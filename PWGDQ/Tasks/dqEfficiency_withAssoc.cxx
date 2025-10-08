@@ -2319,7 +2319,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processMCGenWithGrouping(soa::Filtered<MyEventsVtxCovSelected> const& events,
-                                      ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+                                ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
     uint32_t mcDecision = 0;
     int isig = 0;
@@ -2330,12 +2330,11 @@ struct AnalysisSameEventPairing {
       if (!event.has_reducedMCevent()) {
         continue;
       }
-      
+
       if (fHasTwoProngGenMCsignals) {
         auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
         groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-        for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks))
-        {
+        for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
           auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
           if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
