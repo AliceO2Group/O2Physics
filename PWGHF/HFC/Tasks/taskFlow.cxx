@@ -73,6 +73,7 @@ enum MftTrackSelectionStep {
   NoSelection = 0,
   Eta,
   Cluster,
+  Pt,
   NMftTrackSelectionSteps
 };
 
@@ -149,7 +150,7 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
 // static constexpr float kPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 /////// BELOW IS FOR TUTORIAL DOUBLE CHECK
-static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+static constexpr float pairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct HfTaskFlow {
 
@@ -167,12 +168,8 @@ struct HfTaskFlow {
     Configurable<bool> doHeavyFlavor{"doHeavyFlavor", false, "Flag to know we in the heavy flavor case or not"};
     Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
     Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
-    // Configurable<float> doTwoTrackCut{"doTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
     Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
     Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
-    ///// BELOW IS FOR TUTORIAL DOUBLE CHECK
-    Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {cfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
-    // Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinRadius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
   } configTask;
 
   //   configurables for collisions
@@ -190,13 +187,19 @@ struct HfTaskFlow {
     std::string prefix = "ConfigCentralTracks_group";
     Configurable<float> dcaZCentralTrackMax{"dcaZCentralTrackMax", 0.2f, "max dcaZ of central tracks"};
     Configurable<float> etaCentralTrackMax{"etaCentralTrackMax", 0.8f, "max. eta of central tracks"};
-    Configurable<int> trackSelectionType{"TrackSelectionType", 1, "Track selection: 0 -> kGlobalTrack or isGlobalTrackSDD , 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> No globalTrack selection"};
-    Configurable<bool> isApplyTwoTrackCut{"isApplyTwoTrackCut", true, "apply two track cut"};
+    Configurable<bool> isApplyConversionCut{"isApplyConversionCut", false, "apply pair conversion cuts"};
+    Configurable<bool> isApplyTwoTrackCut{"isApplyTwoTrackCut", false, "apply two track cut"};
+    Configurable<bool> isApplyIndexOrdering{"isApplyIndexOrdering", false, "apply track1.index() <= track2.index() cut"};
+    Configurable<bool> isApplyPtOrderingSameEvent{"isApplyPtOrderingSameEvent", false, "apply track1.pt() <= track2.pt() cut"};
+    Configurable<bool> isApplyPtOrderingMixedEvent{"isApplyPtOrderingMixedEvent", false, "apply track1.pt() <= track2.pt() cut"};
+    Configurable<bool> isApplySameTrackCut{"isApplySameTrackCut", false, "apply track1 == track2 cut"};
     Configurable<float> maxMergingRadius{"maxMergingRadius", 2.5, "max radius for merging cut"};
     Configurable<float> mergingCut{"mergingCut", 0.02, "merging cut on track merge"};
     Configurable<float> minMergingRadius{"minMergingRadius", 0.8, "max radius for merging cut"};
+    Configurable<LabeledArray<float>> pairCut{"pairCut", {pairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
     Configurable<float> ptCentralTrackMin{"ptCentralTrackMin", 0.2f, "min. pT of central tracks"};
     Configurable<float> ptCentralTrackMax{"ptCentralTrackMax", 10.0f, "max. pT of central tracks"};
+    Configurable<int> trackSelectionType{"TrackSelectionType", 1, "Track selection: 0 -> kGlobalTrack or isGlobalTrackSDD , 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> No globalTrack selection"};
   } configCentral;
 
   //  configurables for HF candidates
@@ -212,13 +215,21 @@ struct HfTaskFlow {
   //   configurables for MFT tracks
   struct : ConfigurableGroup {
     std::string prefix = "ConfigMft_group";
-    Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks"};
-    Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks"};
-    Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks"};
-    Configurable<float> etaMftTrackMinFilter{"etaMftTrackMinFilter", -3.9f, "Minimum value for the eta of MFT tracks"};
+    Configurable<int> cutBestCollisionId{"cutBestCollisionId", 0, "cut on the best collision Id used in a filter"};
+    Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks when used in cut function"};
+    Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
+    Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
+    Configurable<float> etaMftTrackMinFilter{"etaMftTrackMinFilter", -3.9f, "Minimum value for the eta of MFT tracks when used in filter"};
     Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
     Configurable<float> mftMaxDCAz{"mftMaxDCAz", 2.0f, "Cut on dcaZ for MFT tracks"};
     Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
+    Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
+    Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.2f, "min value of MFT tracks pT when used in cut function"};
+    Configurable<float> ptMftTrackMaxFilter{"ptMftTrackMaxFilter", 10.0f, "max value of MFT tracks pT when used in filter"};
+    Configurable<float> ptMftTrackMinFilter{"ptMftTrackMinFilter", 0.2f, "max value of MFT tracks pT when used in filter"};
+    Configurable<bool> useMftEtaFilter{"useMftEtaFilter", true, "if true, use the Mft eta filter"};
+    Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
+    Configurable<bool> useMftPtFilter{"useMftPtFilter", false, "if true, use the Mft pt filter"};
   } configMft;
 
   HfHelper hfHelper;
@@ -274,8 +285,8 @@ struct HfTaskFlow {
   Filter centralTrackDcaFilter = ifnode(configCentral.dcaZCentralTrackMax.node() > 0.f, nabs(aod::track::dcaZ) <= configCentral.dcaZCentralTrackMax && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
                                         ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
 
-  Filter mftTrackFilter = (aod::fwdtrack::eta < configMft.etaMftTrackMaxFilter) &&
-                          (aod::fwdtrack::eta > configMft.etaMftTrackMinFilter);
+  Filter mftTrackEtaFilter = (configMft.useMftEtaFilter.node() == true) && ((aod::fwdtrack::eta < configMft.etaMftTrackMaxFilter) &&
+                                                                            (aod::fwdtrack::eta > configMft.etaMftTrackMinFilter));
 
   // Filters below will be used for uncertainties
   Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
@@ -324,7 +335,6 @@ struct HfTaskFlow {
 
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
-  bool doPairCuts = false;
 
   // Correlation containers used for data
   OutputObj<CorrelationContainer> sameEvent{"sameEvent"};
@@ -401,6 +411,7 @@ struct HfTaskFlow {
     labelsMftTracksSelection[MftTrackSelectionStep::NoSelection] = "all MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Cluster] = "MFT tracks after clusters selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::Pt] = "MFT tracks after pT selection";
     registry.get<TH1>(HIST("Data/Mft/hMftTracksSelection"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < MftTrackSelectionStep::NMftTrackSelectionSteps; iBin++) {
@@ -409,7 +420,7 @@ struct HfTaskFlow {
 
     registry.add("Data/Mft/hReassociationMftTracks", "hReassociationMftTracks", {HistType::kTH1D, {{ReassociationMftTracks::NReassociationMftTracksSteps, -0.5, +ReassociationMftTracks::NReassociationMftTracksSteps - 0.5}}});
     std::string labelsReassociationMftTracks[ReassociationMftTracks::NReassociationMftTracksSteps];
-    labelsReassociationMftTracks[ReassociationMftTracks::NotReassociatedMftTracks] = "MFT tracks after track selection";
+    labelsReassociationMftTracks[ReassociationMftTracks::NotReassociatedMftTracks] = "Ambiguous MFT tracks after track selection";
     labelsReassociationMftTracks[ReassociationMftTracks::ReassociatedMftTracks] = "Reassociated MFT tracks by DCAxy method";
     registry.get<TH1>(HIST("Data/Mft/hReassociationMftTracks"))->SetMinimum(0);
 
@@ -417,19 +428,16 @@ struct HfTaskFlow {
       registry.get<TH1>(HIST("Data/Mft/hReassociationMftTracks"))->GetXaxis()->SetBinLabel(iBin + 1, labelsReassociationMftTracks[iBin].data());
     }
 
-    registry.add("Data/Mft/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
-    registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
-    registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+    registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
 
     ///// BELOW IS FOR THE TUTORIAL DOUBLE CHECK
     mPairCuts.SetHistogramRegistry(&registry);
-    if (configTask.cfgPairCut->get("Photon") > 0 || configTask.cfgPairCut->get("K0") > 0 || configTask.cfgPairCut->get("Lambda") > 0 || configTask.cfgPairCut->get("Phi") > 0 || configTask.cfgPairCut->get("Rho") > 0) {
-      mPairCuts.SetPairCut(PairCuts::Photon, configTask.cfgPairCut->get("Photon"));
-      mPairCuts.SetPairCut(PairCuts::K0, configTask.cfgPairCut->get("K0"));
-      mPairCuts.SetPairCut(PairCuts::Lambda, configTask.cfgPairCut->get("Lambda"));
-      mPairCuts.SetPairCut(PairCuts::Phi, configTask.cfgPairCut->get("Phi"));
-      mPairCuts.SetPairCut(PairCuts::Rho, configTask.cfgPairCut->get("Rho"));
-      doPairCuts = true;
+    if (configCentral.pairCut->get("Photon") > 0 || configCentral.pairCut->get("K0") > 0 || configCentral.pairCut->get("Lambda") > 0 || configCentral.pairCut->get("Phi") > 0 || configCentral.pairCut->get("Rho") > 0) {
+      mPairCuts.SetPairCut(PairCuts::Photon, configCentral.pairCut->get("Photon"));
+      mPairCuts.SetPairCut(PairCuts::K0, configCentral.pairCut->get("K0"));
+      mPairCuts.SetPairCut(PairCuts::Lambda, configCentral.pairCut->get("Lambda"));
+      mPairCuts.SetPairCut(PairCuts::Phi, configCentral.pairCut->get("Phi"));
+      mPairCuts.SetPairCut(PairCuts::Rho, configCentral.pairCut->get("Rho"));
     }
     ///////////
 
@@ -480,6 +488,11 @@ struct HfTaskFlow {
     if (doprocessSameTpcMftChCh || doprocessSameTpcMftChChReassociated || doprocessSameTpcMftChChNonAmbiguous) {
       addHistograms<Data, TpcMft, ChPartChPart>();
 
+      registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
+
+      registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+      registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+
       // All MFT tracks
       registry.add("Data/Mft/kCFStepAll/hEta", "eta", {HistType::kTH1D, {configAxis.axisEtaAssociated}});
       registry.add("Data/Mft/kCFStepAll/hPhi", "phi", {HistType::kTH1D, {configAxis.axisPhi}});
@@ -495,6 +508,11 @@ struct HfTaskFlow {
     if (doprocessSameTpcMftD0Ch || doprocessSameTpcMftD0ChReassociated) {
       addHistograms<Data, TpcMft, D0ChPart>();
 
+      registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
+
+      registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+      registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+
       // All MFT tracks
       registry.add("Data/Mft/kCFStepAll/hEta", "eta", {HistType::kTH1D, {configAxis.axisEtaAssociated}});
       registry.add("Data/Mft/kCFStepAll/hPhi", "phi", {HistType::kTH1D, {configAxis.axisPhi}});
@@ -509,6 +527,11 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcMftLcCh || doprocessSameTpcMftLcChReassociated) {
       addHistograms<Data, TpcMft, LcChPart>();
+
+      registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
+
+      registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+      registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
 
       // All MFT tracks
       registry.add("Data/Mft/kCFStepAll/hEta", "eta", {HistType::kTH1D, {configAxis.axisEtaAssociated}});
@@ -555,6 +578,11 @@ struct HfTaskFlow {
     if (doprocessSameMftFv0aChCh || doprocessSameMftFv0aChChReassociated || doprocessSameMftFv0aChChNonAmbiguous) {
       addHistograms<Data, MftFv0a, ChPartChPart>();
 
+      registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
+
+      registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+      registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
     }
@@ -590,6 +618,11 @@ struct HfTaskFlow {
 
     if (doprocessSameMftFt0aChCh || doprocessSameMftFt0aChChReassociated || doprocessSameMftFt0aChChNonAmbiguous) {
       addHistograms<Data, MftFt0a, ChPartChPart>();
+
+      registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
+
+      registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
+      registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
 
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
@@ -873,6 +906,15 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Cluster);
     }
 
+    // cut on the pT of MFT tracks (for test purposes)
+    if (configMft.useMftPtCut && (mftTrack.pt() > configMft.ptMftTrackMax || mftTrack.pt() < configMft.ptMftTrackMin)) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Pt);
+    }
+
     return true;
   }
 
@@ -992,23 +1034,38 @@ struct HfTaskFlow {
           }
         }
 
-        //  case of h-h correlations where the two types of tracks are the same
-        //  this avoids autocorrelations and double counting of particle pairs
+        if (configCentral.isApplySameTrackCut && (track1 == track2)) {
+          LOGF(info, "DO we enter applySameTrackCut ?");
+          continue;
+        }
+
+        if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= track2.pt())) {
+          LOGF(info, "Do we enter PtOrderingSameEvent");
+          continue;
+        }
+        if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= track2.pt())) {
+          LOGF(info, "Do we enter PtOrderingMixedEvent");
+          continue;
+        }
+
+        if (configCentral.isApplyIndexOrdering && (track1.index() <= track2.index())) {
+          LOGF(info, "Do we enter IndexOrdering");
+          continue;
+        }
+
+        // I have to add this condition, because ConversionCut is template to get the same type of tracks for both tracks
         if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) {
-          // if (track1.index() <= track2.index()) {
-          //   continue;
-          // }
-          /////// TEST FOR THE PURPOSE OF DEBUGGING
-          // if (track1 == track2) {
-          //   continue;
-          // }
-          // if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
-          //   continue;
-          // }
-          if (track1.pt() <= track2.pt()) {
+          if (configCentral.isApplyConversionCut && mPairCuts.conversionCuts(track1, track2)) {
+            LOGF(info, "Do we enter conversionCuts");
             continue;
           }
+        }
+
+        // I have to add this condition, because PhiStar need track1.sign()
+        if constexpr (std::is_same_v<TTracksTrig, FilteredTracksWDcaSel>) {
           if (configCentral.isApplyTwoTrackCut && std::abs(eta1 - track2.eta()) < configCentral.mergingCut) {
+
+            LOGF(info, "Do we enter phi star cut ?");
 
             double dPhiStarHigh = getDPhiStar(track1, track2, configCentral.maxMergingRadius, magneticField);
             double dPhiStarLow = getDPhiStar(track1, track2, configCentral.minMergingRadius, magneticField);
@@ -1079,10 +1136,13 @@ struct HfTaskFlow {
           } else {                                                          // IF TPC-MFT case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-MFT D0-h
               fillAssociatedQa<Data, TpcMft, D0ChPart>(multiplicity, eta2, phi2);
+              registry.fill(HIST("Data/Mft/hPtMft"), pt2);
             } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-MFT Lc-h
               fillAssociatedQa<Data, TpcMft, LcChPart>(multiplicity, eta2, phi2);
+              registry.fill(HIST("Data/Mft/hPtMft"), pt2);
             } else { // IF NEITHER D0 NOR LC -> TPC-MFT h-h
               fillAssociatedQa<Data, TpcMft, ChPartChPart>(multiplicity, eta2, phi2);
+              registry.fill(HIST("Data/Mft/hPtMft"), pt2);
             } // end of if condition for TPC-TPC or TPC-MFT case
           }
         }
@@ -1167,13 +1227,15 @@ struct HfTaskFlow {
         // Fill QA plot for MFT tracks after physical selection (eta + clusters)
         if (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)) {
           registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AfterTrackSelection);
-          registry.fill(HIST("Data/Mft/hReassociationMftTracks"), ReassociationMftTracks::NotReassociatedMftTracks);
         }
 
         // We check if the track is ambiguous or non-ambiguous (QA plots are filled in isAmbiguousMftTrack)
         // Fill plots only if cutAmbiguousTracks is false (to avoid double counting)
         if (isAmbiguousMftTrack(track2, (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)))) {
           // If the MFT track is ambiguous we may cut or not on the ambiguous track
+          if (sameEvent && (loopCounter == 1)) {
+            registry.fill(HIST("Data/Mft/hReassociationMftTracks"), ReassociationMftTracks::NotReassociatedMftTracks);
+          }
           if (cutAmbiguousTracks) {
             continue;
           }
@@ -1196,6 +1258,25 @@ struct HfTaskFlow {
           if ((track1.prong0Id() == reassociatedMftTrack.globalIndex()) || (track1.prong1Id() == reassociatedMftTrack.globalIndex()) || (track1.prong2Id() == reassociatedMftTrack.globalIndex())) {
             continue;
           }
+        }
+
+        if (configCentral.isApplySameTrackCut && (track1 == reassociatedMftTrack)) {
+          LOGF(info, "DO we enter applySameTrackCut ?");
+          continue;
+        }
+
+        if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
+          LOGF(info, "Do we enter PtOrderingSameEvent");
+          continue;
+        }
+        if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
+          LOGF(info, "Do we enter PtOrderingMixedEvent");
+          continue;
+        }
+
+        if (configCentral.isApplyIndexOrdering && (track1.index() <= reassociatedMftTrack.index())) {
+          LOGF(info, "Do we enter IndexOrdering");
+          continue;
         }
 
         float eta2 = reassociatedMftTrack.eta();
@@ -1221,10 +1302,13 @@ struct HfTaskFlow {
         if (sameEvent && (loopCounter == 1) && (cutAmbiguousTracks == false)) {
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
             fillAssociatedQa<Data, TpcMft, D0ChPart>(multiplicity, eta2, phi2);
+            registry.fill(HIST("Data/Mft/hPtMft"), pt2);
           } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
             fillAssociatedQa<Data, TpcMft, LcChPart>(multiplicity, eta2, phi2);
+            registry.fill(HIST("Data/Mft/hPtMft"), pt2);
           } else {
             fillAssociatedQa<Data, TpcMft, ChPartChPart>(multiplicity, eta2, phi2);
+            registry.fill(HIST("Data/Mft/hPtMft"), pt2);
           }
         }
 
@@ -1615,15 +1699,10 @@ struct HfTaskFlow {
       return;
     }
 
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
 
-    //  the event histograms below are only filled for h-h case
-    //  because there is a possibility of double-filling if more correlation
-    //  options are ran at the same time
-    //  temporary solution, since other correlation options always have to be ran with h-h, too
-    //  TODO: rewrite it in a more intelligent way
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
-    // registry.fill(HIST(Form("Data/hMultiplicity_%s", WhatMultiplicityEstimator[HfTaskFlow::configCollision.multiplicityEstimator].data())), multiplicity);
 
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
@@ -1648,6 +1727,8 @@ struct HfTaskFlow {
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
     }
+
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
@@ -1676,6 +1757,8 @@ struct HfTaskFlow {
       return;
     }
 
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
+
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -1697,6 +1780,8 @@ struct HfTaskFlow {
       return;
     }
 
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
+
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -1716,7 +1801,7 @@ struct HfTaskFlow {
       return;
     }
 
-    registry.fill(HIST("Data/Mft/hNTracks"), tracks.size());
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
 
@@ -1739,7 +1824,7 @@ struct HfTaskFlow {
       return;
     }
 
-    registry.fill(HIST("Data/Mft/hNTracks"), tracks.size());
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
 
@@ -1762,7 +1847,7 @@ struct HfTaskFlow {
       return; // when process function has iterator
     }
 
-    registry.fill(HIST("Data/Mft/hNTracks"), tracks.size());
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
 
@@ -1878,6 +1963,7 @@ struct HfTaskFlow {
       return;
     }
 
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
@@ -2032,6 +2118,7 @@ struct HfTaskFlow {
       return;
     }
 
+    registry.fill(HIST("Data/hNTracks"), tracks.size());
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFT0()) {
