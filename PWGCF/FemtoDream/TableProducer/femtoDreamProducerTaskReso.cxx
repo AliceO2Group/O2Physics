@@ -680,6 +680,74 @@ struct FemtoDreamProducerTaskReso {
       outputCollsMCLabels(-1);
     }
   }
+
+  template <typename P>
+  void fillLikeSign(P const& sliceDaughters)
+  {
+    for (const auto& track1 : sliceDaughters) {
+      if (!resoCuts.daughterSelectionPos(track1) || !resoCuts.isSelectedMinimalPIDPos(track1, Resonance.confDaughterPIDspecies.value)) {
+        continue;
+      }
+      for (const auto& track2 : sliceDaughters) {
+        if (!resoCuts.daughterSelectionPos(track2) || !resoCuts.isSelectedMinimalPIDPos(track2, Resonance.confDaughterPIDspecies.value)) {
+          continue;
+        }
+
+        /// This only works for the case where the mass of opposite charged particles are the same (for example K+/K- have same mass)
+        float massPart1 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[0]);
+        float massPart2 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[1]);
+
+        /// Resonance
+        ROOT::Math::PtEtaPhiMVector tempD1(track1.pt(), track1.eta(), track1.phi(), massPart1);
+        ROOT::Math::PtEtaPhiMVector tempD2(track2.pt(), track2.eta(), track2.phi(), massPart2);
+        ROOT::Math::PtEtaPhiMVector tempReso = tempD1 + tempD2;
+        /// Anti-resonance
+        ROOT::Math::PtEtaPhiMVector tempDA1(track1.pt(), track1.eta(), track1.phi(), massPart2);
+        ROOT::Math::PtEtaPhiMVector tempDA2(track2.pt(), track2.eta(), track2.phi(), massPart1);
+        ROOT::Math::PtEtaPhiMVector tempAntiReso = tempDA1 + tempDA2;
+
+        /// For InvMassQA
+        ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA1(track1.pt(), track1.eta(), track1.phi(), massPart1);
+        ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA1(track2.pt(), track2.eta(), track2.phi(), massPart1);
+        ROOT::Math::PtEtaPhiMVector tempMassQA1 = tempDaughter1MassQA1 + tempDaughter2MassQA1;
+
+        float massQAPart2 = massPart2;
+        if (Resonance.confDaughterPIDspecies.value[0] == Resonance.confDaughterPIDspecies.value[1]) {
+          massQAPart2 = o2::track::PID::getMass(Resonance.confMassQAPart2PID.value);
+        }
+
+        ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA2(track1.pt(), track1.eta(), track1.phi(), massQAPart2);
+        ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA2(track2.pt(), track2.eta(), track2.phi(), massQAPart2);
+        ROOT::Math::PtEtaPhiMVector tempMassQA2 = tempDaughter1MassQA2 + tempDaughter2MassQA2;
+
+        float massDiff = std::abs(Resonance.confResoInvMass.value - tempReso.M());
+        float massDiffAnti = std::abs(Resonance.confResoInvMass.value - tempAntiReso.M());
+
+        bool resoIsNotAnti = true; /// bool for differentianting between particle/antiparticle
+        if ((Resonance.confDaughterPIDspecies->size() > 1) && (Resonance.confDaughterPIDspecies.value[0] != Resonance.confDaughterPIDspecies.value[1])) {
+          auto [isNormal, WrongCombination] = resoCuts.checkCombination(track1, track2, Resonance.confDaughterPIDspecies.value, massDiff, massDiffAnti, Resonance.confUseMassDiffLikeSign.value);
+          if (WrongCombination) {
+            continue;
+          }
+          resoIsNotAnti = isNormal;
+        }
+        /// Resos, where both daughters have the same PID are defaulted to sign 1. and resoIsNotAnti = true
+
+        if (resoIsNotAnti) {
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMass"), tempReso.M());
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassSwitched"), tempAntiReso.M());
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID1"), tempMassQA1.M());
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID2"), tempMassQA2.M());
+        } else {
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMass"), tempReso.M());
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassSwitched"), tempAntiReso.M());
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID1"), tempMassQA1.M());
+          resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID2"), tempMassQA2.M());
+        }
+      } // for (const &auto track2 : sliceDaughters)
+    } // for (const &auto track1 : sliceDaughters)
+  }
+
   template <bool isMC, bool hasItsPid, bool useCentrality, bool analysePbPb, typename V0Type, typename TrackType, typename TrackTypeWithItsPid, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, TrackTypeWithItsPid const& tracksWithItsPid, V0Type const& fullV0s)
   {
@@ -1086,73 +1154,10 @@ struct FemtoDreamProducerTaskReso {
       } // for (const auto& track1 : slicePosdaugh)
 
       if (Resonance.confDoLikeSign.value) {
-        std::vector<Partition<aod::FemtoFullTracks>*> daughterPartitions = {&daughter1, &daughter2};
-        for (const auto* partition : daughterPartitions) {
-          auto sliceDaughters = partition->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
-          for (const auto& track1 : sliceDaughters) {
-            if (!resoCuts.daughterSelectionPos(track1) || !resoCuts.isSelectedMinimalPIDPos(track1, Resonance.confDaughterPIDspecies.value)) {
-              continue;
-            }
-            for (const auto& track2 : sliceDaughters) {
-              if (!resoCuts.daughterSelectionPos(track2) || !resoCuts.isSelectedMinimalPIDPos(track2, Resonance.confDaughterPIDspecies.value)) {
-                continue;
-              }
+        fillLikeSign(slicePosdaugh);
+        fillLikeSign(sliceNegdaugh);
+      }
 
-              /// This only works for the case where the mass of opposite charged particles are the same (for example K+/K- have same mass)
-              float massPart1 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[0]);
-              float massPart2 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[1]);
-
-              /// Resonance
-              ROOT::Math::PtEtaPhiMVector tempD1(track1.pt(), track1.eta(), track1.phi(), massPart1);
-              ROOT::Math::PtEtaPhiMVector tempD2(track2.pt(), track2.eta(), track2.phi(), massPart2);
-              ROOT::Math::PtEtaPhiMVector tempReso = tempD1 + tempD2;
-              /// Anti-resonance
-              ROOT::Math::PtEtaPhiMVector tempDA1(track1.pt(), track1.eta(), track1.phi(), massPart2);
-              ROOT::Math::PtEtaPhiMVector tempDA2(track2.pt(), track2.eta(), track2.phi(), massPart1);
-              ROOT::Math::PtEtaPhiMVector tempAntiReso = tempDA1 + tempDA2;
-
-              /// For InvMassQA
-              ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA1(track1.pt(), track1.eta(), track1.phi(), massPart1);
-              ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA1(track2.pt(), track2.eta(), track2.phi(), massPart1);
-              ROOT::Math::PtEtaPhiMVector tempMassQA1 = tempDaughter1MassQA1 + tempDaughter2MassQA1;
-
-              float massQAPart2 = massPart2;
-              if (Resonance.confDaughterPIDspecies.value[0] == Resonance.confDaughterPIDspecies.value[1]) {
-                massQAPart2 = o2::track::PID::getMass(Resonance.confMassQAPart2PID.value);
-              }
-
-              ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA2(track1.pt(), track1.eta(), track1.phi(), massQAPart2);
-              ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA2(track2.pt(), track2.eta(), track2.phi(), massQAPart2);
-              ROOT::Math::PtEtaPhiMVector tempMassQA2 = tempDaughter1MassQA2 + tempDaughter2MassQA2;
-
-              float massDiff = std::abs(Resonance.confResoInvMass.value - tempReso.M());
-              float massDiffAnti = std::abs(Resonance.confResoInvMass.value - tempAntiReso.M());
-
-              bool resoIsNotAnti = true; /// bool for differentianting between particle/antiparticle
-              if ((Resonance.confDaughterPIDspecies->size() > 1) && (Resonance.confDaughterPIDspecies.value[0] != Resonance.confDaughterPIDspecies.value[1])) {
-                auto [isNormal, WrongCombination] = resoCuts.checkCombination(track1, track2, Resonance.confDaughterPIDspecies.value, massDiff, massDiffAnti, Resonance.confUseMassDiffLikeSign.value);
-                if (WrongCombination) {
-                  continue;
-                }
-                resoIsNotAnti = isNormal;
-              }
-              /// Resos, where both daughters have the same PID are defaulted to sign 1. and resoIsNotAnti = true
-
-              if (resoIsNotAnti) {
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMass"), tempReso.M());
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassSwitched"), tempAntiReso.M());
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID1"), tempMassQA1.M());
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID2"), tempMassQA2.M());
-              } else {
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMass"), tempReso.M());
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassSwitched"), tempAntiReso.M());
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID1"), tempMassQA1.M());
-                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID2"), tempMassQA2.M());
-              }
-            } // for (const &auto track2 : sliceDaughters)
-          } // for (const &auto track1 : sliceDaughters)
-        } // for (auto* partition : daughterPartitions)
-      } // if (Resonance.confDoLikeSign.value)
     } // if (confIsActivatePhi.value)
   } // void fillCollisionsAndTracksAndV0(...)
 
