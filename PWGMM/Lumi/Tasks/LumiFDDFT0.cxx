@@ -229,7 +229,6 @@ struct LumiFDDFT0 {
     o2::conf::ConfigurableParam::updateFromString(
       "pvertexer.useMeanVertexConstraint=false"); // we want to refit w/o
                                                   // MeanVertex constraint
-    
     vertexer.init();
     bool PVrefit_doable = vertexer.prepareVertexRefit(vec_TrkContributos, Pvtx);
     double chi2 = -1.;
