@@ -222,7 +222,7 @@ uint32_t FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool
 {
   float posThresh = 0.;
   float negThresh = 0.;
-  if ( resoIsNotAnti ) {
+  if (resoIsNotAnti) {
     posThresh = mDaughPTPCThr[0];
     negThresh = mDaughPTPCThr[1];
   } else {
@@ -325,18 +325,18 @@ template <typename V, typename T>
 bool FemtoDreamResoSelection::isSelectedMinimalPIDPos(V const& track1, T const& pidVector)
 {
   int pidVecSize = pidVector.size();
-  for (int i=0; i<pidVecSize; i++) {
+  for (int i = 0; i < pidVecSize; i++) {
     const float pidTPC = posDaughTrack.getNsigmaTPC(track1, pidVector[i]);
     const float pidTOF = posDaughTrack.getNsigmaTOF(track1, pidVector[i]);
 
     if (track1.pt() < mDaughPTPCThr[i]) {
       if (std::fabs(pidTPC) < mSigmaPIDMax) {
         return true;
-        } 
-      } else if ((std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax)) {
-          return true;
       }
+    } else if ((std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax)) {
+      return true;
     }
+  }
   return false;
 }
 
@@ -344,18 +344,18 @@ template <typename V, typename T>
 bool FemtoDreamResoSelection::isSelectedMinimalPIDNeg(V const& track2, T const& pidVector)
 {
   int pidVecSize = pidVector.size();
-  for (int i=0; i<pidVecSize; i++) {
+  for (int i = 0; i < pidVecSize; i++) {
     const float pidTPC = negDaughTrack.getNsigmaTPC(track2, pidVector[i]);
     const float pidTOF = negDaughTrack.getNsigmaTOF(track2, pidVector[i]);
 
     if (track2.pt() < mDaughPTPCThr[i]) {
       if (std::fabs(pidTPC) < mSigmaPIDMax) {
         return true;
-        } 
-      } else if ((std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax)) {
-          return true;
       }
+    } else if ((std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax)) {
+      return true;
     }
+  }
   return false;
 }
 
@@ -365,11 +365,11 @@ std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrac
   /// first bool: true (normal resonance) / false (anti resonance)
   /// second bool: is not a valid combination
 
-  const auto part1 = pidVector[0];    /// particle type 1
-  const auto part2 = pidVector[1];    /// particle type 2
+  const auto part1 = pidVector[0]; /// particle type 1
+  const auto part2 = pidVector[1]; /// particle type 2
 
-  float nSigPosPart1Total = getNSigTotal(PosTrack, part1, mDaughPTPCThr[0]);     /// Total propability that PosTrack is of particle type 1
-  float nSigPosPart2Total = getNSigTotal(PosTrack, part2, mDaughPTPCThr[1]);     /// Total propability that PosTrack is of particle type 2
+  float nSigPosPart1Total = getNSigTotal(PosTrack, part1, mDaughPTPCThr[0]); /// Total propability that PosTrack is of particle type 1
+  float nSigPosPart2Total = getNSigTotal(PosTrack, part2, mDaughPTPCThr[1]); /// Total propability that PosTrack is of particle type 2
   float nSigNegPart1Total = getNSigTotal(NegTrack, part1, mDaughPTPCThr[0]);
   float nSigNegPart2Total = getNSigTotal(NegTrack, part2, mDaughPTPCThr[1]);
 
@@ -378,9 +378,9 @@ std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrac
   // check if PosTrack is more likely to be part2 than part1 (and vice versa for NegTrack) -> anti resonance
   bool couldBeAnti = nSigPosPart2Total < nSigPosPart1Total && nSigNegPart1Total < nSigNegPart2Total;
 
-  if (useMassDiff) { 
+  if (useMassDiff) {
     couldBeNormal = couldBeNormal && massDiff < massDiffAnti;
-    couldBeAnti =  couldBeAnti && massDiffAnti < massDiff;
+    couldBeAnti = couldBeAnti && massDiffAnti < massDiff;
   }
 
   if (couldBeNormal && !couldBeAnti) {
@@ -398,7 +398,7 @@ float FemtoDreamResoSelection::getNSigTotal(T const& track, V const& pid, float 
 {
   float nSigTPC = o2::aod::pidutils::tpcNSigma(pid, track);
   float pTtrack = track.pt();
-    
+
   if (pTtrack < threshold) {
     return std::abs(nSigTPC);
   }
@@ -409,7 +409,7 @@ float FemtoDreamResoSelection::getNSigTotal(T const& track, V const& pid, float 
   } else {
     nSigTOF = o2::aod::pidutils::tofNSigma(pid, track);
   }
-  return std::sqrt( nSigTPC * nSigTPC + nSigTOF * nSigTOF);
+  return std::sqrt(nSigTPC * nSigTPC + nSigTOF * nSigTOF);
 }
 
 //// new getCutContainer
