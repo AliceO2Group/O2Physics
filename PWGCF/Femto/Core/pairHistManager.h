@@ -16,27 +16,22 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 
-#include "PWGCF/Femto/Core/closePairRejection.h"
-#include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
-#include "PWGCF/Femto/Core/pairCleaner.h"
-#include "PWGCF/Femto/Core/trackHistManager.h"
-#include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/Configurable.h"
-#include "Framework/GroupedCombinations.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
 
-#include "Math/Boost.h"
-#include "Math/Vector4D.h"
-#include "TMath.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
 
 #include <array>
+#include <cmath>
 #include <map>
-#include <random>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femto
@@ -221,7 +216,7 @@ class PairHistManager
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   float mMass1 = 0.f;
   float mMass2 = 0.f;
   float mAbsCharge1 = 1.f;

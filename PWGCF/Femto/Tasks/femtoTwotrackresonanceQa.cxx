@@ -15,7 +15,6 @@
 
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
-#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
@@ -29,6 +28,9 @@
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisHelpers.h"
+#include "Framework/OutputObjHeader.h"
+#include "Framework/InitContext.h"
 
 #include <map>
 #include <string>

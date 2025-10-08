@@ -166,7 +166,7 @@ template <const char* kinkPrefix,
 class KinkHistManager
 {
  public:
-  /// Destructor
+  KinkHistManager() = default;
   virtual ~KinkHistManager() = default;
 
   /// Initializes histograms for the task
@@ -280,7 +280,7 @@ class KinkHistManager
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   trackhistmanager::TrackHistManager<chaDauPrefix, mode> mChaDauManager;
 };
 }; // namespace kinkhistmanager

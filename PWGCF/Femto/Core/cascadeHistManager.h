@@ -168,7 +168,7 @@ template <const char* cascadePrefix,
 class CascadeHistManager
 {
  public:
-  /// Destructor
+  CascadeHistManager() = default;
   virtual ~CascadeHistManager() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
@@ -257,7 +257,7 @@ class CascadeHistManager
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
 
   trackhistmanager::TrackHistManager<bachelorPrefix, mode> mBachelorManager;
   trackhistmanager::TrackHistManager<posDauPrefix, mode> mPosDauManager;

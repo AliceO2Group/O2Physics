@@ -125,7 +125,7 @@ template <modes::Mode mode>
 class CollisionHistManager
 {
  public:
-  /// Destructor
+  CollisionHistManager() = default;
   virtual ~CollisionHistManager() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
@@ -181,7 +181,7 @@ class CollisionHistManager
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
 }; // namespace femtounitedcolhistmanager
 }; // namespace colhistmanager
 }; // namespace o2::analysis::femto

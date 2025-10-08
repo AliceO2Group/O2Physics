@@ -30,7 +30,12 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
 
+#include "fairlogger/Logger.h"
+
+#include <chrono>
+#include <cstdint>
 #include <map>
 #include <random>
 #include <vector>

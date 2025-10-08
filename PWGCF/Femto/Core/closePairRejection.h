@@ -19,9 +19,13 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 
+#include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
 
 #include <array>
+#include <cmath>
+#include <cstddef>
 #include <map>
 #include <numeric>
 #include <string>
