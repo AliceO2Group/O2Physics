@@ -42,9 +42,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <TComplex.h>
@@ -137,6 +137,9 @@ struct LongrangeCorrelation {
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
   Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
+  Configurable<bool> isUseEffCorr{"isUseEffCorr", false, "Enable efficiency correction"};
+  Configurable<std::string> cfgEffccdbPath{"cfgEffccdbPath", "/alice/data/CCDB/Users/a/abmodak/OO/Efficiency", "Browse track eff object from CCDB"};
+  Configurable<std::string> cfgMultccdbPath{"cfgMultccdbPath", "/alice/data/CCDB/Users/a/abmodak/OO/Multiplicity", "Browse mult efficiency object from CCDB"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
@@ -174,6 +177,12 @@ struct LongrangeCorrelation {
   OutputObj<CorrelationContainer> mixedFt0aMft{Form("mixedEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> sameFt0aFt0c{Form("sameEventFt0aFt0c_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> mixedFt0aFt0c{Form("mixedEventFt0aFt0c_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+
+  // corrections
+  TH3D* hTrkEff = nullptr;
+  TH1D* hMultEff = nullptr;
+  bool fLoadTrkEffCorr = false;
+  bool fLoadMultEffCorr = false;
 
   template <KindOfCorrType corrType, KindOfEvntType evntType>
   void addHistos()
@@ -349,15 +358,82 @@ struct LongrangeCorrelation {
     }
   }
 
+  void loadEffCorrection(uint64_t timestamp)
+  {
+    if (fLoadTrkEffCorr) {
+      return;
+    }
+    if (cfgEffccdbPath.value.empty() == false) {
+      hTrkEff = ccdb->getForTimeStamp<TH3D>(cfgEffccdbPath, timestamp);
+      if (hTrkEff == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEffccdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEffccdbPath.value.c_str(), (void*)hTrkEff);
+    }
+    fLoadTrkEffCorr = true;
+  }
+
+  void loadMultCorrection(uint64_t timestamp)
+  {
+    if (fLoadMultEffCorr) {
+      return;
+    }
+    if (cfgMultccdbPath.value.empty() == false) {
+      hMultEff = ccdb->getForTimeStamp<TH1D>(cfgMultccdbPath, timestamp);
+      if (hMultEff == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for multiplicity from %s", cfgMultccdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgMultccdbPath.value.c_str(), (void*)hMultEff);
+    }
+    fLoadMultEffCorr = true;
+  }
+
+  float getTrkEffCorr(float eta, float pt, float posZ)
+  {
+    float eff = 1.;
+    if (hTrkEff) {
+      int etaBin = hTrkEff->GetXaxis()->FindBin(eta);
+      int ptBin = hTrkEff->GetYaxis()->FindBin(pt);
+      int zBin = hTrkEff->GetZaxis()->FindBin(posZ);
+      eff = hTrkEff->GetBinContent(etaBin, ptBin, zBin);
+    } else {
+      eff = 1.0;
+    }
+    if (eff < 0.001)
+      eff = 1.0;
+
+    return eff;
+  }
+
+  float getMultEffCorr(float mult)
+  {
+    float eff = 1.;
+    if (hMultEff) {
+      int multBin = hMultEff->GetXaxis()->FindBin(mult);
+      eff = hMultEff->GetBinContent(multBin);
+    } else {
+      eff = 1.0;
+    }
+    if (eff < 0.001)
+      eff = 1.0;
+
+    return eff;
+  }
+
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TFT0s>
   void fillCorrFt0aGlobal(TTarget target, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz, float multiplicity)
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
     if (!mixing)
       histos.fill(HIST("Ft0aGlobal/SE/hMult_used"), multiplicity);
+
     for (auto const& triggerTrack : triggers) {
+      float trkeffw = 1.0f;
+      if (isUseEffCorr)
+        trkeffw = getTrkEffCorr(triggerTrack.eta(), triggerTrack.pt(), vz);
+
       if (!mixing)
-        histos.fill(HIST("Ft0aGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+        histos.fill(HIST("Ft0aGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt(), trkeffw);
 
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
         auto chanelid = ft0.channelA()[iCh];
@@ -383,10 +459,10 @@ struct LongrangeCorrelation {
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
         float deltaEta = triggerTrack.eta() - eta;
         if (mixing)
-          histos.fill(HIST("Ft0aGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+          histos.fill(HIST("Ft0aGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta, trkeffw);
         else
-          histos.fill(HIST("Ft0aGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
-        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
+          histos.fill(HIST("Ft0aGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta, trkeffw);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, trkeffw);
       } // associated ft0 tracks
     } // trigger tracks
   } // fillCorrFt0aGlobal
@@ -398,8 +474,12 @@ struct LongrangeCorrelation {
     if (!mixing)
       histos.fill(HIST("Ft0cGlobal/SE/hMult_used"), multiplicity);
     for (auto const& triggerTrack : triggers) {
+      float trkeffw = 1.0f;
+      if (isUseEffCorr)
+        trkeffw = getTrkEffCorr(triggerTrack.eta(), triggerTrack.pt(), vz);
+
       if (!mixing)
-        histos.fill(HIST("Ft0cGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+        histos.fill(HIST("Ft0cGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt(), trkeffw);
 
       for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
         auto chanelid = ft0.channelC()[iCh] + 96;
@@ -425,10 +505,10 @@ struct LongrangeCorrelation {
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
         float deltaEta = triggerTrack.eta() - eta;
         if (mixing)
-          histos.fill(HIST("Ft0cGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+          histos.fill(HIST("Ft0cGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta, trkeffw);
         else
-          histos.fill(HIST("Ft0cGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
-        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
+          histos.fill(HIST("Ft0cGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta, trkeffw);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, trkeffw);
       } // associated ft0 tracks
     } // trigger tracks
   } // fillCorrFt0cGlobal
@@ -440,8 +520,12 @@ struct LongrangeCorrelation {
     if (!mixing)
       histos.fill(HIST("MftGlobal/SE/hMult_used"), multiplicity);
     for (auto const& triggerTrack : triggers) {
+      float trkeffw = 1.0f;
+      if (isUseEffCorr)
+        trkeffw = getTrkEffCorr(triggerTrack.eta(), triggerTrack.pt(), vz);
+
       if (!mixing)
-        histos.fill(HIST("MftGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+        histos.fill(HIST("MftGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt(), trkeffw);
 
       for (auto const& assoTrack : mft) {
         if (!isMftTrackSelected(assoTrack)) {
@@ -461,10 +545,10 @@ struct LongrangeCorrelation {
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (mixing)
-          histos.fill(HIST("MftGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+          histos.fill(HIST("MftGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta, trkeffw);
         else
-          histos.fill(HIST("MftGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
-        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), assoTrack.pt(), deltaPhi, deltaEta);
+          histos.fill(HIST("MftGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta, trkeffw);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), assoTrack.pt(), deltaPhi, deltaEta, trkeffw);
       } // associated mft tracks
     } // trigger tracks
   } // fillCorrMftGlobal
@@ -598,15 +682,21 @@ struct LongrangeCorrelation {
     histos.fill(HIST("QA/VtxZHist"), col.posZ());
   }
 
-  void processFt0aGlobalSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks)
+  void processFt0aGlobalSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
     if (col.has_foundFT0()) {
+      auto bc = col.bc_as<aod::BCsWithTimestamps>();
+      loadEffCorrection(bc.timestamp());
+      loadMultCorrection(bc.timestamp());
       fillYield<kFT0AGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
       auto multiplicity = col.multiplicity();
+      float multw = getMultEffCorr(multiplicity);
+      if (isUseEffCorr)
+        multiplicity = multiplicity * multw;
       if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
         return;
       }
@@ -614,15 +704,21 @@ struct LongrangeCorrelation {
     }
   } // same event
 
-  void processFt0cGlobalSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks)
+  void processFt0cGlobalSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
     if (col.has_foundFT0()) {
+      auto bc = col.bc_as<aod::BCsWithTimestamps>();
+      loadEffCorrection(bc.timestamp());
+      loadMultCorrection(bc.timestamp());
       fillYield<kFT0CGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
       auto multiplicity = col.multiplicity();
+      float multw = getMultEffCorr(multiplicity);
+      if (isUseEffCorr)
+        multiplicity = multiplicity * multw;
       if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
         return;
       }
@@ -630,28 +726,39 @@ struct LongrangeCorrelation {
     }
   } // same event
 
-  void processMftGlobalSE(CollTable::iterator const& col, MftTrkTable const& mfttracks, TrksTable const& tracks)
+  void processMftGlobalSE(CollTable::iterator const& col, MftTrkTable const& mfttracks, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    loadEffCorrection(bc.timestamp());
+    loadMultCorrection(bc.timestamp());
     fillYield<kMFTGLOBAL, kSE>(tracks);
     auto multiplicity = col.multiplicity();
+    float multw = getMultEffCorr(multiplicity);
+    if (isUseEffCorr)
+      multiplicity = multiplicity * multw;
     if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
       return;
     }
     fillCorrMftGlobal<CorrelationContainer::kCFStepReconstructed>(sameMftGlobal, tracks, mfttracks, false, col.posZ(), multiplicity);
   } // same event
 
-  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, MftTrkTable const& mfttracks)
+  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, MftTrkTable const& mfttracks, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
     if (col.has_foundFT0()) {
       fillYield<kFT0AMFT, kSE>(mfttracks);
+      auto bc = col.bc_as<aod::BCsWithTimestamps>();
+      loadMultCorrection(bc.timestamp());
       const auto& ft0 = col.foundFT0();
       auto multiplicity = col.multiplicity();
+      float multw = getMultEffCorr(multiplicity);
+      if (isUseEffCorr)
+        multiplicity = multiplicity * multw;
       if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
         return;
       }
@@ -659,15 +766,20 @@ struct LongrangeCorrelation {
     }
   } // same event
 
-  void processFt0aFt0cSE(CollTable::iterator const& col, aod::FT0s const&)
+  void processFt0aFt0cSE(CollTable::iterator const& col, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
     if (col.has_foundFT0()) {
+      auto bc = col.bc_as<aod::BCsWithTimestamps>();
+      loadMultCorrection(bc.timestamp());
       auto multiplicity = col.multiplicity();
       histos.fill(HIST("Ft0aFt0c/SE/hMult"), multiplicity);
       const auto& ft0 = col.foundFT0();
+      float multw = getMultEffCorr(multiplicity);
+      if (isUseEffCorr)
+        multiplicity = multiplicity * multw;
       if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
         return;
       }
@@ -675,7 +787,7 @@ struct LongrangeCorrelation {
     }
   } // same event
 
-  void processFt0aGlobalME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
+  void processFt0aGlobalME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -692,10 +804,16 @@ struct LongrangeCorrelation {
         continue;
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
+        auto bc = col1.bc_as<aod::BCsWithTimestamps>();
+        loadEffCorrection(bc.timestamp());
+        loadMultCorrection(bc.timestamp());
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
         fillYield<kFT0AGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         auto multiplicity = col1.multiplicity();
+        float multw = getMultEffCorr(multiplicity);
+        if (isUseEffCorr)
+          multiplicity = multiplicity * multw;
         if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
           continue;
         }
@@ -704,7 +822,7 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
-  void processFt0cGlobalME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
+  void processFt0cGlobalME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -721,10 +839,16 @@ struct LongrangeCorrelation {
         continue;
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
+        auto bc = col1.bc_as<aod::BCsWithTimestamps>();
+        loadEffCorrection(bc.timestamp());
+        loadMultCorrection(bc.timestamp());
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
         fillYield<kFT0CGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         auto multiplicity = col1.multiplicity();
+        float multw = getMultEffCorr(multiplicity);
+        if (isUseEffCorr)
+          multiplicity = multiplicity * multw;
         if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
           continue;
         }
@@ -733,7 +857,7 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
-  void processMftGlobalME(CollTable const& col, MftTrkTable const& mfttracks, TrksTable const& tracks)
+  void processMftGlobalME(CollTable const& col, MftTrkTable const& mfttracks, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -748,7 +872,13 @@ struct LongrangeCorrelation {
       if (!isEventSelected(col1) || !isEventSelected(col2)) {
         continue;
       }
+      auto bc = col1.bc_as<aod::BCsWithTimestamps>();
+      loadEffCorrection(bc.timestamp());
+      loadMultCorrection(bc.timestamp());
       auto multiplicity = col1.multiplicity();
+      float multw = getMultEffCorr(multiplicity);
+      if (isUseEffCorr)
+        multiplicity = multiplicity * multw;
       if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
         continue;
       }
@@ -756,7 +886,7 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
-  void processFt0aMftME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
+  void processFt0aMftME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, MftTrkTable const& mfttracks, aod::BCsWithTimestamps const&)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -773,10 +903,15 @@ struct LongrangeCorrelation {
         continue;
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
+        auto bc = col1.bc_as<aod::BCsWithTimestamps>();
+        loadMultCorrection(bc.timestamp());
         auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
         fillYield<kFT0AMFT, kME>(slicedTriggerMftTracks);
         const auto& ft0 = col2.foundFT0();
         auto multiplicity = col1.multiplicity();
+        float multw = getMultEffCorr(multiplicity);
+        if (isUseEffCorr)
+          multiplicity = multiplicity * multw;
         if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
           continue;
         }
@@ -785,7 +920,7 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
-  void processFt0aFt0cME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
+  void processFt0aFt0cME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -802,10 +937,15 @@ struct LongrangeCorrelation {
         continue;
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
+        auto bc = col1.bc_as<aod::BCsWithTimestamps>();
+        loadMultCorrection(bc.timestamp());
         auto multiplicity = col1.multiplicity();
         histos.fill(HIST("Ft0aFt0c/ME/hMult"), multiplicity);
         const auto& ft0a = col1.foundFT0();
         const auto& ft0c = col2.foundFT0();
+        float multw = getMultEffCorr(multiplicity);
+        if (isUseEffCorr)
+          multiplicity = multiplicity * multw;
         if (multiplicity < cfgMinMult || multiplicity >= cfgMaxMult) {
           continue;
         }
@@ -835,7 +975,7 @@ struct LongrangeCorrelation {
     }
     return true;
   }
-  
+
   void processEff(aod::McCollisions::iterator const& mcCollision, CollTableMC const& RecCols, aod::McParticles const& GenParticles, TrksTableMC const& RecTracks)
   {
     if (std::abs(mcCollision.posZ()) >= cfgVtxCut) {
@@ -870,12 +1010,12 @@ struct LongrangeCorrelation {
       auto recTracksPart = RecTracks.sliceBy(perColMC, RecCol.globalIndex());
       for (const auto& Rectrack : recTracksPart) {
         if (Rectrack.has_mcParticle()) {
-    	    auto mcpart = Rectrack.mcParticle();
-	        histos.fill(HIST("hmcrecdndptRecoAll"), mcpart.eta(), mcpart.pt(), multiplicity, mcCollision.posZ()); 
+          auto mcpart = Rectrack.mcParticle();
+          histos.fill(HIST("hmcrecdndptRecoAll"), mcpart.eta(), mcpart.pt(), multiplicity, mcCollision.posZ());
           if (mcpart.isPhysicalPrimary()) {
             histos.fill(HIST("hmcrecdndptRecoPrimary"), mcpart.eta(), mcpart.pt(), multiplicity, mcCollision.posZ());
-	        }
-	      } else {
+          }
+        } else {
           histos.fill(HIST("hmcrecdndptFake"), Rectrack.eta(), Rectrack.pt(), multiplicity, mcCollision.posZ());
         }
       } // track (mcrec) loop
