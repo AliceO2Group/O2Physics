@@ -90,7 +90,8 @@ enum CentEstimator {
   kCentFT0M,
   kCentFT0CVariant1,
   kCentMFT,
-  kCentNGlobal
+  kCentNGlobal,
+  kCentFV0A
 };
 
 struct derivedlambdakzeroanalysis {
@@ -106,7 +107,7 @@ struct derivedlambdakzeroanalysis {
 
   Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true"};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
-  Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 3:CentFT0CVariant1, 4:CentMFT, 5:CentNGlobal)"};
+  Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"};
 
   Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
   Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
@@ -1127,6 +1128,8 @@ struct derivedlambdakzeroanalysis {
       return collision.centMFT();
     else if (centralityEstimator == kCentNGlobal)
       return collision.centNGlobal();
+    else if (centralityEstimator == kCentFV0A)
+      return collision.centFV0A();
 
     return -1.f;
   }
