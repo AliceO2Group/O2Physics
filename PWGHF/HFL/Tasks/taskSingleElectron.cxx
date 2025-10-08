@@ -279,16 +279,16 @@ struct HfTaskSingleElectron {
             if (grmotherPdg == kPi0) {
               return GammaPi0;
             }
-            if (grmotherPdg == kEta) {
+            if (grmotherPdg == PdgCode::kEta) {
               return GammaEta;
             }
-            if (grmotherPdg == kOmega) {
+            if (grmotherPdg == PdgCode::kOmega) {
               return GammaOmega;
             }
             if (grmotherPdg == kPhi) {
               return GammaPhi;
             }
-            if (grmotherPdg == kEtaPrime) {
+            if (grmotherPdg == PdgCode::kEtaPrime) {
               return GammaEtaPrime;
             }
             if (grmotherPdg == kRho770_0) {
@@ -320,12 +320,12 @@ struct HfTaskSingleElectron {
             mpt = grmotherPt;
             return GammaPi0;
           }
-          if (grmotherPdg == kEta) {
+          if (grmotherPdg == PdgCode::kEta) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaEta;
           }
-          if (grmotherPdg == kOmega) {
+          if (grmotherPdg == PdgCode::kOmega) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaOmega;
@@ -335,7 +335,7 @@ struct HfTaskSingleElectron {
             mpt = grmotherPt;
             return GammaPhi;
           }
-          if (grmotherPdg == kEtaPrime) {
+          if (grmotherPdg == PdgCode::kEtaPrime) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaEtaPrime;
@@ -355,10 +355,10 @@ struct HfTaskSingleElectron {
         if (grmothersIdsVec.empty()) {
           static const std::map<int, SourceType> pdgToSource = {
             {kPi0, Pi0},
-            {kEta, Eta},
-            {kOmega, Omega},
+            {PdgCode::kEta, Eta},
+            {PdgCode::kOmega, Omega},
             {kPhi, Phi},
-            {kEtaPrime, EtaPrime},
+            {PdgCode::kEtaPrime, EtaPrime},
             {kRho770_0, Rho0},
             {kKPlus, Ke3},
             {kK0Long, K0l}};
@@ -393,16 +393,16 @@ struct HfTaskSingleElectron {
           mpdg = motherPdg;
           return Pi0;
         }
-        if (motherPdg == kEta) {
+        if (motherPdg == PdgCode::kEta) {
           return Eta;
         }
-        if (motherPdg == kOmega) {
+        if (motherPdg == PdgCode::kOmega) {
           return Omega;
         }
         if (motherPdg == kPhi) {
           return Phi;
         }
-        if (motherPdg == kEtaPrime) {
+        if (motherPdg == PdgCode::kEtaPrime) {
           return EtaPrime;
         }
         if (motherPdg == kRho770_0) {
