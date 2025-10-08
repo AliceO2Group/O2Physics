@@ -211,7 +211,7 @@ struct HfTaskXic0ToXiPi {
     // MC rec.
     for (const auto& candidate : candidates) {
       if (candidate.resultSelections() != true) {
-        return;
+        continue;
       }
       double etaCharmBaryon;
       if constexpr (UseKfParticle) {
@@ -220,7 +220,7 @@ struct HfTaskXic0ToXiPi {
         etaCharmBaryon = candidate.etaCharmBaryon();
       }
       if (yCandRecMax >= 0. && std::abs(etaCharmBaryon) > yCandRecMax) {
-        return;
+        continue;
       }
 
       auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
