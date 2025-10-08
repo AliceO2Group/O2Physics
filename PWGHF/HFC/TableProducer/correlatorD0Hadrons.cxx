@@ -447,7 +447,6 @@ struct HfCorrelatorD0Hadrons {
 
         // ========== soft pion removal ===================================================
         double invMassDstar1 = 0., invMassDstar2 = 0.;
-        bool isSoftPiD0 = false, isSoftPiD0bar = false;
         auto pSum2 = RecoDecay::p2(candidate.pVector(), track.pVector());
         auto ePion = track.energy(massPi);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
@@ -455,24 +454,22 @@ struct HfCorrelatorD0Hadrons {
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - hfHelper.invMassD0ToPiK(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0 = true;
             continue;
           }
         }
 
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           if ((std::abs(invMassDstar2 - hfHelper.invMassD0barToKPi(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0bar = true;
             continue;
           }
         }
         registry.fill(HIST("hTrackCounter"), 2); // fill no. of tracks after soft pion removal
 
         int signalStatus = 0;
-        if ((candidate.isSelD0() >= selectionFlagD0) && !isSoftPiD0) {
+        if (candidate.isSelD0() >= selectionFlagD0) {
           signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0Only;
         }
-        if ((candidate.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnly;
         }
 
@@ -646,14 +643,12 @@ struct HfCorrelatorD0Hadrons {
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - hfHelper.invMassD0ToPiK(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0 = true;
             continue;
           }
         }
 
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           if ((std::abs(invMassDstar2 - hfHelper.invMassD0barToKPi(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0bar = true;
             continue;
           }
         }
