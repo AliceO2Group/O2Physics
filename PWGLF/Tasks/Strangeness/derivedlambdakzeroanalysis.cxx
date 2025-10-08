@@ -1946,7 +1946,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
-      if (v0mother.pdgCode() == PDG_t::kXiPlus && v0mother.isPhysicalPrimary())
+      if (v0mother.pdgCode() == PDG_t::kXiPlusBar && v0mother.isPhysicalPrimary())
         histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
   }
@@ -2752,13 +2752,13 @@ struct derivedlambdakzeroanalysis {
         if (cascMC.pdgCode() == PDG_t::kXiMinus) {
           histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (cascMC.pdgCode() == PDG_t::kXiPlus) {
+        if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
           histos.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
         if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
           histos.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (cascMC.pdgCode() == PDG_t::kOmegaPlus) {
+        if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
           histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
@@ -2767,7 +2767,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (cascMC.pdgCode() == PDG_t::kXiPlus) {
+      if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
@@ -2775,7 +2775,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (cascMC.pdgCode() == PDG_t::kOmegaPlus) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
