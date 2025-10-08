@@ -90,6 +90,7 @@ static const std::vector<std::string> tableNames{
   "CentFT0As",
   "CentFT0Cs",
   "CentFT0CVariant1s",
+  "CentFT0CVariant2s",
   "CentFDDMs",
   "CentNTPVs",
   "CentNGlobals",
@@ -98,10 +99,11 @@ static const std::vector<std::string> tableNames{
   "BCCentFT0As",
   "BCCentFT0Cs"};
 
-static constexpr int nTablesConst = 38;
+static constexpr int nTablesConst = 39;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -175,6 +177,7 @@ enum tableIndex { kFV0Mults,       // standard
                   kCentFT0As,         // standard Run 3
                   kCentFT0Cs,         // standard Run 3
                   kCentFT0CVariant1s, // standard Run 3
+                  kCentFT0CVariant2s, // standard Run 3
                   kCentFDDMs,         // standard Run 3
                   kCentNTPVs,         // standard Run 3
                   kCentNGlobals,      // requires track selection task
@@ -221,6 +224,7 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::CentFT0As> centFT0A;
   o2::framework::Produces<aod::CentFT0Cs> centFT0C;
   o2::framework::Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
+  o2::framework::Produces<aod::CentFT0CVariant2s> centFT0CVariant2;
   o2::framework::Produces<aod::CentFDDMs> centFDDM;
   o2::framework::Produces<aod::CentNTPVs> centNTPV;
   o2::framework::Produces<aod::CentNGlobals> centNGlobals;
@@ -432,6 +436,7 @@ class MultModule
   CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
   CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
   CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
+  CalibrationInfo ft0cVariant2Info = CalibrationInfo("FT0Cvar2");
   CalibrationInfo fddmInfo = CalibrationInfo("FDD");
   CalibrationInfo ntpvInfo = CalibrationInfo("NTracksPV");
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
@@ -1186,6 +1191,7 @@ class MultModule
       ft0aInfo.mCalibrationStored = false;
       ft0cInfo.mCalibrationStored = false;
       ft0cVariant1Info.mCalibrationStored = false;
+      ft0cVariant2Info.mCalibrationStored = false;
       fddmInfo.mCalibrationStored = false;
       ntpvInfo.mCalibrationStored = false;
       nGlobalInfo.mCalibrationStored = false;
@@ -1225,6 +1231,8 @@ class MultModule
           getccdb(ft0cInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           getccdb(ft0cVariant1Info, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0CVariant2s])
+          getccdb(ft0cVariant2Info, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFDDMs])
           getccdb(fddmInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentNTPVs])
@@ -1249,7 +1257,9 @@ class MultModule
     if (
       internalOpts.mEnabledTables[kCentFV0As] || internalOpts.mEnabledTables[kCentFT0Ms] ||
       internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] ||
-      internalOpts.mEnabledTables[kCentFT0CVariant1s] || internalOpts.mEnabledTables[kCentFDDMs] ||
+      internalOpts.mEnabledTables[kCentFT0CVariant1s] ||
+      internalOpts.mEnabledTables[kCentFT0CVariant2s] ||
+      internalOpts.mEnabledTables[kCentFDDMs] ||
       internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
       internalOpts.mEnabledTables[kCentMFTs] || internalOpts.mEnabledTables[kBCCentFT0Ms] ||
       internalOpts.mEnabledTables[kBCCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0Cs]) {
@@ -1304,6 +1314,8 @@ class MultModule
           populateTable(cursors.centFT0C, ft0cInfo, mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           populateTable(cursors.centFT0CVariant1, ft0cVariant1Info, mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0CVariant2s])
+          populateTable(cursors.centFT0CVariant2, ft0cVariant2Info, mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFDDMs])
           populateTable(cursors.centFDDM, fddmInfo, mults[iEv].multFDDAZeq + mults[iEv].multFDDCZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentNTPVs])
