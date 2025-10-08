@@ -596,27 +596,26 @@ struct HStrangeCorrelation {
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!isValidTrigger(trigg))
         continue;
-
+      float efficiencyTrigg = 1.0f;
+      float efficiencyTriggError = 0.0f;
+      float purityTrigg = 1.0f;
+      float purityTriggErr = 0.0;
       if (!mixing) {
-        float efficiency = 1.0f;
-        float efficiencyError = 0.0f;
-        float purity = 1.0f;
-        float purityErr = 0.0;
         if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiencyFlags.applyPurityTrigger)
-            purity = hPurityHadron->Interpolate(trigg.pt());
+            purityTrigg = hPurityHadron->Interpolate(trigg.pt());
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            efficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
+            efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
             if (efficiencyFlags.applyPurityTrigger)
-              purityErr = hPurityHadron->Interpolate(trigg.pt());
+              purityTriggErr = hPurityHadron->Interpolate(trigg.pt());
           }
-          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
-            efficiency = 1;
-            efficiencyError = 0;
+          if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyTrigg = 1;
+            efficiencyTriggError = 0;
           }
         }
-        fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesV0")), trigg.pt(), mult, efficiency, efficiencyError, purity, purityErr);
+        fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesV0")), trigg.pt(), mult, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
       }
 
       double triggSign = trigg.sign();
@@ -702,35 +701,24 @@ struct HStrangeCorrelation {
         static_for<0, 2>([&](auto i) {
           constexpr int Index = i.value;
           float efficiency = 1.0f;
-          float efficiencytrigg = 1.0f;
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
-          float triggerEfficiencyError = 0.0f;
           if (efficiencyFlags.applyEfficiencyCorrection) {
             efficiency = hEfficiencyV0[Index]->Interpolate(ptassoc, assoc.eta());
             if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyError = hEfficiencyUncertaintyV0[Index]->Interpolate(ptassoc, assoc.eta());
           }
-          if (efficiencyFlags.applyEfficiencyForTrigger) {
-            efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-            if (efficiencyFlags.applyEfficiencyPropagation)
-              triggerEfficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(pttrigger, trigg.eta());
-          }
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
             efficiency = 1;
             efficiencyError = 0;
           }
-          if (efficiencytrigg == 0) { // check for zero efficiency, do not apply if the case
-            efficiencytrigg = 1;
-            triggerEfficiencyError = 0;
-          }
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            totalEffUncert = std::sqrt(std::pow(efficiencytrigg * efficiencyError, 2) + std::pow(triggerEfficiencyError * efficiency, 2));
+            totalEffUncert = std::sqrt(std::pow(efficiencyTrigg * efficiencyError, 2) + std::pow(efficiencyTriggError * efficiency, 2));
           }
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
-              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
                 double deltaPhiStarPion = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPion, bField);
@@ -748,7 +736,7 @@ struct HStrangeCorrelation {
               }
             }
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) {
-              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (std::abs(deltaphi) < 0.8 && doITSClustersQA) {
                 histos.fill(HIST("hITSClusters") + HIST(kV0names[Index]) + HIST("NegativeDaughterToward"), ptassoc, negtrack.itsNCls(), assoc.v0radius());
                 histos.fill(HIST("hITSClusters") + HIST(kV0names[Index]) + HIST("PositiveDaughterToward"), ptassoc, postrack.itsNCls(), assoc.v0radius());
@@ -774,7 +762,7 @@ struct HStrangeCorrelation {
               }
             }
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma) {
-              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
                 double deltaPhiStarPion = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStarPion, bField);
@@ -792,11 +780,11 @@ struct HStrangeCorrelation {
               }
             }
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
-              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/") + HIST(kV0names[Index])), binFillThn, 1, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/") + HIST(kV0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma)
-              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(kV0names[Index])), binFillThn, 1, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(kV0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma)
-              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/") + HIST(kV0names[Index])), binFillThn, 1, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/") + HIST(kV0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           }
         });
       }
@@ -812,26 +800,26 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg))
         continue;
 
+      float efficiencyTrigg = 1.0f;
+      float efficiencyTriggError = 0.0f;
+      float purityTrigg = 1.0f;
+      float purityTriggErr = 0.0f;
       if (!mixing) {
-        float efficiency = 1.0f;
-        float efficiencyError = 0.0f;
-        float purity = 1.0f;
-        float purityErr = 0.0f;
         if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiencyFlags.applyPurityTrigger)
-            purity = hPurityHadron->Interpolate(trigg.pt());
+            purityTrigg = hPurityHadron->Interpolate(trigg.pt());
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            efficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
+            efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
             if (efficiencyFlags.applyPurityTrigger)
-              purityErr = hPurityUncertaintyHadron->Interpolate(trigg.pt());
+              purityTriggErr = hPurityUncertaintyHadron->Interpolate(trigg.pt());
           }
-          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
-            efficiency = 1;
-            efficiencyError = 0;
+          if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyTrigg = 1;
+            efficiencyTriggError = 0;
           }
         }
-        fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesCascade")), trigg.pt(), mult, efficiency, efficiencyError, purity, purityErr);
+        fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesCascade")), trigg.pt(), mult, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
       }
       double triggSign = trigg.sign();
       double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
@@ -921,31 +909,24 @@ struct HStrangeCorrelation {
         static_for<0, 3>([&](auto i) {
           constexpr int Index = i.value;
           float efficiency = 1.0f;
-          float efficiencytrigg = 1.0f;
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
-          float triggerEfficiencyError = 0.0f;
           if (efficiencyFlags.applyEfficiencyCorrection) {
             efficiency = hEfficiencyCascade[Index]->Interpolate(ptassoc, assoc.eta());
             if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyError = hEfficiencyUncertaintyCascade[Index]->Interpolate(ptassoc, assoc.eta());
-          }
-          if (efficiencyFlags.applyEfficiencyForTrigger) {
-            efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-            if (efficiencyFlags.applyEfficiencyPropagation)
-              triggerEfficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(pttrigger, trigg.eta());
           }
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
             efficiency = 1;
             efficiencyError = 0;
           }
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            totalEffUncert = std::sqrt(std::pow(efficiencytrigg * efficiencyError, 2) + std::pow(triggerEfficiencyError * efficiency, 2));
+            totalEffUncert = std::sqrt(std::pow(efficiencyTrigg * efficiencyError, 2) + std::pow(efficiencyTriggError * efficiency, 2));
           }
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index + 3) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(CascselMap, Index) && TESTBIT(CascselMap, Index + 4) && TESTBIT(CascselMap, Index + 8) && TESTBIT(CascselMap, Index + 12)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
-              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
                 if ((Index == 0 && triggSign > 0) || (Index == 1 && triggSign < 0) || (Index == 2 && triggSign > 0) || (Index == 3 && triggSign < 0))
@@ -955,7 +936,7 @@ struct HStrangeCorrelation {
               }
             }
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) {
-              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
                 if ((Index == 0 && triggSign > 0) || (Index == 1 && triggSign < 0) || (Index == 2 && triggSign > 0) || (Index == 3 && triggSign < 0))
@@ -965,7 +946,7 @@ struct HStrangeCorrelation {
               }
             }
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma) {
-              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
                 if ((Index == 0 && triggSign > 0) || (Index == 1 && triggSign < 0) || (Index == 2 && triggSign > 0) || (Index == 3 && triggSign < 0))
@@ -975,11 +956,11 @@ struct HStrangeCorrelation {
               }
             }
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
-              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/") + HIST(kCascadenames[Index])), binFillThn, 1, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/LeftBg/") + HIST(kCascadenames[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma)
-              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(kCascadenames[Index])), binFillThn, 1, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(kCascadenames[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma)
-              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/") + HIST(kCascadenames[Index])), binFillThn, 1, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
+              fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/RightBg/") + HIST(kCascadenames[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
           }
         });
       }
@@ -996,29 +977,30 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg))
         continue;
 
+      float efficiencyTrigger = 1.0f;
+      float efficiencyTriggerError = 0.0f;
+      float purityTrigger = 1.0f;
+      float purityTriggerError = 0.0f;
       if (!mixing) {
-        float efficiency = 1.0f;
-        float efficiencyError = 0.0f;
-        float purity = 1.0f;
-        float purityError = 0.0f;
+
         if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          efficiencyTrigger = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiencyFlags.applyPurityTrigger)
-            purity = hPurityHadron->Interpolate(trigg.pt());
+            purityTrigger = hPurityHadron->Interpolate(trigg.pt());
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
+            efficiencyTriggerError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
             if (efficiencyFlags.applyPurityTrigger)
-              purityError = hPurityUncertaintyHadron->Interpolate(trigg.pt());
+              purityTriggerError = hPurityUncertaintyHadron->Interpolate(trigg.pt());
           }
-          if (efficiency == 0) { // check for zero efficiency, do not apply if the case
-            efficiency = 1;
-            efficiencyError = 0;
+          if (efficiencyTrigger == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyTrigger = 1;
+            efficiencyTriggerError = 0;
           }
         }
         if constexpr (requires { triggerTrack.extra(); })
-          fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesPion")), trigg.pt(), mult, efficiency, efficiencyError, purity, purityError);
+          fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesPion")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
         else
-          fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesHadron")), trigg.pt(), mult, efficiency, efficiencyError, purity, purityError);
+          fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesHadron")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
       }
       double triggSign = trigg.sign();
       double triggForDeltaPhiStar[] = {trigg.phi(), trigg.pt(), triggSign};
@@ -1064,12 +1046,8 @@ struct HStrangeCorrelation {
           continue;
 
         float efficiency = 1;
-        float efficiencyTrigg = 1.0f;
         float purity = 1.0f;
         float purityUncertainty = 0.0f;
-        float purityTrigger = 1.0f;
-        float triggerPurityUncertainty = 0.0f;
-        float triggerEfficiencyUncert = 0.0f;
         float totalEffUncert = 0.0;
         float efficiencyUncertainty = 0.0f;
         float totalPurityUncert = 0.0;
@@ -1089,33 +1067,19 @@ struct HStrangeCorrelation {
             }
           }
         }
-        if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiencyTrigg = hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-          if (efficiencyFlags.applyPurityTrigger)
-            purityTrigger = hPurityHadron->Interpolate(pttrigger);
-          if (efficiencyFlags.applyEfficiencyPropagation) {
-            triggerEfficiencyUncert = hEfficiencyUncertaintyTrigger->Interpolate(pttrigger, trigg.eta());
-            if (efficiencyFlags.applyPurityTrigger)
-              triggerPurityUncertainty = hPurityUncertaintyHadron->Interpolate(pttrigger);
-          }
-        }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
           efficiencyUncertainty = 0.0;
         }
-        if (efficiencyTrigg == 0) {
-          efficiencyTrigg = 1.0;
-          triggerEfficiencyUncert = 0.0;
-        }
         if (efficiencyFlags.applyEfficiencyPropagation) {
-          totalEffUncert = std::sqrt(std::pow(efficiencyTrigg * efficiencyUncertainty, 2) + std::pow(triggerEfficiencyUncert * efficiency, 2));
-          totalPurityUncert = std::sqrt(std::pow(purityTrigger * purityUncertainty, 2) + std::pow(purity * triggerPurityUncertainty, 2));
+          totalEffUncert = std::sqrt(std::pow(efficiencyTrigger * efficiencyUncertainty, 2) + std::pow(efficiencyTriggerError * efficiency, 2));
+          totalPurityUncert = std::sqrt(std::pow(purityTrigger * purityUncertainty, 2) + std::pow(purity * purityTriggerError, 2));
         }
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
         double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
         if (!mixing) {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
-            fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Pion")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purity * purityTrigger, totalPurityUncert);
+            fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Pion")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
             if (triggSign == assocSign && doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Pion") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), 0.5);
             } else if (doDeltaPhiStarCheck) {
@@ -1127,13 +1091,13 @@ struct HStrangeCorrelation {
             } else if (doDeltaPhiStarCheck) {
               histos.fill(HIST("sameEvent/Signal/Hadron") + HIST("DeltaPhiStar"), deltaPhiStar, trigg.eta() - assoc.eta(), -0.5);
             }
-            fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Hadron")), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purity * purityTrigger, totalPurityUncert);
+            fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/Hadron")), binFillThn, etaWeight, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
           }
         } else {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
-            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Pion")), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purity * purityTrigger, totalPurityUncert);
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Pion")), binFillThn, 1, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
           } else {
-            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Hadron")), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purity * purityTrigger, totalPurityUncert);
+            fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/Hadron")), binFillThn, 1, efficiency * efficiencyTrigger, totalEffUncert, purity * purityTrigger, totalPurityUncert);
           }
         }
       }
