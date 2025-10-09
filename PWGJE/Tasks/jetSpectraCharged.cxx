@@ -510,7 +510,7 @@ struct JetSpectraCharged {
         if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
           double corrTagjetpt = jetMCP.pt() - (mcrho * jetMCP.area());
           double corrBasejetpt = jetMCD.pt() - (rho * jetMCD.area());
-          double dcorrpt =  corrBasejetpt - corrTagjetpt;
+          double dcorrpt = corrBasejetpt - corrTagjetpt;
           if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
@@ -531,8 +531,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -578,8 +577,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -632,8 +630,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -664,8 +661,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -696,8 +692,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -728,8 +723,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -880,8 +874,7 @@ struct JetSpectraCharged {
       float centrality = 0.0;
       if (checkCentFT0M) {
         centrality = collision.centFT0M();
-      }
-      else {
+      } else {
         centrality = collision.centFT0C();
       }
       if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
@@ -981,8 +974,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -1013,8 +1005,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -1046,8 +1037,7 @@ struct JetSpectraCharged {
     float centrality = 0.0;
     if (checkCentFT0M) {
       centrality = collision.centFT0M();
-    }
-    else {
+    } else {
       centrality = collision.centFT0C();
     }
     if (centrality < centralityMin || centrality > centralityMax) {
@@ -1110,8 +1100,7 @@ struct JetSpectraCharged {
       float centrality = 0.0;
       if (checkCentFT0M) {
         centrality = collision.centFT0M();
-      }
-      else {
+      } else {
         centrality = collision.centFT0C();
       }
       registry.fill(HIST("h_mcd_events_matched"), 0.5);
