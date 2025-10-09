@@ -164,7 +164,7 @@ struct LongRangeDihadronCor {
 
   // FT0 geometry
   o2::ft0::Geometry ft0Det;
-  static constexpr uint64_t ft0IndexA = 96;
+  static constexpr uint64_t Ft0IndexA = 96;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
   std::vector<float> cstFT0RelGain{};
 
@@ -367,7 +367,7 @@ struct LongRangeDihadronCor {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= ft0IndexA) {
+    if (chno >= Ft0IndexA) {
       z = -z;
     }
     auto r = std::sqrt(x * x + y * y);
@@ -519,7 +519,7 @@ struct LongRangeDihadronCor {
   {
     if (fitType == kFT0C) {
       id = ft0.channelC()[iCh];
-      id = id + ft0IndexA ;
+      id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
       registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
