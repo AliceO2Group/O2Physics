@@ -37,7 +37,7 @@ using namespace o2::framework;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps,
                                        aod::Run3MatchedToBCSparse>;
 
-struct FT0Qa {
+struct ft0Qa {
   /// Event selection options
   enum Sel {
     kNoSel = 0,
@@ -424,7 +424,7 @@ struct FT0Qa {
 
   } // end of processCollsions()
 
-  PROCESS_SWITCH(FT0Qa, processCollisions, "per-collision analysis", true);
+  PROCESS_SWITCH(ft0Qa, processCollisions, "per-collision analysis", true);
 
   // soa::Join<aod::BCs, aod::BcSels, aod::Mults >::iterator const &collision,
   // aod::FT0s const &ft0s, aod::FV0As const &fv0s
@@ -540,11 +540,11 @@ struct FT0Qa {
     //   }
     // }
   }
-  PROCESS_SWITCH(FT0Qa, processBCs, "per-BC analysis", true);
+  PROCESS_SWITCH(ft0Qa, processBCs, "per-BC analysis", true);
 
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<FT0Qa>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<ft0Qa>(cfgc)};
 }
