@@ -18,7 +18,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
