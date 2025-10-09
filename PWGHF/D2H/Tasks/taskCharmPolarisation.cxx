@@ -1393,8 +1393,8 @@ struct HfTaskCharmPolarisation {
   template <charm_polarisation::DecayChannel Channel>
   bool isInSignalRegion(float invMass)
   {
-    float invMassMin = 0.f;
-    float invMassMax = 100.f;
+    float invMassMin;
+    float invMassMax;
     if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
       invMassMin = 0.142f;
       invMassMax = 0.15f;
@@ -1576,7 +1576,7 @@ struct HfTaskCharmPolarisation {
       // variable definition
       float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
       float pxCharmHad{-1000.f}, pyCharmHad{-1000.f}, pzCharmHad{-1000.f};
-      float massDau{0.f}, invMassCharmHad{0.f}, invMassCharmHadForSparse{0.f}, invMassD0{0.f}, invMassKPiLc{0.f}, invMassPKLc{0.f}, invMassPPiLc{0.f};
+      double massDau{0.}, invMassCharmHad{0.}, invMassCharmHadForSparse{0.}, invMassD0{0.}, invMassKPiLc{0.}, invMassPKLc{0.}, invMassPPiLc{0.};
       float rapidity{-999.f};
       std::array<float, 3> outputMl{-1.f, -1.f, -1.f};
       int isRotatedCandidate = 0; // currently meaningful only for Lc->pKpi
@@ -1834,12 +1834,11 @@ struct HfTaskCharmPolarisation {
         float const xQvec = (*qVecs).at(0);
         float const yQvec = (*qVecs).at(1);
         ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
-        float cosThetaStarEP = -10.f;
         float const phiEP = -99.f;
 
         if (activateTHnSparseCosThStarEP) {
           // EP
-          cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
+          float cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
           fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar);
         }
       }
@@ -2310,8 +2309,7 @@ struct HfTaskCharmPolarisation {
                           TracksWithExtra const& tracks)
   {
     for (const auto& collision : collisions) {
-      float centrality = {-1.f};
-      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2340,8 +2338,7 @@ struct HfTaskCharmPolarisation {
                                 TracksWithExtra const& tracks)
   {
     for (const auto& collision : collisions) {
-      float centrality = {-1.f};
-      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2371,11 +2368,10 @@ struct HfTaskCharmPolarisation {
                             FilteredCandDstarWSelFlagAndMc const& dstarCandidates,
                             TracksWithExtra const& tracks)
   {
-    float centrality = {-1.f};
     int numPvContributorsGen{0};
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2400,7 +2396,7 @@ struct HfTaskCharmPolarisation {
     }
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
-      float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+      const auto cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
     }
   }
@@ -2412,11 +2408,10 @@ struct HfTaskCharmPolarisation {
                                   FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates,
                                   TracksWithExtra const& tracks)
   {
-    float centrality = {-1.f};
     int numPvContributorsGen{0};
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2441,7 +2436,7 @@ struct HfTaskCharmPolarisation {
     }
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
-      float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+      const auto cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
     }
   }

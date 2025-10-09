@@ -313,11 +313,11 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos1Proton;
+        TrackSelectorPID::Status pidTrackPos2Proton;
+        TrackSelectorPID::Status pidTrackPos1Pion;
+        TrackSelectorPID::Status pidTrackPos2Pion;
+        TrackSelectorPID::Status pidTrackNegKaon;
         if (usePidTpcAndTof) {
 
           pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
