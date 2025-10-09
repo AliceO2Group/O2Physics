@@ -24,25 +24,31 @@ namespace femtodatatypes
 {
 // Note: Length of the bitmask is the limit of how many selections can be configured
 
+// datatypes for collsions
+using CollisionTagType = uint64_t;
+using CollisionMaskType = uint16_t;
+
 // datatypes for tracks
+using MomentumType = uint16_t;
 using TrackMaskType = uint64_t;
 using TrackType = uint16_t;
 
 // datatypes for v0s
 using V0MaskType = uint16_t;
-using V0Type = uint8_t;
+using V0Type = uint16_t;
+
+// datatypes for kinks
+using KinkMaskType = uint32_t;
+using KinkType = uint8_t;
 
 // datatypes for two track resonances
 using TwoTrackResonanceMaskType = uint32_t;
 // two track resonance types
-using TwoTrackResonanceType = uint8_t;
+using TwoTrackResonanceType = uint16_t;
 
 // datatypes for cascades
 using CascadeMaskType = uint16_t;
-using CascadeType = uint8_t;
-
-// datatypes for pairs
-using PairType = uint8_t;
+using CascadeType = uint16_t;
 
 } // namespace femtodatatypes
 

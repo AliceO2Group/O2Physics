@@ -8,22 +8,24 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 #ifndef PWGCF_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_DATAMODEL_FEMTODERIVED_H_
 
-#include <cmath>
-#include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
-#include "Framework/DataTypes.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "Common/DataModel/Multiplicity.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Expressions.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Expressions.h"
+#include "MathUtils/Utils.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -35,6 +37,7 @@ enum CollisionBinning {
   kMult,               //! Bin collision in number of charged tracks for mixing
   kMultPercentile,     //! Bin collision in multiplicity percentile for mixing
   kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
+  kMultPercentileQn,   //! Bin collision in multiplicity percentile an qn value for mixing
   kNCollisionBinning
 };
 
@@ -50,6 +53,9 @@ DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit f
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
 
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
+
+DECLARE_SOA_COLUMN(QnVal, qnVal, int);         //! qn values for dividing events
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int); //! Occupancy of the event
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
@@ -60,6 +66,10 @@ DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
                          femtodreamcollision::Sphericity,
                          femtodreamcollision::MagField);
 using FDCollision = FDCollisions::iterator;
+
+DECLARE_SOA_TABLE(FDExtQnCollisions, "AOD", "FDEXTQNCOLLISION",
+                  femtodreamcollision::QnVal,
+                  femtodreamcollision::Occupancy);
 
 DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
@@ -88,7 +98,7 @@ DECLARE_SOA_TABLE_STAGED(FDMCCollLabels, "FDMCCollLabel", mcfdcolllabel::FDMCCol
 /// FemtoDreamTrack
 namespace femtodreamparticle
 {
-/// Distinuishes the different particle types
+/// Distinguishes the different particle types
 enum ParticleType {
   kTrack,   //! Track
   kV0,      //! V0
@@ -96,9 +106,15 @@ enum ParticleType {
   kCascade, //! Cascade
   kCascadeV0,
   kCascadeV0Child,
-  kCascadeBachelor, //! Bachelor track of a cascade
-  kCharmHadron,     //! Bachelor track of a cascade
-  kNParticleTypes   //! Number of particle types
+  kCascadeBachelor,             //! Bachelor track of a cascade
+  kCharmHadron,                 //! Bachelor track of a cascade
+  kReso,                        //! Resonances (phi)
+  kResoChild,                   // Child track of a Resonance
+  kResoPosdaughTPC_NegdaughTPC, // cases for Phi-daughters for TPC or TOF combinations
+  kResoPosdaughTPC_NegdaughTOF,
+  kResoPosdaughTOF_NegdaughTPC,
+  kResoPosdaughTOF_NegdaughTOF,
+  kNParticleTypes //! Number of particle types
 };
 
 enum MomentumType {
@@ -107,8 +123,9 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF"}; //! Naming of the different particle types
+
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -228,14 +245,14 @@ DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);                    //! Track et
 DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);                    //! Track phi of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);                    //! Track phi of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);                    //! Track phi of charm hadron prong2
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);        //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                            //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);                  //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);                  //! flag for generator level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int);    //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
 DECLARE_SOA_COLUMN(TrkPt, trkPt, float);                            //! Transverse momentum of associate femto particle
 DECLARE_SOA_COLUMN(TrkEta, trkEta, float);                          //! Eta of associate femto particle
 DECLARE_SOA_COLUMN(TrkPhi, trkPhi, float);                          //! Phi of associate femto particle

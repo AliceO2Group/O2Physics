@@ -59,25 +59,33 @@ enum class System : uint32_t {
   kMC = BIT(2),
   kRun3 = BIT(3),
   kRun2 = BIT(4),
-  kNoCentCal = BIT(5),
   kPP_Run3 = kPP | kRun3,
   kPP_Run2 = kPP | kRun2,
-  kPP_NoCentCal_Run3 = kPP | kRun3 | kNoCentCal,
   kPbPb_Run3 = kPbPb | kRun3,
   kPbPb_Run2 = kPbPb | kRun2,
+};
+
+enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
+  kPAtPv, // momentum at primary vertex
+  kPt,    // transverse momentum
 };
 
 enum class Track : o2::aod::femtodatatypes::TrackType {
   kPrimaryTrack,
   kV0Daughter,
   kCascadeBachelor,
-  kResonanceDaughter
+  kResonanceDaughter,
+  kKinkDaughter
 };
 
 enum class V0 : o2::aod::femtodatatypes::V0Type {
   kLambda,
   kAntiLambda,
   kK0short
+};
+
+enum class Kink : o2::aod::femtodatatypes::KinkType {
+  kSigma
 };
 
 enum class Cascade : o2::aod::femtodatatypes::CascadeType {
@@ -91,20 +99,6 @@ enum class TwoTrackResonance : o2::aod::femtodatatypes::TwoTrackResonanceType {
   kPhi,
   kKstar0,
   kKstar0Bar
-};
-
-enum class Pairs : o2::aod::femtodatatypes::PairType {
-  kTrackTrack,
-  kTrackV0,
-  kTrackResonance,
-  kTrackCascade
-};
-
-enum class TrackPairs : o2::aod::femtodatatypes::PairType {
-  kTrackTrack,
-  kTrackPosDaughter,
-  kTrackNegDaughter,
-  kTrackBachelor
 };
 
 }; // namespace modes
