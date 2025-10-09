@@ -214,19 +214,19 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Multiplicity Histograms
       registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {{101, 0.0f, 101.0f}});
       registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {{101, 0.0f, 101.0f, axisNch});
-      registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
+        registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
 
-      // Histograms for xi (data)
-      registryData.add("hMassXipos", "hMassXipos", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
-      registryData.add("hMassXineg", "hMassXineg", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
-      registryData.add("hMassXiposSelected", "hMassXiposSelected", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
-      registryData.add("hMassXinegSelected", "hMassXinegSelected", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+        // Histograms for xi (data)
+        registryData.add("hMassXipos", "hMassXipos", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+        registryData.add("hMassXineg", "hMassXineg", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+        registryData.add("hMassXiposSelected", "hMassXiposSelected", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+        registryData.add("hMassXinegSelected", "hMassXinegSelected", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
 
-      // Histograms for omega (data)
-      registryData.add("hMassOmegapos", "hMassOmegapos", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
-      registryData.add("hMassOmeganeg", "hMassOmeganeg", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
-      registryData.add("hMassOmegaposSelected", "hMassOmegaposSelected", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
-      registryData.add("hMassOmeganegSelected", "hMassOmeganegSelected", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+        // Histograms for omega (data)
+        registryData.add("hMassOmegapos", "hMassOmegapos", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+        registryData.add("hMassOmeganeg", "hMassOmeganeg", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+        registryData.add("hMassOmegaposSelected", "hMassOmegaposSelected", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+        registryData.add("hMassOmeganegSelected", "hMassOmeganegSelected", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
     }
 
     if (doprocessMonteCarloRec) {
