@@ -14,43 +14,41 @@
 /// \since  Mar 28, 2024
 /// \brief  Multiparticle flow measurements with FT0 and ZDC
 
+#include "FlowContainer.h"
+#include "GFW.h"
+#include "GFWCumulant.h"
+#include "GFWPowerArray.h"
+#include "GFWWeights.h"
 
-#include <cmath>
-#include <vector>
-#include <string>
-#include <memory>
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "TList.h"
-#include <TProfile.h>
-#include <TRandom3.h>
-#include <TF1.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "TList.h"
 #include "TPDGCode.h"
+#include <TF1.h>
+#include <TProfile.h>
+#include <TRandom3.h>
 
-#include "GFW.h"
-#include "GFWPowerArray.h"
-#include "GFWCumulant.h"
-#include "GFWWeights.h"
-#include "FlowContainer.h"
+#include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1030,11 +1028,11 @@ struct FlowGfwTask {
       }
 
       if (cfgGlobalTracks) {
-         if (withinPtRef) {
-           registry.fill(HIST("GlobalTracks"), centrality, nch);
-           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-          }
+        if (withinPtRef) {
+          registry.fill(HIST("GlobalTracks"), centrality, nch);
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
         }
+      }
 
       if (cfgGlobalplusITS) {
         if (withinPtRef) {
