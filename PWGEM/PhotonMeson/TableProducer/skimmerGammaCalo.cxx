@@ -191,7 +191,6 @@ struct SkimmerGammaCalo {
       historeg.fill(HIST("EOut"), emccluster.energy());
       historeg.fill(HIST("M02Out"), emccluster.m02());
       historeg.fill(HIST("TimeOut"), emccluster.time());
-      historeg.fill(HIST("hCaloClusterFilter"), 6);
 
       tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
                         emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vPhi, vEta, vP, vPt);
