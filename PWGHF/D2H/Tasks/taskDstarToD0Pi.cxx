@@ -266,11 +266,11 @@ struct HfTaskDstarToD0Pi {
     // D0toPiKPi0 study
     if (doprocessMcWML && studyD0ToPiKPi0 && isCentStudy) {
       registry.add("D0toPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore for D0toPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
-    }else if (doprocessMcWoMl && studyD0ToPiKPi0 && isCentStudy) {
+    } else if (doprocessMcWoMl && studyD0ToPiKPi0 && isCentStudy) {
       registry.add("D0toPiKPi0/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate for D0toPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
-    }else if (doprocessMcWML && studyD0ToPiKPi0 && !isCentStudy) {
+    } else if (doprocessMcWML && studyD0ToPiKPi0 && !isCentStudy) {
       registry.add("D0toPiKPi0/hDeltaInvMassVsPtVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0toPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
-    }else if (doprocessMcWoMl && studyD0ToPiKPi0 && !isCentStudy) {
+    } else if (doprocessMcWoMl && studyD0ToPiKPi0 && !isCentStudy) {
       registry.add("D0toPiKPi0/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate for D0toPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
     }
 
@@ -554,10 +554,10 @@ struct HfTaskDstarToD0Pi {
             }
           }
         }
-      }else if(std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0 && std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0){
+      } else if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0 && std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) {
         // Aplly all selection to study D*->D0(piKpi0)pi channel same as signal channel
         // MC Matched but to D*->D0(piKpi0)pi channel
-        if constexpr (applyMl) {
+        if constexpr (ApplyMl) {
           if (studyD0ToPiKPi0 && isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
             auto deltaMDstar = std::abs(candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0());
             auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
@@ -567,7 +567,7 @@ struct HfTaskDstarToD0Pi {
             auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
             registry.fill(HIST("D0toPiKPi0/hDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
           }
-        }else {
+        } else {
           if (studyD0ToPiKPi0 && isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
             auto deltaMDstar = std::abs(candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0());
             registry.fill(HIST("D0toPiKPi0/hDeltaInvMassDstar3D"), deltaMDstar, candDstarMcRec.pt(), centrality);
@@ -576,7 +576,7 @@ struct HfTaskDstarToD0Pi {
             registry.fill(HIST("D0toPiKPi0/hDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
           }
         }
-      }else { // MC Unmatched (Baground at Reconstruction Level)
+      } else { // MC Unmatched (Baground at Reconstruction Level)
         if (qaEnabled) {
           registry.fill(HIST("QA/hCPASkimD0RecBg"), candDstarMcRec.cpaD0());
           registry.fill(HIST("QA/hEtaSkimD0RecBg"), candDstarMcRec.etaD0());
