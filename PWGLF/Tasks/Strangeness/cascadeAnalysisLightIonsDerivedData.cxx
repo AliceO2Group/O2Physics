@@ -185,7 +185,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
-      registryData.add("number_of_events_data_vs_centrality", "number of events in data vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, axisCentEstimator});
+      registryData.add("number_of_events_data_vs_centrality", "number of events in data vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, {101, 0.0f, 101.0f}});
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -212,9 +212,9 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryQC.add("hdcav0topvdata", "hdcav0topvdata", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
 
       // Multiplicity Histograms
-      registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {axisCentEstimator});
-      registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {axisCentEstimator, axisNch});
-      registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {axisCentEstimator, axisMult});
+      registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {{101, 0.0f, 101.0f}});
+      registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+      registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
 
       // Histograms for xi (data)
       registryData.add("hMassXipos", "hMassXipos", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
@@ -243,7 +243,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
-      registryMC.add("number_of_events_mc_rec_vs_centrality", "number of events in mc_rec vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, axisCentEstimator});
+      registryMC.add("number_of_events_mc_rec_vs_centrality", "number of events in mc_rec vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, {101, 0.0f, 101.0f}});
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -270,9 +270,9 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryQC.add("hdcav0topvRec", "hdcav0topvRec", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
 
       // Multiplicity Histograms
-      registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {axisCentEstimator});
-      registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {axisCentEstimator, axisNch});
-      registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {axisCentEstimator, axisMult});
+      registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {{101, 0.0f, 101.0f}});
+      registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+      registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
 
       // Histograms for xi (mc)
       registryMC.add("hMassXipos_truerec", "hMassXipos_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
@@ -296,12 +296,16 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenXiMinus", "h2dGenXiMinus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
+      registryMC.add("h2dGenXiPlus", "h2dGenXiPlus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
 
       // Histograms for omega (mc)
       registryMC.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
+      registryMC.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
 
       // Histograms for event loss/splitting
       registryMC.add("hGenEvents", "hGenEvents", HistType::kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
@@ -751,6 +755,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       multiplicity = collision.multNTracksGlobal();
     }
 
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 0, centrality);
+
     // event selections
     if (applySel8 && !collision.sel8())
       return;
@@ -892,6 +898,8 @@ struct CascadeAnalysisLightIonsDerivedData {
         centralityMcRec = RecCol.centNGlobal();
         multiplicityMcRec = RecCol.multNTracksGlobal();
       }
+
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 0, centralityMcRec);
 
       // event selections
       if (applySel8 && !RecCol.sel8())
@@ -1053,14 +1061,18 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Store the Zvtx
       registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
-      // float centrality = 100.5f;
+      float centralityMC = 100.5f;
 
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-        // auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-        // if (centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
-        // if (centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
-        // if (centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
-        // if (centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
+        auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
+        if (centralityEstimator == Option::kFT0C)
+          centralityMC = collision.centFT0C();
+        if (centralityEstimator == Option::kFT0M)
+          centralityMC = collision.centFT0M();
+        if (centralityEstimator == Option::kFV0A)
+          centralityMC = collision.centFV0A();
+        if (centralityEstimator == Option::kNGlobal)
+          centralityMC = collision.centNGlobal();
 
         if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
           registryMC.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
@@ -1077,15 +1089,19 @@ struct CascadeAnalysisLightIonsDerivedData {
       }
 
       if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
+        registryMC.fill(HIST("h2dGenXiMinus"), centralityMC, ptmc);
         registryMC.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == kXiPlusBar && std::abs(cascMC.rapidityMC(0)) < rapcut) {
+        registryMC.fill(HIST("h2dGenXiPlus"), centralityMC, ptmc);
         registryMC.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == kOmegaMinus && std::abs(cascMC.rapidityMC(2)) < rapcut) {
+        registryMC.fill(HIST("h2dGenOmegaMinus"), centralityMC, ptmc);
         registryMC.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
       if (cascMC.pdgCode() == kOmegaPlusBar && std::abs(cascMC.rapidityMC(2)) < rapcut) {
+        registryMC.fill(HIST("h2dGenOmegaPlus"), centralityMC, ptmc);
         registryMC.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
     } // cascMC loop
