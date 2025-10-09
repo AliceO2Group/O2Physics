@@ -94,15 +94,19 @@ struct HfTreeCreatorElectronDCA {
     registry.get<TH1>(HIST("hZVertex"))->Fill(collision.posZ());
     int pdgCode = 0, absPDGCode = 0, sourcePDG = 0;
     for (const auto& track : tracks) {
-      if (!track.trackCutFlagFb3())
+      if (!track.trackCutFlagFb3()) {
         continue;
+      }
       registry.get<TH1>(HIST("hpTTracks"))->Fill(track.pt());
-      if (track.pt() < pTMin)
+      if (track.pt() < pTMin) {
         continue;
-      if (std::abs(track.eta()) > etaRange)
+      }
+      if (std::abs(track.eta()) > etaRange) {
         continue;
-      if (track.mcParticleId() < 1)
+      }
+      if (track.mcParticleId() < 1) {
         continue;
+      }
       auto mcTrack = track.mcParticle();
       if (std::abs(mcTrack.pdgCode()) == kElectron) {
         bool isConversion = false;
@@ -113,18 +117,19 @@ struct HfTreeCreatorElectronDCA {
         auto motherTracks = mcTrack.mothers_as<aod::McParticles>();
         int numberOfMothers = motherTracks.size();
         // Categorise the electron sources
-        int firstMotherPDG = motherTracks[0].pdgCode();
-        if (firstMotherPDG == kGamma)
+        int const firstMotherPDG = motherTracks[0].pdgCode();
+        if (firstMotherPDG == kGamma) {
           isConversion = true;
+        }
         while (numberOfMothers == 1) // loop through all generations
         {
           pdgCode = motherTracks[0].pdgCode();
           absPDGCode = std::abs(pdgCode);
-          if (static_cast<int>(absPDGCode / 100) == 4 || static_cast<int>(absPDGCode / 1000) == 4) {
+          if ((absPDGCode / 100) == 4 || (absPDGCode / 1000) == 4) {
             isCharm = true;
             sourcePDG = pdgCode;
           }
-          if (static_cast<int>(absPDGCode / 100) == 5 || static_cast<int>(absPDGCode / 1000) == 5) {
+          if ((absPDGCode / 100) == 5 || (absPDGCode / 1000) == 5) {
             isBeauty = true;
             sourcePDG = pdgCode; // already in order, since beauty would decay to charm
           }
@@ -133,10 +138,11 @@ struct HfTreeCreatorElectronDCA {
           numberOfMothers = motherTracks.size();
         }
         if (!isBeauty && !isCharm) {
-          if (isConversion)
+          if (isConversion) {
             sourcePDG = kGamma;
-          else
+          } else {
             sourcePDG = firstMotherPDG;
+          }
         }
         hfEleTable(track.eta(), track.phi(), track.pt(), sourcePDG, track.dcaXY(), productionRadius);
       }

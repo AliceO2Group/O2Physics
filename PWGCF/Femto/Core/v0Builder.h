@@ -110,7 +110,7 @@ template <const char* Prefix>
 struct ConfLambdaSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_SELECTIONS(1.0, 1.2, 3122)
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1 for Lambda and -1 for Antilambda"};
+  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1: Lambda; -1: Antilambda; 0: both)"};
 };
 
 // base selection for analysis task for k0short
@@ -123,9 +123,13 @@ struct ConfK0shortSelection : o2::framework::ConfigurableGroup {
 #undef V0_DEFAULT_SELECTIONS
 
 constexpr const char PrefixLambdaSelection1[] = "LambdaSelection1";
+constexpr const char PrefixLambdaSelection2[] = "LambdaSelection2";
 using ConfLambdaSelection1 = ConfLambdaSelection<PrefixLambdaSelection1>;
+using ConfLambdaSelection2 = ConfLambdaSelection<PrefixLambdaSelection2>;
 constexpr const char PrefixK0shortSelection1[] = "K0shortSelection1";
+constexpr const char PrefixK0shortSelection2[] = "K0shortSelection1";
 using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
+using ConfK0shortSelection2 = ConfK0shortSelection<PrefixK0shortSelection2>;
 
 /// The different selections for v0s
 enum V0Seles {
@@ -466,6 +470,106 @@ class V0Builder
   bool mProduceK0shortMasks = false;
   bool mProduceK0shortExtras = false;
 };
+
+struct ConfV0TablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("V0Tables");
+  o2::framework::Configurable<int> limitLambda{"limitLambda", 1, "At least this many lambdas need to be in the collision"};
+  o2::framework::Configurable<int> limitK0short{"limitK0short", 0, "At least this many k0short need to be in the collision"};
+};
+
+struct V0BuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFLambdas> producedLambdas;
+  o2::framework::Produces<o2::aod::StoredFLambdaMasks> producedLambdaMasks;
+  o2::framework::Produces<o2::aod::StoredFK0shorts> producedK0shorts;
+  o2::framework::Produces<o2::aod::StoredFK0shortMasks> producedK0shortMasks;
+};
+
+class V0BuilderDerivedToDerived
+{
+ public:
+  V0BuilderDerivedToDerived() = default;
+  ~V0BuilderDerivedToDerived() = default;
+
+  template <typename T>
+  void init(T& config)
+  {
+    mLimitLambda = config.limitLambda.value;
+    mLimitK0short = config.limitK0short.value;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewLambdas(T1& col, T2& /*lambdaTable*/, T3& partitionLambda, T4& cache)
+  {
+    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (lambdaSlice.size() >= mLimitLambda) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewK0shorts(T1& col, T2& /*k0shortTable*/, T3& partitionK0short, T4& cache)
+  {
+    auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (k0shortSlice.size() >= mLimitK0short) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void processLambdas(T1& col, T2& /*lambdaTable*/, T3& /*oldTrackTable*/, T4& partitionLambda, T5& trackBuilder, T6& indexMap, T7& cache, T8& newLambdaTable, T9& newTrackTable, T10& newCollisionTable)
+  {
+    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& lambda : lambdaSlice) {
+
+      auto posDaughter = lambda.template posDau_as<T3>();
+      auto negDaughter = lambda.template negDau_as<T3>();
+
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable, indexMap);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable, indexMap);
+
+      newLambdaTable.producedLambdas(newCollisionTable.producedCollision.lastIndex(),
+                                     lambda.signedPt(),
+                                     lambda.eta(),
+                                     lambda.phi(),
+                                     lambda.mass(),
+                                     posDaughterIndex,
+                                     negDaughterIndex);
+      newLambdaTable.producedLambdaMasks(lambda.mask());
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void processK0shorts(T1& col, T2& /*k0shortTable*/, T3& /*oldTrackTable*/, T4& partitionK0short, T5& trackBuilder, T6& indexMap, T7& cache, T8& newK0shortTable, T9& newTrackTable, T10& newCollisionTable)
+  {
+    auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& k0short : k0shortSlice) {
+
+      auto posDaughter = k0short.template posDau_as<T3>();
+      auto negDaughter = k0short.template negDau_as<T3>();
+
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable, indexMap);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable, indexMap);
+
+      newK0shortTable.producedK0shorts(newCollisionTable.producedCollision.lastIndex(),
+                                       k0short.pt(),
+                                       k0short.eta(),
+                                       k0short.phi(),
+                                       k0short.mass(),
+                                       posDaughterIndex,
+                                       negDaughterIndex);
+      newK0shortTable.producedK0shortMasks(k0short.mask());
+    }
+  }
+
+ private:
+  int mLimitLambda = 0;
+  int mLimitK0short = 0;
+};
+
 } // namespace v0builder
 } // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_V0BUILDER_H_

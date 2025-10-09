@@ -35,6 +35,11 @@ o2physics_add_dpl_workflow(electron-converter4
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(electron-converter5
+                  SOURCES electronConverter5.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(track-converter1
                   SOURCES trackConverter1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

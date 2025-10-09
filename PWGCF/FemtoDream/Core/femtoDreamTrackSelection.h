@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -30,7 +30,6 @@
 #include "ReconstructionDataFormats/PID.h"
 
 #include <cmath>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -113,7 +112,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   void setPIDSpecies(T& pids)
   {
     std::vector<int> tmpPids = pids; /// necessary due to some features of the configurable
-    for (o2::track::PID pid : tmpPids) {
+    for (const o2::track::PID pid : tmpPids) {
       mPIDspecies.push_back(pid);
     }
   }
@@ -146,7 +145,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   /// \tparam T Data type of the track
   /// \param track Track
   /// \return Whether the most open combination of all selection criteria is fulfilled
-  template <typename T>
+  template <class T>
   bool isSelectedMinimal(T const& track);
 
   /// Obtain the bit-wise container for the selections
@@ -438,7 +437,7 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   const auto dca = track.dcaXY(); // Accordingly to FemtoDream in AliPhysics  as well as LF analysis,
                                   // only dcaXY should be checked; NOT std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.))
   std::vector<float> pidTPC, pidTOF;
-  for (auto it : mPIDspecies) {
+  for (const auto& it : mPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
@@ -495,6 +494,7 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
       return isFulfilled;
     }
   }
+
   return true;
 }
 
@@ -518,7 +518,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   const auto dca = Dca;
 
   std::vector<float> pidTPC, pidTOF, pidITS;
-  for (auto it : mPIDspecies) {
+  for (const auto& it : mPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
     if constexpr (useItsPid) {
@@ -528,7 +528,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
 
   float observable = 0.;
   for (auto& sel : mSelections) {
-    const auto selVariable = sel.getSelectionVariable();
+    auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {
       /// PID needsgetNsigmaITSto be handled a bit differently since we may need more than one species
       for (size_t i = 0; i < mPIDspecies.size(); ++i) {

@@ -51,6 +51,8 @@
 /PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @mpuccio @dmallick2 @smaff92
 /PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @mpuccio @ercolessi @romainschotter
 /PWGLF/TableProducer/Strangeness @alibuild @sustripathy @mpuccio @skundu692 @ercolessi @romainschotter
+/PWGLF/TableProducer/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
 /PWGLF/Utils @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
@@ -59,7 +61,7 @@
 /PWGMM/Lumi @alibuild @sustripathy @skundu692 @aalkin @jgcn @gbencedi @abmodak
 /PWGMM/UE   @alibuild @sustripathy @skundu692 @aalkin @aortizve @jgcn
 
-/PWGUD @alibuild @pbuehler @nystrand @rolavick
+/PWGUD @alibuild @amatyja @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc
@@ -70,4 +72,4 @@
 /Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @mfasDa @fjonasALICE
 /Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @ercolessi @iravasen @njacazio @romainschotter @skundu692
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk
-/Tutorials/PWGUD @alibuild @pbuehler
+/Tutorials/PWGUD @alibuild @pbuehler @amatyja
