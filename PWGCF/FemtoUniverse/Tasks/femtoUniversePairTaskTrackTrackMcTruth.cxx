@@ -169,7 +169,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
       if (!confNoPDGPartOne && part.tempFitVar() != confPDGCodePartOne) {
         continue;
       }
-      if (std::abs(part.tempFitVar()) == Pdg::kD0 && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
+      if (static_cast<int>(part.tempFitVar()) == static_cast<int>(Pdg::kD0) && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
         continue;
       }
       trackHistoPartOne.fillQA<isMC, false>(part);
@@ -180,7 +180,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
         if (!confNoPDGPartTwo && part.tempFitVar() != confPDGCodePartTwo) {
           continue;
         }
-        if (std::abs(part.tempFitVar()) == Pdg::kD0 && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
+        if (static_cast<int>(part.tempFitVar()) == static_cast<int>(Pdg::kD0) && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, false>(part);
