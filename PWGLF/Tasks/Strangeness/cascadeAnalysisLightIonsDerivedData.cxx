@@ -213,7 +213,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       // Multiplicity Histograms
       registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {{101, 0.0f, 101.0f}});
-      registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {{101, 0.0f, 101.0f, axisNch});
+      registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
         registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
 
         // Histograms for xi (data)
