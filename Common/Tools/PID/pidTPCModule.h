@@ -460,7 +460,7 @@ class pidTPCModule
       const auto& bc = collision.template bc_as<B>();
       hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
       i++;
-    }  
+    }
     auto bc = bcs.begin();
     hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
 
@@ -494,13 +494,12 @@ class pidTPCModule
               track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
             }
           } else {
-            // asign Hadronic Rate at beginning of run  if track does not belong to a collision               
+            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
             if (collsys == CollisionSystemType::kCollSyspp) {
               track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
             } else {
               track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
             }
-  
           }
         }
         counter_track_props += input_dimensions;
@@ -678,14 +677,13 @@ class pidTPCModule
     if (pidTPCopts.useCorrecteddEdx) {
       size_t i = 0;
       for (const auto& collision : cols) {
-        const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();;
+        const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
         hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
         i++;
-      }  
+      }
       auto bc = bcs.begin();
       hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
     }
-
 
     for (auto const& trk : tracks) {
       // get the TPC signal to be used in the PID
