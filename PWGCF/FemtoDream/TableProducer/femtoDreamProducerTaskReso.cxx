@@ -258,10 +258,10 @@ struct FemtoDreamProducerTaskReso {
 
   void init(InitContext&)
   {
-    if (doprocessData == false && doprocessData_noCentrality == false && doprocessData_CentPbPb == false && doprocessMC == false && doprocessMC_noCentrality == false && doprocessMC_CentPbPb == false) {
+    if (doprocessData == false && doprocessData_noCentrality == false && doprocessDataCentPbPb == false && doprocessMC == false && doprocessMCnoCentrality == false && doprocessMCCentPbPb == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessData == true) || (doprocessData_CentPbPb == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC == true) || (doprocessData_CentPbPb == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC_CentPbPb == true)) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMCnoCentrality == true) || (doprocessMC == true && doprocessMCnoCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMCnoCentrality == true) || (doprocessDataCentPbPb == true && doprocessData == true) || (doprocessDataCentPbPb == true && doprocessData_noCentrality == true) || (doprocessDataCentPbPb == true && doprocessMC == true) || (doprocessDataCentPbPb == true && doprocessMCnoCentrality == true) || (doprocessDataCentPbPb == true && doprocessMCCentPbPb == true)) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -1203,10 +1203,10 @@ struct FemtoDreamProducerTaskReso {
   PROCESS_SWITCH(FemtoDreamProducerTaskReso, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
 
-  void processData_CentPbPb(aod::FemtoFullCollisionCentPbPb const& col, // o2-linter: disable=name/function-variable (UpperCamelCase defined soa::JOIN)
-                            aod::BCsWithTimestamps const&,
-                            aod::FemtoFullTracks const& tracks,
-                            o2::aod::V0Datas const& fullV0s)
+  void processDataCentPbPb(aod::FemtoFullCollisionCentPbPb const& col,
+                           aod::BCsWithTimestamps const&,
+                           aod::FemtoFullTracks const& tracks,
+                           o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
@@ -1220,7 +1220,7 @@ struct FemtoDreamProducerTaskReso {
       fillCollisionsAndTracksAndV0<false, false, true, true>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(FemtoDreamProducerTaskReso, processData_CentPbPb,
+  PROCESS_SWITCH(FemtoDreamProducerTaskReso, processDataCentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
@@ -1237,33 +1237,33 @@ struct FemtoDreamProducerTaskReso {
   }
   PROCESS_SWITCH(FemtoDreamProducerTaskReso, processMC, "Provide MC data", false);
 
-  void processMC_noCentrality(aod::FemtoFullCollisionNoCentMC const& col, // o2-linter: disable=name/function-variable (UpperCamelCase defined soa::JOIN)
-                              aod::BCsWithTimestamps const&,
-                              soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                              aod::FemtoFullMCgenCollisions const&,
-                              aod::McParticles const&,
-                              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+  void processMCnoCentrality(aod::FemtoFullCollisionNoCentMC const& col,
+                             aod::BCsWithTimestamps const&,
+                             soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                             aod::FemtoFullMCgenCollisions const&,
+                             aod::McParticles const&,
+                             soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(FemtoDreamProducerTaskReso, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
+  PROCESS_SWITCH(FemtoDreamProducerTaskReso, processMCnoCentrality, "Provide MC data without requiring a centrality calibration", false);
 
-  void processMC_CentPbPb(aod::FemtoFullCollisionMCCentPbPb const& col, // o2-linter: disable=name/function-variable (UpperCamelCase defined soa::JOIN)
-                          aod::BCsWithTimestamps const&,
-                          soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                          aod::FemtoFullMCgenCollisions const&,
-                          aod::McParticles const&,
-                          soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+  void processMCCentPbPb(aod::FemtoFullCollisionMCCentPbPb const& col,
+                         aod::BCsWithTimestamps const&,
+                         soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                         aod::FemtoFullMCgenCollisions const&,
+                         aod::McParticles const&,
+                         soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(FemtoDreamProducerTaskReso, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
+  PROCESS_SWITCH(FemtoDreamProducerTaskReso, processMCCentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
