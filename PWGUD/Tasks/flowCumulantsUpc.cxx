@@ -231,6 +231,10 @@ struct FlowCumulantsUpc {
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
+    registry.add("hCentMC", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
+    registry.add("hVtxZMC", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
+    registry.add("hMultMC", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+    registry.add("numberOfTracksMC", "Number of tracks per event", {HistType::kTH1D, {{1000, 0, 1000}}});
     registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
     if (!cfgUseSmallMemory) {
       registry.add("BeforeSel8_globalTracks_centT0C", "before sel8;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -279,6 +283,7 @@ struct FlowCumulantsUpc {
     registry.add("hnTPCCrossedRowMC", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
     registry.add("hDCAzMC", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hDCAxyMC", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
+    registry.add("eventCounterMC", "Number of MC Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
     registry.add("hTrackCorrection2dMC", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
 
     o2::framework::AxisSpec axis = axisPt;
@@ -913,14 +918,15 @@ struct FlowCumulantsUpc {
       fillFC(corrconfigs.at(l_ind), independent, lRandom);
     }
   }
-  PROCESS_SWITCH(FlowCumulantsUpc, process, "process", true);
+  PROCESS_SWITCH(FlowCumulantsUpc, process, "process", false);
 
   //-----------------------------------------------------------------------------------------------------------------------
   void processSim(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles)
   {
+
     registry.fill(HIST("eventCounterMC"), 0.5);
 
-    registry.fill(HIST("hEventCount"), 1.5);
+    // registry.fill(HIST("hEventCount"), 1.5);
     float cent = 100;
     float vtxz = mcCollision.posZ();
     registry.fill(HIST("hVtxZMC"), vtxz);
@@ -996,8 +1002,8 @@ struct FlowCumulantsUpc {
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       fillFCMC(corrconfigs.at(l_ind), independent, lRandomMc);
     }
-    PROCESS_SWITCH(FlowCumulantsUpc, processSim, "processSim", false);
   }
+  PROCESS_SWITCH(FlowCumulantsUpc, processSim, "processSim", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
