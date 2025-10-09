@@ -1093,8 +1093,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("tauxy-midy-pol-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
         int binspT[4] = {50, 10, 20, 1000};
-        double xminpT[4] = {2., 0., -1., -0.05};
-        double xmaxpT[4] = {4., 20., 1., 0.05};
+        double xminpT[4] = {2., 0., -1., -0.5};
+        double xmaxpT[4] = {4., 20., 1., 0.5};
         hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
 
@@ -1102,8 +1102,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int varspTRand[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaRM, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
 
         int binspT[4] = {50, 10, 20, 1000};
-        double xminpT[4] = {2., 0., -1., -0.05};
-        double xmaxpT[4] = {4., 20., 1., 0.05};
+        double xminpT[4] = {2., 0., -1., -0.5};
+        double xmaxpT[4] = {4., 20., 1., 0.5};
         hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaRand", "", 4, varspTRand, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
 
@@ -1111,8 +1111,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
 
         int binspT[4] = {50, 10, 20, 1000};
-        double xminpT[4] = {2., 0., -1., -0.05};
-        double xmaxpT[4] = {4., 20., 1., 0.05};
+        double xminpT[4] = {2., 0., -1., -0.5};
+        double xmaxpT[4] = {4., 20., 1., 0.5};
         hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
 
