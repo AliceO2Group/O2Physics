@@ -272,7 +272,7 @@ struct JetHadronRecoil {
           }
         }
       }
-
+    }
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
