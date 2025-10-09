@@ -17,12 +17,13 @@
 #ifndef PWGDQ_CORE_VARMANAGER_H_
 #define PWGDQ_CORE_VARMANAGER_H_
 
-#include <Framework/AnalysisDataModel.h>
-#include <Math/Vector4Dfwd.h>
-#include <cstdint>
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
+
+#include <Framework/AnalysisDataModel.h>
+#include <Math/Vector4Dfwd.h>
+#include <cstdint>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -31,36 +32,36 @@
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/DataTypes.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/DataTypes.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/SMatrix.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/VectorUtil.h"
-#include "TGeoGlobalMagField.h"
-#include "TH3F.h"
-#include "THn.h"
-#include "TRandom.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/SMatrix.h>
+#include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <Math/VectorUtil.h>
+#include <TGeoGlobalMagField.h>
+#include <TH3F.h>
+#include <THn.h>
+#include <TRandom.h>
 #include <TObject.h>
 #include <TString.h>
 
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
 
 #include <algorithm>
 #include <cmath>
@@ -3740,7 +3741,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
     if constexpr (eventHasVtxCov) {
 
-      std::array<float, 6> covMatrixPCA;
+      std::array<float, 6> covMatrixPCA{};
       // get track impact parameters
       // This modifies track momenta!
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
