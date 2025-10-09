@@ -269,9 +269,9 @@ struct JetHadronRecoil {
           auto particle = track.template mcParticle_as<U>();
           if (track.collisionId() == particle.collisionId()) {
             registry.fill(HIST("hPtTrackMatchedToCollisions"), track.pt(), weight);
+          }
         }
       }
-    }
 
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
