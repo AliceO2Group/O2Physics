@@ -1443,7 +1443,7 @@ struct AntinucleiInJets {
             registryMC.fill(HIST("antip_prim_up"), track.pt(), wPrimUp);
             registryMC.fill(HIST("antip_prim_low"), track.pt(), wPrimLow);
           }
-         
+
           // Secondary antiprotons from material
           if (!particle.isPhysicalPrimary() && !particle.has_mothers()) {
 
