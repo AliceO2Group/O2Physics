@@ -173,12 +173,11 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
 
   // Input parameters for fitting
   const int npars{10}; // PED     NSY  NSM    NSW    ASY   ASM     ASW   BETA    v2D     v2h
-  Double_t vals[npars] = {3., 2., 0., 0.5, 2., 3.14, 0.3, 2., 0.1, 0.1};
-  Double_t lowBounds[npars] = {0., 0., -1., 0., 0., 2., 0., 0.5, 0., 0.};
-  Double_t uppBounds[npars] = {9999., 999., 1., 3.14 / 3., 999., 4., 3.14 / 2., 3.5, 0.5, 0.5};
-
-  Double_t const v2AssocPart[nBinsPtD] = {0.15, 0.15, 0.15, 0.15};
-  Double_t const v2Dmeson[nBinsPtD] = {0.175, 0.09, 0.04, 0.04};
+  const Double_t vals[npars] = {3., 2., 0., 0.5, 2., 3.14, 0.3, 2., 0.1, 0.1};
+  const Double_t lowBounds[npars] = {0., 0., -1., 0., 0., 2., 0., 0.5, 0., 0.};
+  const Double_t uppBounds[npars] = {9999., 999., 1., 3.14 / 3., 999., 4., 3.14 / 2., 3.5, 0.5, 0.5};
+  const Double_t v2AssocPart[nBinsPtD] = {0.15, 0.15, 0.15, 0.15};
+  const Double_t v2Dmeson[nBinsPtD] = {0.175, 0.09, 0.04, 0.04};
 
   // Output histograms
   TH1D* hBaselin[nBinsPtHad];
@@ -347,8 +346,6 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       pttext->Draw("same");
       if (drawSystematicErrors) {
         tCorrUncDs->Draw("same");
-      }
-      if (drawSystematicErrors) {
         tScaleUnc->Draw("same");
       }
     }
@@ -399,18 +396,12 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
     hBaselin[iBinPtHad]->SetMinimum(0);
     hBaselin[iBinPtHad]->Draw();
 
-    TH1F* hBaselinSyst;
-    TH1F* hNSYieldSyst;
-    TH1F* hNSSigmaSyst;
-    TH1F* hASYieldSyst;
-    TH1F* hASSigmaSyst;
-
     if (drawSystematicErrors) {
-      hBaselinSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsBaselinMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      hNSYieldSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      hNSSigmaSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      hASYieldSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
-      hASSigmaSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hBaselinSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsBaselinMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hNSYieldSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hNSSigmaSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsNSSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hASYieldSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASYieldMerged_PtBinAssoc%d", iBinPtHad + 1)));
+      TH1F* hASSigmaSyst = reinterpret_cast<TH1F*>(inFileFitSystematicErrors->Get(Form("hSystematicErrorsASSigmaMerged_PtBinAssoc%d", iBinPtHad + 1)));
 
       for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
         hBaselinSyst->SetBinError(iBinPtCand + 1, hBaselinSyst->GetBinContent(iBinPtCand + 1) * hBaselin[iBinPtHad]->GetBinContent(iBinPtCand + 1));

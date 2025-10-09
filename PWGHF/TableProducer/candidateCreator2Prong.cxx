@@ -115,21 +115,14 @@ struct HfCandidateCreator2Prong {
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-
   int runNumber{0};
-  float toMicrometers = 10000.; // from cm to µm
-  double massPi{0.};
-  double massK{0.};
-  double massE{0.};
-  double massMu{0.};
-  double massPiK{0.};
-  double massKPi{0.};
-  double massEE{0.};
-  double massMuMu{0.};
   double bz{0.};
 
+  const float toMicrometers = 10000.; // from cm to µm
+
   std::shared_ptr<TH1> hCandidates;
+
+  using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   ConfigurableAxis axisMass{"axisMass", {500, 1.6, 2.1}, "axis for mass (GeV/c^2)"};
 
@@ -191,11 +184,6 @@ struct HfCandidateCreator2Prong {
 
     // init HF event selection helper
     hfEvSel.init(registry);
-
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massE = MassElectron;
-    massMu = MassMuon;
 
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
@@ -366,11 +354,11 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant masses
-        auto arrayMomenta = std::array{pvec0, pvec1};
-        massPiK = RecoDecay::m(arrayMomenta, std::array{massPi, massK});
-        massKPi = RecoDecay::m(arrayMomenta, std::array{massK, massPi});
-        massEE = RecoDecay::m(arrayMomenta, std::array{massE, massE});
-        massMuMu = RecoDecay::m(arrayMomenta, std::array{massMu, massMu});
+        const auto arrayMomenta = std::array{pvec0, pvec1};
+        const auto massPiK = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus});
+        const auto massKPi = RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus});
+        const auto massEE = RecoDecay::m(arrayMomenta, std::array{MassElectron, MassElectron});
+        const auto massMuMu = RecoDecay::m(arrayMomenta, std::array{MassMuon, MassMuon});
         registry.fill(HIST("hMass2"), massPiK);
         registry.fill(HIST("hMass2"), massKPi);
         registry.fill(HIST("hMassEE"), massEE);
