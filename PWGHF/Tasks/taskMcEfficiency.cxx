@@ -125,7 +125,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <bool Mc, bool HasDplus, bool HasDs, bool HasLc, bool HasXicPlus, typename T1, typename T2, typename T3>
-  void candidate3ProngLoop(T1& candidates, T2& tracks, T3& mcParticles, std::vector<int> pdgCodes)
+  void candidate3ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> const& pdgCodes)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
 
@@ -325,7 +325,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <bool Mc, typename T1, typename T2, typename T3>
-  void candidate2ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> pdgCodes)
+  void candidate2ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> const& pdgCodes)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
 
