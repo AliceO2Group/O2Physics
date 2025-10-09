@@ -712,7 +712,6 @@ class pidTPCModule
         int occupancy;
         if (trk.has_collision()) {
           auto collision = cols.iteratorAt(trk.collisionId());
-          auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
           hadronicRate = hadronicRateForCollision[trk.collisionId()];
           occupancy = collision.trackOccupancyInTimeRange();
         } else {
