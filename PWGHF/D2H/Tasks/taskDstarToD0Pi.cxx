@@ -263,24 +263,26 @@ struct HfTaskDstarToD0Pi {
       }
     }
 
-    // inclusive D0ToPiKPi0 study
-    if (doprocessMcWML && studyD0ToPiKPi0 && isCentStudy) {
-      registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
-    } else if (doprocessMcWoMl && studyD0ToPiKPi0 && isCentStudy) {
-      registry.add("D0ToPiKPi0/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
-    } else if (doprocessMcWML && studyD0ToPiKPi0 && !isCentStudy) {
-      registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
-    } else if (doprocessMcWoMl && studyD0ToPiKPi0 && !isCentStudy) {
-      registry.add("D0ToPiKPi0/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
-    }
+    if (studyD0ToPiKPi0) {
+      // inclusive D0ToPiKPi0 study
+      if (doprocessMcWML && isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+      } else if (doprocessMcWoMl && isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
+      } else if (doprocessMcWML && !isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+      } else if (doprocessMcWoMl && !isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+      }
 
-    // differential (prompt/Non-prompt) D0ToPiKPi0 study
-    if (doprocessMcWML && studyD0ToPiKPi0) {
-      registry.add("D0ToPiKPi0/hPromptDeltaInvMassVsPtVsBDTScore", "Prompt #Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
-      registry.add("D0ToPiKPi0/hNonPromptDeltaInvMassVsPtVsBDTScore", "Non-Prompt #Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
-    } else if (doprocessMcWoMl && studyD0ToPiKPi0) {
-      registry.add("D0ToPiKPi0/hPromptDeltaInvMassDstar2D", "Prompt #Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
-      registry.add("D0ToPiKPi0/hNonPromptDeltaInvMassDstar2D", "Non-Prompt #Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+      // differential (prompt/Non-prompt) D0ToPiKPi0 study
+      if (doprocessMcWML) {
+        registry.add("D0ToPiKPi0/hPromptDeltaInvMassVsPtVsBDTScore", "Prompt #Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+        registry.add("D0ToPiKPi0/hNonPromptDeltaInvMassVsPtVsBDTScore", "Non-Prompt #Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+      } else if (doprocessMcWoMl) {
+        registry.add("D0ToPiKPi0/hPromptDeltaInvMassDstar2D", "Prompt #Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+        registry.add("D0ToPiKPi0/hNonPromptDeltaInvMassDstar2D", "Non-Prompt #Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+      }
     }
 
     // if weights to be applied
@@ -563,36 +565,35 @@ struct HfTaskDstarToD0Pi {
             }
           }
         }
-      } else if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0 && std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) {
+      } else if (studyD0ToPiKPi0 && (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0)) {
         // Aplly all selection to study D*->D0(piKpi0)pi channel same as signal channel
         // MC Matched but to D*->D0(piKpi0)pi channel
         auto deltaMDstar = std::abs(candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0());
         if constexpr (ApplyMl) {
           auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
           // inclusive study
-          if (studyD0ToPiKPi0 && isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          if (isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
-          } else if (studyD0ToPiKPi0 && !isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          } else if (!isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
           }
           // differential (prompt/Non-prompt) study
-          if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt)) {
+          if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt)) {
             registry.fill(HIST("D0ToPiKPi0/hPromptDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
-          } else if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt)) {
+          } else if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt)) {
             registry.fill(HIST("D0ToPiKPi0/hNonPromptDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
           }
-
         } else {
           // inclusive study
-          if (studyD0ToPiKPi0 && isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          if (isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassDstar3D"), deltaMDstar, candDstarMcRec.pt(), centrality);
-          } else if (studyD0ToPiKPi0 && !isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          } else if (!isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
           }
           // differential (prompt/Non-prompt) study
-          if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt)) {
+          if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt)) {
             registry.fill(HIST("D0ToPiKPi0/hPromptDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
-          } else if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt)) {
+          } else if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt)) {
             registry.fill(HIST("D0ToPiKPi0/hNonPromptDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
           }
         }
