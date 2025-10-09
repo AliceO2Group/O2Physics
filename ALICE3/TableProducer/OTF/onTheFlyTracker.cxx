@@ -113,6 +113,7 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutDe{"lutDe", "lutCovm.de.dat", "LUT for deuterons"};
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
+  Configurable<std::string> lutAl{"lutAl", "lutCovm.he3.dat", "LUT for Alphas"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
@@ -138,11 +139,12 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
-    Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
+    Configurable<std::string> alice3geo{"alice3geo", "2", "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025, or path to ccdb with a3 geo"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
     Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
+    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
     Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
@@ -264,6 +266,7 @@ struct OnTheFlyTracker {
       loadLUT(1000010020, lutDe.value);
       loadLUT(1000010030, lutTr.value);
       loadLUT(1000020030, lutHe3.value);
+      loadLUT(1000020040, lutAl.value);
 
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
@@ -407,21 +410,26 @@ struct OnTheFlyTracker {
     rand.SetSeed(seed);
 
     // configure FastTracker
-    fastTracker.SetMagneticField(magneticField);
-    fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
-    fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
-    fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
+    if (enableSecondarySmearing) {
+      fastTracker.SetMagneticField(magneticField);
+      fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
+      fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
+      fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
-    if (fastTrackerSettings.alice3detector == 0) {
-      fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-    }
-    if (fastTrackerSettings.alice3detector == 1) {
-      fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-      fastTracker.AddTPC(0.1, 0.1);
-    }
+      if (fastTrackerSettings.alice3geo.value == "0") {
+        fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
+      } else if (fastTrackerSettings.alice3geo.value == "1") {
+        fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
+        fastTracker.AddTPC(0.1, 0.1);
+      } else if (fastTrackerSettings.alice3geo.value == "2") {
+        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
+      } else {
+        fastTracker.AddGenericDetector(fastTrackerSettings.alice3geo, ccdb.operator->());
+      }
 
-    // print fastTracker settings
-    fastTracker.Print();
+      // print fastTracker settings
+      fastTracker.Print();
+    }
   }
 
   /// Function to decay the xi
@@ -495,6 +503,16 @@ struct OnTheFlyTracker {
     auto ir = irSampler.generateCollisionTime();
     const float eventCollisionTime = ir.timeInBCNS;
 
+    constexpr std::array<int, 9> longLivedHandledPDGs = {kElectron,
+                                                         kMuonMinus,
+                                                         kPiPlus,
+                                                         kKPlus,
+                                                         kProton,
+                                                         o2::constants::physics::kDeuteron,
+                                                         o2::constants::physics::kTriton,
+                                                         o2::constants::physics::kHelium3,
+                                                         o2::constants::physics::kAlpha};
+
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
     for (const auto& mcParticle : mcParticles) {
@@ -505,7 +523,8 @@ struct OnTheFlyTracker {
         continue;
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
+      if (!longLivedToBeHandled) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {
@@ -552,7 +571,8 @@ struct OnTheFlyTracker {
           continue;
         }
       }
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
+      if (!longLivedToBeHandled) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {
@@ -818,6 +838,10 @@ struct OnTheFlyTracker {
                       static_cast<float>(xyz1[1]),
                       static_cast<float>(xyz1[2])};
                     const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {currentTrackingLayer.getResolutionRPhi() * currentTrackingLayer.getResolutionRPhi(), 0.f, currentTrackingLayer.getResolutionZ() * currentTrackingLayer.getResolutionZ()};
+                    if (currentTrackingLayer.isInDeadPhiRegion(phi)) {
+                      continue; // No hit for strangeness tracking update
+                    }
+
                     cascadeTrack.update(hitpoint, hitpointcov);
                     thisCascade.foundClusters++; // add to findable
                   }

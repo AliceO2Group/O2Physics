@@ -325,8 +325,12 @@ struct V0QA {
       registry.add("sharing/AntiLambdaAntiLambda", "AntiLambda-AntiLambda w shared daughter", HistType::kTHnSparseD, {axisV0Pt, axisEta, axisV0Pt});
 
       registry.add("sharing/JetPtEtaPhi", "JetPtEtaPhi", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("sharing/JetPtEtaPhiNone", "JetPtEtaPhiNone", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("sharing/JetPtEtaPhiSingle", "JetPtEtaPhiSingle", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("sharing/JetPtEtaPhiMultiple", "JetPtEtaPhiMultiple", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("sharing/JetPtEtaPhiShared", "JetPtEtaPhiShared", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("sharing/JetPtEtaPhiNoShared", "JetPtEtaPhiNoShared", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+
       registry.add("sharing/JetPtEtaV0Pt", "JetPtEtaV0Pt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("sharing/JetPtEtaK0SPt", "JetPtEtaK0SPt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("sharing/JetPtEtaLambdaPt", "JetPtEtaLambdaPt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
@@ -900,14 +904,20 @@ struct V0QA {
   }
 
   template <typename T>
-  void fillV0DaughterSharingJet(T const& jet, bool jetHasSingleV0)
+  void fillV0DaughterSharingJet(T const& jet, bool jetContainsSharedDaughters)
   {
     registry.fill(HIST("sharing/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
-
-    if (jetHasSingleV0)
+    if (jet.candidatesIds().size() == 0)
+      registry.fill(HIST("sharing/JetPtEtaPhiNone"), jet.pt(), jet.eta(), jet.phi());
+    else if (jet.candidatesIds().size() == 1)
       registry.fill(HIST("sharing/JetPtEtaPhiSingle"), jet.pt(), jet.eta(), jet.phi());
     else
       registry.fill(HIST("sharing/JetPtEtaPhiMultiple"), jet.pt(), jet.eta(), jet.phi());
+
+    if (jetContainsSharedDaughters)
+      registry.fill(HIST("sharing/JetPtEtaPhiShared"), jet.pt(), jet.eta(), jet.phi());
+    else
+      registry.fill(HIST("sharing/JetPtEtaPhiNoShared"), jet.pt(), jet.eta(), jet.phi());
   }
 
   template <typename T, typename U>
@@ -1767,7 +1777,7 @@ struct V0QA {
 
     // Check if V0s within the same jet share daughters
     for (const auto& jet : jets) {
-      bool jetHasSingleV0 = true;
+      bool jetContainsSharedDaughters = false;
 
       for (const auto& trigger : jet.template candidates_as<aod::CandidatesV0Data>()) {
         if (trigger.isRejectedCandidate())
@@ -1782,14 +1792,14 @@ struct V0QA {
           if (trigger == associate)
             continue;
 
-          jetHasSingleV0 = false;
-
           // Double-counting accounted for by filling histograms with weight 0.5
-          if (v0sShareDaughter<DaughterJTracks>(trigger, associate))
+          if (v0sShareDaughter<DaughterJTracks>(trigger, associate)) {
+            jetContainsSharedDaughters = true;
             fillV0DaughterSharingJet<DaughterJTracks, DaughterTracks>(jet, trigger, associate);
+          }
         }
       }
-      fillV0DaughterSharingJet(jet, jetHasSingleV0);
+      fillV0DaughterSharingJet(jet, jetContainsSharedDaughters);
     }
   }
   PROCESS_SWITCH(V0QA, processTestV0DaughterSharing, "Test V0s with shared daughters", false);

@@ -48,28 +48,28 @@ const TString stringPoolBin = "Pool Bin Number;";
 const int nBinsPtCorrelation = 8;
 
 const double binsPtCorrelationsDefault[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 100.};
-auto vecBinsPtCorrelationsDefault = std::vector<double>{binsPtCorrelationsDefault, binsPtCorrelationsDefault + nBinsPtCorrelation + 1};
+const auto vecBinsPtCorrelationsDefault = std::vector<double>{binsPtCorrelationsDefault, binsPtCorrelationsDefault + nBinsPtCorrelation + 1};
 
 const double signalRegionLefBoundDefault[nBinsPtCorrelation] = {0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144};
-auto vecSignalRegionLefBoundDefault = std::vector<double>{signalRegionLefBoundDefault, signalRegionLefBoundDefault + nBinsPtCorrelation};
+const auto vecSignalRegionLefBoundDefault = std::vector<double>{signalRegionLefBoundDefault, signalRegionLefBoundDefault + nBinsPtCorrelation};
 
 const double signalRegionRightBoundDefault[nBinsPtCorrelation] = {0.146, 0.146, 0.146, 0.146, 0.146, 0.146, 0.146, 0.146};
-auto vecSignalRegionRightBoundDefault = std::vector<double>{signalRegionRightBoundDefault, signalRegionRightBoundDefault + nBinsPtCorrelation};
+const auto vecSignalRegionRightBoundDefault = std::vector<double>{signalRegionRightBoundDefault, signalRegionRightBoundDefault + nBinsPtCorrelation};
 
 // const double sidebandLeftOuterDefault[nBinsPtCorrelation] = {1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690};
-// auto vecSidebandLeftOuterDefault = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nBinsPtCorrelation};
+// const auto vecSidebandLeftOuterDefault = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nBinsPtCorrelation};
 
 // const double sidebandLeftInnerDefault[nBinsPtCorrelation] = {1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250};
-// auto vecSidebandLeftInnerDefault = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + nBinsPtCorrelation};
+// const auto vecSidebandLeftInnerDefault = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + nBinsPtCorrelation};
 
 const double sidebandRightInnerDefault[nBinsPtCorrelation] = {0.147, 0.147, 0.147, 0.147, 0.147, 0.147, 0.147, 0.147};
-auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nBinsPtCorrelation};
+const auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nBinsPtCorrelation};
 
 const double sidebandRightOuterDefault[nBinsPtCorrelation] = {0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154};
-auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
+const auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
 
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::NBinsPt;
-std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
+const std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
 
 // Dstar-Hadron correlation pair
 struct HfTaskCorrelationDstarHadrons {
@@ -97,11 +97,11 @@ struct HfTaskCorrelationDstarHadrons {
   {
 
     auto axisPtDstar = (std::vector<double>)binsPtEfficiency;
-    AxisSpec axisSpecPtDstar = {axisPtDstar};
-    AxisSpec axisSpecDeltaPhi = {nBinsDeltaPhi, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
-    AxisSpec axisSpecDeltaEta = {deltaEtaBinEdges};
-    AxisSpec axisSpecPtHadron = {ptHadronBinsEdges};
-    AxisSpec axisSpecPoolBin = {9, 0., 9.};
+    AxisSpec const axisSpecPtDstar = {axisPtDstar};
+    AxisSpec const axisSpecDeltaPhi = {nBinsDeltaPhi, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
+    AxisSpec const axisSpecDeltaEta = {deltaEtaBinEdges};
+    AxisSpec const axisSpecPtHadron = {ptHadronBinsEdges};
+    AxisSpec const axisSpecPoolBin = {9, 0., 9.};
 
     registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
     registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
@@ -116,16 +116,16 @@ struct HfTaskCorrelationDstarHadrons {
   void processData(aod::DstarHadronPair const& dstarHPairs)
   {
     for (const auto& dstarHPair : dstarHPairs) {
-      float deltaPhi = dstarHPair.deltaPhi();
-      float deltaEta = dstarHPair.deltaEta();
-      float ptDstar = dstarHPair.ptDstar();
-      float ptTrack = dstarHPair.ptTrack();
-      int poolBin = dstarHPair.poolBin();
-      float deltaM = dstarHPair.deltaM();
+      float const deltaPhi = dstarHPair.deltaPhi();
+      float const deltaEta = dstarHPair.deltaEta();
+      float const ptDstar = dstarHPair.ptDstar();
+      float const ptTrack = dstarHPair.ptTrack();
+      int const poolBin = dstarHPair.poolBin();
+      float const deltaM = dstarHPair.deltaM();
 
-      int effBinPtDstar = o2::analysis::findBin(binsPtEfficiency, ptDstar);
+      int const effBinPtDstar = o2::analysis::findBin(binsPtEfficiency, ptDstar);
       // LOG(info) << "efficiency index " << effBinPtDstar;
-      int corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
+      int const corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
       // LOG(info) << "correlation index " << corrBinPtDstar;
 
       // reject candidate if outside pT ranges of interst
@@ -137,10 +137,10 @@ struct HfTaskCorrelationDstarHadrons {
       //   ptTrack = 10.5;
       // }
       float netEfficiencyWeight = 1.0;
-      float efficiencyWeightTracks = 1.0;
+      float const efficiencyWeightTracks = 1.0;
 
       if (applyEfficiency) {
-        float efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
+        float const efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
         // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       }

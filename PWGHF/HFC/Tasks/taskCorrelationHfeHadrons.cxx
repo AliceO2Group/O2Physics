@@ -88,14 +88,14 @@ struct HfTaskCorrelationHfeHadrons {
 
   PROCESS_SWITCH(HfTaskCorrelationHfeHadrons, process, "Process ", false);
 
-  void processMcGen(aod::HfEHadronMcPair const& McGenpairEntries)
+  void processMcGen(aod::HfEHadronMcPair const& mcGenpairEntries)
   {
     double deltaPhi = -999;
     double deltaEta = -999;
     double ptHadron = -999;
     double ptElectron = -999;
 
-    for (const auto& pairEntry : McGenpairEntries) {
+    for (const auto& pairEntry : mcGenpairEntries) {
 
       deltaPhi = pairEntry.deltaPhi();
       deltaEta = pairEntry.deltaEta();
@@ -103,7 +103,7 @@ struct HfTaskCorrelationHfeHadrons {
       ptHadron = pairEntry.ptHadron();
 
       registry.fill(HIST("hMcGenInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-      if (pairEntry.isNonHfEHCorr()) {
+      if (pairEntry.isNonHfEHCorr() != 0) {
 
         registry.fill(HIST("hMcGenNonHfEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
       }

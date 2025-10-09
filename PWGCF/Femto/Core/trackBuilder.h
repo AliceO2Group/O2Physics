@@ -56,6 +56,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   // track quality cuts
   o2::framework::Configurable<std::vector<float>> tpcClustersMin{"tpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcCrossedRowsMin{"tpcCrossedRowsMin", {80.f}, "Minimum number of crossed rows in TPC"};
+  o2::framework::Configurable<std::vector<float>> tpcClustersOverCrossedRows{"tpcClustersOverCrossedRows", {0.83f}, "Minimum fraction of clusters over crossed rows in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcSharedClustersMax{"tpcSharedClustersMax", {160.f}, "Maximum number of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcSharedClusterFractionMax{"tpcSharedClusterFractionMax", {1.f}, "Maximum fraction of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> itsClustersMin{"itsClustersMin", {5.f}, "Minimum number of clusters in ITS"};
@@ -117,7 +118,8 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive tracks and -1 for negative tracks)"};
+  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3)"};
+  o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
@@ -126,8 +128,8 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   // track selection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 2u, "Bitmask for selections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 1u, "Bitmask for selections above momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 0x2u, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 0x1u, "Bitmask for selections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
 };
@@ -145,14 +147,15 @@ using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
 /// enum for all track selections
 enum TrackSels {
   // track quality cuts
-  kTPCnClsMin,     ///< Min. number of TPC clusters
-  kTPCcRowsMin,    ///< Min. number of crossed TPC rows
-  kTPCsClsMax,     ///< Max. number of shared TPC clusters
-  kTPCsClsFracMax, ///< Max. fractions of shared TPC clusters
-  kITSnClsMin,     ///< Min. number of ITS clusters
-  kITSnClsIbMin,   ///< Min. number of ITS clusters in the inner barrel
-  kDCAxyMax,       ///< Max. |DCA_xy| (cm) as a function of pT
-  kDCAzMax,        ///< Max. |DCA_z| (cm) as a function of pT
+  kTPCnClsMin,          ///< Min. number of TPC clusters
+  kTPCcRowsMin,         ///< Min. number of crossed TPC rows
+  kTPCnClsOvercRowsMin, ///< Min. fraction of TPC clusters of TPC crossed rows
+  kTPCsClsMax,          ///< Max. number of shared TPC clusters
+  kTPCsClsFracMax,      ///< Max. fractions of shared TPC clusters
+  kITSnClsMin,          ///< Min. number of ITS clusters
+  kITSnClsIbMin,        ///< Min. number of ITS clusters in the inner barrel
+  kDCAxyMax,            ///< Max. |DCA_xy| (cm) as a function of pT
+  kDCAzMax,             ///< Max. |DCA_z| (cm) as a function of pT
 
   /// track pid cuts
   kItsElectron, ///< ITS Electon PID
@@ -202,6 +205,8 @@ const char trackSelsName[] = "Track Selection Object";
 const std::unordered_map<TrackSels, std::string> trackSelsToString = {
   {kTPCnClsMin, "Min. number of TPC clusters"},
   {kTPCcRowsMin, "Min. number of crossed TPC rows"},
+  {kTPCnClsOvercRowsMin, "Min. fraction of TPC clusters over TPC crossed rows"},
+  {kTPCsClsMax, "Max. number of shared TPC clusters"},
   {kTPCsClsMax, "Max. number of shared TPC clusters"},
   {kTPCsClsFracMax, "Max. fractions of shared TPC clusters"},
   {kITSnClsMin, "Min. number of ITS clusters"},
@@ -271,6 +276,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     // add selections for track quality
     this->addSelection(config.tpcClustersMin.value, kTPCnClsMin, limits::kLowerLimit, true, true);
     this->addSelection(config.tpcCrossedRowsMin.value, kTPCcRowsMin, limits::kLowerLimit, true, true);
+    this->addSelection(config.tpcClustersOverCrossedRows.value, kTPCnClsOvercRowsMin, limits::kLowerLimit, true, true);
     this->addSelection(config.tpcSharedClustersMax.value, kTPCsClsMax, limits::kUpperLimit, true, true);
     this->addSelection(config.tpcSharedClusterFractionMax.value, kTPCsClsFracMax, limits::kUpperLimit, true, true);
     this->addSelection(config.itsClustersMin.value, kITSnClsMin, limits::kLowerLimit, true, true);
@@ -341,6 +347,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->reset();
     this->evaluateObservable(kTPCnClsMin, Track.tpcNClsFound());
     this->evaluateObservable(kTPCcRowsMin, Track.tpcNClsCrossedRows());
+    this->evaluateObservable(kTPCnClsOvercRowsMin, static_cast<float>(Track.tpcNClsFound()) / static_cast<float>(Track.tpcNClsCrossedRows()));
     this->evaluateObservable(kTPCsClsMax, Track.tpcNClsShared());
     this->evaluateObservable(kTPCsClsFracMax, static_cast<float>(Track.tpcNClsShared()) / static_cast<float>(Track.tpcNClsFound()));
     this->evaluateObservable(kITSnClsMin, Track.itsNCls());
@@ -443,7 +450,7 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
 class TrackBuilder
 {
  public:
-  TrackBuilder() {}
+  TrackBuilder() = default;
   virtual ~TrackBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
@@ -609,7 +616,87 @@ class TrackBuilder
   bool mProduceHeliumPids = false;
 };
 
+struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFTracks> producedTracks;
+  o2::framework::Produces<o2::aod::StoredFTrackMasks> producedTrackMasks;
+};
+
+struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("TrackTables");
+  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "At least this many tracks of type 1 need to be in the collision"};
+  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 0, "At least this many tracks of type 2 need to be in the collision"};
+};
+
+class TrackBuilderDerivedToDerived
+{
+ public:
+  TrackBuilderDerivedToDerived() = default;
+  ~TrackBuilderDerivedToDerived() = default;
+
+  template <typename T>
+  void init(T& config)
+  {
+    mLimitTrack1 = config.limitTrack1.value;
+    mLimitTrack2 = config.limitTrack2.value;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool collisionHasTooFewTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache)
+  {
+    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice1.size() >= mLimitTrack1 && trackSlice2.size() >= mLimitTrack2) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& indexMap, T6& cache, T7& newTrackTable, T8& newCollisionTable)
+  {
+    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& track : trackSlice1) {
+      this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
+    }
+    for (auto const& track : trackSlice2) {
+      this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  {
+    trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
+                                 track.signedPt(),
+                                 track.eta(),
+                                 track.phi());
+    trackProducts.producedTrackMasks(track.trackMask());
+    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  {
+    auto result = utils::getIndex(daughter.globalIndex(), indexMap);
+    if (result) {
+      return result.value();
+    } else {
+      this->fillTrack(daughter, trackProducts, collisionProducts, indexMap);
+      int64_t idx = trackProducts.producedTracks.lastIndex();
+      indexMap.emplace(daughter.globalIndex(), idx);
+      return idx;
+    }
+  }
+
+ private:
+  int mLimitTrack1 = 0;
+  int mLimitTrack2 = 0;
+};
+
 } // namespace trackbuilder
+//
 } // namespace o2::analysis::femto
 
 #endif // PWGCF_FEMTO_CORE_TRACKBUILDER_H_
