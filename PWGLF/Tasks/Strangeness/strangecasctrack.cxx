@@ -27,6 +27,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::math;
 
 struct StrangeCascTrack {
 
@@ -61,7 +62,7 @@ struct StrangeCascTrack {
     histos.add("Events/PVz", "PV z position", kTH1F, {{100, -20, 20}});
     histos.add("Events/Mult", "Multiplicity", kTH1F, {axisMult});
 
-    histos.add("Tracked/Phi", "Phi", kTH1F, {{100, 0., 2 * o2::constants::math::M_PI}});
+    histos.add("Tracked/Phi", "Phi", kTH1F, {{100, 0., 2 * M_PI}});
     histos.add("Tracked/Eta", "Eta", kTH1F, {{102, -2.01, 2.01}});
     histos.add("Tracked/DCAxy", "DCA to xy", kTH1F, {{500, 0., 0.5}});
     histos.add("Tracked/DCAz", "DCA to z", kTH1F, {{500, 0., 0.5}});
@@ -71,7 +72,7 @@ struct StrangeCascTrack {
     histos.add("Tracked/Omega", "", kTHnD, {axisOmegaMass, axisPt, axisMult});
     histos.add("Tracked/Xi", "", kTHnD, {axisXiMass, axisPt, axisMult});
 
-    histos.add("All/Phi", "Phi", kTH1F, {{100, 0., 2 * o2::constants::math::M_PI}});
+    histos.add("All/Phi", "Phi", kTH1F, {{100, 0., 2 * M_PI}});
     histos.add("All/Eta", "Eta", kTH1F, {{102, -2.01, 2.01}});
     histos.add("All/DCAxy", "DCA to xy", kTH1F, {{1000, 0, 1.}});
     histos.add("All/DCAz", "DCA to z", kTH1F, {{1000, 0, 1.}});
