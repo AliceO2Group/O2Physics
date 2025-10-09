@@ -1065,10 +1065,14 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-        if (centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
-        if (centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
-        if (centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
-        if (centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
+        if (centralityEstimator == Option::kFT0C)
+          centrality = collision.centFT0C();
+        if (centralityEstimator == Option::kFT0M)
+          centrality = collision.centFT0M();
+        if (centralityEstimator == Option::kFV0A)
+          centrality = collision.centFV0A();
+        if (centralityEstimator == Option::kNGlobal)
+          centrality = collision.centNGlobal();
 
         if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
           registryMC.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
