@@ -591,9 +591,11 @@ struct CreateResolutionMap {
       }
       if (muoncuts.refitGlobalMuon) {
         eta = mfttrack.eta();
-        phi = mfttrack.phi();
-        o2::math_utils::bringTo02Pi(phi);
+        // phi = mfttrack.phi();
+        // o2::math_utils::bringTo02Pi(phi);
         pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        phi = propmuonAtDCA.getPhi();
+        o2::math_utils::bringTo02Pi(phi);
       }
 
       float dpt = (ptMatchedMCHMID - pt) / pt;
