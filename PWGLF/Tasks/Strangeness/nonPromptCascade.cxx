@@ -201,8 +201,13 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
-  Configurable<bool> cfgReducedOutput{"cfgReducedOutput", true, "Reduce the number of histos in output"};
+  
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
+
+  Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
+  Configurable<float> cfgMinMult{"cfgMinMult", 3000.f, "Lower range of FT0M histo in zoomed histo"};
+  Configurable<float> cfgMaxCent{"cfgMaxCent", 8.0025f, "Upper range of FT0M histo"};
+
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -219,10 +224,13 @@ struct NonPromptCascadeTask {
   std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCent;
   std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCentZoom;
 
-  AxisSpec multAxis = {8000, 0, 8000, "Multiplicity FT0M"};
-  AxisSpec centAxis = {1621, -0.025, 81.025, "Centrality"};
-  AxisSpec centAxisZoom = {1601, -0.0025, 8.0025, "Centrality"};
-  AxisSpec multAxisZoom = {5000, 3000, 8000, "Multiplicity FT0M"};
+  int nBinsMult = cfgMaxMult;
+  int nBinsMultZoom = cfgMaxMult - cfgMinMult;
+  int nBinsCentZoom = (cfgMaxCent + 0.0025)/0.005;
+  AxisSpec multAxis = {nBinsMult, 0, cfgMaxMult, "Multiplicity FT0M"};
+  AxisSpec centAxis = {101, -0.025, 101.025, "Centrality"};
+  AxisSpec centAxisZoom = {nBinsCentZoom, -0.0025, cfgMaxCent, "Centrality"};
+  AxisSpec multAxisZoom = {nBinsMultZoom, cfgMinMult, cfgMaxMult, "Multiplicity FT0M"};
   AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -343,20 +351,16 @@ struct NonPromptCascadeTask {
       std::string histNameMvCZ = "mult/hMultVsCentZoom_run" + std::to_string(mRunNumber);
       std::string histNameTvC = "mult/hNTracksVsCent_run" + std::to_string(mRunNumber);
       std::string histNameTvCZ = "mult/hNTracksVsCentZoom_run" + std::to_string(mRunNumber);
-      if (!mHistsPerRunMultVsCentZoom.contains(histNameMvCZ)) {
+      if (!mHistsPerRunMultVsCent.contains(histNameMvC)) {
+        mHistsPerRunMultVsCent[histNameMvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvC.c_str(), histNameMvC.c_str(), HistType::kTH2F, {centAxis, multAxis}));
         mHistsPerRunMultVsCentZoom[histNameMvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvCZ.c_str(), histNameMvCZ.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
+        mHistsPerRunNtracktVsCent[histNameTvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvC.c_str(), histNameTvC.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
         mHistsPerRunNtracktVsCentZoom[histNameTvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvCZ.c_str(), histNameTvCZ.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
-        if (!cfgReducedOutput) {
-          mHistsPerRunMultVsCent[histNameMvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvC.c_str(), histNameMvC.c_str(), HistType::kTH2F, {centAxis, multAxis}));
-          mHistsPerRunNtracktVsCent[histNameTvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvC.c_str(), histNameTvC.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
-        }
       }
+      mHistsPerRunMultVsCent[histNameMvC]->Fill(coll.centFT0M(), coll.multFT0M());
       mHistsPerRunMultVsCentZoom[histNameMvCZ]->Fill(coll.centFT0M(), coll.multFT0M());
+      mHistsPerRunNtracktVsCent[histNameTvC]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
       mHistsPerRunNtracktVsCentZoom[histNameTvCZ]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-      if (!cfgReducedOutput) {
-        mHistsPerRunMultVsCent[histNameMvC]->Fill(coll.centFT0M(), coll.multFT0M());
-        mHistsPerRunNtracktVsCent[histNameTvC]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-      }
       // run integrated histos
       mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
