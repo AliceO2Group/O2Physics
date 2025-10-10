@@ -9,17 +9,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \commonly used for PCM analyses.
+/// \file PCMUtilities.h
+/// \brief helper functions commonly used for PCM analyses.
 /// \author daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 
-#include <TVector2.h>
-#include "ReconstructionDataFormats/HelixHelper.h"
-#include "DetectorsBase/Propagator.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <DetectorsBase/Propagator.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+
+#include <TVector2.h>
+
+#include <array>
+#include <cmath>
+
+#include <math.h>
 
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
@@ -64,8 +74,8 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-  float alphaPos = M_PI + std::atan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
-  float alphaNeg = M_PI + std::atan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
+  float alphaPos = o2::constants::math::PI + std::atan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
+  float alphaNeg = o2::constants::math::PI + std::atan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
 
   float vertexXPos = helixPos.xC + helixPos.rC * std::cos(alphaPos);
   float vertexYPos = helixPos.yC + helixPos.rC * std::sin(alphaPos);
