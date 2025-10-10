@@ -75,7 +75,7 @@ struct FlowZdcTask {
   Configurable<float> minTdcZn{"minTdcZn", -4.0, "minimum TDC for ZN"};
   Configurable<float> maxTdcZn{"maxTdcZn", -4.0, "maximum TDC for ZN"};
   Configurable<float> minTdcZp{"minTdcZp", -4.0, "minimum TDC for ZP"};
-  Configurable<float> maxTdcZp{"maxTdcZp", -4.0, "maximum TDC for ZP"};  
+  Configurable<float> maxTdcZp{"maxTdcZp", -4.0, "maximum TDC for ZP"};
   Configurable<float> cfgCollisionEnergy{"cfgCollisionEnergy", 2.68, "cfgCollisionEnergy"};
   // event selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
@@ -339,7 +339,8 @@ struct FlowZdcTask {
       histos.add("ZpaVsTdc", "ZPAvsTDC; ZPA Amp; ZPA TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("Zem1VsTdc", "ZEM1vsTDC; ZEM1 Amp; ZEM1 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
       histos.add("Zem2VsTdc", "ZEM2vsTDC; ZEM2 Amp; ZEM2 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
-    }    
+
+    }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     // Enabling object caching, otherwise each call goes to the CCDB server
@@ -492,37 +493,37 @@ struct FlowZdcTask {
 
     if (sumZEMs > zemCut) {
       if (isTDCcut) {
-        if((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) {
+        if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) {
           histos.fill(HIST("ZNA"), znA);
           histos.fill(HIST("ZNACommon"), commonSumZna);
           histos.fill(HIST("ZNASector"), sumZNA);
         }
-        if((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) {
+        if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) {
           histos.fill(HIST("ZNC"), znC);
           histos.fill(HIST("ZNCCommon"), commonSumZnc);
           histos.fill(HIST("ZNCSector"), sumZNC);
         }
-        if((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)) {
+        if ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)) {
           histos.fill(HIST("ZPA"), zpA);
           histos.fill(HIST("ZPACommon"), commonSumZpa);
           histos.fill(HIST("ZPASector"), sumZPA);
         }
-        if((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) {
+        if ((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) {
           histos.fill(HIST("ZPC"), zpC);
           histos.fill(HIST("ZPCCommon"), commonSumZpc);
           histos.fill(HIST("ZPCSector"), sumZPC);
         }
-        if(((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)))
+        if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)))
           histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
-        if(((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))) {
+        if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))) {
           histos.fill(HIST("ZNAVsZNC"), znC, znA);
           histos.fill(HIST("ZN"), znA + znC);
         }
-        if((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
+        if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
           histos.fill(HIST("ZNAVsZPA"), zpA, znA);
-        if((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))
+        if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))
           histos.fill(HIST("ZNCVsZPC"), zpC, znC);
-        if(((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)) && ((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)))
+        if (((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)) && ((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)))
           histos.fill(HIST("ZPAVsZPC"), zpC, zpA);
       } else {
         histos.fill(HIST("ZNA"), znA);
@@ -553,8 +554,7 @@ struct FlowZdcTask {
       histos.fill(HIST("ZEM1Vstdc"), tZEM1, aZEM1);
       histos.fill(HIST("ZEM2Vstdc"), tZEM2, aZEM2);
       histos.fill(HIST("debunch"), tZNA - tZNC, tZNA + tZNC);
-    
-  }
+    }
     float et = 0., meanpt = 0.;
     int itsTracks = 0, glbTracks = 0;
     for (const auto& track : tracks) {
@@ -866,7 +866,7 @@ struct FlowZdcTask {
     histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
   }
 
-  void processZdc(aod::Zdc const & zdc)
+  void processZdc(aod::Zdc const& zdc)
   {
     auto znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
     auto znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
