@@ -30,6 +30,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include <TPDGCode.h>
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -406,7 +408,7 @@ struct JetShapeTask {
         if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) { // do this in the context of the track ! (context matters!!!)
           if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
             registry.fill(HIST("ptHistogramPion"), mcParticle.pt());
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kkPlus)
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
             registry.fill(HIST("ptHistogramKaon"), mcParticle.pt());
           if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
             registry.fill(HIST("ptHistogramProton"), mcParticle.pt());
@@ -422,7 +424,7 @@ struct JetShapeTask {
       if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
         if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
           registry.fill(HIST("ptGeneratedPion"), mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == PDG_t::kkPlus)
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
           registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt());
         if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
           registry.fill(HIST("ptGeneratedProton"), mcParticle.pt());
