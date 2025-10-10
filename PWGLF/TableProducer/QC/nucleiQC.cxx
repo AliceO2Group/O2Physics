@@ -409,7 +409,7 @@ struct nucleiQC {
         if (track.has_mcParticle()) {
           const auto& particle = track.mcParticle();
           if (cfgDoCheckPdgCode) {
-            if (particle.pdgCode() != nuclei::pdgCodes[kSpeciesRt])
+            if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
               return;
           }
           if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax) {
