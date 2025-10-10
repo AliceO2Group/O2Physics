@@ -14,40 +14,41 @@
 /// \since  Mar 28, 2024
 /// \brief  Multiparticle flow measurements with FT0 and ZDC
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <cmath>
-#include <vector>
-#include <string>
-#include <memory>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "TPDGCode.h"
-
-#include "GFWPowerArray.h"
+#include "FlowContainer.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
+#include "GFWPowerArray.h"
 #include "GFWWeights.h"
-#include "FlowContainer.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+
 #include "TList.h"
+#include "TPDGCode.h"
+#include <TF1.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TF1.h>
+
+#include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -70,31 +71,31 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgTrackSel, bool, false, "ITS and TPC cluster selection")
   O2_DEFINE_CONFIGURABLE(cfgMinCentFT0C, float, 0.0f, "Minimum FT0C Centrality")
   O2_DEFINE_CONFIGURABLE(cfgMaxCentFT0C, float, 100.0f, "Maximum FT0C Centrality")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Custom DCA Z cut")
+  O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0c, bool, false, "Centrality estimator based on FT0C signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0a, bool, false, "Centrality estimator based on FT0A signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0m, bool, false, " A centrality estimator based on FT0A+FT0C signals.")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFv0a, bool, false, "Centrality estimator based on FV0A signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0cVariant1, bool, false, "A variant of FT0C")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "Track selection for ITS matches")
-  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
-  O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyPt, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to Nch efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
-  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
-  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "Custom DCA Z cut")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "Custom DCA XY cut")
   O2_DEFINE_CONFIGURABLE(cfgDCAzPt, bool, true, "switch for DCAz pt dependent")
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "Track selection for ITS matches")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, false, "kNoTimeFrameBorder");
   O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, false, "kNoITSROFrameBorder");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileup, bool, false, "kNoSameBunchPileup");
@@ -102,9 +103,9 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, false, "kIsVertexITSTPC");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
-  O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgV0AT0A5Sigma, bool, false, "V0A T0A 5 sigma cut")
+  O2_DEFINE_CONFIGURABLE(cfgGlobalTracks, bool, false, "Global tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalonly, bool, false, "Global only tracks")
   O2_DEFINE_CONFIGURABLE(cfgITSonly, bool, false, "ITS only tracks")
@@ -360,6 +361,7 @@ struct FlowGfwTask {
       registry.add("phi_Cen_ITSOnly", "phi_Cen_ITS;Centrality (%); #phi;", {HistType::kTH2D, {axisCentrality, axisPhi}});
 
       // Track types
+      registry.add("GlobalTracks", "Global Tracks;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
       registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
       registry.add("Globalonly", "Global only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
       registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", {HistType::kTH2D, {axisCentrality, axisNch}});
@@ -620,12 +622,12 @@ struct FlowGfwTask {
       else
         LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
     }
-    if (cfgEfficiency.value.empty() == false) {
-      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+    if (cfgEfficiencyPt.value.empty() == false) {
+      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiencyPt, timestamp);
       if (mEfficiency == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
+        LOGF(fatal, "Could not load Pt efficiency histogram for trigger particles from %s", cfgEfficiencyPt.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiencyPt.value.c_str(), (void*)mEfficiency);
     }
 
     if (cfgEfficiencyNch.value.empty() == false) {
@@ -809,20 +811,16 @@ struct FlowGfwTask {
       return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
     } else if (cfgITSonly) {
       return ((track.itsNCls() >= cfgCutITSclu));
+    } else if (cfgGlobalTracks) {
+      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
     } else {
       return false;
     }
   }
 
-  // Apply process filters
+  // Apply process filters GlobalTracks
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::cent::centFT0C > cfgMinCentFT0C) && (aod::cent::centFT0C < cfgMaxCentFT0C);
-  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
-                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                              ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
-                       ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
-                              ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
-                       (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, aod::Zdcs const&, BCsRun3 const&)
   {
@@ -1027,6 +1025,13 @@ struct FlowGfwTask {
         registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
         registry.fill(HIST("hDCAz"), track.dcaZ());
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
+      }
+
+      if (cfgGlobalTracks) {
+        if (withinPtRef) {
+          registry.fill(HIST("GlobalTracks"), centrality, nch);
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        }
       }
 
       if (cfgGlobalplusITS) {
