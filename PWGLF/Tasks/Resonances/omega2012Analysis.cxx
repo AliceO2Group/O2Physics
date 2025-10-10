@@ -832,10 +832,11 @@ struct Omega2012Analysis {
       if (!casctopCut(xi))
         continue;
 
-      // Add xi daughter track IDs (proton, pion, bachelor pion)
-      usedTrackIds.insert(xi.posTrackId());
-      usedTrackIds.insert(xi.negTrackId());
-      usedTrackIds.insert(xi.bachTrackId());
+      // Add xi daughter track IDs from cascadeIndices array (ordered: positive, negative, bachelor)
+      auto cascIndices = xi.cascadeIndices();
+      usedTrackIds.insert(cascIndices[0]); // positive track
+      usedTrackIds.insert(cascIndices[1]); // negative track
+      usedTrackIds.insert(cascIndices[2]); // bachelor track
     }
 
     // Collect track IDs from v0s
@@ -843,9 +844,10 @@ struct Omega2012Analysis {
       if (!v0CutEnhanced(collision, v0))
         continue;
 
-      // Add v0 daughter track IDs (positive and negative tracks)
-      usedTrackIds.insert(v0.posTrackId());
-      usedTrackIds.insert(v0.negTrackId());
+      // Add v0 daughter track IDs from indices array
+      auto v0Indices = v0.indices();
+      usedTrackIds.insert(v0Indices[0]); // positive track
+      usedTrackIds.insert(v0Indices[1]); // negative track
     }
 
     // First loop: xi + pion to check xi1530 mass window
