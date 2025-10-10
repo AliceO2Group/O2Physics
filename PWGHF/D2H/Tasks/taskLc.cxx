@@ -133,17 +133,24 @@ struct HfTaskLc {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
+    const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
+
     auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
-      registry.add(("Data/" + histoName).c_str(), ("3-prong candidates;" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
-      registry.add(("MC/reconstructed/signal/" + histoName + "RecSig").c_str(), ("3-prong candidates (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
-      registry.add(("MC/reconstructed/prompt/" + histoName + "RecSigPrompt").c_str(), ("3-prong candidates (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
-      registry.add(("MC/reconstructed/nonprompt/" + histoName + "RecSigNonPrompt").c_str(), ("3-prong candidates (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      if (isData) {
+        registry.add(("Data/" + histoName).c_str(), ("3-prong candidates;" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      } else {
+        registry.add(("MC/reconstructed/signal/" + histoName + "RecSig").c_str(), ("3-prong candidates (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/reconstructed/prompt/" + histoName + "RecSigPrompt").c_str(), ("3-prong candidates (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/reconstructed/nonprompt/" + histoName + "RecSigNonPrompt").c_str(), ("3-prong candidates (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      }
     };
 
     auto addHistogramsGen = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
-      registry.add(("MC/generated/signal/" + histoName + "Gen").c_str(), ("MC particles (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
-      registry.add(("MC/generated/prompt/" + histoName + "GenPrompt").c_str(), ("MC particles (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
-      registry.add(("MC/generated/nonprompt/" + histoName + "GenNonPrompt").c_str(), ("MC particles (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      if (!isData) {
+        registry.add(("MC/generated/signal/" + histoName + "Gen").c_str(), ("MC particles (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/generated/prompt/" + histoName + "GenPrompt").c_str(), ("MC particles (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/generated/nonprompt/" + histoName + "GenNonPrompt").c_str(), ("MC particles (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      }
     };
 
     /// mass candidate
@@ -151,7 +158,9 @@ struct HfTaskLc {
     /// pT
     addHistogramsRec("hPt", "#it{p}_{T}^{rec.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
     addHistogramsGen("hPt", "#it{p}_{T}^{gen.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
-    registry.add("MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    if (!isData) {
+      registry.add("MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    }
     addHistogramsRec("hPtProng0", "prong 0 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
     addHistogramsRec("hPtProng1", "prong 1 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
     addHistogramsRec("hPtProng2", "prong 2 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
@@ -181,7 +190,9 @@ struct HfTaskLc {
 
     auto vbins = (std::vector<double>)binsPt;
     /// mass candidate
-    registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
+    if (isData) {
+      registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
+    }
     addHistogramsRec("hMassVsPt", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
     /// DCAxy to prim. vertex prongs
     addHistogramsRec("hd0VsPtProng0", "prong 0 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
