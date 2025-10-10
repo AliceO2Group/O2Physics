@@ -116,7 +116,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   using SameEvtPairsChHad = soa::Filtered<soa::Join<aod::HfcRedSEChBases, aod::HfcRedAssTracks>>;
   using SameEvtPairsHadHad = soa::Filtered<soa::Join<aod::HfcRedSEHadBases, aod::HfcRedAssTracks>>;
   using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedAssBases, aod::HfcRedAssTracks>>;
-  using TrigCharmCands = soa::Filtered<soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigCharms>>;
+  using TrigCharmCands = soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigCharms>;
 
   Filter filterAssocTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYAssoc) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZAssoc) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsAssoc > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsAssoc > itsNClsMin);
   Filter filterTrigTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYTrig) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZTrig) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsTrig > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsTrig > itsNClsMin);
