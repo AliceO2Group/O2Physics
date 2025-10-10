@@ -305,7 +305,6 @@ struct FlowTask {
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisIndependent}});
-    registry.add("hDeltaPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
@@ -1033,19 +1032,10 @@ struct FlowTask {
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
 
-    // additional loop to calculate standard error of pT
-    double deltaPtSum = 0.;
-    double meanPt = ptSum / weffEvent;
-    for (const auto& track : tracks) {
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-        continue;
-      deltaPtSum += weff * (track.pt() - meanPt) * (track.pt() - meanPt);
-    }
     double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
     // MeanPt
     if (weffEvent) {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
-      registry.fill(HIST("hDeltaPt"), independent, std::sqrt(deltaPtSum / (weffEvent - 1)), weffEvent);
     }
     if (weffEventWithinGap08)
       registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, weffEventWithinGap08);
