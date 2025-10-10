@@ -105,6 +105,8 @@ struct hadronnucleicorrelation {
   // Mixing parameters
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
   Configurable<int> _multNsubBins{"multSubBins", 10, "number of sub-bins to perform the mixing within"};
+  Configurable<float> maxmultmix{"maxmultmix", 20, "maximum multiplicity to mix"};
+
 
   // pT/A bins
   Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
@@ -1812,6 +1814,28 @@ struct hadronnucleicorrelation {
 
       if (std::abs(collision1.posZ()) > cutzvertex) {
         continue;
+      }
+
+      int vertexBinToMix = std::floor((collision.posZ() + cutzvertex) / (2 * cutzvertex / _vertexNbinsToMix));
+      int centBinToMix = std::floor(collision.mult() / (maxmultmix / _multNsubBins));
+
+      if (collision.mult()>maxmultmix) centBinToMix=_multNsubBins-1; // to avoid overflow in centrality bin
+      if (centBinToMix<0) centBinToMix=0; // to avoid underflow in centrality bin
+
+      if (selectedparticlesMC_antid.find(collision1.globalIndex()) != selectedparticlesMC_antid.end()) {
+        mixbinsMC_antid[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision1)>(collision1));
+      }
+
+      if (selectedparticlesMC_d.find(collision1.globalIndex()) != selectedparticlesMC_d.end()) {
+        mixbinsMC_d[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision1)>(collision1));
+      }
+
+      if (selectedparticlesMC_antip.find(collision1.globalIndex()) != selectedparticlesMC_antip.end()) {
+        mixbinsMC_antip[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision1)>(collision1));
+      }
+
+      if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
+        mixbinsMC_p[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision1)>(collision1));
       }
 
       // anti-d - anti-p correlation
