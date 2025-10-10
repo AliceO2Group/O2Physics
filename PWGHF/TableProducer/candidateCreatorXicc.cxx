@@ -80,11 +80,6 @@ struct HfCandidateCreatorXicc {
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter to build the Xicc vertex
   HfHelper hfHelper;
 
-  double massPi{0.};
-  double massK{0.};
-  double massXic{0.};
-  double massXicc{0.};
-
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   OutputObj<TH1F> hMassXic{TH1F("hMassXic", "xic candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.6)};
@@ -93,10 +88,6 @@ struct HfCandidateCreatorXicc {
 
   void init(InitContext const&)
   {
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massXic = MassXiCPlus;
-
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -232,17 +223,15 @@ struct HfCandidateCreatorXiccMc {
                aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
-    int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
-    int8_t origin = 0;
-    int8_t debug = 0;
+    int8_t flag;
+    int8_t origin;
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
+      int8_t debug = 0;
       flag = 0;
       origin = 0;
-      debug = 0;
       auto xicCand = candidate.prong0();
       auto arrayDaughters = std::array{xicCand.prong0_as<aod::TracksWMc>(),
                                        xicCand.prong1_as<aod::TracksWMc>(),
@@ -252,7 +241,7 @@ struct HfCandidateCreatorXiccMc {
                                           xicCand.prong1_as<aod::TracksWMc>(),
                                           xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);

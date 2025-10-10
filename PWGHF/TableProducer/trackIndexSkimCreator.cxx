@@ -958,10 +958,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         }
         if (config.debugPvRefit) {
           LOG(info) << "### vecPvContributorGlobId.size()=" << vecPvContributorGlobId.size() << ", vecPvContributorTrackParCov.size()=" << vecPvContributorTrackParCov.size() << ", N. original contributors=" << collision.numContrib();
-        }
-
-        /// Perform the PV refit only for tracks with an assigned collision
-        if (config.debugPvRefit) {
+          /// Perform the PV refit only for tracks with an assigned collision
           LOG(info) << "[BEFORE performPvRefitTrack] track.collision().globalIndex(): " << collision.globalIndex();
         }
         performPvRefitTrack(collision, bcWithTimeStamps, vecPvContributorGlobId, vecPvContributorTrackParCov, track, pvRefitPvCoord, pvRefitPvCovMatrix, pvRefitDcaXYDcaZ);
@@ -1964,12 +1961,11 @@ struct HfTrackIndexSkimCreator {
 
     /// PV refitting, if the tracks contributed to this at the beginning
     o2::dataformats::VertexBase primVtxBaseRecalc;
-    bool recalcPvRefit = false;
     if ((doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) && pvRefitDoable) {
       if (config.fillHistograms) {
         registry.fill(HIST("PvRefit/verticesPerCandidate"), 2);
       }
-      recalcPvRefit = true;
+      bool recalcPvRefit = true;
       int nCandContr = 0;
       for (const uint64_t myGlobalID : vecCandPvContributorGlobId) {                                              // o2-linter: disable=const-ref-in-for-loop (small type)
         auto trackIterator = std::find(vecPvContributorGlobId.begin(), vecPvContributorGlobId.end(), myGlobalID); /// track global index
@@ -2005,10 +2001,6 @@ struct HfTrackIndexSkimCreator {
       }
       if (config.fillHistograms) {
         registry.fill(HIST("PvRefit/hChi2vsNContrib"), primVtxRefitted.getNContributors(), primVtxRefitted.getChi2());
-      }
-
-      for (size_t i = 0; i < vecPvContributorGlobId.size(); i++) {
-        vecPvRefitContributorUsed[i] = true; /// restore the tracks for the next PV refitting (probably not necessary here)
       }
 
       if (recalcPvRefit) {

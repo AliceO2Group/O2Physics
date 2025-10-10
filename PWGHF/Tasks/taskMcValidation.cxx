@@ -953,8 +953,8 @@ struct HfTaskMcValidationRec {
       }
       uint const index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
-        auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+        const auto& particle = track.mcParticle(); // get corresponding MC particle to check origin
+        const auto& mcCollision = particle.mcCollision_as<aod::McCollisions>();
         if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
@@ -966,7 +966,7 @@ struct HfTaskMcValidationRec {
           histAmbiguousTracks->Fill(origin, track.pt());
           std::vector<double> ambCollPosZ{};
           for (const auto& collIdx : track.compatibleCollIds()) {
-            auto ambCollision = collisions.rawIteratorAt(collIdx);
+            const auto& ambCollision = collisions.rawIteratorAt(collIdx);
             ambCollPosZ.push_back(ambCollision.posZ());
           }
           // here we are only interested to tracks associated to multiple vertices
@@ -976,8 +976,7 @@ struct HfTaskMcValidationRec {
         }
         float deltaZ = -999.f;
         if (index) {
-          auto collision = track.collision_as<CollisionsWithMCLabels>();
-          auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+          const auto& collision = track.collision_as<CollisionsWithMCLabels>();
           deltaZ = collision.posZ() - mcCollision.posZ();
           if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
@@ -1101,7 +1100,7 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isD0Sel && std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+        if (std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           whichHad = DzeroToKPi;
         }
         int whichOrigin;

@@ -39,7 +39,7 @@
 /PWGEM @alibuild @feisenhu @dsekihat @ivorobye
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
-/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng
 # PWG-LF
 /PWGLF @alibuild @sustripathy @skundu692 @mpuccio
 /PWGLF/DataModel @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
@@ -68,7 +68,7 @@
 /Tutorials/PWGCF @alibuild @jgrosseo @victor-gonzalez @zchochul
 /Tutorials/PWGDQ @alibuild @iarsene @mcoquet @lucamicheletti93
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
-/Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa @gluparel
+/Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa @gluparel @xinyepeng
 /Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @mfasDa @fjonasALICE
 /Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @ercolessi @iravasen @njacazio @romainschotter @skundu692
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk

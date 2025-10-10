@@ -32,7 +32,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
@@ -59,8 +58,6 @@ namespace o2::analysis::femto
 namespace consumeddata
 {
 using Run3PpCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
-// FIXME: sometimes people want to run analyis even though centrality calibration is not available yet
-// using Run3PpWithoutCentCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 
 using Run3FullPidTracks =
   soa::Join<Tracks, TracksExtra, TracksDCA,
@@ -79,12 +76,8 @@ using Run3PpKinks = KinkCands;
 
 struct FemtoProducer {
 
-  // configurables
-  struct : ConfigurableGroup {
-    std::string prefix = std::string("General");
-    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
-    Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField/Run2 -> GLO/GRP/GRP"};
-  } ConfOptions;
+  // ccdb
+  collisionbuilder::ConfCcdb confCcdb;
 
   // collision builder
   collisionbuilder::CollisionBuilderProducts collisionBuilderProducts;
@@ -92,7 +85,6 @@ struct FemtoProducer {
   collisionbuilder::ConfCollisionFilters confCollisionFilters;
   collisionbuilder::ConfCollisionBits confCollisionBits;
   collisionbuilder::ConfCollisionRctFlags confCollisionRctFlags;
-  collisionbuilder::ConfCollisionTriggers confCollisionTriggers;
   collisionbuilder::CollisionBuilder collisionBuilder;
 
   // track builder
@@ -160,40 +152,23 @@ struct FemtoProducer {
 
   // histogramming
   // add histograms in next iteration
-  // HistogramRegistry hRegistry{"FemtoProducer", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry hRegistry{"FemtoProducer", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // data members
-  int runNumber = -1;
-  int magField = 0.f;
   Service<o2::ccdb::BasicCCDBManager> ccdb;            /// Accessing the CCDB
   std::unordered_map<int64_t, int64_t> indexMapTracks; // for mapping tracks to lambdas, cascades and resonances
-
-  void initFromCcdb(o2::aod::BCsWithTimestamps::iterator const& bc)
-  {
-    if (runNumber == bc.runNumber())
-      return;
-    auto timestamp = bc.timestamp();
-    static o2::parameters::GRPMagField* grpo = nullptr;
-    grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ConfOptions.grpPath.value, timestamp);
-    if (grpo == nullptr) {
-      LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
-      return;
-    }
-    magField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
-    runNumber = bc.runNumber();
-  };
 
   void init(InitContext& context)
   {
     // init ccdb
-    ccdb->setURL(ConfOptions.ccdbUrl.value);
+    ccdb->setURL(confCcdb.ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
     // collision selection
-    collisionBuilder.init(confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCollisionTriggers, confCollisionTables, context);
+    collisionBuilder.init(confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCcdb, confCollisionTables, context);
 
     // configure track builder
     trackBuilder.init(confTrackBits, confTrackFilters, confTrackTables, context);
@@ -232,9 +207,8 @@ struct FemtoProducer {
   void processTracks(T1 const& col, T2 const& /* bcs*/, T3 const& tracks, T4 const& tracksWithItsPid)
   {
     auto bc = col.template bc_as<T2>();
-    initFromCcdb(bc);
-    collisionBuilder.buildCollision<system>(bc, col, tracks, ccdb, magField);
-    if (!collisionBuilder.checkCollision(bc, col)) {
+    collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
+    if (!collisionBuilder.checkCollision(col)) {
       return;
     }
     collisionBuilder.fillCollision<system>(collisionBuilderProducts, col);

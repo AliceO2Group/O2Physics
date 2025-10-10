@@ -57,16 +57,6 @@ o2physics_add_dpl_workflow(cf-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::ReconstructionDataFormats O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cf-filter-qa
-    SOURCES PWGCF/CFFilterQA.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(cf-filter-ppphi
-    SOURCES PWGCF/CFFilterPPPhi.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(je-filter
     SOURCES PWGJE/jetFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib

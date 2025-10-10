@@ -483,7 +483,7 @@ struct HfFemtoDreamProducer {
                            float bdtScoreBkg,
                            float bdtScorePrompt,
                            float bdtScoreFd) {
-        if (functionSelection >= 1){
+        if (functionSelection >= 1) {
           rowCandCharmHad(
             outputCollision.lastIndex(),
             timeStamp,
@@ -511,7 +511,8 @@ struct HfFemtoDreamProducer {
               candidate.flagMcMatchRec(),
               candidate.originMcRec());
           }
-      } };
+        }
+      };
 
       if constexpr (Channel == DecayChannel::DplusToPiKPi) {
         if constexpr (UseCharmMl) {
@@ -576,7 +577,7 @@ struct HfFemtoDreamProducer {
       }
     }
 
-    if (!isTrackFilled) {
+    if (!isTrackFilled) { // FIXME: isTrackFilled is always false here
       isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
       // If track filling was successful, fill the collision table
     }

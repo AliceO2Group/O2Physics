@@ -25,14 +25,17 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/Zorro.h"
 
+#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/Configurable.h"
 
 #include "fairlogger/Logger.h"
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace o2::analysis::femto
 {
@@ -73,13 +76,14 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> occupancyMax{"occupancyMax", {}, "Maximum occpancy"};
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
+  o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
 };
 
-struct ConfCollisionTriggers : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string("CollisionTriggers");
-  o2::framework::Configurable<bool> useTrigger{"useTrigger", false, "Set to true to only selected triggered collisions"};
-  o2::framework::Configurable<std::string> ccdbPath{"ccdbPath", std::string("EventFiltering/Zorro/"), "CCDB path for trigger information"};
-  o2::framework::Configurable<std::string> triggers{"triggers", std::string("fPPP,fPPL"), "Comma seperated list of all triggers to be used"};
+struct ConfCcdb : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("ConfCcdb");
+  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
+  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField/Run2 -> GLO/GRP/GRP"};
+  o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
 };
 
 struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {
@@ -125,6 +129,8 @@ enum CollisionSels {
   kSphericityMin,             ///< Min. sphericity
   kSphericityMax,             ///< Max. sphericity
 
+  kTriggers,
+
   kCollisionSelsMax
 };
 
@@ -146,14 +152,16 @@ const std::unordered_map<CollisionSels, std::string> colSelsToString = {
   {kOccupancyMin, "Minimum Occupancy"},
   {kOccupancyMax, "Maximum Occupancy"},
   {kSphericityMin, "Minimum Sphericity"},
-  {kSphericityMax, "Maximum Sphericity"}
+  {kSphericityMax, "Maximum Sphericity"},
+
+  {kTriggers, "Triggers"}
 
 };
 
 class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::CollisionMaskType, kCollisionSelsMax>
 {
  public:
-  CollisionSelection() {}
+  CollisionSelection() = default;
   virtual ~CollisionSelection() = default;
 
   template <typename T1, typename T2>
@@ -188,6 +196,10 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->addSelection(config.occupancyMax.value, kOccupancyMax, limits::kUpperLimit, true, true);
     this->addSelection(config.sphericityMin.value, kSphericityMin, limits::kLowerLimit, true, true);
     this->addSelection(config.sphericityMax.value, kSphericityMax, limits::kUpperLimit, true, true);
+
+    std::vector<float> triggerValues(config.triggers.value.size(), 1.f);
+    this->addSelection(triggerValues, kTriggers, limits::kEqualArray, false, true);
+    this->addComments(kTriggers, config.triggers.value);
   };
 
   void setMagneticField(int MagField)
@@ -255,13 +267,12 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   }
 
   template <typename T>
-  void applySelections(T const& col)
+  void applySelections(T const& col, std::vector<bool> const& triggerDecisions)
   {
     this->reset();
 
-    // casting bool to float gurantees
-    // false -> 0
-    // true -> 1
+    // casting bool to float gurantees false -> 0 and true -> 1
+    // and we check for equality to 1, so evaluation succeeds if the selection bit is true
     this->evaluateObservable(kSel8, static_cast<float>(col.sel8()));
     this->evaluateObservable(kNoSameBunchPileUp, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)));
     this->evaluateObservable(kIsVertexItsTpc, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)));
@@ -279,6 +290,13 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->evaluateObservable(kOccupancyMax, col.trackOccupancyInTimeRange());
     this->evaluateObservable(kSphericityMin, mSphericity);
     this->evaluateObservable(kSphericityMax, mSphericity);
+
+    // for the trigger we need to pass an vector of 0 (false) and 1 (true) for all configured trigger selections
+    if (!triggerDecisions.empty()) {
+      std::vector<float> trigger(triggerDecisions.size());
+      std::transform(triggerDecisions.begin(), triggerDecisions.end(), trigger.begin(), [](bool b) { return b ? 1.0f : 0.0f; });
+      this->evaluateObservable(kTriggers, trigger);
+    }
 
     this->assembleBitmask();
   };
@@ -330,18 +348,24 @@ class CollisionBuilder
   virtual ~CollisionBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void init(T1& confFilter, T2& confBits, T3& confRct, T4& confTrigger, T5& confTable, T6& initContext)
+  void init(T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
   {
     mCollisionSelection.configure(confFilter, confBits);
-    if (confTrigger.useTrigger.value) {
+    if (!confBits.triggers.value.empty()) {
       mUseTrigger = true;
-      mTriggerNames = confTrigger.triggers.value;
-      mZorro.setBaseCCDBPath(confTrigger.ccdbPath.value);
+      for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
+        mTriggerNames += confBits.triggers.value[i];
+        if (i != confBits.triggers.value.size() - 1) {
+          mTriggerNames += ",";
+        }
+      }
+      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
     }
     if (confRct.useRctFlags.value) {
       mUseRctFlags = true;
       mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
     }
+    mGrpPath = confCcdb.grpPath.value;
 
     LOG(info) << "Initialize femto collision builder...";
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
@@ -360,31 +384,45 @@ class CollisionBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
-  void buildCollision(T1& bc, T2& col, T3& tracks, T4& ccdb, int magField)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void initCollision(T1& bc, T2& col, T3& tracks, T4& ccdb, T5& histRegistry)
   {
-    if (mUseTrigger) {
-      mZorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), mTriggerNames);
+    if (mRunNumber != bc.runNumber()) {
+      mRunNumber = bc.runNumber();
+      static o2::parameters::GRPMagField* grpo = nullptr;
+      grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+      if (grpo == nullptr) {
+        LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+      }
+      mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
+
+      if (mUseTrigger) {
+        mZorro.initCCDB(ccdb.service, mRunNumber, bc.timestamp(), mTriggerNames);
+        mZorro.populateHistRegistry(histRegistry, mRunNumber);
+      }
     }
-    mCollisionSelection.setMagneticField(magField);
+
+    mCollisionSelection.setMagneticField(mMagField);
     mCollisionSelection.setSphericity(tracks);
     mCollisionSelection.setMultiplicity<system>(col);
     mCollisionSelection.setCentrality<system>(col);
-    mCollisionSelection.applySelections(col);
+
+    std::vector<bool> triggerDecisions = {};
+    if (mUseTrigger) {
+      triggerDecisions = mZorro.getTriggerOfInterestResults(bc.globalBC());
+    }
+
+    mCollisionSelection.applySelections(col, triggerDecisions);
   }
 
-  template <typename T1, typename T2>
-  bool checkCollision(T1 const& bc, T2 const& col)
+  template <typename T1>
+  bool checkCollision(T1 const& col)
   {
-    // First: if triggers are enabled, the object must be selected
-    if (mUseTrigger && !mZorro.isSelected(bc.globalBC())) {
-      return false;
-    }
-    // Then: if RCT flags are enabled, check them
+    // check RCT flags first
     if (mUseRctFlags && !mRctFlagsChecker(col)) {
       return false;
     }
-    // Finally: do the expensive checks
+    // make other checks
     return mCollisionSelection.checkFilters(col) &&
            mCollisionSelection.passesAllRequiredSelections();
   }
@@ -438,6 +476,9 @@ class CollisionBuilder
   CollisionSelection mCollisionSelection;
   Zorro mZorro;
   bool mUseTrigger = false;
+  int mRunNumber = -1;
+  std::string mGrpPath = std::string("");
+  int mMagField = 0;
   aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
   bool mUseRctFlags = false;
   std::string mTriggerNames = std::string("");

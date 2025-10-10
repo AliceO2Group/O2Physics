@@ -229,7 +229,6 @@ struct HfTaskFlow {
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
   o2::fv0::Geometry* fv0Det{};
-  std::vector<int> hfIndexCache;
 
   // =========================
   //      using declarations : DATA
@@ -707,7 +706,7 @@ struct HfTaskFlow {
 
   double getPhiFV0(unsigned int chno) const
   {
-    int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
+    int const cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY;
     if (isChnoInLeft) {
@@ -743,7 +742,7 @@ struct HfTaskFlow {
 
   double getEtaFV0(unsigned int chno) const
   {
-    int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
+    int const cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY, offsetZ;
     if (isChnoInLeft) {

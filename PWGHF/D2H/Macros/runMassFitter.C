@@ -237,14 +237,14 @@ int runMassFitter(const TString& configFileName)
       hMass[iSliceVar] = inputFile->Get<TH1>(inputHistoName[iSliceVar].data());
       if (enableRefl) {
         hMassRefl[iSliceVar] = inputFileRefl->Get<TH1>(reflHistoName[iSliceVar].data());
-        hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
-        hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
         if (hMassRefl[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: MC reflection histogram not found! Exit!");
         }
+        hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
         if (hMassSgn[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
         }
+        hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
       }
     } else {
       hMass[iSliceVar] = inputFile->Get<TH1>(promptHistoName[iSliceVar].data());
@@ -505,9 +505,6 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsChiSquareTotal->SetBinError(iSliceVar + 1, 1.e-20);
       if (enableRefl) {
         hReflectionOverSignal->SetBinContent(iSliceVar + 1, reflOverSgn);
-      }
-
-      if (enableRefl) {
         if (nSliceVarBins > 1) {
           canvasRefl[iCanvas]->cd(iSliceVar - nCanvasesMax * iCanvas + 1);
         } else {
@@ -625,7 +622,7 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
   }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
   if (argc == 1) {
     throw std::runtime_error("Not enough arguments. Please use\n./runMassFitter configFileName");

@@ -140,7 +140,6 @@ struct HfTaskSigmacToCascade {
   {
     for (const auto& candSc : candScs) {
       const auto& candidateLc = candSc.prongLc_as<RecoLc>();
-      float massSc(-1.), massLc(-1.), deltaMass(-1.);
       float ptSc(candSc.pt()), ptLc(candidateLc.pt());
       float const etaSc(candSc.eta()) /*, etaLc(candidateLc.eta())*/;
       float const phiSc(candSc.phi()) /*, phiLc(candidateLc.phi())*/;
@@ -149,9 +148,9 @@ struct HfTaskSigmacToCascade {
       float cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
       float y(-1.);
 
-      massLc = hfHelper.invMassLcToK0sP(candidateLc);
-      massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
-      deltaMass = massSc - massLc;
+      auto massLc = hfHelper.invMassLcToK0sP(candidateLc);
+      auto massSc = hfHelper.invMassScRecoLcToK0sP(candSc, candidateLc);
+      auto deltaMass = massSc - massLc;
       if (candSc.charge() == 0) {
         y = hfHelper.ySc0(candSc);
       } else if (candSc.charge() == 2) {
