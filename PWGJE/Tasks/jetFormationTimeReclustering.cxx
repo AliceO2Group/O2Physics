@@ -14,7 +14,11 @@
 /// \author Morgan Knuesel & Johanna Lömker
 //
 
-// mini header for tables and columns
+//*********************************************************
+//                                                        *
+//              Table definitions                         *
+//                                                        *
+//*********************************************************
 
 #ifndef PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
 #define PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
@@ -177,16 +181,18 @@ JETSUBSTRUCTURE_TABLES_DEF(C, "C", Charged, charged, JTracks, CJetCOs, "CJETCO",
 
 #endif // PWGJE_DATAMODEL_JETFORMATIONTIMERECLUSTERING_H_
 
-// beginning of the task
+//*********************************************************
+//                                                        *
+//              Begin of the task                         *
+//                                                        *
+//*********************************************************
+
 #include "RecoDecay.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetSubstructureUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisTask.h"
@@ -207,9 +213,7 @@ JETSUBSTRUCTURE_TABLES_DEF(C, "C", Charged, charged, JTracks, CJetCOs, "CJETCO",
 #include <cmath>
 #include <cstdint>
 #include <utility>
-#include <vector>
 
-#include <math.h>
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
