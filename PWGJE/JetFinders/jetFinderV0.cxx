@@ -66,8 +66,9 @@ struct JetFinderV0Task {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
-  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0}, "tracking efficiency array applied to jet finding"};
-  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 999.}, "pt binning of tracking efficiency array"};
+  Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
+  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
+  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -159,11 +160,13 @@ struct JetFinderV0Task {
     registry.add("hJet", "sparse for data or mcd jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
     registry.add("hJetMCP", "sparse for mcp jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
 
-    if (trackingEfficiencyPtBinning->size() < 2) {
-      LOGP(fatal, "jetFinder workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
-    }
-    if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
-      LOGP(fatal, "jetFinder workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
+    if (applyTrackingEfficiency) {
+      if (trackingEfficiencyPtBinning->size() < 2) {
+        LOGP(fatal, "jetFinderV0 workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
+      }
+      if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
+        LOGP(fatal, "jetFinderV0 workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
+      }
     }
   }
 
@@ -193,7 +196,7 @@ struct JetFinderV0Task {
           }
         }
         */
-    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, trackingEfficiency, trackingEfficiencyPtBinning, candidates);
+    jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning, candidates);
 
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, saveJetsWithCandidatesOnly);
   }
