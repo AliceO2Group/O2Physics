@@ -212,7 +212,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U>
-  void fillHistograms(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0, bool isMC = false)
+  void fillHistograms(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
@@ -348,7 +348,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U, typename P>
-  void fillHistogramsMCD(T const& jets, U const& tracks, P const& particles,  float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
+  void fillHistogramsMCD(T const& jets, U const& tracks, P const&, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
