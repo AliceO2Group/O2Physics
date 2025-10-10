@@ -152,7 +152,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     if (!fillSparses && !fillTables) {
       LOGP(fatal, "At least one of fillSparses or fillTables must be true!");
     }
-    if ( (binsPtTrig.value.size() != (bdtScore0PtMaxs.value.size() + 1) || binsPtTrig.value.size() != (bdtScore1PtMins.value.size() + 1))) {
+    if ((binsPtTrig.value.size() != (bdtScore0PtMaxs.value.size() + 1) || binsPtTrig.value.size() != (bdtScore1PtMins.value.size() + 1))) {
       LOGP(fatal, "The size of bdtScore0PtMaxs and bdtScore1PtMins must be the one of binsPtTrig minus one!");
     }
 
@@ -245,7 +245,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// \param ptTrig is the pT of the charm candidate
   template <typename TCand>
   bool isSelBdtScoreCut(TCand const& cand,
-                           double ptTrig)
+                        double ptTrig)
   {
     for (size_t iPt = 0; iPt < binsPtTrig.value.size() - 1; iPt++) {
       if (ptTrig >= binsPtTrig.value[iPt] && ptTrig < binsPtTrig.value[iPt + 1]) {
@@ -507,7 +507,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventHadHadWMultMix, "Process Mixed Event for Had-Had with multiplicity pools", false);
 
   void processCharmTriggers(aod::HfcRedTrigCharms const& trigCands,
-                                    aod::HfcRedCorrColls const&)
+                            aod::HfcRedCorrColls const&)
   {
     for (const auto& trigCand : trigCands) {
       auto collision = trigCand.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
@@ -521,7 +521,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processCharmTriggers, "Process charm trigger info", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
