@@ -901,9 +901,8 @@ struct HfTaskLc {
 
     for (const auto& collision : collisions) {
 
-      auto rejectionMask{0}; // 32 bits, in case new ev. selections will be added
       float centrality{-1.f};
-      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
