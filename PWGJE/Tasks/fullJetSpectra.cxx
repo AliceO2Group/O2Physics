@@ -457,13 +457,13 @@ struct FullJetSpectra {
       registry.add("h2_track_etaphi", "jet_track #eta vs jet_track #varphi; #eta_{track};#varphi_{track}", {HistType::kTH2F, {{500, -5., 5.}, {160, -1., 7.}}}, doSumw2);
       registry.add("h2_jet_etaphi", "jet #eta vs jet #varphi; #eta_{jet};#varphi_{jet}", {HistType::kTH2F, {{100, -1., 1.}, {160, -1., 7.}}}, doSumw2);
 
-      //NEW: Jet constituent histograms for each hadronic correction mode
+      // NEW: Jet constituent histograms for each hadronic correction mode
       registry.add("h_full_jet_neutralconstituents_energy_uncorr", "Jet neutral cluster energy (uncorr)", {HistType::kTH1F, {{400, 0., 400.}}}, doSumw2);
       registry.add("h_full_jet_neutralconstituents_energy_corr_oneTrack100", "Jet neutral cluster energy (corr 1track100)", {HistType::kTH1F, {{400, 0., 400.}}}, doSumw2);
       registry.add("h_full_jet_neutralconstituents_energy_corr_oneTrack70", "Jet neutral cluster energy (corr 1track70)", {HistType::kTH1F, {{400, 0., 400.}}}, doSumw2);
       registry.add("h_full_jet_neutralconstituents_energy_corr_allTracks100", "Jet neutral cluster energy (corr alltracks100)", {HistType::kTH1F, {{400, 0., 400.}}}, doSumw2);
       registry.add("h_full_jet_neutralconstituents_energy_corr_allTracks70", "Jet neutral cluster energy (corr alltracks70)", {HistType::kTH1F, {{400, 0., 400.}}}, doSumw2);
-      //Corrected NEF histograms for the corresponding correction mode
+      // Corrected NEF histograms for the corresponding correction mode
       registry.add("h2_full_jet_nef_uncorr", "Jet pT vs NEF (uncorr); p_{T,jet}; NEF", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 1.}}}, doSumw2);
       registry.add("h2_full_jet_nef_corr_oneTrack100", "Jet pT vs NEF (corr, 1track100); p_{T,jet}; NEF", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 1.}}}, doSumw2);
       registry.add("h2_full_jet_nef_corr_oneTrack70", "Jet pT vs NEF (corr, 1track70); p_{T,jet}; NEF", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 1.}}}, doSumw2);
@@ -776,7 +776,7 @@ struct FullJetSpectra {
       registry.fill(HIST("h_full_jet_phi"), jet.phi(), weight);
       registry.fill(HIST("h2_jet_etaphi"), jet.eta(), jet.phi(), weight);
 
-      //Sums for each correction mode
+      // Sums for each correction mode
       double neutralEnergy_uncorr = 0.0;
       double neutralEnergy_corr_oneTrack100 = 0.0;
       double neutralEnergy_corr_oneTrack70 = 0.0;
@@ -814,18 +814,17 @@ struct FullJetSpectra {
         registry.fill(HIST("h_full_jet_neutralconstituents_energy_uncorr"), cluster.energy(), weight);
 
         if (cluster.energyCorrectedOneTrack1()) {
-            registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_oneTrack100"), cluster.energyCorrectedOneTrack1(), weight);
+          registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_oneTrack100"), cluster.energyCorrectedOneTrack1(), weight);
         }
-        if  (cluster.energyCorrectedOneTrack2()) {
-            registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_oneTrack70"), cluster.energyCorrectedOneTrack2(), weight);
+        if (cluster.energyCorrectedOneTrack2()) {
+          registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_oneTrack70"), cluster.energyCorrectedOneTrack2(), weight);
         }
-        if  (cluster.energyCorrectedAllTracks1()) {
-            registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_allTracks100"), cluster.energyCorrectedAllTracks1(), weight);
+        if (cluster.energyCorrectedAllTracks1()) {
+          registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_allTracks100"), cluster.energyCorrectedAllTracks1(), weight);
         }
-        if  (cluster.energyCorrectedAllTracks2()) {
-            registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_allTracks70"), cluster.energyCorrectedAllTracks2(), weight);
+        if (cluster.energyCorrectedAllTracks2()) {
+          registry.fill(HIST("h_full_jet_neutralconstituents_energy_corr_allTracks70"), cluster.energyCorrectedAllTracks2(), weight);
         }
-
       }
       // auto nef = neutralEnergy / jet.energy();
       // registry.fill(HIST("h2_full_jet_nef"), jet.pt(), nef, weight);
@@ -970,18 +969,18 @@ struct FullJetSpectra {
       sumclusterE_corr_allTracks70 += cluster.energyCorrectedAllTracks2();
 
       registry.fill(HIST("h_cluster_energy_uncorr"), cluster.energy(), weight);
-        if (cluster.energyCorrectedOneTrack1()) {
-            registry.fill(HIST("h_cluster_energy_corr_oneTrack100"), cluster.energyCorrectedOneTrack1(), weight);
-        }
-        if (cluster.energyCorrectedOneTrack2()) {
-            registry.fill(HIST("h_cluster_energy_corr_oneTrack70"), cluster.energyCorrectedOneTrack2(), weight);
-        }
-        if (cluster.energyCorrectedAllTracks1()) {
-            registry.fill(HIST("h_cluster_energy_corr_allTracks100"), cluster.energyCorrectedAllTracks1(), weight);
-        }
-        if (cluster.energyCorrectedAllTracks2()) {
-            registry.fill(HIST("h_cluster_energy_corr_allTracks70"), cluster.energyCorrectedAllTracks2(), weight);
-        }
+      if (cluster.energyCorrectedOneTrack1()) {
+        registry.fill(HIST("h_cluster_energy_corr_oneTrack100"), cluster.energyCorrectedOneTrack1(), weight);
+      }
+      if (cluster.energyCorrectedOneTrack2()) {
+        registry.fill(HIST("h_cluster_energy_corr_oneTrack70"), cluster.energyCorrectedOneTrack2(), weight);
+      }
+      if (cluster.energyCorrectedAllTracks1()) {
+        registry.fill(HIST("h_cluster_energy_corr_allTracks100"), cluster.energyCorrectedAllTracks1(), weight);
+      }
+      if (cluster.energyCorrectedAllTracks2()) {
+        registry.fill(HIST("h_cluster_energy_corr_allTracks70"), cluster.energyCorrectedAllTracks2(), weight);
+      }
 
       registry.fill(HIST("h_clusterTime"), cluster.time(), weight);
       registry.fill(HIST("h_cluster_pt"), clusterpt, weight);
@@ -992,7 +991,6 @@ struct FullJetSpectra {
       registry.fill(HIST("h_cluster_energysum_corr_oneTrack70"), sumclusterE_corr_oneTrack70, weight);
       registry.fill(HIST("h_cluster_energysum_corr_allTracks100"), sumclusterE_corr_allTracks100, weight);
       registry.fill(HIST("h_cluster_energysum_corr_allTracks70"), sumclusterE_corr_allTracks70, weight);
-
     }
   }
 
@@ -1903,7 +1901,7 @@ struct FullJetSpectra {
   PROCESS_SWITCH(FullJetSpectra, processCleanup, "Periodic cleanup", true);
   */
   void processDataTracks(soa::Filtered<EMCCollisionsData>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks,
-                         ClusterWithCorrections const& clusters) //replaced "soa::Filtered<aod::JetClusters>" with ClusterWithCorrections to include the hadcorr tables
+                         ClusterWithCorrections const& clusters) // replaced "soa::Filtered<aod::JetClusters>" with ClusterWithCorrections to include the hadcorr tables
   {
     bool eventAccepted = false;
 
@@ -2215,7 +2213,6 @@ struct FullJetSpectra {
         neutralEnergy_corr_oneTrack70 += jetcluster.energyCorrectedOneTrack2();
         neutralEnergy_corr_allTracks100 += jetcluster.energyCorrectedAllTracks1();
         neutralEnergy_corr_allTracks70 += jetcluster.energyCorrectedAllTracks2();
-
       }
       auto jetEnergy = jet.energy();
 
