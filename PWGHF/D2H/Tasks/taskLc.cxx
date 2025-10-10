@@ -225,7 +225,7 @@ struct HfTaskLc {
 
   void init(InitContext&)
   {
-    std::array<bool, 13> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataWithMlWithUpc};
+    std::array<bool, 14> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataWithMlWithUpc, doprocessDataStdWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
@@ -357,7 +357,7 @@ struct HfTaskLc {
 
       bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
       bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
-      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
+      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataStdWithUpc;
       bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
@@ -901,9 +901,8 @@ struct HfTaskLc {
 
     for (const auto& collision : collisions) {
 
-      uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
       float centrality{-1.f};
-      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -1017,6 +1016,19 @@ struct HfTaskLc {
     runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
+
+  void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                             aod::BcFullInfos const& bcs,
+                             LcCandidatesMl const& selectedLcCandidatesMl,
+                             aod::Tracks const&,
+                             aod::FT0s const& ft0s,
+                             aod::FV0As const& fv0as,
+                             aod::FDDs const& fdds,
+                             aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithUpc, "Process real data with the standard method with UPC", false);
 
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,
