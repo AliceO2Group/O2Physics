@@ -116,6 +116,8 @@ DhCorrelationExtraction::DhCorrelationExtraction(const DhCorrelationExtraction& 
                                                                                           fFilePromptMc(source.fFilePromptMc),
                                                                                           fFileNonPromptMc(source.fFileNonPromptMc),
                                                                                           fDirMass(source.fDirMass),
+                                                                                          fDirSE(source.fDirSE),
+                                                                                          fDirME(source.fDirME),
                                                                                           fDirSecPart(source.fDirSecPart),
                                                                                           fCorrectedCorrHisto(source.fCorrectedCorrHisto),
                                                                                           fCorrectedCorrHistoBaselineSubtr(source.fCorrectedCorrHistoBaselineSubtr),
@@ -942,16 +944,15 @@ Bool_t DhCorrelationExtraction::readInputSecondaryPartContamination()
 TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
-  TH1D* hModul = new TH1D();
+  TH1D* hModul = nullptr;
 
   fFilePromptMc = TFile::Open(fFilePromptMcRecName.Data());
-  fFileNonPromptMc = TFile::Open(fFileNonPromptMcRecName.Data());
-
   if (fFilePromptMc == nullptr) {
-    std::cout << "[ERROR] File prompt MC rec cannot be opened! check your file path!" << std::endl;
+    throw std::runtime_error("[ERROR] File prompt MC rec cannot be opened! check your file path!");
   }
+  fFileNonPromptMc = TFile::Open(fFileNonPromptMcRecName.Data());
   if (fFileNonPromptMc == nullptr) {
-    std::cout << "[ERROR] File non-prompt MC rec cannot be opened! check your file path!" << std::endl;
+    throw std::runtime_error("[ERROR] File non-prompt MC rec cannot be opened! check your file path!");
   }
 
   // TODO: generalise this part
@@ -1019,7 +1020,7 @@ TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Dou
 TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t pool, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
   // TODO: Subtraction of softpion
-  TH2D* h2D = new TH2D(); // pointer to be returned
+  TH2D* h2D = nullptr; // pointer to be returned
 
   THnSparseD* hSparse = nullptr;
   if (sEorMe == kSE) { // Same Event
@@ -1027,7 +1028,7 @@ TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t p
       hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSignalRegionName.Data()));
     } else if (!fSidebandDivided) {
       hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSidebandsName.Data()));
-    } else if (fSidebandDivided) {
+    } else {
       if (fUseSidebLeft && !fUseSidebRight) {
         hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSidebandLeftName.Data()));
       } else if (!fUseSidebLeft && fUseSidebRight) {
@@ -1044,7 +1045,7 @@ TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t p
       hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSignalRegionName.Data()));
     } else if (!fSidebandDivided) {
       hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSidebandsName.Data()));
-    } else if (fSidebandDivided) {
+    } else {
       if (fUseSidebLeft && !fUseSidebRight) {
         hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSidebandLeftName.Data()));
       } else if (!fUseSidebLeft && fUseSidebRight) {
@@ -1183,7 +1184,7 @@ void DhCorrelationExtraction::getSignalAndBackgroundForNorm(Double_t ptCandMin, 
 TH2D* DhCorrelationExtraction::getFdTemplateHisto(Int_t promptOrFd, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
-  TH2D* h2D = new TH2D(); // pointer to be returned
+  TH2D* h2D = nullptr; // pointer to be returned
 
   if (promptOrFd == kPrompt) {
     h2D = reinterpret_cast<TH2D*>(fFileFDTemplate->Get(Form("%s%.0f_%.0f_ptassoc%.0f_%.0f", fHistoFDTemplatePromptName.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
@@ -1215,7 +1216,7 @@ TH2D* DhCorrelationExtraction::getFdTemplateHisto(Int_t promptOrFd, Double_t ptC
 TH1D* DhCorrelationExtraction::getCorrelHistoSecondaryPart(Int_t partType, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
-  TH1D* h1D = new TH1D(); // pointer to be returned
+  TH1D* h1D = nullptr; // pointer to be returned
 
   THnSparseD* hSparse = nullptr;
 
@@ -1329,8 +1330,7 @@ TH1D* DhCorrelationExtraction::reflectHistoRun2(TH1D* h, Double_t scale)
 Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t /*ptHadMin*/, Double_t /*ptHadMax*/)
 {
 
-  TH1D* h1D = new TH1D();
-  h1D = reinterpret_cast<TH1D*>(fFileFDPromptFrac->Get(fHistoFDPromptFracName.Data()));
+  TH1D* h1D = reinterpret_cast<TH1D*>(fFileFDPromptFrac->Get(fHistoFDPromptFracName.Data()));
 
   Int_t const binPtCandMin = h1D->GetXaxis()->FindBin(ptCandMin + 0.01);
   Int_t const binPtCandMax = h1D->GetXaxis()->FindBin(ptCandMax - 0.01);
@@ -1380,7 +1380,7 @@ Double_t DhCorrelationExtraction::calculateBaseline(TH1D*& histo, Bool_t totalRa
   // total range = 2*Pi
   // half range = Pi , for histogram reflected under symmetric assumption
 
-  Double_t baseline, errBaseline;
+  Double_t baseline;
   Int_t const nBinsPhi = histo->GetNbinsX();
   Int_t const binPhiHalf = nBinsPhi / 2;
   Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;

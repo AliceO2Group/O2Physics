@@ -121,11 +121,9 @@ struct HfCorrelatorDsHadronsSelCollision {
       }
     }
     if (useSel8) {
-      isSel8 = false;
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = false;
       isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isDsFound && isSel8 && isNosameBunchPileUp;
@@ -504,18 +502,15 @@ struct HfCorrelatorDsHadrons {
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
 
     // MC reco level
-    bool isDsPrompt = false;
-    bool isDsSignal = false;
     bool isCorrectInvMassHypo = false;
-    bool isDecayChan = false;
     bool isAlreadyFilledEvent = false;
     float const multiplicityFT0M = collision.multFT0M();
     for (const auto& candidate : candidates) {
       // prompt and non-prompt division
-      isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+      bool isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       // Ds Signal
-      isDsSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
-      isDecayChan = candidate.flagMcDecayChanRec() == channelsResonant[decayChannel];
+      bool isDsSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
+      bool isDecayChan = candidate.flagMcDecayChanRec() == channelsResonant[decayChannel];
 
       if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
@@ -588,7 +583,6 @@ struct HfCorrelatorDsHadrons {
           continue;
         }
         bool isPhysicalPrimary = false;
-        int trackOrigin = -1;
         // DsToKKPi and DsToPiKK division
         if (isCorrectInvMassHypo && candidate.isSelDsToKKPi() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
@@ -602,7 +596,7 @@ struct HfCorrelatorDsHadrons {
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
-            trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+            auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
             entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
           } else {
             entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, 0);
@@ -628,7 +622,7 @@ struct HfCorrelatorDsHadrons {
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
-            trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+            auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
             entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
           } else {
             entryDsHadronGenInfo(isDsPrompt, false, 0);

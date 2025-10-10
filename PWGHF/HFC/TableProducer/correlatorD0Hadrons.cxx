@@ -130,11 +130,9 @@ struct HfCorrelatorD0HadronsSelection {
       }
     }
     if (useSel8) {
-      isSel8 = false;
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = false;
       isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isD0Found && isSel8 && isNosameBunchPileUp;
@@ -449,7 +447,6 @@ struct HfCorrelatorD0Hadrons {
 
         // ========== soft pion removal ===================================================
         double invMassDstar1 = 0., invMassDstar2 = 0.;
-        bool isSoftPiD0 = false, isSoftPiD0bar = false;
         auto pSum2 = RecoDecay::p2(candidate.pVector(), track.pVector());
         auto ePion = track.energy(massPi);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
@@ -457,24 +454,22 @@ struct HfCorrelatorD0Hadrons {
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - hfHelper.invMassD0ToPiK(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0 = true;
             continue;
           }
         }
 
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           if ((std::abs(invMassDstar2 - hfHelper.invMassD0barToKPi(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0bar = true;
             continue;
           }
         }
         registry.fill(HIST("hTrackCounter"), 2); // fill no. of tracks after soft pion removal
 
         int signalStatus = 0;
-        if ((candidate.isSelD0() >= selectionFlagD0) && !isSoftPiD0) {
+        if (candidate.isSelD0() >= selectionFlagD0) {
           signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0Only;
         }
-        if ((candidate.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnly;
         }
 
@@ -538,14 +533,12 @@ struct HfCorrelatorD0Hadrons {
     // MC reco level
     bool flagD0 = false;
     bool flagD0bar = false;
-    bool isD0Prompt = false;
-    bool isD0NonPrompt = false;
     std::vector<float> outputMlD0 = {-1., -1., -1.};
     std::vector<float> outputMlD0bar = {-1., -1., -1.};
 
     for (const auto& candidate : candidates) {
-      isD0Prompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
-      isD0NonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+      bool isD0Prompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+      bool isD0NonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
       // check decay channel flag for candidate
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
@@ -640,7 +633,6 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounter"), 1); // fill no. of tracks before soft pion removal
 
         bool isPhysicalPrimary = false;
-        int trackOrigin = -1;
         // ===== soft pion removal ===================================================
         double invMassDstar1 = 0, invMassDstar2 = 0;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
@@ -651,14 +643,12 @@ struct HfCorrelatorD0Hadrons {
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - hfHelper.invMassD0ToPiK(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0 = true;
             continue;
           }
         }
 
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           if ((std::abs(invMassDstar2 - hfHelper.invMassD0barToKPi(candidate)) - softPiMass) < ptSoftPionMax) {
-            isSoftPiD0bar = true;
             continue;
           }
         }
@@ -704,7 +694,7 @@ struct HfCorrelatorD0Hadrons {
         if (track.has_mcParticle()) {
           auto mcParticle = track.template mcParticle_as<aod::McParticles>();
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
-          trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+          auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
           entryD0HadronGenInfo(isD0Prompt, isPhysicalPrimary, trackOrigin);
         } else {
           entryD0HadronGenInfo(isD0Prompt, isPhysicalPrimary, 0);
