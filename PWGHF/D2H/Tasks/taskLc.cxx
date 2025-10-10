@@ -962,7 +962,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
-  PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", false);
+  PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(Collisions const& collisions,
                          LcCandidatesMl const& selectedLcCandidatesMl,
@@ -1015,7 +1015,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
   }
-  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", true);
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
 
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,
