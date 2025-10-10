@@ -901,7 +901,7 @@ struct HfTaskLc {
 
     for (const auto& collision : collisions) {
 
-      uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
+      auto rejectionMask{0}; // 32 bits, in case new ev. selections will be added
       float centrality{-1.f};
       rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
       if (rejectionMask != 0) {
