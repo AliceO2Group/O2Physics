@@ -164,7 +164,7 @@ struct JetFinderTask {
       registry.add("hJetEWS", "sparse for data or mcd event-wise subtracted jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
       registry.add("hJetMCP", "sparse for mcp jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
     }
-  
+
     if (applyTrackingEfficiency) {
       if (trackingEfficiencyPtBinning->size() < 2) {
         LOGP(fatal, "jetFinder workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");

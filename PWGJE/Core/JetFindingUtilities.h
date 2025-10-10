@@ -103,12 +103,12 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
         continue;
       }
     }
-    if (applyTrackingEfficiency){
+    if (applyTrackingEfficiency) {
       auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
-      if (iter!=trackingEfficiencyPtBinning.begin() && iter!=trackingEfficiencyPtBinning.end()){
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
         std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
         TRandom3 randomNumber(0);
-        if (randomNumber.Rndm() > trackingEfficiency[index]){
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
           continue;
         }
       }
@@ -138,12 +138,12 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
         continue;
       }
     }
-    if (applyTrackingEfficiency){
+    if (applyTrackingEfficiency) {
       auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
-      if (iter!=trackingEfficiencyPtBinning.begin() && iter!=trackingEfficiencyPtBinning.end()){
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
         std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
         TRandom3 randomNumber(0);
-        if (randomNumber.Rndm() > trackingEfficiency[index]){
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
           continue;
         }
       }
