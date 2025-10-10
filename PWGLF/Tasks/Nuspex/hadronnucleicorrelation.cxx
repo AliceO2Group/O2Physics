@@ -156,11 +156,10 @@ struct hadronnucleicorrelation {
   std::map<std::pair<int, float>, std::vector<colType>> mixbins_antip;
   std::map<std::pair<int, float>, std::vector<colType>> mixbins_p;
   std::map<std::pair<int, float>, std::vector<colType>> mixbinsPID_antidantip;
-  std::map<float, std::vector<MCcolType>> mixbinsMC_antidantip;
-  std::map<float, std::vector<MCcolType>> mixbinsMC_dp;
-  std::map<float, std::vector<MCcolType>> mixbinsMC_antipantip;
-  std::map<float, std::vector<MCcolType>> mixbinsMC_pp;
-  std::map<float, std::vector<MCcolType>> mixbinsMC_antipp;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_antid;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_d;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_antip;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_p;
 
   std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
   std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkTypeMC>> PairMC = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkTypeMC>>();
@@ -323,6 +322,7 @@ struct hadronnucleicorrelation {
 
     if (doQA) {
       // Track QA
+      QA.add("QA/hMult", "multiplicity", {HistType::kTH1D, {{150, 0.f, 150.f, "N_{ch}"}}});
       QA.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
       QA.add("QA/hTPCnClusters", "N TPC Clusters; N TPC Clusters", {HistType::kTH1D, {{200, 0.f, 200.f}}});
       QA.add("QA/hTPCSharedClusters", "N TPC Shared Clusters; N TPC SharedClusters", {HistType::kTH1D, {{100, 0.f, 1.f}}});
@@ -927,6 +927,7 @@ struct hadronnucleicorrelation {
         continue;
 
       registry.fill(HIST("hNEvents"), 0.5);
+      QA.fill(HIST("QA/hMult"), collision.mult());
 
       if (selectedtracks_antid.find(collision.globalIndex()) != selectedtracks_antid.end() &&
           selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end()) {
@@ -1619,6 +1620,7 @@ struct hadronnucleicorrelation {
       if (std::abs(collision.posZ()) > cutzvertex)
         continue;
       registry.fill(HIST("hNEvents"), 0.5);
+      QA.fill(HIST("QA/hMult"), collision.mult());
 
       int vertexBinToMix = std::floor((collision.posZ() + cutzvertex) / (2 * cutzvertex / _vertexNbinsToMix));
       int centBinToMix = std::floor(collision.multPerc() / (100.0 / _multNsubBins));
@@ -1806,6 +1808,7 @@ struct hadronnucleicorrelation {
     for (auto collision1 : mcCollisions) { // loop on collisions
 
       registry.fill(HIST("Generated/hNEventsMC"), 0.5);
+      QA.fill(HIST("QA/hMult"), collision1.mult());
 
       if (std::abs(collision1.posZ()) > cutzvertex) {
         continue;
