@@ -339,7 +339,6 @@ struct FlowZdcTask {
       histos.add("ZpaVsTdc", "ZPAvsTDC; ZPA Amp; ZPA TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("Zem1VsTdc", "ZEM1vsTDC; ZEM1 Amp; ZEM1 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
       histos.add("Zem2VsTdc", "ZEM2vsTDC; ZEM2 Amp; ZEM2 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
-
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
