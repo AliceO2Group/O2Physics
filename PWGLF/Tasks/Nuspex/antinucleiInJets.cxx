@@ -500,6 +500,22 @@ struct AntinucleiInJets {
     LOGP(info, "Successfully loaded reweighting histograms from CCDB path");
   }
 
+  // Get first ancestor
+  aod::McParticle getFirstAncestor(aod::McParticle const& particle, aod::McParticles const& mcParticles)
+  {
+    auto current = particle;
+
+    while (current.has_mothers()) {
+      auto motherId = current.mothersIds()[0];
+      if (motherId < 0 || motherId >= mcParticles.size()) {
+        break;
+      }
+      current = mcParticles.iteratorAt(motherId);
+    }
+
+    return current;
+  }
+
   // Compute two unit vectors perpendicular to p
   void getPerpendicularAxis(const TVector3& p, TVector3& u, double sign)
   {
@@ -1428,56 +1444,61 @@ struct AntinucleiInJets {
             registryMC.fill(HIST("antip_prim_low"), track.pt(), wPrimLow);
           }
 
-          // Secondary antiprotons from week decays
+          // Secondary antiprotons from material
+          if (!particle.isPhysicalPrimary() && !particle.has_mothers()) {
+
+            // Fill histograms
+            registryMC.fill(HIST("antip_sec_pythia"), track.pt());
+            registryMC.fill(HIST("antip_sec_std"), track.pt());
+            registryMC.fill(HIST("antip_sec_up"), track.pt());
+            registryMC.fill(HIST("antip_sec_low"), track.pt());
+          }
+
+          // Secondary antiprotons from weak decays
           if (!particle.isPhysicalPrimary() && particle.has_mothers()) {
 
-            // Initialize weights
+            // Get first ancestor
+            auto ancestor = getFirstAncestor(particle, mcParticles);
             double wSecStd(1.0), wSecUp(1.0), wSecLow(1.0);
-            auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
 
-            // Antiprotons from sigma
-            if (std::abs(mother.pdgCode()) == PDG_t::kSigmaBarMinus) {
-              if (mother.pt() < primaryAntiSigma->GetXaxis()->GetXmax()) {
-                int ipt = primaryAntiSigma->FindBin(mother.pt());
-                wSecStd = primaryAntiSigma->GetBinContent(ipt);
-                wSecUp = wSecStd + primaryAntiSigma->GetBinError(ipt);
-                wSecLow = wSecStd - primaryAntiSigma->GetBinError(ipt);
-              }
+            // Antiprotons from antiSigma
+            if (ancestor.pdgCode() == PDG_t::kSigmaBarMinus && ancestor.pt() < primaryAntiSigma->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiSigma->FindBin(ancestor.pt());
+              wSecStd = primaryAntiSigma->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiSigma->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiSigma->GetBinError(ipt);
             }
 
-            // Antiprotons from primary Lambda0
-            if (std::abs(mother.pdgCode()) == kLambda0Bar) {
-              if (mother.isPhysicalPrimary()) {
-                if (mother.pt() < primaryAntiLambda->GetXaxis()->GetXmax()) {
-                  int ipt = primaryAntiLambda->FindBin(mother.pt());
-                  wSecStd = primaryAntiLambda->GetBinContent(ipt);
-                  wSecUp = wSecStd + primaryAntiLambda->GetBinError(ipt);
-                  wSecLow = wSecStd - primaryAntiLambda->GetBinError(ipt);
-                }
-              }
+            // Antiprotons from antiLambda0
+            if (ancestor.pdgCode() == PDG_t::kLambda0Bar && ancestor.pt() < primaryAntiLambda->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiLambda->FindBin(ancestor.pt());
+              wSecStd = primaryAntiLambda->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiLambda->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiLambda->GetBinError(ipt);
+            }
 
-              // Antiprotons from secondary Lambda0 (Xi -> Lambda0)
-              if (!mother.isPhysicalPrimary()) {
-                auto grandmother = mcParticles.iteratorAt(mother.mothersIds()[0]);
-                if (std::abs(grandmother.pdgCode()) == kXiMinus) {
-                  if (grandmother.pt() < primaryAntiXi->GetXaxis()->GetXmax()) {
-                    int ipt = primaryAntiXi->FindBin(grandmother.pt());
-                    wSecStd = primaryAntiXi->GetBinContent(ipt);
-                    wSecUp = wSecStd + primaryAntiXi->GetBinError(ipt);
-                    wSecLow = wSecStd - primaryAntiXi->GetBinError(ipt);
-                  }
-                }
+            // Antiprotons from antiXi
+            if (ancestor.pdgCode() == PDG_t::kXiPlusBar && ancestor.pt() < primaryAntiXi->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiXi->FindBin(ancestor.pt());
+              wSecStd = primaryAntiXi->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiXi->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiXi->GetBinError(ipt);
+            }
 
-                // Antiprotons from secondary Lambda0 (Omega -> Lambda0)
-                if (std::abs(grandmother.pdgCode()) == kOmegaMinus) {
-                  if (grandmother.pt() < primaryAntiOmega->GetXaxis()->GetXmax()) {
-                    int ipt = primaryAntiOmega->FindBin(grandmother.pt());
-                    wSecStd = primaryAntiOmega->GetBinContent(ipt);
-                    wSecUp = wSecStd + primaryAntiOmega->GetBinError(ipt);
-                    wSecLow = wSecStd - primaryAntiOmega->GetBinError(ipt);
-                  }
-                }
-              }
+            // Antiprotons from antiXi0
+            if (ancestor.pdgCode() == -o2::constants::physics::Pdg::kXi0 && ancestor.pt() < primaryAntiXi->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiXi->FindBin(ancestor.pt());
+              wSecStd = primaryAntiXi->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiXi->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiXi->GetBinError(ipt);
+            }
+
+            // Antiprotons from antiOmega
+            if (ancestor.pdgCode() == PDG_t::kOmegaPlusBar && ancestor.pt() < primaryAntiOmega->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiOmega->FindBin(ancestor.pt());
+              wSecStd = primaryAntiOmega->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiOmega->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiOmega->GetBinError(ipt);
             }
 
             // Fill histograms
