@@ -91,10 +91,10 @@ struct HfTaskLc {
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   HfEventSelection hfEvSel; // event selection and monitoring
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HfHelper hfHelper;
   SliceCache cache;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
