@@ -1019,13 +1019,13 @@ struct HfTaskLc {
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
 
   void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                                aod::BcFullInfos const& bcs,
-                                LcCandidatesMl const& selectedLcCandidatesMl,
-                                aod::Tracks const&,
-                                aod::FT0s const& ft0s,
-                                aod::FV0As const& fv0as,
-                                aod::FDDs const& fdds,
-                                aod::Zdcs const& /*zdcs*/)
+                             aod::BcFullInfos const& bcs,
+                             LcCandidatesMl const& selectedLcCandidatesMl,
+                             aod::Tracks const&,
+                             aod::FT0s const& ft0s,
+                             aod::FV0As const& fv0as,
+                             aod::FDDs const& fdds,
+                             aod::Zdcs const& /*zdcs*/)
   {
     runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
   }
