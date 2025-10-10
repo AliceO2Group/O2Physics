@@ -382,8 +382,8 @@ class pidTPCModule
   } // end init
 
   //__________________________________________________
-  template <typename TCCDB, typename TCCDBApi, typename C, typename M, typename T, typename B>
-  std::vector<float> createNetworkPrediction(TCCDB& ccdb, TCCDBApi& ccdbApi, C const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
+  template <typename TCCDB, typename TCCDBApi, typename M, typename T, typename B>
+  std::vector<float> createNetworkPrediction(TCCDB& ccdb, TCCDBApi& ccdbApi, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
   {
 
     std::vector<float> network_prediction;
@@ -592,8 +592,8 @@ class pidTPCModule
   };
 
   //__________________________________________________
-  template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TCollisions, typename TTracks, typename TTracksQA, typename TProducts>
-  void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, TCollisions const& cols, TTracks const& tracks, TTracksQA const& tracksQA, TProducts& products)
+  template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TTracks, typename TTracksQA, typename TProducts>
+  void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& cols, TTracks const& tracks, TTracksQA const& tracksQA, TProducts& products)
   {
     if (tracks.size() == 0) {
       return; // empty protection
