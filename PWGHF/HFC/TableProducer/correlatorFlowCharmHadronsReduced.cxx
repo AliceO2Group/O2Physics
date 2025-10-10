@@ -118,6 +118,13 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedAssBases, aod::HfcRedAssTracks>>;
   using TrigCharmCands = soa::Filtered<soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigCharms>>;
 
+  Filter filterAssocTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYAssoc) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZAssoc) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsAssoc > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsAssoc > itsNClsMin);
+  Filter filterTrigTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYTrig) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZTrig) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsTrig > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsTrig > itsNClsMin);
+  Filter filterSameEvtPairs = (nabs(aod::hf_correl_charm_had_reduced::deltaEta) > deltaEtaAbsMin) && (nabs(aod::hf_correl_charm_had_reduced::deltaEta) < deltaEtaAbsMax);
+
+  Preslice<AssocTracks> assocTracksPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
+  Preslice<TrigCharmCands> trigCharmCandsPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
+
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
   ConfigurableAxis centPoolBins{"centPoolBins", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100}, "Event centrality pools"};
