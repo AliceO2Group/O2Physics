@@ -8,7 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \author Maxim Virta (maxim.virta@cern.ch)
+/// \brief flow measurement with q-vectors
+/// \file jEPFlowAnalysis.cxx
 /// \since Jul 2024
 
 #include "FlowJHistManager.h"
@@ -39,7 +42,7 @@ using MyTracks = aod::Tracks;
 
 struct jEPFlowAnalysis {
 
-  HistogramRegistry EPFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
   bool debug = kFALSE;
@@ -82,7 +85,7 @@ struct jEPFlowAnalysis {
   std::string fullCCDBShiftCorrPath;
 
   template <typename T>
-  int GetdetId(const T& name)
+  int getdetId(const T& name)
   {
     if (name.value == "FT0C") {
       return 0;
@@ -105,9 +108,9 @@ struct jEPFlowAnalysis {
 
   void init(InitContext const&)
   {
-    detId = GetdetId(cfgDetName);
-    refAId = GetdetId(cfgRefAName);
-    refBId = GetdetId(cfgRefBName);
+    detId = getdetId(cfgDetName);
+    refAId = getdetId(cfgRefAName);
+    refBId = getdetId(cfgRefBName);
 
     AxisSpec axisMod{cfgnMode, 2., cfgnMode + 2.};
     AxisSpec axisEvtPl{360, -constants::math::PI * 1.1, constants::math::PI * 1.1};
@@ -116,16 +119,16 @@ struct jEPFlowAnalysis {
     AxisSpec axisPt{cfgAxisPt, "pT"};
     AxisSpec axisCos{cfgAxisCos, "cos"};
 
-    EPFlowHistograms.add("EpDet", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    EPFlowHistograms.add("EpRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    EPFlowHistograms.add("EpRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpDet", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
 
-    EPFlowHistograms.add("EpResDetRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    EPFlowHistograms.add("EpResDetRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
-    EPFlowHistograms.add("EpResRefARefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpResDetRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpResDetRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
+    epFlowHistograms.add("EpResRefARefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
 
-    EPFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
-    EPFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
+    epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
+    epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
   }
 
   void process(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
@@ -134,7 +137,7 @@ struct jEPFlowAnalysis {
       return;
 
     float cent = coll.cent();
-    EPFlowHistograms.fill(HIST("FullCentrality"), cent);
+    epFlowHistograms.fill(HIST("FullCentrality"), cent);
     float eps[3] = {0.};
 
     if (cfgShiftCorr) {
@@ -142,10 +145,10 @@ struct jEPFlowAnalysis {
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
         shiftprofile.clear();
-        for (int i = 2; i < 5; i++) {
+        for (int i = 0; i < cfgnMode; i++) {
           fullCCDBShiftCorrPath = cfgShiftPath;
           fullCCDBShiftCorrPath += "/v";
-          fullCCDBShiftCorrPath += std::to_string(i);
+          fullCCDBShiftCorrPath += std::to_string(i + 2);
           auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, bc.timestamp());
           shiftprofile.push_back(objshift);
         }
@@ -166,7 +169,8 @@ struct jEPFlowAnalysis {
       float weight = 1.0;
 
       if (cfgShiftCorr) {
-        for (int ishift = 1; ishift <= 10; ishift++) {
+        constexpr int kShiftBins = 10;
+        for (int ishift = 1; ishift <= kShiftBins; ishift++) {
           auto coeffshiftxDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 0.5, ishift - 0.5));
           auto coeffshiftyDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 1.5, ishift - 0.5));
           auto coeffshiftxRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.5, ishift - 0.5));
@@ -191,21 +195,21 @@ struct jEPFlowAnalysis {
       float resNumB = helperEP.GetResolution(eps[0], eps[2], i + 2);
       float resDenom = helperEP.GetResolution(eps[1], eps[2], i + 2);
 
-      EPFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
-      EPFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
-      EPFlowHistograms.fill(HIST("EpRefB"), i + 2, cent, eps[2]);
+      epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
+      epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
+      epFlowHistograms.fill(HIST("EpRefB"), i + 2, cent, eps[2]);
 
-      EPFlowHistograms.fill(HIST("EpResDetRefA"), i + 2, cent, resNumA);
-      EPFlowHistograms.fill(HIST("EpResDetRefB"), i + 2, cent, resNumB);
-      EPFlowHistograms.fill(HIST("EpResRefARefB"), i + 2, cent, resDenom);
+      epFlowHistograms.fill(HIST("EpResDetRefA"), i + 2, cent, resNumA);
+      epFlowHistograms.fill(HIST("EpResDetRefB"), i + 2, cent, resNumB);
+      epFlowHistograms.fill(HIST("EpResRefARefB"), i + 2, cent, resDenom);
 
       for (int j = 0; j < cfgnMode; j++) { // loop over detectors used
-        for (auto& track : tracks) {
+        for (const auto& track : tracks) {
           float vn = std::cos((i + 2) * (track.phi() - eps[j]));
-          float vn_sin = std::sin((i + 2) * (track.phi() - eps[j]));
+          float vnSin = std::sin((i + 2) * (track.phi() - eps[j]));
 
-          EPFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn * weight);
-          EPFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vn_sin * weight);
+          epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn * weight);
+          epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin * weight);
         }
       }
     }
