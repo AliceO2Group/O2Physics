@@ -103,8 +103,6 @@ struct PiKpRAA {
 
   static constexpr int kZeroInt{0};
   static constexpr int kSevenInt{7};
-  static constexpr float kPosOne{1.0};
-  static constexpr float kNegOne{-1.0};
 
   static constexpr float kZero{0.0f};
   static constexpr float kOne{1.0f};
