@@ -18,6 +18,7 @@
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>, Heidelberg University, GSI Darmstadt
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -145,12 +146,13 @@ struct HfTaskLc {
 
   void init(InitContext&)
   {
-    std::array<bool, 14> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataWithMlWithUpc, doprocessDataStdWithUpc};
+    const std::array<bool, 14> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessDataWithMlWithUpc, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataStdWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
-    const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
+    const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
+    const bool isUpc = doprocessDataWithMlWithUpc || doprocessDataStdWithUpc;
 
     auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
       if (isData) {
@@ -253,12 +255,14 @@ struct HfTaskLc {
     /// decay length error
     addHistogramsRec("hDecLenErrVsPt", "decay length error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 1.}, {vbins}}});
 
-    qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
-    qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
-    qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
-    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
-    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
-    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+    if (isUpc) {
+      qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+      qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+      qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
+      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
+      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+    }
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
@@ -330,7 +334,9 @@ struct HfTaskLc {
       }
     }
 
-    hfEvSel.addHistograms(qaRegistry); // collision monitoring
+    if (isUpc) {
+      hfEvSel.addHistograms(qaRegistry); // collision monitoring
+    }
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -400,8 +406,8 @@ struct HfTaskLc {
   template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
-    auto thisCollId = collision.globalIndex();
-    auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
+    const auto thisCollId = collision.globalIndex();
+    const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
 
     for (const auto& candidate : groupedLcCandidates) {
       /// Select Lc
@@ -415,22 +421,22 @@ struct HfTaskLc {
 
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
-        auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
-        auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
-        auto particleMother = mcParticles.rawIteratorAt(indexMother);
+        const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+        const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+        const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
+        const auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
 
-        auto pt = candidate.pt();
-        auto ptProng0 = candidate.ptProng0();
-        auto ptProng1 = candidate.ptProng1();
-        auto ptProng2 = candidate.ptProng2();
-        auto decayLength = candidate.decayLength();
-        auto chi2PCA = candidate.chi2PCA();
-        auto cpa = candidate.cpa();
-        auto originType = candidate.originMcRec();
-        auto numPvContributors = collision.numContrib();
-        auto ptRecB = candidate.ptBhadMotherPart();
+        const auto pt = candidate.pt();
+        const auto ptProng0 = candidate.ptProng0();
+        const auto ptProng1 = candidate.ptProng1();
+        const auto ptProng2 = candidate.ptProng2();
+        const auto decayLength = candidate.decayLength();
+        const auto chi2PCA = candidate.chi2PCA();
+        const auto cpa = candidate.cpa();
+        const auto originType = candidate.originMcRec();
+        const auto numPvContributors = collision.numContrib();
+        const auto ptRecB = candidate.ptBhadMotherPart();
 
         /// MC reconstructed signal
         fillHistogramsRecSig<Signal>(candidate);
@@ -520,8 +526,8 @@ struct HfTaskLc {
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
-        auto ptGen = particle.pt();
-        auto originType = particle.originMcGen();
+        const auto ptGen = particle.pt();
+        const auto originType = particle.originMcGen();
         float ptGenB = -1.;
         unsigned int numPvContributors = 0;
         const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
@@ -534,7 +540,7 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
-        const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        const auto& mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         const float p2m = particle.p() / o2::constants::physics::MassLambdaCPlus;
         const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
         const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
@@ -572,9 +578,9 @@ struct HfTaskLc {
   template <bool FillMl, typename CollType, typename CandType>
   void fillHistosData(CollType const& collision, CandType const& candidates)
   {
-    auto thisCollId = collision.globalIndex();
-    auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
-    auto numPvContributors = collision.numContrib();
+    const auto thisCollId = collision.globalIndex();
+    const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
+    const auto numPvContributors = collision.numContrib();
 
     for (const auto& candidate : groupedLcCandidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -583,15 +589,15 @@ struct HfTaskLc {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }
-      auto pt = candidate.pt();
-      auto ptProng0 = candidate.ptProng0();
-      auto ptProng1 = candidate.ptProng1();
-      auto ptProng2 = candidate.ptProng2();
-      auto decayLength = candidate.decayLength();
-      auto decayLengthXY = candidate.decayLengthXY();
-      auto chi2PCA = candidate.chi2PCA();
-      auto cpa = candidate.cpa();
-      auto cpaXY = candidate.cpaXY();
+      const auto pt = candidate.pt();
+      const auto ptProng0 = candidate.ptProng0();
+      const auto ptProng1 = candidate.ptProng1();
+      const auto ptProng2 = candidate.ptProng2();
+      const auto decayLength = candidate.decayLength();
+      const auto decayLengthXY = candidate.decayLengthXY();
+      const auto chi2PCA = candidate.chi2PCA();
+      const auto cpa = candidate.cpa();
+      const auto cpaXY = candidate.cpaXY();
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
@@ -716,13 +722,13 @@ struct HfTaskLc {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
-      auto bc = collision.template bc_as<BCsType>();
+      const auto& bc = collision.template bc_as<BCsType>();
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
       GapType gap = GapType::DoubleGap;
       if (bc.has_zdc()) {
-        auto zdc = bc.zdc();
+        const auto zdc = bc.zdc();
         qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
         gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
