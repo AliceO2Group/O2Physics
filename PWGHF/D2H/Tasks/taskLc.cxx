@@ -49,6 +49,7 @@
 #include <array>
 #include <cmath>
 #include <numeric>
+#include <string>
 #include <vector> // std::vector
 
 using namespace o2;
