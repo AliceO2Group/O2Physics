@@ -94,10 +94,13 @@ std::map<std::string, bool> buildMapForCommitHash(const std::string& hash)
   }
   std::string lineOfO2VersionsWithHash;
   while (std::getline(infileO2Versions, lineOfO2Version)) {
-    std::string tag = lineOfO2Version.substr(lineOfO2Version.find("O2::") + 4);
+    // Extract the tag
+    int stripSize = 4;
+    std::string tag = lineOfO2Version.substr(lineOfO2Version.find("O2::") + stripSize);
     // Strip a trailing "-1" (some alienv entries append this)
-    if (tag.size() >= 2 && tag.compare(tag.size() - 2, 2, "-1") == 0) {
-      tag.resize(tag.size() - 2);
+    stripSize = 2;
+    if (tag.size() >= stripSize && tag.compare(tag.size() - stripSize, stripSize, "-1") == 0) {
+      tag.resize(tag.size() - stripSize);
     }
     LOG(debug) << "Checking tag '" << lineOfO2Version << "' tag (" << tag << ")";
     bool found = false;
