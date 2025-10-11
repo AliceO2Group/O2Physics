@@ -151,7 +151,7 @@ std::string MetadataHelper::getO2Version() const
   return get("O2Version");
 }
 
-bool MetadataHelper::isCommitInSoftwareTag(const std::string& commitHash, const std::string & ccdbUrl) const
+bool MetadataHelper::isCommitInSoftwareTag(const std::string& commitHash, const std::string& ccdbUrl) const
 {
   const std::string softwareTag = getO2Version();
   std::string command = "curl -i -L ";
