@@ -27,6 +27,7 @@
 #include <TObjString.h>
 #include <TSystem.h>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
