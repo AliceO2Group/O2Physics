@@ -1616,8 +1616,22 @@ struct AntinucleiInJets {
   // Generated events
   void processJetsMCgen(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
+    // Define per-event particle containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> protonMomentum;
+
+    // Event counter
+    int eventCounter = 0;
+
     // Loop over all simulated collisions
     for (const auto& collision : collisions) {
+
+      // Increment event counter
+      eventCounter++;
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      protonMomentum.clear();
 
       // Event counter: before event selection
       registryMC.fill(HIST("genEvents"), 0.5);
@@ -1629,9 +1643,7 @@ struct AntinucleiInJets {
       // Event counter: after event selection
       registryMC.fill(HIST("genEvents"), 1.5);
 
-      // Loop over all MC particles
-      std::vector<fastjet::PseudoJet> fjParticles;
-      std::vector<TVector3> protonMomentum;
+      // Loop over MC particles
       for (const auto& particle : mcParticles) {
 
         // Select physical primaries within acceptance
@@ -1644,7 +1656,7 @@ struct AntinucleiInJets {
         // Store 3-momentum vectors of antiprotons for further analysis
         if (particle.pdgCode() == PDG_t::kProtonBar) {
           TVector3 pVec(particle.px(), particle.py(), particle.pz());
-          protonMomentum.push_back(pVec);
+          protonMomentum.emplace_back(pVec);
         }
 
         // 4-momentum representation of a particle
@@ -1754,6 +1766,12 @@ struct AntinucleiInJets {
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("genEvents"), 3.5);
       }
+
+      // Shrink large vectors every 1000 events
+      if (eventCounter % 1000 == 0) {
+        fjParticles.shrink_to_fit();
+        protonMomentum.shrink_to_fit();
+      }
     }
   }
   PROCESS_SWITCH(AntinucleiInJets, processJetsMCgen, "process jets mc gen", false);
@@ -1761,8 +1779,22 @@ struct AntinucleiInJets {
   // Reconstructed events
   void processJetsMCrec(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, McParticles const&)
   {
+    // Define per-event containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<int> antiprotonTrackIndex;
+
+    // Event counter
+    int eventCounter = 0;
+
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
+
+      // Increment event counter
+      eventCounter++;
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      antiprotonTrackIndex.clear();
 
       // Event counter: before event selection
       registryMC.fill(HIST("recEvents"), 0.5);
@@ -1806,8 +1838,6 @@ struct AntinucleiInJets {
 
       // Loop over reconstructed tracks
       int id(-1);
-      std::vector<fastjet::PseudoJet> fjParticles;
-      std::vector<int> antiprotonTrackIndex;
       for (auto const& track : mcTracks) {
         id++;
 
@@ -2027,6 +2057,12 @@ struct AntinucleiInJets {
       }
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("recEvents"), 9.5);
+      }
+
+      // Shrink large vectors every 1000 events
+      if (eventCounter % 1000 == 0) {
+        fjParticles.shrink_to_fit();
+        antiprotonTrackIndex.shrink_to_fit();
       }
     }
   }
