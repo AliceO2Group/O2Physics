@@ -129,19 +129,9 @@ struct HfCandidateCreator3Prong {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber{0};
-  float toMicrometers = 10000.; // from cm to µm
-  double massP{0.};
-  double massPi{0.};
-  double massK{0.};
-  double massPKPi{0.};
-  double massPiKP{0.};
-  double massPiKPi{0.};
-  double massKKPi{0.};
-  double massPiKK{0.};
-  double massKPi{0.};
-  double massPiK{0.};
   double bz{0.};
 
+  const float toMicrometers = 10000.; // from cm to µm
   constexpr static float UndefValueFloat{-999.f};
 
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
@@ -222,10 +212,6 @@ struct HfCandidateCreator3Prong {
 
     // init HF event selection helper
     hfEvSel.init(registry);
-
-    massP = MassProton;
-    massPi = MassPiPlus;
-    massK = MassKPlus;
 
     // Configure DCAFitterN
     // df.setBz(bz);
@@ -418,14 +404,14 @@ struct HfCandidateCreator3Prong {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant mass
-        auto arrayMomenta = std::array{pvec0, pvec1, pvec2};
-        massPKPi = RecoDecay::m(arrayMomenta, std::array{massP, massK, massPi});
-        massPiKP = RecoDecay::m(arrayMomenta, std::array{massPi, massK, massP});
-        massPiKPi = RecoDecay::m(arrayMomenta, std::array{massPi, massK, massPi});
-        massKKPi = RecoDecay::m(arrayMomenta, std::array{massK, massK, massPi});
-        massPiKK = RecoDecay::m(arrayMomenta, std::array{massPi, massK, massK});
-        massKPi = RecoDecay::m(std::array{arrayMomenta.at(1), arrayMomenta.at(2)}, std::array{massK, massPi});
-        massPiK = RecoDecay::m(std::array{arrayMomenta.at(0), arrayMomenta.at(1)}, std::array{massPi, massK});
+        const auto arrayMomenta = std::array{pvec0, pvec1, pvec2};
+        const auto massPKPi = RecoDecay::m(arrayMomenta, std::array{MassProton, MassKPlus, MassPiPlus});
+        const auto massPiKP = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus, MassProton});
+        const auto massPiKPi = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus, MassPiPlus});
+        const auto massKKPi = RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassKPlus, MassPiPlus});
+        const auto massPiKK = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus, MassKPlus});
+        const auto massKPi = RecoDecay::m(std::array{arrayMomenta.at(1), arrayMomenta.at(2)}, std::array{MassKPlus, MassPiPlus});
+        const auto massPiK = RecoDecay::m(std::array{arrayMomenta.at(0), arrayMomenta.at(1)}, std::array{MassPiPlus, MassKPlus});
         registry.fill(HIST("hMass3PiKPi"), massPiKPi);
         registry.fill(HIST("hMass3PKPi"), massPKPi);
         registry.fill(HIST("hMass3PiKP"), massPiKP);
