@@ -245,8 +245,8 @@ struct LfMyV0s {
     registryData.add("LambdaPtMass", "LambdaPtMass", HistType::kTH2F, {ptAxis, invMassLambdaAxis});
     registryData.add("AntiLambdaPtMass", "AntiLambdaPtMass", HistType::kTH2F, {ptAxis, invMassLambdaAxis});
 
-    registryData.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
-    registryData.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
+    registryData.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{invMassLambdaAxis}}});
+    registryData.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {{invMassLambdaAxis}}});
     registryData.add("V0pTInLab", "V0pTInLab", kTH1F, {axisPT});
 
     registryData.add("V0pxInLab", "V0pxInLab", kTH1F, {axisPx});
@@ -267,6 +267,11 @@ struct LfMyV0s {
     registryData.add("protonQA/profileprotonsinthetaInLab", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotonsinphiInLab", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotoncosSquarethetaInLab", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("JetQA/JetthetaInLab", "JetthetaInLab", kTH1F, {axisTheta});
+    registryData.add("JetQA/JetphiInLab", "JetphiInLab", kTH1F, {axisPhi});
+    registryData.add("JetQA/JetpxInLab", "JetpxInLab", kTH1F, {axisPx});
+    registryData.add("JetQA/JetpyInLab", "JetpyInLab", kTH1F, {axisPy});
+    registryData.add("JetQA/JetpzInLab", "JetpzInLab", kTH1F, {axisPz});
 
     registryData.add("protonQA/V0protonpxInRest_frame", "V0protonpxInRest_frame", kTH1F, {axisPx});
     registryData.add("protonQA/V0protonpyInRest_frame", "V0protonpyInRest_frame", kTH1F, {axisPy});
@@ -278,6 +283,11 @@ struct LfMyV0s {
     registryData.add("protonQA/profileprotonsinthetaInV0frame", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotonsinphiInV0frame", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotoncosSquarethetaInV0frame", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("JetQA/JetthetaInV0", "JetthetaInV0", kTH1F, {axisTheta});
+    registryData.add("JetQA/JetphiInV0", "JetphiInV0", kTH1F, {axisPhi});
+    registryData.add("JetQA/JetpxInV0", "JetpxInV0", kTH1F, {axisPx});
+    registryData.add("JetQA/JetpyInV0", "JetpyInV0", kTH1F, {axisPy});
+    registryData.add("JetQA/JetpzInV0", "JetpzInV0", kTH1F, {axisPz});
 
     registryData.add("protonQA/V0protonpxInJetframe", "V0protonpxInJetframe", kTH1F, {axisPx});
     registryData.add("protonQA/V0protonpyInJetframe", "V0protonpyInJetframe", kTH1F, {axisPy});
@@ -289,6 +299,11 @@ struct LfMyV0s {
     registryData.add("protonQA/profileprotonsinphiInJetframe", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotoncosSquarethetaInJetframe", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/V0protonMassInJetframe", "V0protonMassInJetframe", kTH1F, {axisMass});
+    registryData.add("JetQA/JetthetaInJetframe", "JetthetaInJetframe", kTH1F, {axisTheta});
+    registryData.add("JetQA/JetphiInJetframe", "JetphiInJetframe", kTH1F, {axisPhi});
+    registryData.add("JetQA/JetpxInJetframe", "JetpxInJetframe", kTH1F, {axisPx});
+    registryData.add("JetQA/JetpyInJetframe", "JetpyInJetframe", kTH1F, {axisPy});
+    registryData.add("JetQA/JetpzInJetframe", "JetpzInJetframe", kTH1F, {axisPz});
 
     registryData.add("protonQA/V0protonpxInJetV0frame", "V0protonpxInJetV0frame", kTH1F, {axisPx});
     registryData.add("protonQA/V0protonpyInJetV0frame", "V0protonpyInJetV0frame", kTH1F, {axisPy});
@@ -300,6 +315,11 @@ struct LfMyV0s {
     registryData.add("protonQA/profileprotonsinthetaInJetV0frame", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotonsinphiInJetV0frame", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("protonQA/profileprotoncosSquarethetaInJetV0frame", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("JetQA/JetthetaInJetV0frame", "JetthetaInJetV0frame", kTH1F, {axisTheta});
+    registryData.add("JetQA/JetphiInJetV0frame", "JetphiInJetV0frame", kTH1F, {axisPhi});
+    registryData.add("JetQA/JetpxInJetV0frame", "JetpxInJetV0frame", kTH1F, {axisPx});
+    registryData.add("JetQA/JetpyInJetV0frame", "JetpyInJetV0frame", kTH1F, {axisPy});
+    registryData.add("JetQA/JetpzInJetV0frame", "JetpzInJetV0frame", kTH1F, {axisPz});
 
     registryData.add("V0LambdapxInJetV0frame", "V0LambdapxInJetV0frame", kTH1F, {axisPx});
     registryData.add("V0LambdapyInJetV0frame", "V0LambdapyInJetV0frame", kTH1F, {axisPy});
@@ -376,7 +396,7 @@ struct LfMyV0s {
 
     registryV0Data.add("hprotoncosthetainLab", "hprotoncosthetainLab", kTH1F, {{200, -1.f, 1.f}});
     registryV0Data.add("hprotonsinthetainLab", "hprotonsinthetainLab", kTH1F, {{200, -1.f, 1.f}});
-    registryV0Data.add("hprotonthetainLab", "hprotonthetainLab", kTH1F, {{200, 0.f, TMath::Pi()}});
+    registryV0Data.add("hprotonthetainLab", "hprotonthetainLab", kTH1F, {axisTheta});
 
     registryV0Data.add("hprotoncosthetainV0", "hprotoncosthetainV0", kTH1F, {{200, -1.f, 1.f}});
     registryV0Data.add("hprotonsinthetainV0", "hprotonsinthetainV0", kTH1F, {{200, -1.f, 1.f}});
@@ -1516,6 +1536,7 @@ struct LfMyV0s {
     float maxJetpz = 0;
     float maxJeteta = 0;
     float maxJetphi = 0;
+    float maxJetE = 0;
     float maxJetpT = 0;
     float maxJetPt = -999;
     for (auto& jet : jets) {
@@ -1541,6 +1562,7 @@ struct LfMyV0s {
         maxJetpy = jet.py();
         maxJetpz = jet.pz();
         maxJeteta = jet.eta();
+        maxJetE = jet.E();
         maxJetphi = jet.phi();
         maxJetpT = jet.pt();
         maxJetPt = maxJetpT;
@@ -1609,6 +1631,12 @@ struct LfMyV0s {
         double ELambda = sqrt(candidate.mLambda() * candidate.mLambda() + PLambda * PLambda);
         double protonE = sqrt(massPr * massPr + pos.px() * pos.px() + pos.py() * pos.py() + pos.pz() * pos.pz());
 
+        TMatrixD pLabJet(4, 1);
+        pLabJet(0, 0) = maxJetE;
+        pLabJet(1, 0) = maxJetpx;
+        pLabJet(2, 0) = maxJetpy;
+        pLabJet(3, 0) = maxJetpz;
+
         TMatrixD pLabV0(4, 1);
         pLabV0(0, 0) = ELambda;
         pLabV0(1, 0) = candidate.px();
@@ -1641,9 +1669,16 @@ struct LfMyV0s {
         double protonPInLab = sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));
         double protonsinThetaInLab = protonPtInLab / protonPInLab;
         double protonMassInLab = sqrt(pLabproton(0, 0) * pLabproton(0, 0) - pLabproton(1, 0) * pLabproton(1, 0) - pLabproton(2, 0) * pLabproton(2, 0) - pLabproton(3, 0) * pLabproton(3, 0));
+        double jettheta = maxJetpz / sqrt(pLabJet(1, 0) * pLabJet(1, 0) + pLabJet(2, 0) * pLabJet(2, 0) + pLabJet(3, 0) * pLabJet(3, 0));
+        double jetphi = maxJetpy / sqrt(pLabJet(1, 0) * pLabJet(1, 0) + pLabJet(2, 0) * pLabJet(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInLab"), TMath::ASin(jettheta));
+        registryData.fill(HIST("JetQA/JetphiInLab"), TMath::ASin(jetphi));
+        registryData.fill(HIST("JetQA/JetpxInLab"), pLabJet(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInLab"), pLabJet(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInLab"), pLabJet(3, 0));
 
         registryData.fill(HIST("protonQA/V0protonphiInLab"), TMath::ASin(protonsinPhiInLab));
-        registryData.fill(HIST("protonQA/V0protonThetaInLab"), TMath::ASin(protonsinThetaInLab));
+        registryData.fill(HIST("protonQA/V0protonthetaInLab"), TMath::ASin(protonsinThetaInLab));
         registryData.fill(HIST("protonQA/V0protoncosthetaInLab"), protoncosthetaInLab);
         registryData.fill(HIST("protonQA/profileprotonsinthetaInLab"), candidate.mLambda(), protonsinThetaInLab);
         registryData.fill(HIST("protonQA/profileprotonsinphiInLab"), candidate.mLambda(), protonsinPhiInLab);
@@ -1657,6 +1692,16 @@ struct LfMyV0s {
         double protonPtInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0));
         double protonsinThetaInV0 = protonPtInV0 / protonPInV0;
 
+        TMatrixD JetInV0(4, 1);
+        JetInV0 = LorentzTransInV0frame(ELambda, candidate.px(), candidate.py(), candidate.pz()) * pLabJet;
+        double jetthetaInV0 = JetInV0(3, 0) / sqrt(JetInV0(1, 0) * JetInV0(1, 0) + JetInV0(2, 0) * JetInV0(2, 0) + JetInV0(3, 0) * JetInV0(3, 0));
+        double jetphiInV0 = JetInV0(2, 0) / sqrt(JetInV0(1, 0) * JetInV0(1, 0) + JetInV0(2, 0) * JetInV0(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInV0"), TMath::ASin(jetthetaInV0));
+        registryData.fill(HIST("JetQA/JetphiInV0"), TMath::ASin(jetphiInV0));
+        registryData.fill(HIST("JetQA/JetpxInV0"), JetInV0(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInV0"), JetInV0(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInV0"), JetInV0(3, 0));
+
         registryData.fill(HIST("protonQA/V0protonMassInRest_frame"), protonMassInV0);
         registryData.fill(HIST("protonQA/V0protonpxInRest_frame"), protonInV0(1, 0));
         registryData.fill(HIST("protonQA/V0protonpyInRest_frame"), protonInV0(2, 0));
@@ -1664,7 +1709,7 @@ struct LfMyV0s {
         double protonsinPhiInV0frame = protonInV0(2, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0));
         double protoncosthetaInV0frame = protonInV0(3, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
         registryData.fill(HIST("protonQA/V0protonphiInRest_frame"), TMath::ASin(protonsinPhiInV0frame));
-        registryData.fill(HIST("protonQA/V0protonThetaInRest_frame"), TMath::ASin(protonsinThetaInV0));
+        registryData.fill(HIST("protonQA/V0protonthetaInRest_frame"), TMath::ASin(protonsinThetaInV0));
         registryData.fill(HIST("protonQA/V0protoncosthetaInV0frame"), protoncosthetaInV0frame);
         registryData.fill(HIST("protonQA/profileprotonsinthetaInV0frame"), candidate.mLambda(), protonsinThetaInV0);
         registryData.fill(HIST("protonQA/profileprotonsinphiInV0frame"), candidate.mLambda(), protonsinPhiInV0frame);
@@ -1679,11 +1724,21 @@ struct LfMyV0s {
         double protonSinThetainJet = protonPtinJet / protonPinJet;
         double protonMassInJetframe = sqrt(protonInJet(0, 0) * protonInJet(0, 0) - protonInJet(1, 0) * protonInJet(1, 0) - protonInJet(2, 0) * protonInJet(2, 0) - protonInJet(3, 0) * protonInJet(3, 0));
 
+        TMatrixD pInJet(4, 1);
+        pInJet = MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabJet;
+        double jetthetaInJet = pInJet(3, 0) / sqrt(pInJet(1, 0) * pInJet(1, 0) + pInJet(2, 0) * pInJet(2, 0) + pInJet(3, 0) * pInJet(3, 0));
+        double jetphiInJet = pInJet(2, 0) / sqrt(pInJet(1, 0) * pInJet(1, 0) + pInJet(2, 0) * pInJet(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInJetframe"), TMath::ASin(jetthetaInJet));
+        registryData.fill(HIST("JetQA/JetphiInJetframe"), TMath::ASin(jetphiInJet));
+        registryData.fill(HIST("JetQA/JetpxInJetframe"), pInJet(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInJetframe"), pInJet(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInJetframe"), pInJet(3, 0));
+
         registryData.fill(HIST("protonQA/V0protonpxInJetframe"), protonInJet(1, 0));
         registryData.fill(HIST("protonQA/V0protonpyInJetframe"), protonInJet(2, 0));
         registryData.fill(HIST("protonQA/V0protonpzInJetframe"), protonInJet(3, 0));
         registryData.fill(HIST("protonQA/V0protonphiInJetframe"), TMath::ASin(protonsinPhiInJet));
-        registryData.fill(HIST("protonQA/V0protonThetaInJetframe"), TMath::ASin(protonSinThetainJet));
+        registryData.fill(HIST("protonQA/V0protonthetaInJetframe"), TMath::ASin(protonSinThetainJet));
         registryData.fill(HIST("protonQA/V0protoncosthetaInJetframe"), protoncosthetaInJet);
         registryData.fill(HIST("protonQA/profileprotonsinthetaInJetframe"), candidate.mLambda(), protonSinThetainJet);
         registryData.fill(HIST("protonQA/profileprotonsinphiInJetframe"), candidate.mLambda(), protonsinPhiInJet);
@@ -1699,11 +1754,21 @@ struct LfMyV0s {
         double protonSinThetainJetV0 = protonPtinJetV0 / protonPinJetV0;
         double protonMassInJetV0frame = sqrt(protonInJetV0(0, 0) * protonInJetV0(0, 0) - protonInJetV0(1, 0) * protonInJetV0(1, 0) - protonInJetV0(2, 0) * protonInJetV0(2, 0) - protonInJetV0(3, 0) * protonInJetV0(3, 0));
 
+        TMatrixD JetInJetV0(4, 1);
+        JetInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabJet;
+        double jetthetaInJetV0 = JetInJetV0(3, 0) / sqrt(JetInJetV0(1, 0) * JetInJetV0(1, 0) + JetInJetV0(2, 0) * JetInJetV0(2, 0) + JetInJetV0(3, 0) * JetInJetV0(3, 0));
+        double jetphiInJetV0 = JetInJetV0(2, 0) / sqrt(JetInJetV0(1, 0) * JetInJetV0(1, 0) + JetInJetV0(2, 0) * JetInJetV0(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInJetV0frame"), TMath::ASin(jetthetaInJetV0));
+        registryData.fill(HIST("JetQA/JetphiInJetV0frame"), TMath::ASin(jetphiInJetV0));
+        registryData.fill(HIST("JetQA/JetpxInJetV0frame"), JetInJetV0(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInJetV0frame"), JetInJetV0(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInJetV0frame"), JetInJetV0(3, 0));
+
         registryData.fill(HIST("protonQA/V0protonpxInJetV0frame"), protonInJetV0(1, 0));
         registryData.fill(HIST("protonQA/V0protonpyInJetV0frame"), protonInJetV0(2, 0));
         registryData.fill(HIST("protonQA/V0protonpzInJetV0frame"), protonInJetV0(3, 0));
         registryData.fill(HIST("protonQA/V0protonphiInJetV0frame"), TMath::ASin(protonsinphiInJetV0));
-        registryData.fill(HIST("protonQA/V0protonThetaInJetV0frame"), TMath::ASin(protonSinThetainJetV0));
+        registryData.fill(HIST("protonQA/V0protonthetaInJetV0frame"), TMath::ASin(protonSinThetainJetV0));
         registryData.fill(HIST("protonQA/V0protoncosthetaInJetV0"), protoncosthetaInJetV0);
         registryData.fill(HIST("protonQA/V0protonMassInJetV0frame"), protonMassInJetV0frame);
         registryData.fill(HIST("protonQA/profileprotonsinthetaInJetV0frame"), candidate.mLambda(), protonSinThetainJetV0);
