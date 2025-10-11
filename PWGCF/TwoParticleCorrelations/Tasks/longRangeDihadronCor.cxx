@@ -164,7 +164,7 @@ struct LongRangeDihadronCor {
 
   // FT0 geometry
   o2::ft0::Geometry ft0Det;
-  const uint64_t ft0IndexA = 96;
+  static constexpr uint64_t Ft0IndexA = 96;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
   std::vector<float> cstFT0RelGain{};
 
@@ -283,8 +283,6 @@ struct LongRangeDihadronCor {
       registry.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
       registry.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, axisFit}});
-      registry.add("FT0Cmp", "", {HistType::kTH2F, {axisChID, axisFit}});
-      registry.add("FT0CmpCorrect", "", {HistType::kTH2F, {axisChID, axisFit}});
     }
     if (doprocessSameTpcFt0a) {
       registry.add("deltaEta_deltaPhi_same_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
@@ -369,7 +367,7 @@ struct LongRangeDihadronCor {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= ft0IndexA) {
+    if (chno >= Ft0IndexA) {
       z = -z;
     }
     auto r = std::sqrt(x * x + y * y);
@@ -519,21 +517,19 @@ struct LongRangeDihadronCor {
   template <typename TFT0s>
   void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, float& ampl, int fitType)
   {
-    int rID{0};
     if (fitType == kFT0C) {
       id = ft0.channelC()[iCh];
-      rID = id + 96;
+      id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
-      registry.fill(HIST("FT0Cmp"), rID, ampl);
+      registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
-      registry.fill(HIST("FT0CmpCorrect"), rID, ampl);
+      registry.fill(HIST("FT0AmpCorrect"), id, ampl);
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
-      rID = id;
       ampl = ft0.amplitudeA()[iCh];
-      registry.fill(HIST("FT0Amp"), rID, ampl);
+      registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
-      registry.fill(HIST("FT0AmpCorrect"), rID, ampl);
+      registry.fill(HIST("FT0AmpCorrect"), id, ampl);
     } else {
       LOGF(fatal, "Cor Index %d out of range", fitType);
     }
