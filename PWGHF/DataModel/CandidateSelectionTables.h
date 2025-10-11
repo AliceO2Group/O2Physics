@@ -384,9 +384,6 @@ DECLARE_SOA_TABLE(HfSelToXiPiKf, "AOD", "HFSELTOXIPIKF",
 DECLARE_SOA_TABLE(HfMlToXiPi, "AOD", "HFMLSELTOXIPI",
                   hf_sel_toxipi::MlProbToXiPi);
 
-DECLARE_SOA_TABLE(HfMlToXiPiKf, "AOD", "HFMLSELTOXIPIKF",
-                  hf_sel_toxipi::MlProbToXiPi);
-
 namespace hf_sel_toomegapi
 {
 DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
