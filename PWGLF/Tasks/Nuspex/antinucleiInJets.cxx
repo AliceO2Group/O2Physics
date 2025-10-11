@@ -505,12 +505,23 @@ struct AntinucleiInJets {
   {
     auto current = particle;
 
+    // If already physical primary, return it
+    if (current.isPhysicalPrimary())
+      return current;
+
     while (current.has_mothers()) {
       auto motherId = current.mothersIds()[0];
+
+      // Stop if motherId is invalid
       if (motherId < 0 || motherId >= mcParticles.size()) {
         break;
       }
+
+      // Move up the chain
       current = mcParticles.iteratorAt(motherId);
+
+      if (current.isPhysicalPrimary())
+        break;
     }
 
     return current;
