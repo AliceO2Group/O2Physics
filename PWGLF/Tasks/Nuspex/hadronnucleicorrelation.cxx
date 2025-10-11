@@ -183,8 +183,16 @@ struct hadronnucleicorrelation {
   std::vector<std::shared_ptr<TH3>> hPIDEtaPhiGen_AntiDeAntiPr_ME;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrAntiPr_ME;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_PrPr_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_PrPr_ME;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrPr_SE;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrPr_ME;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiDePr_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiDePr_ME;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_DeAntiPr_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_DeAntiPr_ME;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_DePr_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_DePr_ME;
 
   int nBinspT;
   TH2F* hEffpTEta_proton;
@@ -257,6 +265,7 @@ struct hadronnucleicorrelation {
 
     if (isMCGen || mcCorrelation) {
       for (int i = 0; i < nBinspT; i++) {
+        // antid-antip
         auto htempSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
                                                          Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiDeAntiPr_SE.push_back(std::move(htempSEGen_AntiDeAntiPr));
@@ -264,6 +273,7 @@ struct hadronnucleicorrelation {
                                                          Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiDeAntiPr_ME.push_back(std::move(htempMEGen_AntiDeAntiPr));
 
+        // antip-antip
         auto htempSEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
                                                          Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiPrAntiPr_SE.push_back(std::move(htempSEGen_AntiPrAntiPr));
@@ -271,12 +281,46 @@ struct hadronnucleicorrelation {
                                                          Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiPrAntiPr_ME.push_back(std::move(htempMEGen_AntiPrAntiPr));
 
+        // p-p
+        auto htempSEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_PrPr_SE.push_back(std::move(htempSEGen_PrPr));
+        auto htempMEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_PrPr_ME.push_back(std::move(htempMEGen_PrPr));
+
+        // antip-p
         auto htempSEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiPrPr_SE.push_back(std::move(htempSEGen_AntiPrPr));
         auto htempMEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiPrPr_ME.push_back(std::move(htempMEGen_AntiPrPr));
+
+        // d-p
+        auto htempSEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_DePr_SE.push_back(std::move(htempSEGen_DePr));
+        auto htempMEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_DePr_ME.push_back(std::move(htempMEGen_DePr));
+
+        // antid-p
+        auto htempSEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_AntiDePr_SE.push_back(std::move(htempSEGen_AntiDePr));
+        auto htempMEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_AntiDePr_ME.push_back(std::move(htempMEGen_AntiDePr));
+
+        // d-antip
+        auto htempSEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_DeAntiPr_SE.push_back(std::move(htempSEGen_DeAntiPr));
+        auto htempMEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_DeAntiPr_ME.push_back(std::move(htempMEGen_DeAntiPr));
+
       }
     }
 
@@ -730,7 +774,7 @@ struct hadronnucleicorrelation {
   }
 
   template <int ME, typename Type>
-  void mixMCParticles(Type const& particles1, Type const& particles2, bool ispap)
+  void mixMCParticles(Type const& particles1, Type const& particles2, bool mode)
   {
     for (auto const& it1 : particles1) {
       for (auto const& it2 : particles2) {
@@ -743,15 +787,27 @@ struct hadronnucleicorrelation {
           if (it1->pt() >= pTBins.value.at(k) && it1->pt() < pTBins.value.at(k + 1)) {
             // Use correct histogram based on ME flag
             if constexpr (ME) {
-              if (ispap)
+              if (mode==0)
                 hEtaPhiGen_AntiPrPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
-              else
+              else if (mode==1)
                 hEtaPhiGen_AntiDeAntiPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else if (mode==2)
+                hEtaPhiGen_AntiDePr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else if (mode==3)
+                hEtaPhiGen_DeAntiPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else if (mode==4)
+                hEtaPhiGen_DePr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
             } else {
-              if (ispap)
+              if (mode==0)
                 hEtaPhiGen_AntiPrPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
-              else
+              else if (mode==1)
                 hEtaPhiGen_AntiDeAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else if (mode==2)
+                hEtaPhiGen_AntiDePr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else if (mode==3)
+                hEtaPhiGen_DeAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else if (mode==4)
+                hEtaPhiGen_DePr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
             }
           }
         }
@@ -760,7 +816,7 @@ struct hadronnucleicorrelation {
   }
 
   template <int ME, typename Type>
-  void mixMCParticlesIdentical(Type const& particles1, Type const& particles2)
+  void mixMCParticlesIdentical(Type const& particles1, Type const& particles2, bool ismatter)
   {
     for (auto const& it1 : particles1) {
       for (auto const& it2 : particles2) {
@@ -768,7 +824,7 @@ struct hadronnucleicorrelation {
         float deltaEtaGen = it2->eta() - it1->eta();
         float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
 
-        if (!ME && std::abs(deltaPhiGen) < 0.001 && std::abs(deltaEtaGen) < 0.001) {
+        if (!ME && std::abs(deltaPhiGen) < 0.0001 && std::abs(deltaEtaGen) < 0.0001) {
           continue;
         }
 
@@ -777,9 +833,15 @@ struct hadronnucleicorrelation {
           if (it1->pt() >= pTBins.value.at(k) && it1->pt() < pTBins.value.at(k + 1)) {
             // Use correct histogram based on ME flag
             if constexpr (ME) {
-              hEtaPhiGen_AntiPrAntiPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              if (ismatter)
+                hEtaPhiGen_PrPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else
+                hEtaPhiGen_AntiPrAntiPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
             } else {
-              hEtaPhiGen_AntiPrAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              if (ismatter)
+                hEtaPhiGen_PrPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+              else
+                hEtaPhiGen_AntiPrAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
             }
           }
         }
@@ -1837,138 +1899,227 @@ struct hadronnucleicorrelation {
       if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
         mixbinsMC_p[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision1)>(collision1));
       }
+    } // coll
 
-      // anti-d - anti-p correlation
-      if (selectedparticlesMC_antid.find(collision1.globalIndex()) != selectedparticlesMC_antid.end()) {
-        if (selectedparticlesMC_antip.find(collision1.globalIndex()) != selectedparticlesMC_antip.end()) {
-          mixMCParticles<0>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 0); // mixing SE
-        }
+    if (!mixbinsMC_antip.empty()) {
 
-        int stop1 = 0;
+      //antip-antip
+      for (auto i = mixbinsMC_antip.begin(); i != mixbinsMC_antip.end(); i++) { // iterating over all vertex&mult bins
 
-        for (auto collision2 : mcCollisions) { // nested loop on collisions
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
 
-          if (collision1.globalIndex() == collision2.globalIndex()) {
-            continue;
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedparticlesMC_antip.find(col1->index()) != selectedparticlesMC_antip.end()) {
+            mixMCParticlesIdentical<0>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 0); // mixing SE
           }
 
-          if (stop1 > maxmixcollsGen) {
-            break;
-          }
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
-          if (selectedparticlesMC_antip.find(collision2.globalIndex()) != selectedparticlesMC_antip.end()) {
-            mixMCParticles<1>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_antip[collision2.globalIndex()], 0); // mixing ME
-          }
+            auto col2 = (i->second)[indx2];
 
-          stop1++;
-        }
-      }
-
-      // d - p correlation
-      if (domatterGen) {
-        if (selectedparticlesMC_d.find(collision1.globalIndex()) != selectedparticlesMC_d.end()) {
-          if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
-            mixMCParticles<0>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 0); // mixing SE
-          }
-
-          int stop2 = 0;
-
-          for (auto collision2 : mcCollisions) { // nested loop on collisions
-
-            if (collision1.globalIndex() == collision2.globalIndex()) {
+            if (col1 == col2) {
               continue;
             }
 
-            if (stop2 > maxmixcollsGen) {
-              break;
+            if (selectedparticlesMC_antip.find(col2->index()) != selectedparticlesMC_antip.end()) {
+              mixMCParticlesIdentical<1>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 0); // mixing SE
             }
-
-            if (selectedparticlesMC_p.find(collision2.globalIndex()) != selectedparticlesMC_p.end()) {
-              mixMCParticles<1>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision2.globalIndex()], 0); // mixing ME
-            }
-
-            stop2++;
           }
         }
       }
 
-      // anti-p - anti-p correlation
-      if (selectedparticlesMC_antip.find(collision1.globalIndex()) != selectedparticlesMC_antip.end()) {
+      //antip-p
+      for (auto i = mixbinsMC_antip.begin(); i != mixbinsMC_antip.end(); i++) { // iterating over all vertex&mult bins
 
-        mixMCParticlesIdentical<0>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()]); // mixing SE
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
 
-        int stop3 = 0;
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
 
-        for (auto collision2 : mcCollisions) { // nested loop on collisions
+          auto col1 = value[indx1];
 
-          if (collision1.globalIndex() == collision2.globalIndex()) {
-            continue;
+          if (selectedparticlesMC_antip.find(col1->index()) != selectedparticlesMC_antip.end()) {
+            mixMCParticles<0>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 0); // mixing SE
           }
 
-          if (stop3 > maxmixcollsGen) {
-            break;
-          }
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
-          if (selectedparticlesMC_antip.find(collision2.globalIndex()) != selectedparticlesMC_antip.end()) {
-            mixMCParticlesIdentical<1>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_antip[collision2.globalIndex()]); // mixing ME
-          }
+            auto col2 = (i->second)[indx2];
 
-          stop3++;
-        }
-      }
-      // p - p correlation
-      if (domatterGen) {
-        if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
-
-          mixMCParticlesIdentical<0>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()]); // mixing SE
-
-          int stop4 = 0;
-
-          for (auto collision2 : mcCollisions) { // nested loop on collisions
-
-            if (collision1.globalIndex() == collision2.globalIndex()) {
+            if (col1 == col2) {
               continue;
             }
 
-            if (stop4 > maxmixcollsGen) {
-              break;
+            if (selectedparticlesMC_antip.find(col2->index()) != selectedparticlesMC_antip.end()) {
+              mixMCParticles<1>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 0); // mixing SE
             }
-
-            if (selectedparticlesMC_p.find(collision2.globalIndex()) != selectedparticlesMC_p.end()) {
-              mixMCParticlesIdentical<1>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_p[collision2.globalIndex()]); // mixing ME
-            }
-
-            stop4++;
           }
         }
       }
 
-      // p-antip correlation
-      if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
-        if (selectedparticlesMC_antip.find(collision1.globalIndex()) != selectedparticlesMC_antip.end()) {
-          mixMCParticles<0>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 1); // mixing SE
-        }
+    } // mixbinsMC_antip
 
-        int stop5 = 0;
+    if (!mixbinsMC_p.empty()) {
 
-        for (auto collision2 : mcCollisions) { // nested loop on collisions
+      //p-p
+      for (auto i = mixbinsMC_p.begin(); i != mixbinsMC_p.end(); i++) { // iterating over all vertex&mult bins
 
-          if (collision1.globalIndex() == collision2.globalIndex()) {
-            continue;
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedparticlesMC_p.find(col1->index()) != selectedparticlesMC_p.end()) {
+            mixMCParticlesIdentical<0>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 1); // mixing SE
           }
 
-          if (stop5 > maxmixcollsGen) {
-            break;
-          }
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
-          if (selectedparticlesMC_antip.find(collision2.globalIndex()) != selectedparticlesMC_antip.end()) {
-            mixMCParticles<1>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_antip[collision2.globalIndex()], 1); // mixing ME
-          }
+            auto col2 = (i->second)[indx2];
 
-          stop5++;
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedparticlesMC_p.find(col2->index()) != selectedparticlesMC_p.end()) {
+              mixMCParticlesIdentical<1>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 1); // mixing SE
+            }
+          }
         }
       }
-    }
+    } // mixbinsMC_p
+
+    if (!mixbinsMC_antid.empty()) {
+
+      //antid-antip
+      for (auto i = mixbinsMC_antid.begin(); i != mixbinsMC_antid.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedparticlesMC_antid.find(col1->index()) != selectedparticlesMC_antid.end()) {
+            mixMCParticles<0>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 1); // mixing SE
+          }
+
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = (i->second)[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedparticlesMC_antid.find(col2->index()) != selectedparticlesMC_antid.end()) {
+              mixMCParticles<1>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 1); // mixing SE
+            }
+          }
+        }
+      }
+
+      //antid-p
+      for (auto i = mixbinsMC_antid.begin(); i != mixbinsMC_antid.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedparticlesMC_antid.find(col1->index()) != selectedparticlesMC_antid.end()) {
+            mixMCParticles<0>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 2); // mixing SE
+          }
+
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = (i->second)[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedparticlesMC_antid.find(col2->index()) != selectedparticlesMC_antid.end()) {
+              mixMCParticles<1>(selectedparticlesMC_antid[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 2); // mixing SE
+            }
+          }
+        }
+      }
+
+    } // mixbinsMC_antid
+
+    if (!mixbinsMC_d.empty()) {
+
+      //d-antip
+      for (auto i = mixbinsMC_d.begin(); i != mixbinsMC_d.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedparticlesMC_d.find(col1->index()) != selectedparticlesMC_d.end()) {
+            mixMCParticles<0>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 3); // mixing SE
+          }
+
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = (i->second)[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedparticlesMC_d.find(col2->index()) != selectedparticlesMC_d.end()) {
+              mixMCParticles<1>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()], 3); // mixing SE
+            }
+          }
+        }
+      }
+
+      //d-p
+      for (auto i = mixbinsMC_d.begin(); i != mixbinsMC_d.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedparticlesMC_d.find(col1->index()) != selectedparticlesMC_d.end()) {
+            mixMCParticles<0>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 4); // mixing SE
+          }
+
+          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = (i->second)[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedparticlesMC_d.find(col2->index()) != selectedparticlesMC_d.end()) {
+              mixMCParticles<1>(selectedparticlesMC_d[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()], 4); // mixing SE
+            }
+          }
+        }
+      }
+
+    } // mixbinsMC_d
+
+
 
     // clearing up
     for (auto i = selectedparticlesMC_antid.begin(); i != selectedparticlesMC_antid.end(); i++)
@@ -1986,6 +2137,25 @@ struct hadronnucleicorrelation {
     for (auto i = selectedparticlesMC_p.begin(); i != selectedparticlesMC_p.end(); i++)
       (i->second).clear();
     selectedparticlesMC_p.clear();
+
+    for (auto& pair : mixbinsMC_antip) {
+      pair.second.clear(); // clear the vector associated with the key
+    }
+    mixbinsMC_antip.clear(); // clear the map
+
+    for (auto& pair : mixbinsMC_p) {
+      pair.second.clear(); // clear the vector associated with the key
+    }
+    mixbinsMC_p.clear(); // clear the map
+    for (auto& pair : mixbinsMC_antid) {
+      pair.second.clear(); // clear the vector associated with the key
+    }
+    mixbinsMC_antid.clear(); // clear the map
+
+    for (auto& pair : mixbinsMC_d) {
+      pair.second.clear(); // clear the vector associated with the key
+    }
+    mixbinsMC_d.clear(); // clear the map
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processGen, "processGen", false);
 };
