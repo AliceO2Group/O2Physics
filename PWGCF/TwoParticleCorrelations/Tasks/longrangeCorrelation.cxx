@@ -104,17 +104,6 @@ auto static constexpr kMinFt0cCell = 96;
 auto static constexpr kMinCharge = 3.f;
 AxisSpec axisEvent{10, 0.5, 9.5, "#Event", "EventAxis"};
 
-namespace o2::aod
-{
-namespace longrangemultclass
-{
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Centrality/multiplicity value
-} // namespace longrangemultclass
-DECLARE_SOA_TABLE(LRMultTables, "AOD", "LRMULTTABLE", longrangemultclass::Multiplicity); //! Transient multiplicity table
-
-using LRMultTable = LRMultTables::iterator;
-} // namespace o2::aod
-
 struct LongrangeCorrelation {
 
   struct : ConfigurableGroup {
@@ -159,8 +148,8 @@ struct LongrangeCorrelation {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
-  ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "Mixing bins - multiplicity"};
-  ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "Mixing bins - z-vertex"};
+  ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
+  ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
@@ -169,14 +158,20 @@ struct LongrangeCorrelation {
   ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
   ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {96, 3.5, 4.9}, "#eta assoc axis"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity / centrality axis for histograms"};
   ConfigurableAxis amplitudeFt0a{"amplitudeFt0a", {5000, 0, 10000}, "FT0A amplitude"};
   ConfigurableAxis channelFt0aAxis{"channelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
 
-  using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::LRMultTables>;
+  Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
+  Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
+  Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+  Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
+  Configurable<float> cfgPtCutMult{"cfgPtCutMult", 3.0f, "maximum track pT for multiplicity classification"};
+
+  using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using MftTrkTable = soa::Filtered<aod::MFTTracks>;
-  using CollTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::LRMultTables>>;
+  using CollTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms>>;
   using TrksTableMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>>;
   Preslice<TrksTable> perColGlobal = aod::track::collisionId;
   Preslice<TrksTableMC> perColMC = aod::track::collisionId;
@@ -392,6 +387,35 @@ struct LongrangeCorrelation {
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), phi);
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
     }
+  }
+
+  template <typename countTrk>
+  int countNTracks(countTrk const& tracks)
+  {
+    auto nTrk = 0;
+    for (const auto& track : tracks) {
+      if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMult) {
+        continue;
+      }
+      nTrk++;
+    }
+    return nTrk;
+  }
+
+  template <typename CheckColCent>
+  float selColCent(CheckColCent const& col)
+  {
+    auto cent = -1;
+    if (isApplyCentFT0C) {
+      cent = col.centFT0C();
+    }
+    if (isApplyCentFV0A) {
+      cent = col.centFV0A();
+    }
+    if (isApplyCentFT0M) {
+      cent = col.centFT0M();
+    }
+    return cent;
   }
 
   void loadEffCorrection(uint64_t timestamp)
@@ -785,7 +809,11 @@ struct LongrangeCorrelation {
       loadMultCorrection(bc.timestamp());
       fillYieldTpc<kFT0AGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
-      auto multiplicity = col.multiplicity();
+      auto multiplicity = 1.0f;
+      if (isUseCentEst)
+        multiplicity = selColCent(col);
+      else
+        multiplicity = countNTracks(tracks);
       float multw = getMultEffCorr(multiplicity);
       if (isUseEffCorr)
         multiplicity = multiplicity * multw;
@@ -807,7 +835,11 @@ struct LongrangeCorrelation {
       loadMultCorrection(bc.timestamp());
       fillYieldTpc<kFT0CGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
-      auto multiplicity = col.multiplicity();
+      auto multiplicity = 1.0f;
+      if (isUseCentEst)
+        multiplicity = selColCent(col);
+      else
+        multiplicity = countNTracks(tracks);
       float multw = getMultEffCorr(multiplicity);
       if (isUseEffCorr)
         multiplicity = multiplicity * multw;
@@ -827,7 +859,11 @@ struct LongrangeCorrelation {
     loadEffCorrection(bc.timestamp());
     loadMultCorrection(bc.timestamp());
     fillYieldTpc<kMFTGLOBAL, kSE>(tracks);
-    auto multiplicity = col.multiplicity();
+    auto multiplicity = 1.0f;
+    if (isUseCentEst)
+      multiplicity = selColCent(col);
+    else
+      multiplicity = countNTracks(tracks);
     float multw = getMultEffCorr(multiplicity);
     if (isUseEffCorr)
       multiplicity = multiplicity * multw;
@@ -837,7 +873,7 @@ struct LongrangeCorrelation {
     fillCorrMftGlobal<CorrelationContainer::kCFStepReconstructed>(sameMftGlobal, tracks, mfttracks, false, col.posZ(), multiplicity);
   } // same event
 
-  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, MftTrkTable const& mfttracks, aod::BCsWithTimestamps const&)
+  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, MftTrkTable const& mfttracks, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
@@ -847,7 +883,11 @@ struct LongrangeCorrelation {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       loadMultCorrection(bc.timestamp());
       const auto& ft0 = col.foundFT0();
-      auto multiplicity = col.multiplicity();
+      auto multiplicity = 1.0f;
+      if (isUseCentEst)
+        multiplicity = selColCent(col);
+      else
+        multiplicity = countNTracks(tracks);
       float multw = getMultEffCorr(multiplicity);
       if (isUseEffCorr)
         multiplicity = multiplicity * multw;
@@ -858,17 +898,21 @@ struct LongrangeCorrelation {
     }
   } // same event
 
-  void processFt0aFt0cSE(CollTable::iterator const& col, aod::FT0s const&, aod::BCsWithTimestamps const&)
+  void processFt0aFt0cSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
     if (col.has_foundFT0()) {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
-      loadMultCorrection(bc.timestamp());
-      auto multiplicity = col.multiplicity();
-      histos.fill(HIST("Ft0aFt0c/SE/hMult"), multiplicity);
       const auto& ft0 = col.foundFT0();
+      loadMultCorrection(bc.timestamp());
+      auto multiplicity = 1.0f;
+      if (isUseCentEst)
+        multiplicity = selColCent(col);
+      else
+        multiplicity = countNTracks(tracks);
+      histos.fill(HIST("Ft0aFt0c/SE/hMult"), multiplicity);
       float multw = getMultEffCorr(multiplicity);
       if (isUseEffCorr)
         multiplicity = multiplicity * multw;
@@ -902,7 +946,11 @@ struct LongrangeCorrelation {
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
         fillYieldTpc<kFT0AGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
-        auto multiplicity = col1.multiplicity();
+        auto multiplicity = 1.0f;
+        if (isUseCentEst)
+          multiplicity = selColCent(col1);
+        else
+          multiplicity = countNTracks(slicedTriggerTracks);
         float multw = getMultEffCorr(multiplicity);
         if (isUseEffCorr)
           multiplicity = multiplicity * multw;
@@ -937,7 +985,11 @@ struct LongrangeCorrelation {
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
         fillYieldTpc<kFT0CGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
-        auto multiplicity = col1.multiplicity();
+        auto multiplicity = 1.0f;
+        if (isUseCentEst)
+          multiplicity = selColCent(col1);
+        else
+          multiplicity = countNTracks(slicedTriggerTracks);
         float multw = getMultEffCorr(multiplicity);
         if (isUseEffCorr)
           multiplicity = multiplicity * multw;
@@ -967,7 +1019,11 @@ struct LongrangeCorrelation {
       auto bc = col1.bc_as<aod::BCsWithTimestamps>();
       loadEffCorrection(bc.timestamp());
       loadMultCorrection(bc.timestamp());
-      auto multiplicity = col1.multiplicity();
+      auto multiplicity = 1.0f;
+      if (isUseCentEst)
+        multiplicity = selColCent(col1);
+      else
+        multiplicity = countNTracks(tracks1);
       float multw = getMultEffCorr(multiplicity);
       if (isUseEffCorr)
         multiplicity = multiplicity * multw;
@@ -998,9 +1054,14 @@ struct LongrangeCorrelation {
         auto bc = col1.bc_as<aod::BCsWithTimestamps>();
         loadMultCorrection(bc.timestamp());
         auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
+        auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
         fillYieldMft<kFT0AMFT, kME>(slicedTriggerMftTracks);
         const auto& ft0 = col2.foundFT0();
-        auto multiplicity = col1.multiplicity();
+        auto multiplicity = 1.0f;
+        if (isUseCentEst)
+          multiplicity = selColCent(col1);
+        else
+          multiplicity = countNTracks(slicedTriggerTracks);
         float multw = getMultEffCorr(multiplicity);
         if (isUseEffCorr)
           multiplicity = multiplicity * multw;
@@ -1031,7 +1092,12 @@ struct LongrangeCorrelation {
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
         auto bc = col1.bc_as<aod::BCsWithTimestamps>();
         loadMultCorrection(bc.timestamp());
-        auto multiplicity = col1.multiplicity();
+        auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
+        auto multiplicity = 1.0f;
+        if (isUseCentEst)
+          multiplicity = selColCent(col1);
+        else
+          multiplicity = countNTracks(slicedTriggerTracks);
         histos.fill(HIST("Ft0aFt0c/ME/hMult"), multiplicity);
         const auto& ft0a = col1.foundFT0();
         const auto& ft0c = col2.foundFT0();
@@ -1085,7 +1151,12 @@ struct LongrangeCorrelation {
       } else {
         numcontributors = RecCol.numContrib();
       }
-      multiplicity = RecCol.multiplicity();
+      if (isUseCentEst)
+        multiplicity = selColCent(RecCol);
+      else {
+        auto recTracksPart = RecTracks.sliceBy(perColMC, RecCol.globalIndex());
+        multiplicity = countNTracks(recTracksPart);
+      }
     }
 
     for (const auto& particle : GenParticles) {
@@ -1128,89 +1199,8 @@ struct LongrangeCorrelation {
   PROCESS_SWITCH(LongrangeCorrelation, processEff, "Estimate efficiency", false);
 };
 
-struct MultiplicityClassifier {
-  Produces<aod::LRMultTables> multvalue;
-  Configurable<float> cfgEtaCut{"cfgEtaCut", 0.8f, "Eta range to consider"};
-  Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.2f, "minimum accepted track pT"};
-  Configurable<float> cfgPtCutMax{"cfgPtCutMax", 3.0f, "maximum accepted track pT"};
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                              ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
-  Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                     ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
-  Filter fTrackSelectionDCA = ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
-                                     ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
-  Filter fTracksEta = nabs(aod::track::eta) < cfgEtaCut;
-  Filter fTracksPt = (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax);
-
-  void init(InitContext const&)
-  {
-    int enabledFunctions = 0;
-    if (doprocessTracks) {
-      histos.add("htrackPt", "htrackPt", {HistType::kTH1F, {{10, 0., 10.}}});
-      histos.add("htrackMult", "htrackMult", {HistType::kTH1F, {{500, 0., 500.}}});
-      enabledFunctions++;
-    }
-    if (doprocessFT0C) {
-      histos.add("hCentFt0c", "hCentFt0c", {HistType::kTH1F, {{100, 0., 100.}}});
-      enabledFunctions++;
-    }
-    if (doprocessFV0A) {
-      histos.add("hCentFv0a", "hCentFv0a", {HistType::kTH1F, {{100, 0., 100.}}});
-      enabledFunctions++;
-    }
-    if (doprocessFT0M) {
-      histos.add("hCentFt0m", "hCentFt0m", {HistType::kTH1F, {{100, 0., 100.}}});
-      enabledFunctions++;
-    }
-    if (enabledFunctions != 1) {
-      LOGP(fatal, "{} multiplicity classifier enabled but we need exactly 1.", enabledFunctions);
-    }
-  }
-
-  void processTracks(aod::Collision const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks)
-  {
-    multvalue(tracks.size());
-    histos.fill(HIST("htrackMult"), tracks.size());
-    for (auto const& iTrk : tracks)
-      histos.fill(HIST("htrackPt"), iTrk.pt());
-  }
-
-  void processFT0C(aod::CentFT0Cs const& centralities)
-  {
-    for (auto const& c : centralities) {
-      multvalue(c.centFT0C());
-      histos.fill(HIST("hCentFt0c"), c.centFT0C());
-    }
-  }
-
-  void processFV0A(aod::CentFV0As const& centralities)
-  {
-    for (auto const& c : centralities) {
-      multvalue(c.centFV0A());
-      histos.fill(HIST("hCentFv0a"), c.centFV0A());
-    }
-  }
-
-  void processFT0M(aod::CentFT0Ms const& centralities)
-  {
-    for (auto const& c : centralities) {
-      multvalue(c.centFT0M());
-      histos.fill(HIST("hCentFt0m"), c.centFT0M());
-    }
-  }
-
-  PROCESS_SWITCH(MultiplicityClassifier, processTracks, "Select track count as multiplicity", false);
-  PROCESS_SWITCH(MultiplicityClassifier, processFT0C, "Select FT0C centrality as multiplicity", false);
-  PROCESS_SWITCH(MultiplicityClassifier, processFV0A, "Select FV0A centrality as multiplicity", false);
-  PROCESS_SWITCH(MultiplicityClassifier, processFT0M, "Select FT0M centrality as multiplicity", false);
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LongrangeCorrelation>(cfgc),
-    adaptAnalysisTask<MultiplicityClassifier>(cfgc)};
+    adaptAnalysisTask<LongrangeCorrelation>(cfgc)};
 }
