@@ -151,6 +151,9 @@ struct AntinucleiInJets {
   Configurable<std::string> weightsXi{"weightsXi", "", "weightsXi"};
   Configurable<std::string> weightsOmega{"weightsOmega", "", "weightsOmega"};
 
+  // Number of events
+  Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
+
   // Reweighting histograms
   TH1F* primaryAntiprotons;
   TH1F* primaryAntiLambda;
@@ -1767,8 +1770,8 @@ struct AntinucleiInJets {
         registryMC.fill(HIST("genEvents"), 3.5);
       }
 
-      // Shrink large vectors every 1000 events
-      if (eventCounter % 1000 == 0) {
+      // Shrink large vectors
+      if (eventCounter % shrinkInterval == 0) {
         fjParticles.shrink_to_fit();
         protonMomentum.shrink_to_fit();
       }
@@ -2059,8 +2062,8 @@ struct AntinucleiInJets {
         registryMC.fill(HIST("recEvents"), 9.5);
       }
 
-      // Shrink large vectors every 1000 events
-      if (eventCounter % 1000 == 0) {
+      // Shrink large vectors
+      if (eventCounter % shrinkInterval == 0) {
         fjParticles.shrink_to_fit();
         antiprotonTrackIndex.shrink_to_fit();
       }
