@@ -68,9 +68,9 @@ struct HfTaskXic0ToXiPi {
   using Xic0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec>>;
 
   using Xic0CandsMl = soa::Filtered<soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfMlToXiPi>>;
-  using Xic0CandsMlKF = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPiKf>>;
+  using Xic0CandsMlKF = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using Xic0CandsMlMc = soa::Filtered<soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfMlToXiPi, aod::HfXicToXiPiMCRec>>;
-  using Xic0CandsMlMcKF = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPiKf, aod::HfXicToXiPiMCRec>>;
+  using Xic0CandsMlMcKF = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi, aod::HfXicToXiPiMCRec>>;
 
   using Xic0Gen = soa::Filtered<soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>>;
 
@@ -164,13 +164,13 @@ struct HfTaskXic0ToXiPi {
     if (candidate.resultSelections() != true) {
       return;
     }
-    double etaCharmBaryon;
+    double yCharmBaryon;
     if constexpr (UseKfParticle) {
-      etaCharmBaryon = candidate.kfRapXic();
+      yCharmBaryon = candidate.kfRapXic();
     } else {
-      etaCharmBaryon = candidate.etaCharmBaryon();
+      yCharmBaryon = candidate.y(o2::constants::physics::MassXiC0);
     }
-    if (yCandRecMax >= 0. && std::abs(etaCharmBaryon) > yCandRecMax) {
+    if (yCandRecMax >= 0. && std::abs(yCharmBaryon) > yCandRecMax) {
       return;
     }
 
@@ -186,7 +186,7 @@ struct HfTaskXic0ToXiPi {
                     candidate.mlProbToXiPi()[0],
                     candidate.invMassCharmBaryon(),
                     ptXic,
-                    etaCharmBaryon,
+                    yCharmBaryon,
                     centrality,
                     ptPiFromXic,
                     numPvContributors);
@@ -194,7 +194,7 @@ struct HfTaskXic0ToXiPi {
       registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
                     candidate.invMassCharmBaryon(),
                     ptXic,
-                    etaCharmBaryon,
+                    yCharmBaryon,
                     centrality,
                     ptPiFromXic,
                     numPvContributors);
@@ -213,13 +213,13 @@ struct HfTaskXic0ToXiPi {
       if (candidate.resultSelections() != true) {
         continue;
       }
-      double etaCharmBaryon;
+      double yCharmBaryon;
       if constexpr (UseKfParticle) {
-        etaCharmBaryon = candidate.kfRapXic();
+        yCharmBaryon = candidate.kfRapXic();
       } else {
-        etaCharmBaryon = candidate.etaCharmBaryon();
+        yCharmBaryon = candidate.y(o2::constants::physics::MassXiC0);
       }
-      if (yCandRecMax >= 0. && std::abs(etaCharmBaryon) > yCandRecMax) {
+      if (yCandRecMax >= 0. && std::abs(yCharmBaryon) > yCandRecMax) {
         continue;
       }
 
@@ -230,7 +230,7 @@ struct HfTaskXic0ToXiPi {
                       candidate.mlProbToXiPi()[0],
                       candidate.invMassCharmBaryon(),
                       ptXic,
-                      etaCharmBaryon,
+                      yCharmBaryon,
                       candidate.ptBhadMotherPart(),
                       candidate.originMcRec(),
                       candidate.flagMcMatchRec(),
@@ -239,7 +239,7 @@ struct HfTaskXic0ToXiPi {
         registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"),
                       candidate.invMassCharmBaryon(),
                       ptXic,
-                      etaCharmBaryon,
+                      yCharmBaryon,
                       candidate.ptBhadMotherPart(),
                       candidate.originMcRec(),
                       candidate.flagMcMatchRec(),
