@@ -61,12 +61,6 @@ using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 
-enum class GapType {
-  GapA = 0,
-  GapC = 1,
-  DoubleGap = 2,
-};
-
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
@@ -78,32 +72,13 @@ struct HfTaskLc {
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
-
-  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
-  constexpr static float NanoToPico = 1000.f;
-
-  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
-
-  enum MlClasses : int {
-    MlClassBackground = 0,
-    MlClassPrompt,
-    MlClassNonPrompt,
-    NumberOfMlClasses
-  };
+  // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfEventSelection hfEvSel; // event selection and monitoring
-
-  enum SignalClasses : int {
-    Signal = 0,
-    Prompt,
-    NonPrompt
-  };
-
   HfHelper hfHelper;
+  HfEventSelection hfEvSel; // event selection and monitoring
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -120,6 +95,7 @@ struct HfTaskLc {
   using LcCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
   using LcCandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mcparticle::mcCollisionId;
@@ -141,8 +117,33 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
 
   HistogramRegistry registry{"registry", {}};
-
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Factors for conversion between units
+  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
+  constexpr static float NanoToPico = 1000.f;
+  // Names of folders and suffixes for MC signal histograms
+  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
+  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
+
+  enum MlClasses : int {
+    MlClassBackground = 0,
+    MlClassPrompt,
+    MlClassNonPrompt,
+    NumberOfMlClasses
+  };
+
+  enum SignalClasses : int {
+    Signal = 0,
+    Prompt,
+    NonPrompt
+  };
+
+  enum class GapType {
+    GapA = 0,
+    GapC = 1,
+    DoubleGap = 2,
+  };
 
   void init(InitContext&)
   {
@@ -344,7 +345,7 @@ struct HfTaskLc {
   }
 
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
-  /// \param candidate is candidate
+  /// \param collision is collision
   /// \return centrality/multiplicity percentile of the collision
   template <typename Coll>
   float evaluateCentralityColl(const Coll& collision)
@@ -354,55 +355,55 @@ struct HfTaskLc {
 
   /// Helper function for filling MC reconstructed histograms for prompt, nonpromt and common (signal)
   /// \param candidate is a reconstructed candidate
-  /// \tparam signalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
-  template <int signalType, typename CandidateType>
+  /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
+  template <int SignalType, typename CandidateType>
   void fillHistogramsRecSig(CandidateType const& candidate)
   {
     const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
     const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
     if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate));
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate), candidate.pt());
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPKPi(candidate));
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPKPi(candidate), candidate.pt());
     }
     if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPiKP(candidate));
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPiKP(candidate), candidate.pt());
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPiKP(candidate));
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPiKP(candidate), candidate.pt());
     }
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hPtProng0RecSig") + HIST(SignalSuffixes[signalType]), candidate.ptProng0());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hPtProng1RecSig") + HIST(SignalSuffixes[signalType]), candidate.ptProng1());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hPtProng2RecSig") + HIST(SignalSuffixes[signalType]), candidate.ptProng2());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng0());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng1());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng2());
 
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hd0Prong0RecSig") + HIST(SignalSuffixes[signalType]), candidate.impactParameter0());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hd0Prong1RecSig") + HIST(SignalSuffixes[signalType]), candidate.impactParameter1());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hd0Prong2RecSig") + HIST(SignalSuffixes[signalType]), candidate.impactParameter2());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hd0VsPtProng0RecSig") + HIST(SignalSuffixes[signalType]), candidate.impactParameter0(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hd0VsPtProng1RecSig") + HIST(SignalSuffixes[signalType]), candidate.impactParameter1(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hd0VsPtProng2RecSig") + HIST(SignalSuffixes[signalType]), candidate.impactParameter2(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDecLengthRecSig") + HIST(SignalSuffixes[signalType]), candidate.decayLength());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDecLengthVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.decayLength(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDecLengthxyRecSig") + HIST(SignalSuffixes[signalType]), candidate.decayLengthXY());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDecLengthxyVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.decayLengthXY(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hCtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.ctLc(candidate));
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hCtVsPtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.ctLc(candidate), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hCPARecSig") + HIST(SignalSuffixes[signalType]), candidate.cpa());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hCPAVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.cpa(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hCPAxyRecSig") + HIST(SignalSuffixes[signalType]), candidate.cpaXY());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hCPAxyVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.cpaXY(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDca2RecSig") + HIST(SignalSuffixes[signalType]), candidate.chi2PCA());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDca2VsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.chi2PCA(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hEtaRecSig") + HIST(SignalSuffixes[signalType]), candidate.eta());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hEtaVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.eta(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hPhiRecSig") + HIST(SignalSuffixes[signalType]), candidate.phi());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hPhiVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.phi(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hImpParErrProng0VsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.errorImpactParameter0(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hImpParErrProng1VsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.errorImpactParameter1(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hImpParErrProng2VsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.errorImpactParameter2(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hDecLenErrVsPtRecSig") + HIST(SignalSuffixes[signalType]), candidate.errorDecayLength(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter0());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter1());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter2());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter0(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter1(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter2(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.ctLc(candidate));
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.ctLc(candidate), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPARecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDca2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.chi2PCA());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDca2VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.chi2PCA(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaRecSig") + HIST(SignalSuffixes[SignalType]), candidate.eta());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.eta(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiRecSig") + HIST(SignalSuffixes[SignalType]), candidate.phi());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.phi(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng0VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameter0(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng1VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameter1(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng2VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameter2(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLenErrVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorDecayLength(), candidate.pt());
   }
 
   /// Fill MC histograms at reconstruction level
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
@@ -502,17 +503,17 @@ struct HfTaskLc {
 
   /// Helper function for filling MC generated histograms for prompt, nonpromt and common (signal)
   /// \param particle is a generated particle
-  /// \tparam signalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
-  template <int signalType, typename ParticleType>
+  /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
+  template <int SignalType, typename ParticleType>
   void fillHistogramsGen(ParticleType const& particle)
   {
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[signalType]), particle.pt());
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[signalType]), particle.eta());
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hYGen") + HIST(SignalSuffixes[signalType]), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus));
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPhiGen") + HIST(SignalSuffixes[signalType]), particle.phi());
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hEtaVsPtGen") + HIST(SignalSuffixes[signalType]), particle.eta(), particle.pt());
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hYVsPtGen") + HIST(SignalSuffixes[signalType]), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus), particle.pt());
-    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPhiVsPtGen") + HIST(SignalSuffixes[signalType]), particle.phi(), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[SignalType]), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[SignalType]), particle.eta());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hYGen") + HIST(SignalSuffixes[SignalType]), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus));
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiGen") + HIST(SignalSuffixes[SignalType]), particle.phi());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaVsPtGen") + HIST(SignalSuffixes[SignalType]), particle.eta(), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hYVsPtGen") + HIST(SignalSuffixes[SignalType]), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiVsPtGen") + HIST(SignalSuffixes[SignalType]), particle.phi(), particle.pt());
   }
 
   /// Fill MC histograms at generated level
@@ -574,7 +575,7 @@ struct HfTaskLc {
   }
 
   /// Fill histograms for real data
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandType>
   void fillHistosData(CollType const& collision, CandType const& candidates)
   {
@@ -692,7 +693,7 @@ struct HfTaskLc {
     }
   }
   /// Run the analysis on real data
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates)
@@ -703,7 +704,7 @@ struct HfTaskLc {
     }
   }
 
-  template <bool fillMl, typename CollType, typename CandType, typename BCsType>
+  template <bool FillMl, typename CollType, typename CandType, typename BCsType>
   void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
                                           CandType const& candidates,
                                           BCsType const& bcs,
@@ -713,9 +714,7 @@ struct HfTaskLc {
 
   )
   {
-
     for (const auto& collision : collisions) {
-
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
       if (rejectionMask != 0) {
@@ -735,9 +734,7 @@ struct HfTaskLc {
         qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
       }
       if (gap == GapType::GapA || gap == GapType::GapC) {
-        fillHistosData<fillMl>(collision, candidates);
-      } else {
-        continue;
+        fillHistosData<FillMl>(collision, candidates);
       }
     }
   }
@@ -757,7 +754,7 @@ struct HfTaskLc {
   }
 
   /// Run the analysis on MC data
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
