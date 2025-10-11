@@ -139,17 +139,18 @@ DECLARE_SOA_COLUMN(DcaZAssoc, dcaZAssoc, float);                     //! Impact 
 
 DECLARE_SOA_TABLE(HfcRedTrigBases, "AOD", "HFCREDTRIGBASE", //! Table with trigger candidate base info
                   soa::Index<>,
-                  aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
                   aod::hf_correl_charm_had_reduced::PhiTrig,
                   aod::hf_correl_charm_had_reduced::EtaTrig);
 
 DECLARE_SOA_TABLE(HfcRedTrigCharms, "AOD", "HFCREDTRIGCHARM", //! Table with Same Event Charm-Hadron pairs information
+                  aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
                   aod::hf_correl_charm_had_reduced::PtTrig,
                   aod::hf_correl_charm_had_reduced::InvMassTrig,
                   aod::hf_correl_charm_had_reduced::BdtScore0Trig,
                   aod::hf_correl_charm_had_reduced::BdtScore1Trig);
 
 DECLARE_SOA_TABLE(HfcRedTrigTracks, "AOD", "HFCREDTRIGTRACK", //! Table with Same Event Charm-Hadron pairs information
+                  aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
                   aod::hf_correl_charm_had_reduced::PtTrig,
                   aod::hf_correl_charm_had_reduced::NTpcCrossedRowsTrig,
                   aod::hf_correl_charm_had_reduced::ItsClsMapTrig,
