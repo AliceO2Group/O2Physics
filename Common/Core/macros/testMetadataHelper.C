@@ -120,13 +120,13 @@ std::map<std::string, bool> buildMapForCommitHash(const std::string& hash)
 }
 
 void populateCCDBWithCommitAvailability(std::map<string, bool> hasHashMap,
-                                        const std::string commitHash)
+                                        const std::string commitHash const std::string ccdbUrl = "http://ccdb-test.cern.ch:8080/")
 {
   // First, init the CCDB manager to test if the ccdb is already populated
   o2::ccdb::CcdbApi api;
-  api.init("http://ccdb-test.cern.ch:8080/");
+  api.init(ccdbUrl);
   if (!api.isHostReachable()) {
-    LOG(fatal) << "CCDB host http://ccdb-test.cern.ch:8080/ is not reacheable, cannot go forward";
+    LOG(fatal) << "CCDB host " << ccdbUrl << " is not reacheable, cannot go forward";
   }
   for (const auto& entry : hasHashMap) {
     if (!entry.second) { // Version of the code does not have the hash
