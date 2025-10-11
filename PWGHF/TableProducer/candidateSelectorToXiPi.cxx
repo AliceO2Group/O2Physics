@@ -59,7 +59,7 @@ enum PidInfoStored {
 /// Struct for applying Omegac0/Xic0 selection cuts
 struct HfCandidateSelectorToXiPi {
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
-  Produces<aod::HfMlToXiPiKf> hfMlToXiPi;
+  Produces<aod::HfMlToXiPi> hfMlToXiPi;
 
   // LF analysis selections
   Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
