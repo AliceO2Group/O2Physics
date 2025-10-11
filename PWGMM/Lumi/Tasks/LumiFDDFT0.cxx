@@ -120,6 +120,10 @@ DECLARE_SOA_TABLE(EventInfoFV0, "AOD", "EventInfoFV0",
                   full::InputMask, full::TCMTriggerFV0, full::TimeAFV0,
                   full::ChargeAFV0);
 
+DECLARE_SOA_TABLE(EventInfoCTP, "AOD", "EventInfoCTP",
+                  full::TimeStamp, full::GlobalBC,
+                  full::InputMask);
+
 } // namespace o2::aod
 
 struct LumiFDDFT0 {
@@ -127,6 +131,7 @@ struct LumiFDDFT0 {
   Produces<o2::aod::EventInfoFDD> rowEventInfofdd;
   Produces<o2::aod::EventInfoFT0> rowEventInfoft0;
   Produces<o2::aod::EventInfoFV0> rowEventInfofv0;
+  Produces<o2::aod::EventInfoCTP> rowEventInfoCTP;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   const char* ccdbpath_grp = "GLO/Config/GRPMagField";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
@@ -135,6 +140,7 @@ struct LumiFDDFT0 {
   Configurable<uint64_t> fttimestamp{"fttimestamp", 1668080173000, "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
   Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
+  Configurable<bool> useRelTimeStamp{"useRelTimeStamp", false, "timestamp info stored as relative to fttimestamp"};
 
   HistogramRegistry histos{
     "histos",
@@ -340,8 +346,19 @@ struct LumiFDDFT0 {
   };
   PROCESS_SWITCH(LumiFDDFT0, processFull, "Process FDD", true);
 
-  void processLite(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const&)
+  void processLite(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
+    // table to store CTP input mask, globalBC and timestamp
+    for (const auto& bc : bcs) {
+      if (!bc.timestamp())
+        continue;
+      if (useRelTimeStamp) {
+        Long64_t relTS = bc.timestamp() - fttimestamp;
+        rowEventInfoCTP(relTS, bc.globalBC(), bc.inputMask());
+      } else {
+        rowEventInfoCTP(bc.timestamp(), bc.globalBC(), bc.inputMask());
+      }
+    }
 
     // Scan over the FDD table and store charge and time along with globalBC
     for (auto& fdd : fdds) {
