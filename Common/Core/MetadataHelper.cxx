@@ -146,7 +146,8 @@ std::string MetadataHelper::makeMetadataLabel() const
 std::string MetadataHelper::getO2Version() const
 {
   if (!mIsInitialized) {
-    LOG(fatal) << "Metadata not initialized";
+    LOG(warning) << "Metadata not initialized";
+    return "undefined";
   }
   return get("O2Version");
 }
