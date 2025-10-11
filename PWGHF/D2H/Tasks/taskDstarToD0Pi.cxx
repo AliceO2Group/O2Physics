@@ -565,35 +565,35 @@ struct HfTaskDstarToD0Pi {
             }
           }
         }
-      } else if (studyD0ToPiKPi0 && (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0)) {
+      } else if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0)) {
         // Aplly all selection to study D*->D0(piKpi0)pi channel same as signal channel
         // MC Matched but to D*->D0(piKpi0)pi channel
         auto deltaMDstar = std::abs(candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0());
         if constexpr (ApplyMl) {
           auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
           // inclusive study
-          if (isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          if (isCentStudy) {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
-          } else if (!isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          } else {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
           }
           // differential (prompt/Non-prompt) study
-          if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt)) {
+          if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("D0ToPiKPi0/hPromptDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
-          } else if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt)) {
+          } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("D0ToPiKPi0/hNonPromptDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
           }
-        } else {
+        } else { // without ML
           // inclusive study
-          if (isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          if (isCentStudy) {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassDstar3D"), deltaMDstar, candDstarMcRec.pt(), centrality);
-          } else if (!isCentStudy && candDstarMcRec.isSelDstarToD0Pi()) {
+          } else {
             registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
           }
           // differential (prompt/Non-prompt) study
-          if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt)) {
+          if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("D0ToPiKPi0/hPromptDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
-          } else if (candDstarMcRec.isSelDstarToD0Pi() && (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt)) {
+          } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("D0ToPiKPi0/hNonPromptDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
           }
         }
