@@ -375,7 +375,7 @@ struct FormationTimeReclustering {
   }
 
   template <bool isSubtracted, typename T, typename U, typename V, typename M, typename N>
-  void analyseCharged(T const& jet, U const& tracks, V const& trackSlicer, M& outputTable, N& splittingTable)
+  void analyseCharged(T const& jet, U const&, V const&, M& outputTable, N& splittingTable)
   {
     jetConstituents.clear();
     ptJet = jet.pt();
