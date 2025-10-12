@@ -142,11 +142,6 @@ struct HfCandidateSelectorToOmegaKa {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
-  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality bins"};
-  ConfigurableAxis thnConfigAxisPtKaon{"thnConfigAxisPtKaon", {100, 0, 10}, "PtPion from Omegac0 bins"};
-
   struct : ConfigurableGroup {
     //// KF selection
     std::string prefix = "kfSel";
@@ -176,6 +171,11 @@ struct HfCandidateSelectorToOmegaKa {
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorKa selectorKaon;
+
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality bins"};
+  ConfigurableAxis thnConfigAxisPtKaon{"thnConfigAxisPtKaon", {100, 0, 10}, "PtPion from Omegac0 bins"};
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
   using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
