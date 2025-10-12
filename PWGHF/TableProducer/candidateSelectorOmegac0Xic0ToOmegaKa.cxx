@@ -57,7 +57,7 @@ enum PidInfoStored {
 };
 
 /// Struct for applying OmegaKa -> Omega Ka selection cuts
-struct HfCandidateSelectorToOmegaKa {
+struct HfCandidateSelectorOmegac0Xic0ToOmegaKa {
   Produces<aod::HfSelToOmegaKaKf> hfSelToOmegaKaKf;
   // Produces<aod::HfMlSelOmegaKaToOmegaKa> hfMlSelToOmegaKa;
 
@@ -172,13 +172,13 @@ struct HfCandidateSelectorToOmegaKa {
   TrackSelectorPr selectorProton;
   TrackSelectorKa selectorKaon;
 
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality bins"};
   ConfigurableAxis thnConfigAxisPtKaon{"thnConfigAxisPtKaon", {100, 0, 10}, "PtPion from Omegac0 bins"};
-
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
-  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
