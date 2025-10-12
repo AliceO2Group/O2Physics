@@ -66,7 +66,7 @@ struct FemtoPairTrackTrack {
   Partition<Tracks> trackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
   Partition<Tracks> trackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
 
-  Preslice<Tracks> perColReco = aod::femtobase::stored::collisionId;
+  Preslice<Tracks> perColReco = aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;

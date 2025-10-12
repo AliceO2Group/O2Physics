@@ -85,23 +85,23 @@ class PairTrackTrackBuilder
       mTrackHistManager1.init(registry, trackHistSpec1);
 
       mPairHistManagerSe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection1.pdgCode.value);
-      mPairHistManagerSe.setCharge(confTrackSelection1.charge.value, confTrackSelection1.charge.value);
-      mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.charge.value, confTrackSelection1.charge.value, confCpr.on.value);
+      mPairHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
+      mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confCpr.on.value);
 
       mPairHistManagerMe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection1.pdgCode.value);
-      mPairHistManagerMe.setCharge(confTrackSelection1.charge.value, confTrackSelection1.charge.value);
-      mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.charge.value, confTrackSelection1.charge.value, confCpr.on.value);
+      mPairHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
+      mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value, confCpr.on.value);
     } else {
       mTrackHistManager1.init(registry, trackHistSpec1);
       mTrackHistManager2.init(registry, trackHistSpec2);
 
       mPairHistManagerSe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection2.pdgCode.value);
-      mPairHistManagerSe.setCharge(confTrackSelection1.charge.value, confTrackSelection2.charge.value);
-      mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.charge.value, confTrackSelection2.charge.value, confCpr.on.value);
+      mPairHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
+      mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, confCpr.on.value);
 
       mPairHistManagerMe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection2.pdgCode.value);
-      mPairHistManagerMe.setCharge(confTrackSelection1.charge.value, confTrackSelection2.charge.value);
-      mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.charge.value, confTrackSelection2.charge.value, confCpr.on.value);
+      mPairHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
+      mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value, confCpr.on.value);
     }
 
     // setup mixing
@@ -125,7 +125,7 @@ class PairTrackTrackBuilder
   void processSameEvent(T1 const& col, T2& /*trackTable*/, T3& partition1, T4& partition2, T5& cache)
   {
     if (mSameSpecies) {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() == 0) {
         return;
       }
@@ -133,8 +133,8 @@ class PairTrackTrackBuilder
       mCprSe.setMagField(col.magField());
       pairprocesshelpers::processSameEvent(trackSlice1, mTrackHistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
     } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() == 0 || trackSlice2.size() == 0) {
         return;
       }
@@ -242,13 +242,13 @@ class PairTrackV0Builder
 
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confV0Selection.pdgCode.value);
-    mPairHistManagerSe.setCharge(confTrackSelection.charge.value, 1);
-    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confCpr.on.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confV0Selection.pdgCode.value);
-    mPairHistManagerMe.setCharge(confTrackSelection.charge.value, 1);
-    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confCpr.on.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
@@ -258,8 +258,8 @@ class PairTrackV0Builder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*v0table*/, T5& v0Partition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }
@@ -346,13 +346,13 @@ class PairTrackTwoTrackResonanceBuilder
 
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confResonanceSelection.pdgCode.value);
-    mPairHistManagerSe.setCharge(confTrackSelection.charge.value, 1);
-    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confCpr.on.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confResonanceSelection.pdgCode.value);
-    mPairHistManagerMe.setCharge(confTrackSelection.charge.value, 1);
-    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confCpr.on.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
@@ -362,8 +362,8 @@ class PairTrackTwoTrackResonanceBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*resonanceTable*/, T5& resonancePartition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto v0Slice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }
@@ -447,13 +447,13 @@ class PairTrackKinkBuilder
 
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
-    mPairHistManagerSe.setCharge(confTrackSelection.charge.value, confKinkSelection.sign.value);
-    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confKinkSelection.sign.value, confCpr.on.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, confKinkSelection.sign.value);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
-    mPairHistManagerMe.setCharge(confTrackSelection.charge.value, confKinkSelection.sign.value);
-    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confKinkSelection.sign.value, confCpr.on.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, confKinkSelection.sign.value);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
@@ -463,8 +463,8 @@ class PairTrackKinkBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*kinktable*/, T5& kinkPartition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || kinkSlice.size() == 0) {
       return;
     }
@@ -554,13 +554,13 @@ class PairTrackCascadeBuilder
 
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
-    mPairHistManagerSe.setCharge(confTrackSelection.charge.value, confCascadeSelection.sign.value);
-    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confCascadeSelection.sign.value, confCpr.on.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
-    mPairHistManagerMe.setCharge(confTrackSelection.charge.value, confCascadeSelection.sign.value);
-    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.charge.value, confCascadeSelection.sign.value, confCpr.on.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
@@ -570,8 +570,8 @@ class PairTrackCascadeBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*cascadeTable*/, T5& v0Partition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }

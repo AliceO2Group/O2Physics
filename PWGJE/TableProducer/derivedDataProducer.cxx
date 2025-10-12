@@ -469,7 +469,7 @@ struct JetDerivedDataProducerTask {
         auto JClusterID = trackCollisionMapping.find({clusterTrack.trackId(), cluster.collisionId()}); // does EMCal use its own associator?
         clusterTrackIDs.push_back(JClusterID->second);
         auto emcTrack = clusterTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
-        products.jTracksEMCalTable(JClusterID->second, emcTrack.trackEtaEmcal(), emcTrack.trackPhiEmcal());
+        products.jTracksEMCalTable(JClusterID->second, emcTrack.trackEtaEmcal(), emcTrack.trackPhiEmcal(), clusterTrack.deltaEta(), clusterTrack.deltaPhi());
       }
       products.jClustersMatchedTracksTable(clusterTrackIDs);
     }

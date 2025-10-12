@@ -293,12 +293,12 @@ struct HfTreeCreatorDstarToD0Pi {
       runNumber);
   }
 
-  template <bool doMc = false, typename T>
+  template <bool DoMc = false, typename T>
   void fillCandidateTable(const T& candidate, float ptBhadMotherPart = -1)
   {
     int8_t flagMc{0};
     int8_t originMc{0};
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
     }
@@ -495,7 +495,7 @@ struct HfTreeCreatorDstarToD0Pi {
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -536,7 +536,7 @@ struct HfTreeCreatorDstarToD0Pi {
       }
       for (const auto& candidate : reconstructedCandBkg) {
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }

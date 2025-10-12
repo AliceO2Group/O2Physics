@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoDreamContainer.h
+/// \file femtoDreamContainer.h
 /// \brief Definition of the FemtoDreamContainer
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
@@ -19,17 +19,19 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINER_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINER_H_
 
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
-
-#include "Framework/HistogramRegistry.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
+
+#include "Framework/HistogramRegistry.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
+
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -99,6 +101,7 @@ class FemtoDreamContainer
     }
     if (extendedplots) {
       mHistogramRegistry->add((folderName + "/relPairkstarmTPtPart1PtPart2MultPercentile").c_str(), ("; :" + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity Percentile (%)").c_str(), kTHnSparseF, {femtoObsAxis, mTAxis4D, pTAxis, pTAxis, multPercentileAxis4D});
+      mHistogramRegistry->add((folderName + "/invMassPart1invMassPart2kstar").c_str(), (";#it{m} (GeV/#it{c}^{2}); #it{m} (GeV/#it{c}^{2}), " + femtoObs).c_str(), kTHnSparseF, {mP2Axis, mP2Axis, femtoObsAxis});
     }
   }
 
@@ -267,6 +270,9 @@ class FemtoDreamContainer
     }
     if (extendedplots) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTPtPart1PtPart2MultPercentile"), femtoObs, mT, part1.pt(), part2.pt(), multPercentile);
+      if constexpr (std::is_same_v<T1, o2::aod::FDParticle> && std::is_same_v<T2, o2::aod::FDParticle>) {
+        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/invMassPart1invMassPart2kstar"), part1.mLambda(), part2.mLambda(), femtoObs);
+      }
     }
   }
 

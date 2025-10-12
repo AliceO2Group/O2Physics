@@ -372,31 +372,40 @@ struct spectraKinkPiKa {
   Configurable<float> minradius{"minradius", 130.0, "minradiuscut"};
   Configurable<float> maxradius{"maxradius", 200.0, "maxradiuscut"};
   Configurable<float> dcaXYcut{"dcaXYcut", 0.2, "dcaXYcut"};
+  Configurable<float> dcaXYcutkink{"dcaXYcutkink", 0.2, "dcaXYcutkink"};
   Configurable<float> dcaZcut{"dcaZcut", 0.2, "dcaZcut"};
   Configurable<float> tpcChi2Cut{"tpcChi2Cut", 4.0, "tpcChi2Cut"};
+  Configurable<float> minqt{"minqt", 0.12, "min qt for kaon"};
+  Configurable<float> maxqt{"maxqt", 0.3, "max qt for kaon"};
+
   Configurable<int> centestimator{"centestimator", 0, "Select multiplicity estimator: 0 - FT0C, 1 - FT0A, 2 - FT0M, 3 - FV0A, 4 - PVTracks"};
   Configurable<int> pid{"pidMother", 321, ""};
   Configurable<int> dpid{"pidDaughter", 13, ""};
   Configurable<bool> d0pid{"dopid", 0, ""};
   Configurable<bool> dptCut{"dptCut", 0, ""};
+  Configurable<bool> qa{"qa", 0, ""};
+  Configurable<int> maxtpcncle{"maxtpcncle", 0, "max tpc find ncle"};
+  Configurable<int> mintpcncle{"mintpcncle", 0, "min tpc find ncle"};
+  Configurable<bool> onlykaon{"onlykaon", 0, "kaon"};
+  Configurable<bool> onlypion{"onlypion", 0, "pion"};
+
+  ConfigurableAxis ptAxis{"ptAxis", {150, 0, 15}, ""};
+  ConfigurableAxis qtAxis{"qtAxis", {2000, 0.0, 2.0}, ""};
+  ConfigurableAxis kinkAxis{"kinkAxis", {200, 0.0, 4.0}, ""};
+  ConfigurableAxis etaAxis{"etaAxis", {200, -5.0, 5.0}, ""};
+  ConfigurableAxis vertexAxis{"vertexAxis", {1200, -300.0, 300.0}, ""};
+  ConfigurableAxis radiusAxis{"radiusAxis", {600, 0.0, 300.0}, ""};
+  ConfigurableAxis massAxis{"massAxis", {600, 0.1, 0.7}, ""};
+  ConfigurableAxis multAxis{"multAxis", {120, 0.0, 120.0}, ""};
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
   Preslice<aod::Tracks> mtPerCol = aod::track::collisionId;
 
   void init(InitContext const&)
   {
-    // Axes
-    const AxisSpec ptAxis{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec qtAxis{2000, 0, 2, "#it{q}_{T} (GeV/#it{c})"};
-    const AxisSpec kinkAxis{200, 0, 4, "#theta"};
-    const AxisSpec etaAxis{200, -5.0, 5.0, "#eta"};
-    const AxisSpec vertexAxis{1200, -300., 300., "vrtx [cm]"};
-    const AxisSpec radiusAxis{600, 0., 300., "vrtx [cm]"};
-    const AxisSpec massAxis{600, 0.1, 0.7, "Inv mass (GeV/#it{c}^{2})"};
-    const AxisSpec multAxis{120, 0, 120, "Multiplicity"};
 
     // Event selection
-    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexAxis}});
+    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {{200, -20.0, 20.0}}});
     rEventSelection.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {multAxis}});
 
     rpiKkink.add("h2_dau_pt_vs_eta_rec", "pt_vs_eta_dau", {HistType::kTH3F, {ptAxis, etaAxis, multAxis}});
@@ -424,45 +433,29 @@ struct spectraKinkPiKa {
     rpiKkink.add("h2_pion_data", "h2_pion_data", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis, multAxis}, true);
 
     // track qa
-    rpiKkink.add("h2_kinkradius_vs_vz", "kink radius_vz", {HistType::kTH2F, {vertexAxis, radiusAxis}});
-    rpiKkink.add("h2_kink_vx_vs_vy", "kink vx vs vz ", {HistType::kTH2F, {vertexAxis, vertexAxis}});
+    if (qa) {
+      rpiKkink.add("h2_kinkradius_vs_pt", "kink radius_vs pt", {HistType::kTH2F, {radiusAxis, ptAxis}});
+      rpiKkink.add("h2_kinkradius_vs_ncl", "kink radius_vs ncl", {HistType::kTH2F, {radiusAxis, {300, 0.0, 300.0}}});
 
-    rpiKkink.add("tpc_dedx", "p vs dE/dx", {HistType::kTH2F, {{500, 0.0, 10.0}, {5000, 0.0, 5000.0}}});
-    rpiKkink.add("tpc_nsigma_kaon", "p#k n#sigma", {HistType::kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}}});
-    rpiKkink.add("tpc_nsigma_pion", "p#pi n#sigma", {HistType::kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}}});
+      rpiKkink.add("h2_kinkradius_vs_vz", "kink radius_vz", {HistType::kTH2F, {vertexAxis, radiusAxis}});
+      rpiKkink.add("h2_kink_vx_vs_vy", "kink vx vs vz ", {HistType::kTH2F, {vertexAxis, vertexAxis}});
 
-    rpiKkink.add("tr_dcaxyM", "dcaxym", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    rpiKkink.add("tr_dcaxyD", "dcaxyd", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
-    rpiKkink.add("tr_dcaxykink_topo", "tr_dcaxykink_topo", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+      rpiKkink.add("tpc_dedx", "p vs dE/dx", {HistType::kTH2F, {{500, 0.0, 10.0}, {5000, 0.0, 5000.0}}});
+      rpiKkink.add("tpc_nsigma_kaon", "p#k n#sigma", {HistType::kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}}});
+      rpiKkink.add("tpc_nsigma_pion", "p#pi n#sigma", {HistType::kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}}});
 
-    rpiKkink.add("tr_chi2nclM", "chi2nclm", {HistType::kTH1F, {{100, 0.0, 100.0}}});
-    rpiKkink.add("tr_chi2nclD", "chi2ncld", {HistType::kTH1F, {{100, 0.0, 100.0}}});
-    rpiKkink.add("tr_tpcnclfindM", "tpcnclfindm", {HistType::kTH1F, {{300, 0.0, 300.0}}});
-    rpiKkink.add("tr_tpcnclfindD", "tpcnclfindd", {HistType::kTH1F, {{300, 0.0, 300.0}}});
-    rpiKkink.add("tr_itsChi2NClM", "itsChi2NClm", {HistType::kTH1F, {{200, 0.0, 200.0}}});
+      rpiKkink.add("tr_dcaxyM", "dcaxym", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+      rpiKkink.add("tr_dcaxyD", "dcaxyd", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
+      rpiKkink.add("tr_dcaxykink_topo", "tr_dcaxykink_topo", {HistType::kTH1F, {{1000, -5.0, 5.0}}});
 
-    if (doprocessMC) {
-      rpiKkink.add("h2_dau_pt_vs_eta_gen", "pt_vs_eta_dau", {HistType::kTH2F, {ptAxis, etaAxis}});
-      rpiKkink.add("h2_moth_pt_vs_eta_gen", "pt_vs_eta_moth", {HistType::kTH2F, {ptAxis, etaAxis}});
-      rpiKkink.add("h2_pt_moth_vs_dau_gen", "pt_moth_vs_dau", {HistType::kTH2F, {ptAxis, ptAxis}});
+      rpiKkink.add("tr_chi2nclM", "chi2nclm", {HistType::kTH1F, {{100, 0.0, 100.0}}});
+      rpiKkink.add("tr_chi2nclD", "chi2ncld", {HistType::kTH1F, {{100, 0.0, 100.0}}});
+      rpiKkink.add("tr_tpcnclfindM", "tpcnclfindm", {HistType::kTH1F, {{300, 0.0, 300.0}}});
+      rpiKkink.add("tr_tpcnclfindD", "tpcnclfindd", {HistType::kTH1F, {{300, 0.0, 300.0}}});
+      rpiKkink.add("tr_itsChi2NClM", "itsChi2NClm", {HistType::kTH1F, {{200, 0.0, 200.0}}});
 
-      rpiKkink.add("h2_qt_gen", "qt", {HistType::kTH1F, {qtAxis}});
-      rpiKkink.add("h2_qt_rec", "qt", {HistType::kTH1F, {qtAxis}});
-      rpiKkink.add("h2_kink_angle_gen", "kink angle", {HistType::kTH1F, {kinkAxis}});
-
-      rpiKkink.add("h2_kaon_mc_gen", "h2_kaon_mc_gen", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis}, true);
-      rpiKkink.add("h2_kaon_mc_rec", "h2_kaon_mc_rec", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis, multAxis}, true);
-
-      // qa
       rpiKkink.add("h2_kinkradius_vs_vz_m", "kink radius_vz", {HistType::kTH2F, {vertexAxis, radiusAxis}});
       rpiKkink.add("h2_kink_vx_vs_vy_m", "kink vx vs vz ", {HistType::kTH2F, {vertexAxis, vertexAxis}});
-
-      rpiKkink.add("h2_dau_pt_vs_eta_rec_m", "pt_vs_eta_dau", {HistType::kTH3F, {ptAxis, etaAxis, multAxis}});
-      rpiKkink.add("h2_moth_pt_vs_eta_rec_m", "pt_vs_eta_moth", {HistType::kTH3F, {ptAxis, etaAxis, multAxis}});
-      rpiKkink.add("h2_pt_moth_vs_dau_rec_m", "pt_moth_vs_dau", {HistType::kTH2F, {ptAxis, ptAxis}});
-      rpiKkink.add("h2_kink_angle_m", "kink angle", {HistType::kTH2F, {kinkAxis, multAxis}});
-      rpiKkink.add("h2_invmass_kaon_m", "Inv mass vs Pt", {HistType::kTH3F, {massAxis, ptAxis, ptAxis}});
-      rpiKkink.add("h2_kaon_mc_rec_m", "h2_kaon_mc_rec_m", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis, multAxis}, true);
 
       rpiKkink.add("tpc_dedx_m", "p vs dE/dx", {HistType::kTH2F, {{500, 0.0, 10.0}, {5000, 0.0, 5000.0}}});
       rpiKkink.add("tpc_nsigma_kaon_m", "p#k n#sigma", {HistType::kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}}});
@@ -477,6 +470,27 @@ struct spectraKinkPiKa {
       rpiKkink.add("tr_tpcnclfindM_m", "tpcnclfindm", {HistType::kTH1F, {{300, 0.0, 300.0}}});
       rpiKkink.add("tr_tpcnclfindD_m", "tpcnclfindd", {HistType::kTH1F, {{300, 0.0, 300.0}}});
       rpiKkink.add("tr_itsChi2NClM_m", "itsChi2NClm", {HistType::kTH1F, {{200, 0.0, 200.0}}});
+    }
+    if (doprocessMC) {
+      rpiKkink.add("h2_dau_pt_vs_eta_gen", "pt_vs_eta_dau", {HistType::kTH2F, {ptAxis, etaAxis}});
+      rpiKkink.add("h2_moth_pt_vs_eta_gen", "pt_vs_eta_moth", {HistType::kTH2F, {ptAxis, etaAxis}});
+      rpiKkink.add("h2_pt_moth_vs_dau_gen", "pt_moth_vs_dau", {HistType::kTH2F, {ptAxis, ptAxis}});
+
+      rpiKkink.add("h2_qt_gen", "qt", {HistType::kTH1F, {qtAxis}});
+      rpiKkink.add("h2_qt_rec", "qt", {HistType::kTH1F, {qtAxis}});
+      rpiKkink.add("h2_kink_angle_gen", "kink angle", {HistType::kTH1F, {kinkAxis}});
+
+      rpiKkink.add("h2_kaon_mc_gen", "h2_kaon_mc_gen", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis}, true);
+      rpiKkink.add("h2_kaon_mc_rec", "h2_kaon_mc_rec", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis, multAxis}, true);
+
+      rpiKkink.add("h2_dau_pt_vs_eta_rec_m", "pt_vs_eta_dau", {HistType::kTH3F, {ptAxis, etaAxis, multAxis}});
+      rpiKkink.add("h2_moth_pt_vs_eta_rec_m", "pt_vs_eta_moth", {HistType::kTH3F, {ptAxis, etaAxis, multAxis}});
+      rpiKkink.add("h2_pt_moth_vs_dau_rec_m", "pt_moth_vs_dau", {HistType::kTH2F, {ptAxis, ptAxis}});
+      rpiKkink.add("h2_kink_angle_m", "kink angle", {HistType::kTH2F, {kinkAxis, multAxis}});
+      rpiKkink.add("h2_invmass_kaon_m", "Inv mass vs Pt", {HistType::kTH3F, {massAxis, ptAxis, ptAxis}});
+      rpiKkink.add("h2_kaon_mc_rec_m", "h2_kaon_mc_rec_m", HistType::kTHnSparseF, {massAxis, ptAxis, etaAxis, qtAxis, multAxis}, true);
+
+      // qa
     }
   }
 
@@ -554,18 +568,24 @@ struct spectraKinkPiKa {
 
       if (dptCut && v1.Pt() > v0.Pt())
         continue;
-      rpiKkink.fill(HIST("tpc_dedx"), v0.P(), mothTrack.tpcSignal());
-      rpiKkink.fill(HIST("tpc_nsigma_kaon"), v0.Pt(), mothTrack.tpcNSigmaKa());
-      rpiKkink.fill(HIST("tpc_nsigma_pion"), v0.Pt(), mothTrack.tpcNSigmaPi());
+      if (qa) {
 
-      rpiKkink.fill(HIST("tr_chi2nclM"), mothTrack.tpcChi2NCl());
-      rpiKkink.fill(HIST("tr_chi2nclD"), dauTrack.tpcChi2NCl());
-      rpiKkink.fill(HIST("tr_tpcnclfindM"), mothTrack.tpcNClsFindable());
-      rpiKkink.fill(HIST("tr_tpcnclfindD"), dauTrack.tpcNClsFindable());
-      rpiKkink.fill(HIST("tr_itsChi2NClM"), mothTrack.itsChi2NCl());
+        rpiKkink.fill(HIST("tpc_dedx"), v0.P(), mothTrack.tpcSignal());
+        rpiKkink.fill(HIST("tpc_nsigma_kaon"), v0.Pt(), mothTrack.tpcNSigmaKa());
+        rpiKkink.fill(HIST("tpc_nsigma_pion"), v0.Pt(), mothTrack.tpcNSigmaPi());
 
+        rpiKkink.fill(HIST("tr_chi2nclM"), mothTrack.tpcChi2NCl());
+        rpiKkink.fill(HIST("tr_chi2nclD"), dauTrack.tpcChi2NCl());
+        rpiKkink.fill(HIST("tr_tpcnclfindM"), mothTrack.tpcNClsFindable());
+        rpiKkink.fill(HIST("tr_tpcnclfindD"), dauTrack.tpcNClsFindable());
+        rpiKkink.fill(HIST("tr_itsChi2NClM"), mothTrack.itsChi2NCl());
+      }
       if (mothTrack.tpcChi2NCl() > tpcChi2Cut)
         continue;
+
+      if (mothTrack.tpcNClsFindable() > maxtpcncle || mothTrack.tpcNClsFindable() < mintpcncle)
+        continue;
+
       if (std::abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
         kaon = true;
       }
@@ -582,12 +602,21 @@ struct spectraKinkPiKa {
       if (radiusxy < minradius || radiusxy > maxradius)
         continue;
       // dcaXYmoth        kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
-      rpiKkink.fill(HIST("tr_dcaxyM"), kinkCand.dcaMothPv());
-      rpiKkink.fill(HIST("tr_dcaxyD"), kinkCand.dcaDaugPv());
-      rpiKkink.fill(HIST("tr_dcaxykink_topo"), kinkCand.dcaKinkTopo());
+      if (qa) {
+        rpiKkink.fill(HIST("tr_dcaxyM"), kinkCand.dcaMothPv());
+        rpiKkink.fill(HIST("tr_dcaxyD"), kinkCand.dcaDaugPv());
+        rpiKkink.fill(HIST("tr_dcaxykink_topo"), kinkCand.dcaKinkTopo());
 
-      rpiKkink.fill(HIST("h2_kinkradius_vs_vz"), kinkCand.zDecVtx(), radiusxy);
-      rpiKkink.fill(HIST("h2_kink_vx_vs_vy"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
+        rpiKkink.fill(HIST("h2_kinkradius_vs_vz"), kinkCand.zDecVtx(), radiusxy);
+        rpiKkink.fill(HIST("h2_kink_vx_vs_vy"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
+        rpiKkink.fill(HIST("h2_kinkradius_vs_pt"), radiusxy, v0.Pt());
+        rpiKkink.fill(HIST("h2_kinkradius_vs_ncl"), radiusxy, mothTrack.tpcNClsFindable());
+      }
+      if (kinkCand.dcaMothPv() > dcaXYcut)
+        continue;
+
+      if (kinkCand.dcaKinkTopo() > dcaXYcutkink)
+        continue;
 
       float pMoth = v0.P();
       float pDaug = v1.P();
@@ -596,39 +625,52 @@ struct spectraKinkPiKa {
       float radToDeg = o2::constants::math::Rad2Deg;
       if (kinkangle * radToDeg < kinkanglecut)
         continue;
-
-      if (kaon) {
-        rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta(), multiplicity);
-        rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta(), multiplicity);
-        rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec"), v0.Pt(), v1.Pt());
-        rpiKkink.fill(HIST("h2_kink_angle"), kinkangle, multiplicity);
-      }
-      if (pion) {
-        rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec_pion"), v0.Pt(), v0.Eta(), multiplicity);
-        rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec_pion"), v1.Pt(), v1.Eta(), multiplicity);
-        rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec_pion"), v0.Pt(), v1.Pt());
-        rpiKkink.fill(HIST("h2_kink_angle_pion"), kinkangle, multiplicity);
-      }
       TVector3 pdlab(v1.Px(), v1.Py(), v1.Pz());
       // Compute transverse component
       TVector3 motherDir(v0.Px(), v0.Py(), v0.Pz());
       double ptd = pdlab.Perp(motherDir); // or p_d_lab.Mag() * sin(theta)
 
-      if (kaon) {
+      if (kaon && onlykaon && std::abs(v0.Rapidity()) < rapCut) {
         v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassKaonCharged);
+        rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta(), multiplicity);
+        rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta(), multiplicity);
+        rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec"), v0.Pt(), v1.Pt());
+        rpiKkink.fill(HIST("h2_kink_angle"), kinkangle, multiplicity);
         double mass = computeMotherMass(v0, v1);
-        rpiKkink.fill(HIST("h2_qt"), ptd);
         rpiKkink.fill(HIST("h2_qt_vs_pt"), ptd, v1.Pt());
-        rpiKkink.fill(HIST("h2_invmass_kaon"), mass, v0.Pt(), ptd);
-        rpiKkink.fill(HIST("h2_kaon_data"), mass, v0.Pt(), v0.Eta(), ptd, multiplicity);
+        rpiKkink.fill(HIST("h2_kaon_data"), mass, v0.Pt(), v0.Rapidity(), ptd, multiplicity);
+
+        if (qa && ptd > minqt && ptd < maxqt) {
+          rpiKkink.fill(HIST("h2_kinkradius_vs_vz_m"), kinkCand.zDecVtx(), radiusxy);
+          rpiKkink.fill(HIST("h2_kink_vx_vs_vy_m"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
+
+          rpiKkink.fill(HIST("tpc_dedx_m"), v0.P(), mothTrack.tpcSignal());
+          rpiKkink.fill(HIST("tpc_nsigma_kaon_m"), v0.Pt(), mothTrack.tpcNSigmaKa());
+          rpiKkink.fill(HIST("tpc_nsigma_pion_m"), v0.Pt(), mothTrack.tpcNSigmaPi());
+
+          rpiKkink.fill(HIST("tr_chi2nclM_m"), mothTrack.tpcChi2NCl());
+          rpiKkink.fill(HIST("tr_chi2nclD_m"), dauTrack.tpcChi2NCl());
+          rpiKkink.fill(HIST("tr_tpcnclfindM_m"), mothTrack.tpcNClsFindable());
+          rpiKkink.fill(HIST("tr_tpcnclfindD_m"), dauTrack.tpcNClsFindable());
+          rpiKkink.fill(HIST("tr_itsChi2NClM_m"), mothTrack.itsChi2NCl());
+
+          rpiKkink.fill(HIST("tr_dcaxyM_m"), kinkCand.dcaMothPv());
+          rpiKkink.fill(HIST("tr_dcaxyD_m"), kinkCand.dcaDaugPv());
+          rpiKkink.fill(HIST("tr_dcaxykink_topo_m"), kinkCand.dcaKinkTopo());
+
+          rpiKkink.fill(HIST("h2_kinkradius_vs_pt"), radiusxy, v0.Pt());
+          rpiKkink.fill(HIST("h2_kinkradius_vs_ncl"), radiusxy, mothTrack.tpcNClsFindable());
+        }
       }
-      if (pion) {
+      if (pion && onlypion && std::abs(v0.Rapidity()) < rapCut) {
+        rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec_pion"), v0.Pt(), v0.Eta(), multiplicity);
+        rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec_pion"), v1.Pt(), v1.Eta(), multiplicity);
+        rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec_pion"), v0.Pt(), v1.Pt());
+        rpiKkink.fill(HIST("h2_kink_angle_pion"), kinkangle, multiplicity);
         v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassPionCharged);
         double mass = computeMotherMass(v0, v1);
-        rpiKkink.fill(HIST("h2_qt_pion"), ptd);
         rpiKkink.fill(HIST("h2_qt_vs_ptpion"), ptd, v1.Pt());
-        rpiKkink.fill(HIST("h2_invmass_pion"), mass, v0.Pt(), ptd);
-        rpiKkink.fill(HIST("h2_pion_data"), mass, v0.Pt(), v0.Eta(), ptd, multiplicity);
+        rpiKkink.fill(HIST("h2_pion_data"), mass, v0.Pt(), v0.Rapidity(), ptd, multiplicity);
       }
     }
   }
@@ -675,16 +717,22 @@ struct spectraKinkPiKa {
 
         v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetCoordinates(dauTrack.px(), dauTrack.py(), dauTrack.pz(), o2::constants::physics::MassMuon);
+        if (qa) {
+          rpiKkink.fill(HIST("tpc_dedx"), v0.P(), mothTrack.tpcSignal());
+          rpiKkink.fill(HIST("tpc_nsigma_kaon"), v0.Pt(), mothTrack.tpcNSigmaKa());
+          rpiKkink.fill(HIST("tpc_nsigma_pion"), v0.Pt(), mothTrack.tpcNSigmaPi());
 
-        rpiKkink.fill(HIST("tpc_dedx"), v0.P(), mothTrack.tpcSignal());
-        rpiKkink.fill(HIST("tpc_nsigma_kaon"), v0.Pt(), mothTrack.tpcNSigmaKa());
-        rpiKkink.fill(HIST("tpc_nsigma_pion"), v0.Pt(), mothTrack.tpcNSigmaPi());
+          rpiKkink.fill(HIST("tr_chi2nclM"), mothTrack.tpcChi2NCl());
+          rpiKkink.fill(HIST("tr_chi2nclD"), dauTrack.tpcChi2NCl());
+          rpiKkink.fill(HIST("tr_tpcnclfindM"), mothTrack.tpcNClsFindable());
+          rpiKkink.fill(HIST("tr_tpcnclfindD"), dauTrack.tpcNClsFindable());
+          rpiKkink.fill(HIST("tr_itsChi2NClM"), mothTrack.itsChi2NCl());
+        }
+        if (mothTrack.tpcChi2NCl() > tpcChi2Cut)
+          continue;
 
-        rpiKkink.fill(HIST("tr_chi2nclM"), mothTrack.tpcChi2NCl());
-        rpiKkink.fill(HIST("tr_chi2nclD"), dauTrack.tpcChi2NCl());
-        rpiKkink.fill(HIST("tr_tpcnclfindM"), mothTrack.tpcNClsFindable());
-        rpiKkink.fill(HIST("tr_tpcnclfindD"), dauTrack.tpcNClsFindable());
-        rpiKkink.fill(HIST("tr_itsChi2NClM"), mothTrack.itsChi2NCl());
+        if (mothTrack.tpcNClsFindable() > maxtpcncle || mothTrack.tpcNClsFindable() < mintpcncle)
+          continue;
 
         bool kaon = false;
         if (std::abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
@@ -699,13 +747,22 @@ struct spectraKinkPiKa {
         double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
         if (radiusxy < minradius || radiusxy > maxradius)
           continue;
+        if (qa) {
+          rpiKkink.fill(HIST("tr_dcaxyM"), kinkCand.dcaMothPv());
+          rpiKkink.fill(HIST("tr_dcaxyD"), kinkCand.dcaDaugPv());
+          rpiKkink.fill(HIST("tr_dcaxykink_topo"), kinkCand.dcaKinkTopo());
 
-        rpiKkink.fill(HIST("tr_dcaxyM"), kinkCand.dcaMothPv());
-        rpiKkink.fill(HIST("tr_dcaxyD"), kinkCand.dcaDaugPv());
-        rpiKkink.fill(HIST("tr_dcaxykink_topo"), kinkCand.dcaKinkTopo());
+          rpiKkink.fill(HIST("h2_kinkradius_vs_vz"), kinkCand.zDecVtx(), radiusxy);
+          rpiKkink.fill(HIST("h2_kink_vx_vs_vy"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
 
-        rpiKkink.fill(HIST("h2_kinkradius_vs_vz"), kinkCand.zDecVtx(), radiusxy);
-        rpiKkink.fill(HIST("h2_kink_vx_vs_vy"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
+          rpiKkink.fill(HIST("h2_kinkradius_vs_pt"), radiusxy, v0.Pt());
+          rpiKkink.fill(HIST("h2_kinkradius_vs_ncl"), radiusxy, mothTrack.tpcNClsFindable());
+        }
+        if (kinkCand.dcaMothPv() > dcaXYcut)
+          continue;
+
+        if (kinkCand.dcaKinkTopo() > dcaXYcutkink)
+          continue;
 
         float pMoth = v0.P();
         float pDaug = v1.P();
@@ -749,30 +806,33 @@ struct spectraKinkPiKa {
             if (std::abs(mcTrackMoth.pdgCode()) != pid || std::abs(mcTrackDau.pdgCode()) != dpid) {
               continue;
             }
-            rpiKkink.fill(HIST("h2_kinkradius_vs_vz_m"), kinkCand.zDecVtx(), radiusxy);
-            rpiKkink.fill(HIST("h2_kink_vx_vs_vy_m"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
-
             rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec_m"), v0.Pt(), v0.Eta(), multiplicity);
             rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec_m"), v1.Pt(), v1.Eta(), multiplicity);
             rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec_m"), v0.Pt(), v1.Pt());
             rpiKkink.fill(HIST("h2_kink_angle_m"), kinkangle, multiplicity);
-            rpiKkink.fill(HIST("h2_invmass_kaon_m"), mass, v0.Pt(), ptd);
-            rpiKkink.fill(HIST("h2_qt_rec"), ptd);
-            rpiKkink.fill(HIST("h2_kaon_mc_rec_m"), mass, v0.Pt(), v0.Eta(), ptd, multiplicity);
+            rpiKkink.fill(HIST("h2_kaon_mc_rec_m"), mass, v0.Pt(), v0.Rapidity(), ptd, multiplicity);
 
-            rpiKkink.fill(HIST("tpc_dedx_m"), v0.P(), mothTrack.tpcSignal());
-            rpiKkink.fill(HIST("tpc_nsigma_kaon_m"), v0.Pt(), mothTrack.tpcNSigmaKa());
-            rpiKkink.fill(HIST("tpc_nsigma_pion_m"), v0.Pt(), mothTrack.tpcNSigmaPi());
+            if (qa && ptd > minqt && ptd < maxqt) {
+              rpiKkink.fill(HIST("h2_kinkradius_vs_vz_m"), kinkCand.zDecVtx(), radiusxy);
+              rpiKkink.fill(HIST("h2_kink_vx_vs_vy_m"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
 
-            rpiKkink.fill(HIST("tr_chi2nclM_m"), mothTrack.tpcChi2NCl());
-            rpiKkink.fill(HIST("tr_chi2nclD_m"), dauTrack.tpcChi2NCl());
-            rpiKkink.fill(HIST("tr_tpcnclfindM_m"), mothTrack.tpcNClsFindable());
-            rpiKkink.fill(HIST("tr_tpcnclfindD_m"), dauTrack.tpcNClsFindable());
-            rpiKkink.fill(HIST("tr_itsChi2NClM_m"), mothTrack.itsChi2NCl());
+              rpiKkink.fill(HIST("tpc_dedx_m"), v0.P(), mothTrack.tpcSignal());
+              rpiKkink.fill(HIST("tpc_nsigma_kaon_m"), v0.Pt(), mothTrack.tpcNSigmaKa());
+              rpiKkink.fill(HIST("tpc_nsigma_pion_m"), v0.Pt(), mothTrack.tpcNSigmaPi());
 
-            rpiKkink.fill(HIST("tr_dcaxyM_m"), kinkCand.dcaMothPv());
-            rpiKkink.fill(HIST("tr_dcaxyD_m"), kinkCand.dcaDaugPv());
-            rpiKkink.fill(HIST("tr_dcaxykink_topo_m"), kinkCand.dcaKinkTopo());
+              rpiKkink.fill(HIST("tr_chi2nclM_m"), mothTrack.tpcChi2NCl());
+              rpiKkink.fill(HIST("tr_chi2nclD_m"), dauTrack.tpcChi2NCl());
+              rpiKkink.fill(HIST("tr_tpcnclfindM_m"), mothTrack.tpcNClsFindable());
+              rpiKkink.fill(HIST("tr_tpcnclfindD_m"), dauTrack.tpcNClsFindable());
+              rpiKkink.fill(HIST("tr_itsChi2NClM_m"), mothTrack.itsChi2NCl());
+
+              rpiKkink.fill(HIST("tr_dcaxyM_m"), kinkCand.dcaMothPv());
+              rpiKkink.fill(HIST("tr_dcaxyD_m"), kinkCand.dcaDaugPv());
+              rpiKkink.fill(HIST("tr_dcaxykink_topo_m"), kinkCand.dcaKinkTopo());
+
+              rpiKkink.fill(HIST("h2_kinkradius_vs_pt_m"), radiusxy, v0.Pt());
+              rpiKkink.fill(HIST("h2_kinkradius_vs_ncl_m"), radiusxy, mothTrack.tpcNClsFindable());
+            }
           }
         }
       }
@@ -830,7 +890,7 @@ struct spectraKinkPiKa {
       double ptd = pdlab.Perp(motherDir); // or p_d_lab.Mag() * sin(theta)
       rpiKkink.fill(HIST("h2_qt_gen"), ptd);
       double mass = computeMotherMass(v0, v1);
-      rpiKkink.fill(HIST("h2_kaon_mc_gen"), mass, v0.Pt(), v0.Eta(), ptd);
+      rpiKkink.fill(HIST("h2_kaon_mc_gen"), mass, v0.Pt(), v0.Rapidity(), ptd);
     }
   }
   PROCESS_SWITCH(spectraKinkPiKa, processMC, "MC processing", false);

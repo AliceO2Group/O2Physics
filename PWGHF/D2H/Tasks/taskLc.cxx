@@ -17,6 +17,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
+/// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -30,6 +31,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -45,7 +47,9 @@
 #include <TPDGCode.h>
 
 #include <array>
+#include <cmath>
 #include <numeric>
+#include <string>
 #include <vector> // std::vector
 
 using namespace o2;
@@ -54,6 +58,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
+using namespace o2::hf_evsel;
+
+enum class GapType {
+  GapA = 0,
+  GapC = 1,
+  DoubleGap = 2,
+};
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
@@ -76,9 +87,15 @@ struct HfTaskLc {
     MlClassNonPrompt,
     NumberOfMlClasses
   };
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  HfEventSelection hfEvSel; // event selection and monitoring
 
   HfHelper hfHelper;
   SliceCache cache;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
@@ -204,13 +221,14 @@ struct HfTaskLc {
      {"MC/generated/prompt/hPhiGenPrompt", "MC particles (matched, prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
      {"MC/generated/nonprompt/hPhiGenNonPrompt", "MC particles (matched, non-prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}}}};
 
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   void init(InitContext&)
   {
-    std::array<bool, 12> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M};
+    std::array<bool, 14> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataWithMlWithUpc, doprocessDataStdWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
-
     auto vbins = (std::vector<double>)binsPt;
     /// mass candidate
     registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
@@ -311,6 +329,12 @@ struct HfTaskLc {
     registry.add("MC/reconstructed/prompt/hDecLenErrSigPrompt", "3-prong candidates (matched, prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
+    qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+    qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+    qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
@@ -331,10 +355,10 @@ struct HfTaskLc {
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
 
-      bool isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
-      bool isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
-      bool isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
-      bool isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
+      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
+      bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
+      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataStdWithUpc;
+      bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
 
@@ -381,6 +405,12 @@ struct HfTaskLc {
         registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
       }
     }
+
+    hfEvSel.addHistograms(qaRegistry); // collision monitoring
+
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
@@ -394,7 +424,7 @@ struct HfTaskLc {
 
   /// Fill MC histograms at reconstruction level
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
 
@@ -554,7 +584,7 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
         if (fillTHn) {
-          float cent = evaluateCentralityColl(collision);
+          float const cent = evaluateCentralityColl(collision);
           float occ{-1.};
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
@@ -565,7 +595,7 @@ struct HfTaskLc {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             massLc = hfHelper.invMassLcToPKPi(candidate);
 
-            if constexpr (fillMl) {
+            if constexpr (FillMl) {
               if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
                 outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
                 outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
@@ -594,7 +624,7 @@ struct HfTaskLc {
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
             massLc = hfHelper.invMassLcToPiKP(candidate);
 
-            if constexpr (fillMl) {
+            if constexpr (FillMl) {
               if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
                 outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
                 outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
@@ -645,7 +675,7 @@ struct HfTaskLc {
         for (const auto& recCol : recoCollsPerMcColl) {
           numPvContributors = recCol.numContrib() > numPvContributors ? recCol.numContrib() : numPvContributors;
         }
-        float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
+        float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
         float occ{-1.};
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
@@ -709,7 +739,7 @@ struct HfTaskLc {
 
   /// Fill histograms for real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType>
+  template <bool FillMl, typename CollType, typename CandType>
   void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
@@ -777,7 +807,7 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
 
       if (fillTHn) {
-        float cent = evaluateCentralityColl(collision);
+        float const cent = evaluateCentralityColl(collision);
         float occ{-1.};
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
@@ -788,7 +818,7 @@ struct HfTaskLc {
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPKPi(candidate);
 
-          if constexpr (fillMl) {
+          if constexpr (FillMl) {
             if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
               outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
               outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
@@ -817,7 +847,7 @@ struct HfTaskLc {
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPiKP(candidate);
 
-          if constexpr (fillMl) {
+          if constexpr (FillMl) {
             if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
               outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
               outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
@@ -848,26 +878,79 @@ struct HfTaskLc {
   }
   /// Run the analysis on real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType>
+  template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData<fillMl>(collision, candidates);
+      fillHistosData<FillMl>(collision, candidates);
     }
+  }
+
+  template <bool fillMl, typename CollType, typename CandType, typename BCsType>
+  void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
+                                          CandType const& candidates,
+                                          BCsType const& bcs,
+                                          aod::FT0s const& ft0s,
+                                          aod::FV0As const& fv0as,
+                                          aod::FDDs const& fdds
+
+  )
+  {
+
+    for (const auto& collision : collisions) {
+
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
+      }
+      auto bc = collision.template bc_as<BCsType>();
+      upchelpers::FITInfo fitInfo{};
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+      GapType gap = GapType::DoubleGap;
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
+      }
+      if (gap == GapType::GapA || gap == GapType::GapC) {
+        fillHistosData<fillMl>(collision, candidates);
+      } else {
+        continue;
+      }
+    }
+  }
+
+  GapType determineGapType(float FT0A, float FT0C, float ZNA, float ZNC)
+  {
+    constexpr float FT0AThreshold = 100.0;
+    constexpr float FT0CThreshold = 50.0;
+    constexpr float ZDCThreshold = 1.0;
+    if (FT0A < FT0AThreshold && FT0C > FT0CThreshold && ZNA < ZDCThreshold && ZNC > ZDCThreshold) {
+      return GapType::GapA;
+    }
+    if (FT0A > FT0AThreshold && FT0C < FT0CThreshold && ZNA > ZDCThreshold && ZNC < ZDCThreshold) {
+      return GapType::GapC;
+    }
+    return GapType::DoubleGap;
   }
 
   /// Run the analysis on MC data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
                                  CandLcMcGen const& mcParticles)
   {
     for (const auto& collision : collisions) {
       // MC Rec.
-      fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
+      fillHistosMcRec<FillMl>(collision, candidates, mcParticles);
     }
     // MC gen.
     fillHistosMcGen(mcParticles, collisions);
@@ -920,6 +1003,32 @@ struct HfTaskLc {
     runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
+
+  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                aod::BcFullInfos const& bcs,
+                                LcCandidatesMl const& selectedLcCandidatesMl,
+                                aod::Tracks const&,
+                                aod::FT0s const& ft0s,
+                                aod::FV0As const& fv0as,
+                                aod::FDDs const& fdds,
+                                aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
+
+  void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                             aod::BcFullInfos const& bcs,
+                             LcCandidatesMl const& selectedLcCandidatesMl,
+                             aod::Tracks const&,
+                             aod::FT0s const& ft0s,
+                             aod::FV0As const& fv0as,
+                             aod::FDDs const& fdds,
+                             aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithUpc, "Process real data with the standard method with UPC", false);
 
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,

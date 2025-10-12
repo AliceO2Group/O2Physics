@@ -130,17 +130,17 @@ struct HfTaskDplus {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
     auto vbins = static_cast<std::vector<double>>(binsPt);
-    AxisSpec thnAxisPt = {vbins, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec thnAxisMass = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
-    AxisSpec thnAxisY = {thnConfigAxisY, "y"};
-    AxisSpec thnAxisMlScore0 = {thnConfigAxisMlScore0, "Score 0"};
-    AxisSpec thnAxisMlScore1 = {thnConfigAxisMlScore1, "Score 1"};
-    AxisSpec thnAxisMlScore2 = {thnConfigAxisMlScore2, "Score 2"};
-    AxisSpec thnAxisPtBHad{thnConfigAxisPtBHad, "#it{p}_{T,B} (GeV/#it{c})"};
-    AxisSpec thnAxisFlagBHad{thnConfigAxisFlagBHad, "B Hadron flag"};
-    AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
-    AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
-    AxisSpec thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
+    AxisSpec const thnAxisPt = {vbins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const thnAxisMass = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
+    AxisSpec const thnAxisY = {thnConfigAxisY, "y"};
+    AxisSpec const thnAxisMlScore0 = {thnConfigAxisMlScore0, "Score 0"};
+    AxisSpec const thnAxisMlScore1 = {thnConfigAxisMlScore1, "Score 1"};
+    AxisSpec const thnAxisMlScore2 = {thnConfigAxisMlScore2, "Score 2"};
+    AxisSpec const thnAxisPtBHad{thnConfigAxisPtBHad, "#it{p}_{T,B} (GeV/#it{c})"};
+    AxisSpec const thnAxisFlagBHad{thnConfigAxisFlagBHad, "B Hadron flag"};
+    AxisSpec const thnAxisCent{thnConfigAxisCent, "Centrality"};
+    AxisSpec const thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
+    AxisSpec const thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
 
     registry.add("hMass", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -247,7 +247,7 @@ struct HfTaskDplus {
   template <typename T1>
   void fillHisto(const T1& candidate)
   {
-    float pt = candidate.pt();
+    float const pt = candidate.pt();
     registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate), pt);
     registry.fill(HIST("hPt"), pt);
     registry.fill(HIST("hEta"), candidate.eta(), pt);
@@ -280,7 +280,7 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   /// \param numPvContributors contributors to the PV
-  template <bool isMc, bool isMatched, typename T1>
+  template <bool IsMc, bool IsMatched, typename T1>
   void fillSparseML(const T1& candidate,
                     float ptbhad,
                     int flagBHad,
@@ -292,8 +292,8 @@ struct HfTaskDplus {
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
       outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
     }
-    if constexpr (isMc) {                                               // MC
-      if constexpr (isMatched) {                                        // Matched
+    if constexpr (IsMc) {                                               // MC
+      if constexpr (IsMatched) {                                        // Matched
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) { // Prompt
 
           if (storeCentrality && storeOccupancy) {
@@ -367,10 +367,10 @@ struct HfTaskDplus {
 
   // Fill histograms of quantities for the reconstructed Dplus candidates with MC matching
   /// \param candidate is candidate
-  template <bool isMatched, typename T1>
+  template <bool IsMatched, typename T1>
   void fillHistoMCRec(const T1& candidate)
   {
-    if constexpr (isMatched) {
+    if constexpr (IsMatched) {
       auto ptRec = candidate.pt();
       auto yRec = hfHelper.yDplus(candidate);
       registry.fill(HIST("hPtVsYRecSig_RecoSkim"), ptRec, yRec);
@@ -479,15 +479,15 @@ struct HfTaskDplus {
 
   // Run analysis for the reconstructed Dplus candidates from data
   /// \param candidates are reconstructed candidates
-  template <bool fillMl, typename T1>
+  template <bool FillMl, typename T1>
   void runDataAnalysis(const T1& /*candidates*/, CollisionsCent const& /*colls*/)
   {
     float cent{-1.f};
     float occ{-1.f};
     float numPvContr{-1.f};
     float ptBhad{-1.f};
-    int flagBHad{-1};
-    if constexpr (!fillMl) {
+    int const flagBHad{-1};
+    if constexpr (!FillMl) {
       for (const auto& candidate : selectedDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -522,7 +522,7 @@ struct HfTaskDplus {
   // Run analysis for the reconstructed Dplus candidates with MC matching
   /// \param recoCandidates are reconstructed candidates
   /// \param recoColls are reconstructed collisions
-  template <bool fillMl>
+  template <bool FillMl>
   void runAnalysisMcRec(McRecoCollisionsCent const& /*recoColls*/)
   {
     float cent{-1};
@@ -532,7 +532,7 @@ struct HfTaskDplus {
     int flagBHad{-1};
 
     // MC rec. w/o Ml
-    if constexpr (!fillMl) {
+    if constexpr (!FillMl) {
       for (const auto& candidate : recoDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -565,9 +565,9 @@ struct HfTaskDplus {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
         }
-          if (storePvContributors) {
-            numPvContr = collision.numContrib();
-          }
+        if (storePvContributors) {
+          numPvContr = collision.numContrib();
+        }
         fillHisto(candidate);
         fillHistoMCRec<true>(candidate);
         fillSparseML<true, true>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
@@ -601,7 +601,7 @@ struct HfTaskDplus {
   /// \param mcGenCollisions are the generated MC collisions
   /// \param mcRecoCollisions are the reconstructed MC collisions
   /// \param mcGenParticles are the generated MC particle candidates
-  template <bool fillMl, typename Cand>
+  template <bool FillMl, typename Cand>
   void runAnalysisMcGen(aod::McCollisions const& mcGenCollisions,
                         McRecoCollisionsCent const& mcRecoCollisions,
                         Cand const& mcGenParticles)
@@ -636,11 +636,11 @@ struct HfTaskDplus {
           flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
           ptGenB = bHadMother.pt();
         }
-        for (const auto& recCol : mcRecoCollisions) {
+        for (const auto& recCol : recoCollsPerGenMcColl) {
           numPvContr = std::max<float>(numPvContr, recCol.numContrib());
         }
         fillHistoMCGen(particle);
-        if constexpr (fillMl) {
+        if constexpr (FillMl) {
           fillSparseMcGen(particle, ptGenB, flagGenB, cent, occ, numPvContr);
         }
       }

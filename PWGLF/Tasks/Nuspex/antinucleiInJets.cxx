@@ -142,6 +142,22 @@ struct AntinucleiInJets {
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
   Configurable<std::array<double, 5>> cfgBetheBlochParams{"cfgBetheBlochParams", {0.6539, 1.591, 0.8225, 2.363, 0.09}, "TPC Bethe-Bloch parameterisation for He3"};
 
+  // Configuration parameters for CCDB access and reweighting input files
+  Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
+  Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/PrimaryFractionAntip", "path to file with reweighting"};
+  Configurable<std::string> weightsProton{"weightsProton", "", "weightsProton"};
+  Configurable<std::string> weightsLambda{"weightsLambda", "", "weightsLambda"};
+  Configurable<std::string> weightsSigma{"weightsSigma", "", "weightsSigma"};
+  Configurable<std::string> weightsXi{"weightsXi", "", "weightsXi"};
+  Configurable<std::string> weightsOmega{"weightsOmega", "", "weightsOmega"};
+
+  // Reweighting histograms
+  TH1F* primaryAntiprotons;
+  TH1F* primaryAntiLambda;
+  TH1F* primaryAntiSigma;
+  TH1F* primaryAntiXi;
+  TH1F* primaryAntiOmega;
+
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -177,6 +193,16 @@ struct AntinucleiInJets {
     // Set default MC parametrization for ITS response
     if (setMCDefaultItsParams) {
       itsResponse.setMCDefaultParameters();
+    }
+
+    // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
+    if (doprocessAntinucleiEfficiency) {
+      ccdb->setURL(urlToCcdb.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      ccdb->setFatalWhenNull(false);
+      getReweightingHistograms(ccdb, TString(pathToFile), TString(weightsProton), TString(weightsLambda), TString(weightsSigma), TString(weightsXi), TString(weightsOmega));
     }
 
     // Binning
@@ -218,6 +244,9 @@ struct AntinucleiInJets {
 
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+
+      // angle between track and jet axis
+      registryData.add("theta_track_jet", "theta_track_jet", HistType::kTH2F, {{100, 0, 100, "#it{p}^{jet}_{T} (GeV/#it{c})"}, {400, 0, 20.0, "#theta_{track-jet} (deg)"}});
 
       // Antiprotons
       registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
@@ -270,6 +299,10 @@ struct AntinucleiInJets {
       // Normalization histogram
       registryMC.add("antiproton_deltay_deltaphi_jet", "antiproton_deltay_deltaphi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
       registryMC.add("antiproton_deltay_deltaphi_ue", "antiproton_deltay_deltaphi_ue", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
+
+      // 2d kinematic distributions (eta,pt) in jets and UE
+      registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+      registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     }
 
     // Reconstructed antiproton spectra in jets and UE (MC-matched) with TPC/TOF PID
@@ -296,9 +329,6 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_prim_dca_ue", "antiproton_prim_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
       registryMC.add("antiproton_all_dca_jet", "antiproton_all_dca_jet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
       registryMC.add("antiproton_all_dca_ue", "antiproton_all_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-
-      // nsigmaITS for antiproton candidates
-      registryMC.add("antiproton_nsigma_its_mc", "antiproton_nsigma_its_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
 
       // nsigmaTOF for antiprotons
       registryMC.add("antiproton_nsigma_tof_jet_mc", "antiproton_nsigma_tof_jet_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
@@ -349,11 +379,25 @@ struct AntinucleiInJets {
       registryMC.add("antihelium3_rec_tpc_ue", "antihelium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Generated spectra needed for reweighting
-      registryMC.add("protonBar", "protonBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("lambdaBar", "lambdaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("xiBar", "xiBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("omegaBar", "omegaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("sigmaBar", "sigmaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("protonBar", "protonBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("lambdaBar", "lambdaBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("xiBar", "xiBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("omegaBar", "omegaBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("sigmaBar", "sigmaBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // nsigmaITS for antiproton candidates
+      registryMC.add("antiproton_nsigma_its_mc", "antiproton_nsigma_its_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
+
+      // Systematics on the fraction of primary antiprotons
+      registryMC.add("antip_prim_pythia", "antip_prim_pythia", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_prim_std", "antip_prim_std", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_prim_up", "antip_prim_up", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_prim_low", "antip_prim_low", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      registryMC.add("antip_sec_pythia", "antip_sec_pythia", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_sec_std", "antip_sec_std", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_sec_up", "antip_sec_up", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_sec_low", "antip_sec_low", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
     }
 
     // Systematic uncertainties (Data)
@@ -433,6 +477,54 @@ struct AntinucleiInJets {
       registryCorr.add("q1p_square_fullEvent", "q1p_square_fullEvent", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis});
       registryCorr.add("q1d_q1p_fullEvent", "q1d_q1p_fullEvent", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis});
     }
+  }
+
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString antip, TString antilambda, TString antisigma, TString antixi, TString antiomega)
+  {
+    TList* list = ccdbObj->get<TList>(filepath.Data());
+    if (!list) {
+      LOGP(error, "Could not retrieve the list from CCDB");
+      return;
+    }
+
+    primaryAntiprotons = static_cast<TH1F*>(list->FindObject(antip));
+    primaryAntiLambda = static_cast<TH1F*>(list->FindObject(antilambda));
+    primaryAntiSigma = static_cast<TH1F*>(list->FindObject(antisigma));
+    primaryAntiXi = static_cast<TH1F*>(list->FindObject(antixi));
+    primaryAntiOmega = static_cast<TH1F*>(list->FindObject(antiomega));
+
+    if (!primaryAntiprotons || !primaryAntiSigma || !primaryAntiLambda || !primaryAntiXi || !primaryAntiOmega) {
+      LOGP(error, "Missing one or more reweighting histograms in CCDB list");
+    }
+
+    LOGP(info, "Successfully loaded reweighting histograms from CCDB path");
+  }
+
+  // Get first ancestor
+  aod::McParticle getFirstAncestor(aod::McParticle const& particle, aod::McParticles const& mcParticles)
+  {
+    auto current = particle;
+
+    // If already physical primary, return it
+    if (current.isPhysicalPrimary())
+      return current;
+
+    while (current.has_mothers()) {
+      auto motherId = current.mothersIds()[0];
+
+      // Stop if motherId is invalid
+      if (motherId < 0 || motherId >= mcParticles.size()) {
+        break;
+      }
+
+      // Move up the chain
+      current = mcParticles.iteratorAt(motherId);
+
+      if (current.isPhysicalPrimary())
+        break;
+    }
+
+    return current;
   }
 
   // Compute two unit vectors perpendicular to p
@@ -621,20 +713,6 @@ struct AntinucleiInJets {
       47.61, 44.02, 32.15, 46.21, 34.75, 40.17, 37.14, 30.55, 45.42, 42.30,
       41.79, 33.21, 39.12, 47.98, 36.52, 31.58, 49.44, 38.02, 35.56, 43.49};
 
-    static std::vector<double> minEtaSyst = {
-      -0.804, -0.844, -0.751, -0.784, -0.819, -0.823, -0.768, -0.781, -0.845, -0.787,
-      -0.758, -0.828, -0.776, -0.842, -0.808, -0.763, -0.849, -0.770, -0.799, -0.754,
-      -0.825, -0.847, -0.806, -0.783, -0.796, -0.835, -0.777, -0.752, -0.838, -0.813,
-      -0.785, -0.802, -0.795, -0.846, -0.780, -0.829, -0.817, -0.773, -0.765, -0.789,
-      -0.800, -0.839, -0.758, -0.820, -0.833, -0.762, -0.792, -0.809, -0.827, -0.751};
-
-    static std::vector<double> maxEtaSyst = {
-      0.804, 0.844, 0.751, 0.784, 0.819, 0.823, 0.768, 0.781, 0.845, 0.787,
-      0.758, 0.828, 0.776, 0.842, 0.808, 0.763, 0.849, 0.770, 0.799, 0.754,
-      0.825, 0.847, 0.806, 0.783, 0.796, 0.835, 0.777, 0.752, 0.838, 0.813,
-      0.785, 0.802, 0.795, 0.846, 0.780, 0.829, 0.817, 0.773, 0.765, 0.789,
-      0.800, 0.839, 0.758, 0.820, 0.833, 0.762, 0.792, 0.809, 0.827, 0.751};
-
     // Track Selection
     if (requirePvContributor && !(track.isPVContributor()))
       return false;
@@ -650,7 +728,7 @@ struct AntinucleiInJets {
       return false;
     if (track.itsChi2NCl() > maxChiSquareItsSyst[isyst])
       return false;
-    if (track.eta() < minEtaSyst[isyst] || track.eta() > maxEtaSyst[isyst])
+    if (track.eta() < minEta || track.eta() > maxEta)
       return false;
     if (track.pt() < minPt)
       return false;
@@ -870,6 +948,11 @@ struct AntinucleiInJets {
         // Apply DCA selections
         if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
           continue;
+
+        // Fill angular distribution of tracks wrt jet axis
+        TVector3 trackDirection(track.px(), track.py(), track.pz());
+        double thetaTrackJet = (180.0 / PI) * jetAxis.Angle(trackDirection);
+        registryData.fill(HIST("theta_track_jet"), jet.pt(), thetaTrackJet);
 
         // Particle identification using the ITS cluster size
         bool passedItsPidProt(true), passedItsPidDeut(true), passedItsPidHel(true);
@@ -1346,6 +1429,99 @@ struct AntinucleiInJets {
           continue;
         const auto particle = track.mcParticle();
 
+        // ****************************************************************************************************************
+
+        // Systematic uncertainty on primary fraction
+        if (track.sign() < 0 && particle.pdgCode() == PDG_t::kProtonBar) {
+
+          // Primary antiprotons
+          if (particle.isPhysicalPrimary()) {
+
+            // Initialize weights
+            double wPrimStd(1.0), wPrimUp(1.0), wPrimLow(1.0);
+
+            // Weight assignment
+            if (particle.pt() < primaryAntiprotons->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiprotons->FindBin(particle.pt());
+              wPrimStd = primaryAntiprotons->GetBinContent(ipt);
+              wPrimUp = wPrimStd + primaryAntiprotons->GetBinError(ipt);
+              wPrimLow = wPrimStd - primaryAntiprotons->GetBinError(ipt);
+            }
+
+            // Fill histograms
+            registryMC.fill(HIST("antip_prim_pythia"), track.pt());
+            registryMC.fill(HIST("antip_prim_std"), track.pt(), wPrimStd);
+            registryMC.fill(HIST("antip_prim_up"), track.pt(), wPrimUp);
+            registryMC.fill(HIST("antip_prim_low"), track.pt(), wPrimLow);
+          }
+
+          // Secondary antiprotons from material
+          if (!particle.isPhysicalPrimary() && !particle.has_mothers()) {
+
+            // Fill histograms
+            registryMC.fill(HIST("antip_sec_pythia"), track.pt());
+            registryMC.fill(HIST("antip_sec_std"), track.pt());
+            registryMC.fill(HIST("antip_sec_up"), track.pt());
+            registryMC.fill(HIST("antip_sec_low"), track.pt());
+          }
+
+          // Secondary antiprotons from weak decays
+          if (!particle.isPhysicalPrimary() && particle.has_mothers()) {
+
+            // Get first ancestor
+            auto ancestor = getFirstAncestor(particle, mcParticles);
+            double wSecStd(1.0), wSecUp(1.0), wSecLow(1.0);
+
+            // Antiprotons from antiSigma
+            if (ancestor.pdgCode() == PDG_t::kSigmaBarMinus && ancestor.pt() < primaryAntiSigma->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiSigma->FindBin(ancestor.pt());
+              wSecStd = primaryAntiSigma->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiSigma->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiSigma->GetBinError(ipt);
+            }
+
+            // Antiprotons from antiLambda0
+            if (ancestor.pdgCode() == PDG_t::kLambda0Bar && ancestor.pt() < primaryAntiLambda->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiLambda->FindBin(ancestor.pt());
+              wSecStd = primaryAntiLambda->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiLambda->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiLambda->GetBinError(ipt);
+            }
+
+            // Antiprotons from antiXi
+            if (ancestor.pdgCode() == PDG_t::kXiPlusBar && ancestor.pt() < primaryAntiXi->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiXi->FindBin(ancestor.pt());
+              wSecStd = primaryAntiXi->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiXi->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiXi->GetBinError(ipt);
+            }
+
+            // Antiprotons from antiXi0
+            if (ancestor.pdgCode() == -o2::constants::physics::Pdg::kXi0 && ancestor.pt() < primaryAntiXi->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiXi->FindBin(ancestor.pt());
+              wSecStd = primaryAntiXi->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiXi->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiXi->GetBinError(ipt);
+            }
+
+            // Antiprotons from antiOmega
+            if (ancestor.pdgCode() == PDG_t::kOmegaPlusBar && ancestor.pt() < primaryAntiOmega->GetXaxis()->GetXmax()) {
+              int ipt = primaryAntiOmega->FindBin(ancestor.pt());
+              wSecStd = primaryAntiOmega->GetBinContent(ipt);
+              wSecUp = wSecStd + primaryAntiOmega->GetBinError(ipt);
+              wSecLow = wSecStd - primaryAntiOmega->GetBinError(ipt);
+            }
+
+            // Fill histograms
+            registryMC.fill(HIST("antip_sec_pythia"), track.pt());
+            registryMC.fill(HIST("antip_sec_std"), track.pt(), wSecStd);
+            registryMC.fill(HIST("antip_sec_up"), track.pt(), wSecUp);
+            registryMC.fill(HIST("antip_sec_low"), track.pt(), wSecLow);
+          }
+        }
+
+        // ****************************************************************************************************************
+
         // Select only physical primary particles
         if (!particle.isPhysicalPrimary())
           continue;
@@ -1372,6 +1548,11 @@ struct AntinucleiInJets {
         }
         if (applyItsPid && (2.0 * pt) < ptMaxItsPidHel && (nSigmaITShel3 < nSigmaItsMin || nSigmaITShel3 > nSigmaItsMax)) {
           passedItsPidHel = false;
+        }
+
+        // Fill nsigmaITS for antiproton candidates
+        if (track.sign() < 0 && particle.pdgCode() == PDG_t::kProtonBar && isHighPurityAntiproton(track)) {
+          registryMC.fill(HIST("antiproton_nsigma_its_mc"), pt, nSigmaITSprot);
         }
 
         // Fill histograms of antiprotons
@@ -1522,6 +1703,9 @@ struct AntinucleiInJets {
 
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt());
+
+          // Fill 2d (pt,eta) distribution of antiprotons
+          registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta());
         }
 
         // Set up two perpendicular cone axes for underlying event estimation
@@ -1562,6 +1746,9 @@ struct AntinucleiInJets {
 
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt());
+
+          // Fill 2d (pt,eta) distribution of antiprotons
+          registryMC.fill(HIST("antiproton_eta_pt_ue"), protonVec.Pt(), protonVec.Eta());
         }
       }
       if (isAtLeastOneJetSelected) {
@@ -1737,11 +1924,6 @@ struct AntinucleiInJets {
 
           // nsigmaITS for antiprotons
           double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
-
-          // Fill nsigmaITS for antiproton candidates
-          if (isHighPurityAntiproton(track)) {
-            registryMC.fill(HIST("antiproton_nsigma_its_mc"), pt, nSigmaITSprot);
-          }
 
           // Particle identification using the ITS cluster size
           bool passedItsPidProt(true);

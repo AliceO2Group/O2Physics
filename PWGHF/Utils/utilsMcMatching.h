@@ -138,6 +138,7 @@ static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> 
   {DecayChannelResonant::LcToPKstar0, {-o2::constants::physics::Pdg::kK0Star892, +PDG_t::kProton}},
   {DecayChannelResonant::LcToDeltaplusplusK, {+2224, +PDG_t::kKMinus}},
   {DecayChannelResonant::LcToL1520Pi, {+102134, +PDG_t::kPiPlus}},
+  {DecayChannelResonant::LcToPPhi, {+PDG_t::kProton, +o2::constants::physics::Pdg::kPhi}},
 };
 
 // Ξc+
