@@ -46,8 +46,8 @@
 #include <algorithm> // std::min
 #include <array>
 #include <numeric>
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
