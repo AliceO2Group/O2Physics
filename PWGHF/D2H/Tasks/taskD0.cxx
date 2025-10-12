@@ -336,10 +336,11 @@ struct HfTaskD0 {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  template <int ReconstructionType, bool ApplyMl, typename CandType, typename CollType>
+  template <int ReconstructionType, bool ApplyMl, typename CandType, typename CollType, typename BCsType>
   void processData(CandType const& candidates,
                    CollType const&,
-                   aod::TracksWExtra const&)
+                   aod::TracksWExtra const&,
+                   BCsType const&)
   {
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -408,7 +409,7 @@ struct HfTaskD0 {
         }
         if (storeOccupancyAndIR && occEstimator != OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
-          auto bc = collision.template foundBC_as<aod::BcFullInfos>();
+          auto bc = collision.template foundBC_as<BCsType>();
           ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
         }
       }
@@ -514,50 +515,51 @@ struct HfTaskD0 {
       }
     }
   }
-  void processDataWithDCAFitterN(D0Candidates const&, Collisions const& collisions, aod::TracksWExtra const& tracks)
+  void processDataWithDCAFitterN(D0Candidates const&, Collisions const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates, collisions, tracks);
+    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates, collisions, tracks, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
-  void processDataWithDCAFitterNCent(D0Candidates const&, CollisionsCent const& collisions, aod::TracksWExtra const& tracks)
+  void processDataWithDCAFitterNCent(D0Candidates const&, CollisionsCent const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates, collisions, tracks);
+    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates, collisions, tracks, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNCent, "process taskD0 with DCAFitterN and centrality", false);
 
-  void processDataWithKFParticle(D0CandidatesKF const&, Collisions const& collisions, aod::TracksWExtra const& tracks)
+  void processDataWithKFParticle(D0CandidatesKF const&, Collisions const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF, collisions, tracks);
+    processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF, collisions, tracks, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticle, "process taskD0 with KFParticle", false);
   // TODO: add processKFParticleCent
 
-  void processDataWithDCAFitterNMl(D0CandidatesMl const&, Collisions const& collisions, aod::TracksWExtra const& tracks)
+  void processDataWithDCAFitterNMl(D0CandidatesMl const&, Collisions const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl, collisions, tracks);
+    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl, collisions, tracks, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMl, "process taskD0 with DCAFitterN and ML selections", false);
 
-  void processDataWithDCAFitterNMlCent(D0CandidatesMl const&, CollisionsCent const& collisions, aod::TracksWExtra const& tracks)
+  void processDataWithDCAFitterNMlCent(D0CandidatesMl const&, CollisionsCent const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl, collisions, tracks);
+    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl, collisions, tracks, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMlCent, "process taskD0 with DCAFitterN and ML selections and centrality", false);
 
-  void processDataWithKFParticleMl(D0CandidatesMlKF const&, Collisions const& collisions, aod::TracksWExtra const& tracks)
+  void processDataWithKFParticleMl(D0CandidatesMlKF const&, Collisions const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF, collisions, tracks);
+    processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF, collisions, tracks, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticleMl, "process taskD0 with KFParticle and ML selections", false);
   // TODO: add processKFParticleMlCent
 
-  template <int ReconstructionType, bool ApplyMl, typename CandType, typename CollType>
+  template <int ReconstructionType, bool ApplyMl, typename CandType, typename CollType, typename BCsType>
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  TracksSelQuality const&,
                  CollType const& collisions,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsType const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
@@ -578,7 +580,7 @@ struct HfTaskD0 {
       }
       if (storeOccupancyAndIR && occEstimator != OccupancyEstimator::None) {
         occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
-        auto bc = collision.template foundBC_as<aod::BcFullInfos>();
+        auto bc = collision.template foundBC_as<BCsType>();
         ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
       }
       float massD0, massD0bar;
@@ -911,9 +913,10 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                TracksSelQuality const& tracks,
                                CollisionsWithMcLabels const& collisions,
-                               aod::McCollisions const& mcCollisions)
+                               aod::McCollisions const& mcCollisions,
+                               aod::BcFullInfos const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
@@ -921,9 +924,10 @@ struct HfTaskD0 {
                                    soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                    TracksSelQuality const& tracks,
                                    CollisionsWithMcLabelsCent const& collisions,
-                                   aod::McCollisions const& mcCollisions)
+                                   aod::McCollisions const& mcCollisions,
+                                   aod::BcFullInfos const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNCent, "Process MC with DCAFitterN and centrality", false);
 
@@ -931,9 +935,10 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                TracksSelQuality const& tracks,
                                CollisionsWithMcLabels const& collisions,
-                               aod::McCollisions const& mcCollisions)
+                               aod::McCollisions const& mcCollisions,
+                               aod::BcFullInfos const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
   // TODO: add the processMcWithKFParticleCent
@@ -942,9 +947,10 @@ struct HfTaskD0 {
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  TracksSelQuality const& tracks,
                                  CollisionsWithMcLabels const& collisions,
-                                 aod::McCollisions const& mcCollisions)
+                                 aod::McCollisions const& mcCollisions,
+                                 aod::BcFullInfos const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNMl, "Process MC with DCAFitterN and ML selection", false);
 
@@ -952,9 +958,10 @@ struct HfTaskD0 {
                                      soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                      TracksSelQuality const& tracks,
                                      CollisionsWithMcLabelsCent const& collisions,
-                                     aod::McCollisions const& mcCollisions)
+                                     aod::McCollisions const& mcCollisions,
+                                     aod::BcFullInfos const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNMlCent, "Process MC with DCAFitterN and ML selection and centrality", false);
 
@@ -962,9 +969,10 @@ struct HfTaskD0 {
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  TracksSelQuality const& tracks,
                                  CollisionsWithMcLabels const& collisions,
-                                 aod::McCollisions const& mcCollisions)
+                                 aod::McCollisions const& mcCollisions,
+                                 aod::BcFullInfos const& bcs)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
   // TODO: add the processMcWithKFParticleMlCent
