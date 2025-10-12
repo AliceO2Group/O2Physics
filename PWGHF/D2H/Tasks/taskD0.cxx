@@ -47,6 +47,7 @@
 #include <array>
 #include <numeric>
 #include <vector>
+#include <string>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -88,10 +89,11 @@ struct HfTaskD0 {
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   HfHelper hfHelper;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher mRateFetcher;
 
   SliceCache cache;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
   using D0CandidatesMc = soa::Join<D0Candidates, aod::HfCand2ProngMcRec>;
   using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
