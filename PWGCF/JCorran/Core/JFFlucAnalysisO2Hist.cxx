@@ -21,6 +21,7 @@
 #include <vector>
 
 using namespace o2;
+using namespace o2::framework;
 
 JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec& axisMultiplicity, AxisSpec& phiAxis, AxisSpec& etaAxis, AxisSpec& zvtAxis, AxisSpec& ptAxis, AxisSpec& massAxis, uint16_t multCorrMask, const TString& folder) : JFFlucAnalysis()
 {
@@ -39,8 +40,7 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
       multAxes.emplace_back(100, 0, 1000, "Nch PV");
     if (multCorrMask & aod::cfmultset::MultNTracksGlobal)
       multAxes.emplace_back(100, 0, 1000, "Nch Global");
-    registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
-    phs[HIST_THN_SPARSE_MULTCORR] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_multcorr", folder.Data()), "multiplicity/centrality correlations", {HistType::kTHnSparseF, multAxes})).get();
+    phs[HIST_THN_SPARSE_MULTCORR] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/multCorrelations", folder.Data()), "multiplicity/centrality correlations", {HistType::kTHnSparseF, multAxes})).get();
   } else {
     phs[HIST_THN_SPARSE_MULTCORR] = 0;
   }
