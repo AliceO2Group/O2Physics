@@ -423,6 +423,8 @@ struct FlowGfwOmegaXi {
       registry.add("QAhisto/V0/hqadcanegtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
       registry.add("QAhisto/V0/hqadcanegtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
       // Cascade QA
+      registry.add("QAhisto/Xi/hqaCascRadiusbefore", "", {HistType::kTH1D, {{200, -10, 10}}});
+      registry.add("QAhisto/Xi/hqaCascRadiusafter", "", {HistType::kTH1D, {{200, -10, 10}}});
       registry.add("QAhisto/Xi/hqaCasccosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
       registry.add("QAhisto/Xi/hqaCasccosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
       registry.add("QAhisto/Xi/hqaCascV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
@@ -436,6 +438,8 @@ struct FlowGfwOmegaXi {
       registry.add("QAhisto/Xi/hqadcaCascV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
       registry.add("QAhisto/Xi/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
 
+      registry.add("QAhisto/Xi/hqaCascRadiusbefore", "", {HistType::kTH1D, {{200, -10, 10}}});
+      registry.add("QAhisto/Xi/hqaCascRadiusafter", "", {HistType::kTH1D, {{200, -10, 10}}});
       registry.add("QAhisto/Omega/hqaCasccosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
       registry.add("QAhisto/Omega/hqaCasccosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
       registry.add("QAhisto/Omega/hqaCascV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
@@ -996,7 +1000,7 @@ struct FlowGfwOmegaXi {
     if (!collision.sel8())
       return;
     registry.fill(HIST("hEventCount"), 1.5);
-    if (eventSelected(collision, cent, interactionRate))
+    if (!eventSelected(collision, cent, interactionRate))
       return;
     TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
     loadCorrections(bc.timestamp());
@@ -1254,6 +1258,7 @@ struct FlowGfwOmegaXi {
         // fill QA
         if (cfgOutputQA) {
           if (isXi) {
+            registry.fill(HIST("QAhisto/Xi/hqaCascRadiusbefore"), casc.cascradius());
             registry.fill(HIST("QAhisto/Xi/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1262,6 +1267,7 @@ struct FlowGfwOmegaXi {
             registry.fill(HIST("QAhisto/Xi/hqadcaCascV0daubefore"), casc.dcaV0daughters());
           }
           if (isOmega) {
+            registry.fill(HIST("QAhisto/Omega/hqaCascRadiusbefore"), casc.cascradius());
             registry.fill(HIST("QAhisto/Omega/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1326,6 +1332,7 @@ struct FlowGfwOmegaXi {
         // fill QA
         if (cfgOutputQA) {
           if (isXi) {
+            registry.fill(HIST("QAhisto/Xi/hqaCascRadiusafter"), casc.cascradius());
             registry.fill(HIST("QAhisto/Xi/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1334,6 +1341,7 @@ struct FlowGfwOmegaXi {
             registry.fill(HIST("QAhisto/Xi/hqadcaCascV0dauafter"), casc.dcaV0daughters());
           }
           if (isOmega) {
+            registry.fill(HIST("QAhisto/Omega/hqaCascRadiusafter"), casc.cascradius());
             registry.fill(HIST("QAhisto/Omega/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1688,6 +1696,7 @@ struct FlowGfwOmegaXi {
       // fill QA
       if (cfgOutputQA) {
         if (std::abs(pdgCode) == kXiMinus) {
+          registry.fill(HIST("QAhisto/Xi/hqaCascRadiusbefore"), casc.dcabachtopv());
           registry.fill(HIST("QAhisto/Xi/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
           registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
           registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1696,6 +1705,7 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("QAhisto/Xi/hqadcaCascV0daubefore"), casc.dcaV0daughters());
         }
         if (std::abs(pdgCode) == kOmegaMinus) {
+          registry.fill(HIST("QAhisto/Omega/hqaCascRadiusbefore"), casc.dcabachtopv());
           registry.fill(HIST("QAhisto/Omega/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
           registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
           registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1767,6 +1777,7 @@ struct FlowGfwOmegaXi {
           }
           // fill QA
           if (cfgOutputQA) {
+            registry.fill(HIST("QAhisto/Omega/hqaCascRadiusafter"), casc.cascradius());
             registry.fill(HIST("QAhisto/Omega/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1789,6 +1800,7 @@ struct FlowGfwOmegaXi {
           }
           // fill QA
           if (cfgOutputQA) {
+            registry.fill(HIST("QAhisto/Omega/hqaCascRadiusafter"), casc.cascradius());
             registry.fill(HIST("QAhisto/Omega/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Omega/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1815,6 +1827,7 @@ struct FlowGfwOmegaXi {
           }
           // fill QA
           if (cfgOutputQA) {
+            registry.fill(HIST("QAhisto/Xi/hqaCascRadiusafter"), casc.cascradius());
             registry.fill(HIST("QAhisto/Xi/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1836,6 +1849,7 @@ struct FlowGfwOmegaXi {
               registry.fill(HIST("MC/densityMCRecXi"), cascPt, nch, density, casc.mXi());
           }
           if (cfgOutputQA) {
+            registry.fill(HIST("QAhisto/Xi/hqaCascRadiusafter"), casc.cascradius());
             registry.fill(HIST("QAhisto/Xi/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
             registry.fill(HIST("QAhisto/Xi/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
