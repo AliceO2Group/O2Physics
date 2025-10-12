@@ -723,7 +723,7 @@ struct matchingMFT {
         float dr = std::sqrt(deta * deta + dphi * dphi);
 
         // auto mcParticle_MFTMCHMID = muon_tmp.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
-        auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>();    // this is identical to mcParticle_MFTMCHMID
+        auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
         auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
         // float chi2ndf = muon_tmp.chi2() / (2.f * (mchtrack.nClusters() + mfttrack.nClusters()) - 5.f);
 
