@@ -107,7 +107,6 @@ struct lambdaspincorrderived {
   Configurable<float> phiMix{"phiMix", 0.1, "Phi cut on event mixing"};
   Configurable<float> massMix{"massMix", 0.0028, "Masscut on event mixing"};
 
-  // --- Pair-space axes (add near your other ConfigurableAxis)
   ConfigurableAxis ax_dphi_h{"ax_dphi_h", {72, 0.0, 2.0 * TMath::Pi()}, "Δφ_h"};
   ConfigurableAxis ax_deta{"ax_deta", {32, -1.6, 1.6}, "Δη"};
   ConfigurableAxis ax_ptpair{"ax_ptpair", {100, 0.0, 10.0}, "p_{T,pair} (GeV/c)"};
@@ -133,7 +132,6 @@ struct lambdaspincorrderived {
     histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
 
     // --- 3D SE/ME pair-space maps per category (LL, LAL, ALL, ALAL)
-    // SE = same-event (unit weight), ME = mixed-event (uses your mixing+CCDB weight)
     histos.add("SE_LL", "SE pairs LL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
     histos.add("SE_LAL", "SE pairs LAL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
     histos.add("SE_ALL", "SE pairs ALL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
