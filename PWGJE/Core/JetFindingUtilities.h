@@ -92,7 +92,7 @@ constexpr bool isEMCALClusterTable()
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, const U* candidate = nullptr)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, std::vector<double> trackingEfficiency, std::vector<double> trackingEfficiencyPtBinning, const U* candidate = nullptr)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -103,10 +103,14 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
         continue;
       }
     }
-    if (trackingEfficinecy < 0.999) { // this code is a bit ugly but it stops us needing to do the random generation unless asked for
-      TRandom3 randomNumber(0);
-      if (randomNumber.Rndm() > trackingEfficinecy) { // Is Rndm ok to use?
-        continue;
+    if (applyTrackingEfficiency) {
+      auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
+        std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
+        TRandom3 randomNumber(0);
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
+          continue;
+        }
       }
     }
     fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
@@ -123,7 +127,7 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
  */
 
 template <typename T, typename U>
-void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, U const& candidates)
+void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, std::vector<double> trackingEfficiency, std::vector<double> trackingEfficiencyPtBinning, U const& candidates)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -134,10 +138,14 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
         continue;
       }
     }
-    if (trackingEfficinecy < 0.999) { // this code is a bit ugly but it stops us needing to do the random generation unless asked for
-      TRandom3 randomNumber(0);
-      if (randomNumber.Rndm() > trackingEfficinecy) { // Is Rndm ok to use?
-        continue;
+    if (applyTrackingEfficiency) {
+      auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
+        std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
+        TRandom3 randomNumber(0);
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
+          continue;
+        }
       }
     }
     fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());

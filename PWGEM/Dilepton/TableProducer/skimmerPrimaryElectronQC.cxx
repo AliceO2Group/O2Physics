@@ -85,10 +85,12 @@ struct skimmerPrimaryElectronQC {
     Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
     Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
+    Configurable<float> minchi2its{"minchi2its", -1e+10, "min. chi2/NclsITS"};
     Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
     Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
     Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
     Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
+    Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -3.5, "min. TPC n sigma for electron inclusion"};
     Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +3.5, "max. TPC n sigma for electron inclusion"};
   } trackcut;
@@ -293,13 +295,17 @@ struct skimmerPrimaryElectronQC {
       return false;
     }
 
-    if (trackcut.maxchi2its < track.itsChi2NCl()) { // accept ITS afterburner (itsChi2NCl = -999)
+    if (track.itsChi2NCl() < trackcut.minchi2its || trackcut.maxchi2its < track.itsChi2NCl()) { // accept ITS afterburner (itsChi2NCl = -999)
       return false;
     }
     if (track.itsNCls() < trackcut.min_ncluster_its) {
       return false;
     }
     if (track.itsNClsInnerBarrel() < trackcut.min_ncluster_itsib) {
+      return false;
+    }
+
+    if (!trackcut.includeITSsa && (!track.hasITS() || !track.hasTPC())) {
       return false;
     }
 

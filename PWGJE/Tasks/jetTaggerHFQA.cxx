@@ -382,10 +382,12 @@ struct JetTaggerHFQA {
       registry.add("h2_jet_phi_mult", "", {HistType::kTH2F, {{axisPhi}, {axisMult}}});
       if (fillGeneralSVQA) {
         registry.add("h2_3prong_nprongs_mult", "", {HistType::kTH2F, {{axisNprongs}, {axisMult}}});
-        registry.add("hn_jet_3prong_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMult}}});
+        registry.add("hn_jet_3prong_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMult}}});
       }
-      registry.add("hn_jet_pt_3prong_Sxy_N1_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}}});
-      registry.add("hn_jet_pt_3prong_Sxyz_N1_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMult}}});
+      registry.add("hn_jet_3prong_Sxy_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}}});
+      registry.add("hn_jet_3prong_Sxyz_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMult}}});
+      registry.add("hn_taggedjet_3prong_Sxy_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}}});
+      registry.add("hn_taggedjet_3prong_Sxyz_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMult}}});
     }
     if (doprocessSV2ProngMCD || doprocessSV2ProngMCDWeighted || doprocessSV2ProngMCPMCDMatched || doprocessSV2ProngMCPMCDMatchedWeighted) {
       if (!(doprocessIPsMCD || doprocessIPsMCDWeighted || doprocessIPsMCPMCDMatched || doprocessIPsMCPMCDMatchedWeighted) && !(doprocessJPMCD || doprocessJPMCDWeighted || doprocessJPMCPMCDMatched || doprocessJPMCPMCDMatchedWeighted) && !(doprocessSV3ProngMCD || doprocessSV3ProngMCDWeighted || doprocessSV3ProngMCPMCDMatched || doprocessSV3ProngMCPMCDMatchedWeighted)) {
@@ -435,18 +437,18 @@ struct JetTaggerHFQA {
       registry.add("h3_taggedjet_pt_3prong_mass_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisMass}, {axisJetFlavour}}});
       registry.add("h3_taggedjet_pt_3prong_mass_xyz_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisMass}, {axisJetFlavour}}});
     }
-    if (doprocessSV3ProngMCDMult) {
-      registry.add("h2_jet_pt_mult_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisJetFlavour}, {axisMult}}});
-      registry.add("h2_jet_eta_mult_flavour", "", {HistType::kTH3F, {{axisEta}, {axisJetFlavour}, {axisMult}}});
-      registry.add("h2_jet_phi_mult_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisJetFlavour}, {axisMult}}});
+    if (doprocessSV3ProngMCDMult || doprocessSV3ProngMCDMultWeighted || doprocessSV3ProngMCPMCDMatchedMult || doprocessSV3ProngMCPMCDMatchedMultWeighted) {
+      registry.add("h3_jet_pt_mult_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisMult}, {axisJetFlavour}}});
+      registry.add("h3_jet_eta_mult_flavour", "", {HistType::kTH3F, {{axisEta}, {axisMult}, {axisJetFlavour}}});
+      registry.add("h3_jet_phi_mult_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisMult}, {axisJetFlavour}}});
       if (fillGeneralSVQA) {
         registry.add("h3_3prong_nprongs_mult_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisMult}, {axisJetFlavour}}});
-        registry.add("hn_jet_3prong_mult_flavour", "", {HistType::kTHnF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMult}, {axisJetFlavour}}});
+        registry.add("hn_jet_3prong_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMult}, {axisJetFlavour}}});
       }
-      registry.add("hn_jet_3prong_Sxy_N1_mult_flavour", "", {HistType::kTHnF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}, {axisJetFlavour}}});
-      registry.add("hn_jet_3prong_Sxyz_N1_mult_flavour", "", {HistType::kTHnF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMult}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_mult_flavour", "", {HistType::kTHnF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisMult}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxyz_N1_mult_flavour", "", {HistType::kTHnF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisMult}, {axisJetFlavour}}});
+      registry.add("hn_jet_3prong_Sxy_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}, {axisJetFlavour}}});
+      registry.add("hn_jet_3prong_Sxyz_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMult}, {axisJetFlavour}}});
+      registry.add("hn_taggedjet_3prong_Sxy_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisMult}, {axisJetFlavour}}});
+      registry.add("hn_taggedjet_3prong_Sxyz_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisMult}, {axisJetFlavour}}});
     }
   }
 
@@ -1022,9 +1024,9 @@ struct JetTaggerHFQA {
     if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      registry.fill(HIST("hn_jet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
+      registry.fill(HIST("hn_jet_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
       if (jet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
+        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
       }
     }
     if (fillSVxyz) {
@@ -1033,9 +1035,9 @@ struct JetTaggerHFQA {
       if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
         auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
         auto massSV = bjetCandXYZ.m();
-        registry.fill(HIST("h2_jet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxyz, massSV, mult);
+        registry.fill(HIST("hn_jet_3prong_Sxyz_N1_mult"), jet.pt(), maxSxyz, massSV, mult);
         if (jet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("h2_taggedjet_pt_3prong_Sxyz_N1_mult"), jet.pt(), maxSxyz, massSV, mult);
+          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_mult"), jet.pt(), maxSxyz, massSV, mult);
         }
       }
     }
@@ -1168,7 +1170,7 @@ struct JetTaggerHFQA {
     registry.fill(HIST("h3_jet_eta_mult_flavour"), mcdjet.eta(), mult, origin, eventWeight);
     registry.fill(HIST("h3_jet_phi_mult_flavour"), mcdjet.phi(), mult, origin, eventWeight);
     if (fillGeneralSVQA) {
-      registry.fill(HIST("h3_3prong_nprongs_mult_flavour"), mcdjet.template secondaryVertices_as<V>().size(), mult, origin);
+      registry.fill(HIST("h3_3prong_nprongs_mult_flavour"), mcdjet.template secondaryVertices_as<V>().size(), mult, origin, eventWeight);
       for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
         registry.fill(HIST("hn_jet_3prong_mult_flavour"), mcdjet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), prong.decayLength(), prong.errorDecayLengthXY(), prong.decayLength() / prong.errorDecayLengthXY(), origin, eventWeight);
       }
@@ -1180,7 +1182,7 @@ struct JetTaggerHFQA {
       auto massSV = bjetCand.m();
       registry.fill(HIST("hn_jet_3prong_Sxy_N1_mult_flavour"), mcdjet.pt(), maxSxy, massSV, mult, origin, eventWeight);
       if (mcdjet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_pt_3prong_Sxy_N1_mult_flavour"), mcdjet.pt(), maxSxy, massSV, mult, origin, eventWeight);
+        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_mult_flavour"), mcdjet.pt(), maxSxy, massSV, mult, origin, eventWeight);
       }
     }
     if (fillSVxyz) {
@@ -1190,7 +1192,7 @@ struct JetTaggerHFQA {
         auto massSV = bjetCandXYZ.m();
         registry.fill(HIST("hn_jet_3prong_Sxyz_N1_mult_flavour"), mcdjet.pt(), maxSxyz, massSV, mult, origin, eventWeight);
         if (mcdjet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("hn_taggedjet_pt_3prong_Sxyz_N1_mult_flavour"), mcdjet.pt(), maxSxyz, massSV, mult, origin, eventWeight);
+          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_mult_flavour"), mcdjet.pt(), maxSxyz, massSV, mult, origin, eventWeight);
         }
       }
     }
