@@ -67,24 +67,14 @@ struct lambdaspincorrderived {
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
-  // TH3D* hweightNUAL;
-  // TH3D* hweightNUAAL;
-  // TH3D* hweight1;
-  // TH3D* hweight2;
-  // TH3D* hweight3;
-  // TH3D* hweight4;
-  // Configurable<std::string> ConfWeightPathNUAL{"ConfWeightPathNUAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  // Configurable<std::string> ConfWeightPathNUAAL{"ConfWeightPathNUAAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  // Configurable<std::string> ConfWeightPathLL{"ConfWeightPathLL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  // Configurable<std::string> ConfWeightPathALAL{"ConfWeightPathALAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  // Configurable<std::string> ConfWeightPathLAL{"ConfWeightPathLAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-  // Configurable<std::string> ConfWeightPathALL{"ConfWeightPathALL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
-
-  Configurable<std::string> ConfEffPathL{"ConfEffPathL", "", "CCDB path to Eff (optional)"};
-  Configurable<std::string> ConfEffPathAL{"ConfEffPathAL", "", "CCDB path to Eff (optional)"};
-
-  TH3D* hEff_L = nullptr;
-  TH3D* hEff_AL = nullptr;
+  TH3D* hweight1;
+  TH3D* hweight2;
+  TH3D* hweight3;
+  TH3D* hweight4;
+  Configurable<std::string> ConfWeightPathLL{"ConfWeightPathLL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
+  Configurable<std::string> ConfWeightPathALAL{"ConfWeightPathALAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
+  Configurable<std::string> ConfWeightPathLAL{"ConfWeightPathLAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
+  Configurable<std::string> ConfWeightPathALL{"ConfWeightPathALL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
 
   // event sel/////////
   Configurable<float> centMin{"centMin", 0, "Minimum Centrality"};
@@ -117,6 +107,10 @@ struct lambdaspincorrderived {
   Configurable<float> phiMix{"phiMix", 0.1, "Phi cut on event mixing"};
   Configurable<float> massMix{"massMix", 0.0028, "Masscut on event mixing"};
 
+  ConfigurableAxis ax_dphi_h{"ax_dphi_h", {72, 0.0, 2.0 * TMath::Pi()}, "Δφ_h"};
+  ConfigurableAxis ax_deta{"ax_deta", {32, -1.6, 1.6}, "Δη"};
+  ConfigurableAxis ax_ptpair{"ax_ptpair", {100, 0.0, 10.0}, "p_{T,pair} (GeV/c)"};
+
   // THnsparse bining
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {50, 1.09, 1.14}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisR{"configThnAxisR", {80, 0.0, 8.0}, "#it{R}"};
@@ -137,12 +131,16 @@ struct lambdaspincorrderived {
     histos.add("ptCent", "ptCent", HistType::kTH2D, {{100, 0.0, 10.0}, {8, 0.0, 80.0}}, true);
     histos.add("etaCent", "etaCent", HistType::kTH2D, {{32, -0.8, 0.8}, {8, 0.0, 80.0}}, true);
 
-    // Attempted-for-replacement (Den) and Succeeded (Num) per SE leg kinematics
-    histos.add("hMatchDen_L", "Attempted #Lambda; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
-    histos.add("hMatchDen_AL", "Attempted #bar{#Lambda}; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
+    // --- 3D SE/ME pair-space maps per category (LL, LAL, ALL, ALAL)
+    histos.add("SE_LL", "SE pairs LL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    histos.add("SE_LAL", "SE pairs LAL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    histos.add("SE_ALL", "SE pairs ALL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    histos.add("SE_ALAL", "SE pairs ALAL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
-    histos.add("hMatchNum_L", "Succeeded #Lambda; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
-    histos.add("hMatchNum_AL", "Succeeded #bar{#Lambda}; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
+    histos.add("ME_LL", "ME pairs LL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    histos.add("ME_LAL", "ME pairs LAL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    histos.add("ME_ALL", "ME pairs ALL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
+    histos.add("ME_ALAL", "ME pairs ALAL;Δφ_h;Δη;p_{T,pair}", HistType::kTH3D, {ax_dphi_h, ax_deta, ax_ptpair}, true);
 
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
@@ -181,8 +179,10 @@ struct lambdaspincorrderived {
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     LOGF(info, "Getting alignment offsets from the CCDB...");
     if (useweight) {
-      hEff_L = ccdb->getForTimeStamp<TH3D>(ConfEffPathL.value, cfgCcdbParam.nolaterthan.value);
-      hEff_AL = ccdb->getForTimeStamp<TH3D>(ConfEffPathAL.value, cfgCcdbParam.nolaterthan.value);
+      hweight1 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLL.value, cfgCcdbParam.nolaterthan.value);
+      hweight2 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLAL.value, cfgCcdbParam.nolaterthan.value);
+      hweight3 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALL.value, cfgCcdbParam.nolaterthan.value);
+      hweight4 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALAL.value, cfgCcdbParam.nolaterthan.value);
     }
   }
 
@@ -319,18 +319,26 @@ struct lambdaspincorrderived {
       cosThetaDiff = cosDeltaTheta_hel;
     }
 
-    double deltaPhi = std::abs(RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F, harmonic));
-    double deltaEta = particle1Dummy.Eta() - particle2Dummy.Eta();
+    // --- helper to compute pair-space variables
+    auto phi1h = RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F, harmonic);
+    auto phi2h = RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F, harmonic);
+    double dphi_h = std::abs(phi1h - phi2h);
+    double deta_pair = particle1Dummy.Eta() - particle2Dummy.Eta();
+    double pt_pair = (particle1Dummy + particle2Dummy).Pt();
     double deltaRap = std::abs(particle1Dummy.Rapidity() - particle2Dummy.Rapidity());
-    double deltaR = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+    double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_h * dphi_h);
 
-    double epsWeightParticle1 = 1.0;
+    double epsWeight = 1.0;
 
     if (useweight && datatype == 1) {
-      if (tag1 == 0) {
-        epsWeightParticle1 = hEff_L->GetBinContent(hEff_L->FindBin(particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic)));
-      } else {
-        epsWeightParticle1 = hEff_AL->GetBinContent(hEff_AL->FindBin(particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic)));
+      if (tag1 == 0 && tag2 == 0) {
+        epsWeight = hweight1->GetBinContent(hweight1->FindBin(dphi_h, deta_pair, pt_pair));
+      } else if (tag1 == 0 && tag2 == 1) {
+        epsWeight = hweight2->GetBinContent(hweight2->FindBin(dphi_h, deta_pair, pt_pair));
+      } else if (tag1 == 1 && tag2 == 0) {
+        epsWeight = hweight3->GetBinContent(hweight3->FindBin(dphi_h, deta_pair, pt_pair));
+      } else if (tag1 == 1 && tag2 == 1) {
+        epsWeight = hweight4->GetBinContent(hweight4->FindBin(dphi_h, deta_pair, pt_pair));
       }
     }
 
@@ -341,22 +349,26 @@ struct lambdaspincorrderived {
         histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, mixpairweight);
         histos.fill(HIST("hSparseRapLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, mixpairweight);
         histos.fill(HIST("hSparsePairMassLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), mixpairweight);
+        histos.fill(HIST("SE_LL"), dphi_h, deta_pair, pt_pair);
       } else if (tag1 == 0 && tag2 == 1) {
         histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, mixpairweight);
         histos.fill(HIST("hSparseRapLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, mixpairweight);
         histos.fill(HIST("hSparsePairMassLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), mixpairweight);
+        histos.fill(HIST("SE_LAL"), dphi_h, deta_pair, pt_pair);
       } else if (tag1 == 1 && tag2 == 0) {
         histos.fill(HIST("hSparseAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, mixpairweight);
         histos.fill(HIST("hSparseRapAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, mixpairweight);
         histos.fill(HIST("hSparsePairMassAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), mixpairweight);
+        histos.fill(HIST("SE_ALL"), dphi_h, deta_pair, pt_pair);
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, mixpairweight);
         histos.fill(HIST("hSparseRapAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, mixpairweight);
         histos.fill(HIST("hSparsePairMassAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), mixpairweight);
+        histos.fill(HIST("SE_ALAL"), dphi_h, deta_pair, pt_pair);
       }
     } else if (datatype == 1) {
       double weight = mixpairweight;
-      weight = mixpairweight / epsWeightParticle1;
+      weight = mixpairweight / epsWeight;
       if (weight <= 0.0) {
         weight = 1.0;
       }
@@ -365,21 +377,25 @@ struct lambdaspincorrderived {
         histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
         histos.fill(HIST("hSparseRapLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
         histos.fill(HIST("hSparsePairMassLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
+        histos.fill(HIST("ME_LL"), dphi_h, deta_pair, pt_pair);
       } else if (tag1 == 0 && tag2 == 1) {
         histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight);
         histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
         histos.fill(HIST("hSparseRapLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
         histos.fill(HIST("hSparsePairMassLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
+        histos.fill(HIST("ME_LAL"), dphi_h, deta_pair, pt_pair);
       } else if (tag1 == 1 && tag2 == 0) {
         histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight);
         histos.fill(HIST("hSparseAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
         histos.fill(HIST("hSparseRapAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
         histos.fill(HIST("hSparsePairMassAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
+        histos.fill(HIST("ME_ALL"), dphi_h, deta_pair, pt_pair);
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight);
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight);
         histos.fill(HIST("hSparseRapAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight);
         histos.fill(HIST("hSparsePairMassAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, pairDummy.M(), weight);
+        histos.fill(HIST("ME_ALAL"), dphi_h, deta_pair, pt_pair);
       }
     }
   }
@@ -606,36 +622,32 @@ struct lambdaspincorrderived {
 
   void processMEV3(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
-    // one pool (deque) per mixing bin; each entry holds (collision index, slice of its V0s)
     auto nBins = colBinning.getAllBinsCount();
     std::vector<std::deque<std::pair<int, AllTrackCandidates>>> eventPools(nBins);
 
     for (auto& collision1 : collisions) {
-      // select mixing bin for this event
       const int bin = colBinning.getBin(std::make_tuple(collision1.posz(), collision1.cent()));
 
-      // --- if pool is still empty, just store this event and skip mixing
+      // if pool empty, push and continue
       if (eventPools[bin].empty()) {
         auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
         eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
-        if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
+        if ((int)eventPools[bin].size() > nEvtMixing)
           eventPools[bin].pop_front();
-        }
-        continue; // skip directly to the next event
+        continue;
       }
 
-      // all V0s from the current event
+      // current event slice
       auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
 
-      // loop over same-event candidate pairs (t1,t2)
-      int oldindex = -555;
+      // loop over SE unordered pairs (t1,t2)
       for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0(t1) || !selectionV0(t2))
           continue;
         if (t2.index() <= t1.index())
-          continue; // unique unordered pairs
+          continue;
         if (t1.protonIndex() == t2.protonIndex())
-          continue; // no shared daughter
+          continue;
         if (t1.pionIndex() == t2.pionIndex())
           continue;
         if (t1.protonIndex() == t2.pionIndex())
@@ -643,94 +655,67 @@ struct lambdaspincorrderived {
         if (t1.pionIndex() == t2.protonIndex())
           continue;
 
-        // --- First pass over previous events: count replacements for t1 (first leg)
-        int mixes = 0;
-
-        struct PoolView {
-          AllTrackCandidates* pool; // pointer to slice of V0s from a prior event
-          int nRepl;                // how many tX match t1 by checkKinematics
+        // scan prior events for replacements for t1
+        struct PV {
+          AllTrackCandidates* pool;
+          int nRepl;
         };
-
-        std::vector<PoolView> usable;
+        std::vector<PV> usable;
         int totalRepl = 0;
 
+        int mixes = 0;
         for (auto it = eventPools[bin].rbegin();
              it != eventPools[bin].rend() && mixes < nEvtMixing; ++it, ++mixes) {
           const int collision2idx = it->first;
-          auto& poolB = it->second; // V0 slice of that prior event in this bin
-          if (collision2idx == collision1.index()) {
-            continue; // skip same-event mixing
-          }
+          auto& poolB = it->second;
+          if (collision2idx == collision1.index())
+            continue;
+
           int nRepl = 0;
           for (auto& tX : poolB) {
             if (!selectionV0(tX))
               continue;
             if (checkKinematics(t1, tX))
-              ++nRepl; // <-- match against t1 only
+              ++nRepl;
           }
-
           if (nRepl > 0) {
-            usable.push_back(PoolView{&poolB, nRepl});
+            usable.push_back(PV{&poolB, nRepl});
             totalRepl += nRepl;
           }
         }
 
-        // --- Track-by-track matching efficiency (count each t1 once in this event)
-        if (t1.index() != oldindex) {
-          const double phi1 = RecoDecay::constrainAngle(t1.lambdaPhi(), 0.0F, harmonic);
-          if (t1.v0Status() == 0) {
-            histos.fill(HIST("hMatchDen_L"), t1.lambdaPt(), t1.lambdaEta(), phi1);
-          } else {
-            histos.fill(HIST("hMatchDen_AL"), t1.lambdaPt(), t1.lambdaEta(), phi1);
-          }
-
-          if (totalRepl > 0) { // success for this t1 this event
-            if (t1.v0Status() == 0) {
-              histos.fill(HIST("hMatchNum_L"), t1.lambdaPt(), t1.lambdaEta(), phi1);
-            } else {
-              histos.fill(HIST("hMatchNum_AL"), t1.lambdaPt(), t1.lambdaEta(), phi1);
-            }
-          }
-          oldindex = t1.index();
-        }
-
         if (totalRepl == 0)
-          continue; // no viable replacement for this t1
-
-        // --- Second pass: build mixed pairs (tX replaces t1), normalized per-SE-leg
+          continue;
         const float wBase = 1.0f / static_cast<float>(totalRepl);
 
+        // emit mixed pairs: tX replaces t1; t2 stays
         for (auto& pv : usable) {
           auto& poolB = *pv.pool;
           for (auto& tX : poolB) {
             if (!selectionV0(tX))
               continue;
             if (!checkKinematics(t1, tX))
-              continue; // defensive re-check
+              continue;
 
-            // Build mixed pair: tX (from prior event) replaces t1; t2 stays (current event)
-            proton = ROOT::Math::PtEtaPhiMVector(tX.protonPt(), tX.protonEta(), tX.protonPhi(), o2::constants::physics::MassProton);
-            lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass());
-            proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
-            lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
+            auto proton = ROOT::Math::PtEtaPhiMVector(tX.protonPt(), tX.protonEta(), tX.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass());
+            auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
 
-            const float dPhi = std::fabs(
-              RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) -
-              RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
+            const float dPhi = std::fabs(RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
             histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
             fillHistograms(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, wBase);
           }
         }
-      } // end same-event pair loop
-      // after mixing with prior events, push current event into the pool
+      }
+      // push current event into pool
       auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
       eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
-      if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
+      if ((int)eventPools[bin].size() > nEvtMixing)
         eventPools[bin].pop_front();
-      }
-    } // end primary-event loop
+    }
   }
-  PROCESS_SWITCH(lambdaspincorrderived, processMEV3, "Process data ME", false);
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV3, "Process data ME (first-leg, pair-3D maps)", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
