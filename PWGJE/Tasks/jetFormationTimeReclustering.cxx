@@ -414,8 +414,7 @@ struct FormationTimeReclustering {
   }
   PROCESS_SWITCH(FormationTimeReclustering, processChargedJetsMCD, "charged jet substructure", false);
 
-  void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet,
-                             aod::JetParticles const& particles)
+  void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet)
   {
     jetConstituents.clear();
     ptJet = jet.pt();
