@@ -583,7 +583,7 @@ struct Dilepton {
       } else {
         LOG(fatal) << "set 0 or 1 to cfgPolarizationFrame!";
       }
-      const AxisSpec axis_cos_theta{ConfPolarizationCosThetaBins, Form("|cos(#theta^{%s})|", frameName.data())};
+      const AxisSpec axis_cos_theta{ConfPolarizationCosThetaBins, Form("cos(#theta^{%s})", frameName.data())};
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_cos_theta}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
@@ -615,8 +615,8 @@ struct Dilepton {
         LOG(fatal) << "set 0 or 1 to cfgPolarizationFrame!";
       }
 
-      const AxisSpec axis_cos_theta{ConfPolarizationCosThetaBins, Form("|cos(#theta^{%s})|", frameName.data())};
-      const AxisSpec axis_phi{ConfPolarizationPhiBins, Form("|#varphi^{%s}| (rad.)", frameName.data())};
+      const AxisSpec axis_cos_theta{ConfPolarizationCosThetaBins, Form("cos(#theta^{%s})", frameName.data())};
+      const AxisSpec axis_phi{ConfPolarizationPhiBins, Form("#varphi^{%s} (rad.)", frameName.data())};
       const AxisSpec axis_quadmom{ConfPolarizationQuadMomBins, Form("#frac{3 cos^{2}(#theta^{%s}) -1}{2}", frameName.data())};
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_cos_theta, axis_phi, axis_quadmom}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");

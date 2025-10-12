@@ -368,8 +368,8 @@ struct DileptonMC {
 
     const AxisSpec axis_dphi_ee{cfg_nbin_dphi_ee, -M_PI / 2., 3. / 2. * M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"}; // for kHFll
     const AxisSpec axis_deta_ee{cfg_nbin_deta_ee, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};                                    // for kHFll
-    const AxisSpec axis_cos_theta_pol{ConfPolarizationCosThetaBins, Form("|cos(#theta^{%s})|", frameName.data())};                   // for kPolarization, kUPC
-    const AxisSpec axis_phi_pol{ConfPolarizationPhiBins, Form("|#varphi^{%s}| (rad.)", frameName.data())};                           // for kPolarization
+    const AxisSpec axis_cos_theta_pol{ConfPolarizationCosThetaBins, Form("cos(#theta^{%s})", frameName.data())};                     // for kPolarization, kUPC
+    const AxisSpec axis_phi_pol{ConfPolarizationPhiBins, Form("#varphi^{%s} (rad.)", frameName.data())};                             // for kPolarization
     const AxisSpec axis_quadmom{ConfPolarizationQuadMomBins, Form("#frac{3 cos^{2}(#theta^{%s}) -1}{2}", frameName.data())};         // for kPolarization
     const AxisSpec axis_aco{cfg_nbin_aco, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};                   // for kUPC
     const AxisSpec axis_asym_pt{cfg_nbin_asym_pt, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"};    // for kUPC
