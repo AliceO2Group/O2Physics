@@ -324,10 +324,10 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
       if constexpr (CandType == CandidateType::Hadron) {
-        rowTrigHads(trigCandPt, trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
+        rowTrigHads(rowCollisions.lastIndex(), trigCandPt, trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
       } else {
         std::array<float, 2> outputMl = getCandMlScores<CandType>(trigCand);
-        rowTrigCharms(trigCandPt, getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
+        rowTrigCharms(rowCollisions.lastIndex(), trigCandPt, getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
       }
 
       for (const auto& assTrk : assTrks) {
@@ -377,8 +377,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 
       std::array<float, 2> outputMl = getCandMlScores<CandType>(trigCand);
-      rowTrigBases(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta());
-      rowTrigCharms(trigCand.pt(), getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
+      rowTrigBases(trigCand.phi(), trigCand.eta());
+      rowTrigCharms(rowCollisions.lastIndex(), trigCand.pt(), getCandMass<CandType>(trigCand), outputMl[0], outputMl[1]);
     }
   }
 
@@ -545,7 +545,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
     fillSameEvent<CandidateType::Hadron>(tracks, tracks, cent);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronSameEvent, "Process Same Event for hadron candidates", true);
+  PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronSameEvent, "Process Same Event for hadron candidates", false);
 
   // Hadron Hadron Mixed Event
   void processHadronHadronMixedEvent(CollsWithCentMult::iterator const& coll,

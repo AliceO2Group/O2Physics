@@ -2591,8 +2591,15 @@ struct muonQa {
       double mass = GetMuMuInvariantMass(fgValuesMuonPV1, fgValuesMuonPV2);
       double pT = GetMuMuPt(fgValuesMuonPV1, fgValuesMuonPV2);
       double yPair = GetMuMuRap(fgValuesMuonPV1, fgValuesMuonPV2);
-      double dcaXPair = muonPosPV.dcaX - muonNegPV.dcaX;
-      double dcaYPair = muonPosPV.dcaY - muonNegPV.dcaY;
+      double dcaXPair;
+      double dcaYPair;
+      if (configRealign.fDoRealign) {
+        dcaXPair = muonPos.dcaX - muonNeg.dcaX;
+        dcaYPair = muonPos.dcaY - muonNeg.dcaY;
+      } else {
+        dcaXPair = muonPosPV.dcaX - muonNegPV.dcaX;
+        dcaYPair = muonPosPV.dcaY - muonNegPV.dcaY;
+      }
       // mass cuts only used for DCA of Jpsi candidates
       double minJpsiMass = 2.8;
       double maxJpsiMass = 3.4;
