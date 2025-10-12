@@ -42,7 +42,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -51,6 +50,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 
 #include <TEfficiency.h>
 #include <THashList.h>
@@ -93,6 +93,12 @@ struct OnTheFlyTofPid {
     Configurable<bool> considerEventTime{"considerEventTime", true, "flag to consider event time"};
     Configurable<float> innerTOFRadius{"innerTOFRadius", 20, "barrel inner TOF radius (cm)"};
     Configurable<float> outerTOFRadius{"outerTOFRadius", 80, "barrel outer TOF radius (cm)"};
+    Configurable<float> innerTOFLength{"innerTOFLength", 124, "barrel inner TOF length (cm)"};
+    Configurable<float> outerTOFLength{"outerTOFLength", 250, "barrel outer TOF length (cm)"};
+    Configurable<float> innerTOFPixelArea{"innerTOFPixelArea", 1.0, "barrel inner TOF pixel area (mm^2)"};
+    Configurable<float> innerTOFFractionOfInactiveArea{"innerTOFFractionOfInactiveArea", 2.f, "barrel inner TOF fraction of inactive area"};
+    Configurable<float> outerTOFPixelArea{"outerTOFPixelArea", 25.0, "barrel outer TOF pixel area (mm^2)"};
+    Configurable<float> outerTOFFractionOfInactiveArea{"outerTOFFractionOfInactiveArea", 2.f, "barrel outer TOF fraction of inactive area"};
     Configurable<float> innerTOFTimeReso{"innerTOFTimeReso", 20, "barrel inner TOF time error (ps)"};
     Configurable<float> outerTOFTimeReso{"outerTOFTimeReso", 20, "barrel outer TOF time error (ps)"};
     Configurable<int> nStepsLIntegrator{"nStepsLIntegrator", 200, "number of steps in length integrator"};
@@ -244,6 +250,86 @@ struct OnTheFlyTofPid {
     }
   }
 
+  bool isTrackInActiveAreaOfInnerTOF(const float hitRphi, const float hitZ)
+  {
+
+    // First we compute the fraction of active area (at the first call of the function)
+    if (simConfig.innerTOFFractionOfInactiveArea.value >= 1.f) {
+      return true; // no inefficiency
+    }
+    static bool firstCall = true;
+    static float totalArea = 0.f;
+    static int chipsInRphi = 0;
+    static int chipsInZ = 0;
+    static float chipSizeRphi = 0.f;
+    static float chipSizeZ = 0.f;
+    static float chipInactiveSkinRphi = 0.f;
+    static float chipInactiveSkinZ = 0.f;
+    if (firstCall) {
+      firstCall = false;
+      totalArea = o2::constants::math::TwoPI * simConfig.innerTOFRadius.value * simConfig.innerTOFLength.value; // total cylindrical area
+      totalArea *= (1.f - simConfig.innerTOFFractionOfInactiveArea.value);
+      // For now we assume square chips
+      chipSizeRphi = std::sqrt(simConfig.innerTOFPixelArea.value);
+      chipSizeZ = chipSizeRphi;
+      chipsInRphi = static_cast<int>(o2::constants::math::TwoPI * simConfig.innerTOFRadius.value / chipSizeRphi);
+      chipsInZ = static_cast<int>(simConfig.innerTOFLength.value / chipSizeZ);
+    }
+    // Now we check if the track fell in the active area or not
+    int chipIdRphi = hitRphi / chipSizeRphi;
+    int chipIdZ = (hitZ + simConfig.innerTOFLength.value / 2) / chipSizeZ;
+
+    // Now compute the position of the track in the chip local frame
+    float localPosRphi = hitRphi - (chipIdRphi * chipSizeRphi);
+    float localPosZ = (hitZ + simConfig.innerTOFLength.value / 2) - (chipIdZ * chipSizeZ);
+
+    if (localPosRphi < chipInactiveSkinRphi || localPosRphi > (chipSizeRphi - chipInactiveSkinRphi) ||
+        localPosZ < chipInactiveSkinZ || localPosZ > (chipSizeZ - chipInactiveSkinZ)) {
+      return false; // track in inactive area
+    }
+    return true;
+  }
+
+  bool isTrackInActiveAreaOfOuterTOF(const float hitRphi, const float hitZ)
+  {
+
+    // First we compute the fraction of active area (at the first call of the function)
+    if (simConfig.outerTOFFractionOfInactiveArea.value >= 1.f) {
+      return true; // no inefficiency
+    }
+    static bool firstCall = true;
+    static float totalArea = 0.f;
+    static int chipsInRphi = 0;
+    static int chipsInZ = 0;
+    static float chipSizeRphi = 0.f;
+    static float chipSizeZ = 0.f;
+    static float chipInactiveSkinRphi = 0.f;
+    static float chipInactiveSkinZ = 0.f;
+    if (firstCall) {
+      firstCall = false;
+      totalArea = o2::constants::math::TwoPI * simConfig.outerTOFRadius.value * simConfig.outerTOFLength.value; // total cylindrical area
+      totalArea *= (1.f - simConfig.outerTOFFractionOfInactiveArea.value);
+      // For now we assume square chips
+      chipSizeRphi = std::sqrt(simConfig.outerTOFPixelArea.value);
+      chipSizeZ = chipSizeRphi;
+      chipsInRphi = static_cast<int>(o2::constants::math::TwoPI * simConfig.outerTOFRadius.value / chipSizeRphi);
+      chipsInZ = static_cast<int>(simConfig.outerTOFLength.value / chipSizeZ);
+    }
+    // Now we check if the track fell in the active area or not
+    int chipIdRphi = hitRphi / chipSizeRphi;
+    int chipIdZ = (hitZ + simConfig.outerTOFLength.value / 2) / chipSizeZ;
+
+    // Now compute the position of the track in the chip local frame
+    float localPosRphi = hitRphi - (chipIdRphi * chipSizeRphi);
+    float localPosZ = (hitZ + simConfig.outerTOFLength.value / 2) - (chipIdZ * chipSizeZ);
+
+    if (localPosRphi < chipInactiveSkinRphi || localPosRphi > (chipSizeRphi - chipInactiveSkinRphi) ||
+        localPosZ < chipInactiveSkinZ || localPosZ > (chipSizeZ - chipInactiveSkinZ)) {
+      return false; // track in inactive area
+    }
+    return true;
+  }
+
   /// function to calculate track length of this track up to a certain radius
   /// \param track the input track
   /// \param radius the radius of the layer you're calculating the length to
@@ -298,9 +384,28 @@ struct OnTheFlyTofPid {
       if (scalarProduct1 > scalarProduct2) {
         modulus = std::hypot(point1[0] - trcCircle.xC, point1[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
         cosAngle = (point1[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point1[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
+        if (abs(radius - simConfig.innerTOFRadius.value) < o2::constants::math::Epsilon) {
+          if (!isTrackInActiveAreaOfInnerTOF(point1[0], point1[1])) {
+            return 0.f; // track in inactive area
+          }
+        } else {
+          if (!isTrackInActiveAreaOfOuterTOF(point1[0], point1[1])) {
+            return 0.f; // track in inactive area
+          }
+        }
+
       } else {
         modulus = std::hypot(point2[0] - trcCircle.xC, point2[1] - trcCircle.yC) * std::hypot(startPoint[0] - trcCircle.xC, startPoint[1] - trcCircle.yC);
         cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
+        if (abs(radius - simConfig.innerTOFRadius.value) < o2::constants::math::Epsilon) {
+          if (!isTrackInActiveAreaOfInnerTOF(point2[0], point2[1])) {
+            return 0.f; // track in inactive area
+          }
+        } else {
+          if (!isTrackInActiveAreaOfOuterTOF(point2[0], point2[1])) {
+            return 0.f; // track in inactive area
+          }
+        }
       }
       cosAngle /= modulus;
       length = trcCircle.rC * std::acos(cosAngle);
