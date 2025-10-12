@@ -713,5 +713,5 @@ struct HfCandidateSelectorOmegac0Xic0ToOmegaKa {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorToOmegaKa>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorOmegac0Xic0ToOmegaKa>(cfgc)};
 }
