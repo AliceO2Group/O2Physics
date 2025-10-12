@@ -65,6 +65,7 @@ struct HfCorrelatorHfeHadrons {
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
 
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
+  Configurable<float> invariantMassEl{"invariantMassEl", 0.14f, "max Invariant Mass for Photonic electron"};
   // Associated Hadron selection
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1f, "Transverse momentum range for associated hadron tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8f, "Eta range  for associated hadron tracks"};
@@ -105,6 +106,7 @@ struct HfCorrelatorHfeHadrons {
   ConfigurableAxis binsPt{"binsPt", {50, 0.0, 50}, "#it{p_{T}}(GeV/#it{c})"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsNSigma{"binsNSigma", {30, -15., 15.}, "#it{#sigma_{TPC}}"};
+  ConfigurableAxis binsMass{"binsMass", {100, 0.0, 2.0}, "Mass (GeV/#it{c}^{2}); entries"};
 
   HistogramRegistry registry{
     "registry",
@@ -116,11 +118,17 @@ struct HfCorrelatorHfeHadrons {
     AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta #eta = #eta_{Electron}- #eta_{Hadron}"};
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{Electron}- #varphi_{Hadron}"};
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
+    AxisSpec axisMass = {binsMass, "Mass (GeV/#it{c}^{2}); entries"};
     AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec axisNSigma = {binsNSigma, "it{#sigma_{TPC}}"};
 
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
     registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
+    registry.add("hLikeMass", "Like mass", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hLikeSignPt", "Like sign Momentum ", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1D, {{axisPt}}});
+
     registry.add("hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hLSEHCorrel", "Sparse for Delta phi and Delta eta Like sign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -235,18 +243,32 @@ struct HfCorrelatorHfeHadrons {
       registry.fill(HIST("hptElectron"), ptElectron);
       int nElectronLS = 0;
       int nElectronUS = 0;
+      float massLike = 0;
+      float massUnLike = 0;
       if (eTrack.nElPairLS() > 0) {
         for (int i = 0; i < eTrack.nElPairLS(); ++i) {
+          massLike = eTrack.invariantMass();
 
-          ++nElectronLS;
           registry.fill(HIST("hLSElectronBin"), poolBin);
+          registry.fill(HIST("hLikeMass"), massLike);
+
+          if (massLike <= invariantMassEl) {
+            ++nElectronLS;
+            registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
+          }
         }
       }
       if (eTrack.nElPairUS() > 0) {
         for (int i = 0; i < eTrack.nElPairUS(); ++i) {
+          massUnLike = eTrack.invariantMass();
 
-          ++nElectronUS;
           registry.fill(HIST("hULSElectronBin"), poolBin);
+          registry.fill(HIST("hUnLikeMass"), massUnLike);
+
+          if (massUnLike <= invariantMassEl) {
+            ++nElectronUS;
+            registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
+          }
         }
       }
 
@@ -279,16 +301,18 @@ struct HfCorrelatorHfeHadrons {
         int nElHadUSCorr = 0;
         if (eTrack.nElPairLS() > 0) {
           for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-
-            ++nElHadLSCorr;
-            registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+            if (eTrack.invariantMass() <= invariantMassEl) {
+              ++nElHadLSCorr;
+              registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+            }
           }
         }
         if (eTrack.nElPairUS() > 0) {
           for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-
-            registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-            ++nElHadUSCorr;
+            if (eTrack.invariantMass() <= invariantMassEl) {
+              registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+              ++nElHadUSCorr;
+            }
           }
         }
         entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, nElHadLSCorr, nElHadUSCorr);
@@ -367,7 +391,7 @@ struct HfCorrelatorHfeHadrons {
     fillCorrelation(collision, electron, tracks, bc);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
 
   // =======  Process starts for McRec, Same event ============
 
@@ -379,7 +403,7 @@ struct HfCorrelatorHfeHadrons {
     fillCorrelation(mcCollision, mcElectron, mcTracks, bc);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", true);
 
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electron)
   {
