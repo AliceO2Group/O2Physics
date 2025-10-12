@@ -458,7 +458,7 @@ struct kstarInOO {
         continue; // Kaon and pion not from the same K*0
 
       if (cfgMcHistos) {
-        histos.fill(HIST("hMC_USS_True"), centrality, kstarPt_Kpi, Minv_Kpi);
+        histos.fill(HIST("hMC_USS_True"), centrality, KstarPt_Kpi, Minv_Kpi);
       }
       //======================
     } // for
