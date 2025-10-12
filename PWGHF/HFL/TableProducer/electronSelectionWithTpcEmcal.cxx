@@ -72,6 +72,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
   Configurable<bool> fillTrackInfo{"fillTrackInfo", true, "Fill histograms with Track Information info before track match"};
   Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms"};
+  Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
@@ -138,7 +139,6 @@ struct HfElectronSelectionWithTpcEmcal {
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   // configurable axis
-  Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {100, -2.0, 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {32, 0.0, o2::constants::math::TwoPI}, "#it{#varphi}"};
