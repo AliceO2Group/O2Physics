@@ -66,7 +66,7 @@ o2physics_add_dpl_workflow(task-charm-reso-to-d-trk-reduced
 
 o2physics_add_dpl_workflow(task-d0
                     SOURCES taskD0.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-directed-flow-charm-hadrons
