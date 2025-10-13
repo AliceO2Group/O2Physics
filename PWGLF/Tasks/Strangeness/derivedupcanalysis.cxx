@@ -1089,11 +1089,14 @@ struct Derivedupcanalysis {
     auto znc = collision.energyCommonZNC();
     constexpr float inf_f = std::numeric_limits<float>::infinity();
 
-    if (zna == -inf_f) histos.fill(HIST("eventQA/hZN"), -1, znc, gap);
-    else if (znc == -inf_f) histos.fill(HIST("eventQA/hZN"), zna, -1, gap);
-    else if (zna == -999 && znc == -999) histos.fill(HIST("eventQA/hZN"), -2, -2, gap);
-    else if (zna == -999 || znc == -999) LOG(warning) << "Only one ZDC signal is -999";
-
+    if (zna == -inf_f)
+      histos.fill(HIST("eventQA/hZN"), -1, znc, gap);
+    else if (znc == -inf_f)
+      histos.fill(HIST("eventQA/hZN"), zna, -1, gap);
+    else if (zna == -999 && znc == -999)
+      histos.fill(HIST("eventQA/hZN"), -2, -2, gap);
+    else if (zna == -999 || znc == -999)
+      LOG(warning) << "Only one ZDC signal is -999";
   }
 
   template <typename TCollision>
@@ -1951,7 +1954,7 @@ struct Derivedupcanalysis {
 
       std::size_t nV0sThisColl = v0sGrouped[collision.globalIndex()].size();
 
-      for (std::size_t i = 0 ; i < nV0sThisColl ; i++) {
+      for (std::size_t i = 0; i < nV0sThisColl; i++) {
         auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
         if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
           continue; // skip V0s that are not standard
@@ -2041,7 +2044,7 @@ struct Derivedupcanalysis {
 
       std::size_t nV0sThisColl = v0sGrouped[collision.globalIndex()].size();
 
-      for (std::size_t i = 0 ; i < nV0sThisColl ; i++) {
+      for (std::size_t i = 0; i < nV0sThisColl; i++) {
         auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
         if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
           continue; // skip V0s that are not standard
@@ -2092,7 +2095,7 @@ struct Derivedupcanalysis {
 
       std::size_t nCascadesThisColl = cascadesGrouped[collision.globalIndex()].size();
 
-      for (std::size_t i = 0 ; i < nCascadesThisColl ; i++) {
+      for (std::size_t i = 0; i < nCascadesThisColl; i++) {
         auto casc = fullCascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
         std::bitset<kSelNum> selMap = computeBitmapCascade(casc, collision);
         // the candidate may belong to any particle species
@@ -2178,7 +2181,7 @@ struct Derivedupcanalysis {
 
       std::size_t nCascadesThisColl = cascadesGrouped[collision.globalIndex()].size();
 
-      for (std::size_t i = 0 ; i < nCascadesThisColl ; i++) {
+      for (std::size_t i = 0; i < nCascadesThisColl; i++) {
         auto casc = fullCascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
         std::bitset<kSelNum> selMap = computeBitmapCascade(casc, collision);
 

@@ -180,12 +180,10 @@ struct Cascqaanalysis {
       registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
     }
 
-
     rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     if (cfgEvtRCTFlagCheckerFV0Check) {
       rctChecker.set(o2::aod::rctsel::kFV0Bad);
     }
-
   }
 
   Filter preFilter =
