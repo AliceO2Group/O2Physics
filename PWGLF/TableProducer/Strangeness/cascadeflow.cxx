@@ -1790,7 +1790,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsT0CV0A"), eventplaneVecT0C.Dot(eventplaneVecV0A), collisionCentrality);
     resolution.fill(HIST("QVectorsV0ATPCC"), eventplaneVecV0A.Dot(eventplaneVecTPCC), collisionCentrality);
     resolution.fill(HIST("QVectorsV0ATPCA"), eventplaneVecV0A.Dot(eventplaneVecTPCA), collisionCentrality);
-    
+
     resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0C()), collisionCentrality);
     resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), collisionCentrality);
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), collisionCentrality);
