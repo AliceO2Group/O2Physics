@@ -80,12 +80,12 @@ struct FemtoTrackQa {
     trackHistManager.init(&hRegistry, trackHistSpec, trackSelections.chargeAbs.value, confTrackQaBinning.momentumType.value);
   };
 
-  void process(FilteredCollision const& col, Tracks const& /*tracks*/)
+  void process(FilteredCollision const& col, Tracks const& tracks)
   {
     colHistManager.fill(col);
     auto trackSlice = trackPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& track : trackSlice) {
-      trackHistManager.fill(track);
+      trackHistManager.fill(track, tracks);
     }
   }
 };

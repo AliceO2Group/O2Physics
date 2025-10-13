@@ -127,7 +127,7 @@ constexpr const char PrefixLambdaSelection2[] = "LambdaSelection2";
 using ConfLambdaSelection1 = ConfLambdaSelection<PrefixLambdaSelection1>;
 using ConfLambdaSelection2 = ConfLambdaSelection<PrefixLambdaSelection2>;
 constexpr const char PrefixK0shortSelection1[] = "K0shortSelection1";
-constexpr const char PrefixK0shortSelection2[] = "K0shortSelection1";
+constexpr const char PrefixK0shortSelection2[] = "K0shortSelection2";
 using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
 using ConfK0shortSelection2 = ConfK0shortSelection<PrefixK0shortSelection2>;
 

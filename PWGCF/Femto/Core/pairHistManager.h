@@ -117,6 +117,9 @@ constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
+constexpr char PrefixV0V0Se[] = "V0V0/SE/";
+constexpr char PrefixV0V0Me[] = "V0V0/ME/";
+
 constexpr char PrefixTrackResonanceSe[] = "TrackResonance/SE/";
 constexpr char PrefixTrackResonanceMe[] = "TrackResonance/ME/";
 
@@ -145,15 +148,15 @@ class PairHistManager
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
 
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kKstar, HistTable), GetHistDesc(kKstar, HistTable), GetHistType(kKstar, HistTable), {Specs[kKstar]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kMt, HistTable), GetHistDesc(kMt, HistTable), GetHistType(kMt, HistTable), {Specs[kMt]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt1VsPt2, HistTable), GetHistDesc(kPt1VsPt2, HistTable), GetHistType(kPt1VsPt2, HistTable), {Specs[kPt1VsPt2]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt1VsKstar, HistTable), GetHistDesc(kPt1VsKstar, HistTable), GetHistType(kPt1VsKstar, HistTable), {Specs[kPt1VsKstar]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt2VsKstar, HistTable), GetHistDesc(kPt2VsKstar, HistTable), GetHistType(kPt2VsKstar, HistTable), {Specs[kPt2VsKstar]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt1VsKt, HistTable), GetHistDesc(kPt1VsKt, HistTable), GetHistType(kPt1VsKt, HistTable), {Specs[kPt1VsKt]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt2VsKt, HistTable), GetHistDesc(kPt2VsKt, HistTable), GetHistType(kPt2VsKt, HistTable), {Specs[kPt2VsKt]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt1VsMt, HistTable), GetHistDesc(kPt1VsMt, HistTable), GetHistType(kPt1VsMt, HistTable), {Specs[kPt1VsMt]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt2VsMt, HistTable), GetHistDesc(kPt2VsMt, HistTable), GetHistType(kPt2VsMt, HistTable), {Specs[kPt2VsMt]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar, HistTable), getHistDesc(kKstar, HistTable), getHistType(kKstar, HistTable), {Specs[kKstar]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kMt, HistTable), getHistDesc(kMt, HistTable), getHistType(kMt, HistTable), {Specs[kMt]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsPt2, HistTable), getHistDesc(kPt1VsPt2, HistTable), getHistType(kPt1VsPt2, HistTable), {Specs[kPt1VsPt2]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsKstar, HistTable), getHistDesc(kPt1VsKstar, HistTable), getHistType(kPt1VsKstar, HistTable), {Specs[kPt1VsKstar]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsKstar, HistTable), getHistDesc(kPt2VsKstar, HistTable), getHistType(kPt2VsKstar, HistTable), {Specs[kPt2VsKstar]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsKt, HistTable), getHistDesc(kPt1VsKt, HistTable), getHistType(kPt1VsKt, HistTable), {Specs[kPt1VsKt]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsKt, HistTable), getHistDesc(kPt2VsKt, HistTable), getHistType(kPt2VsKt, HistTable), {Specs[kPt2VsKt]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsMt, HistTable), getHistDesc(kPt1VsMt, HistTable), getHistType(kPt1VsMt, HistTable), {Specs[kPt1VsMt]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsMt, HistTable), getHistDesc(kPt2VsMt, HistTable), getHistType(kPt2VsMt, HistTable), {Specs[kPt2VsMt]});
     }
 
     // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
@@ -199,19 +202,19 @@ class PairHistManager
   void fill()
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kKstar, HistTable)), mKstar);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kMt, HistTable)), mMt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsPt2, HistTable)), mParticle1.Pt(), mParticle2.Pt());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsKstar, HistTable)), mParticle1.Pt(), mKstar);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsMt, HistTable)), mParticle1.Pt(), mMt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsKt, HistTable)), mParticle1.Pt(), mKt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsKstar, HistTable)), mParticle2.Pt(), mKstar);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsMt, HistTable)), mParticle2.Pt(), mMt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsKt, HistTable)), mParticle2.Pt(), mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar, HistTable)), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMt, HistTable)), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsPt2, HistTable)), mParticle1.Pt(), mParticle2.Pt());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsKstar, HistTable)), mParticle1.Pt(), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsMt, HistTable)), mParticle1.Pt(), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsKt, HistTable)), mParticle1.Pt(), mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsKstar, HistTable)), mParticle2.Pt(), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsMt, HistTable)), mParticle2.Pt(), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsKt, HistTable)), mParticle2.Pt(), mKt);
     }
 
     // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
-    //  mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaz, HistTable)), track.pt(), track.dcaZ());
+    //  mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDcaz, HistTable)), track.pt(), track.dcaZ());
     // }
   }
 

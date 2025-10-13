@@ -35,7 +35,7 @@ struct HistInfo {
 };
 
 template <typename EnumType, typename ArrayType>
-constexpr o2::framework::HistType GetHistType(EnumType variable, const ArrayType& array)
+constexpr o2::framework::HistType getHistType(EnumType variable, const ArrayType& array)
 {
   const auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
     return entry.hist == variable;
@@ -45,7 +45,7 @@ constexpr o2::framework::HistType GetHistType(EnumType variable, const ArrayType
 }
 
 template <typename EnumType, typename ArrayType>
-constexpr std::string_view GetHistName(EnumType variable, const ArrayType& array)
+constexpr std::string_view getHistName(EnumType variable, const ArrayType& array)
 {
   auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
     return entry.hist == variable;
@@ -55,7 +55,7 @@ constexpr std::string_view GetHistName(EnumType variable, const ArrayType& array
 }
 
 template <typename EnumType, typename ArrayType>
-std::string GetHistNamev2(EnumType variable, const ArrayType& array)
+std::string getHistNameV2(EnumType variable, const ArrayType& array)
 {
   auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
     return entry.hist == variable;
@@ -65,7 +65,7 @@ std::string GetHistNamev2(EnumType variable, const ArrayType& array)
 }
 
 template <typename EnumType, typename ArrayType>
-constexpr const char* GetHistDesc(EnumType variable, const ArrayType& array)
+constexpr const char* getHistDesc(EnumType variable, const ArrayType& array)
 {
   auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
     return entry.hist == variable;
