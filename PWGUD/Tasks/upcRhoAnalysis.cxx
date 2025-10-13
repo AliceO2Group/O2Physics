@@ -546,7 +546,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hKaPIDRadius"), std::sqrt(radiusKa));
     if (rejectLowerProbPairs)
       return ((radiusPi < std::pow(tracksTpcNSigmaPiCut, 2)) && (radiusPi < radiusEl) && (radiusPi < radiusKa));
-    else 
+    else
       return radiusPi < std::pow(tracksTpcNSigmaPiCut, 2);
   }
 
@@ -642,7 +642,7 @@ struct UpcRhoAnalysis {
   {
     // check if the collision run number is contained within the selectedRuns vector
     if (selectRuns && getRunIndex(collision.runNumber(), selectedRuns) == 0)
-    return;
+      return;
     int runIndex = getRunIndex(collision.runNumber(), runNumbers);
 
     fillCollisionQcHistos<0>(collision); // fill QC histograms before cuts
@@ -869,7 +869,7 @@ struct UpcRhoAnalysis {
       }
       if (mcParticle.has_daughters()) {
         rMC.fill(HIST("MC/tracks/all/hMotherPdgCode"), mcParticle.pdgCode());
-        if (mcParticle.pdgCode() != kRho770_0) 
+        if (mcParticle.pdgCode() != kRho770_0)
           continue; // consider only rho0s
         for (const auto& daughter : mcParticle.template daughters_as<T>()) {
           if (!daughter.isPhysicalPrimary() || std::abs(daughter.pdgCode()) != kPiPlus)
