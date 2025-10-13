@@ -179,7 +179,7 @@ struct TrackEfficiency {
   void init(o2::framework::InitContext&)
   {
     if (!(acceptSplitCollisions == NonSplitOnly || acceptSplitCollisions == SplitOkCheckAnyAssocColl || acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly)) {
-      LOGF(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
+      LOGP(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
     }
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
