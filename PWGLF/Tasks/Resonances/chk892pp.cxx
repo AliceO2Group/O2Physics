@@ -109,7 +109,7 @@ struct Chk892pp {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-	Preslice<aod::V0s> perCollisionV0 = aod::v0data::collisionId;
+  Preslice<aod::V0s> perCollisionV0 = aod::v0data::collisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::PVMults>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi>;
@@ -172,7 +172,7 @@ struct Chk892pp {
   } EventCuts;
   RCTFlagsChecker rctChecker;
 
-	Configurable<bool> cfgFillQAPlots{"cfgFillQAPlots", false, "Fill QA plots"};
+  Configurable<bool> cfgFillQAPlots{"cfgFillQAPlots", false, "Fill QA plots"};
   Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
   /// PID Selections, pion
@@ -923,7 +923,7 @@ struct Chk892pp {
         if (std::abs(yreco) > KstarCuts.cfgKstarMaxRap)
           continue;
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
-			}
+      }
     }
   } // effKstarProcessReco
 
@@ -947,18 +947,18 @@ struct Chk892pp {
       auto trkbNSigmaPiTOF = (istrkbhasTOF) ? bTrack.tofNSigmaPi() : -999.;
 
       if constexpr (!IsMix) {
-				if (cfgFillQAPlots) {
-					// Bachelor pion QA plots
-					histos.fill(HIST("QA/before/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-					if (istrkbhasTOF) {
-						histos.fill(HIST("QA/before/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
-						histos.fill(HIST("QA/before/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
-					}
-					histos.fill(HIST("QA/before/trkbpionpT"), trkbpt);
-					histos.fill(HIST("QA/before/trkbpionDCAxy"), bTrack.dcaXY());
-					histos.fill(HIST("QA/before/trkbpionDCAz"), bTrack.dcaZ());
-				}
-			}
+        if (cfgFillQAPlots) {
+          // Bachelor pion QA plots
+          histos.fill(HIST("QA/before/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
+          if (istrkbhasTOF) {
+            histos.fill(HIST("QA/before/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trkbpionpT"), trkbpt);
+          histos.fill(HIST("QA/before/trkbpionDCAxy"), bTrack.dcaXY());
+          histos.fill(HIST("QA/before/trkbpionDCAz"), bTrack.dcaZ());
+        }
+      }
 
       if (!trackCut(bTrack))
         continue;
@@ -966,18 +966,18 @@ struct Chk892pp {
         continue;
 
       if constexpr (!IsMix) {
-				if (cfgFillQAPlots) {
-					// Bachelor pion QA plots after applying cuts
-					histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-					if (istrkbhasTOF) {
-						histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
-						histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
-					}
-					histos.fill(HIST("QA/after/trkbpionpT"), trkbpt);
-					histos.fill(HIST("QA/after/trkbpionDCAxy"), bTrack.dcaXY());
-					histos.fill(HIST("QA/after/trkbpionDCAz"), bTrack.dcaZ());
-				}
-			}
+        if (cfgFillQAPlots) {
+          // Bachelor pion QA plots after applying cuts
+          histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
+          if (istrkbhasTOF) {
+            histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trkbpionpT"), trkbpt);
+          histos.fill(HIST("QA/after/trkbpionDCAxy"), bTrack.dcaXY());
+          histos.fill(HIST("QA/after/trkbpionDCAz"), bTrack.dcaZ());
+        }
+      }
       trackIndicies.push_back(bTrack.index());
     }
 
@@ -1013,39 +1013,39 @@ struct Chk892pp {
       lResoSecondary = LorentzVectorSetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
 
       if constexpr (!IsMix) {
-				if (cfgFillQAPlots) {
-					// Seconddary QA plots
-					histos.fill(HIST("QA/before/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
-					if (istrkphasTOF) {
-						histos.fill(HIST("QA/before/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
-						histos.fill(HIST("QA/before/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
-					}
-					histos.fill(HIST("QA/before/trkppionpT"), trkppt);
-					histos.fill(HIST("QA/before/trkppionDCAxy"), posDauTrack.dcaXY());
-					histos.fill(HIST("QA/before/trkppionDCAz"), posDauTrack.dcaZ());
+        if (cfgFillQAPlots) {
+          // Seconddary QA plots
+          histos.fill(HIST("QA/before/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
+          if (istrkphasTOF) {
+            histos.fill(HIST("QA/before/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trkppionpT"), trkppt);
+          histos.fill(HIST("QA/before/trkppionDCAxy"), posDauTrack.dcaXY());
+          histos.fill(HIST("QA/before/trkppionDCAz"), posDauTrack.dcaZ());
 
-					histos.fill(HIST("QA/before/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
-					if (istrknhasTOF) {
-						histos.fill(HIST("QA/before/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
-						histos.fill(HIST("QA/before/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
-					}
-					histos.fill(HIST("QA/before/trknpionpT"), trknpt);
-					histos.fill(HIST("QA/before/trknpionDCAxy"), negDauTrack.dcaXY());
-					histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
+          histos.fill(HIST("QA/before/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
+          if (istrknhasTOF) {
+            histos.fill(HIST("QA/before/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trknpionpT"), trknpt);
+          histos.fill(HIST("QA/before/trknpionDCAxy"), negDauTrack.dcaXY());
+          histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
 
-					histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
-					histos.fill(HIST("QA/before/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
-					histos.fill(HIST("QA/before/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
+          histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
+          histos.fill(HIST("QA/before/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
+          histos.fill(HIST("QA/before/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
 
-					histos.fill(HIST("QA/before/hpT_Secondary"), trkkpt);
-					histos.fill(HIST("QA/before/hy_Secondary"), trkky);
-					histos.fill(HIST("QA/before/hRadiusSecondary"), trkkRadius);
-					histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
-					histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
-					histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
-					histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
-				}
-			}
+          histos.fill(HIST("QA/before/hpT_Secondary"), trkkpt);
+          histos.fill(HIST("QA/before/hy_Secondary"), trkky);
+          histos.fill(HIST("QA/before/hRadiusSecondary"), trkkRadius);
+          histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
+          histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
+          histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
+          histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
+        }
+      }
 
       if (!SecondaryCuts.cfgByPassDauPIDSelection && !selectionPIDPion(posDauTrack))
         continue;
@@ -1055,46 +1055,46 @@ struct Chk892pp {
         continue;
 
       if constexpr (!IsMix) {
-				if (cfgFillQAPlots) {
-					// Seconddary QA plots after applying cuts
+        if (cfgFillQAPlots) {
+          // Seconddary QA plots after applying cuts
 
-					histos.fill(HIST("QA/after/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
-					if (istrkphasTOF) {
-						histos.fill(HIST("QA/after/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
-						histos.fill(HIST("QA/after/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
-					}
-					histos.fill(HIST("QA/after/trkppionpT"), trkppt);
-					histos.fill(HIST("QA/after/trkppionDCAxy"), posDauTrack.dcaXY());
-					histos.fill(HIST("QA/after/trkppionDCAz"), posDauTrack.dcaZ());
+          histos.fill(HIST("QA/after/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
+          if (istrkphasTOF) {
+            histos.fill(HIST("QA/after/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trkppionpT"), trkppt);
+          histos.fill(HIST("QA/after/trkppionDCAxy"), posDauTrack.dcaXY());
+          histos.fill(HIST("QA/after/trkppionDCAz"), posDauTrack.dcaZ());
 
-					histos.fill(HIST("QA/after/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
-					if (istrknhasTOF) {
-						histos.fill(HIST("QA/after/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
-						histos.fill(HIST("QA/after/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
-					}
-					histos.fill(HIST("QA/after/trknpionpT"), trknpt);
-					histos.fill(HIST("QA/after/trknpionDCAxy"), negDauTrack.dcaXY());
-					histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
+          histos.fill(HIST("QA/after/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
+          if (istrknhasTOF) {
+            histos.fill(HIST("QA/after/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trknpionpT"), trknpt);
+          histos.fill(HIST("QA/after/trknpionDCAxy"), negDauTrack.dcaXY());
+          histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
 
-					histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
-					histos.fill(HIST("QA/after/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
-					histos.fill(HIST("QA/after/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
+          histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
+          histos.fill(HIST("QA/after/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
+          histos.fill(HIST("QA/after/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
 
-					histos.fill(HIST("QA/after/hpT_Secondary"), trkkpt);
-					histos.fill(HIST("QA/after/hy_Secondary"), trkky);
-					histos.fill(HIST("QA/after/hRadiusSecondary"), trkkRadius);
-					histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
-					histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
-					histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
-					histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
-				}
-				histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M());
-			}
-			k0sIndicies.push_back(k0sCand.index());
-		}
+          histos.fill(HIST("QA/after/hpT_Secondary"), trkkpt);
+          histos.fill(HIST("QA/after/hy_Secondary"), trkky);
+          histos.fill(HIST("QA/after/hRadiusSecondary"), trkkRadius);
+          histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
+          histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
+          histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
+          histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
+        }
+        histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M());
+      }
+      k0sIndicies.push_back(k0sCand.index());
+    }
 
     for (const auto& trackIndex : trackIndicies) {
-			auto bTrack = dTracks1.rawIteratorAt(trackIndex);
+      auto bTrack = dTracks1.rawIteratorAt(trackIndex);
       for (const auto& k0sIndex : k0sIndicies) {
         auto k0sCand = dTracks2.rawIteratorAt(k0sIndex);
 
@@ -1106,30 +1106,30 @@ struct Chk892pp {
 
         // QA plots
         if constexpr (!IsMix) {
-					if (cfgFillQAPlots) {
-						histos.fill(HIST("QA/before/KstarRapidity"), lResoKstar.Rapidity());
-						histos.fill(HIST("QA/before/kstarinvmass"), lResoKstar.M());
-					}
-				}
+          if (cfgFillQAPlots) {
+            histos.fill(HIST("QA/before/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/before/kstarinvmass"), lResoKstar.M());
+          }
+        }
 
         if (lResoKstar.Rapidity() > KstarCuts.cfgKstarMaxRap || lResoKstar.Rapidity() < KstarCuts.cfgKstarMinRap)
           continue;
 
         if constexpr (!IsMix) {
           unsigned int typeKstar = bTrack.sign() > 0 ? BinType::kKstarP : BinType::kKstarN;
-					if (cfgFillQAPlots) {
+          if (cfgFillQAPlots) {
 
-						histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
-						histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
-					}
-					histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M());
+            histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
+          }
+          histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M());
 
           if (BkgEstimationConfig.cfgFillRotBkg) {
             for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++) {
               auto lRotAngle = BkgEstimationConfig.cfgMinRot + i * ((BkgEstimationConfig.cfgMaxRot - BkgEstimationConfig.cfgMinRot) / (BkgEstimationConfig.cfgNrotBkg - 1));
-							if (cfgFillQAPlots) {
-								histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
-							}
+              if (cfgFillQAPlots) {
+                histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              }
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
                 // lDaughterRot.RotateZ(lRotAngle);
@@ -1150,7 +1150,7 @@ struct Chk892pp {
             }
           }
         } // IsMix
-			} // K0scand
+      } // K0scand
     } // bTrack
 
     count++;
@@ -1186,24 +1186,24 @@ struct Chk892pp {
                  MCEventCandidates const& events)
   {
     buildAllowedMcIds(events);
-		effK0sProcessGen(mcpart);
-		effK0sProcessReco(v0s);
-		effKstarProcessGen(mcpart);
-		effKstarProcessReco(v0s, tracks);
-	}
+    effK0sProcessGen(mcpart);
+    effK0sProcessReco(v0s);
+    effKstarProcessGen(mcpart);
+    effKstarProcessReco(v0s, tracks);
+  }
   PROCESS_SWITCH(Chk892pp, processMC, "Process Event for MC", false);
 
-	void processMCQA(MCEventCandidates::iterator const& collision,
-									 MCTrackCandidates const& tracks,
-									 MCV0Candidates const& v0s,
-									 aod::BCsWithTimestamps const&)
-	{
-		if (!colCuts.isSelected(collision))
-			return;
-		if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
-			return;
+  void processMCQA(MCEventCandidates::iterator const& collision,
+                   MCTrackCandidates const& tracks,
+                   MCV0Candidates const& v0s,
+                   aod::BCsWithTimestamps const&)
+  {
+    if (!colCuts.isSelected(collision))
+      return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
 
-		lCentrality = getCentrality(collision);
+    lCentrality = getCentrality(collision);
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
     if (!collision.isInelGt0())
@@ -1211,7 +1211,7 @@ struct Chk892pp {
     colCuts.fillQA(collision);
 
     fillHistograms<true, false>(collision, tracks, v0s);
-	}
+  }
   PROCESS_SWITCH(Chk892pp, processMCQA, "Process Event for MC and fill QA plots", true);
 };
 
