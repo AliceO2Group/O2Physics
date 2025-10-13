@@ -153,6 +153,7 @@ struct UpcRhoAnalysis {
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
 
   Configurable<float> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
+  Configurable<bool> rejectLowerProbPairs{"rejectLowerProbPairs", false, "reject track pairs with lower El or Ka PID radii"};
   Configurable<float> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
   Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 4, "min ITS clusters cut"};
   Configurable<float> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
@@ -543,7 +544,10 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hPiPIDRadius"), std::sqrt(radiusPi));
     rQC.fill(HIST("QC/tracks/hElPIDRadius"), std::sqrt(radiusEl));
     rQC.fill(HIST("QC/tracks/hKaPIDRadius"), std::sqrt(radiusKa));
-    return radiusPi < std::pow(tracksTpcNSigmaPiCut, 2);
+    if (rejectLowerProbPairs)
+      return ((radiusPi < std::pow(tracksTpcNSigmaPiCut, 2)) && (radiusPi < radiusEl) && (radiusPi < radiusKa));
+    else 
+      return radiusPi < std::pow(tracksTpcNSigmaPiCut, 2);
   }
 
   template <typename T>
