@@ -169,7 +169,8 @@ struct TrackEfficiency {
       registry.fill(HIST("h2_centrality_particle_phi"), collision.centFT0M(), mcparticle.phi(), weight);
       registry.fill(HIST("h2_centrality_particle_energy"), collision.centFT0M(), mcparticle.energy(), weight);
       registry.fill(HIST("h3_intrate_centrality_particle_pt"), collision.hadronicRate(), collision.centFT0M(), mcparticle.pt(), weight);
-      for (auto const& track : tracks) {
+      auto partTracks = tracks.sliceBy(tracksPerJParticles, mcparticle.globalIndex());
+      for (auto const& track : partTracks) {
         registry.fill(HIST("h2_particle_pt_track_pt_deltapt"), mcparticle.pt(), mcparticle.pt() - track.pt(), weight);
         registry.fill(HIST("h2_particle_pt_track_pt_deltaptoverparticlept"), mcparticle.pt(), (mcparticle.pt() - track.pt()) / mcparticle.pt(), weight);
       }
@@ -319,6 +320,9 @@ struct TrackEfficiency {
       registry.add("h2_centrality_particle_phi", "centrality vs particle #varphi; centrality; #varphi_{part}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
       registry.add("h2_centrality_particle_energy", "centrality vs particle energy; centrality; Energy GeV", {HistType::kTH2F, {centAxis, {100, 0.0, 100.0}}});
       registry.add("h3_intrate_centrality_particle_pt", "interaction rate vs centrality vs particle pT; int. rate; centrality; #it{p}_{T,part} (GeV/#it{c})", {HistType::kTH3F, {intRateAxis, centAxis, {200, 0., 200.}}});
+
+      registry.add("h2_particle_pt_track_pt_deltapt", "track pt vs delta pT; pT; #it{p}_{T, part} - #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, -1., 1.}}});
+      registry.add("h2_particle_pt_track_pt_deltaptoverparticlept", "track vs delta pT / MC pT ; pT; #frac{#it{p}_{T, part} - #it{p}_{T,track}}{#it{p}_{T,part}}", {HistType::kTH2F, {{200, 0., 200.}, {200, -1., 1.}}});
     }
 
     if (doprocessCollisionsFromData || doprocessCollisionsFromMc || doprocessCollisionsFromMcWeighted) {
@@ -366,6 +370,7 @@ struct TrackEfficiency {
   }
 
   Preslice<aod::JetTracksMCD> tracksPerJCollision = o2::aod::jtrack::collisionId;
+  PresliceUnsorted<aod::JetTracksMCD> tracksPerJParticles = o2::aod::jmctracklb::mcParticleId;
 
   // filters for processTracks QA functions only:
   Filter trackCuts = (aod::jtrack::pt >= trackQAPtMin && aod::jtrack::pt < trackQAPtMax && aod::jtrack::eta > trackQAEtaMin && aod::jtrack::eta < trackQAEtaMax);
@@ -751,7 +756,7 @@ struct TrackEfficiency {
   void processTracksFromMc(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision, // a filter should probably be added here to stay consistent with processTracksFromData
                            soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
                            soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
-                           soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
+                           soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
                            soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&)
   {
     if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
@@ -776,7 +781,7 @@ struct TrackEfficiency {
   void processTracksFromMcWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision, // a filter should probably be added here to stay consistent with processTracksFromData
                                    soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
                                    soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
-                                   soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
+                                   soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& jetTracks,
                                    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const&)
   {
     if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
@@ -803,7 +808,7 @@ struct TrackEfficiency {
                         soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
                         soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                         soa::Filtered<aod::JetParticles> const& mcparticles,
-                        soa::Filtered<aod::JetTracks> const& tracks)
+                        soa::Filtered<aod::JetTracksMCD> const& tracks)
   {
 
     if (!(std::abs(mcCollision.posZ()) < vertexZCut)) {
@@ -855,7 +860,7 @@ struct TrackEfficiency {
                                 soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
                                 soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                 soa::Filtered<aod::JetParticles> const& mcparticles,
-                                soa::Filtered<aod::JetTracks> const& tracks)
+                                soa::Filtered<aod::JetTracksMCD> const& tracks)
   {
     if (skipMBGapEvents && mcCollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
