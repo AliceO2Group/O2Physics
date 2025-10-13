@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <vector>
 #include <TPDGCode.h>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

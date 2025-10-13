@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <limits>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
