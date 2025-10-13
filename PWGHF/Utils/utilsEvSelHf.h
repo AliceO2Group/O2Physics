@@ -215,7 +215,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     sgCuts.SetMaxFITtime(34.f); // Maximum FIT time in ns
 
     // Set FIT amplitudes: FV0, FT0A, FT0C, FDDA, FDDC
-    sgCuts.SetFITAmpLimits({-1.f, 150.f, 50.f, -1.f, -1.f});
+    sgCuts.SetFITAmpLimits({-1.f, 1000.f, 1000.f, -1.f, -1.f});
 
     return sgCuts;
   }
