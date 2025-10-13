@@ -1660,7 +1660,7 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kCentFT0C] = event.centFT0C();
       values[kCentFT0A] = event.centFT0A();
       values[kCentFT0M] = event.centFT0M();
-      }
+    }
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
