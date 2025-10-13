@@ -738,6 +738,12 @@ struct FemtoUniverseProducerTask {
                          particle.tofNSigmaOmLaPr(), particle.tofNSigmaOmKa(),
                          particle.dcacascdaughters(), particle.cascradius(),
                          particle.x(), particle.y(), particle.z(), -999.);
+      } else {
+        outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999.,
+                         particle.dcacascdaughters(), particle.cascradius(),
+                         particle.x(), particle.y(), particle.z(), -999.);
       }
     } else {
       // LOGF(info, "isTrack0orV0: %d, isPhi: %d", isTrackOrV0, isPhiOrD0);
