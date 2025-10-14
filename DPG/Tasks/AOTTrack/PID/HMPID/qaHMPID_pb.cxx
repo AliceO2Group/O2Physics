@@ -382,7 +382,7 @@ struct pidHmpidQaPb {
 
         histos.fill(HIST("hmpidNPhotons"), hmpid.nphotons());
 
-        sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+        sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
         if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
           histos.fill(HIST("nPhotons_vs_sin2Ch"), sin2changle, hmpid.nphotons());
         }

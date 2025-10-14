@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_HMPIDTABLEPB_H
-#define O2_ANALYSIS_HMPIDTABLEPB_H
+#ifndef DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPIDPB_H_
+#define DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPIDPB_H_
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -81,4 +81,4 @@ DECLARE_SOA_TABLE(HMPID_analysisPb, "AOD", "HMPIDANALYSISPB",
                   variables_table::Centrality);
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_HMPIDTABLEPB_H
+#endif // DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPIDPB_H_

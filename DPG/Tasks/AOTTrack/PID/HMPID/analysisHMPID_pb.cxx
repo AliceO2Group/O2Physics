@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 // O2 includes
+
 #include "tableHMPIDPb.h"
 
 #include "Common/Core/PID/PIDTOF.h"
@@ -36,6 +37,8 @@
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <TTree.h>
+
+#include <string>
 
 // CREATE AND FILL TABLE FOR PBPB COLLISIONS
 
