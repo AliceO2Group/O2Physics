@@ -2382,7 +2382,7 @@ struct AnalysisSameEventPairing {
           }
         }
       }
-    }    
+    }
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
