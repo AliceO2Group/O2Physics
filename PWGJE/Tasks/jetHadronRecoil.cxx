@@ -201,6 +201,7 @@ struct JetHadronRecoil {
     if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWithRhoSubtraction || doprocessJetsMCPMCDMatchedWeighted || doprocessJetsMCPMCDMatchedWeightedWithRhoSubtraction || doprocessRecoilJetsMCPMCDMatched || doprocessRecoilJetsMCPMCDMatchedWeighted || doprocessRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction) {
       registry.add("hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{500, -100, 400}, {400, 0, 400}}}, doSumw);
       registry.add("hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{100, 0.0, o2::constants::math::TwoPI}, {100, 0.0, o2::constants::math::TwoPI}}}, doSumw);
+      registry.add("hPhiMatched2d", "#phi matching 2d;#phi;p_{T}", {HistType::kTH2F, {{100, 0.0, o2::constants::math::TwoPI}, {400, 0, 400}}}, doSumw);
       registry.add("hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {dRAxisDet, dRAxisPart}}, doSumw);
       registry.add("hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}, doSumw);
       registry.add("hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {dRAxisPart}}, doSumw);
@@ -864,6 +865,7 @@ struct JetHadronRecoil {
           float dphip = RecoDecay::constrainAngle(jetTag.phi() - phiTTPart);
           dRp = getWTAaxisDifference(jetTag, particles);
           registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
+          registry.fill(HIST("hPhiMatched2d"), jetTag.phi(), jetTag.pt(), weight);
           registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);
           registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
           if ((std::abs(dphi - o2::constants::math::PI) < 0.6) || (std::abs(dphip - o2::constants::math::PI) < 0.6)) {
