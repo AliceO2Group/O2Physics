@@ -82,10 +82,10 @@ class StandardCCDBLoader
     }
 
     grpmag = ccdb->template getForRun<o2::parameters::GRPMagField>(cGroup.grpmagPath.value, currentRunNumber);
-    if(grpmag){
+    if (grpmag) {
       LOG(info) << "Setting global propagator magnetic field to current " << grpmag->getL3Current() << " A for run " << currentRunNumber << " from its GRPMagField CCDB object";
       o2::base::Propagator::initFieldFromGRP(grpmag);
-    }else{ 
+    } else {
       LOGF(info, "GRPMagField object returned nullptr, will attempt alternate method");
 
       o2::parameters::GRPObject* grpo = 0x0;
