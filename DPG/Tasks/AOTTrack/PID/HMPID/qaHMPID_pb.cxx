@@ -19,28 +19,27 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
-#include "TF1.h"
+#include <TF1.h>
 #include <TTree.h>
 
-#include "HMPIDBase/Param.h"
+#include <HMPIDBase/Param.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// task per leggere la table creata dal task HMPIDanalysis per performance e stablity --dataset pp SENZA il photscharge as vector
+using namespace o2::constants::physics;
 
 // distance 2D between MIP and Track extrapolated
 float distance2D(float x1, float y1, float x2, float y2)
@@ -108,8 +107,6 @@ void getProbability(float hmpidSignal, float hmpidMomentum, double* probs)
   // Calculates probability to be a pion-kaon-proton with the "amplitude" method
   // from the given Cerenkov angle and momentum assuming no initial particle composition (class taken by AliROOT)
 
-  Double_t probabilityParticle;
-
   Int_t nSpecies = 3;
 
   if (hmpidSignal <= 0) {
@@ -120,56 +117,10 @@ void getProbability(float hmpidSignal, float hmpidMomentum, double* probs)
   }
 
   // assign mass in GeV/c^2
-  Double_t mass[] = {0.139570, 0.493677, 0.938272};
-
-  /*
-  Double_t chAngle_th = expectedSignal(mass, hmpidMomentum);
-
-  //check
-  if (chAngle_th > 900.)
-  {
-    return 0.0; // No light emitted, probability is zero
-  }
-
-  /////////////////////////////////////////////////////////////
-
-  Double_t sigma_ring = expectedSigma(hmpidMomentum, particleType);
-
-  if(sigma_ring==0)
-  {
-    return 0.0; //no ring
-  }
-
-  /////////////////////////////////////////////////////////////
-
-  // Check if within the "desert" range
-  if (TMath::Abs(hmpidSignal - chAngle_th) >= 4 * sigma_ring)
-  {
-    return 1.0/((Float_t) nSpecies); // Assume equal probability in "desert" case
-  }
-
-  // Calculate Gaussian height for the selected species
-  Double_t hSpecies = TMath::Gaus(chAngle_th, hmpidSignal, sigma_ring, kTRUE);
-
-  // To normalize the probability, calculate the total height (hTot) across all species
-  Double_t hTot = 0;
-  for (int i = 0; i < nSpecies; i++)
-  {
-    Double_t chAngle_th_i = expectedSignal(mass_species[i], hmpidMomentum);
-    Double_t sigma_ring_i = expectedSigma(hmpidMomentum, particles_species[i]);
-    if (sigma_ring_i > 0 && chAngle_th_i <= 900)
-    {
-      hTot += TMath::Gaus(chAngle_th_i, hmpidSignal, sigma_ring_i, kTRUE);
-    }
-
-
-  }
-
-  probabilityParticle = hSpecies / hTot;
-
-  // Return the normalized probability for the specific species
-  return (hTot > 0) ? probabilityParticle : 0.0;
-*/
+  double mProton = o2::constants::physics::MassProton;
+  double mPion = o2::constants::physics::MassPionCharged;
+  double mKaon = o2::constants::physics::MassKaonCharged;
+  Double_t mass[] = {mPion, mKaon, mProton};
 
   Double_t hTot = 0;                    // Initialize the total height of the amplitude method
   Double_t* h = new Double_t[nSpecies]; // number of charged particles to be considered
@@ -425,7 +376,7 @@ struct pidHmpidQaPb {
         histos.fill(HIST("Mass2distribution"), mass2);
       }
 
-      float sin2changle;
+      float sin2changle = 0.;
 
       if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
 
@@ -495,7 +446,7 @@ struct pidHmpidQaPb {
         //{ ---
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons0"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch0"), sin2changle, hmpid.nphotons());
           }
@@ -660,7 +611,7 @@ struct pidHmpidQaPb {
 
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons1"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch1"), sin2changle, hmpid.nphotons());
           }
@@ -817,7 +768,7 @@ struct pidHmpidQaPb {
 
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons2"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch2"), sin2changle, hmpid.nphotons());
           }
@@ -975,7 +926,7 @@ struct pidHmpidQaPb {
 
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons3"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch3"), sin2changle, hmpid.nphotons());
           }
@@ -1133,7 +1084,7 @@ struct pidHmpidQaPb {
 
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons4"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch4"), sin2changle, hmpid.nphotons());
           }
@@ -1291,7 +1242,7 @@ struct pidHmpidQaPb {
 
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons5"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch5"), sin2changle, hmpid.nphotons());
           }
@@ -1449,7 +1400,7 @@ struct pidHmpidQaPb {
 
         if (distance2D(hmpid.xtrack(), hmpid.ytrack(), hmpid.xmip(), hmpid.ymip()) < cut_d_mip_track && hmpid.chargeMIP() > 120.) {
           histos.fill(HIST("hmpidNPhotons6"), hmpid.nphotons());
-          sin2changle = (float)TMath::Power(TMath::Sin(hmpid.chAngle()), 2);
+          sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xmip() <= 100. && hmpid.xmip() >= 40. && hmpid.ymip() <= 100. && hmpid.ymip() >= 40.) {
             histos.fill(HIST("nPhotons_vs_sin2Ch6"), sin2changle, hmpid.nphotons());
           }

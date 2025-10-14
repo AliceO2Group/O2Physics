@@ -15,13 +15,11 @@
 
 #include "tableHMPID.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TString.h"
 #include <TMath.h>
-
-#include <iostream>
+#include <TString.h>
 
 // distance 2D between MIP and Track extrapolated
 float distance2D(float x1, float y1, float x2, float y2)

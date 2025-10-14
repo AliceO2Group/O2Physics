@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
 #ifndef O2_ANALYSIS_HMPIDTABLE_H
 #define O2_ANALYSIS_HMPIDTABLE_H
 
