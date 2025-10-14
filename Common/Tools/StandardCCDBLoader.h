@@ -81,6 +81,27 @@ class StandardCCDBLoader
       return;
     }
 
+    grpmag = ccdb->template getForRun<o2::parameters::GRPMagField>(cGroup.grpmagPath.value, currentRunNumber);
+    if(grpmag){
+      LOG(info) << "Setting global propagator magnetic field to current " << grpmag->getL3Current() << " A for run " << currentRunNumber << " from its GRPMagField CCDB object";
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+    }else{ 
+      LOGF(info, "GRPMagField object returned nullptr, will attempt alternate method");
+
+      o2::parameters::GRPObject* grpo = 0x0;
+      grpo = ccdb->template getForRun<o2::parameters::GRPObject>(cGroup.grpPath.value, currentRunNumber);
+      if (!grpo) {
+        LOG(fatal) << "Alternate path failed! Got nullptr from CCDB for path " << cGroup.grpPath << " of object GRPObject for run " << currentRunNumber;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+    }
+    if (getMeanVertex) {
+      // only try this if explicitly requested
+      mMeanVtx = ccdb->template getForRun<o2::dataformats::MeanVertexObject>(cGroup.mVtxPath.value, currentRunNumber);
+    } else {
+      mMeanVtx = nullptr;
+    }
+
     // load matLUT for this timestamp
     if (!lut) {
       LOG(info) << "Loading material look-up table for timestamp: " << currentRunNumber;
@@ -88,18 +109,8 @@ class StandardCCDBLoader
     } else {
       LOG(info) << "Material look-up table already in place. Not reloading.";
     }
-
-    grpmag = ccdb->template getForRun<o2::parameters::GRPMagField>(cGroup.grpmagPath.value, currentRunNumber);
-    LOG(info) << "Setting global propagator magnetic field to current " << grpmag->getL3Current() << " A for run " << currentRunNumber << " from its GRPMagField CCDB object";
-    o2::base::Propagator::initFieldFromGRP(grpmag);
     LOG(info) << "Setting global propagator material propagation LUT";
     o2::base::Propagator::Instance()->setMatLUT(lut);
-    if (getMeanVertex) {
-      // only try this if explicitly requested
-      mMeanVtx = ccdb->template getForRun<o2::dataformats::MeanVertexObject>(cGroup.mVtxPath.value, currentRunNumber);
-    } else {
-      mMeanVtx = nullptr;
-    }
 
     runNumber = currentRunNumber;
   }
