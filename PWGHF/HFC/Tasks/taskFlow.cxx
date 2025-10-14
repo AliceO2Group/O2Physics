@@ -180,7 +180,7 @@ struct HfTaskFlow {
 
   struct : ConfigurableGroup {
     std::string prefix = "ConfigTask_group";
-    Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "false = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
+    Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "falsce = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
     Configurable<bool> doHeavyFlavor{"doHeavyFlavor", false, "Flag to know we in the heavy flavor case or not"};
     Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
     Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
@@ -191,8 +191,11 @@ struct HfTaskFlow {
   //   configurables for collisions
   struct : ConfigurableGroup {
     std::string prefix = "ConfigCollision_group";
+    Configurable<bool> isApplyGoodItsLayersAll{"isApplyGoodItsLayersAll", false, "Enable GoodITSLayersAll"};
     Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
     Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
+    Configurable<int> maxMultiplicity{"maxMultiplicity", 300, "maximum multiplicity selection for collision"};
+    Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
     Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
     Configurable<float> zVertexMax{"zVertexMax", 10.0f, "Accepted z-vertex range"};
@@ -209,6 +212,9 @@ struct HfTaskFlow {
     Configurable<bool> isApplyPtOrderingSameEvent{"isApplyPtOrderingSameEvent", false, "apply track1.pt() <= track2.pt() cut"};
     Configurable<bool> isApplyPtOrderingMixedEvent{"isApplyPtOrderingMixedEvent", false, "apply track1.pt() <= track2.pt() cut"};
     Configurable<bool> isApplySameTrackCut{"isApplySameTrackCut", false, "apply track1 == track2 cut"};
+    Configurable<float> maxChi2ItsClusters{"maxChi2ItsClusters", 36.f, "max chi2 per ITS clusters"};
+    Configurable<float> maxChi2TpcClusters{"maxChi2TpcClusters", 2.5f, "max chi2 per TPC clusters"};
+    Configurable<int> maxSigmaDCAxy{"maxSigmaDCAxy", 7, "maximum sigma deviations from expected DCA"};
     Configurable<float> maxMergingRadius{"maxMergingRadius", 2.5, "max radius for merging cut"};
     Configurable<float> mergingCut{"mergingCut", 0.02, "merging cut on track merge"};
     Configurable<float> minItsClusters{"minItsClusters", 5.0f, "cut for minimum ITS clusters"};
@@ -294,6 +300,10 @@ struct HfTaskFlow {
                                             ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
 
   Filter centralTrackDcaFilter = (ifnode(configCentral.dcaZCentralTrackMax.node() > 0.f, nabs(aod::track::dcaZ) <= configCentral.dcaZCentralTrackMax && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), ncheckbit(aod::track::trackCutFlag, TrackSelectionDca)));
+
+  Filter centralTrackChi2TpcClusterFilter = (aod::track::tpcChi2NCl < configCentral.maxChi2TpcClusters);
+
+  Filter centralTrackChi2ItsClusterFilter = (aod::track::itsChi2NCl < configCentral.maxChi2ItsClusters);
 
   Filter mftTrackEtaFilter = ((aod::fwdtrack::eta < configMft.etaMftTrackMaxFilter) && (aod::fwdtrack::eta > configMft.etaMftTrackMinFilter));
 
@@ -852,12 +862,13 @@ struct HfTaskFlow {
     if (configCollision.isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-
     if (configCollision.isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-
     if (configCollision.isApplyNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if (configCollision.isApplyGoodItsLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
 
@@ -1717,6 +1728,10 @@ struct HfTaskFlow {
       auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
       const auto multiplicity = getMultiplicityEstimator(collision1, false);
 
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
+
       corrContainer->fillEvent(multiplicity, step);
       fillCorrelations(corrContainer, step, tracks1, tracks2, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()));
     }
@@ -1751,6 +1766,10 @@ struct HfTaskFlow {
           const auto multiplicity = getMultiplicityEstimator(collision1, false);
           auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
           const auto& fv0 = collision2.foundFV0();
+
+          if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+            return;
+          }
 
           corrContainer->fillEvent(multiplicity, step);
           fillCorrelationsFIT(corrContainer, step, slicedTriggerTracks, fv0, tracks2, multiplicity, collision1.posZ(), false, fitType);
@@ -1800,6 +1819,10 @@ struct HfTaskFlow {
         const auto& ft0as = collision1.foundFT0();
         const auto& ft0cs = collision2.foundFT0();
 
+        if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+          return;
+        }
+
         corrContainer->fillEvent(multiplicity, step);
         fillCorrelationsFt0aFt0c(corrContainer, step, ft0as, ft0cs, multiplicity, collision1.posZ(), true);
       }
@@ -1829,9 +1852,12 @@ struct HfTaskFlow {
     }
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
-
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
 
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
@@ -1859,9 +1885,12 @@ struct HfTaskFlow {
     }
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
-
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
@@ -1889,9 +1918,12 @@ struct HfTaskFlow {
     }
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
-
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
@@ -1912,12 +1944,13 @@ struct HfTaskFlow {
     }
 
     registry.fill(HIST("Data/hNTracks"), tracks.size());
-
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
-    // I use kCFStepAll for running my code with all MFTTracks were the reassociation process was not applied
-    // We don't fill "normal" QA plots with these tracks, only specific plots to compare with other type of MFTTracks
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
   }
@@ -1935,11 +1968,12 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
-
-    // const auto multiplicity = collision.multNTracksPV();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
-    // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
   }
@@ -1962,7 +1996,10 @@ struct HfTaskFlow {
     // const auto multiplicity = collision.multNTracksPV();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
-    // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
   }
@@ -1981,12 +2018,12 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/hNTracks"), tracks.size());
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
-
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
-    // I use kCFStepTracked for running my code with only non-ambiguous MFTTracks
-    // This is the same as running with reassociatedMftTracks, but applying one more cut in the fillCorrelations function
-    // We don't fill "normal" QA plots with these tracks, only specific plots to compare with other type of MFTTracks
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, true);
   }
@@ -2016,6 +2053,10 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
   }
@@ -2032,7 +2073,10 @@ struct HfTaskFlow {
 
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
-    // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelationsReassociatedMftTracks(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
   }
@@ -2062,6 +2106,10 @@ struct HfTaskFlow {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
   }
@@ -2078,7 +2126,10 @@ struct HfTaskFlow {
 
     const auto multiplicity = getMultiplicityEstimator(collision, true);
 
-    // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
+    if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+      return;
+    }
+
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelationsReassociatedMftTracks(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
   }
@@ -2096,11 +2147,15 @@ struct HfTaskFlow {
       return;
     }
 
-    registry.fill(HIST("Data/hNTracks"), tracks.size());
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+
+      registry.fill(HIST("Data/hNTracks"), tracks.size());
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, fv0, fv0as, multiplicity, collision.posZ(), true, isFV0A);
@@ -2120,10 +2175,13 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, fv0, fv0as, multiplicity, collision.posZ(), true, isFV0A);
@@ -2143,10 +2201,13 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, fv0, fv0as, multiplicity, collision.posZ(), true, isFV0A);
@@ -2166,10 +2227,13 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, fv0, fv0as, multiplicity, collision.posZ(), true, isFV0A);
@@ -2186,10 +2250,13 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, fv0, fv0as, multiplicity, collision.posZ(), true, false, isFV0A);
@@ -2207,10 +2274,13 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, fv0, fv0as, multiplicity, collision.posZ(), true, false, isFV0A);
@@ -2228,10 +2298,13 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
-
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
+      const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, fv0, fv0as, multiplicity, collision.posZ(), true, true, isFV0A);
@@ -2253,9 +2326,12 @@ struct HfTaskFlow {
 
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-
       registry.fill(HIST("Data/hNTracks"), tracks.size());
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
@@ -2277,8 +2353,11 @@ struct HfTaskFlow {
 
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
@@ -2300,8 +2379,11 @@ struct HfTaskFlow {
 
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
@@ -2325,6 +2407,10 @@ struct HfTaskFlow {
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
+
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
     }
@@ -2344,6 +2430,10 @@ struct HfTaskFlow {
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
+
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A);
     }
@@ -2362,6 +2452,10 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, true, isFT0A);
@@ -2383,9 +2477,12 @@ struct HfTaskFlow {
 
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-
       registry.fill(HIST("Data/hNTracks"), tracks.size());
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C);
@@ -2407,8 +2504,11 @@ struct HfTaskFlow {
 
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C);
@@ -2430,8 +2530,11 @@ struct HfTaskFlow {
 
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
-
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C);
@@ -2453,6 +2556,10 @@ struct HfTaskFlow {
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
+
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFt0aFt0c(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, ft0, ft0, multiplicity, collision.posZ(), true);
