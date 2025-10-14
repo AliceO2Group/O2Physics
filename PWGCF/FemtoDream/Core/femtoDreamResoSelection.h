@@ -65,7 +65,7 @@ class FemtoDreamResoSelection
   virtual ~FemtoDreamResoSelection() = default;
 
   template <typename V>
-  uint32_t getType(V const& track1, V const& track2, bool resoIsNotAnti);
+  int getType(V const& track1, V const& track2, bool resoIsNotAnti);
 
   /// assigns value from configurbale to private class member
   template <typename V>
@@ -218,7 +218,7 @@ class FemtoDreamResoSelection
 }; // namespace femtoDream
 
 template <typename V>
-uint32_t FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool resoIsNotAnti)
+int FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool resoIsNotAnti)
 {
   float posThresh = 0.;
   float negThresh = 0.;
@@ -403,13 +403,9 @@ float FemtoDreamResoSelection::getNSigTotal(T const& track, V const& pid, float 
     return std::abs(nSigTPC);
   }
 
-  float nSigTOF = 0.;
-  if (!track.hasTOF()) {
-    nSigTOF = 999.f;
-  } else {
-    nSigTOF = o2::aod::pidutils::tofNSigma(pid, track);
-  }
-  return std::sqrt(nSigTPC * nSigTPC + nSigTOF * nSigTOF);
+  float nSigTOF = track.hasTOF() ? o2::aod::pidutils::tofNSigma(pid, track) : 999.f;
+
+  return std::hypot(nSigTPC, nSigTOF);
 }
 
 //// new getCutContainer
