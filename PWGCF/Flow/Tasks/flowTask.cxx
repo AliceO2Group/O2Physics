@@ -147,6 +147,9 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, false, "rejection for TPC sector overlap")
     O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
     ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
+    O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutLowCutFunction, std::string, "0.1/x-0.005", "Function for TPC mod phi-pt cut");
+    O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutHighCutFunction, std::string, "0.1/x+0.01", "Function for TPC mod phi-pt cut");
+    O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
   } cfgFuncParas;
@@ -301,6 +304,12 @@ struct FlowTask {
     registry.add("hDCAz", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
+    registry.add("hMeanPt", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
@@ -512,8 +521,8 @@ struct FlowTask {
     }
 
     if (cfgFuncParas.cfgShowTPCsectorOverlap) {
-      cfgFuncParas.fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      cfgFuncParas.fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+      cfgFuncParas.fPhiCutLow = new TF1("fPhiCutLow", cfgFuncParas.cfgTPCPhiCutLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fPhiCutHigh = new TF1("fPhiCutHigh", cfgFuncParas.cfgTPCPhiCutHighCutFunction->c_str(), 0, 100);
     }
 
     if (cfgTrackDensityCorrUse) {
@@ -547,6 +556,25 @@ struct FlowTask {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1)
         registry.fill(tarName, cent, val, dnx);
+      return;
+    }
+    return;
+  }
+
+  template <char... chars, char... chars2>
+  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& vnWeff, const ConstStr<chars2...>& vnpT, const double& cent)
+  {
+    double meanPt = sum_pt / WeffEvent;
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        registry.fill(vnWeff, cent, val, dnx * WeffEvent);
+        registry.fill(vnpT, cent, val * meanPt, dnx * WeffEvent);
+      }
       return;
     }
     return;
@@ -781,7 +809,7 @@ struct FlowTask {
     phimodn = fmod(phimodn, o2::constants::math::TwoPI / 9.0);
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
     if (cfgFuncParas.cfgRejectionTPCsectorOverlap) {
-      if (phimodn < cfgFuncParas.fPhiCutHigh->Eval(track.pt()) && phimodn > cfgFuncParas.fPhiCutLow->Eval(track.pt()))
+      if (track.pt() >= cfgFuncParas.cfgTPCPhiCutPtMin && phimodn < cfgFuncParas.fPhiCutHigh->Eval(track.pt()) && phimodn > cfgFuncParas.fPhiCutLow->Eval(track.pt()))
         return false; // reject track
     }
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
@@ -895,6 +923,10 @@ struct FlowTask {
 
     // track weights
     float weff = 1, wacc = 1;
+    double weffEvent = 0;
+    double ptSum = 0., ptSum_Gap08 = 0.;
+    double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
+    double sumPtsquareWsquareWithinGap08 = 0., sumPtWsquareWithinGap08 = 0.;
     double nTracksCorrected = 0;
     int magnetfield = 0;
     float independent = cent;
@@ -940,6 +972,7 @@ struct FlowTask {
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
+      bool withinEtaGap08 = (std::abs(track.eta()) < cfgEtaPtPt);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef)
@@ -975,7 +1008,16 @@ struct FlowTask {
         registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
         registry.fill(HIST("hDCAz"), track.dcaZ(), track.pt());
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
+        weffEvent += weff;
+        ptSum += weff * track.pt();
         nTracksCorrected += weff;
+        if (withinEtaGap08) {
+          ptSum_Gap08 += weff * track.pt();
+          sumPtWsquareWithinGap08 += weff * weff * track.pt();
+          sumPtsquareWsquareWithinGap08 += weff * weff * track.pt() * track.pt();
+          weffEventWithinGap08 += weff;
+          weffEventSquareWithinGap08 += weff * weff;
+        }
       }
       if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
@@ -989,6 +1031,26 @@ struct FlowTask {
         fillPtSums<kReco>(track, weff);
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+
+    double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
+    // MeanPt
+    if (weffEvent) {
+      registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
+    }
+    if (weffEventWithinGap08)
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, weffEventWithinGap08);
+    // c22_gap8 * pt_withGap8
+    if (weffEventWithinGap08)
+      fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
+    // PtVariance
+    if (weffEventDiffWithGap08) {
+      registry.fill(HIST("PtVariance_partA_WithinGap08"), independent,
+                    (ptSum_Gap08 * ptSum_Gap08 - sumPtsquareWsquareWithinGap08) / weffEventDiffWithGap08,
+                    weffEventDiffWithGap08);
+      registry.fill(HIST("PtVariance_partB_WithinGap08"), independent,
+                    (weffEventWithinGap08 * ptSum_Gap08 - sumPtWsquareWithinGap08) / weffEventDiffWithGap08,
+                    weffEventDiffWithGap08);
+    }
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {

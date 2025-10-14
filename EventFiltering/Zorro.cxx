@@ -202,6 +202,7 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
     mTOIidx.push_back(bin);
   }
   mTOIcounts.resize(mTOIs.size(), 0);
+  mATcounts.resize(mSelections->GetNbinsX() - 2, 0);
   LOGF(info, "Zorro initialized for run %d, triggers of interest:", runNumber);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
@@ -235,8 +236,11 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
         for (int iTOI{0}; iTOI < 64; ++iTOI) {
           if (mZorroHelpers->at(i).selMask[iMask] & (1ull << iTOI)) {
             mLastResult.set(iMask * 64 + iTOI, 1);
-            if (mAnalysedTriggers && !mAccountedBCranges[i]) {
-              mAnalysedTriggers->Fill(iMask * 64 + iTOI);
+            if (!mAccountedBCranges[i]) {
+              mATcounts[iMask * 64 + iTOI]++;
+              if (mAnalysedTriggers) {
+                mAnalysedTriggers->Fill(iMask * 64 + iTOI);
+              }
             }
           }
         }

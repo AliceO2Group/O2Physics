@@ -36,12 +36,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
 namespace o2::aod
 {
@@ -217,7 +217,6 @@ DECLARE_SOA_TABLE(HfCandCascFullEs, "AOD", "HFCANDCASCFULLE",
                   collision::PosZ);
 
 DECLARE_SOA_TABLE(HfCandCascFullPs, "AOD", "HFCANDCASCFULLP",
-                  collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
@@ -267,7 +266,7 @@ struct HfTreeCreatorLcToK0sP {
     constexpr int IndexFirstClass{0};
     constexpr int IndexSecondClass{1};
     constexpr int IndexThirdClass{2};
-    if (mlScores.size() == 0) {
+    if (mlScores.empty()) {
       return; // when candidateSelectorLcK0sP rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
     }
     mlScoreFirstClass = mlScores.at(IndexFirstClass);
@@ -449,11 +448,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       const int flag = candidate.flagMcMatchRec();
 
-      if (fillOnlySignal && flag != 0) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
-      } else if (fillOnlyBackground && flag == 0) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
-      } else {
+      if ((fillOnlySignal && flag != 0) || (fillOnlyBackground && flag == 0) || (!fillOnlySignal && !fillOnlyBackground)) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
       }
     }
@@ -463,7 +458,6 @@ struct HfTreeCreatorLcToK0sP {
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1) {
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
@@ -505,7 +499,7 @@ struct HfTreeCreatorLcToK0sP {
       auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
       ++iCand;
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
+      double const pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, 0, 0, candidateMlScore);
       }

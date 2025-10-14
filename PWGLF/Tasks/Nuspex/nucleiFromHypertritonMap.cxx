@@ -56,6 +56,8 @@ struct nucleiFromHypertritonMap {
 
   // Track Parameters
   Configurable<int> min_ITS_nClusters{"min_ITS_nClusters", 7, "minimum number of found ITS clusters"};
+  Configurable<int> min_ITS_InnerBarrel_nClusters{"min_ITS_InnerBarrel_nClusters", 1, "minimum number of found ITS Inner Barrel clusters"};
+  Configurable<int> max_ITS_InnerBarrel_nClusters{"max_ITS_InnerBarrel_nClusters", 3, "maximum number of found ITS Inner Barrel clusters"};
   Configurable<int> min_TPC_nClusters{"min_TPC_nClusters", 100, "minimum number of found TPC clusters"};
   Configurable<int> min_TPC_nCrossedRows{"min_TPC_nCrossedRows", 70, "minimum number of TPC crossed pad rows"};
   Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4.0f, "maximum TPC chi^2/Ncls"};
@@ -82,12 +84,15 @@ struct nucleiFromHypertritonMap {
     registryMC.add("hypertritonPtGen", "hypertritonPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     if (saveHelium) {
       registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("he3SecPtGen_from_hypertriton", "he3SecPtGen_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("hyperHe4PtGen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("he3SecPtGen_from_hyperHe4", "he3SecPtGen_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("he3PtRec", "he3PtRec", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("he3PtGen", "he3PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     } else {
       registryMC.add("deutSecPtRec_from_hypertriton", "deutSecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("deutSecPtGen_from_hypertriton", "deutSecPtGen_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("deutPtRec", "deutPtRec", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("deutPtGen", "deutPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     }
@@ -108,6 +113,11 @@ struct nucleiFromHypertritonMap {
           for (auto& daughter : mcparticle.daughters_as<aod::McParticles>()) {
             if (daughter.pdgCode() == selectedPDG) {
               registryMC.fill(HIST("hypertritonPtGen"), mcparticle.pt());
+              if (saveHelium) {
+                registryMC.fill(HIST("he3SecPtGen_from_hypertriton"), daughter.pt());
+              } else {
+                registryMC.fill(HIST("deutSecPtGen_from_hypertriton"), daughter.pt());
+              }
             }
           }
         }
@@ -115,6 +125,9 @@ struct nucleiFromHypertritonMap {
           for (auto& daughter : mcparticle.daughters_as<aod::McParticles>()) {
             if (daughter.pdgCode() == selectedPDG) {
               registryMC.fill(HIST("hyperHe4PtGen"), mcparticle.pt());
+              if (saveHelium) {
+                registryMC.fill(HIST("he3SecPtGen_from_hyperHe4"), daughter.pt());
+              }
             }
           }
         }
@@ -137,6 +150,8 @@ struct nucleiFromHypertritonMap {
       }
 
       if (track.itsNCls() < min_ITS_nClusters ||
+          track.itsNClsInnerBarrel() < min_ITS_InnerBarrel_nClusters ||
+          track.itsNClsInnerBarrel() > max_ITS_InnerBarrel_nClusters ||
           track.tpcNClsFound() < min_TPC_nClusters ||
           track.tpcNClsCrossedRows() < min_TPC_nCrossedRows ||
           track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||

@@ -43,7 +43,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod:
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
@@ -58,7 +58,7 @@ struct CreateEMEventPhoton {
   Produces<o2::aod::EMEventsMult> eventMult;
   Produces<o2::aod::EMEventsCent> eventCent;
   Produces<o2::aod::EMEventsQvec> eventQvec;
-  Produces<o2::aod::EMSWTriggerInfos> emswtbit;
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
 
@@ -183,7 +183,7 @@ struct CreateEMEventPhoton {
         if (collision.swtaliastmp_raw() == 0) {
           continue;
         } else {
-          emswtbit(collision.swtaliastmp_raw(), collision.nInspectedTVX());
+          emswtbit(collision.swtaliastmp_raw());
         }
       }
 

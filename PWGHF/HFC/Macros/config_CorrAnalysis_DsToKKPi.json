@@ -1,13 +1,23 @@
 {
-    "CodeName": "Default",
-    "_CodeName": "Name to identify the analysis",
-    "pathFileSE": "~/cernbox/DsCorrelationAnalysis/MasterDegreeAnalysis/AnalysisResultsFinal.root",
-    "pathFileME": "~/cernbox/DsCorrelationAnalysis/MasterDegreeAnalysis/AnalysisResultsFinalME.root",
-    "pathFileMass": "/data/dataalice/scattar/RawYieldsDs.root",
+    "CodeName": "Test_example",
+    "_CodeName": "Name to identify the analysis: pass7_Full_ptAssoc0p3, Thin2023_Full_ptAssoc0p3",
+    "pathFileSE": "~/cernbox/AnalysisResults_SE_pp_Thin2023_FullAnalysis.root",
+    "_pathFileSE": "Name SE file",
+    "pathFileME": "~/cernbox/AnalysisResults_ME_derived_Thinned2023.root",
+    "_pathFileME": "Name ME file",
+    "pathFileMass": "~/cernbox/DsCorrelationAnalysis/ClassesForAnalysis/InvMassFitter/InvMass_pp_Thin2023_Final_Default.root",
+    "_pathFileMass": "Name mass file",
+    "pathFileFDTemplate": "~/cernbox/TemplatesCRMode2_ptAssocInt.root",
+    "pathFileFDPromptFrac": "~/cernbox/CutVarDs_FDVarDefaultBkg.root",
+    "pathFileSecPart": "~/cernbox/AnalysisResults_MC_Anchored_Thin2023_SecPart.root",
+    "_pathFileSecPart": "Path file for secondary particle contamination correction",
     "InputDirSE": "hf-task-correlation-ds-hadrons",
     "InputDirME": "hf-task-correlation-ds-hadrons",
+    "InputDirSecPart": "hf-task-correlation-ds-hadrons",
     "InputHistoCorrSignalName": "hCorrel2DVsPtSignalRegion",
     "InputHistoCorrSidebaName": "hCorrel2DVsPtSidebands",
+    "InputHistoCorrSidebaLeftName": "hCorrel2DVsPtSidebandLeft",
+    "InputHistoCorrSidebaRightName": "hCorrel2DVsPtSidebandRight",
     "InputHistoMassName": [
         "hRawYieldsSignal",
         "hRawYieldsBkg",
@@ -18,21 +28,34 @@
         "Bkg yield vs pt",
         "SBs yield vs pt"
     ],
+    "InputHistoFDTemplatePrompt": "EtaPhiPromptNorm_pt",
+    "InputHistoFDTemplateNonPrompt": "EtaPhiNonPromptNorm_pt",
+    "InputHistoFDPromptFrac": "hRawFracPrompt",
+    "InputHistoPrimaryPart": "hCorrel2DVsPtPhysicalPrimaryMcRec",
+    "InputHistoAllPart": "hCorrel2DVsPtSignalRegionMcRec",
+    "IsDividedSideb": true,
+    "UseSidebLeft": true,
+    "UseSidebRight": false,
+    "ApplySecPartCorr": true,
+    "ApplyFDCorr": true,
+    "ApplyBiasBtoDCorr": true,
+    "pathfFilePromptMcRec": "~/cernbox/DsCorrelationAnalysis/ClassesForAnalysis/MonteCarloClosureTest/MonteCarloClosureTest_Prompt_All.root",
+    "pathfFileNonPromptMcRec": "~/cernbox/DsCorrelationAnalysis/ClassesForAnalysis/MonteCarloClosureTest/MonteCarloClosureTest_NonPrompt_All.root",
     "binsPtCandIntervals": [
-        2.0,
+        1.0,
         3.0,
-        4.0,
         5.0,
         8.0,
-        16.0
+        16.0,
+        36.0
     ],
     "binsPtHadIntervals": [
-        0.0,
-        11.0
+        0.3,
+        50.0
     ],
     "deltaEtaInterval": [
-        -0.8,
-        0.8
+        -1.0,
+        1.0
     ],
     "DmesonSpecie": 2,
     "_DmesonSpecie": [
@@ -45,7 +68,36 @@
     "_NumberOfPools": "Number of pools for the event mixing",
     "CorrectPoolsSeparately": false,
     "_CorrectPoolsSeparately": "true = pool-by-pool ME correction; false = merged-pools ME correction",
-    "FitFunction": 1,
-    "FixBaseline": 0,
-    "FixMean": 3
+    "RebinAngCorr": false,
+    "RebinFDCorr": true,
+    "RebinSecPart": false,
+    "nRebinDeltaPhi": 2,
+    "nRebinDeltaEta": 2,
+    "InputFileNameFitCorr": "ExtractCorrelationsResults_Reflected.root",
+    "_InputFileNameFitCorr": "ExtractCorrelationsResults_Reflected.root - ExtractCorrelationsResults.root",
+    "IsRiflected": true,
+    "DrawSystematics": false,
+    "SameSystematics": false,
+    "_SameSystematics": "true: systematic take from the first delta phi bin, false: systematic applied bin per bin",
+    "FitFunction": [
+        2,
+        2,
+        2,
+        2,
+        2
+    ],
+    "_FitFunction": "1 : const + G NS + G AS (w/o periodicity), 2 : const + G NS + G AS  (w/ periodicity), 3 : const + G AS, 4 : const + GenG NS + G AS  (w/ periodicity), 5 : const + VonMises NS + VonMises AS (w/periodicity), 6 : const + VonMises AS",
+    "FixBaseline": 4,
+    "_FixBaseline": "0 : baseline free, = 1 : fix the baseline to the minimum of the histogram, < 0 : fix the baseline to the weighted average of the abs(fFixBaseline) lower points, = 3 : fix the baseline to the weighted average of the points passed through the function SetPointsForBaseline(), 4 : fix the baseline to the weighted average of default transverse region points",
+    "FixMean": 3,
+    "_FixMean": "= 0 : NS & AS mean free, = 1 : NS mean fixed to 0, AS mean free, = 2 : AS mean fixed to pi, NS mean free, = 3 : NS mean fixed to 0, AS mean to pi",
+    "ShiftBaseUp": false,
+    "ShiftBaseDown": false,
+    "nBaselinePoints": 4,
+    "binsForBaseline": [
+        6,
+        7,
+        8,
+        9
+    ]
 }

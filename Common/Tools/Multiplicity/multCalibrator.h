@@ -19,11 +19,14 @@
 #ifndef COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
 #define COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
 
-#include <TH1D.h>
+#include <TH1.h>
 #include <TNamed.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <iostream>
-#include <map>
 
 class multCalibrator : public TNamed
 {

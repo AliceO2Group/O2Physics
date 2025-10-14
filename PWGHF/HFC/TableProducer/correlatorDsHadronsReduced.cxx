@@ -83,9 +83,9 @@ struct HfCorrelatorDsHadronsReduced {
 
   void init(InitContext&)
   {
-    AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
-    AxisSpec axisPosZ = {binsPosZ, "PosZ"};
-    AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
+    AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
+    AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
+    AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
     AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
     AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
@@ -110,7 +110,7 @@ struct HfCorrelatorDsHadronsReduced {
                           soa::Join<aod::AssocTrackReds, aod::AssocTrackSels> const& tracks)
   {
 
-    BinningTypeDerived corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}, true};
 
     for (const auto& collision : collisions) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));
@@ -126,7 +126,7 @@ struct HfCorrelatorDsHadronsReduced {
         registry.fill(HIST("hDsPoolBin"), poolBin);
         registry.fill(HIST("hPhiVsPtCand"), RecoDecay::constrainAngle(candidate.phiCand(), -PIHalf), candidate.ptCand());
         registry.fill(HIST("hEtaVsPtCand"), candidate.etaCand(), candidate.ptCand());
-        entryDsCandRecoInfo(candidate.invMassDs(), candidate.ptCand(), candidate.bdtScorePrompt(), candidate.bdtScoreBkg());
+        entryDsCandRecoInfo(candidate.invMassDs(), candidate.ptCand(), candidate.bdtScorePrompt(), candidate.bdtScoreBkg(), collision.numPvContrib());
         for (const auto& track : tracksThisColl) {
           // Removing Ds daughters by checking track indices
           if ((candidate.prong0Id() == track.originTrackId()) || (candidate.prong1Id() == track.originTrackId()) || (candidate.prong2Id() == track.originTrackId())) {
@@ -140,7 +140,8 @@ struct HfCorrelatorDsHadronsReduced {
                             track.etaAssocTrack() - candidate.etaCand(),
                             candidate.ptCand(),
                             track.ptAssocTrack(),
-                            poolBin);
+                            poolBin,
+                            collision.numPvContrib());
           entryDsHadronRecoInfo(candidate.invMassDs(), false, false);
           entryDsHadronMlInfo(candidate.bdtScorePrompt(), candidate.bdtScoreBkg());
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.nTpcCrossedRows());
@@ -155,10 +156,10 @@ struct HfCorrelatorDsHadronsReduced {
                             aod::AssocTrackReds const& tracks)
   {
 
-    BinningTypeDerived corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningTypeDerived const corrBinning{{zPoolBins, multPoolBins}, true};
 
     for (const auto& collision : collisions) {
-      int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));
+      int const poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multiplicity()));
       registry.fill(HIST("hCollisionPoolBin"), poolBin);
       registry.fill(HIST("hMultFT0M"), collision.multiplicity());
       registry.fill(HIST("hZVtx"), collision.posZ());
@@ -181,7 +182,7 @@ struct HfCorrelatorDsHadronsReduced {
 
     auto tracksTuple = std::make_tuple(candidates, tracks);
 
-    Pair<aod::HfcRedCollisions, aod::DsCandReduceds, aod::AssocTrackReds, BinningTypeDerived> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<aod::HfcRedCollisions, aod::DsCandReduceds, aod::AssocTrackReds, BinningTypeDerived> const pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       if (tracks1.size() == 0) {
@@ -189,7 +190,7 @@ struct HfCorrelatorDsHadronsReduced {
       }
 
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multiplicity()));
-      int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multiplicity()));
+      int const poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multiplicity()));
 
       if (poolBin != poolBinDs) {
         LOGF(info, "Error, poolBins are diffrent");
@@ -202,7 +203,8 @@ struct HfCorrelatorDsHadronsReduced {
                           pAssoc.etaAssocTrack() - cand.etaCand(),
                           cand.ptCand(),
                           pAssoc.ptAssocTrack(),
-                          poolBin);
+                          poolBin,
+                          c1.numPvContrib());
         entryDsHadronRecoInfo(cand.invMassDs(), false, false);
         // entryDsHadronGenInfo(false, false, 0);
       }

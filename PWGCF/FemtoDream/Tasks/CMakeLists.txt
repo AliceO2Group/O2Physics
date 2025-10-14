@@ -19,8 +19,18 @@ o2physics_add_dpl_workflow(femtodream-triplet-track-track-track
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-dream-triplet-task-track-track-track-pb-pb
+          SOURCES femtoDreamTripletTaskTrackTrackTrackPbPb.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-pair-track-v0
           SOURCES femtoDreamPairTaskTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-dream-pair-task-v0-reso
+          SOURCES femtoDreamPairTaskV0Reso.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
@@ -29,8 +39,18 @@ o2physics_add_dpl_workflow(femtodream-pair-track-cascade
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-pair-casdcade-cascade
+          SOURCES femtodreamPairCascadeCascade.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-triplet-track-track-v0
           SOURCES femtoDreamTripletTaskTrackTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-dream-triplet-task-track-track-v0-pb-pb
+          SOURCES femtoDreamTripletTaskTrackTrackV0PbPb.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
@@ -41,6 +61,11 @@ o2physics_add_dpl_workflow(femtodream-debug-track
 
 o2physics_add_dpl_workflow(femtodream-debug-v0
           SOURCES femtoDreamDebugV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-dream-debug-reso
+          SOURCES femtoDreamDebugReso.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
@@ -61,5 +86,10 @@ o2physics_add_dpl_workflow(femtodream-hash
 
 o2physics_add_dpl_workflow(femtodream-pair-v0-v0
           SOURCES femtoDreamPairTaskV0V0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-dream-pair-efficiency
+          SOURCES femtoDreamPairEfficiency.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
