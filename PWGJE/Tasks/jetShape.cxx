@@ -13,14 +13,10 @@
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
 /// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
-#include <string>
-#include <vector>
-#include <cmath>
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -28,13 +24,17 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include <TPDGCode.h>
 
-#include "Framework/runDataProcessing.h"
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,13 +101,13 @@ struct JetShapeTask {
                               {"eventCounter", "eventCounter", {HistType::kTH1F, {{1, 0, +1, ""}}}},
                               {"ptVsCentrality", "ptvscentrality", {HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}}}},
                               {"ptResolution", "ptResolution", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {100, -1.0, +1.0}}}},
-                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}, 
-                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}, 
+                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
                               {"ptHistogramProton", "ptHistogramProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}, 
-                              {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}, 
+                              {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
                               {"ptHistogramProtonTof", "ptHistogramProtonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}, 
+                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
                               {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
                               {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}}};
 
@@ -384,13 +384,12 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processProductionRatio, "production ratio", false);
 
-
-  void processReco(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>const& tracks, aod::McParticles const&)
+  void processReco(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
 
     for (const auto& track : tracks) {
-      if(track.has_mcParticle()){
+      if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
         registry.fill(HIST("ptResolution"), track.pt(), track.pt() - mcParticle.pt());
 
@@ -409,36 +408,44 @@ struct JetShapeTask {
         if (track.itsNCls() < nclItsMin)
           continue;
 
-        if(mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax){ // do this in the context of the track ! (context matters!!!) 
-          if(std::abs(mcParticle.pdgCode())==PDG_t::kPiPlus) registry.fill(HIST("ptHistogramPion"), mcParticle.pt()); 
-          if(std::abs(mcParticle.pdgCode())==PDG_t::kKPlus) registry.fill(HIST("ptHistogramKaon"), mcParticle.pt()); 
-          if(std::abs(mcParticle.pdgCode())==PDG_t::kProton) registry.fill(HIST("ptHistogramProton"), mcParticle.pt());
+        if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) { // do this in the context of the track ! (context matters!!!)
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+            registry.fill(HIST("ptHistogramPion"), mcParticle.pt());
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+            registry.fill(HIST("ptHistogramKaon"), mcParticle.pt());
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+            registry.fill(HIST("ptHistogramProton"), mcParticle.pt());
         }
 
-        if(track.hasTOF()){
-          if(mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax){
-            if(std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt()); 
-            if(std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus) registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt()); 
-            if(std::abs(mcParticle.pdgCode()) == PDG_t::kProton) registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt());
+        if (track.hasTOF()) {
+          if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+              registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt());
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+              registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt());
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+              registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt());
           }
         }
       }
     }
   }
   PROCESS_SWITCH(JetShapeTask, processReco, "process reconstructed information", true);
-  
-  void processSim(aod::McParticles const& mcParticles) 
+
+  void processSim(aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
-      if(mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y())< mcRapidityMax){
-        if(std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus ) registry.fill(HIST("ptGeneratedPion"), mcParticle.pt()); 
-        if(std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus) registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt()); 
-        if(std::abs(mcParticle.pdgCode()) == PDG_t::kProton) registry.fill(HIST("ptGeneratedProton"), mcParticle.pt());
-      } 
+      if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+          registry.fill(HIST("ptGeneratedPion"), mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+          registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+          registry.fill(HIST("ptGeneratedProton"), mcParticle.pt());
+      }
     }
   }
   PROCESS_SWITCH(JetShapeTask, processSim, "process pure simulation information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetShapeTask>(cfgc)}; }
-
