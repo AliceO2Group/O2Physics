@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorOmegaKa0Xic0ToOmegaKa.cxx
-/// \brief OmegaKa0 Xic0 → Omega Ka selection task
+/// \file candidateSelectorOmegac0Xic0ToOmegaKa.cxx
+/// \brief Omegac0 Xic0 → Omega Ka selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
