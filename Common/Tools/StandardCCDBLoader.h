@@ -17,6 +17,7 @@
 #define COMMON_TOOLS_STANDARDCCDBLOADER_H_
 
 #include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
