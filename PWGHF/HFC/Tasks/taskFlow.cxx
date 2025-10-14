@@ -214,7 +214,6 @@ struct HfTaskFlow {
     Configurable<bool> isApplySameTrackCut{"isApplySameTrackCut", false, "apply track1 == track2 cut"};
     Configurable<float> maxChi2ItsClusters{"maxChi2ItsClusters", 36.f, "max chi2 per ITS clusters"};
     Configurable<float> maxChi2TpcClusters{"maxChi2TpcClusters", 2.5f, "max chi2 per TPC clusters"};
-    Configurable<int> maxSigmaDCAxy{"maxSigmaDCAxy", 7, "maximum sigma deviations from expected DCA"};
     Configurable<float> maxMergingRadius{"maxMergingRadius", 2.5, "max radius for merging cut"};
     Configurable<float> mergingCut{"mergingCut", 0.02, "merging cut on track merge"};
     Configurable<float> minItsClusters{"minItsClusters", 5.0f, "cut for minimum ITS clusters"};
@@ -252,6 +251,8 @@ struct HfTaskFlow {
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.2f, "min value of MFT tracks pT when used in cut function"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
   } configMft;
+
+  TF1* fPtDepDCAxy = nullptr;
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -320,12 +321,6 @@ struct HfTaskFlow {
   Preslice<HfCandidatesSelLc> perColLcs = aod::track::collisionId;
   Preslice<FilteredMftTracks> perColMftTracks = o2::aod::fwdtrack::collisionId;
   Preslice<FilteredTracksWDcaSel> perColTracks = aod::track::collisionId;
-
-  // =========================
-  //      Preslice : MC
-  // =========================
-
-  // Preslice<MftTracksMcLabels> mftTracksPerCollision = aod::fwdtrack::collisionId;
 
   //  configurables for containers
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
@@ -437,6 +432,8 @@ struct HfTaskFlow {
     LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY(), (*offsetFV0)[0].getZ());
     LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY(), (*offsetFV0)[1].getZ());
 
+    fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+
     //  =========================
     //      Event histograms
     //  =========================
@@ -478,8 +475,6 @@ struct HfTaskFlow {
                                            {configAxis.axisPtEfficiency, "p_{T} (GeV/c)"},
                                            {configAxis.axisVertexEfficiency, "z-vtx (cm)"}};
     std::vector<AxisSpec> const userAxis = {{configAxis.axisMass, "m_{inv} (GeV/c^{2})"}};
-
-    fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
 
     //  =========================
     //  Initialization of histograms and CorrelationContainers for TpcTpc cases
