@@ -66,7 +66,6 @@ struct hadronnucleicorrelation {
   Configurable<bool> isMC{"isMC", false, "is MC"};
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
-  Configurable<bool> domatterGen{"domatterGen", true, "domatterGen"};
   Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
