@@ -55,7 +55,11 @@ struct jEPFlowAnalysis {
     Configurable<float> cfgEtaMax{"cfgEtaMax", 1.f, "Maximum eta used for track selection."};
   } cfgTrackCuts;
 
-  Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "Use event selection"};
+  Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
+  Configurable<int> cfgEvtSel{"cfgEvtSel", 0, "Event selection flags\n0: Sel8\n1: Sel8+kIsGoodZvtxFT0vsPV+kNoSameBunchPileup\n2: Sel8+kIsGoodZvtxFT0vsPV+kNoSameBunchPileup+kNoCollInTimeRangeStandard\n3: Sel8+kNoSameBunchPileup"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "Total number of detectors in qVectorsTable"};
   Configurable<int> cfgnMode{"cfgnMode", 1, "the number of modulations"};
 
@@ -114,6 +118,7 @@ struct jEPFlowAnalysis {
 
     AxisSpec axisMod{cfgnMode, 2., cfgnMode + 2.};
     AxisSpec axisEvtPl{360, -constants::math::PI * 1.1, constants::math::PI * 1.1};
+    AxisSpec axisVertex{150, -12.5, 12.5};
 
     AxisSpec axisCent{cfgAxisCent, "cent"};
     AxisSpec axisPt{cfgAxisPt, "pT"};
@@ -129,15 +134,43 @@ struct jEPFlowAnalysis {
 
     epFlowHistograms.add("vncos", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
     epFlowHistograms.add("vnsin", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisCos}});
+
+    epFlowHistograms.add("hCentrality", "", {HistType::kTH1F, {axisCent}});
+    epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});
   }
 
   void process(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (cfgAddEvtSel && (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup)))
-      return;
+    if (cfgAddEvtSel) {
+      switch (cfgEvtSel) {
+        case 0: // Sel8
+          if (!coll.sel8())
+            return;
+          break;
+        case 1: // PbPb standard
+          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        case 2: // PbPb with pileup
+          if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
+              !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        case 3: // Small systems (OO, NeNe, pp)
+          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        default:
+          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
+      }
+      // Check occupancy
+      if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
+        return;
+    }
 
     float cent = coll.cent();
-    epFlowHistograms.fill(HIST("FullCentrality"), cent);
+    epFlowHistograms.fill(HIST("hCentrality"), cent);
+    epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
     float eps[3] = {0.};
 
     if (cfgShiftCorr) {
