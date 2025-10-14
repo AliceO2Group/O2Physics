@@ -184,7 +184,6 @@ struct HfTaskFlow {
     Configurable<bool> doHeavyFlavor{"doHeavyFlavor", false, "Flag to know we in the heavy flavor case or not"};
     Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
     Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
-    Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
     Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
   } configTask;
 
@@ -848,12 +847,9 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AllEvents);
     }
 
-    if (configTask.processMc == false) {
-      if (!collision.sel8()) {
-        return false;
-      }
+    if (!collision.sel8()) {
+      return false;
     }
-
     if (configCollision.isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
@@ -1035,25 +1031,22 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (configTask.processMc == false) {                                // If DATA
-          if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
-            if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
-              fillTriggerQa<Data, TpcTpc, D0ChPart>(multiplicity, eta1, phi1, pt1);
-            } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-TPC Lc-h
-              fillTriggerQa<Data, TpcTpc, LcChPart>(multiplicity, eta1, phi1, pt1);
-            } else { // IF NEITHER D0 NOR LC -> TPC-TPC h-h
-              fillTriggerQa<Data, TpcTpc, ChPartChPart>(multiplicity, eta1, phi1, pt1);
-            }
-          } else {                                                          // IF TPC-MFT case
-            if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-MFT D0-h
-              fillTriggerQa<Data, TpcMft, D0ChPart>(multiplicity, eta1, phi1, pt1);
-            } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-MFT Lc-h
-              fillTriggerQa<Data, TpcMft, LcChPart>(multiplicity, eta1, phi1, pt1);
-            } else { // IF NEITHER D0 NOR LC -> TPC-MFT h-h
-              fillTriggerQa<Data, TpcMft, ChPartChPart>(multiplicity, eta1, phi1, pt1);
-            } // end of if condition for TPC-TPC or TPC-MFT case
+        if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
+          if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
+            fillTriggerQa<Data, TpcTpc, D0ChPart>(multiplicity, eta1, phi1, pt1);
+          } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-TPC Lc-h
+            fillTriggerQa<Data, TpcTpc, LcChPart>(multiplicity, eta1, phi1, pt1);
+          } else { // IF NEITHER D0 NOR LC -> TPC-TPC h-h
+            fillTriggerQa<Data, TpcTpc, ChPartChPart>(multiplicity, eta1, phi1, pt1);
           }
-          // Maybe I won't need it for MC (first files are way lighter in MC, but also I need to loop over all tracks in MC GEN)
+        } else {                                                          // IF TPC-MFT case
+          if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-MFT D0-h
+            fillTriggerQa<Data, TpcMft, D0ChPart>(multiplicity, eta1, phi1, pt1);
+          } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-MFT Lc-h
+            fillTriggerQa<Data, TpcMft, LcChPart>(multiplicity, eta1, phi1, pt1);
+          } else { // IF NEITHER D0 NOR LC -> TPC-MFT h-h
+            fillTriggerQa<Data, TpcMft, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+          } // end of if condition for TPC-TPC or TPC-MFT case
         }
       }
 
@@ -1401,47 +1394,45 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (configTask.processMc == false) {                                // If DATA
-          if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
-            if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
-              if constexpr (std::is_same_v<aod::FV0As, TFits>) {            // IF NEITHER D0 NOR LC ->
-                fillTriggerQa<Data, TpcFv0a, D0ChPart>(multiplicity, eta1, phi1, pt1);
-              } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
-                if (fitType == isFT0A) {
-                  fillTriggerQa<Data, TpcFt0a, D0ChPart>(multiplicity, eta1, phi1, pt1);
-                }
-                if (fitType == isFT0C) {
-                  fillTriggerQa<Data, TpcFt0c, D0ChPart>(multiplicity, eta1, phi1, pt1);
-                }
-              }
-            } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-FV0a Lc-h
-              if constexpr (std::is_same_v<aod::FV0As, TFits>) {                   // IF NEITHER D0 NOR LC ->
-                fillTriggerQa<Data, TpcFv0a, LcChPart>(multiplicity, eta1, phi1, pt1);
-              } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
-                if (fitType == isFT0A) {
-                  fillTriggerQa<Data, TpcFt0a, LcChPart>(multiplicity, eta1, phi1, pt1);
-                }
-                if (fitType == isFT0C) {
-                  fillTriggerQa<Data, TpcFt0c, LcChPart>(multiplicity, eta1, phi1, pt1);
-                }
-              }
-            } else if constexpr (std::is_same_v<aod::FV0As, TFits>) { // IF NEITHER D0 NOR LC -
-              fillTriggerQa<Data, TpcFv0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+        if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
+          if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
+            if constexpr (std::is_same_v<aod::FV0As, TFits>) {            // IF NEITHER D0 NOR LC ->
+              fillTriggerQa<Data, TpcFv0a, D0ChPart>(multiplicity, eta1, phi1, pt1);
             } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
               if (fitType == isFT0A) {
-                fillTriggerQa<Data, TpcFt0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+                fillTriggerQa<Data, TpcFt0a, D0ChPart>(multiplicity, eta1, phi1, pt1);
               }
               if (fitType == isFT0C) {
-                fillTriggerQa<Data, TpcFt0c, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+                fillTriggerQa<Data, TpcFt0c, D0ChPart>(multiplicity, eta1, phi1, pt1);
               }
             }
-          } else { // If FilteredMftTracks as trigger
-            if constexpr (std::is_same_v<aod::FV0As, TFits>) {
-              fillTriggerQa<Data, MftFv0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+          } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-FV0a Lc-h
+            if constexpr (std::is_same_v<aod::FV0As, TFits>) {                   // IF NEITHER D0 NOR LC ->
+              fillTriggerQa<Data, TpcFv0a, LcChPart>(multiplicity, eta1, phi1, pt1);
             } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
               if (fitType == isFT0A) {
-                fillTriggerQa<Data, MftFt0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+                fillTriggerQa<Data, TpcFt0a, LcChPart>(multiplicity, eta1, phi1, pt1);
               }
+              if (fitType == isFT0C) {
+                fillTriggerQa<Data, TpcFt0c, LcChPart>(multiplicity, eta1, phi1, pt1);
+              }
+            }
+          } else if constexpr (std::is_same_v<aod::FV0As, TFits>) { // IF NEITHER D0 NOR LC -
+            fillTriggerQa<Data, TpcFv0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+          } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
+            if (fitType == isFT0A) {
+              fillTriggerQa<Data, TpcFt0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+            }
+            if (fitType == isFT0C) {
+              fillTriggerQa<Data, TpcFt0c, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+            }
+          }
+        } else { // If FilteredMftTracks as trigger
+          if constexpr (std::is_same_v<aod::FV0As, TFits>) {
+            fillTriggerQa<Data, MftFv0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
+          } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
+            if (fitType == isFT0A) {
+              fillTriggerQa<Data, MftFt0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
             }
           }
         }
