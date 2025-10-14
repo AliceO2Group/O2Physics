@@ -475,6 +475,7 @@ class PidManager
     }
   }
 
+  // ITS
   template <typename Ttrack>
   float getClusterSizeCosLambdaITS(const Ttrack& track)
   {
@@ -524,7 +525,7 @@ class PidManager
   template <typename Ttrack>
   float getNSigmaTPC(const Ttrack& track)
   {
-    if (!mUseTpcCentralCalibration) {
+    if (mUseTpcCentralCalibration) {
       return getNSigmaTPCcentral(track);
     }
     float expectedSignal = getExpectedTPCsignal(track.tpcInnerParam());
