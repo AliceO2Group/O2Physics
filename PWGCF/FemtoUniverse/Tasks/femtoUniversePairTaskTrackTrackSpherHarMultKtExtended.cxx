@@ -809,7 +809,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     auto thegroupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     bool fillQA = true;
 
-    int pairType;
+    int pairType = 0;
     if (cfgProcessPM) {
       pairType = 1;
     } else if (cfgProcessPP) {
@@ -1166,7 +1166,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   void processMixedEventNtrMCTruth(o2::aod::FdCollisions const& cols,
                                    FemtoTruthParticles const&)
   {
-    int pairType;
+    int pairType = 0;
     if (cfgProcessPM) {
       pairType = 1;
     } else if (cfgProcessPP) {
