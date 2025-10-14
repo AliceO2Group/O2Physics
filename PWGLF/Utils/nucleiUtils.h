@@ -509,7 +509,7 @@ class PidManager
   // TPC
   float getExpectedTPCsignal(const float p)
   {
-    if (!mUseTpcCentralCalibration)
+    if (mUseTpcCentralCalibration)
       return -999.f;
 
     float pScaled = p * mMomScaling[0] + mMomScaling[1];
