@@ -734,7 +734,10 @@ struct OnTheFlyTracker {
             // DCA to PV taken care of in daughter tracks already, not necessary
             thisCascade.dcaV0dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
             thisCascade.v0radius = std::hypot(pos[0], pos[1]);
-            thisCascade.mLambda = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+            thisCascade.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
+                                                          std::array{negP[0], negP[1], negP[2]}},
+                                               std::array{o2::constants::physics::MassProton,
+                                                          o2::constants::physics::MassPionCharged});
 
             // go for cascade: create V0 (pseudo)track from reconstructed V0
             std::array<float, 21> covV = {0.};
