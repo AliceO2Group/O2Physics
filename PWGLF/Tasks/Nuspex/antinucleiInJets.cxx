@@ -1626,6 +1626,10 @@ struct AntinucleiInJets {
     // Event counter
     int eventCounter = 0;
 
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
     // Loop over all simulated collisions
     for (const auto& collision : collisions) {
 
@@ -1675,8 +1679,6 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("genEvents"), 2.5);
 
       // Cluster MC particles into jets using anti-kt algorithm
-      fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
       auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
@@ -1772,8 +1774,8 @@ struct AntinucleiInJets {
 
       // Shrink large vectors
       if (eventCounter % shrinkInterval == 0) {
-        fjParticles.shrink_to_fit();
-        protonMomentum.shrink_to_fit();
+        std::vector<fastjet::PseudoJet>().swap(fjParticles);
+        std::vector<TVector3>().swap(protonMomentum);
       }
     }
   }
@@ -1785,6 +1787,10 @@ struct AntinucleiInJets {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
     std::vector<int> antiprotonTrackIndex;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
 
     // Event counter
     int eventCounter = 0;
@@ -1870,8 +1876,6 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("recEvents"), 8.5);
 
       // Cluster particles using the anti-kt algorithm
-      fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
       auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
@@ -2064,8 +2068,8 @@ struct AntinucleiInJets {
 
       // Shrink large vectors
       if (eventCounter % shrinkInterval == 0) {
-        fjParticles.shrink_to_fit();
-        antiprotonTrackIndex.shrink_to_fit();
+        std::vector<fastjet::PseudoJet>().swap(fjParticles);
+        std::vector<int>().swap(antiprotonTrackIndex);
       }
     }
   }
