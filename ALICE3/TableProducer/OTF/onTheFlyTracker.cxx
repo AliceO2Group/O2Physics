@@ -259,15 +259,15 @@ struct OnTheFlyTracker {
           std::LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
         }
       };
-      loadLUT(11, lutEl.value);
-      loadLUT(13, lutMu.value);
-      loadLUT(211, lutPi.value);
-      loadLUT(321, lutKa.value);
-      loadLUT(2212, lutPr.value);
-      loadLUT(1000010020, lutDe.value);
-      loadLUT(1000010030, lutTr.value);
-      loadLUT(1000020030, lutHe3.value);
-      loadLUT(1000020040, lutAl.value);
+      loadLUT(kElectron, lutEl.value);
+      loadLUT(kMuonMinus, lutMu.value);
+      loadLUT(kPiMinus, lutPi.value);
+      loadLUT(kKPlus, lutKa.value);
+      loadLUT(kProton, lutPr.value);
+      loadLUT(o2::constants::physics::kDeuteron, lutDe.value);
+      loadLUT(o2::constants::physics::kTriton, lutTr.value);
+      loadLUT(o2::constants::physics::kHelium3, lutHe3.value);
+      loadLUT(o2::constants::physics::kAlpha, lutAl.value);
 
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
@@ -609,7 +609,7 @@ struct OnTheFlyTracker {
       o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
 
       bool isDecayDaughter = false;
-      if (mcParticle.getProcess() == 4)
+      if (mcParticle.getProcess() == TMCProcess::kPDecay)
         isDecayDaughter = true;
 
       multiplicityCounter++;
@@ -627,9 +627,9 @@ struct OnTheFlyTracker {
           continue;
         }
 
-        o2::upgrade::convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
-        o2::upgrade::convertTLorentzVectorToO2Track(-211, decayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
-        o2::upgrade::convertTLorentzVectorToO2Track(2212, decayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, decayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(kProton, decayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
 
         for (int i = 0; i < 3; i++) {
           isReco[i] = false;
