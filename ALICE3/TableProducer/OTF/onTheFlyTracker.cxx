@@ -585,13 +585,13 @@ struct OnTheFlyTracker {
       }
 
       histos.fill(HIST("hPtGenerated"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 11)
+      if (std::abs(mcParticle.pdgCode()) == kElectron)
         histos.fill(HIST("hPtGeneratedEl"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 211)
+      if (std::abs(mcParticle.pdgCode()) == kPiPlus)
         histos.fill(HIST("hPtGeneratedPi"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 321)
+      if (std::abs(mcParticle.pdgCode()) == kKPlus)
         histos.fill(HIST("hPtGeneratedKa"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 2212)
+      if (std::abs(mcParticle.pdgCode()) == kProton)
         histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
 
       if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
@@ -900,13 +900,13 @@ struct OnTheFlyTracker {
 
       // Base QA (note: reco pT here)
       histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
-      if (std::abs(mcParticle.pdgCode()) == 11)
+      if (std::abs(mcParticle.pdgCode()) == kElectron)
         histos.fill(HIST("hPtReconstructedEl"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 211)
+      if (std::abs(mcParticle.pdgCode()) == kPiPlus)
         histos.fill(HIST("hPtReconstructedPi"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 321)
+      if (std::abs(mcParticle.pdgCode()) == kKPlus)
         histos.fill(HIST("hPtReconstructedKa"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == 2212)
+      if (std::abs(mcParticle.pdgCode()) == kProton)
         histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
 
       if (doExtraQA) {
