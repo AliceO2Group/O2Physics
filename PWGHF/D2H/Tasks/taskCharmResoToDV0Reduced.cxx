@@ -88,6 +88,7 @@ DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                        
 DECLARE_SOA_COLUMN(InvMassGen, invMassGen, float);                                         //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(FlagCharmBach, flagCharmBach, int8_t);                                  //! Flag for charm bachelor classification
 DECLARE_SOA_COLUMN(FlagCharmBachInterm, flagCharmBachInterm, int8_t);                      //! Flag for charm bachelor classification intermediate
+DECLARE_SOA_COLUMN(NKinkedTracks, nKinkedTracks, int8_t);                                  //! Number of kinked tracks found in MC matching
 } // namespace hf_cand_reso_to_v0_lite
 
 DECLARE_SOA_TABLE(HfCandDV0Lites, "AOD", "HFCANDDV0LITE", //! Table with some Resonances properties
@@ -128,7 +129,8 @@ DECLARE_SOA_TABLE(HfCandDV0Lites, "AOD", "HFCANDDV0LITE", //! Table with some Re
                   hf_cand_reso_to_v0_lite::PtGen,
                   hf_cand_reso_to_v0_lite::InvMassGen,
                   hf_cand_reso_to_v0_lite::FlagCharmBach,
-                  hf_cand_reso_to_v0_lite::FlagCharmBachInterm);
+                  hf_cand_reso_to_v0_lite::FlagCharmBachInterm,
+                  hf_cand_reso_to_v0_lite::NKinkedTracks);
 
 DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with some B0 properties
                   hf_cand_reso_to_v0_lite::Pt,
@@ -258,7 +260,7 @@ struct HfTaskCharmResoToDV0Reduced {
 
     // MC Rec
     float ptGen{-1.}, invMassGen{-1};
-    int8_t origin{0}, flagMcMatchRec{0}, flagCharmBach{0}, flagCharmBachInterm{0};
+    int8_t origin{0}, flagMcMatchRec{0}, flagCharmBach{0}, flagCharmBachInterm{0}, nKinkedTracks{0};
     int debugMcRec{-1};
     if constexpr (DoMc) {
       ptGen = candidate.ptGen();
@@ -268,6 +270,7 @@ struct HfTaskCharmResoToDV0Reduced {
       invMassGen = candidate.invMassGen();
       flagCharmBach = candidate.flagMcMatchRecD();
       flagCharmBachInterm = candidate.flagMcMatchChanD();
+      nKinkedTracks = candidate.nTracksDecayed();
       if (fillOnlySignal) {
         if (Channel == DecayChannel::DstarK0s &&
             !hf_decay::hf_cand_reso::particlesToDstarK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
@@ -372,7 +375,8 @@ struct HfTaskCharmResoToDV0Reduced {
         ptGen,
         invMassGen,
         flagCharmBach,
-        flagCharmBachInterm);
+        flagCharmBachInterm,
+        nKinkedTracks);
     }
   } // fillCand
 
