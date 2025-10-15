@@ -33,20 +33,21 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "DetectorsVertexing/PVertexerHelpers.h"
-#include "Field/MagneticField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "SimulationDataFormat/InteractionSampler.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexer.h>
+#include <DetectorsVertexing/PVertexerHelpers.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <SimulationDataFormat/InteractionSampler.h>
 
 #include <TGenPhaseSpace.h>
 #include <TGeoGlobalMagField.h>
@@ -527,7 +528,7 @@ struct OnTheFlyTracker {
       if (!longLivedToBeHandled) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
-        } else if (pdg != 3312) {
+        } else if (pdg != kXiMinus) {
           continue;
         }
       }
@@ -554,7 +555,7 @@ struct OnTheFlyTracker {
       std::vector<double> xiDecayVertex, laDecayVertex;
       std::vector<double> layers = {0.50, 1.20, 2.50, 3.75, 7.00, 12.0, 20.0};
       if (cascadeDecaySettings.decayXi) {
-        if (mcParticle.pdgCode() == 3312) {
+        if (mcParticle.pdgCode() == kXiMinus) {
           o2::track::TrackParCov xiTrackParCov;
           o2::upgrade::convertMCParticleToO2Track(mcParticle, xiTrackParCov, pdgDB);
           decayParticle(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
@@ -567,7 +568,7 @@ struct OnTheFlyTracker {
       if (!mcParticle.isPhysicalPrimary()) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
-        } else if (pdg != 3312) {
+        } else if (pdg != kXiMinus) {
           continue;
         }
       }
@@ -575,7 +576,7 @@ struct OnTheFlyTracker {
       if (!longLivedToBeHandled) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
-        } else if (pdg != 3312) {
+        } else if (pdg != kXiMinus) {
           continue;
         }
       }
@@ -593,7 +594,7 @@ struct OnTheFlyTracker {
       if (std::abs(mcParticle.pdgCode()) == 2212)
         histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
 
-      if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == 3312) {
+      if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
         histos.fill(HIST("hGenXi"), xiDecayRadius2D, mcParticle.pt());
         histos.fill(HIST("hGenPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
         histos.fill(HIST("hGenPiFromLa"), laDecayRadius2D, decayProducts[1].Pt());
@@ -619,7 +620,7 @@ struct OnTheFlyTracker {
       std::vector<int> nHits(3);        // total
       std::vector<int> nSiliconHits(3); // silicon type
       std::vector<int> nTPCHits(3);     // TPC type
-      if (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == 3312) {
+      if (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus) {
         if (cascadeDecaySettings.doXiQA)
           histos.fill(HIST("hXiBuilding"), 0.0f);
         if (xiDecayRadius2D > 20) {
@@ -669,7 +670,7 @@ struct OnTheFlyTracker {
           }
         }
 
-        if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == 3312) {
+        if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
           if (isReco[0] && isReco[1] && isReco[2]) {
             histos.fill(HIST("hXiBuilding"), 2.0f);
             histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
@@ -685,7 +686,7 @@ struct OnTheFlyTracker {
         // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
         // combine particles into actual Xi candidate
         // cascade building starts here
-        if (cascadeDecaySettings.findXi && mcParticle.pdgCode() == 3312 && isReco[0] && isReco[1] && isReco[2]) {
+        if (cascadeDecaySettings.findXi && mcParticle.pdgCode() == kXiMinus && isReco[0] && isReco[1] && isReco[2]) {
           if (cascadeDecaySettings.doXiQA)
             histos.fill(HIST("hXiBuilding"), 3.0f);
           // assign indices of the particles we've used
