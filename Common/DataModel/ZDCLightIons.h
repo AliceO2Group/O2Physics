@@ -95,4 +95,4 @@ DECLARE_SOA_TABLE(ZDCLightIons, "AOD", "ZDCTABLELI", o2::soa::Index<>,
                   zdclightions::SelectionBits);
 } // namespace o2::aod
 
-#endif  // COMMON_DATAMODEL_ZDCLIGHTIONS_H_
+#endif // COMMON_DATAMODEL_ZDCLIGHTIONS_H_
