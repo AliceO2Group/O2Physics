@@ -87,14 +87,14 @@ struct TrackEfficiency {
   Configurable<bool> getPtHatFromHepMCXSection{"getPtHatFromHepMCXSection", true, "test configurable, configurable should be removed once well tested"};
   Configurable<bool> useTrueTrackWeight{"useTrueTrackWeight", true, "test configurable, should be set to 1 then config removed once well tested"};
 
-  // systematics variation
+  // systematics variation - Run 2 guidelines: https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsTrackSystematicUncertainty
   TrackSelection customTrackSelection;
   Configurable<bool> useCustomTrackSelection{"useCustomTrackSelection", false, "whether to use the custom cuts (used for cut variation for tracking efficiency systematics)"};
   Configurable<float> effSystMinNCrossedRowsTPC{"effSystMinNCrossedRowsTPC", 70, "min number of crossed rows TPC"};
   Configurable<float> effSystMinNCrossedRowsOverFindableClustersTPC{"effSystMinNCrossedRowsOverFindableClustersTPC", 0.8, "min ratio of crossed rows over findable clusters TPC"};
   Configurable<float> effSystMaxChi2PerClusterTPC{"effSystMaxChi2PerClusterTPC", 4.0, "max chi2 per cluster TPC"};
-  Configurable<float> effSystMaxChi2PerClusterITS{"effSystMaxChi2PerClusterITS", 36.0, "max chi2 per cluster ITS	"};
-  // Configurable<float> effSystMaxDcaXY{"effSystMaxDcaXY", 0.0105 * 0.035 / pT^1.1 ????, "max DCA to vertex xy"};
+  Configurable<float> effSystMaxChi2PerClusterITS{"effSystMaxChi2PerClusterITS", 36.0, "max chi2 per cluster ITS"};
+  // Configurable<float> effSystMaxDcaXY{"effSystMaxDcaXY", 0.0105 * 0.035 / pT^1.1 ????, "max DCA to vertex xy"}; not including this for now as it's a function with 3 parameters
   Configurable<float> effSystMaxDcaZ{"effSystMaxDcaZ", 2.0, "max DCA to vertex z"};
   Configurable<float> effSystMinNrequiredHits{"effSystMinNrequiredHits", 1, "minimum number of hits among the 3 innermost layers of the ITS"};
 
