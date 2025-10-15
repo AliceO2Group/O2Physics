@@ -13,13 +13,12 @@
 /// \author Aimeric Landou <aimeric.landou@cern.ch>
 /// \brief task that creates the histograms necessary for computation of efficiency and purity functions in offline postprocess macros; also can make mcparticle and track QC histograms
 
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisTask.h"
@@ -107,9 +106,10 @@ struct TrackEfficiency {
     SplitOkCheckAnyAssocColl,      // 1
     SplitOkCheckFirstAssocCollOnly // 2
   };
- 
+
   template <typename TJetTrack>
-  bool isAcceptedTrack(TJetTrack const& jetTrack) {
+  bool isAcceptedTrack(TJetTrack const& jetTrack)
+  {
     if (!useCustomTrackSelection) {
       if (jetderiveddatautilities::selectTrack(jetTrack, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(jetTrack, trackDcaZmax)) { // if track selection is uniformTrack, dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
         return true;
@@ -118,7 +118,7 @@ struct TrackEfficiency {
       const auto& aodTrack = jetTrack.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>(); // might need the aodTracks to have the TracksExtra table as well; should check; check what is needed for the track selection
       if (customTrackSelection.IsSelected(aodTrack)) {
         return true;
-      } 
+      }
     }
     return false;
   }
@@ -202,11 +202,11 @@ struct TrackEfficiency {
 
       // customTrackSelection = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value); does this need to be setup?
       LOGP(info, "Customizing track selection:");
-      int dcaSetup = 0; //default dca setup
+      int dcaSetup = 0;                                                                                                               // default dca setup
       customTrackSelection = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, dcaSetup); // takes global tracks configuration, then edit some cuts
       customTrackSelection.SetEtaRange(-999, 999);
       customTrackSelection.SetPtRange(0, 1e10f);
-      
+
       customTrackSelection.SetMinNCrossedRowsTPC(effSystMinNCrossedRowsTPC.value);
       customTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(effSystMinNCrossedRowsOverFindableClustersTPC.value);
       customTrackSelection.SetMaxChi2PerClusterTPC(effSystMaxChi2PerClusterTPC.value);
@@ -360,7 +360,7 @@ struct TrackEfficiency {
       registry.add("h_trackselplot_dcaxy", "track selection variable: dca XY", {HistType::kTH1F, {{1000, -1.0, 1.0}}});
       registry.add("h_trackselplot_dcaz", "track selection variable: dca Z", {HistType::kTH1F, {{1000, -1.0, 1.0}}});
 
-      registry.add("h2_trackselplot_pt_tpccrossedrows", "track selection variable: pt vs number of tpc crossed rows", {HistType::kTH2F, {{200, 0., 200.},{165, -0.5, 164.5}}});
+      registry.add("h2_trackselplot_pt_tpccrossedrows", "track selection variable: pt vs number of tpc crossed rows", {HistType::kTH2F, {{200, 0., 200.}, {165, -0.5, 164.5}}});
       registry.add("h2_trackselplot_pt_tpccrossedrowsoverfindable", "track selection variable: pt vs ratio of of tpc crossed rows over number of findable clusters", {HistType::kTH2F, {{200, 0., 200.}, {120, 0.0, 1.2}}});
       registry.add("h2_trackselplot_pt_chi2ncls_tpc", "track selection variable: pt vs Chi2 / cluster for the TPC track segment", {HistType::kTH2F, {{200, 0., 200.}, {100, 0.0, 10.0}}});
       registry.add("h2_trackselplot_pt_chi2ncls_its", "track selection variable: pt vs Chi2 / cluster for the ITS track segment", {HistType::kTH2F, {{200, 0., 200.}, {200, 0.0, 40.0}}});
@@ -1110,11 +1110,12 @@ struct TrackEfficiency {
   }
   PROCESS_SWITCH(TrackEfficiency, processMcCollisionsWeighted, "QA for McCollisions in weighted MC", false);
 
-  void processTrackSelectionHistograms(soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA>::iterator const& track) { // should probably select collisions 
+  void processTrackSelectionHistograms(soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA>::iterator const& track)
+  { // should probably select collisions
     registry.fill(HIST("h_trackselplot_tpccrossedrows"), track.tpcNClsCrossedRows());
     registry.fill(HIST("h_trackselplot_tpccrossedrowsoverfindable"), track.tpcCrossedRowsOverFindableCls());
-    registry.fill(HIST("h_trackselplot_chi2ncls_tpc"), track.tpcChi2NCl	());
-    registry.fill(HIST("h_trackselplot_chi2ncls_its"), track.itsChi2NCl	());
+    registry.fill(HIST("h_trackselplot_chi2ncls_tpc"), track.tpcChi2NCl());
+    registry.fill(HIST("h_trackselplot_chi2ncls_its"), track.itsChi2NCl());
     registry.fill(HIST("h_trackselplot_dcaxy"), track.dcaXY());
     registry.fill(HIST("h_trackselplot_dcaz"), track.dcaZ());
 
