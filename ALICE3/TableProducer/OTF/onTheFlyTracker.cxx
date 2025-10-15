@@ -256,7 +256,7 @@ struct OnTheFlyTracker {
       auto loadLUT = [&](int pdg, const std::string& lutFile) {
         bool success = mSmearer.loadTable(pdg, lutFile.c_str());
         if (!success && !lutFile.empty()) {
-          std::LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
         }
       };
       loadLUT(kElectron, lutEl.value);
@@ -364,7 +364,7 @@ struct OnTheFlyTracker {
       hFastTrackerQA->GetXaxis()->SetBinLabel(8, "efficiency");
     }
 
-    std::LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
+    LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
     o2::parameters::GRPMagField grpmag;
     grpmag.setFieldUniformity(true);
     grpmag.setL3Current(30000.f * (magneticField / 5.0f));
@@ -373,18 +373,18 @@ struct OnTheFlyTracker {
 
     auto fieldInstance = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     if (!fieldInstance) {
-      std::LOGF(fatal, "Failed to set up magnetic field! Stopping now!");
+      LOGF(fatal, "Failed to set up magnetic field! Stopping now!");
     }
 
     // Cross-check
-    std::LOGF(info, "Check field at (0, 0, 0): %.1f kG, nominal: %.1f", static_cast<float>(fieldInstance->GetBz(0, 0, 0)), static_cast<float>(field));
+    LOGF(info, "Check field at (0, 0, 0): %.1f kG, nominal: %.1f", static_cast<float>(fieldInstance->GetBz(0, 0, 0)), static_cast<float>(field));
 
-    std::LOGF(info, "Initializing empty material cylinder LUT - could be better in the future");
+    LOGF(info, "Initializing empty material cylinder LUT - could be better in the future");
     o2::base::MatLayerCylSet* lut = new o2::base::MatLayerCylSet();
     lut->addLayer(200, 200.1, 2, 1.0f, 100.0f);
-    std::LOGF(info, "MatLayerCylSet::optimizePhiSlices()");
+    LOGF(info, "MatLayerCylSet::optimizePhiSlices()");
     lut->optimizePhiSlices();
-    std::LOGF(info, "Setting lut now...");
+    LOGF(info, "Setting lut now...");
     o2::base::Propagator::Instance()->setMatLUT(lut);
 
     irSampler.setInteractionRate(100);
@@ -450,7 +450,7 @@ struct OnTheFlyTracker {
 
     double xi_gamma = 1 / std::sqrt(1 + (particle.p() * particle.p()) / (xi_mass * xi_mass));
     double xi_ctau = 4.91 * xi_gamma;
-    double xi_rxyz = (-xi_ctau * std::log(1 - u));
+    double xi_rxyz = (-xi_ctau * log(1 - u));
     float sna, csa;
     o2::math_utils::CircleXYf_t xi_circle;
     track.getCircleParams(magneticField, xi_circle, sna, csa);
@@ -475,7 +475,7 @@ struct OnTheFlyTracker {
     double la_gamma = 1 / std::sqrt(1 + (la.P() * la.P()) / (la_mass * la_mass));
     double la_ctau = 7.89 * la_gamma;
     std::vector<double> laDaughters = {pi_mass, pr_mass};
-    double la_rxyz = (-la_ctau * std::log(1 - u));
+    double la_rxyz = (-la_ctau * log(1 - u));
     laDecayVertex.push_back(xiDecayVertex[0] + la_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
     laDecayVertex.push_back(xiDecayVertex[1] + la_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
     laDecayVertex.push_back(xiDecayVertex[2] + la_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
@@ -534,7 +534,7 @@ struct OnTheFlyTracker {
       }
       const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
       if (!pdgInfo) {
-        std::LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
+        LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
         continue;
       }
       if (pdgInfo->Charge() == 0) {
@@ -705,7 +705,7 @@ struct OnTheFlyTracker {
           try {
             nCand = fitter.process(xiDaughterTrackParCovsTracked[1], xiDaughterTrackParCovsTracked[2]);
           } catch (...) {
-            // std::LOG(error) << "Exception caught in DCA fitter process call!";
+            // LOG(error) << "Exception caught in DCA fitter process call!";
             dcaFitterOK_V0 = false;
           }
           if (nCand == 0) {
@@ -761,7 +761,7 @@ struct OnTheFlyTracker {
             try {
               nCand = fitter.process(v0Track, xiDaughterTrackParCovsTracked[0]);
             } catch (...) {
-              // std::LOG(error) << "Exception caught in DCA fitter process call!";
+              // LOG(error) << "Exception caught in DCA fitter process call!";
               dcaFitterOK_Cascade = false;
             }
             if (nCand == 0) {
