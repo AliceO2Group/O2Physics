@@ -20,6 +20,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
+#define DIM_PHOTSCHARGE 10
+
 namespace o2::aod
 {
 

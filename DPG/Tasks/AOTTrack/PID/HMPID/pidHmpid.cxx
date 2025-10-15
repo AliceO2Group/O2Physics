@@ -51,7 +51,7 @@ struct pidHmpidAnalysis {
   // CCDB configurable
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   struct : ConfigurableGroup {
-    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   } ccdbConfig;
 
   Produces<aod::HMPID_analysis> HMPID_analysis;
@@ -67,7 +67,7 @@ struct pidHmpidAnalysis {
   void init(o2::framework::InitContext&)
   {
     // Configure CCDB
-    ccdb->setURL(ccdbConfig.ccdburl);
+    ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
@@ -103,9 +103,9 @@ struct pidHmpidAnalysis {
       if (!global_track.hasITS() || !global_track.hasTPC() || !global_track.hasTOF())
         continue;
 
-      float hmpidPhotsCharge2[10];
+      float hmpidPhotsCharge2[DIM_PHOTSCHARGE];
 
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < DIM_PHOTSCHARGE; i++) {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
       }
 

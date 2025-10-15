@@ -11,26 +11,26 @@
 
 # HMPID
 o2physics_add_dpl_workflow(pid-hmpid-qa-pp
-    SOURCES qaHMPID_pp.cxx
+    SOURCES pidHmpidQaPp.cxx
     PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-hmpid-qa-pb
-    SOURCES qaHMPID_pb.cxx
+    SOURCES pidHmpidQaPb.cxx
     PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-hmpid
-    SOURCES analysisHMPID.cxx
+    SOURCES pidHmpid.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-hmpid-pbpb
-    SOURCES analysisHMPID_pb.cxx
+    SOURCES pidHmpidPbpb.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-hmpid-deuteron
-    SOURCES deuteronCS_HMPID.cxx
+    SOURCES pidHmpidDeuteron.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
