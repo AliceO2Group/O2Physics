@@ -349,7 +349,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U>
-  void fillHistogramsMCD(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0, auto collisionID = 0)
+  void fillHistogramsMCD(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0, int collisionID = 0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
