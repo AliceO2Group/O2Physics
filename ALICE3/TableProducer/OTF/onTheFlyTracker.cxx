@@ -623,7 +623,8 @@ struct OnTheFlyTracker {
       if (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus) {
         if (cascadeDecaySettings.doXiQA)
           histos.fill(HIST("hXiBuilding"), 0.0f);
-        if (xiDecayRadius2D > 20) {
+        static constexpr float kMaxRadius = 20; // cm
+        if (xiDecayRadius2D > kMaxRadius) {
           continue;
         }
 
@@ -783,7 +784,10 @@ struct OnTheFlyTracker {
               thisCascade.cascradius = std::hypot(posCascade[0], posCascade[1]);
               bachelorTrackAtPCA.getPxPyPzGlo(bachP);
 
-              thisCascade.mXi = RecoDecay::m(array{array{bachP[0], bachP[1], bachP[2]}, array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
+              thisCascade.mXi = RecoDecay::m(std::array{std::array{bachP[0], bachP[1], bachP[2]},
+                                                        std::array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]}},
+                                             std::array{o2::constants::physics::MassPionCharged,
+                                                        o2::constants::physics::MassLambda});
 
               // initialize cascade track
               o2::track::TrackParCov cascadeTrack = fitter.createParentTrackParCov();
