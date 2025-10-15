@@ -611,12 +611,13 @@ struct CreateResolutionMap {
       }
 
       if (muoncuts.refitGlobalMuon) {
-        eta = mfttrack.eta();
+        // eta = mfttrack.eta();
         // phi = mfttrack.phi();
         // o2::math_utils::bringTo02Pi(phi);
-        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        eta = propmuonAtDCA.getEta();
         phi = propmuonAtDCA.getPhi();
         o2::math_utils::bringTo02Pi(phi);
+        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
 
         if constexpr (withMFTCov) {
           auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
