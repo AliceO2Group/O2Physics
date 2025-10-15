@@ -132,7 +132,7 @@ struct skimmerPrimaryMuon {
     const double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     mBz = field->getBz(centerMFT); // Get field at centre of MFT
-    LOGF(info, "Bz at center of MFT = %f kZG", mBz); // this is dummy comment.
+    LOGF(info, "Bz at center of MFT = %f kZG", mBz); // this is dummy comment. // dummy2
   }
 
   void addHistograms()
