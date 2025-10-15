@@ -1386,7 +1386,7 @@ struct AnalysisSameEventPairing {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
-    bool isMCGen = context.mOptions.get<bool>("processMCGen");
+    bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithGrouping");
     VarManager::SetDefaultVarNames();
 
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed");
@@ -2318,6 +2318,109 @@ struct AnalysisSameEventPairing {
     } // end loop over reconstructed events
   }
 
+  void processMCGenWithGrouping(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  {
+    uint32_t mcDecision = 0;
+    int isig = 0;
+
+    for (auto& mctrack : mcTracks) {
+      VarManager::FillTrackMC(mcTracks, mctrack);
+      // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
+      // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
+      // TODO:  Use the mcReducedFlags to select signals
+      for (auto& sig : fGenMCSignals) {
+        if (sig->CheckSignal(true, mctrack)) {
+          fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
+        }
+      }
+    }
+    // Fill Generated histograms taking into account selected collisions
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+
+      for (auto& track : mcTracks) {
+        if (track.reducedMCeventId() != event.reducedMCeventId()) {
+          continue;
+        }
+        VarManager::FillTrackMC(mcTracks, track);
+        auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
+        mcDecision = 0;
+        isig = 0;
+        for (auto& sig : fGenMCSignals) {
+          if (sig->CheckSignal(true, track_raw)) {
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
+            fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+            MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
+
+            if (useMiniTree.fConfigMiniTree) {
+              auto mcEvent = mcEvents.rawIteratorAt(track_raw.reducedMCeventId());
+              dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), track_raw.pt(), track_raw.eta(), track_raw.phi(), -999, -999, -999);
+            }
+          }
+          isig++;
+        }
+      }
+    } // end loop over reconstructed events
+    if (fHasTwoProngGenMCsignals) {
+      for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
+        auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+        auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
+        if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+          for (auto& sig : fGenMCSignals) {
+            if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
+              continue;
+            }
+            if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
+              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
+            }
+          }
+        }
+      }
+    }
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+      // CURRENTLY ONLY FOR 1-GENERATION 2-PRONG SIGNALS
+      if (fHasTwoProngGenMCsignals) {
+        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+        groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+        for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+            mcDecision = 0;
+            isig = 0;
+            for (auto& sig : fGenMCSignals) {
+              if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
+                continue;
+              }
+              if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+                mcDecision |= (static_cast<uint32_t>(1) << isig);
+                VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
+                fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                if (useMiniTree.fConfigMiniTree) {
+                  // WARNING! To be checked
+                  dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                }
+              }
+              isig++;
+            }
+          }
+        }
+      } // end loop over reconstructed events
+    }
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -2328,6 +2431,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMCGenWithGrouping, "Loop over MC particle stack (grouped MCTracks) and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
 
