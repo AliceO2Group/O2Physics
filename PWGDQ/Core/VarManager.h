@@ -282,6 +282,7 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
+    kMCEventCentrFT0C,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -1655,9 +1656,11 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionCent) > 0 || (fillMap & ReducedEventExtended) > 0) {
-    values[kCentFT0C] = event.centFT0C();
-    values[kCentFT0A] = event.centFT0A();
-    values[kCentFT0M] = event.centFT0M();
+    if constexpr ((fillMap & CollisionMC) == 0) {
+      values[kCentFT0C] = event.centFT0C();
+      values[kCentFT0A] = event.centFT0A();
+      values[kCentFT0M] = event.centFT0M();
+    }
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
@@ -1982,6 +1985,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+    if constexpr ((fillMap & CollisionCent) > 0) {
+      // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
+      values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
+    }
   }
 
   if constexpr ((fillMap & ReducedEventMC) > 0) {

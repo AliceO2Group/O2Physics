@@ -445,6 +445,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCEventTime] = "MC event time";
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
+  fgVariableNames[kMCEventCentrFT0C] = "MC Centrality FT0C";
   fgVariableUnits[kMCEventGeneratorId] = "";
   fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
@@ -453,6 +454,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
+  fgVariableUnits[kMCEventCentrFT0C] = "%";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
