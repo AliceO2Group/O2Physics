@@ -61,7 +61,6 @@ static const float cutsTable[nPart][nCuts]{
 struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
   Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::framework::O2DatabasePDG> pdgMC;
 
   /// Particle selection part
 
@@ -716,12 +715,13 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   void doSameEventMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int multCol, int ContType, bool fillQA)
   {
 
+    randgen = new TRandom2(0);
     /// Histogramming same event
-    if ((ContType == 1 || ContType == 2) && fillQA) {
+    if ((cfgProcessPM || cfgProcessPP) && fillQA) {
       for (const auto& part : groupPartsOne) {
         if (part.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
           int pdgCode = static_cast<int>(part.tempFitVar());
-          const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
+          const auto& pdgParticle = pdg->GetParticle(pdgCode);
           if (pdgParticle) {
             trackHistoPartOne.fillQA<isMC, false>(part);
           }
@@ -729,11 +729,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
     }
 
-    if ((ContType == 1 || ContType == 3) && fillQA) {
+    if ((cfgProcessPM || cfgProcessMM) && fillQA) {
       for (const auto& part : groupPartsTwo) {
         if (part.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
           int pdgCode = static_cast<int>(part.tempFitVar());
-          const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
+          const auto& pdgParticle = pdg->GetParticle(pdgCode);
           if (pdgParticle) {
             trackHistoPartTwo.fillQA<isMC, false>(part);
           }
@@ -741,15 +741,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
     }
 
-    if (ContType == 1) {
+    if (cfgProcessPM) {
 
       /// Now build the combinations for non-identical particle pairs
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
         int pdgCodePartOne = static_cast<int>(p1.tempFitVar());
-        const auto& pdgParticleOne = pdgMC->GetParticle(pdgCodePartOne);
+        const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
         int pdgCodePartTwo = static_cast<int>(p2.tempFitVar());
-        const auto& pdgParticleTwo = pdgMC->GetParticle(pdgCodePartTwo);
+        const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
         if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == trackonefilter.ConfPDGCodePartOne) && (pdgCodePartTwo == tracktwofilter.ConfPDGCodePartTwo)) {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
           sameEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
@@ -759,9 +759,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
         int pdgCodePartOne = static_cast<int>(p1.tempFitVar());
-        const auto& pdgParticleOne = pdgMC->GetParticle(pdgCodePartOne);
+        const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
         int pdgCodePartTwo = static_cast<int>(p2.tempFitVar());
-        const auto& pdgParticleTwo = pdgMC->GetParticle(pdgCodePartTwo);
+        const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
 
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
         double rand;
@@ -793,6 +793,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
       }
     }
+    delete randgen;
   }
 
   /// process function for to call doSameEvent with Monte Carlo
@@ -807,30 +808,37 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     auto thegroupPartsOne = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     bool fillQA = true;
-    randgen = new TRandom2(0);
+
+    int pairType = 0;
+    if (cfgProcessPM) {
+      pairType = 1;
+    } else if (cfgProcessPP) {
+      pairType = 2;
+    } else if (cfgProcessMM) {
+      pairType = 3;
+    }
 
     if (ConfIsCent) {
       if (cfgProcessPM) {
-        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsTwo, col.multV0M(), 1, fillQA);
+        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsTwo, col.multV0M(), pairType, fillQA);
       }
       if (cfgProcessPP) {
-        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsOne, col.multV0M(), 2, fillQA);
+        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsOne, col.multV0M(), pairType, fillQA);
       }
       if (cfgProcessMM) {
-        doSameEventMCTruth<false>(thegroupPartsTwo, thegroupPartsTwo, col.multV0M(), 3, fillQA);
+        doSameEventMCTruth<false>(thegroupPartsTwo, thegroupPartsTwo, col.multV0M(), pairType, fillQA);
       }
     } else {
       if (cfgProcessPM) {
-        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsTwo, col.multNtr(), 1, fillQA);
+        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsTwo, col.multNtr(), pairType, fillQA);
       }
       if (cfgProcessPP) {
-        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsOne, col.multNtr(), 2, fillQA);
+        doSameEventMCTruth<false>(thegroupPartsOne, thegroupPartsOne, col.multNtr(), pairType, fillQA);
       }
       if (cfgProcessMM) {
-        doSameEventMCTruth<false>(thegroupPartsTwo, thegroupPartsTwo, col.multNtr(), 3, fillQA);
+        doSameEventMCTruth<false>(thegroupPartsTwo, thegroupPartsTwo, col.multNtr(), pairType, fillQA);
       }
     }
-    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processSameEventMCTruth, "Enable processing same event for MC truth", false);
 
@@ -1104,13 +1112,13 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   template <bool isMC, typename PartitionType>
   void doMixedEventMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int multCol, int ContType)
   {
-
+    randgen = new TRandom2(0);
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
       int pdgCodePartOne = static_cast<int>(p1.tempFitVar());
-      const auto& pdgParticleOne = pdgMC->GetParticle(pdgCodePartOne);
+      const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
       int pdgCodePartTwo = static_cast<int>(p2.tempFitVar());
-      const auto& pdgParticleTwo = pdgMC->GetParticle(pdgCodePartTwo);
+      const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
 
       float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
       double rand;
@@ -1149,6 +1157,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
       }
     }
+    delete randgen;
   }
 
   /// process function for to call doMixedEvent with Data
@@ -1157,7 +1166,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   void processMixedEventNtrMCTruth(o2::aod::FdCollisions const& cols,
                                    FemtoTruthParticles const&)
   {
-    randgen = new TRandom2(0);
+    int pairType = 0;
+    if (cfgProcessPM) {
+      pairType = 1;
+    } else if (cfgProcessPP) {
+      pairType = 2;
+    } else if (cfgProcessMM) {
+      pairType = 3;
+    }
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningNtr, ConfNEventsMix, -1, cols, cols)) {
 
@@ -1167,20 +1183,19 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       if (cfgProcessPM) {
         auto groupPartsOne = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto groupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-        doMixedEventMCTruth<false>(groupPartsOne, groupPartsTwo, multiplicityCol, 1);
+        doMixedEventMCTruth<false>(groupPartsOne, groupPartsTwo, multiplicityCol, pairType);
       }
       if (cfgProcessPP) {
         auto groupPartsOne = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto groupPartsTwo = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-        doMixedEventMCTruth<false>(groupPartsOne, groupPartsTwo, multiplicityCol, 2);
+        doMixedEventMCTruth<false>(groupPartsOne, groupPartsTwo, multiplicityCol, pairType);
       }
       if (cfgProcessMM) {
         auto groupPartsOne = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto groupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-        doMixedEventMCTruth<false>(groupPartsOne, groupPartsTwo, multiplicityCol, 3);
+        doMixedEventMCTruth<false>(groupPartsOne, groupPartsTwo, multiplicityCol, pairType);
       }
     }
-    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventNtrMCTruth, "Enable processing MC Truth mixed events for multiplicity", false);
 };
