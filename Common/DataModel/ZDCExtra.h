@@ -25,36 +25,36 @@ namespace o2::aod
 {
 namespace zdcextra
 {
-DECLARE_SOA_COLUMN(ZNApmc, commonPMZNA, float);            //! PMC ZNA         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm1, ZNAPM1, float);                 //! PM1 ZNA         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm2, ZNAPM2, float);                 //! PM2 ZNA         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm3, ZNAPM3, float);                 //! PM3 ZNA         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm4, ZNAPM4, float);                 //! PM4 ZNA         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNAtdc, ZNATDC, float);                 //! TDC ZNA         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpmc, commonPMZNC, float);            //! PMC ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm1, ZNCPM1, float);                 //! PM1 ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm2, ZNCPM2, float);                 //! PM2 ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm3, ZNCPM3, float);                 //! PM3 ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm4, ZNCPM4, float);                 //! PM4 ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCtdc, ZNCTDC, float);                 //! TDC ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(Centrality, centrality, float);         //! Centrality
-DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp
-DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
+DECLARE_SOA_COLUMN(ZnaTowC, znaTowC, float);                //! Common tower ZNA
+DECLARE_SOA_COLUMN(ZnaTow1, znaTow1, float);                //! Tower 1 ZNA
+DECLARE_SOA_COLUMN(ZnaTow2, znaTow2, float);                //! Tower 2 ZNA
+DECLARE_SOA_COLUMN(ZnaTow3, znaTow3, float);                //! Tower 3 ZNA
+DECLARE_SOA_COLUMN(ZnaTow4, znaTow4, float);                //! Tower 4 ZNA
+DECLARE_SOA_COLUMN(ZnaTdc, znaTdc, float);                  //! TDC ZNA
+DECLARE_SOA_COLUMN(ZncTowC, zncTowC, float);                //! Common tower ZNC
+DECLARE_SOA_COLUMN(ZncTow1, zncTow1, float);                //! Tower 1 ZNC
+DECLARE_SOA_COLUMN(ZncTow2, zncTow2, float);                //! Tower 2 ZNC
+DECLARE_SOA_COLUMN(ZncTow3, zncTow3, float);                //! Tower 3 ZNC
+DECLARE_SOA_COLUMN(ZncTow4, zncTow4, float);                //! Tower 4 ZNC
+DECLARE_SOA_COLUMN(ZncTdc, zncTdc, float);                  //! TDC ZNC
+DECLARE_SOA_COLUMN(Centrality, centrality, float);          //! Centrality
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);         //! Timestamp
+DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t);  //! Selection Flags
 } // namespace zdcextra
 
 DECLARE_SOA_TABLE(ZdcExtras, "AOD", "ZDCEXTRA", o2::soa::Index<>,
-                  zdcextra::ZNApmc,
-                  zdcextra::ZNApm1,
-                  zdcextra::ZNApm2,
-                  zdcextra::ZNApm3,
-                  zdcextra::ZNApm4,
-                  zdcextra::ZNAtdc,
-                  zdcextra::ZNCpmc,
-                  zdcextra::ZNCpm1,
-                  zdcextra::ZNCpm2,
-                  zdcextra::ZNCpm3,
-                  zdcextra::ZNCpm4,
-                  zdcextra::ZNCtdc,
+                  zdcextra::ZnaTowC,
+                  zdcextra::ZnaTow1,
+                  zdcextra::ZnaTow2,
+                  zdcextra::ZnaTow3,
+                  zdcextra::ZnaTow4,
+                  zdcextra::ZnaTdc,
+                  zdcextra::ZncTowC,
+                  zdcextra::ZncTow1,
+                  zdcextra::ZncTow2,
+                  zdcextra::ZncTow3,
+                  zdcextra::ZncTow4,
+                  zdcextra::ZncTdc,
                   zdcextra::Centrality,
                   zdcextra::Timestamp,
                   zdcextra::SelectionBits);
