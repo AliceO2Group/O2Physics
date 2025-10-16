@@ -11,26 +11,26 @@
 
 # HMPID
 o2physics_add_dpl_workflow(pid-hmpid-qa-pp
-    SOURCES pidHmpidQaPp.cxx
+    SOURCES HmpidQaPp.cxx
     PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid-qa-pb
-    SOURCES pidHmpidQaPb.cxx
+o2physics_add_dpl_workflow(pid-hmpid-qa-pb-pb
+    SOURCES HmpidQaPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid
-    SOURCES pidHmpid.cxx
+o2physics_add_dpl_workflow(pid-hmpid-table-producer-pp
+    SOURCES HmpidTableProducerPp.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid-pbpb
-    SOURCES pidHmpidPbpb.cxx
+o2physics_add_dpl_workflow(pid-hmpid-table-producer-pb-pb
+    SOURCES HmpidTableProducerPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-hmpid-deuteron
-    SOURCES pidHmpidDeuteron.cxx
+    SOURCES HmpidDeuteron.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
