@@ -768,6 +768,13 @@ struct qVectorsCorrection {
       if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)
         return;
     }
+
+    for (uint i = 0; i < cfgnMods->size(); i++) {
+      fillHistosQvecWithSC(qVec, cfgnMods->at(i));
+      if (cfgQAFinal && cfgQAFlowStudy) {
+        fillHistosFlowWithSC(qVec, tracks, cfgnMods->at(i));
+      }
+    }
   }
   PROCESS_SWITCH(qVectorsCorrection, processWithSC, "process with shift correction", false);
 };
