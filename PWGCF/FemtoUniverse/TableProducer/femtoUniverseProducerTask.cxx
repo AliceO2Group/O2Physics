@@ -2545,7 +2545,7 @@ struct FemtoUniverseProducerTask {
       bool colcheck = false;
       // fill the tables
 
-      if (ConfGeneral.ConfIsCent) {
+      if (ConfGeneral.confIsCent) {
         colcheck = fillCollisionsCentRun3<true>(col);
       } else {
         colcheck = fillCollisions<true>(col, groupedTracks);
