@@ -84,7 +84,7 @@ struct OnTheFlyRichPid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // master setting: magnetic field
-  float magneticField = 0; // Always taken from the tracker task
+  Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
 
   // add rich-specific configurables here
   Configurable<int> bRichNumberOfSectors{"bRichNumberOfSectors", 21, "barrel RICH number of sectors"};
@@ -290,8 +290,12 @@ struct OnTheFlyRichPid {
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
-    if (!getTaskOptionValue(initContext, "on-the-fly-tracker", "magneticField", magneticField, false)) {
-      LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
+    if (magneticField.value < o2::constants::math::Epsilon) {
+      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", magneticField, false)) {
+        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
+      }
+      LOG(info) << "Bz = " << magneticField.value << " T";
     }
 
     // Load LUT for pt and eta smearing
