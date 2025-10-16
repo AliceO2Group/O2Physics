@@ -160,7 +160,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
     Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
-    Configurable<bool> ConfIsCent{"ConfIsCent", true, "Centrality or multiplicity selection"};
+    Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
   } ConfGeneral;
   Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfGeneral.confCentFT0Max);
