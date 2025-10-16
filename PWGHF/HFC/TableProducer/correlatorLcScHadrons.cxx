@@ -81,7 +81,6 @@ double getDeltaPhi(double phiLc, double phiHadron)
 // definition of ME variables
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
-double massLambda = o2::constants::physics::MassLambda;
 // Code to select collisions with at least one Lambda_c
 struct HfCorrelatorLcScHadronsSelection {
   Produces<aod::LcSelection> candSel;
@@ -209,7 +208,7 @@ struct HfCorrelatorLcScHadronsSelection {
     if (std::abs(candidate.yLambda()) > yCandMax) {
       return false;
     }
-    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0.cfgV0LifeTime) {
+    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda > cfgV0.cfgV0LifeTime) {
       return false;
     }
 
@@ -591,7 +590,7 @@ struct HfCorrelatorLcScHadrons {
       auto negTrackV0 = v0.template negTrack_as<TrackType>();
 
       if (isSelectedV0Daughter(posTrackV0, kProton) && isSelectedV0Daughter(negTrackV0, kPiPlus)) {
-        if (std::abs(massLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
+        if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
           registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), posTrackV0.pt());
           registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
@@ -602,7 +601,7 @@ struct HfCorrelatorLcScHadrons {
         }
       }
       if (isSelectedV0Daughter(negTrackV0, kProton) && isSelectedV0Daughter(posTrackV0, kPiPlus)) {
-        if (std::abs(massLambda - v0.mAntiLambda()) > cfgV0.cfgHypMassWindow) {
+        if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) > cfgV0.cfgHypMassWindow) {
           registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
           registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), posTrackV0.pt());
 
