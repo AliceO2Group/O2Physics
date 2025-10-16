@@ -59,7 +59,6 @@ DECLARE_SOA_COLUMN(PidTrkPi, pidTrkPi, uint32_t);
 DECLARE_SOA_COLUMN(TrackIDPi, trackIDPi, int);
 DECLARE_SOA_COLUMN(TrackIDNu, trackIDNu, int);
 
-
 DECLARE_SOA_COLUMN(ItsClusterSizeNu, itsClusterSizeNu, uint32_t);
 DECLARE_SOA_COLUMN(ItsClusterSizePi, itsClusterSizePi, uint32_t);
 
