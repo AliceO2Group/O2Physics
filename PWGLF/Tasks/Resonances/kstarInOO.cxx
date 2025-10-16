@@ -44,7 +44,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
+// #include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -179,10 +179,10 @@ struct kstarInOO {
     }
 
     if (cfgMcHistos) {
-      // histos.add("hPion_PID_Purity", "hPion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      // histos.add("hKaon_PID_Purity", "hKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      // histos.add("hSimplePion_PID_Purity", "hSimplePion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      // histos.add("hSimpleKaon_PID_Purity", "hSimpleKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hPion_PID_Purity", "hPion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hKaon_PID_Purity", "hKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hSimplePion_PID_Purity", "hSimplePion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hSimpleKaon_PID_Purity", "hSimpleKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
 
       histos.add("nEvents_MC", "nEvents_MC", kTH1F, {{4, 0.0, 4.0}});
       histos.add("nEvents_MC_True", "nEvents_MC_True", kTH1F, {{4, 0.0, 4.0}});
@@ -546,6 +546,7 @@ struct kstarInOO {
 
     if (trk1.index() >= trk2.index())
       return {-1.0, -1.0};
+    std::cout << "track1 Index: " << trk1.index() << "track2 Index: " << trk2.index() << std::endl;
 
     //    if (trk1.globalIndex() == trk2.globalIndex())
     //   return {-1.0, -1.0};
