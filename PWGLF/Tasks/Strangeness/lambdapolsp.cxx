@@ -1526,7 +1526,7 @@ struct lambdapolsp {
   using TrackMCTrueTable = aod::McParticles;
   ROOT::Math::PxPyPzMVector lambdadummymc, antiLambdadummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
 
-  void processMC(EventCandidatesMC::iterator const& collision, AllTrackCandidates const& tracks, TrackMCTrueTable const& GenParticles, ResoV0s const& V0s)
+  void processMC(EventCandidatesMC::iterator const& collision, AllTrackCandidates const& /*tracks*/, TrackMCTrueTable const& GenParticles, ResoV0s const& V0s)
   {
     if (!collision.sel8()) {
       return;
