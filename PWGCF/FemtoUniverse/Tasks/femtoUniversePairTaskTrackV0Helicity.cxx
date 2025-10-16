@@ -70,16 +70,16 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   /// Particle 1 (track)
   struct : o2::framework::ConfigurableGroup {
-  Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 211, "Particle 1 (track) -- PDG code"};
-  Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 1, "0: Proton, 1: Pion, 2: Kaon"};
-  ConfigurableAxis confTrkTempFitVarBins{"confTrkTempFitVarBins", {300, -0.15, 0.15}, "TempFitVar binning in the pT vs. TempFitVar plot"};
-  ConfigurableAxis confTrkTempFitVarpTBins{"confTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning in the pT vs. TempFitVar plot"};
-  Configurable<int> confChargePart1{"confChargePart1", 0, "Particle 1 sign"};
-  Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "Particle 1 pT higher limit"};
-  Configurable<float> confLPtPart1{"confLPtPart1", 0.3f, "Particle 1 pT lower limit"};
-  Configurable<float> confTOFmom{"confTOFmom", 0.5, "Momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC nSigma for particle momentum < confTOFmom"};
-  Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF nSigma (combined) for particle momentum > confTOFmom"};
+    Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 211, "Particle 1 (track) -- PDG code"};
+    Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 1, "0: Proton, 1: Pion, 2: Kaon"};
+    ConfigurableAxis confTrkTempFitVarBins{"confTrkTempFitVarBins", {300, -0.15, 0.15}, "TempFitVar binning in the pT vs. TempFitVar plot"};
+    ConfigurableAxis confTrkTempFitVarpTBins{"confTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning in the pT vs. TempFitVar plot"};
+    Configurable<int> confChargePart1{"confChargePart1", 0, "Particle 1 sign"};
+    Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "Particle 1 pT higher limit"};
+    Configurable<float> confLPtPart1{"confLPtPart1", 0.3f, "Particle 1 pT lower limit"};
+    Configurable<float> confTOFmom{"confTOFmom", 0.5, "Momentum threshold for particle identification using TOF"};
+    Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC nSigma for particle momentum < confTOFmom"};
+    Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF nSigma (combined) for particle momentum > confTOFmom"};
   } trackconfigs;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
@@ -169,7 +169,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   /// Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
 
-  static constexpr unsigned int V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // table to select the V0 children
+  static constexpr unsigned int V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // table to select V0 children
 
   /// Containers
   FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
@@ -186,7 +186,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventContHel4;
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventContHel4;
-  
+
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kV0> pairCleaner;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCleanerV0;
 
@@ -555,19 +555,19 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    if(cfgProcessHel)
+    if (cfgProcessHel)
       doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 0);
 
-    if(cfgProcessHel1)
+    if (cfgProcessHel1)
       doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 1);
 
-    if(cfgProcessHel2)
+    if (cfgProcessHel2)
       doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 2);
 
-    if(cfgProcessHel3)
+    if (cfgProcessHel3)
       doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 3);
 
-    if(cfgProcessHel4)
+    if (cfgProcessHel4)
       doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 4);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processSameEvent, "Enable processing same event for track - V0", false);
@@ -863,19 +863,19 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   void processMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    if(cfgProcessHel)
+    if (cfgProcessHel)
       doMixedEvent(cols, parts, partsOne, partsTwo, 0);
 
-    if(cfgProcessHel1)
+    if (cfgProcessHel1)
       doMixedEvent(cols, parts, partsOne, partsTwo, 1);
 
-    if(cfgProcessHel2)
+    if (cfgProcessHel2)
       doMixedEvent(cols, parts, partsOne, partsTwo, 2);
 
-    if(cfgProcessHel3)
+    if (cfgProcessHel3)
       doMixedEvent(cols, parts, partsOne, partsTwo, 3);
 
-    if(cfgProcessHel4)
+    if (cfgProcessHel4)
       doMixedEvent(cols, parts, partsOne, partsTwo, 4);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMixedEvent, "Enable processing mixed event for track - V0", false);
