@@ -93,17 +93,17 @@ struct HfCorrelatorLcScHadronsSelection {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
-struct : ConfigurableGroup {
-   Configurable<float> cfgV0radiusMin{"cfgV0radiusMin", 1.2, "minimum decay radius"};
-   Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
-   Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
-   Configurable<float> cfgV0CosPA{"cfgV0CosPA", 0.995, "minimum v0 cosine"};
-   Configurable<float> cfgDCAV0Dau{"cfgDCAV0Dau", 1.0, "maximum DCA between daughters"};
-   Configurable<float> cfgV0PtMin{"cfgV0PtMin", 0, "minimum pT for lambda"};
-   Configurable<float> cfgV0LifeTime{"cfgV0LifeTime", 30., "maximum lambda lifetime"};
-   Configurable<float> cfgPV{"cfgPV", 10., "maximum z-vertex"};
-   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  struct : ConfigurableGroup {
+    Configurable<float> cfgV0radiusMin{"cfgV0radiusMin", 1.2, "minimum decay radius"};
+    Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
+    Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
+    Configurable<float> cfgV0CosPA{"cfgV0CosPA", 0.995, "minimum v0 cosine"};
+    Configurable<float> cfgDCAV0Dau{"cfgDCAV0Dau", 1.0, "maximum DCA between daughters"};
+    Configurable<float> cfgV0PtMin{"cfgV0PtMin", 0, "minimum pT for lambda"};
+    Configurable<float> cfgV0LifeTime{"cfgV0LifeTime", 30., "maximum lambda lifetime"};
+    Configurable<float> cfgPV{"cfgPV", 10., "maximum z-vertex"};
+    Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+    Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   } cfgV0;
 
   HfHelper hfHelper;
@@ -188,35 +188,35 @@ struct : ConfigurableGroup {
   template <typename TCollision, typename V0>
   bool selectionV0(TCollision const& collision, V0 const& candidate)
   {
-    if (candidate.v0radius() < cfgV0.cfgV0radiusMin){
+    if (candidate.v0radius() < cfgV0.cfgV0radiusMin) {
       return false;
     }
-    if (std::abs(candidate.dcapostopv()) < cfgV0.cfgDCAPosToPVMin){
+    if (std::abs(candidate.dcapostopv()) < cfgV0.cfgDCAPosToPVMin) {
       return false;
     }
-    if (std::abs(candidate.dcanegtopv()) < cfgV0.cfgDCANegToPVMin){
+    if (std::abs(candidate.dcanegtopv()) < cfgV0.cfgDCANegToPVMin) {
       return false;
     }
-    if (candidate.v0cosPA() < cfgV0.cfgV0CosPA){
+    if (candidate.v0cosPA() < cfgV0.cfgV0CosPA) {
       return false;
     }
-    if (std::abs(candidate.dcaV0daughters()) > cfgV0.cfgDCAV0Dau){
+    if (std::abs(candidate.dcaV0daughters()) > cfgV0.cfgDCAV0Dau) {
       return false;
     }
-    if (candidate.pt() < cfgV0.cfgV0PtMin){
+    if (candidate.pt() < cfgV0.cfgV0PtMin) {
       return false;
     }
-    if (std::abs(candidate.yLambda()) > yCandMax){
+    if (std::abs(candidate.yLambda()) > yCandMax) {
       return false;
     }
-    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0.cfgV0LifeTime){
+    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0.cfgV0LifeTime) {
       return false;
     }
 
     return true;
   }
 
-      template <typename TCollision>
+  template <typename TCollision>
   bool eventSelV0(TCollision collision)
   {
     if (!collision.sel8()) {
@@ -252,13 +252,13 @@ struct : ConfigurableGroup {
     if (!eventSelV0(collision)) {
       candSel(isCandFound);
       return;
-    }    
-    if(V0s.size() < kMinV0Candidates){
+    }
+    if (V0s.size() < kMinV0Candidates) {
       candSel(isCandFound);
       return;
     }
-for (const auto& v0 : V0s) {
-     if (selectionV0(collision, v0)){
+    for (const auto& v0 : V0s) {
+      if (selectionV0(collision, v0)) {
         isCandFound = true;
         break;
       }
@@ -266,7 +266,6 @@ for (const auto& v0 : V0s) {
     candSel(isCandFound);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadronsSelection, processV0Selection, "Process V0 Collision Selection for Data", true);
-
 
   void processLcSelection(SelCollisions::iterator const& collision,
                           CandsLcDataFiltered const& candidates)
@@ -554,8 +553,7 @@ struct HfCorrelatorLcScHadrons {
     return y;
   }
 
-
-    template <typename T>
+  template <typename T>
   bool isSelectedV0Daughter(T const& track, int pid)
   {
     // if (!track.isGlobalTrackWoDCA())
@@ -1418,13 +1416,12 @@ struct HfCorrelatorLcScHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processDataLambdaV0, "Data process for v0 lambda", false);
 
-      void processMcLambdaV0(SelCollisions::iterator const&,
-                       TracksWithMc const& tracks, soa::Join<aod::V0Datas,aod::McV0Labels> const& v0s, aod::McParticles const&)
+  void processMcLambdaV0(SelCollisions::iterator const&,
+                         TracksWithMc const& tracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& v0s, aod::McParticles const&)
   {
     fillV0Histograms<true>(v0s, tracks);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processMcLambdaV0, "Mc process for v0 lambda", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
