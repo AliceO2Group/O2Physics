@@ -10,27 +10,27 @@
 # or submit itself to any jurisdiction.
 
 # HMPID
-o2physics_add_dpl_workflow(pid-hmpid-qa-pp
-    SOURCES HmpidQaPp.cxx
+o2physics_add_dpl_workflow(hmpid-qa-pp
+    SOURCES hmpidQaPp.cxx
     PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid-qa-pb-pb
-    SOURCES HmpidQaPbPb.cxx
+o2physics_add_dpl_workflow(hmpid-qa-pb-pb
+    SOURCES hmpidQaPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid-table-producer-pp
-    SOURCES HmpidTableProducerPp.cxx
+o2physics_add_dpl_workflow(hmpid-table-producer-pp
+    SOURCES hmpidTableProducerPp.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid-table-producer-pb-pb
-    SOURCES HmpidTableProducerPbPb.cxx
+o2physics_add_dpl_workflow(hmpid-table-producer-pb-pb
+    SOURCES hmpidTableProducerPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid-deuteron
-    SOURCES HmpidDeuteron.cxx
+o2physics_add_dpl_workflow(hmpid-deuteron
+    SOURCES hmpidDeuteron.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
