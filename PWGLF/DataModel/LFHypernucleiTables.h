@@ -85,6 +85,7 @@ DECLARE_SOA_COLUMN(IsFakeHeOnITSLayer, isFakeHeOnITSLayer, uint8_t);  // uint8_t
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                         // bool: true for signal
 DECLARE_SOA_COLUMN(IsRecoMCCollision, isRecoMCCollision, bool);       // bool: true for reco MC collision
 DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, bool);                   // bool: true for survived event selection
+DECLARE_SOA_COLUMN(IsTwoBodyDecay, isTwoBodyDecay, bool);             // bool: true for two body decay
 } // namespace hyperrec
 
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
@@ -148,7 +149,8 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::IsFakeHeOnITSLayer,
                   hyperrec::IsSignal,
                   hyperrec::IsRecoMCCollision,
-                  hyperrec::IsSurvEvSel);
+                  hyperrec::IsSurvEvSel,
+                  hyperrec::IsTwoBodyDecay);
 
 DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   o2::soa::Index<>,
