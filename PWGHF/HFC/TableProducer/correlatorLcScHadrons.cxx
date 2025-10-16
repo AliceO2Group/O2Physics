@@ -81,6 +81,7 @@ double getDeltaPhi(double phiLc, double phiHadron)
 // definition of ME variables
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
+
 // Code to select collisions with at least one Lambda_c
 struct HfCorrelatorLcScHadronsSelection {
   Produces<aod::LcSelection> candSel;
