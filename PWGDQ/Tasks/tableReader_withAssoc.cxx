@@ -95,6 +95,7 @@ DECLARE_SOA_COLUMN(deltamassBcandidate, deltaMBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
 DECLARE_SOA_COLUMN(EtaBcandidate, etaBcandidate, float);
 DECLARE_SOA_COLUMN(PhiBcandidate, phiBcandidate, float);
+DECLARE_SOA_COLUMN(RapBcandidate, rapBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
 DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
@@ -168,7 +169,7 @@ DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMBA", dqanalysisflags::MuonAmb
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTERA", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
                   dqanalysisflags::RunNumber, dqanalysisflags::EventIdx, dqanalysisflags::EventTimestamp,
-                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate, dqanalysisflags::PhiBcandidate,
+                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate, dqanalysisflags::PhiBcandidate, dqanalysisflags::RapBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
                   dqanalysisflags::GlobalIndexassoc, dqanalysisflags::GlobalIndexleg1, dqanalysisflags::GlobalIndexleg2,
@@ -3448,7 +3449,7 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
           // table to be written out for ML analysis
-          BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi],
+          BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
                        fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
                        fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
                        fValuesHadron[VarManager::kVertexingChi2PCA],
