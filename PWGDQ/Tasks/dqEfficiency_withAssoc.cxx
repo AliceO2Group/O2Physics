@@ -3794,7 +3794,10 @@ struct AnalysisDileptonTrack {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
-      DefineHistograms(fHistMan, "MCTruthGenAccepted", "");
+      for (auto& sig: fRecMCSignals) {
+        DefineHistograms(fHistMan, Form("MCTruthGenSelBR_%s", sig->GetName()), "");
+        DefineHistograms(fHistMan, Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), "");
+      }
     }
 
     TString addHistsStr = fConfigAddJSONHistograms.value;
@@ -4199,40 +4202,42 @@ struct AnalysisDileptonTrack {
         }
       }
 
-      /*for (auto& [t1, t2, t3] : combinations(groupedMCTracks, groupedMCTracks, groupedMCTracks)) {
+      // make a list of all MC tracks in the MC collision corresponding to the current reconstructed event
+      std::vector<size_t> mcTrackIndices;
+      for (auto& t : groupedMCTracks) {
+        mcTrackIndices.push_back(t.globalIndex());
+      }
 
-        if (! (t1.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalDileptonLegPos.value))) {
-          continue;
-        }
-        if (t1.pt() < fConfigMCGenDileptonLegPtMin.value) {
-          continue;
-        }
-        if (std::abs(t1.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
-          continue;
-        }
+      // make a three nested for loop over all MC tracks in the vector
+      for (auto t1 : mcTrackIndices) {
+        auto track1 = mcTracks.rawIteratorAt(*(&t1));
+        for (auto t2 : mcTrackIndices) {
+          if (t1 == t2 || t2 < t1) continue;
+          auto track2 = mcTracks.rawIteratorAt(*(&t2));
+          for (auto t3 : mcTrackIndices) {
+            if (t3 == t1 || t3 == t2) continue;
+            auto track3 = mcTracks.rawIteratorAt(*(&t3)); 
 
-        if (! (t2.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalDileptonLegNeg.value))) {
-          continue;
-        }
-        if (t2.pt() < fConfigMCGenDileptonLegPtMin.value) {
-          continue;
-        }
-        if (std::abs(t2.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
-          continue;
-        }
+            for (auto& sig : fRecMCSignals) {
+              if (sig->CheckSignal(true, track1, track2, track3)) {
+                fHistMan->FillHistClass(Form("MCTruthGenSelBR_%s", sig->GetName()), VarManager::fgValues);
 
-        if (! (t3.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalHadron.value))) {
-          continue;
+                // apply kinematic cuts
+                if (track1.pt() < fConfigMCGenDileptonLegPtMin.value || std::abs(track1.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
+                  continue;
+                }
+                if (track2.pt() < fConfigMCGenDileptonLegPtMin.value || std::abs(track2.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
+                  continue;
+                }
+                if (track3.pt() < fConfigMCGenHadronPtMin.value || std::abs(track3.eta()) > fConfigMCGenHadronEtaAbs.value) {
+                  continue;
+                }
+                fHistMan->FillHistClass(Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), VarManager::fgValues);
+              }
+            }
+          }
         }
-        if (t3.pt() < fConfigMCGenHadronPtMin.value) {
-          continue;
-        }
-        if (std::abs(t3.eta()) > fConfigMCGenHadronEtaAbs.value) {
-          continue;
-        }
-
-        fHistMan->FillHistClass("MCTruthGenSelAccepted", VarManager::fgValues);
-      }*/
+      }
     } // end loop over reconstructed events
   }
 
