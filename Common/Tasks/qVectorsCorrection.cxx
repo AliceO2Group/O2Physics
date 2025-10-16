@@ -204,9 +204,9 @@ struct qVectorsCorrection {
         histosQA.add(Form("histQvecRefAFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
         histosQA.add(Form("histQvecRefBFinalV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
 
-      if (cfgShiftCorPrep) {
-        histosQA.add(Form("histShiftV%d", cfgnMods->at(i)), "", {HistType::kTProfile3D, {axisCent, axisBasis, axisShift}});
-      }
+        if (cfgShiftCorPrep) {
+          histosQA.add(Form("histShiftV%d", cfgnMods->at(i)), "", {HistType::kTProfile3D, {axisCent, axisBasis, axisShift}});
+        }
 
         if (cfgQAOccupancyStudy) {
           histosQA.add(Form("histQvecOccFinalV%d", cfgnMods->at(i)), "", {HistType::kTHnSparseF, {axisQvecF, axisQvecF, axisCent, axisOccupancy}});
@@ -728,7 +728,7 @@ struct qVectorsCorrection {
       for (uint i = 0; i < cfgnMods->size(); i++) {
         fillHistosShiftCor(qVec, cfgnMods->at(i));
       }
-    } 
+    }
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvec(qVec, cfgnMods->at(i));
