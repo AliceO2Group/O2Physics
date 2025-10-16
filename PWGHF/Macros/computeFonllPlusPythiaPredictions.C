@@ -109,7 +109,7 @@ std::vector<std::string> splitString(const std::string& str, char delimiter)
 }
 
 //__________________________________________________________________________________________________
-std::array<TH1D*, 3> readFonll(std::string inFile, std::string histName)
+std::array<TH1D*, 3> readFonll(const std::string& inFile, const std::string& histName)
 {
 
   std::array<TH1D*, 3> hFonll{nullptr, nullptr, nullptr};

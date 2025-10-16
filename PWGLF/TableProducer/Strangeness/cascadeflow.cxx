@@ -156,6 +156,7 @@ struct cascadeFlow {
   Configurable<bool> isQVecT0C{"isQVecT0C", 1, ""};
   Configurable<bool> isQVecT0M{"isQVecT0M", 0, ""};
   Configurable<bool> isQVecV0A{"isQVecV0A", 0, ""};
+  Configurable<bool> isCollisionCentrality{"isCollisionCentrality", 0, ""}; // 0: FT0C, 1: FT0M (implemented only for Lambda analysis in OO)
 
   // Output filling criteria
   struct : ConfigurableGroup {
@@ -182,6 +183,7 @@ struct cascadeFlow {
   struct : ConfigurableGroup {
     Configurable<bool> cfgShiftCorr{"cfgShiftCorr", 0, ""};
     Configurable<std::string> cfgShiftPathFT0C{"cfgShiftPathFT0C", "Users/c/chdemart/OOpass2Shift/ShiftFT0C", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathFV0A{"cfgShiftPathFV0A", "Users/c/chdemart/OOpass2Shift/ShiftFV0A", "Path for Shift"};
     Configurable<std::string> cfgShiftPathTPCL{"cfgShiftPathTPCL", "Users/c/chdemart/OOpass2Shift/ShiftTPCL", "Path for Shift"};
     Configurable<std::string> cfgShiftPathTPCR{"cfgShiftPathTPCR", "Users/c/chdemart/OOpass2Shift/ShiftTPCR", "Path for Shift"};
   } ShiftConfigs;
@@ -258,6 +260,7 @@ struct cascadeFlow {
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
     Configurable<float> rapidityLambda{"rapidityLambda", 0.5, "rapidityLambda"};
     Configurable<float> etaLambda{"etaLambda", 0.8, "etaLambda"};
+    Configurable<float> dauTrackV0Eta{"dauTrackV0Eta", 0.8, "dauTrackV0Eta"};
   } V0Configs;
 
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
@@ -428,6 +431,10 @@ struct cascadeFlow {
       return false;
 
     counter++;
+
+    // eta daughters)
+    //     if (abs(posExtra.eta()) > V0Configs.dauTrackV0Eta || abs(negExtra.y()) > V0Configs.dauTrackV0Eta) return false;
+
     return true;
   }
   template <typename TDaughter>
@@ -487,10 +494,12 @@ struct cascadeFlow {
   int lastRunNumber = -999;
   TProfile3D* shiftprofile;
   TProfile3D* shiftprofileFT0C;
+  TProfile3D* shiftprofileFV0A;
   TProfile3D* shiftprofileTPCL;
   TProfile3D* shiftprofileTPCR;
   std::string fullCCDBShiftCorrPath;
   std::string fullCCDBShiftCorrPathFT0C;
+  std::string fullCCDBShiftCorrPathFV0A;
   std::string fullCCDBShiftCorrPathTPCL;
   std::string fullCCDBShiftCorrPathTPCR;
 
@@ -510,10 +519,11 @@ struct cascadeFlow {
   }
 
   template <typename TCollision>
-  double ComputeEPResolutionwShifts(TCollision coll, double psiT0C, double psiTPCA, double psiTPCC, TProfile3D* shiftprofileA, TProfile3D* shiftprofileB, TProfile3D* shiftprofileC)
+  double ComputeEPResolutionwShifts(TCollision coll, double psiT0C, double psiV0A, double psiTPCA, double psiTPCC, TProfile3D* shiftprofileA, TProfile3D* shiftprofileB, TProfile3D* shiftprofileC, TProfile3D* shiftprofileD)
   {
     int nmode = 2;
     auto deltapsiFT0C = 0.0;
+    auto deltapsiFV0A = 0.0;
     auto deltapsiTPCA = 0.0;
     auto deltapsiTPCC = 0.0;
     for (int ishift = 1; ishift <= 10; ishift++) {
@@ -523,7 +533,11 @@ struct cascadeFlow {
       auto coeffshiftyTPCA = shiftprofileB->GetBinContent(shiftprofileTPCL->FindBin(coll.centFT0C(), 3.5, ishift - 0.5));
       auto coeffshiftxTPCC = shiftprofileC->GetBinContent(shiftprofileTPCR->FindBin(coll.centFT0C(), 4.5, ishift - 0.5));
       auto coeffshiftyTPCC = shiftprofileC->GetBinContent(shiftprofileTPCR->FindBin(coll.centFT0C(), 5.5, ishift - 0.5));
+      auto coeffshiftxFV0A = shiftprofileD->GetBinContent(shiftprofileFV0A->FindBin(coll.centFT0C(), 0.5, ishift - 0.5));
+      auto coeffshiftyFV0A = shiftprofileD->GetBinContent(shiftprofileFV0A->FindBin(coll.centFT0C(), 1.5, ishift - 0.5));
+
       deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psiT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psiT0C)));
+      deltapsiFV0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFV0A * TMath::Cos(ishift * static_cast<float>(nmode) * psiV0A) + coeffshiftyFV0A * TMath::Sin(ishift * static_cast<float>(nmode) * psiV0A)));
       deltapsiTPCA += ((1 / (1.0 * ishift)) * (-coeffshiftxTPCA * TMath::Cos(ishift * static_cast<float>(nmode) * psiTPCA) + coeffshiftyTPCA * TMath::Sin(ishift * static_cast<float>(nmode) * psiTPCA)));
       deltapsiTPCC += ((1 / (1.0 * ishift)) * (-coeffshiftxTPCC * TMath::Cos(ishift * static_cast<float>(nmode) * psiTPCC) + coeffshiftyTPCC * TMath::Sin(ishift * static_cast<float>(nmode) * psiTPCC)));
     }
@@ -531,6 +545,9 @@ struct cascadeFlow {
     // histos.fill(HIST("psi2/QA/EP_TPCA_shifted"), coll.centFT0C(), psiTPCA + deltapsiTPCA);
     // histos.fill(HIST("psi2/QA/EP_TPCC_shifted"), coll.centFT0C(), psiTPCC + deltapsiTPCC);
     resolution.fill(HIST("QVectorsT0CTPCA_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiTPCA - deltapsiTPCA)));
+    resolution.fill(HIST("QVectorsT0CV0A_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiV0A - deltapsiFV0A)));
+    resolution.fill(HIST("QVectorsV0ATPCC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiV0A + deltapsiFV0A - psiTPCC - deltapsiTPCC)));
+    resolution.fill(HIST("QVectorsV0ATPCA_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiV0A + deltapsiFV0A - psiTPCA - deltapsiTPCA)));
     resolution.fill(HIST("QVectorsT0CTPCC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiTPCC - deltapsiTPCC)));
     resolution.fill(HIST("QVectorsTPCAC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiTPCA + deltapsiTPCA - psiTPCC - deltapsiTPCC)));
     return true;
@@ -742,15 +759,25 @@ struct cascadeFlow {
     resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsTPCAC", "QVectorsTPCAC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsT0CV0A", "QVectorsT0CV0A", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsV0ATPCC", "QVectorsV0ATPCC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsV0ATPCA", "QVectorsV0ATPCA", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsNormT0CTPCA", "QVectorsNormT0CTPCA", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
     resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
     resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
+    resolution.add("QVectorsNormT0CV0A", "QVectorsNormT0CV0A", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsNormV0ATPCC", "QVectorsNormV0ATPCC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsNormV0ATPCA", "QVectorsNormV0ATPCA", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsSpecPlane", "QVectorsSpecPlane", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
     resolution.add("QVectorsT0CTPCA_Shifted", "QVectorsT0CTPCA_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsT0CTPCC_Shifted", "QVectorsT0CTPCC_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsTPCAC_Shifted", "QVectorsTPCAC_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsT0CV0A_Shifted", "QVectorsT0CV0A_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsV0ATPCC_Shifted", "QVectorsV0ATPCC_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsV0ATPCA_Shifted", "QVectorsV0ATPCA_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
 
     histos.add("ShiftFT0C", "ShiftFT0C", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
+    histos.add("ShiftFV0A", "ShiftFV0A", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCR", "ShiftTPCR", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
 
@@ -760,6 +787,11 @@ struct cascadeFlow {
     }
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {{120, -12., 12.}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
+    histos.add("hEventCentralityBefEvSel", "hEventCentralityBefEvSel", kTH1F, {{101, 0, 101}});
+    histos.add("hEventCentralityBefEPSel", "hEventCentralityBefEPSel", kTH1F, {{101, 0, 101}});
+    histos.add("hEventCentralityT0M", "hEventCentralityT0M", kTH1F, {{101, 0, 101}});
+    histos.add("hEventCentralityBefEvSelT0M", "hEventCentralityBefEvSelT0M", kTH1F, {{101, 0, 101}});
+    histos.add("hEventCentralityBefEPSelT0M", "hEventCentralityBefEPSelT0M", kTH1F, {{101, 0, 101}});
     histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("hPsiT0CvsCentFT0C", "hPsiT0CvsCentFT0C", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("hPsiZDCA_vs_ZDCC", "hPsiZDCA_vs_ZDCC", HistType::kTH2D, {{100, -o2::constants::math::PI, o2::constants::math::PI}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
@@ -1095,7 +1127,7 @@ struct cascadeFlow {
 
     if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C, shiftprofileFT0C);
-      ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR);
+      ComputeEPResolutionwShifts(coll, psiT0C, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR, shiftprofileFT0C);
     }
 
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
@@ -1408,7 +1440,7 @@ struct cascadeFlow {
 
     if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C, shiftprofileFT0C);
-      ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR);
+      ComputeEPResolutionwShifts(coll, psiT0C, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR, shiftprofileFT0C);
     }
 
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
@@ -1653,6 +1685,16 @@ struct cascadeFlow {
   void processAnalyseLambdaEP2CentralFW(CollEventPlaneCentralFW const& coll, V0Candidates const& V0s, DauTracks const&)
   {
 
+    histos.fill(HIST("hEventCentralityBefEvSel"), coll.centFT0C());
+    histos.fill(HIST("hEventCentralityBefEvSelT0M"), coll.centFT0M());
+
+    Float_t collisionCentrality = 0;
+    if (isCollisionCentrality == 0) { // T0C
+      collisionCentrality = coll.centFT0C();
+    } else if (isCollisionCentrality == 1) { // T0M
+      collisionCentrality = coll.centFT0M();
+    }
+
     if (!AcceptEvent(coll, 1)) {
       return;
     }
@@ -1671,6 +1713,11 @@ struct cascadeFlow {
       qvecIm = coll.qvecFV0AIm();
     }
 
+    double qvecReV0A = coll.qvecFV0ARe();
+    double qvecImV0A = coll.qvecFV0AIm();
+
+    histos.fill(HIST("hEventCentralityBefEPSel"), collisionCentrality);
+    histos.fill(HIST("hEventCentralityBefEPSelT0M"), coll.centFT0M());
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
       if (std::abs(qvecRe) > 990 || std::abs(qvecIm) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
@@ -1683,29 +1730,35 @@ struct cascadeFlow {
 
     histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
-    histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
-    histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), collisionCentrality, coll.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), collisionCentrality, coll.multNTracksGlobal());
 
-    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    histos.fill(HIST("hEventCentrality"), collisionCentrality);
+    histos.fill(HIST("hEventCentralityT0M"), coll.centFT0M());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     ROOT::Math::XYZVector eventplaneVecT0C{qvecRe, qvecIm, 0};
+    ROOT::Math::XYZVector eventplaneVecV0A{qvecReV0A, qvecImV0A, 0};
     ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
     ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
 
     const float psiT0C = std::atan2(qvecIm, qvecRe) * 0.5f;
+    const float psiV0A = std::atan2(qvecImV0A, qvecReV0A) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
-      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
-      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiT0C));
+      histos.fill(HIST("ShiftFT0C"), collisionCentrality, 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
+      histos.fill(HIST("ShiftFT0C"), collisionCentrality, 1.5, ishift - 0.5, std::cos(ishift * 2 * psiT0C));
 
-      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCA));
-      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCA));
+      histos.fill(HIST("ShiftFV0A"), collisionCentrality, 0.5, ishift - 0.5, std::sin(ishift * 2 * psiV0A));
+      histos.fill(HIST("ShiftFV0A"), collisionCentrality, 1.5, ishift - 0.5, std::cos(ishift * 2 * psiV0A));
 
-      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCC));
-      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
+      histos.fill(HIST("ShiftTPCL"), collisionCentrality, 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCA));
+      histos.fill(HIST("ShiftTPCL"), collisionCentrality, 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCA));
+
+      histos.fill(HIST("ShiftTPCR"), collisionCentrality, 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCC));
+      histos.fill(HIST("ShiftTPCR"), collisionCentrality, 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
     }
 
     if (ShiftConfigs.cfgShiftCorr) {
@@ -1714,27 +1767,36 @@ struct cascadeFlow {
         fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
         fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
+        fullCCDBShiftCorrPathFV0A = ShiftConfigs.cfgShiftPathFV0A;
         shiftprofileFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
         shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        shiftprofileFV0A = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFV0A, coll.timestamp());
         lastRunNumber = currentRunNumber;
       }
     }
 
     if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C, shiftprofileFT0C);
-      ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR);
+      ComputeEPResolutionwShifts(coll, psiT0C, psiV0A, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR, shiftprofileFV0A);
     }
 
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
-    histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), psiT0CCorr);
+    histos.fill(HIST("hPsiT0CvsCentFT0C"), collisionCentrality, psiT0CCorr);
 
-    resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
-    resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), coll.centFT0C());
-    resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), coll.centFT0C());
-    resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0C()), coll.centFT0C());
-    resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), coll.centFT0C());
-    resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
+    resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), collisionCentrality);
+    resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), collisionCentrality);
+    resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), collisionCentrality);
+    resolution.fill(HIST("QVectorsT0CV0A"), eventplaneVecT0C.Dot(eventplaneVecV0A), collisionCentrality);
+    resolution.fill(HIST("QVectorsV0ATPCC"), eventplaneVecV0A.Dot(eventplaneVecTPCC), collisionCentrality);
+    resolution.fill(HIST("QVectorsV0ATPCA"), eventplaneVecV0A.Dot(eventplaneVecTPCA), collisionCentrality);
+
+    resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0C()), collisionCentrality);
+    resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), collisionCentrality);
+    resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), collisionCentrality);
+    resolution.fill(HIST("QVectorsNormT0CV0A"), eventplaneVecT0C.Dot(eventplaneVecV0A) / (coll.sumAmplFT0C() * coll.sumAmplFV0A()), collisionCentrality);
+    resolution.fill(HIST("QVectorsNormV0ATPCC"), eventplaneVecV0A.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFV0A()), collisionCentrality);
+    resolution.fill(HIST("QVectorsNormV0ATPCA"), eventplaneVecV0A.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFV0A()), collisionCentrality);
 
     std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
@@ -1841,25 +1903,25 @@ struct cascadeFlow {
         cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
       }
 
-      histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
+      histos.fill(HIST("hv2CEPvsFT0C"), collisionCentrality, v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
       histos.fill(HIST("hLambdaPhi"), v0.phi());
       histos.fill(HIST("hlambdaminuspsiT0C"), lambdaminuspsiT0C);
 
       if (fillingConfigs.isFillTHNLambda) {
         if (fillingConfigs.isFillTHN_V2)
-          histos.get<THn>(HIST("hLambdaV2"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
+          histos.get<THn>(HIST("hLambdaV2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
         if (fillingConfigs.isFillTHN_Pz) {
-          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
         }
         if (fillingConfigs.isFillTHN_Acc)
-          histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
+          histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
       }
       if (fillingConfigs.isFillTHNLambda_PzVsPsi) {
         if (fillingConfigs.isFillTHN_Pz)
-          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C);
+          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C);
         if (fillingConfigs.isFillTHN_Acc)
-          histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
+          histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
       }
 
       double invMassLambda = 0;
@@ -1950,7 +2012,7 @@ struct cascadeFlow {
 
     if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C, shiftprofileFT0C);
-      ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR);
+      ComputeEPResolutionwShifts(coll, psiT0C, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR, shiftprofileFT0C);
     }
 
     histos.fill(HIST("hpsiT0C"), psiT0CCorr);

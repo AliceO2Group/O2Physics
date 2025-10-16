@@ -30,6 +30,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include <TPDGCode.h>
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -49,6 +51,8 @@ struct JetShapeTask {
   Configurable<int> nBinsTofBeta{"nBinsTofBeta", 350, "Number of Beta bins"};
   Configurable<float> pMax{"pMax", 7.0f, "Max value of p"};
   Configurable<float> ptMax{"ptMax", 5.0f, "Max value of pT"};
+  Configurable<int> nBinsP{"nBinsP", 70, "Number of p bins"};
+  Configurable<int> nBinsPt{"nBinsPt", 50, "Number of pT bins"};
   Configurable<int> nBinsDistance{"nBinsDistance", 7, "Number of distance bins"};
   Configurable<float> distanceMax{"distanceMax", 0.7f, "Max value of distance"};
   Configurable<float> nSigmaTofCut{"nSigmaTofCut", 2.0f, "Number of sigma cut for TOF PID"};
@@ -62,17 +66,17 @@ struct JetShapeTask {
                               {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
                               {"tpcTofPiOutOfJet", "tpcTofPiOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcTofPrOutOfJet", "tpcTofPrOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{70, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-                              {"tofPi", "tofPi", {HistType::kTH2F, {{50, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{70, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-                              {"tofPr", "tofPr", {HistType::kTH2F, {{50, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
+                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
+                              {"tofPi", "tofPi", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
+                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
+                              {"tofPr", "tofPr", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcDedx", "tpcDedx", {HistType::kTHnSparseD, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}, {nBinsDistance, 0, distanceMax}}}},
                               {"tpcDedxOutOfJet", "tpcDedxOutOfJet", {HistType::kTH2F, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}}}},
                               {"tofBeta", "tofBeta", {HistType::kTH2F, {{nBinsPForBeta, 0, pMax}, {nBinsTofBeta, 0.4, 1.1}}}},
-                              {"pVsPtForPr", "pVsPtForPr", {HistType::kTHnSparseD, {{70, 0, pMax}, {50, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"pVsPtForPi", "pVsPtPi", {HistType::kTHnSparseD, {{70, 0, pMax}, {50, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"pVsPtForPrOutOfJet", "pVsPtForPrOutOfJet", {HistType::kTH2F, {{70, 0, pMax}, {50, 0, ptMax}}}},
-                              {"pVsPtForPiOutOfJet", "pVsPtPionOutOfJet", {HistType::kTH2F, {{70, 0, pMax}, {50, 0, ptMax}}}},
+                              {"pVsPtForPr", "pVsPtForPr", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
+                              {"pVsPtForPi", "pVsPtPi", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
+                              {"pVsPtForPrOutOfJet", "pVsPtForPrOutOfJet", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}}}},
+                              {"pVsPtForPiOutOfJet", "pVsPtPionOutOfJet", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}}}},
                               {"tofMass", "tofMass", {HistType::kTH1F, {{300, 0, 3}}}},
                               {"trackPhi", "trackPhi", {HistType::kTH1F, {{80, -1, 7}}}},
                               {"trackEta", "trackEta", {HistType::kTH1F, {{100, -1, 1}}}},
@@ -94,7 +98,18 @@ struct JetShapeTask {
                               {"ptSumBg1", "ptSumBg1", {HistType::kTH2F, {{14, 0, 0.7}, {300, 0, 300}}}},
                               {"ptSumBg2", "ptSumBg2", {HistType::kTH2F, {{14, 0, 0.7}, {300, 0, 300}}}},
                               {"event/vertexz", ";Vtx_{z} (cm);Entries", {HistType::kTH1F, {{100, -20, 20}}}},
-                              {"ptVsCentrality", "ptvscentrality", {HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}}}}}};
+                              {"eventCounter", "eventCounter", {HistType::kTH1F, {{1, 0, +1, ""}}}},
+                              {"ptVsCentrality", "ptvscentrality", {HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}}}},
+                              {"ptResolution", "ptResolution", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {100, -1.0, +1.0}}}},
+                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramProton", "ptHistogramProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramProtonTof", "ptHistogramProtonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}}};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -119,6 +134,7 @@ struct JetShapeTask {
   Configurable<float> nclItsMin{"nclItsMin", 2.0f, "its # of cluster cut"};
   Configurable<float> nclTpcMin{"nclTpcMin", 100.0f, "tpc # if cluster cut"};
   Configurable<float> nclcrossTpcMin{"nclcrossTpcMin", 70.0f, "tpc # of crossedRows cut"};
+  Configurable<float> mcRapidityMax{"mcRapidityMax", 0.5f, "maximum mctrack y"};
 
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
 
@@ -258,7 +274,7 @@ struct JetShapeTask {
       }
     }
   }
-  PROCESS_SWITCH(JetShapeTask, processJetShape, "JetShape", true);
+  PROCESS_SWITCH(JetShapeTask, processJetShape, "JetShape", false);
 
   void processProductionRatio(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
@@ -366,7 +382,70 @@ struct JetShapeTask {
       }
     }
   }
-  PROCESS_SWITCH(JetShapeTask, processProductionRatio, "production ratio", true);
+  PROCESS_SWITCH(JetShapeTask, processProductionRatio, "production ratio", false);
+
+  void processReco(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  {
+    registry.fill(HIST("eventCounter"), 0.5);
+
+    for (const auto& track : tracks) {
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+        registry.fill(HIST("ptResolution"), track.pt(), track.pt() - mcParticle.pt());
+
+        if (std::abs(track.eta()) > etaTrUp)
+          continue;
+        if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
+          continue;
+        if (std::abs(track.dcaXY()) > dcaxyMax)
+          continue;
+        if (track.itsChi2NCl() > chi2ItsMax)
+          continue;
+        if (track.tpcChi2NCl() > chi2TpcMax)
+          continue;
+        if (track.tpcNClsFound() < nclTpcMin)
+          continue;
+        if (track.itsNCls() < nclItsMin)
+          continue;
+
+        if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) { // do this in the context of the track ! (context matters!!!)
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+            registry.fill(HIST("ptHistogramPion"), mcParticle.pt());
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+            registry.fill(HIST("ptHistogramKaon"), mcParticle.pt());
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+            registry.fill(HIST("ptHistogramProton"), mcParticle.pt());
+        }
+
+        if (track.hasTOF()) {
+          if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+              registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt());
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+              registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt());
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+              registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt());
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetShapeTask, processReco, "process reconstructed information", true);
+
+  void processSim(aod::McParticles const& mcParticles)
+  {
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+          registry.fill(HIST("ptGeneratedPion"), mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+          registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+          registry.fill(HIST("ptGeneratedProton"), mcParticle.pt());
+      }
+    }
+  }
+  PROCESS_SWITCH(JetShapeTask, processSim, "process pure simulation information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetShapeTask>(cfgc)}; }

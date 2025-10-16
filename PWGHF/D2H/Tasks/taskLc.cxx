@@ -17,6 +17,8 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
+/// \author Ran Tu <ran.tu@cern.ch>, Fudan University
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>, Heidelberg University, GSI Darmstadt
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -30,6 +32,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -47,6 +50,7 @@
 #include <array>
 #include <cmath>
 #include <numeric>
+#include <string>
 #include <vector> // std::vector
 
 using namespace o2;
@@ -55,6 +59,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
+using namespace o2::hf_evsel;
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
@@ -67,19 +72,15 @@ struct HfTaskLc {
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
-
-  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
-  constexpr static float NanoToPico = 1000.f;
-
-  enum MlClasses : int {
-    MlClassBackground = 0,
-    MlClassPrompt,
-    MlClassNonPrompt,
-    NumberOfMlClasses
-  };
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   HfHelper hfHelper;
+  HfEventSelection hfEvSel; // event selection and monitoring
   SliceCache cache;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
@@ -94,6 +95,7 @@ struct HfTaskLc {
   using LcCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
   using LcCandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mcparticle::mcCollisionId;
@@ -114,204 +116,154 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
 
-  HistogramRegistry registry{
-    "registry",
-    {/// mass candidate
-     {"Data/hMass", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 1.98, 2.58}}}},
-     {"MC/reconstructed/signal/hMassRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 1.98, 2.58}}}},
-     {"MC/reconstructed/prompt/hMassRecSigPrompt", "3-prong candidates (matched, prompt);inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 1.98, 2.58}}}},
-     {"MC/reconstructed/nonprompt/hMassRecSigNonPrompt", "3-prong candidates (matched, non-prompt);inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 1.98, 2.58}}}},
-     /// pT
-     {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/prompt/hPtRecSigPrompt", "3-prong candidates (matched, prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/nonprompt/hPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/generated/signal/hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/generated/prompt/hPtGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/generated/nonprompt/hPtGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/signal/hPtRecProng0Sig", "3-prong candidates (matched);prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/prompt/hPtRecProng0SigPrompt", "3-prong candidates (matched, prompt);prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/nonprompt/hPtRecProng0SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/signal/hPtRecProng1Sig", "3-prong candidates (matched);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/prompt/hPtRecProng1SigPrompt", "3-prong candidates (matched, prompt);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/nonprompt/hPtRecProng1SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/signal/hPtRecProng2Sig", "3-prong candidates (matched);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/prompt/hPtRecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     /// DCAxy to prim. vertex prongs
-     {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/signal/hd0RecProng0Sig", "3-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/prompt/hd0RecProng0SigPrompt", "3-prong candidates (matched, prompt);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/nonprompt/hd0RecProng0SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"Data/hd0Prong1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/signal/hd0RecProng1Sig", "3-prong candidates (matched);prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/prompt/hd0RecProng1SigPrompt", "3-prong candidates (matched, prompt);prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/nonprompt/hd0RecProng1SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"Data/hd0Prong2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/signal/hd0RecProng2Sig", "3-prong candidates (matched);prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/prompt/hd0RecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     {"MC/reconstructed/nonprompt/hd0RecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
-     /// decay length candidate
-     {"Data/hDecLength", "3-prong candidates;decay length (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     {"MC/reconstructed/signal/hDecLengthRecSig", "3-prong candidates (matched);decay length (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     {"MC/reconstructed/prompt/hDecLengthRecSigPrompt", "3-prong candidates (matched, prompt);decay length (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     {"MC/reconstructed/nonprompt/hDecLengthRecSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     /// decay length xy candidate
-     {"Data/hDecLengthxy", "3-prong candidates;decay length xy (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     {"MC/reconstructed/signal/hDecLengthxyRecSig", "3-prong candidates (matched);decay length xy (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     {"MC/reconstructed/prompt/hDecLengthxyRecSigPrompt", "3-prong candidates (matched, prompt);decay length xy (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     {"MC/reconstructed/nonprompt/hDecLengthxyRecSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length xy (cm);entries", {HistType::kTH1F, {{400, 0., 1.}}}},
-     /// proper lifetime
-     {"Data/hCt", "3-prong candidates;proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH1F, {{100, 0., 0.2}}}},
-     {"MC/reconstructed/signal/hCtRecSig", "3-prong candidates (matched);proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH1F, {{100, 0., 0.2}}}},
-     {"MC/reconstructed/prompt/hCtRecSigPrompt", "3-prong candidates (matched, prompt);proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH1F, {{100, 0., 0.2}}}},
-     {"MC/reconstructed/nonprompt/hCtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH1F, {{100, 0., 0.2}}}},
-     /// cosine of pointing angle
-     {"Data/hCPA", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"MC/reconstructed/signal/hCPARecSig", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"MC/reconstructed/prompt/hCPARecSigPrompt", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"MC/reconstructed/nonprompt/hCPARecSigNonPrompt", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     /// cosine of pointing angle xy
-     {"Data/hCPAxy", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"MC/reconstructed/signal/hCPAxyRecSig", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"MC/reconstructed/prompt/hCPAxyRecSigPrompt", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"MC/reconstructed/nonprompt/hCPAxyRecSigNonPrompt", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     /// Chi 2 PCA to sec. vertex
-     {"Data/hDca2", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{400, 0., 20.}}}},
-     {"MC/reconstructed/signal/hDca2RecSig", "3-prong candidates (matched);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{400, 0., 20.}}}},
-     {"MC/reconstructed/prompt/hDca2RecSigPrompt", "3-prong candidates (matched);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{400, 0., 20.}}}},
-     {"MC/reconstructed/nonprompt/hDca2RecSigNonPrompt", "3-prong candidates (matched);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH1F, {{400, 0., 20.}}}},
-     /// eta
-     {"Data/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/reconstructed/signal/hEtaRecSig", "3-prong candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/reconstructed/prompt/hEtaRecSigPrompt", "3-prong candidates (matched, prompt);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/reconstructed/nonprompt/hEtaRecSigNonPrompt", "3-prong candidates (matched, non-prompt);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/generated/signal/hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/generated/prompt/hEtaGenPrompt", "MC particles (matched, prompt);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/generated/nonprompt/hEtaGenNonPrompt", "MC particles (matched, non-prompt);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/generated/signal/hYGen", "MC particles (matched);#it{y};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/generated/prompt/hYGenPrompt", "MC particles (matched, prompt);#it{y};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"MC/generated/nonprompt/hYGenNonPrompt", "MC particles (matched, non-prompt);#it{y};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     /// phi
-     {"Data/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
-     {"MC/reconstructed/signal/hPhiRecSig", "3-prong candidates (matched);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
-     {"MC/reconstructed/prompt/hPhiRecSigPrompt", "3-prong candidates (matched, prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
-     {"MC/reconstructed/nonprompt/hPhiRecSigNonPrompt", "3-prong candidates (matched, non-prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
-     {"MC/generated/signal/hPhiGen", "MC particles (matched);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
-     {"MC/generated/prompt/hPhiGenPrompt", "MC particles (matched, prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}},
-     {"MC/generated/nonprompt/hPhiGenNonPrompt", "MC particles (matched, non-prompt);#it{#Phi};entries", {HistType::kTH1F, {{100, 0., 6.3}}}}}};
+  HistogramRegistry registry{"registry", {}};
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Factors for conversion between units
+  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
+  constexpr static float NanoToPico = 1000.f;
+  // Names of folders and suffixes for MC signal histograms
+  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
+  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
+
+  enum MlClasses : int {
+    MlClassBackground = 0,
+    MlClassPrompt,
+    MlClassNonPrompt,
+    NumberOfMlClasses
+  };
+
+  enum SignalClasses : int {
+    Signal = 0,
+    Prompt,
+    NonPrompt
+  };
+
+  enum class GapType {
+    GapA = 0,
+    GapC = 1,
+    DoubleGap = 2,
+  };
 
   void init(InitContext&)
   {
-    std::array<bool, 12> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M};
+    const std::array<bool, 14> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessDataWithMlWithUpc, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M, doprocessDataStdWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
+    const bool isData = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
+    const bool isUpc = doprocessDataWithMlWithUpc || doprocessDataStdWithUpc;
+
+    auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
+      if (isData) {
+        registry.add(("Data/" + histoName).c_str(), ("3-prong candidates;" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      } else {
+        registry.add(("MC/reconstructed/signal/" + histoName + "RecSig").c_str(), ("3-prong candidates (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/reconstructed/prompt/" + histoName + "RecSigPrompt").c_str(), ("3-prong candidates (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/reconstructed/nonprompt/" + histoName + "RecSigNonPrompt").c_str(), ("3-prong candidates (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      }
+    };
+
+    auto addHistogramsGen = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
+      if (!isData) {
+        registry.add(("MC/generated/signal/" + histoName + "Gen").c_str(), ("MC particles (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/generated/prompt/" + histoName + "GenPrompt").c_str(), ("MC particles (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+        registry.add(("MC/generated/nonprompt/" + histoName + "GenNonPrompt").c_str(), ("MC particles (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      }
+    };
+
+    /// mass candidate
+    addHistogramsRec("hMass", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
+    /// pT
+    addHistogramsRec("hPt", "#it{p}_{T}^{rec.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    addHistogramsGen("hPt", "#it{p}_{T}^{gen.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    if (!isData) {
+      registry.add("MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    }
+    addHistogramsRec("hPtProng0", "prong 0 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    addHistogramsRec("hPtProng1", "prong 1 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    addHistogramsRec("hPtProng2", "prong 2 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
+    /// DCAxy to prim. vertex prongs
+    addHistogramsRec("hd0Prong0", "prong 0 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1F, {{600, -0.4, 0.4}}});
+    addHistogramsRec("hd0Prong1", "prong 1 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1F, {{600, -0.4, 0.4}}});
+    addHistogramsRec("hd0Prong2", "prong 2 DCAxy to prim. vertex (cm)", "entries", {HistType::kTH1F, {{600, -0.4, 0.4}}});
+    /// decay length candidate
+    addHistogramsRec("hDecLength", "decay length (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
+    /// decay length xy candidate
+    addHistogramsRec("hDecLengthxy", "decay length xy (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
+    /// proper lifetime
+    addHistogramsRec("hCt", "proper lifetime (#Lambda_{c}) * #it{c} (cm)", "entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    /// cosine of pointing angle
+    addHistogramsRec("hCPA", "cosine of pointing angle", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+    /// cosine of pointing angle xy
+    addHistogramsRec("hCPAxy", "cosine of pointing angle xy", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+    /// Chi 2 PCA to sec. vertex
+    addHistogramsRec("hDca2", "prong Chi2PCA to sec. vertex (cm)", "entries", {HistType::kTH1F, {{400, 0., 20.}}});
+    /// eta
+    addHistogramsRec("hEta", "#it{#eta}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
+    addHistogramsGen("hEta", "#it{#eta}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
+    addHistogramsGen("hY", "#it{y}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
+    /// phi
+    addHistogramsRec("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
+    addHistogramsGen("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
+
     auto vbins = (std::vector<double>)binsPt;
     /// mass candidate
-    registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
-    registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hMassVsPtRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hMassVsPtRecSigPrompt", "3-prong candidates (matched, prompt);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    if (isData) {
+      registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
+    }
+    addHistogramsRec("hMassVsPt", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
     /// DCAxy to prim. vertex prongs
-    registry.add("Data/hd0VsPtProng0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hd0VsPtRecProng0Sig", "3-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hd0VsPtRecProng0SigPrompt", "3-prong candidates (matched, prompt);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hd0VsPtRecProng0SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hd0VsPtProng1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hd0VsPtRecProng1Sig", "3-prong candidates (matched);prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hd0VsPtRecProng1SigPrompt", "3-prong candidates (matched, prompt);prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hd0VsPtRecProng1SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hd0VsPtProng2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hd0VsPtRecProng2Sig", "3-prong candidates (matched);prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hd0VsPtRecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hd0VsPtRecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hd0VsPtProng0", "prong 0 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
+    addHistogramsRec("hd0VsPtProng1", "prong 1 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
+    addHistogramsRec("hd0VsPtProng2", "prong 2 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
 
     /// decay length candidate
-    registry.add("Data/hDecLengthVsPt", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hDecLengthVsPtRecSig", "3-prong candidates (matched);decay length (cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hDecLengthVsPtRecSigPrompt", "3-prong candidates (matched, prompt);decay length (cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hDecLengthVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length (cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hDecLengthVsPt", "decay length (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{400, 0., 1.}, {vbins}}});
 
     /// decay length xy candidate
-    registry.add("Data/hDecLengthxyVsPt", "3-prong candidates;decay length xy(cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hDecLengthxyVsPtRecSig", "3-prong candidates (matched);decay length xy(cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hDecLengthxyVsPtRecSigPrompt", "3-prong candidates (matched, prompt);decay length xy(cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hDecLengthxyVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length xy(cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hDecLengthxyVsPt", "decay length xy (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{400, 0., 1.}, {vbins}}});
 
     /// proper lifetime
-    registry.add("Data/hCtVsPt", "3-prong candidates;proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hCtVsPtRecSig", "3-prong candidates (matched);proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hCtVsPtRecSigPrompt", "3-prong candidates (matched, prompt);proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hCtVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);proper lifetime (#Lambda_{c}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hCtVsPt", "proper lifetime (#Lambda_{c}) * #it{c} (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 0.2}, {vbins}}});
 
     /// cosine of pointing angle
-    registry.add("Data/hCPAVsPt", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hCPAVsPtRecSig", "3-prong candidates (matched);cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hCPAVsPtRecSigPrompt", "3-prong candidates (matched, prompt);cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hCPAVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hCPAVsPt", "cosine of pointing angle", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins}}});
 
     /// cosine of pointing angle xy
-    registry.add("Data/hCPAxyVsPt", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hCPAxyVsPtRecSig", "3-prong candidates (matched);cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hCPAxyVsPtRecSigPrompt", "3-prong candidates (matched, prompt);cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hCPAxyVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hCPAxyVsPt", "cosine of pointing angle xy", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins}}});
 
     /// Chi 2 PCA to sec. vertex
-    registry.add("Data/hDca2VsPt", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{400, 0., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hDca2VsPtRecSig", "3-prong candidates (matched);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{400, 0., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hDca2VsPtRecSigPrompt", "3-prong candidates (matched, prompt);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{400, 0., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hDca2VsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{400, 0., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hDca2VsPt", "prong Chi2PCA to sec. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{400, 0., 20.}, {vbins}}});
     /// eta
-    registry.add("Data/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hEtaVsPtRecSig", "3-prong candidates (matched);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt", "3-prong candidates (matched, prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/signal/hEtaVsPtGenSig", "3-prong candidates (matched);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/prompt/hEtaVsPtGenSigPrompt", "3-prong candidates (matched, prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hEtaVsPt", "candidate #it{#eta}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -2., 2.}, {vbins}}});
+    addHistogramsGen("hEtaVsPt", "#it{#eta}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -2., 2.}, {vbins}}});
 
     /// y
-    registry.add("MC/generated/signal/hYVsPtGenSig", "3-prong candidates (matched);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/prompt/hYVsPtGenSigPrompt", "3-prong candidates (matched, prompt);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/nonprompt/hYVsPtGenSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsGen("hYVsPt", "#it{y}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -2., 2.}, {vbins}}});
 
     /// phi
-    registry.add("Data/hPhiVsPt", "3-prong candidates;candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hPhiVsPtRecSig", "3-prong candidates (matched);candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hPhiVsPtRecSigPrompt", "3-prong candidates (matched, prompt);candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hPhiVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/signal/hPhiVsPtGenSig", "3-prong candidates (matched);candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/prompt/hPhiVsPtGenSigPrompt", "3-prong candidates (matched, prompt);candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/generated/nonprompt/hPhiVsPtGenSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hPhiVsPt", "candidate #it{#Phi}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 6.3}, {vbins}}});
+    addHistogramsGen("hPhiVsPt", "#it{#Phi}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 6.3}, {vbins}}});
 
     /// selection status
     registry.add("hSelectionStatus", "3-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     /// impact parameter error
-    registry.add("Data/hImpParErrProng0", "3-prong candidates;prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hImpParErrProng0Sig", "3-prong candidates (matched);prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hImpParErrProng0SigPrompt", "3-prong candidates (matched, prompt);prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hImpParErrProng0SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hImpParErrProng1Sig", "3-prong candidates (matched);prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hImpParErrProng1SigPrompt", "3-prong candidates (matched, prompt);prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hImpParErrProng1SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hImpParErrProng2Sig", "3-prong candidates (matched);prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hImpParErrProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hImpParErrProng0VsPt", "prong 0 impact parameter error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1., 1.}, {vbins}}});
+    addHistogramsRec("hImpParErrProng1VsPt", "prong 1 impact parameter error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1., 1.}, {vbins}}});
+    addHistogramsRec("hImpParErrProng2VsPt", "prong 2 impact parameter error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1., 1.}, {vbins}}});
     /// decay length error
-    registry.add("Data/hDecLenErr", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/signal/hDecLenErrSig", "3-prong candidates (matched);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/prompt/hDecLenErrSigPrompt", "3-prong candidates (matched, prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    addHistogramsRec("hDecLenErrVsPt", "decay length error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 1.}, {vbins}}});
 
+    if (isUpc) {
+      qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+      qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+      qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
+      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
+      qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+    }
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
@@ -332,9 +284,9 @@ struct HfTaskLc {
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
 
-      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
+      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
       bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
-      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
+      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataStdWithUpc;
       bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
@@ -382,10 +334,18 @@ struct HfTaskLc {
         registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
       }
     }
+
+    if (isUpc) {
+      hfEvSel.addHistograms(qaRegistry); // collision monitoring
+    }
+
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
-  /// \param candidate is candidate
+  /// \param collision is collision
   /// \return centrality/multiplicity percentile of the collision
   template <typename Coll>
   float evaluateCentralityColl(const Coll& collision)
@@ -393,14 +353,62 @@ struct HfTaskLc {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
+  /// Helper function for filling MC reconstructed histograms for prompt, nonpromt and common (signal)
+  /// \param candidate is a reconstructed candidate
+  /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
+  template <int SignalType, typename CandidateType>
+  void fillHistogramsRecSig(CandidateType const& candidate)
+  {
+    const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+    const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+    if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPKPi(candidate));
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPKPi(candidate), candidate.pt());
+    }
+    if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPiKP(candidate));
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPiKP(candidate), candidate.pt());
+    }
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng0());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng1());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng2());
+
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter0());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter1());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter2());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter0(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter1(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameter2(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.ctLc(candidate));
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.ctLc(candidate), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPARecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDca2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.chi2PCA());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDca2VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.chi2PCA(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaRecSig") + HIST(SignalSuffixes[SignalType]), candidate.eta());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.eta(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiRecSig") + HIST(SignalSuffixes[SignalType]), candidate.phi());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.phi(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng0VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameter0(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng1VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameter1(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng2VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameter2(), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLenErrVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorDecayLength(), candidate.pt());
+  }
+
   /// Fill MC histograms at reconstruction level
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
-
-    auto thisCollId = collision.globalIndex();
-    auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
+    const auto thisCollId = collision.globalIndex();
+    const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
 
     for (const auto& candidate : groupedLcCandidates) {
       /// Select Lc
@@ -414,146 +422,34 @@ struct HfTaskLc {
 
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
-        auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
-        auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
-        auto particleMother = mcParticles.rawIteratorAt(indexMother);
+        const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+        const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
+        const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
+        const auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("MC/generated/signal/hPtGenSig"), particleMother.pt()); // gen. level pT
 
-        auto pt = candidate.pt();
-        auto ptProng0 = candidate.ptProng0();
-        auto ptProng1 = candidate.ptProng1();
-        auto ptProng2 = candidate.ptProng2();
-        auto decayLength = candidate.decayLength();
-        auto decayLengthXY = candidate.decayLengthXY();
-        auto chi2PCA = candidate.chi2PCA();
-        auto cpa = candidate.cpa();
-        auto cpaXY = candidate.cpaXY();
-        auto originType = candidate.originMcRec();
-        auto numPvContributors = collision.numContrib();
-        auto ptRecB = candidate.ptBhadMotherPart();
+        const auto pt = candidate.pt();
+        const auto ptProng0 = candidate.ptProng0();
+        const auto ptProng1 = candidate.ptProng1();
+        const auto ptProng2 = candidate.ptProng2();
+        const auto decayLength = candidate.decayLength();
+        const auto chi2PCA = candidate.chi2PCA();
+        const auto cpa = candidate.cpa();
+        const auto originType = candidate.originMcRec();
+        const auto numPvContributors = collision.numContrib();
+        const auto ptRecB = candidate.ptBhadMotherPart();
 
         /// MC reconstructed signal
-        if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-          registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), hfHelper.invMassLcToPKPi(candidate));
-          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), hfHelper.invMassLcToPKPi(candidate), pt);
-        }
-        if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-          registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), hfHelper.invMassLcToPiKP(candidate));
-          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), hfHelper.invMassLcToPiKP(candidate), pt);
-        }
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecProng0Sig"), ptProng0);
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecProng1Sig"), ptProng1);
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecProng2Sig"), ptProng2);
-
-        registry.fill(HIST("MC/reconstructed/signal/hd0RecProng0Sig"), candidate.impactParameter0());
-        registry.fill(HIST("MC/reconstructed/signal/hd0RecProng1Sig"), candidate.impactParameter1());
-        registry.fill(HIST("MC/reconstructed/signal/hd0RecProng2Sig"), candidate.impactParameter2());
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng0Sig"), candidate.impactParameter0(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng1Sig"), candidate.impactParameter1(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng2Sig"), candidate.impactParameter2(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hDecLengthRecSig"), decayLength);
-        registry.fill(HIST("MC/reconstructed/signal/hDecLengthVsPtRecSig"), decayLength, pt);
-        registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyRecSig"), decayLengthXY);
-        registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyVsPtRecSig"), decayLengthXY, pt);
-        registry.fill(HIST("MC/reconstructed/signal/hCtRecSig"), hfHelper.ctLc(candidate));
-        registry.fill(HIST("MC/reconstructed/signal/hCtVsPtRecSig"), hfHelper.ctLc(candidate), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hCPARecSig"), cpa);
-        registry.fill(HIST("MC/reconstructed/signal/hCPAVsPtRecSig"), cpa, pt);
-        registry.fill(HIST("MC/reconstructed/signal/hCPAxyRecSig"), cpaXY);
-        registry.fill(HIST("MC/reconstructed/signal/hCPAxyVsPtRecSig"), cpaXY, pt);
-        registry.fill(HIST("MC/reconstructed/signal/hDca2RecSig"), chi2PCA);
-        registry.fill(HIST("MC/reconstructed/signal/hDca2VsPtRecSig"), chi2PCA, pt);
-        registry.fill(HIST("MC/reconstructed/signal/hEtaRecSig"), candidate.eta());
-        registry.fill(HIST("MC/reconstructed/signal/hEtaVsPtRecSig"), candidate.eta(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hPhiRecSig"), candidate.phi());
-        registry.fill(HIST("MC/reconstructed/signal/hPhiVsPtRecSig"), candidate.phi(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng0Sig"), candidate.errorImpactParameter0(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng1Sig"), candidate.errorImpactParameter1(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng2Sig"), candidate.errorImpactParameter2(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), pt);
+        fillHistogramsRecSig<Signal>(candidate);
 
         /// reconstructed signal prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-            registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), hfHelper.invMassLcToPKPi(candidate));
-            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), hfHelper.invMassLcToPKPi(candidate), pt);
-          }
-          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-            registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), hfHelper.invMassLcToPiKP(candidate));
-            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), hfHelper.invMassLcToPiKP(candidate), pt);
-          }
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecSigPrompt"), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng0SigPrompt"), ptProng0);
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng1SigPrompt"), ptProng1);
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng2SigPrompt"), ptProng2);
-          registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng0SigPrompt"), candidate.impactParameter0());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng1SigPrompt"), candidate.impactParameter1());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng2SigPrompt"), candidate.impactParameter2());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng0SigPrompt"), candidate.impactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng1SigPrompt"), candidate.impactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng2SigPrompt"), candidate.impactParameter2(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthRecSigPrompt"), decayLength);
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthVsPtRecSigPrompt"), decayLength, pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyRecSigPrompt"), decayLengthXY);
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyVsPtRecSigPrompt"), decayLengthXY, pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hCtRecSigPrompt"), hfHelper.ctLc(candidate));
-          registry.fill(HIST("MC/reconstructed/prompt/hCtVsPtRecSigPrompt"), hfHelper.ctLc(candidate), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hCPARecSigPrompt"), cpa);
-          registry.fill(HIST("MC/reconstructed/prompt/hCPAVsPtRecSigPrompt"), cpa, pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hCPAxyRecSigPrompt"), cpaXY);
-          registry.fill(HIST("MC/reconstructed/prompt/hCPAxyVsPtRecSigPrompt"), cpaXY, pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hDca2RecSigPrompt"), chi2PCA);
-          registry.fill(HIST("MC/reconstructed/prompt/hDca2VsPtRecSigPrompt"), chi2PCA, pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hEtaRecSigPrompt"), candidate.eta());
-          registry.fill(HIST("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt"), candidate.eta(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hPhiRecSigPrompt"), candidate.phi());
-          registry.fill(HIST("MC/reconstructed/prompt/hPhiVsPtRecSigPrompt"), candidate.phi(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng0SigPrompt"), candidate.errorImpactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng1SigPrompt"), candidate.errorImpactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2SigPrompt"), candidate.errorImpactParameter2(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrSigPrompt"), candidate.errorDecayLength(), pt);
-        } else {
-          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-            registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), hfHelper.invMassLcToPKPi(candidate));
-            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), hfHelper.invMassLcToPKPi(candidate), pt);
-          }
-          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-            registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), hfHelper.invMassLcToPiKP(candidate));
-            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), hfHelper.invMassLcToPiKP(candidate), pt);
-          }
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecSigNonPrompt"), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng0SigNonPrompt"), ptProng0);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng1SigNonPrompt"), ptProng1);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt"), ptProng2);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng0SigNonPrompt"), candidate.impactParameter0());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng1SigNonPrompt"), candidate.impactParameter1());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng2SigNonPrompt"), candidate.impactParameter2());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng0SigNonPrompt"), candidate.impactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng1SigNonPrompt"), candidate.impactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng2SigNonPrompt"), candidate.impactParameter2(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthRecSigNonPrompt"), decayLength);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthVsPtRecSigNonPrompt"), decayLength, pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyRecSigNonPrompt"), decayLengthXY);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyVsPtRecSigNonPrompt"), decayLengthXY, pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCtRecSigNonPrompt"), hfHelper.ctLc(candidate));
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCtVsPtRecSigNonPrompt"), hfHelper.ctLc(candidate), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCPARecSigNonPrompt"), cpa);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAVsPtRecSigNonPrompt"), cpa, pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAxyRecSigNonPrompt"), cpaXY);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hCPAxyVsPtRecSigNonPrompt"), cpaXY, pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDca2RecSigNonPrompt"), chi2PCA);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDca2VsPtRecSigNonPrompt"), chi2PCA, pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hEtaRecSigNonPrompt"), candidate.eta());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt"), candidate.eta(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPhiRecSigNonPrompt"), candidate.phi());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPhiVsPtRecSigNonPrompt"), candidate.phi(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng0SigNonPrompt"), candidate.errorImpactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng1SigNonPrompt"), candidate.errorImpactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
+          fillHistogramsRecSig<Prompt>(candidate);
+          /// reconstructed signal nonprompt
+        } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+          fillHistogramsRecSig<NonPrompt>(candidate);
         }
+
         if (fillTHn) {
           float const cent = evaluateCentralityColl(collision);
           float occ{-1.};
@@ -563,14 +459,15 @@ struct HfTaskLc {
           double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
           const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
-          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-            massLc = hfHelper.invMassLcToPKPi(candidate);
+
+          auto fillTHnRecSig = [&](bool isPKPi) {
+            massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
 
             if constexpr (FillMl) {
               if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-                outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
-                outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
-                outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
+                outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
+                outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
+                outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
               std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
@@ -591,43 +488,35 @@ struct HfTaskLc {
               }
               registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
             }
+          };
+
+          if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
+            fillTHnRecSig(true);
           }
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-            massLc = hfHelper.invMassLcToPiKP(candidate);
-
-            if constexpr (FillMl) {
-              if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
-                outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-                outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
-                outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
-              }
-              /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                valuesToFill.push_back(occ);
-              }
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
-            } else {
-              std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                valuesToFill.push_back(occ);
-              }
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
-              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
-            }
+            fillTHnRecSig(false);
           }
         }
       }
     }
   }
 
+  /// Helper function for filling MC generated histograms for prompt, nonpromt and common (signal)
+  /// \param particle is a generated particle
+  /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
+  template <int SignalType, typename ParticleType>
+  void fillHistogramsGen(ParticleType const& particle)
+  {
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[SignalType]), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[SignalType]), particle.eta());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hYGen") + HIST(SignalSuffixes[SignalType]), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus));
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiGen") + HIST(SignalSuffixes[SignalType]), particle.phi());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaVsPtGen") + HIST(SignalSuffixes[SignalType]), particle.eta(), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hYVsPtGen") + HIST(SignalSuffixes[SignalType]), RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus), particle.pt());
+    registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiVsPtGen") + HIST(SignalSuffixes[SignalType]), particle.phi(), particle.pt());
+  }
+
   /// Fill MC histograms at generated level
-  /// \tparam fillMl switch to fill ML histograms
   template <typename CandLcMcGen, typename Coll>
   void fillHistosMcGen(CandLcMcGen const& mcParticles, Coll const& recoCollisions)
   {
@@ -638,8 +527,8 @@ struct HfTaskLc {
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
-        auto ptGen = particle.pt();
-        auto originType = particle.originMcGen();
+        const auto ptGen = particle.pt();
+        const auto originType = particle.originMcGen();
         float ptGenB = -1.;
         unsigned int numPvContributors = 0;
         const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
@@ -652,70 +541,47 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
-        const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        const auto& mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         const float p2m = particle.p() / o2::constants::physics::MassLambdaCPlus;
         const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
         const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
 
-        registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
-        registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
-        registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
-        registry.fill(HIST("MC/generated/signal/hPhiGen"), particle.phi());
-        registry.fill(HIST("MC/generated/signal/hEtaVsPtGenSig"), particle.eta(), ptGen);
-        registry.fill(HIST("MC/generated/signal/hYVsPtGenSig"), yGen, ptGen);
-        registry.fill(HIST("MC/generated/signal/hPhiVsPtGenSig"), particle.phi(), ptGen);
+        fillHistogramsGen<Signal>(particle);
+
+        auto fillTHnGen = [&](bool isPrompt) {
+          ptGenB = isPrompt ? -1. : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+
+          if (fillTHn) {
+            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
+            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+              valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
+            }
+            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
+          }
+        };
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          if (fillTHn) {
-            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
-          }
-          registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
-          registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiGenPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenSigPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hYVsPtGenSigPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenSigPrompt"), particle.phi(), ptGen);
-        }
-        if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-          ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          if (fillTHn) {
-            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
-          }
-          registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
-          registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiGenNonPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenSigNonPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiVsPtGenSigNonPrompt"), particle.phi(), ptGen);
+          fillTHnGen(true);
+          fillHistogramsGen<Prompt>(particle);
+        } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+          fillTHnGen(false);
+          fillHistogramsGen<NonPrompt>(particle);
         }
       }
     }
   }
 
   /// Fill histograms for real data
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandType>
   void fillHistosData(CollType const& collision, CandType const& candidates)
   {
-    auto thisCollId = collision.globalIndex();
-    auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
-    auto numPvContributors = collision.numContrib();
+    const auto thisCollId = collision.globalIndex();
+    const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
+    const auto numPvContributors = collision.numContrib();
 
     for (const auto& candidate : groupedLcCandidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -724,15 +590,15 @@ struct HfTaskLc {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }
-      auto pt = candidate.pt();
-      auto ptProng0 = candidate.ptProng0();
-      auto ptProng1 = candidate.ptProng1();
-      auto ptProng2 = candidate.ptProng2();
-      auto decayLength = candidate.decayLength();
-      auto decayLengthXY = candidate.decayLengthXY();
-      auto chi2PCA = candidate.chi2PCA();
-      auto cpa = candidate.cpa();
-      auto cpaXY = candidate.cpaXY();
+      const auto pt = candidate.pt();
+      const auto ptProng0 = candidate.ptProng0();
+      const auto ptProng1 = candidate.ptProng1();
+      const auto ptProng2 = candidate.ptProng2();
+      const auto decayLength = candidate.decayLength();
+      const auto decayLengthXY = candidate.decayLengthXY();
+      const auto chi2PCA = candidate.chi2PCA();
+      const auto cpa = candidate.cpa();
+      const auto cpaXY = candidate.cpaXY();
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
@@ -772,10 +638,10 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hPhiVsPt"), candidate.phi(), pt);
       registry.fill(HIST("hSelectionStatus"), candidate.isSelLcToPKPi(), pt);
       registry.fill(HIST("hSelectionStatus"), candidate.isSelLcToPiKP(), pt);
-      registry.fill(HIST("Data/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
-      registry.fill(HIST("Data/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
-      registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
-      registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
+      registry.fill(HIST("Data/hImpParErrProng0VsPt"), candidate.errorImpactParameter0(), pt);
+      registry.fill(HIST("Data/hImpParErrProng1VsPt"), candidate.errorImpactParameter1(), pt);
+      registry.fill(HIST("Data/hImpParErrProng2VsPt"), candidate.errorImpactParameter2(), pt);
+      registry.fill(HIST("Data/hDecLenErrVsPt"), candidate.errorDecayLength(), pt);
 
       if (fillTHn) {
         float const cent = evaluateCentralityColl(collision);
@@ -786,14 +652,15 @@ struct HfTaskLc {
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
         const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
-        if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-          massLc = hfHelper.invMassLcToPKPi(candidate);
+
+        auto fillTHnData = [&](bool isPKPi) {
+          massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
 
           if constexpr (FillMl) {
             if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-              outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
-              outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
-              outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
+              outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
+              outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
+              outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
@@ -814,41 +681,19 @@ struct HfTaskLc {
             }
             registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
           }
+        };
+
+        if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
+          fillTHnData(true);
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-          massLc = hfHelper.invMassLcToPiKP(candidate);
-
-          if constexpr (FillMl) {
-            if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
-              outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-              outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
-              outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
-            }
-            /// Fill the ML outputScores and variables of candidate
-            std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
-          } else {
-            std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
-          }
+          fillTHnData(false);
         }
       }
     }
   }
   /// Run the analysis on real data
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates)
@@ -859,8 +704,57 @@ struct HfTaskLc {
     }
   }
 
+  template <bool FillMl, typename CollType, typename CandType, typename BCsType>
+  void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
+                                          CandType const& candidates,
+                                          BCsType const& bcs,
+                                          aod::FT0s const& ft0s,
+                                          aod::FV0As const& fv0as,
+                                          aod::FDDs const& fdds
+
+  )
+  {
+    for (const auto& collision : collisions) {
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
+      }
+      const auto& bc = collision.template bc_as<BCsType>();
+      upchelpers::FITInfo fitInfo{};
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+      GapType gap = GapType::DoubleGap;
+      if (bc.has_zdc()) {
+        const auto zdc = bc.zdc();
+        qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
+      }
+      if (gap == GapType::GapA || gap == GapType::GapC) {
+        fillHistosData<FillMl>(collision, candidates);
+      }
+    }
+  }
+
+  GapType determineGapType(float FT0A, float FT0C, float ZNA, float ZNC)
+  {
+    constexpr float FT0AThreshold = 100.0;
+    constexpr float FT0CThreshold = 50.0;
+    constexpr float ZDCThreshold = 1.0;
+    if (FT0A < FT0AThreshold && FT0C > FT0CThreshold && ZNA < ZDCThreshold && ZNC > ZDCThreshold) {
+      return GapType::GapA;
+    }
+    if (FT0A > FT0AThreshold && FT0C < FT0CThreshold && ZNA > ZDCThreshold && ZNC < ZDCThreshold) {
+      return GapType::GapC;
+    }
+    return GapType::DoubleGap;
+  }
+
   /// Run the analysis on MC data
-  /// \tparam fillMl switch to fill ML histograms
+  /// \tparam FillMl switch to fill ML histograms
   template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
@@ -921,6 +815,32 @@ struct HfTaskLc {
     runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
+
+  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                aod::BcFullInfos const& bcs,
+                                LcCandidatesMl const& selectedLcCandidatesMl,
+                                aod::Tracks const&,
+                                aod::FT0s const& ft0s,
+                                aod::FV0As const& fv0as,
+                                aod::FDDs const& fdds,
+                                aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
+
+  void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                             aod::BcFullInfos const& bcs,
+                             LcCandidatesMl const& selectedLcCandidatesMl,
+                             aod::Tracks const&,
+                             aod::FT0s const& ft0s,
+                             aod::FV0As const& fv0as,
+                             aod::FDDs const& fdds,
+                             aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedLcCandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithUpc, "Process real data with the standard method with UPC", false);
 
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,
