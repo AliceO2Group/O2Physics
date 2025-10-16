@@ -546,7 +546,7 @@ struct kstarInOO {
 
     if (trk1.index() >= trk2.index())
       return {-1.0, -1.0};
-    std::cout << "track1 Index: " << trk1.index() << "track2 Index: " << trk2.index() << std::endl;
+    // std::cout << "track1 Index: " << trk1.index() << "track2 Index: " << trk2.index() << std::endl;
 
     //    if (trk1.globalIndex() == trk2.globalIndex())
     //   return {-1.0, -1.0};
