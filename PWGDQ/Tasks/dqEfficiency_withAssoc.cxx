@@ -3795,7 +3795,7 @@ struct AnalysisDileptonTrack {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
-      for (auto& sig: fRecMCSignals) {
+      for (auto& sig : fRecMCSignals) {
         DefineHistograms(fHistMan, Form("MCTruthGenSelBR_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), "");
       }
@@ -4213,11 +4213,13 @@ struct AnalysisDileptonTrack {
       for (auto t1 : mcTrackIndices) {
         auto track1 = mcTracks.rawIteratorAt(*(&t1));
         for (auto t2 : mcTrackIndices) {
-          if (t1 == t2 || t2 < t1) continue;
+          if (t1 == t2 || t2 < t1)
+            continue;
           auto track2 = mcTracks.rawIteratorAt(*(&t2));
           for (auto t3 : mcTrackIndices) {
-            if (t3 == t1 || t3 == t2) continue;
-            auto track3 = mcTracks.rawIteratorAt(*(&t3)); 
+            if (t3 == t1 || t3 == t2)
+              continue;
+            auto track3 = mcTracks.rawIteratorAt(*(&t3));
 
             for (auto& sig : fRecMCSignals) {
               if (sig->CheckSignal(true, track1, track2, track3)) {
