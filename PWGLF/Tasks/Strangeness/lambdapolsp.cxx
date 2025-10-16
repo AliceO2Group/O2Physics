@@ -1524,7 +1524,7 @@ struct lambdapolsp {
   PROCESS_SWITCH(lambdapolsp, processDerivedData, "Process derived data", false);
 
   using TrackMCTrueTable = aod::McParticles;
-  ROOT::Math::PxPyPzMVector lambdamc, antiLambdamc, lambdadummymc, antiLambdadummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
+  ROOT::Math::PxPyPzMVector lambdadummymc, antiLambdadummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
 
   void processMC(EventCandidatesMC::iterator const& collision, AllTrackCandidates const& tracks, TrackMCTrueTable const& GenParticles, ResoV0s const& V0s)
   {
