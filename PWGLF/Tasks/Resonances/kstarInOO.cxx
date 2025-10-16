@@ -279,13 +279,11 @@ struct kstarInOO {
       return false;
     if (cfgTrackGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    // if (cfgTracknFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
-    if (track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
+    if (cfgTracknFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
       return false;
     if (track.tpcNClsCrossedRows() < cfgTracknTPCCrossedRows)
       return false;
-    // if (cfgTracknRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
-    if (track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
+    if (cfgTracknRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > cfgTracknTPCChi2)
       return false;
