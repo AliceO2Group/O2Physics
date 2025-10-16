@@ -9,12 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file ZDCInterCalib.h
-/// \brief ZDC tower intercalibration task
+/// \file ZDCExtra.h
+/// \brief ZDC extra table producer
 /// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>, INFN Torino
+/// \author Uliana Dmitrieva <uliana.dmitrieva@cern.ch>, INFN Torino
 
-#ifndef COMMON_DATAMODEL_ZDCINTERCALIB_H_
-#define COMMON_DATAMODEL_ZDCINTERCALIB_H_
+#ifndef COMMON_DATAMODEL_ZDCEXTRA_H_
+#define COMMON_DATAMODEL_ZDCEXTRA_H_
 
 #include <Framework/AnalysisDataModel.h>
 
@@ -22,7 +23,7 @@
 
 namespace o2::aod
 {
-namespace znoutput // o2-linter: disable=name/workflow-file
+namespace zdcextra
 {
 DECLARE_SOA_COLUMN(ZNApmc, commonPMZNA, float);            //! PMC ZNA         // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZNApm1, ZNAPM1, float);                 //! PM1 ZNA         // o2-linter: disable=name/o2-column
@@ -39,24 +40,24 @@ DECLARE_SOA_COLUMN(ZNCtdc, ZNCTDC, float);                 //! TDC ZNC         /
 DECLARE_SOA_COLUMN(Centrality, centrality, float);         //! Centrality
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp
 DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
-} // namespace znoutput
+} // namespace zdcextra
 
-DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
-                  znoutput::ZNApmc,
-                  znoutput::ZNApm1,
-                  znoutput::ZNApm2,
-                  znoutput::ZNApm3,
-                  znoutput::ZNApm4,
-                  znoutput::ZNAtdc,
-                  znoutput::ZNCpmc,
-                  znoutput::ZNCpm1,
-                  znoutput::ZNCpm2,
-                  znoutput::ZNCpm3,
-                  znoutput::ZNCpm4,
-                  znoutput::ZNCtdc,
-                  znoutput::Centrality,
-                  znoutput::Timestamp,
-                  znoutput::SelectionBits);
+DECLARE_SOA_TABLE(ZdcExtras, "AOD", "ZDCEXTRA", o2::soa::Index<>,
+                  zdcextra::ZNApmc,
+                  zdcextra::ZNApm1,
+                  zdcextra::ZNApm2,
+                  zdcextra::ZNApm3,
+                  zdcextra::ZNApm4,
+                  zdcextra::ZNAtdc,
+                  zdcextra::ZNCpmc,
+                  zdcextra::ZNCpm1,
+                  zdcextra::ZNCpm2,
+                  zdcextra::ZNCpm3,
+                  zdcextra::ZNCpm4,
+                  zdcextra::ZNCtdc,
+                  zdcextra::Centrality,
+                  zdcextra::Timestamp,
+                  zdcextra::SelectionBits);
 } // namespace o2::aod
 
-#endif // COMMON_DATAMODEL_ZDCINTERCALIB_H_
+#endif // COMMON_DATAMODEL_ZDCEXTRA_H_

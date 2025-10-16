@@ -9,14 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file zdcTaskInterCalib.cxx
-/// \brief Task for ZDC tower inter-calibration
-/// \author chiara.oppedisano@cern.ch
+/// \file zdcExtraTableProducer.cxx
+/// \brief Task creating table with ZDC PMTs energies and calculated centroid (Q-vector) to be used for spectator plane measurement
+/// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>, INFN Torino
+/// \author Uliana Dmitrieva <uliana.dmitrieva@cern.ch>, INFN Torino
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/ZDCInterCalib.h"
+#include "Common/DataModel/ZDCExtra.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -29,6 +30,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
 
 #include <cstdint>
 
@@ -40,9 +42,9 @@ using namespace o2::aod::evsel;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
-struct ZdcTaskInterCalib {
+struct ZdcExtraTableProducer {
 
-  Produces<aod::ZDCInterCalib> zTab;
+  Produces<aod::ZdcExtras> zdcextras;
 
   // Configurable parameters
   //
@@ -245,14 +247,14 @@ struct ZdcTaskInterCalib {
           registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
         }
         if (isZNAhit || isZNChit)
-          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNC, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNA, centrality, foundBC.timestamp(), evSelection);
+          zdcextras(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNC, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNA, centrality, foundBC.timestamp(), evSelection);
       }
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ZdcTaskInterCalib>(cfgc)};
+    adaptAnalysisTask<ZdcExtraTableProducer>(cfgc)};
 }
