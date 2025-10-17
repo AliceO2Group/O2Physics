@@ -18,6 +18,7 @@
 #include "Common/Core/TableHelper.h"
 
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/RunningWorkflowInfo.h>
 
 #include <string>

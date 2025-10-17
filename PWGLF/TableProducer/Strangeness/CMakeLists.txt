@@ -36,8 +36,8 @@ o2physics_add_dpl_workflow(cascademcfinder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadepid
-    SOURCES cascadepid.cxx
+o2physics_add_dpl_workflow(strangenesstofpid
+    SOURCES strangenesstofpid.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
@@ -79,11 +79,6 @@ o2physics_add_dpl_workflow(lambdakzeromcbuilder
 o2physics_add_dpl_workflow(lambdakzeromcfinder
     SOURCES lambdakzeromcfinder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(lambdakzeropid
-    SOURCES lambdakzeropid.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzerospawner
@@ -170,9 +165,4 @@ o2physics_add_dpl_workflow(stracents
 o2physics_add_dpl_workflow(lambdaspincorrelation
     SOURCES lambdaspincorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(propagationservice
-    SOURCES propagationService.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
     COMPONENT_NAME Analysis)

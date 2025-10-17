@@ -58,7 +58,6 @@
 #include <numeric>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -260,7 +259,7 @@ struct HfTreeCreatorTccToD0D0Pi {
 
   HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   double bz{0.};
   int runNumber{0};
@@ -392,16 +391,17 @@ struct HfTreeCreatorTccToD0D0Pi {
       o2::dataformats::V0 trackD2;
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-      if (candwD0ThisColl.size() <= 1)
+      if (candwD0ThisColl.size() <= 1) {
         continue; // only loop the collision that include at least 2 D candidates
+      }
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& candidateD1 : candwD0ThisColl) {
 
         auto trackD1Prong0 = tracks.rawIteratorAt(candidateD1.prong0Id()); // positive daughter for D1
         auto trackD1Prong1 = tracks.rawIteratorAt(candidateD1.prong1Id()); // negative daughter for D1
-        std::array<float, 3> pVecD1Prong0{trackD1Prong0.pVector()};
-        std::array<float, 3> pVecD1Prong1{trackD1Prong1.pVector()};
+        std::array<float, 3> const pVecD1Prong0{trackD1Prong0.pVector()};
+        std::array<float, 3> const pVecD1Prong1{trackD1Prong1.pVector()};
         std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
 
         for (auto candidateD2 = candidateD1 + 1; candidateD2 != candwD0ThisColl.end(); ++candidateD2) {
@@ -416,8 +416,8 @@ struct HfTreeCreatorTccToD0D0Pi {
 
           auto trackD2Prong0 = tracks.rawIteratorAt(candidateD2.prong0Id()); // positive daughter for D2
           auto trackD2Prong1 = tracks.rawIteratorAt(candidateD2.prong1Id()); // negative daughter for D2
-          std::array<float, 3> pVecD2Prong0{trackD2Prong0.pVector()};
-          std::array<float, 3> pVecD2Prong1{trackD2Prong1.pVector()};
+          std::array<float, 3> const pVecD2Prong0{trackD2Prong0.pVector()};
+          std::array<float, 3> const pVecD2Prong1{trackD2Prong1.pVector()};
           std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
 
           if (buildVertex) {
@@ -646,7 +646,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecSoftPi}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
             auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecSoftPi}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
             auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPi};
-            const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
+            const auto massD0D0Pi = RecoDecay::m(arrayMomentaDDpi, std::array{MassD0, MassD0, MassPiPlus});
             const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
 
             deltaMassD01 = massKpipi1 - massD01;

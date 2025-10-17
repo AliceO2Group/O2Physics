@@ -254,8 +254,11 @@ enum ResonantChannel : int8_t {
   Kstar0K = 2
 };
 
-static std::unordered_map<int8_t, std::unordered_map<int8_t, int8_t>> channelsResonant = {{{Mother::Ds, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K}}},
-                                                                                           {Mother::Dplus, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K}}}}};
+namespace
+{
+std::unordered_map<int8_t, std::unordered_map<int8_t, int8_t>> channelsResonant = {{{Mother::Ds, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K}}},
+                                                                                    {Mother::Dplus, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K}}}}};
+}
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDsToKKPi {
@@ -325,17 +328,17 @@ struct HfTreeCreatorDsToKKPi {
   /// \param doMc true to fill MC information
   /// \param massHypo mass hypothesis considered: 0 = KKPi, 1 = PiKK
   /// \param candidate is candidate
-  template <bool doMc = false, int massHypo = 0, typename Coll, typename T>
+  template <bool DoMc = false, int MassHypo = 0, typename Coll, typename T>
   void fillCandidateTable(const T& candidate)
   {
     float invMassDs = 0;
     float deltaMassPhiKK = 0;
     float absCos3PiKDs = 0;
-    if constexpr (massHypo == 0) {
+    if constexpr (MassHypo == 0) {
       invMassDs = hfHelper.invMassDsToKKPi(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
       absCos3PiKDs = hfHelper.absCos3PiKDsToKKPi(candidate);
-    } else if constexpr (massHypo == 1) {
+    } else if constexpr (MassHypo == 1) {
       invMassDs = hfHelper.invMassDsToPiKK(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
       absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
@@ -344,11 +347,11 @@ struct HfTreeCreatorDsToKKPi {
     int8_t flagMc{0};
     int8_t originMc{0};
     int8_t channelMc{0};
-    int8_t isSwapped{massHypo}; // 0 if KKPi, 1 if PiKK
+    int8_t isSwapped{MassHypo}; // 0 if KKPi, 1 if PiKK
     float eCand{0.f};
     float ctCand{0.f};
     float yCand = candidate.y(invMassDs);
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
@@ -395,8 +398,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.nSigTofKa2(),
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
-        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
-        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
+        MassHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        MassHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         invMassDs,
         candidate.pt(),
         candidate.eta(),
@@ -463,8 +466,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.nSigTofKa2(),
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
-        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
-        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
+        MassHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        MassHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         candidate.xSecondaryVertex(),
         candidate.ySecondaryVertex(),
         candidate.zSecondaryVertex(),
@@ -515,7 +518,7 @@ struct HfTreeCreatorDsToKKPi {
 
     for (const auto& candidate : selectedDsToKKPiCand) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -525,7 +528,7 @@ struct HfTreeCreatorDsToKKPi {
 
     for (const auto& candidate : selectedDsToPiKKCand) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -571,7 +574,7 @@ struct HfTreeCreatorDsToKKPi {
 
       for (const auto& candidate : reconstructedCandBkg) {
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }

@@ -104,7 +104,8 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
@@ -168,12 +169,14 @@ struct DerivedDataCreatorD0Calibration {
     selectorKaon = selectorPion;
   }
 
-  void process(CollisionsWEvSel const& collisions,
-               aod::TrackAssoc const& trackIndices,
-               TracksWCovExtraPid const&,
-               aod::BCsWithTimestamps const&,
-               TrackMeanOccs const&,
-               aod::TracksQAVersion const&)
+  // main function
+  template <bool withTrackQa, typename TTrackQa, typename TTracks>
+  void runDataCreation(CollisionsWEvSel const& collisions,
+                       aod::TrackAssoc const& trackIndices,
+                       TTracks const&,
+                       aod::BCsWithTimestamps const&,
+                       TrackMeanOccs const&,
+                       TTrackQa const&)
   {
     std::map<int, int> selectedCollisions; // map with indices of selected collisions (key: original AOD Collision table index, value: D0 collision index)
     std::map<int, int> selectedTracks;     // map with indices of selected tracks (key: original AOD Track table index, value: D0 daughter track index)
@@ -201,7 +204,7 @@ struct DerivedDataCreatorD0Calibration {
 
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       for (auto const& trackIndexPos : groupedTrackIndices) {
-        auto trackPos = trackIndexPos.template track_as<TracksWCovExtraPid>();
+        auto trackPos = trackIndexPos.template track_as<TTracks>();
         // track selections
         if (trackPos.sign() < 0) { // first positive track
           continue;
@@ -237,7 +240,7 @@ struct DerivedDataCreatorD0Calibration {
         }
 
         for (auto const& trackIndexNeg : groupedTrackIndices) {
-          auto trackNeg = trackIndexNeg.template track_as<TracksWCovExtraPid>();
+          auto trackNeg = trackIndexNeg.template track_as<TTracks>();
           // track selections
           if (trackNeg.sign() > 0) { // second negative track
             continue;
@@ -419,7 +422,9 @@ struct DerivedDataCreatorD0Calibration {
               // apply BDT models
               if (cfgMl.apply) {
                 std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
-                mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0);
+                if (!mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0)) {
+                  massHypo -= D0MassHypo::D0;
+                }
               }
             }
           }
@@ -432,7 +437,9 @@ struct DerivedDataCreatorD0Calibration {
               // apply BDT models
               if (cfgMl.apply) {
                 std::vector<float> featuresCandD0bar = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi())};
-                mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar);
+                if (!mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar)) {
+                  massHypo -= D0MassHypo::D0Bar;
+                }
               }
             }
           }
@@ -478,7 +485,7 @@ struct DerivedDataCreatorD0Calibration {
             uint8_t tmoRobustT0V0PrimUnfm80{0u};
             uint8_t twmoRobustT0V0PrimUnfm80{0u};
             if (trackPos.has_tmo()) {
-              auto tmoFromTrack = trackPos.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              auto tmoFromTrack = trackPos.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
               tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
               tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
               tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
@@ -515,33 +522,35 @@ struct DerivedDataCreatorD0Calibration {
             int8_t deltaRefGloParamQ2Pt{0};
             int8_t deltaTOFdX{0};
             int8_t deltaTOFdZ{0};
-            if (trackPos.has_trackQA()) {
-              auto trackQA = trackPos.trackQA_as<aod::TracksQAVersion>(); // obtain track QA
-              tpcTime0 = trackQA.tpcTime0();
-              tpcdEdxNorm = trackQA.tpcdEdxNorm();
-              tpcDcaR = trackQA.tpcdcaR();
-              tpcDcaZ = trackQA.tpcdcaZ();
-              tpcClusterByteMask = trackQA.tpcClusterByteMask();
-              tpcdEdxMax0R = trackQA.tpcdEdxMax0R();
-              tpcdEdxMax1R = trackQA.tpcdEdxMax1R();
-              tpcdEdxMax2R = trackQA.tpcdEdxMax2R();
-              tpcdEdxMax3R = trackQA.tpcdEdxMax3R();
-              tpcdEdxTot0R = trackQA.tpcdEdxTot0R();
-              tpcdEdxTot1R = trackQA.tpcdEdxTot1R();
-              tpcdEdxTot2R = trackQA.tpcdEdxTot2R();
-              tpcdEdxTot3R = trackQA.tpcdEdxTot3R();
-              deltaRefContParamY = trackQA.deltaRefContParamY();
-              deltaRefITSParamZ = trackQA.deltaRefITSParamZ();
-              deltaRefContParamSnp = trackQA.deltaRefContParamSnp();
-              deltaRefContParamTgl = trackQA.deltaRefContParamTgl();
-              deltaRefContParamQ2Pt = trackQA.deltaRefContParamQ2Pt();
-              deltaRefGloParamY = trackQA.deltaRefGloParamY();
-              deltaRefGloParamZ = trackQA.deltaRefGloParamZ();
-              deltaRefGloParamSnp = trackQA.deltaRefGloParamSnp();
-              deltaRefGloParamTgl = trackQA.deltaRefGloParamTgl();
-              deltaRefGloParamQ2Pt = trackQA.deltaRefGloParamQ2Pt();
-              deltaTOFdX = trackQA.deltaTOFdX();
-              deltaTOFdZ = trackQA.deltaTOFdZ();
+            if constexpr (withTrackQa) {
+              if (trackPos.has_trackQA()) {
+                auto trackQA = trackPos.template trackQA_as<TTrackQa>(); // obtain track QA
+                tpcTime0 = trackQA.tpcTime0();
+                tpcdEdxNorm = trackQA.tpcdEdxNorm();
+                tpcDcaR = trackQA.tpcdcaR();
+                tpcDcaZ = trackQA.tpcdcaZ();
+                tpcClusterByteMask = trackQA.tpcClusterByteMask();
+                tpcdEdxMax0R = trackQA.tpcdEdxMax0R();
+                tpcdEdxMax1R = trackQA.tpcdEdxMax1R();
+                tpcdEdxMax2R = trackQA.tpcdEdxMax2R();
+                tpcdEdxMax3R = trackQA.tpcdEdxMax3R();
+                tpcdEdxTot0R = trackQA.tpcdEdxTot0R();
+                tpcdEdxTot1R = trackQA.tpcdEdxTot1R();
+                tpcdEdxTot2R = trackQA.tpcdEdxTot2R();
+                tpcdEdxTot3R = trackQA.tpcdEdxTot3R();
+                deltaRefContParamY = trackQA.deltaRefContParamY();
+                deltaRefITSParamZ = trackQA.deltaRefITSParamZ();
+                deltaRefContParamSnp = trackQA.deltaRefContParamSnp();
+                deltaRefContParamTgl = trackQA.deltaRefContParamTgl();
+                deltaRefContParamQ2Pt = trackQA.deltaRefContParamQ2Pt();
+                deltaRefGloParamY = trackQA.deltaRefGloParamY();
+                deltaRefGloParamZ = trackQA.deltaRefGloParamZ();
+                deltaRefGloParamSnp = trackQA.deltaRefGloParamSnp();
+                deltaRefGloParamTgl = trackQA.deltaRefGloParamTgl();
+                deltaRefGloParamQ2Pt = trackQA.deltaRefGloParamQ2Pt();
+                deltaTOFdX = trackQA.deltaTOFdX();
+                deltaTOFdZ = trackQA.deltaTOFdZ();
+              }
             }
 
             trackTable(selectedCollisions[collision.globalIndex()], // stored at PV
@@ -641,7 +650,7 @@ struct DerivedDataCreatorD0Calibration {
             uint8_t tmoRobustT0V0PrimUnfm80{0u};
             uint8_t twmoRobustT0V0PrimUnfm80{0u};
             if (trackNeg.has_tmo()) {
-              auto tmoFromTrack = trackNeg.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              auto tmoFromTrack = trackNeg.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
               tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
               tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
               tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
@@ -678,33 +687,35 @@ struct DerivedDataCreatorD0Calibration {
             int8_t deltaRefGloParamQ2Pt{0};
             int8_t deltaTOFdX{0};
             int8_t deltaTOFdZ{0};
-            if (trackNeg.has_trackQA()) {
-              auto trackQA = trackNeg.trackQA_as<aod::TracksQAVersion>(); // obtain track QA
-              tpcTime0 = trackQA.tpcTime0();
-              tpcdEdxNorm = trackQA.tpcdEdxNorm();
-              tpcDcaR = trackQA.tpcdcaR();
-              tpcDcaZ = trackQA.tpcdcaZ();
-              tpcClusterByteMask = trackQA.tpcClusterByteMask();
-              tpcdEdxMax0R = trackQA.tpcdEdxMax0R();
-              tpcdEdxMax1R = trackQA.tpcdEdxMax1R();
-              tpcdEdxMax2R = trackQA.tpcdEdxMax2R();
-              tpcdEdxMax3R = trackQA.tpcdEdxMax3R();
-              tpcdEdxTot0R = trackQA.tpcdEdxTot0R();
-              tpcdEdxTot1R = trackQA.tpcdEdxTot1R();
-              tpcdEdxTot2R = trackQA.tpcdEdxTot2R();
-              tpcdEdxTot3R = trackQA.tpcdEdxTot3R();
-              deltaRefContParamY = trackQA.deltaRefContParamY();
-              deltaRefITSParamZ = trackQA.deltaRefITSParamZ();
-              deltaRefContParamSnp = trackQA.deltaRefContParamSnp();
-              deltaRefContParamTgl = trackQA.deltaRefContParamTgl();
-              deltaRefContParamQ2Pt = trackQA.deltaRefContParamQ2Pt();
-              deltaRefGloParamY = trackQA.deltaRefGloParamY();
-              deltaRefGloParamZ = trackQA.deltaRefGloParamZ();
-              deltaRefGloParamSnp = trackQA.deltaRefGloParamSnp();
-              deltaRefGloParamTgl = trackQA.deltaRefGloParamTgl();
-              deltaRefGloParamQ2Pt = trackQA.deltaRefGloParamQ2Pt();
-              deltaTOFdX = trackQA.deltaTOFdX();
-              deltaTOFdZ = trackQA.deltaTOFdZ();
+            if constexpr (withTrackQa) {
+              if (trackNeg.has_trackQA()) {
+                auto trackQA = trackNeg.template trackQA_as<TTrackQa>(); // obtain track QA
+                tpcTime0 = trackQA.tpcTime0();
+                tpcdEdxNorm = trackQA.tpcdEdxNorm();
+                tpcDcaR = trackQA.tpcdcaR();
+                tpcDcaZ = trackQA.tpcdcaZ();
+                tpcClusterByteMask = trackQA.tpcClusterByteMask();
+                tpcdEdxMax0R = trackQA.tpcdEdxMax0R();
+                tpcdEdxMax1R = trackQA.tpcdEdxMax1R();
+                tpcdEdxMax2R = trackQA.tpcdEdxMax2R();
+                tpcdEdxMax3R = trackQA.tpcdEdxMax3R();
+                tpcdEdxTot0R = trackQA.tpcdEdxTot0R();
+                tpcdEdxTot1R = trackQA.tpcdEdxTot1R();
+                tpcdEdxTot2R = trackQA.tpcdEdxTot2R();
+                tpcdEdxTot3R = trackQA.tpcdEdxTot3R();
+                deltaRefContParamY = trackQA.deltaRefContParamY();
+                deltaRefITSParamZ = trackQA.deltaRefITSParamZ();
+                deltaRefContParamSnp = trackQA.deltaRefContParamSnp();
+                deltaRefContParamTgl = trackQA.deltaRefContParamTgl();
+                deltaRefContParamQ2Pt = trackQA.deltaRefContParamQ2Pt();
+                deltaRefGloParamY = trackQA.deltaRefGloParamY();
+                deltaRefGloParamZ = trackQA.deltaRefGloParamZ();
+                deltaRefGloParamSnp = trackQA.deltaRefGloParamSnp();
+                deltaRefGloParamTgl = trackQA.deltaRefGloParamTgl();
+                deltaRefGloParamQ2Pt = trackQA.deltaRefGloParamQ2Pt();
+                deltaTOFdX = trackQA.deltaTOFdX();
+                deltaTOFdZ = trackQA.deltaTOFdZ();
+              }
             }
 
             trackTable(selectedCollisions[collision.globalIndex()], // stored at PV
@@ -821,6 +832,28 @@ struct DerivedDataCreatorD0Calibration {
       } // end loop over positive tracks
     } // end loop over collisions tracks
   }
+
+  // process functions
+  void processWithTrackQa(CollisionsWEvSel const& collisions,
+                          aod::TrackAssoc const& trackIndices,
+                          TracksWCovExtraPidAndQa const& tracks,
+                          aod::BCsWithTimestamps const& bcs,
+                          TrackMeanOccs const& occ,
+                          aod::TracksQAVersion const& trackQa)
+  {
+    runDataCreation<true>(collisions, trackIndices, tracks, bcs, occ, trackQa);
+  }
+  PROCESS_SWITCH(DerivedDataCreatorD0Calibration, processWithTrackQa, "Process with trackQA enabled", false);
+
+  void processNoTrackQa(CollisionsWEvSel const& collisions,
+                        aod::TrackAssoc const& trackIndices,
+                        TracksWCovExtraPid const& tracks,
+                        aod::BCsWithTimestamps const& bcs,
+                        TrackMeanOccs const& occ)
+  {
+    runDataCreation<false>(collisions, trackIndices, tracks, bcs, occ, nullptr);
+  }
+  PROCESS_SWITCH(DerivedDataCreatorD0Calibration, processNoTrackQa, "Process without trackQA enabled", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

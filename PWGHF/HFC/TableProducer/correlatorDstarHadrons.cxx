@@ -52,19 +52,19 @@ using namespace o2::framework::expressions;
 const int nBinsPtCorrelation = 8;
 
 const double binsPtCorrelationsDefault[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 100.};
-auto vecBinsPtCorrelationsDefault = std::vector<double>{binsPtCorrelationsDefault, binsPtCorrelationsDefault + nBinsPtCorrelation + 1};
+const auto vecBinsPtCorrelationsDefault = std::vector<double>{binsPtCorrelationsDefault, binsPtCorrelationsDefault + nBinsPtCorrelation + 1};
 
 const double signalRegionLefBoundDefault[nBinsPtCorrelation] = {0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144};
-auto vecSignalRegionLefBoundDefault = std::vector<double>{signalRegionLefBoundDefault, signalRegionLefBoundDefault + nBinsPtCorrelation};
+const auto vecSignalRegionLefBoundDefault = std::vector<double>{signalRegionLefBoundDefault, signalRegionLefBoundDefault + nBinsPtCorrelation};
 
 const double signalRegionRightBoundDefault[nBinsPtCorrelation] = {0.146, 0.146, 0.146, 0.146, 0.146, 0.146, 0.146, 0.146};
-auto vecSignalRegionRightBoundDefault = std::vector<double>{signalRegionRightBoundDefault, signalRegionRightBoundDefault + nBinsPtCorrelation};
+const auto vecSignalRegionRightBoundDefault = std::vector<double>{signalRegionRightBoundDefault, signalRegionRightBoundDefault + nBinsPtCorrelation};
 
 const double sidebandRightInnerDefault[nBinsPtCorrelation] = {0.147, 0.147, 0.147, 0.147, 0.147, 0.147, 0.147, 0.147};
-auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nBinsPtCorrelation};
+const auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nBinsPtCorrelation};
 
 const double sidebandRightOuterDefault[nBinsPtCorrelation] = {0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154};
-auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
+const auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
 
 // flaging a collision if D* meson is found.
 struct HfCorrelatorDstarHadronsCollisionSelector {
@@ -144,9 +144,9 @@ struct HfCorrelatorDstarHadrons {
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
   // Inv Mass of Dstar and D0 Candidate
-  float invMassDstarParticle;
-  float invMassD0Particle;
-  int binNumber;
+  float invMassDstarParticle{};
+  float invMassD0Particle{};
+  int binNumber{};
   SliceCache cache;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
@@ -196,12 +196,15 @@ struct HfCorrelatorDstarHadrons {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
+    AxisSpec const axisSpecMultFT0M{binsMultiplicity, "Multiplicity in FT0M", "multFT0M"};
+
     invMassDstarParticle = -999.0;
     invMassD0Particle = -999.0;
     binNumber = -2;
 
     binningScheme = {{binsZVtx, binsMultiplicity}, true};
 
+    registry.add("QA/hMultFT0M", "Multiplicity distribution in FT0M", {HistType::kTH1D, {axisSpecMultFT0M}});
     registry.add("QA/hCandsPerCol", "Candidates per Collision", {HistType::kTH1D, {{100, 0.0, 100.0}}});
     registry.add("QA/hAssoTracksPerCol", "Tracks per Collision", {HistType::kTH1D, {{1000, 0.0, 1000.0}}});
     registry.add("QA/hCandsVsTracksPerCol", "Candidates vs Tracks per Collision", {HistType::kTHnSparseF, {{100, 0.0, 100.0}, {1000, 0.0, 1000.0}}});
@@ -234,11 +237,12 @@ struct HfCorrelatorDstarHadrons {
       auto candidatesPerCol = candidates.sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto tracksPerCol = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      if (candidatesPerCol.size() && tracksPerCol.size() == 0) {
+      if ((candidatesPerCol.size() != 0) && tracksPerCol.size() == 0) {
         continue;
       } // endif
 
       registry.fill(HIST("hTriggerColCandPairCounts"), 1); // counting number of trigger particle
+      registry.fill(HIST("QA/hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("QA/hCandsPerCol"), candidatesPerCol.size());
       registry.fill(HIST("QA/hAssoTracksPerCol"), tracksPerCol.size());
       registry.fill(HIST("QA/hCandsVsTracksPerCol"), candidatesPerCol.size(), tracksPerCol.size());
@@ -256,7 +260,7 @@ struct HfCorrelatorDstarHadrons {
           invMassD0Particle = cand.invMassD0Bar();
         }
         auto ptDstar = cand.pt();
-        int corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
+        int const corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
         auto deltaM = cand.invMassDstar() - cand.invMassD0();
         if (deltaM > signalRegionLefBound->at(corrBinPtDstar) && deltaM < signalRegionRightBound->at(corrBinPtDstar)) {
           // Signal Region
@@ -357,7 +361,7 @@ struct HfCorrelatorDstarHadrons {
   {
 
     auto dstarHadronTuple = std::make_tuple(candidates, tracks);
-    Pair<FilteredCollisions, FilteredCandidates, FilteredTracks, BinningType> pairData{binningScheme, 5, -1, collisions, dstarHadronTuple, &cache};
+    Pair<FilteredCollisions, FilteredCandidates, FilteredTracks, BinningType> const pairData{binningScheme, 5, -1, collisions, dstarHadronTuple, &cache};
 
     for (const auto& [c1, candidatesPerCol, c2, tracksPerCol] : pairData) {
       auto bc = c2.bc_as<aod::BCsWithTimestamps>();

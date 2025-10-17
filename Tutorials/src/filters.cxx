@@ -10,110 +10,65 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief Filters are used to select specific rows of a table.
-/// \author
-/// \since
+/// \author Anton Alkin (anton.alkin@cern.ch)
+/// \file filters.cxx
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
-namespace o2::aod
-{
-namespace etaphi
-{
-DECLARE_SOA_COLUMN(NPhi, nphi, float);
-DECLARE_SOA_EXPRESSION_COLUMN(CosPhi, cosphi, float,
-                              ncos(aod::etaphi::nphi));
-} // namespace etaphi
-namespace track
-{
-DECLARE_SOA_EXPRESSION_COLUMN(SPt, spt, float,
-                              nabs(aod::track::sigma1Pt / aod::track::signed1Pt));
-}
-DECLARE_SOA_TABLE(TPhi, "AOD", "TPHI",
-                  etaphi::NPhi);
-DECLARE_SOA_EXTENDED_TABLE_USER(EPhi, TPhi, "EPHI",
-                                aod::etaphi::CosPhi);
-using etracks = soa::Join<aod::Tracks, aod::TracksCov>;
-DECLARE_SOA_EXTENDED_TABLE_USER(MTracks, etracks, "MTRACK",
-                                aod::track::SPt);
-} // namespace o2::aod
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// production of table o2::aod::TPhi
-struct ProduceTPhi {
-  Produces<aod::TPhi> tphi;
-  void process(aod::Tracks const& tracks)
-  {
-    for (auto& track : tracks) {
-      tphi(track.phi());
-    }
-  }
-};
-
 // Apply filters on Collisions, Tracks, and TPhi
-struct SpawnExtendedTables {
-  // spawn the extended tables
-  Spawns<aod::EPhi> ephi;
-  Spawns<aod::MTracks> mtrk;
+struct Filters {
+  Configurable<float> ptLow{"ptLow", 0.5f, ""};
+  Configurable<float> ptUp{"ptUp", 2.0f, ""};
+  Filter ptFilterA = aod::track::pt > ptLow;
+  Filter ptFilterB = aod::track::pt < ptUp;
 
-  Configurable<float> ptlow{"ptlow", 0.5f, ""};
-  Configurable<float> ptup{"ptup", 2.0f, ""};
-  Filter ptFilter_a = aod::track::pt > ptlow;
-  Filter ptFilter_b = aod::track::pt < ptup;
+  Configurable<float> etaLow{"etaLow", -1.0f, ""};
+  Configurable<float> etaUp{"etaUp", 1.0f, ""};
+  Filter etafilter = (aod::track::eta < etaUp) && (aod::track::eta > etaLow);
 
-  Configurable<float> etalow{"etalow", -1.0f, ""};
-  Configurable<float> etaup{"etaup", 1.0f, ""};
-  Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
-
-  float philow = 1.0f;
-  float phiup = 2.0f;
-  Filter phifilter = (aod::etaphi::nphi < phiup) && (aod::etaphi::nphi > philow);
+  Configurable<float> phiLow{"phiLow", 1.0f, "Phi lower limit"};
+  Configurable<float> phiUp{"phiUp", 2.0f, "Phi upper limit"};
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
   Filter posZfilter = nabs(aod::collision::posZ) < vtxZ;
-  Filter bitwiseFilter = (o2::aod::track::flags & static_cast<uint32_t>(o2::aod::track::TPCrefit)) != 0u;
+  Filter bitwiseFilter = (aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor);
+
+  // it is now possible to set filters as strings
+  // note that column designators need the full prefix, i.e. o2::aod::
+  // configurables can be used with ncfg(type, value, name)
+  // where value is the default value
+  // name is the full name in JSON, with prefix if there is any
+  Configurable<std::string> extraFilter{"extraFilter", "(o2::aod::track::phi < ncfg(float,2.0,phiUp)) && (o2::aod::track::phi > ncfg(float,1.0,phiLow))", "extra filter string"};
+  Filter extraF;
+
+  void init(InitContext&)
+  {
+    if (!extraFilter->empty()) {
+      // string-based filters need to be assigned in init()
+      extraF = Parser::parse(extraFilter);
+    }
+  }
 
   // process only collisions and tracks which pass all defined filter criteria
-  void process(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TPhi>> const& tracks)
+  void process(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra>> const& tracks)
   {
     LOGF(info, "Collision: %d [N = %d out of %d], -%.1f < %.3f < %.1f",
          collision.globalIndex(), tracks.size(), tracks.tableSize(), (float)vtxZ, collision.posZ(), (float)vtxZ);
-    for (auto& track : tracks) {
-      LOGF(info, "id = %d; eta:  %.3f < %.3f < %.3f; phi: %.3f < %.3f < %.3f; pt: %.3f < %.3f < %.3f",
-           track.collisionId(), (float)etalow, track.eta(), (float)etaup, philow, track.nphi(), phiup, (float)ptlow, track.pt(), (float)ptup);
-    }
-  }
-};
-
-struct ConsumeExtendedTables {
-  void process(aod::Collision const&, soa::Join<aod::Tracks, aod::EPhi> const& tracks)
-  {
-    for (auto& track : tracks) {
-      LOGF(info, "%.3f == %.3f", track.cosphi(), std::cos(track.phi()));
-    }
-  }
-};
-
-// tracks which are not tracklets
-struct FilterTracks {
-  Filter notTracklet = aod::track::trackType != static_cast<uint8_t>(aod::track::TrackTypeEnum::Run2Tracklet);
-  void process(aod::Collision const&, soa::Filtered<aod::MTracks> const& tracks)
-  {
-    for (auto& track : tracks) {
-      LOGF(info, "%.3f == %.3f", track.spt(), std::abs(track.sigma1Pt() / track.signed1Pt()));
+    for (auto const& track : tracks) {
+      LOGP(info, "id = {}; eta:  {} < {} < {}; phi: {} < {} < {}; pt: {} < {} < {}",
+           track.collisionId(), (float)etaLow, track.eta(), (float)etaUp, (float)phiLow, track.phi(), (float)phiUp, (float)ptLow, track.pt(), (float)ptUp);
     }
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<ProduceTPhi>(cfgc),
-    adaptAnalysisTask<SpawnExtendedTables>(cfgc),
-    adaptAnalysisTask<ConsumeExtendedTables>(cfgc),
-    adaptAnalysisTask<FilterTracks>(cfgc),
-  };
+  return {adaptAnalysisTask<Filters>(cfgc)};
 }

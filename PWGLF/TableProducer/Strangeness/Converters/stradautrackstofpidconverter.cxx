@@ -53,7 +53,7 @@ struct stradautrackstofpidconverter {
       lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime();
     }
     for (int ii = 0; ii < dauTracks.size(); ii++) {
-      dautracktofpids(lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii]);
+      dautracktofpids(-1, -1, lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii], 0.0f);
     }
   }
 };

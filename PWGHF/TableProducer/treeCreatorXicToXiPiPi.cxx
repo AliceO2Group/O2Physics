@@ -334,7 +334,8 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Pt,
                   full::Eta,
                   full::Phi,
-                  full::Y);
+                  full::Y,
+                  hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -372,16 +373,16 @@ struct HfTreeCreatorXicToXiPiPi {
   {
   }
 
-  template <bool doMc, bool doKf, typename T>
+  template <bool DoMc, bool DoKf, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t particleFlag = candidate.sign();
     int8_t originMc = 0;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       particleFlag = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
     }
-    if constexpr (!doKf) {
+    if constexpr (!DoKf) {
       if (fillCandidateLiteTable) {
         rowCandidateLite(
           particleFlag,
@@ -646,7 +647,7 @@ struct HfTreeCreatorXicToXiPiPi {
     }
     for (const auto& candidate : candidates) {
       if (fillOnlyBackground && downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
+        float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (pseudoRndm >= downSampleBkgFactor && candidate.pt() < ptMaxForDownSample) {
           continue;
         }
@@ -666,7 +667,7 @@ struct HfTreeCreatorXicToXiPiPi {
     }
     for (const auto& candidate : candidates) {
       if (fillOnlyBackground && downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
+        float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (pseudoRndm >= downSampleBkgFactor && candidate.pt() < ptMaxForDownSample) {
           continue;
         }
@@ -696,7 +697,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recBg.size());
       }
       for (const auto& candidate : recBg) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
+        float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -723,7 +724,8 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus));
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          particle.decayLengthMcGen());
       }
     }
   }
@@ -749,7 +751,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recBgKf.size());
       }
       for (const auto& candidate : recBgKf) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
+        float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -776,7 +778,8 @@ struct HfTreeCreatorXicToXiPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus));
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          particle.decayLengthMcGen());
       }
     }
   }

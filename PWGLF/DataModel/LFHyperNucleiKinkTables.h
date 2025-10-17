@@ -37,12 +37,6 @@ DECLARE_SOA_COLUMN(ZMothIU, zMothIU, float);                            //! Z of
 DECLARE_SOA_COLUMN(PxMothSV, pxMothSV, float);                          //! Px of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PyMothSV, pyMothSV, float);                          //! Py of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PzMothSV, pzMothSV, float);                          //! Pz of the mother track at the decay vertex
-DECLARE_SOA_COLUMN(RefitPxMothPV, refitPxMothPV, float);                //! Refit Px of the mother track at the primary vertex
-DECLARE_SOA_COLUMN(RefitPyMothPV, refitPyMothPV, float);                //! Refit Py of the mother track at the primary vertex
-DECLARE_SOA_COLUMN(RefitPzMothPV, refitPzMothPV, float);                //! Refit Pz of the mother track at the primary vertex
-DECLARE_SOA_COLUMN(RefitPxMothSV, refitPxMothSV, float);                //! Refit Px of the mother track at the decay vertex
-DECLARE_SOA_COLUMN(RefitPyMothSV, refitPyMothSV, float);                //! Refit Py of the mother track at the decay vertex
-DECLARE_SOA_COLUMN(RefitPzMothSV, refitPzMothSV, float);                //! Refit Pz of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PxDaugSV, pxDaugSV, float);                          //! Px of the daughter track at the decay vertex
 DECLARE_SOA_COLUMN(PyDaugSV, pyDaugSV, float);                          //! Py of the daughter track at the decay vertex
 DECLARE_SOA_COLUMN(PzDaugSV, pzDaugSV, float);                          //! Pz of the daughter track at the decay vertex
@@ -53,6 +47,9 @@ DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float);                    //! DCA 
 DECLARE_SOA_COLUMN(ItsChi2Moth, itsChi2Moth, float);                    //! ITS chi2 of the mother track
 DECLARE_SOA_COLUMN(ItsClusterSizesMoth, itsClusterSizesMoth, uint32_t); //! ITS cluster size of the mother track
 DECLARE_SOA_COLUMN(ItsClusterSizesDaug, itsClusterSizesDaug, uint32_t); //! ITS cluster size of the daughter track
+DECLARE_SOA_COLUMN(TpcMomDaug, tpcMomDaug, float);                      //! TPC momentum of the daughter track
+DECLARE_SOA_COLUMN(TpcSignalDaug, tpcSignalDaug, float);                //! TPC signal of the daughter track
+DECLARE_SOA_COLUMN(TpcNClsPIDDaug, tpcNClsPIDDaug, int16_t);            //! Number of TPC clusters used for PID of the daughter track
 DECLARE_SOA_COLUMN(NSigmaTPCDaug, nSigmaTPCDaug, float);                //! Number of tpc sigmas of the daughter track
 DECLARE_SOA_COLUMN(NSigmaITSDaug, nSigmaITSDaug, float);                //! Number of ITS sigmas of the daughter track
 DECLARE_SOA_COLUMN(NSigmaTOFDaug, nSigmaTOFDaug, float);                //! Number of TOF sigmas of the daughter track
@@ -90,11 +87,10 @@ DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   hyperkink::IsMatter,
                   hyperkink::XMothIU, hyperkink::YMothIU, hyperkink::ZMothIU,
                   hyperkink::PxMothSV, hyperkink::PyMothSV, hyperkink::PzMothSV,
-                  hyperkink::RefitPxMothPV, hyperkink::RefitPyMothPV, hyperkink::RefitPzMothPV,
-                  hyperkink::RefitPxMothSV, hyperkink::RefitPyMothSV, hyperkink::RefitPzMothSV,
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
+                  hyperkink::TpcMomDaug, hyperkink::TpcSignalDaug, hyperkink::TpcNClsPIDDaug,
                   hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
                   hyperkink::PxMothPV, hyperkink::PyMothPV, hyperkink::PzMothPV,
                   hyperkink::UpdatePxMothPV, hyperkink::UpdatePyMothPV, hyperkink::UpdatePzMothPV);
@@ -107,11 +103,10 @@ DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   hyperkink::IsMatter,
                   hyperkink::XMothIU, hyperkink::YMothIU, hyperkink::ZMothIU,
                   hyperkink::PxMothSV, hyperkink::PyMothSV, hyperkink::PzMothSV,
-                  hyperkink::RefitPxMothPV, hyperkink::RefitPyMothPV, hyperkink::RefitPzMothPV,
-                  hyperkink::RefitPxMothSV, hyperkink::RefitPyMothSV, hyperkink::RefitPzMothSV,
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
+                  hyperkink::TpcMomDaug, hyperkink::TpcSignalDaug, hyperkink::TpcNClsPIDDaug,
                   hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
                   hyperkink::IsSignal, hyperkink::IsSignalReco, hyperkink::IsCollReco, hyperkink::IsSurvEvSelection,
                   hyperkink::TrueXSV, hyperkink::TrueYSV, hyperkink::TrueZSV,

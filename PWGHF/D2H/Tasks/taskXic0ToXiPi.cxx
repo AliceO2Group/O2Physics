@@ -116,7 +116,7 @@ struct HfTaskXic0ToXiPi {
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
 
     if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
-      std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
+      std::vector<AxisSpec> const axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
       registry.add("hSparseAcc", "Thn for generated Xic0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
     }
@@ -141,8 +141,8 @@ struct HfTaskXic0ToXiPi {
       const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
       const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality."};
       const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
-      std::vector<AxisSpec> axesWithBdtCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
-      std::vector<AxisSpec> axesWithCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithBdtCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
       registry.add("hBdtScoreVsMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with BDT&Cent&pTpi", HistType::kTHnSparseD, axesWithBdtCent);
       registry.add("hMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithCent);
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"))->Sumw2();
@@ -150,7 +150,7 @@ struct HfTaskXic0ToXiPi {
     }
   }
 
-  template <bool applyMl, typename CandType, typename CollType>
+  template <bool ApplyMl, typename CandType, typename CollType>
   void processData(const CandType& candidates, CollType const&)
   {
     for (const auto& candidate : candidates) {
@@ -161,7 +161,7 @@ struct HfTaskXic0ToXiPi {
         continue;
       }
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"), candidate.mlProbToXiPi()[0], candidate.invMassCharmBaryon(), candidate.kfptXic(), candidate.kfRapXic());
       } else {
         registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"), candidate.invMassCharmBaryon(), candidate.kfptXic(), candidate.kfRapXic());
@@ -169,13 +169,13 @@ struct HfTaskXic0ToXiPi {
     }
   }
 
-  template <bool useCentrality, bool applyMl, typename CandType, typename CollType>
+  template <bool UseCentrality, bool ApplyMl, typename CandType, typename CollType>
   void processDataCent(const CandType& candidates, CollType const& collisions)
   {
     for (const auto& collision : collisions) {
 
       auto thisCollId = collision.globalIndex();
-      auto groupedXicCandidates = applyMl
+      auto groupedXicCandidates = ApplyMl
                                     ? candidates.sliceBy(candXicKFMlPerCollision, thisCollId)
                                     : candidates.sliceBy(candXicKFPerCollision, thisCollId);
       // auto numPvContributors = collision.numContrib();
@@ -190,13 +190,13 @@ struct HfTaskXic0ToXiPi {
 
         auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
         float centrality = -999.f;
-        if constexpr (useCentrality) {
+        if constexpr (UseCentrality) {
           auto const& collision = candidate.template collision_as<CollType>();
           centrality = o2::hf_centrality::getCentralityColl(collision);
         }
-        double kfptXic = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
-        double kfptPiFromXic = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
-        if constexpr (applyMl) {
+        double const kfptXic = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+        double const kfptPiFromXic = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+        if constexpr (ApplyMl) {
           registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
                         candidate.mlProbToXiPi()[0],
                         candidate.invMassCharmBaryon(),
@@ -218,7 +218,7 @@ struct HfTaskXic0ToXiPi {
     }
   }
 
-  template <bool applyMl, typename CandType, typename CollType>
+  template <bool ApplyMl, typename CandType, typename CollType>
   void processMc(const CandType& candidates,
                  Xic0Gen const& mcParticles,
                  TracksMc const&,
@@ -235,8 +235,8 @@ struct HfTaskXic0ToXiPi {
       }
 
       auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
-      double kfptXic = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
-      if constexpr (applyMl) {
+      double const kfptXic = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
                       candidate.mlProbToXiPi()[0],
                       candidate.invMassCharmBaryon(),
@@ -281,7 +281,7 @@ struct HfTaskXic0ToXiPi {
                       RecoDecay::OriginType::Prompt,
                       maxNumContrib);
       } else {
-        float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
         registry.fill(HIST("hSparseAcc"),
                       ptGen,
                       ptGenB,
@@ -334,23 +334,23 @@ struct HfTaskXic0ToXiPi {
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMlFT0M, "process HfTaskXic0ToXiPi  with KFParticle and ML selections and with FT0M centrality", false);
 
-  void processMcWithKFParticle(Xic0CandsMcKF const& Xic0CandidatesMcKF,
+  void processMcWithKFParticle(Xic0CandsMcKF const& xic0CandidatesMcKf,
                                Xic0Gen const& mcParticles,
                                TracksMc const& tracks,
                                CollisionsWithMcLabels const& collisions,
                                aod::McCollisions const& mcCollisions)
   {
-    processMc<false>(Xic0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processMc<false>(xic0CandidatesMcKf, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticle, "Process MC with KFParticle", false);
 
-  void processMcWithKFParticleMl(Xic0CandsMlMcKF const& Xic0CandidatesMlMcKF,
+  void processMcWithKFParticleMl(Xic0CandsMlMcKF const& xic0CandidatesMlMcKf,
                                  Xic0Gen const& mcParticles,
                                  TracksMc const& tracks,
                                  CollisionsWithMcLabels const& collisions,
                                  aod::McCollisions const& mcCollisions)
   {
-    processMc<true>(Xic0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processMc<true>(xic0CandidatesMlMcKf, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };

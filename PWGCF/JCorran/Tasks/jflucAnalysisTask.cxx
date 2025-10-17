@@ -23,7 +23,12 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/V0.h"
 
+#include <TFormula.h>
+
+#include <array>
 #include <deque>
+#include <memory>
+#include <string>
 
 // #include "CCDB/BasicCCDBManager.h"
 
@@ -56,6 +61,7 @@ struct jflucAnalysisTask {
   O2_DEFINE_CONFIGURABLE(ptmax, float, 5.0, "Maximum pt for tracks");
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC process");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
+  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity")
 
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
   ConfigurableAxis phiAxis{"axisPhi", {50, 0.0, o2::constants::math::TwoPI}, "phi axis for histograms"};
@@ -64,12 +70,20 @@ struct jflucAnalysisTask {
   ConfigurableAxis ptAxis{"axisPt", {60, 0.0, 300.0}, "pt axis for histograms"};
   ConfigurableAxis massAxis{"axisMass", {1, 0.0, 10.0}, "mass axis for histograms"};
 
+  ConfigurableAxis vnCorrAxis{"vnCorrAxis", {2048, -0.1, 0.1}, "vn correlation axis"};
+  ConfigurableAxis fourCorrSCAxis{"4pCorrAxisSC", {2048, -0.001, 0.001}, "4-particle correlation axis for SC"};
+  ConfigurableAxis twoCorrSCAxis{"2pCorrAxisSC", {2048, -0.1, 0.1}, "2-particle correlation axis for SC"};
+  ConfigurableAxis mixedCorrAxis{"mixedCorrAxis", {2048, -3.0, 3.0}, "N-particle correlation axis"};
+
   Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);                                                     // eta cuts done by jfluc
   Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax);                                                  // eta cuts done by jfluc
   Filter cfmcparticleFilter = (aod::cfmcparticle::pt > ptmin) && (aod::cfmcparticle::pt < ptmax) && (aod::cfmcparticle::sign != 0); // eta cuts done by jfluc
   Filter cf2pFilter = (aod::cf2prongtrack::pt > ptmin) && (aod::cf2prongtrack::pt < ptmax);
 
   HistogramRegistry registry{"registry"};
+
+  std::unique_ptr<TFormula> multCutFormula;
+  std::array<uint, 4> multCutFormulaParamIndex;
 
   void init(InitContext const&)
   {
@@ -79,15 +93,19 @@ struct jflucAnalysisTask {
     auto axisSpecZvt = AxisSpec(zvtAxis);
     auto axisSpecPt = AxisSpec(ptAxis);
     auto axisSpecMass = AxisSpec(massAxis);
+    auto axisSpecVn = AxisSpec(vnCorrAxis);
+    auto axisSpec4pSC = AxisSpec(fourCorrSCAxis);
+    auto axisSpec2pSC = AxisSpec(twoCorrSCAxis);
+    auto axisSpecMixed = AxisSpec(mixedCorrAxis);
     if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected || doprocessCFDerivedMultSet || doprocessCFDerivedMultSetCorrected || doprocessMCCFDerived) {
-      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, cfgMultCorrelationsMask, "jfluc");
+      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, axisSpecVn, axisSpec4pSC, axisSpec2pSC, axisSpecMixed, cfgMultCorrelationsMask, "jfluc");
       pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf->UserCreateOutputObjects();
     } else {
       pcf = 0;
     }
     if (doprocessCF2ProngDerived || doprocessCF2ProngDerivedCorrected) {
-      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, cfgMultCorrelationsMask, "jfluc2prong");
+      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, axisSpecVn, axisSpec4pSC, axisSpec2pSC, axisSpecMixed, cfgMultCorrelationsMask, "jfluc2prong");
       pcf2Prong->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf2Prong->UserCreateOutputObjects();
 
@@ -98,6 +116,28 @@ struct jflucAnalysisTask {
     }
     if ((doprocessCFDerivedMultSet || doprocessCFDerivedMultSetCorrected) && cfgMultCorrelationsMask == 0)
       LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+
+    if (!cfgMultCutFormula.value.empty()) {
+      if (cfgMultCorrelationsMask == 0)
+        LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when outlier cuts are enabled.");
+      multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
+      std::fill_n(multCutFormulaParamIndex.begin(), std::size(multCutFormulaParamIndex), ~0u);
+      std::array<std::string, 4> pars = {"cFT0C", "mFV0A", "mPV", "mGlob"}; // must correspond the order of MultiplicityEstimators
+      for (uint i = 0, n = multCutFormula->GetNpar(); i < n; ++i) {
+        auto m = std::find(pars.begin(), pars.end(), multCutFormula->GetParName(i));
+        if (m == pars.end()) {
+
+          LOGF(warning, "Unknown parameter in cfgMultCutFormula: %s", multCutFormula->GetParName(i));
+          continue;
+        }
+        if ((cfgMultCorrelationsMask.value & (1u << i)) == 0) {
+          LOGF(warning, "The centrality/multiplicity estimator %s is not available to be used in cfgMultCutFormula. Ensure cfgMultCorrelationsMask is correct and matches the CFMultSets in derived data.");
+        } else {
+          multCutFormulaParamIndex[std::distance(pars.begin(), m)] = i;
+          LOGF(info, "Multiplicity cut parameter %s in use.", m->c_str());
+        }
+      }
+    }
   }
 
   template <class T>
@@ -138,6 +178,20 @@ struct jflucAnalysisTask {
     }
   }
 
+  template <class CollType>
+  bool passOutlier(CollType const& collision)
+  {
+    if (cfgMultCutFormula.value.empty())
+      return true;
+    for (uint i = 0; i < 4; ++i) {
+      if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u)
+        continue;
+      auto estIndex = std::popcount(cfgMultCorrelationsMask.value & ((1u << i) - 1));
+      multCutFormula->SetParameter(multCutFormulaParamIndex[i], collision.multiplicities()[estIndex]);
+    }
+    return multCutFormula->Eval() > 0.0f;
+  }
+
   void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
   {
     analyze(collision, tracks);
@@ -166,6 +220,8 @@ struct jflucAnalysisTask {
   {
     if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size()))
       LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+    if (!passOutlier(collision))
+      return;
     analyze(collision, tracks);
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedMultSet, "Process CF derived data with multiplicity sets", false);
@@ -174,6 +230,8 @@ struct jflucAnalysisTask {
   {
     if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size()))
       LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+    if (!passOutlier(collision))
+      return;
     analyze(collision, tracks);
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedMultSetCorrected, "Process CF derived data with corrections and multiplicity sets", false);

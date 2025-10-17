@@ -47,7 +47,6 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
-#include <utility>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -135,7 +134,7 @@ struct HfCandidateCreatorLb {
   {
     // loop over Lc candidates
     for (const auto& lcCand : lcCands) {
-      if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
       if (lcCand.isSelLcToPKPi() >= selectionFlagLc) {
@@ -173,14 +172,14 @@ struct HfCandidateCreatorLb {
       trackParVar1.propagateTo(secondaryVertex[0], bz);
       trackParVar2.propagateTo(secondaryVertex[0], bz);
 
-      std::array<float, 3> pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
+      std::array<float, 3> const pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
       std::array<float, 3> pvecLc = RecoDecay::pVec(pvecpK, track2.pVector());
       auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
       auto trackLc = o2::dataformats::V0(df3.getPCACandidatePos(), pvecLc, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
-      int index0Lc = track0.globalIndex();
-      int index1Lc = track1.globalIndex();
-      int index2Lc = track2.globalIndex();
+      int const index0Lc = track0.globalIndex();
+      int const index1Lc = track1.globalIndex();
+      int const index2Lc = track2.globalIndex();
       // int charge = track0.sign() + track1.sign() + track2.sign();
 
       for (const auto& trackPion : tracks) {
@@ -194,7 +193,7 @@ struct HfCandidateCreatorLb {
           continue;
         }
         hPtPion->Fill(trackPion.pt());
-        std::array<float, 3> pvecPion;
+        std::array<float, 3> pvecPion{};
         auto trackParVarPi = getTrackParCov(trackPion);
 
         // reconstruct the 3-prong Lc vertex
@@ -248,7 +247,7 @@ struct HfCandidateCreatorLb {
         rowCandidateProngs(lcCand.globalIndex(), trackPion.globalIndex());
         // calculate invariant mass
         auto arrayMomenta = std::array{pvecLc, pvecPion};
-        massLcPi = RecoDecay::m(std::move(arrayMomenta), std::array{massLc, massPi});
+        massLcPi = RecoDecay::m(arrayMomenta, std::array{massLc, massPi});
         if (lcCand.isSelLcToPKPi() > 0) {
           hMassLbToLcPi->Fill(massLcPi);
         }

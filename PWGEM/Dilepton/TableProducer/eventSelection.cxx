@@ -61,6 +61,8 @@ struct EMEventSelection {
   Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. occupancy"};
   Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
 
+  Configurable<bool> cfgRequireTVXinEMC{"cfgRequireTVXinEMC", false, "require kTVXinEMC (only for EMC analyses)"};
+
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   void init(InitContext&)
@@ -110,6 +112,10 @@ struct EMEventSelection {
     }
 
     if (!(cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < cfgFT0COccupancyMax)) {
+      return false;
+    }
+
+    if (cfgRequireTVXinEMC && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
       return false;
     }
 

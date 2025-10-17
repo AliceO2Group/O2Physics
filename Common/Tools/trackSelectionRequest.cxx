@@ -12,7 +12,9 @@
 // see header for a more detailed description.
 
 #include "trackSelectionRequest.h"
-#include "Framework/Logger.h"
+
+#include <Framework/Logger.h>
+
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c)
