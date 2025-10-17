@@ -75,11 +75,14 @@ struct TreeWriterTpcV0 {
   constexpr static o2::track::PID::ID PidKaon{o2::track::PID::Kaon};
   constexpr static o2::track::PID::ID PidProton{o2::track::PID::Proton};
 
+  // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
+  constexpr static float NSigmaTofUnmatched{999.f};
+
   /// Configurables
-  Configurable<float> nSigmaTofDauTrackPi{"nSigmaTofDauTrackPi", 999., "n-sigma TOF cut on the pion daughter tracks"};
-  Configurable<float> nSigmaTofDauTrackPr{"nSigmaTofDauTrackPr", 999., "n-sigma TOF cut on the proton daughter tracks"};
-  Configurable<float> nSigmaTofDauTrackEl{"nSigmaTofDauTrackEl", 999., "n-sigma TOF cut on the electron daughter tracks"};
-  Configurable<float> nSigmaTofDauTrackKa{"nSigmaTofDauTrackKa", 999., "n-sigma TOF cut on the kaon daughter tracks"};
+  Configurable<float> nSigmaTofDauTrackPi{"nSigmaTofDauTrackPi", 999.f, "n-sigma TOF cut on the pion daughter tracks"};
+  Configurable<float> nSigmaTofDauTrackPr{"nSigmaTofDauTrackPr", 999.f, "n-sigma TOF cut on the proton daughter tracks"};
+  Configurable<float> nSigmaTofDauTrackEl{"nSigmaTofDauTrackEl", 999.f, "n-sigma TOF cut on the electron daughter tracks"};
+  Configurable<float> nSigmaTofDauTrackKa{"nSigmaTofDauTrackKa", 999.f, "n-sigma TOF cut on the kaon daughter tracks"};
   Configurable<bool> rejectNoTofDauTrackPi{"rejectNoTofDauTrackPi", false, "reject not matched to TOF pion daughter tracks"};
   Configurable<bool> rejectNoTofDauTrackPr{"rejectNoTofDauTrackPr", false, "reject not matched to TOF proton daughter tracks"};
   Configurable<bool> rejectNoTofDauTrackEl{"rejectNoTofDauTrackEl", false, "reject not matched to TOF electron daughter tracks"};
@@ -463,8 +466,8 @@ struct TreeWriterTpcV0 {
 
     auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter) {
       const bool passDownsamplig = downsampleTsalisCharged(dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, daughter.maxPt4dwnsmplTsalis);
-      const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma + 999.) < 1e-3;
-      const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma + 999.) > 1e-3;
+      const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < 1e-3;
+      const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > 1e-3;
       if (passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
         fillSkimmedV0Table<IsCorrectedDeDx>(mother, dauTrack, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate);
       }
@@ -552,8 +555,8 @@ struct TreeWriterTpcV0 {
 
       auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter, const aod::TracksQA& trackQAInstance, const bool existTrkQA) {
         const bool passDownsamplig = downsampleTsalisCharged(dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, daughter.maxPt4dwnsmplTsalis);
-        const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma + 999.) < 1e-3;
-        const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma + 999.) > 1e-3;
+        const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < 1e-3;
+        const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > 1e-3;
         if (passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
           fillSkimmedV0TableWithTrQAGeneric<IsCorrectedDeDx, IsWithdEdx>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
