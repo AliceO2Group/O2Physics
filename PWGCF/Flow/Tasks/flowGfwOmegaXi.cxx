@@ -19,8 +19,8 @@
 #include "GFWPowerArray.h"
 #include "GFWWeights.h"
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/Index.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
