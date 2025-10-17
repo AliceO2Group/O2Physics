@@ -231,15 +231,6 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib, cent::CentFT0M);
 } // namespace o2::aod
 
-/// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
-/// \param candidate is candidate
-/// \return centrality/multiplicity percentile of the collision
-template <typename Coll>
-float evaluateCentralityColl(const Coll& collision)
-{
-  return o2::hf_centrality::getCentralityColl<Coll>(collision);
-}
-
 /// Writes the full information in an output TTree
 struct HfTreeCreatorOmegac0ToOmegaPi {
 
@@ -269,14 +260,14 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   {
   }
 
-  template <typename Colls>
-  void fillEvent(const Colls& collision, float cutZPv)
+  template <typename C>
+  void fillEvent(const C& collision, float cutZPv)
   {
     rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-  template <typename Cands, typename Colls>
-  void fillCandidateLite(const Cands& candidate, const Colls&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
+  template <typename P, typename C>
+  void fillCandidateLite(const P& candidate, const C&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
@@ -284,8 +275,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
-        candidate.template collision_as<Colls>().numContrib(),
-        candidate.template collision_as<Colls>().chi2(),
+        candidate.template collision_as<C>().numContrib(),
+        candidate.template collision_as<C>().chi2(),
         centFt0m,
         candidate.xDecayVtxCharmBaryon(),
         candidate.yDecayVtxCharmBaryon(),
@@ -351,8 +342,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
   }
 
-  template <typename Cands, typename Colls>
-  void fillKfCandidate(const Cands& candidate, const Colls&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
+  template <typename P, typename C>
+  void fillKfCandidate(const P& candidate, const C&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
@@ -417,13 +408,13 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         originMc,
         collisionMatched,
         candidate.hfflag(),
-        candidate.template collision_as<Colls>().numContrib(),
+        candidate.template collision_as<C>().numContrib(),
         centFt0m);
     }
   }
 
-  template <typename Cands, typename Colls>
-  void fillKfCandidateLite(const Cands& candidate, const Colls&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
+  template <typename P, typename C>
+  void fillKfCandidateLite(const P& candidate, const C&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
@@ -462,12 +453,14 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         originMc,
         collisionMatched,
         candidate.hfflag(),
-        candidate.template collision_as<Colls>().numContrib(),
+        candidate.template collision_as<C>().numContrib(),
         centFt0m);
     }
   } // fillKfCandidateLite end
 
-  void processData(Colls const& collisions, CandSel const& candidates, Tracks const&)
+  void processData(Colls const& collisions,
+                   CandSel const& candidates,
+                   Tracks const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -483,7 +476,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processData, "Process data", false);
 
-  void processKfData(Colls const& collisions, CandKfSel const& candidates)
+  void processKfData(Colls const& collisions,
+                     CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -499,7 +493,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfData, "Process KF data", false);
 
-  void processKfDataLite(Colls const& collisions, CandKfSel const& candidates)
+  void processKfDataLite(Colls const& collisions,
+                         CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -515,7 +510,9 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataLite, "Process KF data lite", false);
 
-  void processDataCent(CollsWithFT0M const& collisions, CandSel const& candidates, Tracks const&)
+  void processDataCent(CollsWithFT0M const& collisions,
+                       CandSel const& candidates,
+                       Tracks const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -527,13 +524,14 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       auto collision = candidate.collision_as<CollsWithFT0M>();
-      float centFt0m = evaluateCentralityColl(collision);
+      float centFt0m = o2::hf_centrality::getCentralityColl(collision);
       fillCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, centFt0m);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataCent, "Process data with FT0M info", false);
 
-  void processKfDataCent(CollsWithFT0M const& collisions, CandKfSel const& candidates)
+  void processKfDataCent(CollsWithFT0M const& collisions,
+                         CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -545,13 +543,14 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       auto collision = candidate.collision_as<CollsWithFT0M>();
-      float centFt0m = evaluateCentralityColl(collision);
+      float centFt0m = o2::hf_centrality::getCentralityColl(collision);
       fillKfCandidate(candidate, collisions, -7, RecoDecay::OriginType::None, false, centFt0m);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataCent, "Process KF data with FT0M info", false);
 
-  void processKfDataCentLite(CollsWithFT0M const& collisions, CandKfSel const& candidates)
+  void processKfDataCentLite(CollsWithFT0M const& collisions,
+                             CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -563,13 +562,15 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       auto collision = candidate.collision_as<CollsWithFT0M>();
-      float centFt0m = evaluateCentralityColl(collision);
+      float centFt0m = o2::hf_centrality::getCentralityColl(collision);
       fillKfCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, centFt0m);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataCentLite, "Process KF data lite with FT0M info", false);
 
-  void processMc(Colls const& collisions, CandMcSel const& candidates, Tracks const&)
+  void processMc(Colls const& collisions,
+                 CandMcSel const& candidates,
+                 Tracks const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -580,7 +581,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal && candidate.originMcRec() == 0) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
       fillCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), -1.);
@@ -588,7 +589,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMc, "Process MC", false);
 
-  void processKFMc(Colls const& collisions, CandKfMcSel const& candidates)
+  void processKFMc(Colls const& collisions,
+                   CandKfMcSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -599,7 +601,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal && candidate.originMcRec() == 0) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
       fillKfCandidate(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), -1.);
@@ -607,7 +609,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMc, "Process KF MC", false);
 
-  void processKFMcLite(Colls const& collisions, CandKfMcSel const& candidates)
+  void processKFMcLite(Colls const& collisions,
+                       CandKfMcSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -618,7 +621,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal && candidate.originMcRec() == 0) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
       fillKfCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), -1.);
@@ -626,7 +629,10 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcLite, "Process KF MC Lite", false);
 
-  void processMcCent(CollsWithMcLabels const& collisions, CandMcSel const& candidates, Tracks const&, McCollsWithFT0M const&)
+  void processMcCent(CollsWithMcLabels const& collisions,
+                     CandMcSel const& candidates,
+                     Tracks const&,
+                     McCollsWithFT0M const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -637,17 +643,19 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal && candidate.originMcRec() == 0) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
       auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
-      float centFt0m = evaluateCentralityColl(mcCollision);
+      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
       fillCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), centFt0m);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcCent, "Process MC with FT0M info", false);
 
-  void processKFMcCent(CollsWithMcLabels const& collisions, CandKfMcSel const& candidates, McCollsWithFT0M const&)
+  void processKFMcCent(CollsWithMcLabels const& collisions,
+                       CandKfMcSel const& candidates,
+                       McCollsWithFT0M const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -658,17 +666,19 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal && candidate.originMcRec() == 0) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
       auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
-      float centFt0m = evaluateCentralityColl(mcCollision);
+      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
       fillKfCandidate(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), centFt0m);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcCent, "Process KF MC with FT0M info", false);
 
-  void processKFMcCentLite(CollsWithMcLabels const& collisions, CandKfMcSel const& candidates, McCollsWithFT0M const&)
+  void processKFMcCentLite(CollsWithMcLabels const& collisions,
+                           CandKfMcSel const& candidates,
+                           McCollsWithFT0M const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -679,11 +689,11 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal && candidate.originMcRec() == 0) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
       }
       auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
-      float centFt0m = evaluateCentralityColl(mcCollision);
+      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
       fillKfCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), centFt0m);
     }
   }
