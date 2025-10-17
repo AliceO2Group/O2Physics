@@ -423,7 +423,10 @@ struct kstarInOO {
       // auto [KstarPt_Kpi, Minv_Kpi] = minvReconstruction(trk1, trk2, QA, false);
       // auto [KstarPt_piK, Minv_piK] = minvReconstruction(trk1, trk2, QA, true);
 
+      // 1. (k, pi) passed condition
       std::tie(KstarPt_Kpi, Minv_Kpi) = minvReconstruction(trk1, trk2, QA, false);
+
+      // 2. (pi, k) passed condition if trk1=pion, trk2=kaon after passing 1. candidates
       std::tie(KstarPt_Kpi, Minv_Kpi) = minvReconstruction(trk1, trk2, QA, true);
 
       if (Minv_Kpi < 0)
@@ -533,21 +536,14 @@ struct kstarInOO {
     if (!trackSelection(trk1, false) || !trackSelection(trk2, false))
       return {-1.0, -1.0};
 
-    if (!flip) {
-      if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA)) {
-        return {-1.0, -1.0};
-      }
-    } else {
-      if (!trackPIDPion(trk1, false) || !trackPIDKaon(trk2, false))
-        return {-1.0, -1.0};
-    }
-
-    if (trk1.index() >= trk2.index())
+    if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA))
       return {-1.0, -1.0};
-    // std::cout << "track1 Index: " << trk1.index() << "track2 Index: " << trk2.index() << std::endl;
 
-    //    if (trk1.globalIndex() == trk2.globalIndex())
+    // if (trk1.index() >= trk2.index())
     //   return {-1.0, -1.0};
+    // I checked that index and globalIndex was same function
+    if (trk1.globalIndex() >= trk2.globalIndex())
+      return {-1.0, -1.0};
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     if (!flip) {
