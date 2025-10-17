@@ -448,10 +448,9 @@ struct AntinucleiInJets {
 
       // Event counter
       registryCorr.add("eventCounter", "number of events", HistType::kTH1F, {{20, 0, 20, "counter"}});
-
       registryCorr.add("eventCounter_centrality_fullEvent", "Number of events per centrality (Full Event)", HistType::kTH1F, {multiplicityAxis});
       registryCorr.add("eventCounter_centrality_jet", "Number of events per centrality (Jet)", HistType::kTH1F, {multiplicityAxis});
-      registryCorr.add("eventCounter_centrality_ue", "Number of events per centrality (Underlying Event)",  HistType::kTH1F, {multiplicityAxis});
+      registryCorr.add("eventCounter_centrality_ue", "Number of events per centrality (Underlying Event)", HistType::kTH1F, {multiplicityAxis});
 
       // Correlation histograms: antiproton vs. antideuteron number vs. event multiplicity
       registryCorr.add("rho_jet", "rho_jet", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
@@ -2570,9 +2569,9 @@ struct AntinucleiInJets {
       registryCorr.fill(HIST("q1p_fullEvent"), nAntiprotonFullEvent[i], ptAcenteri, multiplicity);
       for (int j = 0; j < nBins; j++) {
         double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
-          registryCorr.fill(HIST("q1d_square_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j], multiplicity);
-          registryCorr.fill(HIST("q1p_square_fullEvent"), ptAcenteri, ptAcenterj, nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j], multiplicity);
-          registryCorr.fill(HIST("q1d_q1p_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j], multiplicity);
+        registryCorr.fill(HIST("q1d_square_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j], multiplicity);
+        registryCorr.fill(HIST("q1p_square_fullEvent"), ptAcenteri, ptAcenterj, nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j], multiplicity);
+        registryCorr.fill(HIST("q1d_q1p_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j], multiplicity);
       }
     }
 
