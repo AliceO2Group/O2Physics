@@ -109,7 +109,7 @@ void getProbability(float hmpidSignal, float hmpidMomentum, double* probs)
   if (hmpidSignal <= 0) {
     // HMPID does not find anything reasonable for this track, assign 0.33 for all species
     for (int iPart = 0; iPart < nSpecies; iPart++)
-      probs[iPart] = 1.0 / (float)nSpecies;
+      probs[iPart] = 1.0/nSpecies;
     return;
   }
 
@@ -145,7 +145,7 @@ void getProbability(float hmpidSignal, float hmpidMomentum, double* probs)
     if (!desert)
       probs[iPart] = h[iPart] / hTot;
     else
-      probs[iPart] = 1.0 / (float)nSpecies; // all theoretical values are far away from experemental one
+      probs[iPart] = 1.0 / nSpecies; // all theoretical values are far away from experemental one
   }
 
   delete[] h;
@@ -330,7 +330,7 @@ struct HmpidQaPbPb {
 
       if (hmpid.nPhotons() < nMaxPhotons && hmpid.chAngle() > 0 && std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
         if (hmpid.chamber() != rich2 || hmpid.chamber() != rich4) {
-          double pT = (double)(hmpid.momentumTrack() / TMath::CosH(hmpid.etaTrack()));
+          double pT = static_cast<double>(hmpid.momentumTrack() / TMath::CosH(hmpid.etaTrack()));
           histos.fill(HIST("pTvsChAngle"), pT, hmpid.chAngle());
 
           if (hmpid.momentumHmpid() > 0) {
