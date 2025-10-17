@@ -160,6 +160,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
     Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
+    Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
   } ConfGeneral;
   Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfGeneral.confCentFT0Max);
@@ -2541,9 +2542,15 @@ struct FemtoUniverseProducerTask {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       getMagneticFieldTesla(bc);
       const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
-
+      bool colcheck = false;
       // fill the tables
-      const auto colcheck = fillCollisionsCentRun3<true>(col);
+
+      if (ConfGeneral.confIsCent) {
+        colcheck = fillCollisionsCentRun3<true>(col);
+      } else {
+        colcheck = fillCollisions<true>(col, groupedTracks);
+      }
+
       if (colcheck) {
         fillCollisionsCentRun3ColExtra<true>(col, ir);
         fillTracks<true>(groupedTracks);
