@@ -94,6 +94,8 @@ DECLARE_SOA_COLUMN(MassDileptonCandidate, massDileptonCandidate, float);
 DECLARE_SOA_COLUMN(deltamassBcandidate, deltaMBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
 DECLARE_SOA_COLUMN(EtaBcandidate, etaBcandidate, float);
+DECLARE_SOA_COLUMN(PhiBcandidate, phiBcandidate, float);
+DECLARE_SOA_COLUMN(RapBcandidate, rapBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
 DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
@@ -128,12 +130,6 @@ DECLARE_SOA_COLUMN(TPCnsigmaPrleg1, tpcnsigmaPrleg1, float);
 DECLARE_SOA_COLUMN(TPCnsigmaElleg2, tpcnsigmaElleg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPileg2, tpcnsigmaPileg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPrleg2, tpcnsigmaPrleg2, float);
-DECLARE_SOA_COLUMN(DCAXYassoc, dcaXYassoc, float);
-DECLARE_SOA_COLUMN(DCAZassoc, dcaZassoc, float);
-DECLARE_SOA_COLUMN(DCAXYleg1, dcaXYleg1, float);
-DECLARE_SOA_COLUMN(DCAZleg1, dcaZleg1, float);
-DECLARE_SOA_COLUMN(DCAXYleg2, dcaXYleg2, float);
-DECLARE_SOA_COLUMN(DCAZleg2, dcaZleg2, float);
 DECLARE_SOA_COLUMN(ITSClusterMapassoc, itsClusterMapassoc, uint8_t);
 DECLARE_SOA_COLUMN(ITSClusterMapleg1, itsClusterMapleg1, uint8_t);
 DECLARE_SOA_COLUMN(ITSClusterMapleg2, itsClusterMapleg2, uint8_t);
@@ -173,7 +169,7 @@ DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMBA", dqanalysisflags::MuonAmb
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTERA", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
                   dqanalysisflags::RunNumber, dqanalysisflags::EventIdx, dqanalysisflags::EventTimestamp,
-                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate,
+                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate, dqanalysisflags::PhiBcandidate, dqanalysisflags::RapBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
                   dqanalysisflags::GlobalIndexassoc, dqanalysisflags::GlobalIndexleg1, dqanalysisflags::GlobalIndexleg2,
@@ -182,7 +178,6 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
                   dqanalysisflags::TPCnsigmaKaassoc, dqanalysisflags::TPCnsigmaPiassoc, dqanalysisflags::TPCnsigmaPrassoc, dqanalysisflags::TOFnsigmaKaassoc,
                   dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::TPCnsigmaPileg1, dqanalysisflags::TPCnsigmaPrleg1,
                   dqanalysisflags::TPCnsigmaElleg2, dqanalysisflags::TPCnsigmaPileg2, dqanalysisflags::TPCnsigmaPrleg2,
-                  dqanalysisflags::DCAXYassoc, dqanalysisflags::DCAZassoc, dqanalysisflags::DCAXYleg1, dqanalysisflags::DCAZleg1, dqanalysisflags::DCAXYleg2, dqanalysisflags::DCAZleg2,
                   dqanalysisflags::ITSClusterMapassoc, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSClusterMapleg2,
                   dqanalysisflags::ITSChi2assoc, dqanalysisflags::ITSChi2leg1, dqanalysisflags::ITSChi2leg2,
                   dqanalysisflags::TPCNclsassoc, dqanalysisflags::TPCNclsleg1, dqanalysisflags::TPCNclsleg2,
@@ -306,7 +301,6 @@ struct AnalysisEventSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Starting initialization of AnalysisEventSelection (idstoreh)";
 
     bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
@@ -372,7 +366,6 @@ struct AnalysisEventSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fCCDBApi.init(fConfigCcdbUrl.value);
-    LOG(info) << "Initialization of AnalysisEventSelection finished (idstoreh)";
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
@@ -601,7 +594,6 @@ struct AnalysisTrackSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Starting initialization of AnalysisTrackSelection (idstoreh)";
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -651,7 +643,6 @@ struct AnalysisTrackSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fCCDBApi.init(fConfigCcdbUrl.value);
-    LOG(info) << "Initialization of AnalysisTrackSelection finished (idstoreh)";
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks>
@@ -854,7 +845,6 @@ struct AnalysisMuonSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Starting initialization of AnalysisMuonSelection (idstoreh)";
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -906,7 +896,6 @@ struct AnalysisMuonSelection {
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       fCCDB->get<TGeoManager>(fConfigGeoPath);
     }
-    LOG(info) << "Initialization of AnalysisMuonSelection finished (idstoreh)";
   }
 
   template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
@@ -1057,7 +1046,6 @@ struct AnalysisPrefilterSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Starting initialization of AnalysisPrefilterSelection (idstoreh)";
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -1131,7 +1119,6 @@ struct AnalysisPrefilterSelection {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);                                   // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     // VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
-    LOG(info) << "Initialization of AnalysisPrefilterSelection finished (idstoreh)";
   }
 
   template <uint32_t TTrackFillMap, typename TTracks>
@@ -1324,7 +1311,6 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Starting initialization of AnalysisSameEventPairing (idstoreh)";
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow") || context.mOptions.get<bool>("processMixingBarrelWithQvectorCentrSkimmedNoCov");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMixingMuonSkimmed");
@@ -1470,7 +1456,6 @@ struct AnalysisSameEventPairing {
         }
       }
     }
-    LOG(info) << "Initialization of AnalysisSameEventPairing 1 (idstoreh)";
 
     // get the muon track selection cuts
     getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCuts", tempCuts, false);
@@ -1552,8 +1537,6 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    LOG(info) << "Initialization of AnalysisSameEventPairing 2 (idstoreh)";
-
     fCurrentRun = 0;
 
     fCCDB->setURL(fConfigCCDB.url.value);
@@ -1615,7 +1598,6 @@ struct AnalysisSameEventPairing {
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
-    LOG(info) << "Finished initialization of AnalysisSameEventPairing (idstoreh)";
   }
 
   void initParamsFromCCDB(uint64_t timestamp, int runNumber, bool withTwoProngFitter = true)
@@ -2441,7 +2423,6 @@ struct AnalysisAsymmetricPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Initialization of AnalysisAsymmetricPairing started (idstoreh)";
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -2670,7 +2651,6 @@ struct AnalysisAsymmetricPairing {
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-    LOG(info) << "Initialization of AnalysisAsymmetricPairing finished (idstoreh)";
   }
 
   void initParamsFromCCDB(uint64_t timestamp, bool isTriplets)
@@ -3153,7 +3133,6 @@ struct AnalysisDileptonTrack {
 
   void init(o2::framework::InitContext& context)
   {
-    LOG(info) << "Initialization of AnalysisDileptonTrack started (idstoreh)";
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
     bool isBarrelME = context.mOptions.get<bool>("processBarrelMixedEvent");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
@@ -3179,7 +3158,6 @@ struct AnalysisDileptonTrack {
 
     // For each track/muon selection used to produce dileptons, create a separate histogram directory using the
     // name of the track/muon cut.
-    LOG(info) << "Initialization of AnalysisDileptonTrack 1 (idstoreh)";
     if (isBarrel || isMuon || isBarrelAsymmetric) {
       // Get the list of single track and muon cuts computed in the dedicated tasks upstream
       // We need this to know the order in which they were computed, and also to make sure that in this task we do not ask
@@ -3218,7 +3196,6 @@ struct AnalysisDileptonTrack {
       for (int icut = 0; icut < cfgTrackSelection_objArrayTrackCuts->GetEntries(); icut++) {
         fTrackCutNames.push_back(cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName());
       }
-      LOG(info) << "Initialization of AnalysisDileptonTrack 2 (idstoreh)";
       // get the list of associated track cuts to be combined with the dileptons and
       //   check that these were computed upstream and create a bit mask
       TObjArray* cfgDileptonTrack_objArrayTrackCuts = nullptr;
@@ -3258,7 +3235,6 @@ struct AnalysisDileptonTrack {
         getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgPairCuts", cfgPairing_PairCuts, false);
         getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgCommonTrackCuts", cfgPairing_CommonTrackCuts, false);
       }
-      LOG(info) << "Initialization of AnalysisDileptonTrack 3 (idstoreh)";
       if (cfgPairing_TrackCuts.empty()) {
         LOG(fatal) << "There are no dilepton cuts specified in the upstream in the same-event-pairing or asymmetric-pairing";
       }
@@ -3277,7 +3253,6 @@ struct AnalysisDileptonTrack {
           }
         }
       } // end if (common cuts)
-      LOG(info) << "Initialization of AnalysisDileptonTrack 4 (idstoreh)";
       // Get also the pair cuts specified via the JSON parameters
       if (isBarrelAsymmetric) {
         getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgPairCutsJSON", cfgPairing_PairCutsJSON, false);
@@ -3304,7 +3279,6 @@ struct AnalysisDileptonTrack {
       } else {
         fNLegCuts = fNCuts;
       }
-      LOG(info) << "Initialization of AnalysisDileptonTrack 5 (idstoreh)";
       // loop over single lepton cuts
       for (int icut = 0; icut < fNLegCuts; ++icut) {
 
@@ -3378,8 +3352,6 @@ struct AnalysisDileptonTrack {
       LOG(info) << "Loading geometry from CCDB in dilepton-track task";
       fCCDB->get<TGeoManager>(fConfigGeoPath);
     }
-
-    LOG(info) << "Initialization of AnalysisDileptonTrack finished (idstoreh)";
   }
 
   // init parameters from CCDB
@@ -3477,7 +3449,7 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
           // table to be written out for ML analysis
-          BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta],
+          BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
                        fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
                        fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
                        fValuesHadron[VarManager::kVertexingChi2PCA],
@@ -3486,7 +3458,6 @@ struct AnalysisDileptonTrack {
                        track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
                        lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
                        lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
-                       track.dcaXY(), track.dcaZ(), lepton1.dcaXY(), lepton1.dcaZ(), lepton2.dcaXY(), lepton2.dcaZ(),
                        track.itsClusterMap(), lepton1.itsClusterMap(), lepton2.itsClusterMap(),
                        track.itsChi2NCl(), lepton1.itsChi2NCl(), lepton2.itsChi2NCl(),
                        track.tpcNClsFound(), lepton1.tpcNClsFound(), lepton2.tpcNClsFound(),

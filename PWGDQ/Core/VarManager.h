@@ -814,6 +814,7 @@ class VarManager : public TObject
     kPairPt,
     kPairPtDau,
     kPairEta,
+    kPairRap,
     kPairPhi,
     kPairPhiv,
     kDeltaEta,
@@ -4336,6 +4337,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values[VarManager::kMassDau] = mtrack;
     values[VarManager::kDeltaMass] = v123.M() - v12.M();
     values[VarManager::kPairPt] = v123.Pt();
+    values[VarManager::kPairRap] = -v123.Rapidity();
     values[VarManager::kPairEta] = v123.Eta();
     if (fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau]) {
       values[VarManager::kPairMassDau] = v12.M();
