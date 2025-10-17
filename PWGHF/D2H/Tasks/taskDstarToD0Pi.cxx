@@ -59,6 +59,7 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
   Configurable<bool> isCentStudy{"isCentStudy", true, "Flag to select centrality study"};
   Configurable<bool> qaEnabled{"qaEnabled", true, "Flag to enable QA histograms"};
+  Configurable<bool> studyD0ToPiKPi0{"studyD0ToPiKPi0", false, "Flag to study D*->D0(piKpi0)pi channel"};
 
   // CCDB configuration
   Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
@@ -259,6 +260,28 @@ struct HfTaskDstarToD0Pi {
         registry.add("Efficiency/hPtGen", "MC Matched D* Candidates at Generator Level", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
         registry.add("Efficiency/hPtPromptVsGen", "MC Matched Prompt D* Candidates at Generator Level", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
         registry.add("Efficiency/hPtNonPromptVsGen", "MC Matched Non-Prompt D* Candidates at Generator Level", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+      }
+    }
+
+    if (studyD0ToPiKPi0) {
+      // inclusive D0ToPiKPi0 study
+      if (doprocessMcWML && isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+      } else if (doprocessMcWoMl && isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
+      } else if (doprocessMcWML && !isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+      } else if (doprocessMcWoMl && !isCentStudy) {
+        registry.add("D0ToPiKPi0/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+      }
+
+      // differential (prompt/Non-prompt) D0ToPiKPi0 study
+      if (doprocessMcWML) {
+        registry.add("D0ToPiKPi0/hPromptDeltaInvMassVsPtVsBDTScore", "Prompt #Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+        registry.add("D0ToPiKPi0/hNonPromptDeltaInvMassVsPtVsBDTScore", "Non-Prompt #Delta #it{M}_{inv} Vs Pt Vs BDTScore for D0ToPiKPi0", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+      } else if (doprocessMcWoMl) {
+        registry.add("D0ToPiKPi0/hPromptDeltaInvMassDstar2D", "Prompt #Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+        registry.add("D0ToPiKPi0/hNonPromptDeltaInvMassDstar2D", "Non-Prompt #Delta #it{M}_{inv} D* Candidate for D0ToPiKPi0; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
       }
     }
 
@@ -540,6 +563,38 @@ struct HfTaskDstarToD0Pi {
             if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
               registry.fill(HIST("QA/hPtFullRecoNonPromptDstarRecSig"), ptDstarRecSig);
             }
+          }
+        }
+      } else if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0)) {
+        // Aplly all selection to study D*->D0(piKpi0)pi channel same as signal channel
+        // MC Matched but to D*->D0(piKpi0)pi channel
+        auto deltaMDstar = std::abs(candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0());
+        if constexpr (ApplyMl) {
+          auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
+          // inclusive study
+          if (isCentStudy) {
+            registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
+          } else {
+            registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
+          }
+          // differential (prompt/Non-prompt) study
+          if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
+            registry.fill(HIST("D0ToPiKPi0/hPromptDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
+          } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+            registry.fill(HIST("D0ToPiKPi0/hNonPromptDeltaInvMassVsPtVsBDTScore"), deltaMDstar, candDstarMcRec.pt(), bdtScore[0], bdtScore[1], bdtScore[2]);
+          }
+        } else { // without ML
+          // inclusive study
+          if (isCentStudy) {
+            registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassDstar3D"), deltaMDstar, candDstarMcRec.pt(), centrality);
+          } else {
+            registry.fill(HIST("D0ToPiKPi0/hDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
+          }
+          // differential (prompt/Non-prompt) study
+          if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
+            registry.fill(HIST("D0ToPiKPi0/hPromptDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
+          } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+            registry.fill(HIST("D0ToPiKPi0/hNonPromptDeltaInvMassDstar2D"), deltaMDstar, candDstarMcRec.pt());
           }
         }
       } else { // MC Unmatched (Baground at Reconstruction Level)
