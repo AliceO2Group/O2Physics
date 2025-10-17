@@ -84,6 +84,9 @@ DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
 DECLARE_SOA_COLUMN(MassDileptonCandidate, massDileptonCandidate, float);
 DECLARE_SOA_COLUMN(deltaMassBcandidate, deltaMBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
+DECLARE_SOA_COLUMN(EtaBcandidate, etaBcandidate, float);
+DECLARE_SOA_COLUMN(PhiBcandidate, phiBcandidate, float);
+DECLARE_SOA_COLUMN(RapBcandidate, rapBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
 DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
@@ -118,12 +121,6 @@ DECLARE_SOA_COLUMN(TPCnsigmaPrleg1, tpcnsigmaPrleg1, float);
 DECLARE_SOA_COLUMN(TPCnsigmaElleg2, tpcnsigmaElleg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPileg2, tpcnsigmaPileg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPrleg2, tpcnsigmaPrleg2, float);
-DECLARE_SOA_COLUMN(DCAXYassoc, dcaXYassoc, float);
-DECLARE_SOA_COLUMN(DCAZassoc, dcaZassoc, float);
-DECLARE_SOA_COLUMN(DCAXYleg1, dcaXYleg1, float);
-DECLARE_SOA_COLUMN(DCAZleg1, dcaZleg1, float);
-DECLARE_SOA_COLUMN(DCAXYleg2, dcaXYleg2, float);
-DECLARE_SOA_COLUMN(DCAZleg2, dcaZleg2, float);
 DECLARE_SOA_COLUMN(ITSClusterMapassoc, itsClusterMapassoc, uint8_t);
 DECLARE_SOA_COLUMN(ITSClusterMapleg1, itsClusterMapleg1, uint8_t);
 DECLARE_SOA_COLUMN(ITSClusterMapleg2, itsClusterMapleg2, uint8_t);
@@ -173,7 +170,7 @@ DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbi
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::RunNumber, dqanalysisflags::EventIdx, dqanalysisflags::EventTimestamp,
-                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate,
+                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate, dqanalysisflags::PhiBcandidate, dqanalysisflags::RapBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
                   dqanalysisflags::GlobalIndexassoc, dqanalysisflags::GlobalIndexleg1, dqanalysisflags::GlobalIndexleg2,
@@ -182,7 +179,6 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::TPCnsigmaKaassoc, dqanalysisflags::TPCnsigmaPiassoc, dqanalysisflags::TPCnsigmaPrassoc, dqanalysisflags::TOFnsigmaKaassoc,
                   dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::TPCnsigmaPileg1, dqanalysisflags::TPCnsigmaPrleg1,
                   dqanalysisflags::TPCnsigmaElleg2, dqanalysisflags::TPCnsigmaPileg2, dqanalysisflags::TPCnsigmaPrleg2,
-                  dqanalysisflags::DCAXYassoc, dqanalysisflags::DCAZassoc, dqanalysisflags::DCAXYleg1, dqanalysisflags::DCAZleg1, dqanalysisflags::DCAXYleg2, dqanalysisflags::DCAZleg2,
                   dqanalysisflags::ITSClusterMapassoc, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSClusterMapleg2,
                   dqanalysisflags::ITSChi2assoc, dqanalysisflags::ITSChi2leg1, dqanalysisflags::ITSChi2leg2,
                   dqanalysisflags::TPCNclsassoc, dqanalysisflags::TPCNclsleg1, dqanalysisflags::TPCNclsleg2,
@@ -3803,7 +3799,10 @@ struct AnalysisDileptonTrack {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
-      DefineHistograms(fHistMan, "MCTruthGenAccepted", "");
+      for (auto& sig : fRecMCSignals) {
+        DefineHistograms(fHistMan, Form("MCTruthGenSelBR_%s", sig->GetName()), "");
+        DefineHistograms(fHistMan, Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), "");
+      }
     }
 
     TString addHistsStr = fConfigAddJSONHistograms.value;
@@ -3929,7 +3928,7 @@ struct AnalysisDileptonTrack {
           }
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(),
-                       fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
+                       fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
                        fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
                        fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
                        fValuesHadron[VarManager::kVertexingChi2PCA],
@@ -3938,7 +3937,6 @@ struct AnalysisDileptonTrack {
                        track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
                        lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
                        lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
-                       track.dcaXY(), track.dcaZ(), lepton1.dcaXY(), lepton1.dcaZ(), lepton2.dcaXY(), lepton2.dcaZ(),
                        track.itsClusterMap(), lepton1.itsClusterMap(), lepton2.itsClusterMap(),
                        track.itsChi2NCl(), lepton1.itsChi2NCl(), lepton2.itsChi2NCl(),
                        track.tpcNClsFound(), lepton1.tpcNClsFound(), lepton2.tpcNClsFound(),
@@ -4209,40 +4207,44 @@ struct AnalysisDileptonTrack {
         }
       }
 
-      /*for (auto& [t1, t2, t3] : combinations(groupedMCTracks, groupedMCTracks, groupedMCTracks)) {
+      // make a list of all MC tracks in the MC collision corresponding to the current reconstructed event
+      std::vector<size_t> mcTrackIndices;
+      for (auto& t : groupedMCTracks) {
+        mcTrackIndices.push_back(t.globalIndex());
+      }
 
-        if (! (t1.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalDileptonLegPos.value))) {
-          continue;
-        }
-        if (t1.pt() < fConfigMCGenDileptonLegPtMin.value) {
-          continue;
-        }
-        if (std::abs(t1.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
-          continue;
-        }
+      // make a three nested for loop over all MC tracks in the vector
+      for (auto t1 : mcTrackIndices) {
+        auto track1 = mcTracks.rawIteratorAt(*(&t1));
+        for (auto t2 : mcTrackIndices) {
+          if (t1 == t2 || t2 < t1)
+            continue;
+          auto track2 = mcTracks.rawIteratorAt(*(&t2));
+          for (auto t3 : mcTrackIndices) {
+            if (t3 == t1 || t3 == t2)
+              continue;
+            auto track3 = mcTracks.rawIteratorAt(*(&t3));
 
-        if (! (t2.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalDileptonLegNeg.value))) {
-          continue;
-        }
-        if (t2.pt() < fConfigMCGenDileptonLegPtMin.value) {
-          continue;
-        }
-        if (std::abs(t2.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
-          continue;
-        }
+            for (auto& sig : fRecMCSignals) {
+              if (sig->CheckSignal(true, track1, track2, track3)) {
+                fHistMan->FillHistClass(Form("MCTruthGenSelBR_%s", sig->GetName()), VarManager::fgValues);
 
-        if (! (t3.mcReducedFlags() & (uint16_t(1) << fConfigMCGenSignalHadron.value))) {
-          continue;
+                // apply kinematic cuts
+                if (track1.pt() < fConfigMCGenDileptonLegPtMin.value || std::abs(track1.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
+                  continue;
+                }
+                if (track2.pt() < fConfigMCGenDileptonLegPtMin.value || std::abs(track2.eta()) > fConfigMCGenDileptonLegEtaAbs.value) {
+                  continue;
+                }
+                if (track3.pt() < fConfigMCGenHadronPtMin.value || std::abs(track3.eta()) > fConfigMCGenHadronEtaAbs.value) {
+                  continue;
+                }
+                fHistMan->FillHistClass(Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), VarManager::fgValues);
+              }
+            }
+          }
         }
-        if (t3.pt() < fConfigMCGenHadronPtMin.value) {
-          continue;
-        }
-        if (std::abs(t3.eta()) > fConfigMCGenHadronEtaAbs.value) {
-          continue;
-        }
-
-        fHistMan->FillHistClass("MCTruthGenSelAccepted", VarManager::fgValues);
-      }*/
+      }
     } // end loop over reconstructed events
   }
 
