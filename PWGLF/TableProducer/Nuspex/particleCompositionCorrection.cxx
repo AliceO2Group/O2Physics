@@ -89,7 +89,7 @@ void ParticleCompositionCorrection::init(InitContext const&)
   }
   if (!ccdbBasePath.value.empty()) {
     ccdbApi.init("http://ccdb-test.cern.ch:8080");
-    static const long dummyTimeStamp = 2;
+    static const int64_t dummyTimeStamp = 2;
     if (!ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathData.value, modelPathData.value, {}, dummyTimeStamp, false, "ParticleFractions_Data.onnx") || !ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathMC.value, modelPathMC.value, {}, dummyTimeStamp, false, "ParticleFractions_MC.onnx")) {
       LOGP(fatal, "Could not download particle fraction networks!");
     }
