@@ -48,6 +48,7 @@ using std::array;
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraStamps>::iterator;
 using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0MQVs, aod::StraFV0AQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
+using CollEventPlaneCentralFWOnlyFT0C = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
 using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using CollEventAndSpecPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
@@ -1379,7 +1380,7 @@ struct cascadeFlow {
     }
   }
 
-  void processAnalyseDataEP2CentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
+  void processAnalyseDataEP2CentralFW(CollEventPlaneCentralFWOnlyFT0C const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll, 1)) {
