@@ -1,4 +1,3 @@
-
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -2724,7 +2723,7 @@ struct AntinucleiInJets {
           registryCorr.fill(HIST("q1d_q1p_jet"), ptAcenteri, ptAcenterj, nAntideuteronJet[i] * nAntiprotonJet[j], multiplicity);
         }
       }
-        
+
       // Particle counters
       std::vector<int> nAntiprotonUE(nBins, 0);
       std::vector<int> nAntideuteronUE(nBins, 0);
@@ -2838,8 +2837,6 @@ struct AntinucleiInJets {
     // Event counter: events with at least one jet selected
     if (isAtLeastOneJetSelected) {
       registryCorr.fill(HIST("eventCounter"), 9.5);
-        
-      // Fill event counter vs centrality (jet region)
       registryCorr.fill(HIST("eventCounter_centrality_jet"), multiplicity);
     }
   }
@@ -2850,5 +2847,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<AntinucleiInJets>(cfgc)};
 }
-
-
