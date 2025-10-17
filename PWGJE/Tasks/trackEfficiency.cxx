@@ -90,13 +90,13 @@ struct TrackEfficiency {
   // systematics variation - Run 2 guidelines: https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsTrackSystematicUncertainty
   TrackSelection customTrackSelection;
   Configurable<bool> useCustomTrackSelection{"useCustomTrackSelection", false, "whether to use the custom cuts (used for cut variation for tracking efficiency systematics)"};
-  Configurable<float> effSystMinNCrossedRowsTPC{"effSystMinNCrossedRowsTPC", 70, "min number of crossed rows TPC"};
+  Configurable<int> effSystMinNCrossedRowsTPC{"effSystMinNCrossedRowsTPC", 70, "min number of crossed rows TPC"};
   Configurable<float> effSystMinNCrossedRowsOverFindableClustersTPC{"effSystMinNCrossedRowsOverFindableClustersTPC", 0.8, "min ratio of crossed rows over findable clusters TPC"};
   Configurable<float> effSystMaxChi2PerClusterTPC{"effSystMaxChi2PerClusterTPC", 4.0, "max chi2 per cluster TPC"};
   Configurable<float> effSystMaxChi2PerClusterITS{"effSystMaxChi2PerClusterITS", 36.0, "max chi2 per cluster ITS"};
   // Configurable<float> effSystMaxDcaXY{"effSystMaxDcaXY", 0.0105 * 0.035 / pT^1.1 ????, "max DCA to vertex xy"}; not including this for now as it's a function with 3 parameters
   Configurable<float> effSystMaxDcaZ{"effSystMaxDcaZ", 2.0, "max DCA to vertex z"};
-  Configurable<float> effSystMinNrequiredHits{"effSystMinNrequiredHits", 1, "minimum number of hits among the 3 innermost layers of the ITS"};
+  Configurable<int> effSystMinNrequiredHits{"effSystMinNrequiredHits", 1, "minimum number of hits among the 3 innermost layers of the ITS"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -200,10 +200,9 @@ struct TrackEfficiency {
       LOGP(info, "\trequireITS= true");
       LOGP(info, "\trequireTPC= true");
 
-      // customTrackSelection = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value); does this need to be setup?
       LOGP(info, "Customizing track selection:");
       int dcaSetup = 0;                                                                                                               // default dca setup
-      customTrackSelection = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, dcaSetup); // takes global tracks configuration, then edit some cuts
+      customTrackSelection = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, dcaSetup); // takes global tracks configuration, then some of the cuts are edited in the lines below
       customTrackSelection.SetEtaRange(-999, 999);
       customTrackSelection.SetPtRange(0, 1e10f);
 
@@ -358,14 +357,14 @@ struct TrackEfficiency {
       registry.add("h_trackselplot_chi2ncls_tpc", "track selection variable: Chi2 / cluster for the TPC track segment", {HistType::kTH1F, {{100, 0.0, 10.0}}});
       registry.add("h_trackselplot_chi2ncls_its", "track selection variable: Chi2 / cluster for the ITS track segment", {HistType::kTH1F, {{200, 0.0, 40.0}}});
       registry.add("h_trackselplot_dcaxy", "track selection variable: dca XY", {HistType::kTH1F, {{1000, -1.0, 1.0}}});
-      registry.add("h_trackselplot_dcaz", "track selection variable: dca Z", {HistType::kTH1F, {{1000, -1.0, 1.0}}});
+      registry.add("h_trackselplot_dcaz", "track selection variable: dca Z", {HistType::kTH1F, {{4000, -4.0, 4.0}}});
 
       registry.add("h2_trackselplot_pt_tpccrossedrows", "track selection variable: pt vs number of tpc crossed rows", {HistType::kTH2F, {{200, 0., 200.}, {165, -0.5, 164.5}}});
       registry.add("h2_trackselplot_pt_tpccrossedrowsoverfindable", "track selection variable: pt vs ratio of of tpc crossed rows over number of findable clusters", {HistType::kTH2F, {{200, 0., 200.}, {120, 0.0, 1.2}}});
       registry.add("h2_trackselplot_pt_chi2ncls_tpc", "track selection variable: pt vs Chi2 / cluster for the TPC track segment", {HistType::kTH2F, {{200, 0., 200.}, {100, 0.0, 10.0}}});
       registry.add("h2_trackselplot_pt_chi2ncls_its", "track selection variable: pt vs Chi2 / cluster for the ITS track segment", {HistType::kTH2F, {{200, 0., 200.}, {200, 0.0, 40.0}}});
       registry.add("h2_trackselplot_pt_dcaxy", "track selection variable: pt vs dca XY", {HistType::kTH2F, {{200, 0., 200.}, {1000, -1.0, 1.0}}});
-      registry.add("h2_trackselplot_pt_dcaz", "track selection variable: pt vs dca Z", {HistType::kTH2F, {{200, 0., 200.}, {1000, -1.0, 1.0}}});
+      registry.add("h2_trackselplot_pt_dcaz", "track selection variable: pt vs dca Z", {HistType::kTH2F, {{200, 0., 200.}, {4000, -4.0, 4.0}}});
     }
   }
 
@@ -387,8 +386,7 @@ struct TrackEfficiency {
     // missing:
     //   * constexpr auto hasCentrality = CollisionMCRecTableCentFT0C::template contains<aod::CentFT0Cs>();
     //           if constexpr (hasCentrality) {
-    //   * dividing in centrality bins
-    // I should maybe introduce the sel8 cuts on the collisoins (reco, but what about mccoll? maybe not htat way included in efficiency)
+    // At the moment, are only counted mc particles from mc collisions that have at least one reconstructed collision that passes the chosen event selection. Thus, the reconstruction efficiency of mccollision is not counted in this tracking efficiency.
 
     registry.fill(HIST("hMcCollCutsCounts"), 0.5); // all mcCollisions
 
@@ -569,8 +567,7 @@ struct TrackEfficiency {
     // missing:
     //   * constexpr auto hasCentrality = CollisionMCRecTableCentFT0C::template contains<aod::CentFT0Cs>();
     //           if constexpr (hasCentrality) {
-    //   * dividing in centrality bins
-    // I should maybe introduce the sel8 cuts on the collisoins (reco, but what about mccoll? maybe not htat way included in efficiency)
+    // At the moment, are only counted mc particles from mc collisions that have at least one reconstructed collision that passes the chosen event selection. Thus, the reconstruction efficiency of mccollision is not counted in this tracking efficiency.
 
     registry.fill(HIST("hMcCollCutsCounts"), 0.5, mcCollision.weight()); // all mcCollisions
 
@@ -1110,8 +1107,11 @@ struct TrackEfficiency {
   }
   PROCESS_SWITCH(TrackEfficiency, processMcCollisionsWeighted, "QA for McCollisions in weighted MC", false);
 
-  void processTrackSelectionHistograms(soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA>::iterator const& track)
-  { // should probably select collisions
+  void processTrackSelectionHistograms(soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA>::iterator const& track, aod::JetCollisions const&)
+  {
+    if (!jetderiveddatautilities::selectCollision(track.collision_as<aod::JetCollisions>(), eventSelectionBits, skipMBGapEvents)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
+      return;
+    }
     registry.fill(HIST("h_trackselplot_tpccrossedrows"), track.tpcNClsCrossedRows());
     registry.fill(HIST("h_trackselplot_tpccrossedrowsoverfindable"), track.tpcCrossedRowsOverFindableCls());
     registry.fill(HIST("h_trackselplot_chi2ncls_tpc"), track.tpcChi2NCl());
