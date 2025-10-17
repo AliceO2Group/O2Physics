@@ -76,7 +76,7 @@ struct TreeWriterTpcV0 {
   constexpr static o2::track::PID::ID PidProton{o2::track::PID::Proton};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
-  constexpr static float NSigmaTofUnmatched{999.f};
+  constexpr static float NSigmaTofUnmatched{-999.f};
 
   constexpr static float FloatEqualityTolerance{1.e-3f};
 
