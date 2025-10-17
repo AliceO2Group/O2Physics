@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// O2 includes
 #include "tableHMPIDPbPb.h"
 
 #include "Common/Core/PID/PIDTOF.h"
@@ -42,22 +41,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-// distance 2D between MIP and Track extrapolated
-float distance2D(float x1, float y1, float x2, float y2)
-{
-  float d = TMath::Sqrt(TMath::Power(x2 - x1, 2) + TMath::Power(y2 - y1, 2));
-  return d;
-}
-
-Double_t expectedSignal(double mass, float mom)
+double expectedSignal(double mass, float mom)
 {
   // expected theoretical values
 
   double chAngleTh = -999.;
 
-  const Double_t nMean = 1.288; // radiator mean refraction index
+  const double nMean = 1.288; // radiator mean refraction index
 
-  Double_t cosChAngleTh = (TMath::Sqrt(mass * mass + mom * mom)) / (nMean * mom);
+  double cosChAngleTh = (TMath::Sqrt(mass * mass + mom * mom)) / (nMean * mom);
   if (cosChAngleTh > 1)
     return chAngleTh;
 
@@ -66,15 +58,15 @@ Double_t expectedSignal(double mass, float mom)
   return chAngleTh;
 }
 
-Double_t expectedSigma(int iPart, float mom)
+double expectedSigma(int iPart, float mom)
 {
-  Double_t sigmaRing = 0;
-  static const int nMaxSigmas = 6;
+  double sigmaRing = 0;
+  const int nMaxSigmas = 6;
 
   // fit parameters from sigma extrapolation
-  Double_t fitSigmaExtraPions[nMaxSigmas] = {42.8961, -49.8723, 26.2311, -6.59093, 0.754578, -0.0286546};
-  Double_t fitSigmaExtraKaons[nMaxSigmas] = {76.9786, -103.655, 61.7533, -18.7436, 2.87855, -0.178318};
-  Double_t fitSigmaExtraProtons[nMaxSigmas] = {299.466, -383.277, 201.127, -52.2554, 6.67285, -0.334106};
+  double fitSigmaExtraPions[nMaxSigmas] = {42.8961, -49.8723, 26.2311, -6.59093, 0.754578, -0.0286546};
+  double fitSigmaExtraKaons[nMaxSigmas] = {76.9786, -103.655, 61.7533, -18.7436, 2.87855, -0.178318};
+  double fitSigmaExtraProtons[nMaxSigmas] = {299.466, -383.277, 201.127, -52.2554, 6.67285, -0.334106};
 
   // create sigma vs p functions
   TF1* sigmaVsMomPions = new TF1("sigmaVsMomPions", "pol5", 0., 6.);
@@ -87,7 +79,7 @@ Double_t expectedSigma(int iPart, float mom)
     sigmaVsMomProtons->SetParameter(i, fitSigmaExtraProtons[i]);
   }
 
-  static const int idPions = 0, idKaons = 1, idProtons = 2;
+  const int idPions = 0, idKaons = 1, idProtons = 2;
 
   if (iPart == idPions) {
     sigmaRing = gRandom->Gaus(sigmaVsMomPions->Eval(mom) / 1000., 0.1 * sigmaVsMomPions->Eval(mom) / 1000.);
@@ -111,35 +103,32 @@ void getProbability(float hmpidSignal, float hmpidMomentum, double* probs)
   // Calculates probability to be a pion-kaon-proton with the "amplitude" method
   // from the given Cerenkov angle and momentum assuming no initial particle composition (class taken by AliROOT)
 
-  Int_t nSpecies = 3;
-  Float_t angleZeroHeight = 900.;
+  int nSpecies = 3;
+  float angleZeroHeight = 900.;
 
   if (hmpidSignal <= 0) {
     // HMPID does not find anything reasonable for this track, assign 0.33 for all species
-    for (Int_t iPart = 0; iPart < nSpecies; iPart++)
-      probs[iPart] = 1.0 / (Float_t)nSpecies;
+    for (int iPart = 0; iPart < nSpecies; iPart++)
+      probs[iPart] = 1.0 / (float)nSpecies;
     return;
   }
 
   // assign mass in GeV/c^2
-  double mProton = o2::constants::physics::MassProton;
-  double mPion = o2::constants::physics::MassPionCharged;
-  double mKaon = o2::constants::physics::MassKaonCharged;
-  Double_t mass[] = {mPion, mKaon, mProton};
+  double mass[] = {o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
 
-  Double_t hTot = 0;                    // Initialize the total height of the amplitude method
-  Double_t* h = new Double_t[nSpecies]; // number of charged particles to be considered
+  double hTot = 0;                  // Initialize the total height of the amplitude method
+  double* h = new double[nSpecies]; // number of charged particles to be considered
 
-  Bool_t desert = kTRUE; // Flag to evaluate if ThetaC is far ("desert") from the given Gaussians
+  bool desert = kTRUE; // Flag to evaluate if ThetaC is far ("desert") from the given Gaussians
 
-  for (Int_t iPart = 0; iPart < nSpecies; iPart++) { // for each particle
+  for (int iPart = 0; iPart < nSpecies; iPart++) { // for each particle
 
-    h[iPart] = 0;                                                     // reset the height
-    Double_t thetaCerTh = expectedSignal(mass[iPart], hmpidMomentum); // theoretical Theta Cherenkov
+    h[iPart] = 0;                                                   // reset the height
+    double thetaCerTh = expectedSignal(mass[iPart], hmpidMomentum); // theoretical Theta Cherenkov
     if (thetaCerTh > angleZeroHeight)
       continue; // no light emitted, zero height
-    Double_t sigmaRing = expectedSigma(iPart, hmpidMomentum);
-    Float_t maxSigmaRing = 4 * sigmaRing;
+    double sigmaRing = expectedSigma(iPart, hmpidMomentum);
+    float maxSigmaRing = 4 * sigmaRing;
 
     if (sigmaRing == 0)
       continue;
@@ -151,12 +140,12 @@ void getProbability(float hmpidSignal, float hmpidMomentum, double* probs)
 
   } // species loop
 
-  for (Int_t iPart = 0; iPart < nSpecies; iPart++) { // species loop to assign probabilities
+  for (int iPart = 0; iPart < nSpecies; iPart++) { // species loop to assign probabilities
 
     if (!desert)
       probs[iPart] = h[iPart] / hTot;
     else
-      probs[iPart] = 1.0 / (Float_t)nSpecies; // all theoretical values are far away from experemental one
+      probs[iPart] = 1.0 / (float)nSpecies; // all theoretical values are far away from experemental one
   }
 
   delete[] h;
@@ -339,9 +328,9 @@ struct HmpidQaPbPb {
 
       float nMaxPhotons = 15.;
 
-      if (hmpid.nPhotons() < nMaxPhotons && hmpid.chAngle() > 0 && distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+      if (hmpid.nPhotons() < nMaxPhotons && hmpid.chAngle() > 0 && std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
         if (hmpid.chamber() != rich2 || hmpid.chamber() != rich4) {
-          Double_t pT = (Double_t)(hmpid.momentumTrack() / TMath::CosH(hmpid.etaTrack()));
+          double pT = (double)(hmpid.momentumTrack() / TMath::CosH(hmpid.etaTrack()));
           histos.fill(HIST("pTvsChAngle"), pT, hmpid.chAngle());
 
           if (hmpid.momentumHmpid() > 0) {
@@ -362,7 +351,7 @@ struct HmpidQaPbPb {
 
       float sin2changle = 0.;
 
-      if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+      if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
 
         histos.fill(HIST("hmpidNPhotons"), hmpid.nPhotons());
 
@@ -377,7 +366,7 @@ struct HmpidQaPbPb {
         }
       }
 
-      if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+      if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
         histos.fill(HIST("hmpidQMip"), hmpid.chargeMip());
       }
 
@@ -418,7 +407,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip0"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize0"), hmpid.clusterSize());
@@ -428,7 +417,7 @@ struct HmpidQaPbPb {
 
         // for (int i = 0; i < 10; i++)
         //{ ---
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons0"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -445,10 +434,10 @@ struct HmpidQaPbPb {
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
 
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH0_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH0_HV0"), hmpid.photonsCharge()[i]);
@@ -460,10 +449,10 @@ struct HmpidQaPbPb {
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
 
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH0_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH0_HV1"), hmpid.photonsCharge()[i]);
@@ -475,10 +464,10 @@ struct HmpidQaPbPb {
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
 
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH0_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH0_HV2"), hmpid.photonsCharge()[i]);
@@ -490,10 +479,10 @@ struct HmpidQaPbPb {
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
 
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH0_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH0_HV3"), hmpid.photonsCharge()[i]);
@@ -505,10 +494,10 @@ struct HmpidQaPbPb {
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
 
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH0_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH0_HV4"), hmpid.photonsCharge()[i]);
@@ -520,10 +509,10 @@ struct HmpidQaPbPb {
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
 
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH0_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH0_HV5"), hmpid.photonsCharge()[i]);
@@ -535,7 +524,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH0_PC0"), sin2changle, hmpid.nPhotons());
@@ -585,7 +574,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip1"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize1"), hmpid.clusterSize());
@@ -593,7 +582,7 @@ struct HmpidQaPbPb {
         histos.fill(HIST("hmpidMom1"), std::fabs(hmpid.momentumHmpid()));
         histos.fill(HIST("hmpidXYMip1"), hmpid.xMip(), hmpid.yMip());
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons1"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -608,10 +597,10 @@ struct HmpidQaPbPb {
 
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH1_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH1_HV0"), hmpid.photonsCharge()[i]);
@@ -622,10 +611,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH1_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH1_HV1"), hmpid.photonsCharge()[i]);
@@ -636,10 +625,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH1_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH1_HV2"), hmpid.photonsCharge()[i]);
@@ -649,10 +638,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH1_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH1_HV3"), hmpid.photonsCharge()[i]);
@@ -663,10 +652,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH1_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH1_HV4"), hmpid.photonsCharge()[i]);
@@ -677,10 +666,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH1_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH1_HV5"), hmpid.photonsCharge()[i]);
@@ -692,7 +681,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH1_PC0"), sin2changle, hmpid.nPhotons());
@@ -742,7 +731,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip2"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize2"), hmpid.clusterSize());
@@ -750,7 +739,7 @@ struct HmpidQaPbPb {
         histos.fill(HIST("hmpidMom2"), std::fabs(hmpid.momentumHmpid()));
         histos.fill(HIST("hmpidXYMip2"), hmpid.xMip(), hmpid.yMip());
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons2"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -765,10 +754,10 @@ struct HmpidQaPbPb {
 
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH2_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH2_HV0"), hmpid.photonsCharge()[i]);
@@ -779,10 +768,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH2_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH2_HV1"), hmpid.photonsCharge()[i]);
@@ -793,10 +782,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH2_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH2_HV2"), hmpid.photonsCharge()[i]);
@@ -807,10 +796,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH2_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH2_HV3"), hmpid.photonsCharge()[i]);
@@ -821,10 +810,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH2_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH2_HV4"), hmpid.photonsCharge()[i]);
@@ -835,10 +824,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH2_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH2_HV5"), hmpid.photonsCharge()[i]);
@@ -850,7 +839,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH2_PC0"), sin2changle, hmpid.nPhotons());
@@ -900,7 +889,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip3"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize3"), hmpid.clusterSize());
@@ -908,7 +897,7 @@ struct HmpidQaPbPb {
         histos.fill(HIST("hmpidMom3"), std::fabs(hmpid.momentumHmpid()));
         histos.fill(HIST("hmpidXYMip3"), hmpid.xMip(), hmpid.yMip());
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons3"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -923,10 +912,10 @@ struct HmpidQaPbPb {
 
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH3_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH3_HV0"), hmpid.photonsCharge()[i]);
@@ -937,10 +926,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH3_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH3_HV1"), hmpid.photonsCharge()[i]);
@@ -951,10 +940,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH3_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH3_HV2"), hmpid.photonsCharge()[i]);
@@ -965,10 +954,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH3_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH3_HV3"), hmpid.photonsCharge()[i]);
@@ -979,10 +968,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH3_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH3_HV4"), hmpid.photonsCharge()[i]);
@@ -993,10 +982,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH3_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH3_HV5"), hmpid.photonsCharge()[i]);
@@ -1008,7 +997,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH3_PC0"), sin2changle, hmpid.nPhotons());
@@ -1058,7 +1047,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip4"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize4"), hmpid.clusterSize());
@@ -1066,7 +1055,7 @@ struct HmpidQaPbPb {
         histos.fill(HIST("hmpidMom4"), std::fabs(hmpid.momentumHmpid()));
         histos.fill(HIST("hmpidXYMip4"), hmpid.xMip(), hmpid.yMip());
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons4"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -1081,10 +1070,10 @@ struct HmpidQaPbPb {
 
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH4_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH4_HV0"), hmpid.photonsCharge()[i]);
@@ -1095,10 +1084,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH4_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH4_HV1"), hmpid.photonsCharge()[i]);
@@ -1109,10 +1098,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH4_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH4_HV2"), hmpid.photonsCharge()[i]);
@@ -1123,10 +1112,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH4_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH4_HV3"), hmpid.photonsCharge()[i]);
@@ -1137,10 +1126,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH4_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH4_HV4"), hmpid.photonsCharge()[i]);
@@ -1151,10 +1140,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH4_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH4_HV5"), hmpid.photonsCharge()[i]);
@@ -1166,7 +1155,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH4_PC0"), sin2changle, hmpid.nPhotons());
@@ -1216,7 +1205,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip5"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize5"), hmpid.clusterSize());
@@ -1224,7 +1213,7 @@ struct HmpidQaPbPb {
         histos.fill(HIST("hmpidMom5"), std::fabs(hmpid.momentumHmpid()));
         histos.fill(HIST("hmpidXYMip5"), hmpid.xMip(), hmpid.yMip());
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons5"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -1239,10 +1228,10 @@ struct HmpidQaPbPb {
 
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH5_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH5_HV0"), hmpid.photonsCharge()[i]);
@@ -1253,10 +1242,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH5_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH5_HV1"), hmpid.photonsCharge()[i]);
@@ -1267,10 +1256,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH5_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH5_HV2"), hmpid.photonsCharge()[i]);
@@ -1281,10 +1270,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH5_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH5_HV3"), hmpid.photonsCharge()[i]);
@@ -1295,10 +1284,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH5_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH5_HV4"), hmpid.photonsCharge()[i]);
@@ -1309,10 +1298,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH5_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH5_HV5"), hmpid.photonsCharge()[i]);
@@ -1324,7 +1313,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH5_PC0"), sin2changle, hmpid.nPhotons());
@@ -1374,7 +1363,7 @@ struct HmpidQaPbPb {
           }
         }
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
           histos.fill(HIST("hmpidQMip6"), hmpid.chargeMip());
         }
         histos.fill(HIST("hmpidClusSize6"), hmpid.clusterSize());
@@ -1382,7 +1371,7 @@ struct HmpidQaPbPb {
         histos.fill(HIST("hmpidMom6"), std::fabs(hmpid.momentumHmpid()));
         histos.fill(HIST("hmpidXYMip6"), hmpid.xMip(), hmpid.yMip());
 
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip) {
           histos.fill(HIST("hmpidNPhotons6"), hmpid.nPhotons());
           sin2changle = static_cast<float>(TMath::Power(TMath::Sin(hmpid.chAngle()), 2));
           if (hmpid.xMip() <= maxBoxHit && hmpid.xMip() >= minBoxHit && hmpid.yMip() <= maxBoxHit && hmpid.yMip() >= minBoxHit) {
@@ -1397,10 +1386,10 @@ struct HmpidQaPbPb {
 
         // plot per HV sector
         if (fParam->inHVSector(hmpid.yMip()) == hv0) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH6_HV0"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH6_HV0"), hmpid.photonsCharge()[i]);
@@ -1411,10 +1400,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv1) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH6_HV1"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH6_HV1"), hmpid.photonsCharge()[i]);
@@ -1425,10 +1414,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv2) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH6_HV2"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH6_HV2"), hmpid.photonsCharge()[i]);
@@ -1439,10 +1428,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv3) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH6_HV3"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH6_HV3"), hmpid.photonsCharge()[i]);
@@ -1453,10 +1442,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv4) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH6_HV4"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH6_HV4"), hmpid.photonsCharge()[i]);
@@ -1467,10 +1456,10 @@ struct HmpidQaPbPb {
         }
 
         if (fParam->inHVSector(hmpid.yMip()) == hv5) {
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack) {
             histos.fill(HIST("hmpidQMip_RICH6_HV5"), hmpid.chargeMip());
           }
-          if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
+          if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) {
             for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
               if (hmpid.photonsCharge()[i] > 0)
                 histos.fill(HIST("hmpidPhotsCharge_RICH6_HV5"), hmpid.photonsCharge()[i]);
@@ -1482,7 +1471,7 @@ struct HmpidQaPbPb {
 
         //////////////////////////////////////////////////////////////////
         // fill plot photocathode
-        if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
+        if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrack && hmpid.chargeMip() > cutQmip && hmpid.chAngle() > 0) // condizione da verificare a priori
         {
           if (hmpid.xMip() >= xMinPc[0] && hmpid.xMip() <= xMaxPc[0] && hmpid.yMip() >= yMinPc[0] && hmpid.yMip() <= yMaxPc[0]) {
             histos.fill(HIST("nPhotons_vs_sin2Ch_RICH6_PC0"), sin2changle, hmpid.nPhotons());
@@ -1517,7 +1506,7 @@ struct HmpidQaPbPb {
       // if(hmpid.momentumTrack()<0.75 && (hmpid.nPhotons()<13 || hmpid.nPhotons()<18)) continue; //&& hmpid.chAngle()<0.42
       if (hmpid.nPhotons() < minNPhotons || hmpid.nPhotons() > maxNPhotons)
         continue;
-      if (distance2D(hmpid.xTrack(), hmpid.yTrack(), hmpid.xMip(), hmpid.yMip()) < cutDistanceMipTrackForProbability && hmpid.chargeMip() > cutQmip) {
+      if (std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip()) < cutDistanceMipTrackForProbability && hmpid.chargeMip() > cutQmip) {
         histos.fill(HIST("hmpidCkovvsMom"), std::fabs(hmpid.momentumHmpid()), hmpid.chAngle());
       }
 

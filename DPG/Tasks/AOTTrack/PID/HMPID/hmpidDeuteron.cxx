@@ -17,13 +17,6 @@
 #include <TMath.h>
 #include <TString.h>
 
-// distance 2D between MIP and Track extrapolated
-float distance2D(float x1, float y1, float x2, float y2)
-{
-  float d = TMath::Sqrt(TMath::Power(x2 - x1, 2) + TMath::Power(y2 - y1, 2));
-  return d;
-}
-
 using namespace o2;
 using namespace o2::framework;
 
