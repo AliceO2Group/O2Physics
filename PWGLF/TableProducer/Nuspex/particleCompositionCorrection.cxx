@@ -63,7 +63,7 @@ struct ParticleCompositionCorrection {
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
   Configurable<bool> enableQAHistos{"enableQAHistos", true, "enable qa histograms showing the effect of the PCC"};
 
-  Configurable<string> ccdbBasePath{"ccdbBasePath", "/Users/m/makruger/", "ccdb directory contianing the particle fraction networks"};
+  Configurable<std::string> ccdbBasePath{"ccdbBasePath", "/Users/m/makruger/", "ccdb directory contianing the particle fraction networks"};
   Configurable<std::string> modelPathData{"modelPathData", "PCC/data/pp", "Path to the .onnx file containing the particle fractions in data"};
   Configurable<std::string> modelPathMC{"modelPathMC", "PCC/pythia/pp", "Path to the .onnx file containing the particle fractions in MC"};
 
