@@ -313,10 +313,8 @@ struct CreateResolutionMap {
         ccdb->get<TGeoManager>(geoPath);
       }
       o2::mch::TrackExtrap::setField();
-      const double centerMFT[3] = {0, 0, -61.4};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      mBzMFT = field->getBz(centerMFT); // Get field at centre of MFT
-      LOGF(info, "Bz at center of MFT = %f kZG", mBzMFT);
+      mBzMFT = d_bz;
+      LOGF(info, "Bz at center of MFT = %f kZG manually", mBzMFT);
     }
 
     auto run3grp_timestamp = bc.timestamp();
@@ -345,7 +343,6 @@ struct CreateResolutionMap {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
-    mRunNumber = bc.runNumber();
 
     // std::map<string, string> metadata;
     // auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
@@ -357,6 +354,11 @@ struct CreateResolutionMap {
       ccdb->get<TGeoManager>(geoPath);
     }
     o2::mch::TrackExtrap::setField();
+    const double centerMFT[3] = {0, 0, -61.4};
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    mBzMFT = field->getBz(centerMFT); // Get field at centre of MFT
+    LOGF(info, "Bz at center of MFT = %f kZG", mBzMFT);
+    mRunNumber = bc.runNumber();
   }
 
   template <typename TCollision>
