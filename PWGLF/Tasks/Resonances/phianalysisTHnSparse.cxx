@@ -281,20 +281,20 @@ struct PhianalysisTHnSparse {
       registry.add("QAPhi/hRapidity", "Rapidity distribution of #phi candidates", kTH1F, {rapidityaxis});
       registry.add("QAPhi/hEta", "Pseudorapidity distribution of #phi candidates", kTH1F, {etaaxis});
 
-  registry.add("QAPhi/hdPhi", "Azimuthal distribution of #phi candidates", kTH1F, {{100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+      registry.add("QAPhi/hdPhi", "Azimuthal distribution of #phi candidates", kTH1F, {{100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
       auto hdPhi = registry.get<TH1>(HIST("QAPhi/hdPhi"));
       hdPhi->GetXaxis()->SetTitle("#phi (rad)");
 
-  registry.add("QAPhi/h2dPhiPt", "Azimuthal distribution of #Delta#phi candidates vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+      registry.add("QAPhi/h2dPhiPt", "Azimuthal distribution of #Delta#phi candidates vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
       auto h2dPhiPt = registry.get<TH2>(HIST("QAPhi/h2dPhiPt"));
       h2dPhiPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
       h2dPhiPt->GetYaxis()->SetTitle("#Delta#phi (rad)");
 
-  registry.add("QAPhi/hTheta", "Polar distribution of #phi candidates", kTH1F, {{100, 0.0f, o2::constants::math::PI}});
+      registry.add("QAPhi/hTheta", "Polar distribution of #phi candidates", kTH1F, {{100, 0.0f, o2::constants::math::PI}});
       auto hTheta = registry.get<TH1>(HIST("QAPhi/hTheta"));
       hTheta->GetXaxis()->SetTitle("#theta (rad)");
 
-  registry.add("QAPhi/h2dThetaPt", "Polar distribution of #phi candidates vs p_{T}", kTH2F, {{12, 0, 12}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+      registry.add("QAPhi/h2dThetaPt", "Polar distribution of #phi candidates vs p_{T}", kTH2F, {{12, 0, 12}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
       auto h2dThetaPt = registry.get<TH2>(HIST("QAPhi/h2dThetaPt"));
       h2dThetaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
       h2dThetaPt->GetYaxis()->SetTitle("#theta (rad)");
@@ -333,7 +333,6 @@ struct PhianalysisTHnSparse {
         hMCEventTruth->SetMinimum(0.1);
 
         registry.add("QAMC/Truth/hInvMassTrueFalse", "", kTH1F, {invAxis}); // not written events in True distribution due to repetition of mothers??
-
       }
       // Mixing QA
       if (mixingType != rsn::MixingType::none) {
@@ -369,22 +368,22 @@ struct PhianalysisTHnSparse {
         registry.add("QARotational/hEta", "Pseudorapidity distribution of #phi candidates from rotational background", kTH1F, {etaaxis});
 
         // Angular distributions for rotational background
-  registry.add("QARotational/hdPhi", "Rotational background #Delta#phi distribution", kTH1F, {{100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+        registry.add("QARotational/hdPhi", "Rotational background #Delta#phi distribution", kTH1F, {{100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
         auto hRPhi = registry.get<TH1>(HIST("QARotational/hdPhi"));
         hRPhi->GetXaxis()->SetTitle("#Delta#phi");
         hRPhi->GetYaxis()->SetTitle("Counts");
 
-  registry.add("QARotational/h2dPhiPt", "Rotational background #Delta#phi vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+        registry.add("QARotational/h2dPhiPt", "Rotational background #Delta#phi vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
         auto hR2dPhiPt = registry.get<TH2>(HIST("QARotational/h2dPhiPt"));
         hR2dPhiPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
         hR2dPhiPt->GetYaxis()->SetTitle("#Delta#phi");
 
-  registry.add("QARotational/hTheta", "Rotational background #Delta#theta distribution", kTH1F, {{100, 0.0f, o2::constants::math::PI}});
+        registry.add("QARotational/hTheta", "Rotational background #Delta#theta distribution", kTH1F, {{100, 0.0f, o2::constants::math::PI}});
         auto hRdTheta = registry.get<TH1>(HIST("QARotational/hTheta"));
         hRdTheta->GetXaxis()->SetTitle("#Delta#theta");
         hRdTheta->GetYaxis()->SetTitle("Counts");
 
-  registry.add("QARotational/h2dThetaPt", "Rotational background #Delta#theta vs p_{T}", kTH2F,  {{12, 0, 12}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+        registry.add("QARotational/h2dThetaPt", "Rotational background #Delta#theta vs p_{T}", kTH2F, {{12, 0, 12}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
         auto hR2dThetaPt = registry.get<TH2>(HIST("QARotational/h2dThetaPt"));
         hR2dThetaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
         hR2dThetaPt->GetYaxis()->SetTitle("#Delta#theta");
@@ -521,7 +520,7 @@ struct PhianalysisTHnSparse {
     if (produceQA)
       registry.fill(HIST("QAEvent/hSelection"), 0.5);
 
-    if (inelGrater0 && !collision.isInelGt0()) 
+    if (inelGrater0 && !collision.isInelGt0())
       return;
 
     registry.fill(HIST("Factors/hEventCentrality"), collision.centFT0M());
@@ -728,9 +727,9 @@ struct PhianalysisTHnSparse {
       return;
     }
     auto mcCollision = collision.mcCollision();
-    if (std::abs(mcCollision.posZ()) > vzCut) 
+    if (std::abs(mcCollision.posZ()) > vzCut)
       return;
-    if (inelGrater0 && !collision.isInelGt0()) 
+    if (inelGrater0 && !collision.isInelGt0())
       return;
 
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersMC, negDaughtersMC))) {
@@ -816,7 +815,7 @@ struct PhianalysisTHnSparse {
     if (std::abs(mcCollision.posZ()) > vzCut)
       return;
 
-    if (inelGrater0 && !mcCollision.isInelGt0()) 
+    if (inelGrater0 && !mcCollision.isInelGt0())
       return;
 
     if (collisions.size() == 0)
@@ -1039,7 +1038,7 @@ struct PhianalysisTHnSparse {
 
     registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 1.5);
 
-    if (inelGrater0 && !mcCollision.isInelGt0()) 
+    if (inelGrater0 && !mcCollision.isInelGt0())
       return;
 
     registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 2.5);
