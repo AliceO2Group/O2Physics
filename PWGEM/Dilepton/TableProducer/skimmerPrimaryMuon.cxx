@@ -132,7 +132,7 @@ struct skimmerPrimaryMuon {
     const double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     mBz = field->getBz(centerMFT); // Get field at centre of MFT
-    LOGF(info, "Bz at center of MFT = %f kZG", mBz);
+    LOGF(info, "Bz at center of MFT = %f kZG", mBz); // this is dummy comment. // dummy2
   }
 
   void addHistograms()
@@ -311,12 +311,13 @@ struct skimmerPrimaryMuon {
       pDCA = mchtrack.p() * dcaXY_Matched;
 
       if (refitGlobalMuon) {
-        eta = mfttrack.eta();
+        // eta = mfttrack.eta();
         // phi = mfttrack.phi();
         // o2::math_utils::bringTo02Pi(phi);
-        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        eta = propmuonAtDCA.getEta();
         phi = propmuonAtDCA.getPhi();
         o2::math_utils::bringTo02Pi(phi);
+        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
 
         // x = mfttrack.x();
         // y = mfttrack.y();
