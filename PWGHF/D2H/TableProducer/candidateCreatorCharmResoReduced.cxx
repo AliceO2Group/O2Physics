@@ -957,23 +957,24 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
   {
     for (const auto& candReso : candsReso) {
       bool filledMcInfo{false};
-      for (const auto& rowDV0McRec : rowsMcRec) {
-        if ((rowDV0McRec.prong0Id() != candReso.prong0Id()) || (rowDV0McRec.prong1Id() != candReso.prong1Id())) {
+      for (const auto& rowMcRec : rowsMcRec) {
+        if ((rowMcRec.prong0Id() != candReso.prong0Id()) || (rowMcRec.prong1Id() != candReso.prong1Id())) {
           continue;
         }
-        rowResoMcRec(rowDV0McRec.flagMcMatchRec(),
-                     rowDV0McRec.flagMcMatchRecD(),
-                     rowDV0McRec.flagMcMatchChanD(),
-                     rowDV0McRec.debugMcRec(),
-                     rowDV0McRec.origin(),
-                     rowDV0McRec.ptGen(),
-                     rowDV0McRec.invMassGen());
+        rowResoMcRec(rowMcRec.flagMcMatchRec(),
+                     rowMcRec.flagMcMatchRecD(),
+                     rowMcRec.flagMcMatchChanD(),
+                     rowMcRec.debugMcRec(),
+                     rowMcRec.origin(),
+                     rowMcRec.ptGen(),
+                     rowMcRec.invMassGen(),
+                     rowMcRec.nTracksDecayed());
         filledMcInfo = true;
-        if (std::abs(rowDV0McRec.flagMcMatchRec()) > 0 &&
-            !TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
+        if (std::abs(rowMcRec.flagMcMatchRec()) > 0 &&
+            !TESTBIT(rowMcRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
           registry.fill(HIST("hMassMcMatched"), candReso.invMass(), candReso.pt());
-        } else if (std::abs(rowDV0McRec.flagMcMatchRec()) > 0 &&
-                   TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
+        } else if (std::abs(rowMcRec.flagMcMatchRec()) > 0 &&
+                   TESTBIT(rowMcRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
           registry.fill(HIST("hMassMcMatchedIncomplete"), candReso.invMass(), candReso.pt());
         } else {
           registry.fill(HIST("hMassMcUnmatched"), candReso.invMass(), candReso.pt());
@@ -981,7 +982,7 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
-        rowResoMcRec(0, 0, 0, 0, 0, -1.f, -1.f);
+        rowResoMcRec(0, 0, 0, 0, 0, -1.f, -1.f, 0);
         registry.fill(HIST("hMassMcNoEntry"), candReso.invMass(), candReso.pt());
       }
     }

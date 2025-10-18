@@ -348,7 +348,7 @@ bool eventSelection(const Tcollision& collision, HistogramRegistry& registry, La
 template <typename Tcollision>
 float getCentrality(Tcollision const& collision, const int centralityEstimator)
 {
-  if constexpr (!o2::aod::HasCentrality<Tcollision>) {
+  if constexpr (!o2::aod::HasCentrality<Tcollision>) { // requires aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs
     return -1.f;
   }
   if (centralityEstimator == centDetectors::kFV0A) {
@@ -475,6 +475,7 @@ class PidManager
     }
   }
 
+  // ITS
   template <typename Ttrack>
   float getClusterSizeCosLambdaITS(const Ttrack& track)
   {
@@ -508,7 +509,7 @@ class PidManager
   // TPC
   float getExpectedTPCsignal(const float p)
   {
-    if (!mUseTpcCentralCalibration)
+    if (mUseTpcCentralCalibration)
       return -999.f;
 
     float pScaled = p * mMomScaling[0] + mMomScaling[1];
@@ -524,7 +525,7 @@ class PidManager
   template <typename Ttrack>
   float getNSigmaTPC(const Ttrack& track)
   {
-    if (!mUseTpcCentralCalibration) {
+    if (mUseTpcCentralCalibration) {
       return getNSigmaTPCcentral(track);
     }
     float expectedSignal = getExpectedTPCsignal(track.tpcInnerParam());

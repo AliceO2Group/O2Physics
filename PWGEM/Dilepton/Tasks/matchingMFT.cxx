@@ -199,10 +199,9 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt", "DCA_{xy} resolution vs. p_{T};p_{T} (GeV/c);DCA_{xy} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hMCHBitMap", "MCH bit map;MCH bit map", kTH1F, {{1024, -0.5, 1023.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hMIDBitMap", "MID bit map;MID bit map", kTH1F, {{256, -0.5, 255.5}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hMeanMFTClusterSize", "mean MFT cluster size vs. p;p (GeV/c);<MFT cluster size> #times sin(#lambda)", kTH2F, {{100, 0, 100}, {100, 0, 10}}, false);
 
     fRegistry.add("MFTMCHMID/primary/correct/hProdVtxZ", "prod. vtx Z of muon;V_{z} (cm)", kTH1F, {{200, -100, 100}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hRelDeltaPt", "pT resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 10}, {400, -1, +1}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hRelDeltaPt", "pT resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 10}, {200, -1, +1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDeltaEta_Pos", "#eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDeltaEta_Neg", "#eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDeltaPhi_Pos", "#varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 10}, {400, -0.2, +0.2}}, false);
@@ -275,27 +274,27 @@ struct matchingMFT {
     return (clmap > 0);
   }
 
-  template <typename T>
-  float meanClusterSizeMFT(T const& track)
-  {
-    uint64_t mftClusterSizesAndTrackFlags = track.mftClusterSizesAndTrackFlags();
-    uint16_t clsSize = 0;
-    uint16_t n = 0;
-    for (unsigned int layer = 0; layer < 10; layer++) {
-      uint16_t size_per_layer = (mftClusterSizesAndTrackFlags >> (layer * 6)) & 0x3f;
-      clsSize += size_per_layer;
-      if (size_per_layer > 0) {
-        n++;
-      }
-      // LOGF(info, "track.globalIndex() = %d, layer = %d, size_per_layer = %d", track.globalIndex(), layer, size_per_layer);
-    }
+  // template <typename T>
+  // float meanClusterSizeMFT(T const& track)
+  // {
+  //   uint64_t mftClusterSizesAndTrackFlags = track.mftClusterSizesAndTrackFlags();
+  //   uint16_t clsSize = 0;
+  //   uint16_t n = 0;
+  //   for (unsigned int layer = 0; layer < 10; layer++) {
+  //     uint16_t size_per_layer = (mftClusterSizesAndTrackFlags >> (layer * 6)) & 0x3f;
+  //     clsSize += size_per_layer;
+  //     if (size_per_layer > 0) {
+  //       n++;
+  //     }
+  //     // LOGF(info, "track.globalIndex() = %d, layer = %d, size_per_layer = %d", track.globalIndex(), layer, size_per_layer);
+  //   }
 
-    if (n > 0) {
-      return static_cast<float>(clsSize) / static_cast<float>(n) * std::fabs(std::sin(std::atan(track.tgl())));
-    } else {
-      return 0.f;
-    }
-  }
+  //   if (n > 0) {
+  //     return static_cast<float>(clsSize) / static_cast<float>(n) * std::fabs(std::sin(std::atan(track.tgl())));
+  //   } else {
+  //     return 0.f;
+  //   }
+  // }
 
   template <typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack, typename TMFTrackCov>
   void getDeltaEtaDeltaPhiAtMatchingPlane(TCollision const& collision, TFwdTrack const& fwdtrack, TMFTrackCov const& mftCovs, float& deta, float& dphi)
@@ -393,7 +392,6 @@ struct matchingMFT {
     o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, matchingZ, mBz);
     o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToVertex, matchingZ, mBz);
 
-    float p = propmuonAtPV.getP();
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
@@ -424,13 +422,13 @@ struct matchingMFT {
     float dphiMP = 999.f, detaMP = 999.f;
 
     if (refitGlobalMuon) {
-      eta = mfttrack.eta();
+      // eta = mfttrack.eta();
       // phi = mfttrack.phi();
       // o2::math_utils::bringTo02Pi(phi);
-      pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
-      p = propmuonAtPV_Matched.getP();
+      eta = propmuonAtDCA.getEta();
       phi = propmuonAtDCA.getPhi();
       o2::math_utils::bringTo02Pi(phi);
+      pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
 
       if constexpr (withMFTCov) {
         // auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
@@ -464,8 +462,6 @@ struct matchingMFT {
         // }
         // sigma_dcaXY = dcaXY / dcaXYinSigma;
 
-        // o2::track::TrackParCovFwd mftsaAtDCA = getTrackParCovFwd(mfttrack, mfttrackcov);                                                // values at innermost update
-        // mftsaAtDCA.propagateToZhelix(collision.posZ(), mBz);                                                                      // propagated to matching plane
         // cXXatDCA = mftsaAtDCA.getSigma2X();
         // cYYatDCA = mftsaAtDCA.getSigma2Y();
         // cXYatDCA = mftsaAtDCA.getSigmaXY();
@@ -541,7 +537,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMeanMFTClusterSize"), p, meanClusterSizeMFT(mfttrack));
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
@@ -578,7 +573,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMeanMFTClusterSize"), p, meanClusterSizeMFT(mfttrack));
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
@@ -617,7 +611,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMeanMFTClusterSize"), p, meanClusterSizeMFT(mfttrack));
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
@@ -654,7 +647,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMeanMFTClusterSize"), p, meanClusterSizeMFT(mfttrack));
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
