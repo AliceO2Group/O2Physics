@@ -20,9 +20,11 @@
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "EventFiltering/Zorro.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
@@ -33,6 +35,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>

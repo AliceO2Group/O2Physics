@@ -68,7 +68,7 @@ struct FemtoCascadeQa {
   // setup for xis
   cascadebuilder::ConfXiSelection confXiSelection;
   Partition<Xis> xiPartition = MAKE_CASCADE_PARTITION(confXiSelection);
-  Preslice<Xis> preColXis = aod::femtobase::stored::fColId;
+  Preslice<Xis> preColXis = aod::femtobase::stored::collisionId;
 
   cascadehistmanager::ConfXiBinning confXiBinning;
   cascadehistmanager::ConfXiQaBinning confXiQaBinning;
@@ -84,7 +84,7 @@ struct FemtoCascadeQa {
   // setup for omegas
   cascadebuilder::ConfOmegaSelection confOmegaSelection;
   Partition<Omegas> omegaPartition = MAKE_CASCADE_PARTITION(confOmegaSelection);
-  Preslice<Omegas> preColOmegas = aod::femtobase::stored::fColId;
+  Preslice<Omegas> preColOmegas = aod::femtobase::stored::collisionId;
 
   cascadehistmanager::ConfOmegaBinning confOmegaBinning;
   cascadehistmanager::ConfOmegaQaBinning confOmegaQaBinning;
@@ -135,7 +135,7 @@ struct FemtoCascadeQa {
   void processXis(FilteredCollision const& col, Xis const& /*xis*/, Tracks const& tracks)
   {
     colHistManager.fill(col);
-    auto xiSlice = xiPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto xiSlice = xiPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
       xiHistManager.fill(xi, tracks);
     }
@@ -145,7 +145,7 @@ struct FemtoCascadeQa {
   void processOmegas(FilteredCollision const& col, Omegas const& /*omegas*/, Tracks const& tracks)
   {
     colHistManager.fill(col);
-    auto omegaSlice = omegaPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto omegaSlice = omegaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
       omegaHistManager.fill(omega, tracks);
     }

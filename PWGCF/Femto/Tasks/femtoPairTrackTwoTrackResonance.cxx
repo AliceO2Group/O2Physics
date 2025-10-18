@@ -27,10 +27,14 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <string>
@@ -68,7 +72,7 @@ struct FemtoPairTrackTwoTrackResonance {
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
+  Preslice<Tracks> perColTracks = aod::femtobase::stored::collisionId;
 
   // setup for daughters
   trackhistmanager::ConfResonancePosDauBinning confPosDauBinning;
@@ -78,19 +82,19 @@ struct FemtoPairTrackTwoTrackResonance {
   twotrackresonancebuilder::ConfPhiSelection phiSelection;
   twotrackresonancehistmanager::ConfPhiBinning confPhiBinning;
   Partition<Phis> phiPartition = MAKE_RESONANCE_0_PARTITON(phiSelection);
-  Preslice<Phis> perColPhis = aod::femtobase::stored::fColId;
+  Preslice<Phis> perColPhis = aod::femtobase::stored::collisionId;
 
   // setup kstar0
   twotrackresonancebuilder::ConfKstar0Selection kstar0Selection;
   twotrackresonancehistmanager::ConfKstar0Binning confKstar0Binning;
   Partition<Kstar0s> kstar0Partition = MAKE_RESONANCE_1_PARTITON(kstar0Selection);
-  Preslice<Kstar0s> perColKstar0s = aod::femtobase::stored::fColId;
+  Preslice<Kstar0s> perColKstar0s = aod::femtobase::stored::collisionId;
 
   // rho0s
   twotrackresonancebuilder::ConfRho0Selection rho0Selection;
   twotrackresonancehistmanager::ConfRho0Binning confRho0Binning;
   Partition<Rho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(rho0Selection);
-  Preslice<Rho0s> perColRho0s = aod::femtobase::stored::fColId;
+  Preslice<Rho0s> perColRho0s = aod::femtobase::stored::collisionId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
