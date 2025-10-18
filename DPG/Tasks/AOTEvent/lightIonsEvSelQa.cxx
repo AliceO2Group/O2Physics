@@ -1775,7 +1775,7 @@ struct LightIonsEvSelQa {
 
   void processMC(ColEvSelsWithMCLabels const& collisions,
                  BCsInfo const&,
-                 aod::McCollisions const& mcCollisions)
+                 aod::McCollisions const&)
   {
     for (const auto& col : collisions) {
       bool isSel8 = col.sel8();
