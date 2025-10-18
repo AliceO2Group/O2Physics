@@ -21,6 +21,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 
+#include <TSystem.h>
+
 #include <array>
 #include <string>
 
@@ -139,4 +141,32 @@ std::string MetadataHelper::makeMetadataLabel() const
     label += "_" + get("RecoPassName");
   }
   return label;
+}
+
+std::string MetadataHelper::getO2Version() const
+{
+  if (!mIsInitialized) {
+    LOG(warning) << "Metadata not initialized";
+    return "undefined";
+  }
+  return get("O2Version");
+}
+
+bool MetadataHelper::isCommitInSoftwareTag(const std::string& commitHash, const std::string& ccdbUrl) const
+{
+  const std::string softwareTag = getO2Version();
+  std::string command = "curl -i -L ";
+  command += ccdbUrl;
+  command += "O2Version/CommitHash/";
+  command += commitHash;
+  command += "/-1/";
+  command += "O2Version=" + softwareTag;
+  command += " 2>&1 | grep --text O2Version:";
+  // LOG(info) << "Command to check if commit " << commitHash << " is in software tag " << softwareTag << ": " << command;
+  TString res = gSystem->GetFromPipe(command.c_str());
+  if (res.Contains(Form("O2Version: %s", softwareTag.c_str()))) {
+    LOG(debug) << "Commit " << commitHash << " is contained in software tag " << softwareTag;
+    return true;
+  }
+  return false;
 }
