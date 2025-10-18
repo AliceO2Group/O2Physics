@@ -1204,9 +1204,9 @@ struct lambdapolsp {
               AntiLambda = AntiProton + Pion;
               taga = 0;
               if (useAccCorr) {
-                int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-                int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-                acvalue = accprofileL->GetBinContent(binx, biny);
+                int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+                int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+                acvalue = accprofileAL->GetBinContent(binx, biny);
               } else {
                 acvalue = 1.0;
               }
@@ -1245,9 +1245,9 @@ struct lambdapolsp {
             AntiLambda = AntiProton + Pion;
             taga = 0;
             if (useAccCorr) {
-              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-              acvalue = accprofileL->GetBinContent(binx, biny);
+              int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+              acvalue = accprofileAL->GetBinContent(binx, biny);
             } else {
               acvalue = 1.0;
             }
