@@ -71,7 +71,8 @@ struct HfElectronSelectionWithTpcEmcal {
   KFParticle kfNonHfe;
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
   Configurable<bool> fillTrackInfo{"fillTrackInfo", true, "Fill histograms with Track Information info before track match"};
-
+  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms"};
+  Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
@@ -138,7 +139,6 @@ struct HfElectronSelectionWithTpcEmcal {
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   // configurable axis
-
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {100, -2.0, 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {32, 0.0, o2::constants::math::TwoPI}, "#it{#varphi}"};
@@ -181,6 +181,7 @@ struct HfElectronSelectionWithTpcEmcal {
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{trk}- #varphi_{cluster}"};
 
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
+    registry.add("hNeventsAfterPassEmcal", "No of events pass the Emcal", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hLikeMass", "Like mass", {HistType::kTH1D, {{axisMass}}});
     registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1D, {{axisMass}}});
@@ -370,7 +371,7 @@ struct HfElectronSelectionWithTpcEmcal {
       }
     }
     // Pass multiplicities and other required parameters for this electron
-    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), nElPairsLS, nElPairsUS, isEMcal);
+    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), invMassElectron, nElPairsLS, nElPairsUS, isEMcal);
   }
   // Electron Identification
   template <bool IsMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
@@ -379,15 +380,15 @@ struct HfElectronSelectionWithTpcEmcal {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
     }
-
-    registry.fill(HIST("hNevents"), 1);
+    int region = emcalRegion;
+    registry.fill(HIST("hNevents"), region);
 
     // skip events with no clusters
-    if (emcClusters.size() == 0) {
+    if (emcClusters.size() == 0 && skipNoEmcClusters) {
       return;
     }
     registry.fill(HIST("hZvertex"), collision.posZ());
-
+    registry.fill(HIST("hNeventsAfterPassEmcal"), region);
     /////////////////////////////////
     // EMCal cluster info before match ///
     ///////////////////////////////
@@ -542,7 +543,7 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", true);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", false);
   ///  Electron selection - for MC reco-level analysis
   void processMcRec(McTableCollision const& mcCollision,
                     McTableTracks const& mcTracks,
@@ -552,7 +553,7 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<true>(mcCollision, mcTracks, mcEmcClusters, matchedTracks, mcParticles);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", false);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", true);
 
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
