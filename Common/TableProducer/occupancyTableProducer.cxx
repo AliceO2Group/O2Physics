@@ -2708,15 +2708,17 @@ struct CreatePointerTables {
     // create pointer table
     int currentIDXforCheck = 0;
     int listSize = trackGIForTrackQAIndexList.size();
+    bool breakOnOverflow = false;
 
     for (const auto& track : tracks) {
-      while (track.globalIndex() > trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
+      while (!breakOnOverflow && track.globalIndex() > trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
         currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
         if (currentIDXforCheck >= listSize) {
+          breakOnOverflow = true;
           break;
         }
       }
-      if (track.globalIndex() == trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
+      if (!breakOnOverflow && track.globalIndex() == trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
         genTrackToTracksQA(trackGIForTrackQAIndexList[currentIDXforCheck][1]);
       } else {
         genTrackToTracksQA(-1); // put a dummy index when track is not found in trackQA
@@ -2741,15 +2743,17 @@ struct CreatePointerTables {
     // create pointer table
     int currentIDXforCheck = 0;
     int listSize = trackGIForTMOIndexList.size();
+    bool breakOnOverflow = false;
 
     for (const auto& track : tracks) {
-      while (track.globalIndex() > trackGIForTMOIndexList[currentIDXforCheck][0]) {
+      while (!breakOnOverflow && track.globalIndex() > trackGIForTMOIndexList[currentIDXforCheck][0]) {
         currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
         if (currentIDXforCheck >= listSize) {
+          breakOnOverflow = true;
           break;
         }
       }
-      if (track.globalIndex() == trackGIForTMOIndexList[currentIDXforCheck][0]) {
+      if (!breakOnOverflow && track.globalIndex() == trackGIForTMOIndexList[currentIDXforCheck][0]) {
         genTrackToTmo(trackGIForTMOIndexList[currentIDXforCheck][1]);
       } else {
         genTrackToTmo(-1); // put a dummy index when track is not found in trackQA
