@@ -259,7 +259,6 @@ class V0HistManager
   template <typename T1, typename T2>
   void fill(T1 const& v0candidate, T2 const& tracks)
   {
-
     auto posDaughter = v0candidate.template posDau_as<T2>();
     mPosDauManager.fill(posDaughter, tracks);
     auto negDaughter = v0candidate.template negDau_as<T2>();
@@ -311,6 +310,7 @@ class V0HistManager
         mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.massK0short(), massLambda);
         mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.massK0short(), massAntiLambda);
       }
+
       if constexpr (modes::isEqual(v0, modes::V0::kK0short)) {
         mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), v0candidate.massLambda());
         mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassAntiLambda, HistTable)), v0candidate.massAntiLambda());

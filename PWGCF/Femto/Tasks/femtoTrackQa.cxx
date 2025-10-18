@@ -67,7 +67,7 @@ struct FemtoTrackQa {
   trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrackQa, modes::Mode::kAnalysis_Qa> trackHistManager;
 
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelections);
-  Preslice<Tracks> perColReco = aod::femtobase::stored::fColId;
+  Preslice<Tracks> perColReco = aod::femtobase::stored::collisionId;
 
   HistogramRegistry hRegistry{"FemtoTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -83,7 +83,7 @@ struct FemtoTrackQa {
   void process(FilteredCollision const& col, Tracks const& tracks)
   {
     colHistManager.fill(col);
-    auto trackSlice = trackPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& track : trackSlice) {
       trackHistManager.fill(track, tracks);
     }
