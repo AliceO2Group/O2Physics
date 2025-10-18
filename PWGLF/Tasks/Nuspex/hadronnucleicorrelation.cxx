@@ -66,8 +66,6 @@ struct hadronnucleicorrelation {
   Configurable<bool> isMC{"isMC", false, "is MC"};
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
-  Configurable<bool> domatterGen{"domatterGen", true, "domatterGen"};
-  Configurable<bool> mcCorrelation{"mcCorrelation", false, "true: build the correlation function only for SE"};
   Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
@@ -211,7 +209,7 @@ struct hadronnucleicorrelation {
     AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
-    AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
+    AxisSpec DeltaEtaAxis = {300, -1.5, 1.5, "#Delta#eta"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
