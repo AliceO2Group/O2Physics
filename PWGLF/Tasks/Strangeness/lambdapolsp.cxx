@@ -875,6 +875,7 @@ struct lambdapolsp {
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
       return;
     }
+
     // currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
     auto bc = collision.foundBC_as<BCsRun3>();
 
@@ -902,7 +903,7 @@ struct lambdapolsp {
       modqyZDCC = qyZDCC;
     }
 
-    auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane
+    auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane*/
     /*if (useonlypsis) {
       psiZDC = psiZDCC - psiZDCA;
       }*/
@@ -1123,6 +1124,7 @@ struct lambdapolsp {
           accprofileL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathL.value, bc.timestamp());
           accprofileAL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathAL.value, bc.timestamp());
         }
+        double acvalue = 1.0;
         int binxwgt;
         double wgtvalue;
         if (useyldwgt) {
@@ -1186,9 +1188,14 @@ struct lambdapolsp {
             if (LambdaTag) {
               Lambda = Proton + AntiPion;
               tagb = 0;
-              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-              double acvalue = accprofileL->GetBinContent(binx, biny);
+              if (useAccCorr) {
+                int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+                int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+                acvalue = accprofileL->GetBinContent(binx, biny);
+              } else {
+                acvalue = 1.0;
+              }
+
               fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), desbinvalue, acvalue, 1.0);
             }
 
@@ -1196,20 +1203,27 @@ struct lambdapolsp {
             if (aLambdaTag) {
               AntiLambda = AntiProton + Pion;
               taga = 0;
-              int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
-              int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
-              double acvalue = accprofileAL->GetBinContent(binx, biny);
+              if (useAccCorr) {
+                int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+                int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+                acvalue = accprofileL->GetBinContent(binx, biny);
+              } else {
+                acvalue = 1.0;
+              }
               fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), desbinvalue, acvalue, 1.0);
             }
           }
         } else {
-
           if (LambdaTag) {
             Lambda = Proton + AntiPion;
             tagb = 0;
-            int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-            int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-            double acvalue = accprofileL->GetBinContent(binx, biny);
+            if (useAccCorr) {
+              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+              acvalue = accprofileL->GetBinContent(binx, biny);
+            } else {
+              acvalue = 1.0;
+            }
             if (distGrp.filldist && aLambdaTag == 0 && Lambda.M() > distGrp.lowmasscut && Lambda.M() < distGrp.highmasscut) {
               histos.fill(HIST("hcosinelambda"), v0.v0cosPA());
               histos.fill(HIST("hdcabwv0daughlambda"), v0.dcaV0daughters());
@@ -1230,9 +1244,13 @@ struct lambdapolsp {
           if (aLambdaTag) {
             AntiLambda = AntiProton + Pion;
             taga = 0;
-            int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
-            int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
-            double acvalue = accprofileAL->GetBinContent(binx, biny);
+            if (useAccCorr) {
+              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+              acvalue = accprofileL->GetBinContent(binx, biny);
+            } else {
+              acvalue = 1.0;
+            }
             if (distGrp.filldist && LambdaTag == 0 && AntiLambda.M() > distGrp.lowmasscut && AntiLambda.M() < distGrp.highmasscut) {
               histos.fill(HIST("hcosineantilambda"), v0.v0cosPA());
               histos.fill(HIST("hdcabwv0daughantilambda"), v0.dcaV0daughters());
@@ -1500,9 +1518,14 @@ struct lambdapolsp {
         if (analyzeLambda && LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
-          int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-          int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-          double acvalue = accprofileL->GetBinContent(binx, biny);
+          double acvalue = 1.0;
+          if (useAccCorr) {
+            int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+            int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+            acvalue = accprofileL->GetBinContent(binx, biny);
+          } else {
+            acvalue = 1.0;
+          }
           // double acvalue = 1.0;
           fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0);
         }
@@ -1511,9 +1534,14 @@ struct lambdapolsp {
         if (analyzeLambda && aLambdaTag) {
           AntiLambda = AntiProton + Pion;
           taga = 0;
-          int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
-          int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
-          double acvalue = accprofileAL->GetBinContent(binx, biny);
+          double acvalue = 1.0;
+          if (useAccCorr) {
+            int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+            int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+            acvalue = accprofileAL->GetBinContent(binx, biny);
+          } else {
+            acvalue = 1.0;
+          }
           // double acvalue = 1.0;
           fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue);
         }
