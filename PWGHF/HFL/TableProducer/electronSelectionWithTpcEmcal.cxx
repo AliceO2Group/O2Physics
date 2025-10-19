@@ -380,15 +380,15 @@ struct HfElectronSelectionWithTpcEmcal {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
     }
-    int region = emcalRegion;
-    registry.fill(HIST("hNevents"), region);
+
+    registry.fill(HIST("hNevents"), static_cast<int>(emcalRegion));
 
     // skip events with no clusters
     if (emcClusters.size() == 0 && skipNoEmcClusters) {
       return;
     }
     registry.fill(HIST("hZvertex"), collision.posZ());
-    registry.fill(HIST("hNeventsAfterPassEmcal"), region);
+    registry.fill(HIST("hNeventsAfterPassEmcal"), static_cast<int>(emcalRegion));
     /////////////////////////////////
     // EMCal cluster info before match ///
     ///////////////////////////////
@@ -543,7 +543,7 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", false);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", true);
   ///  Electron selection - for MC reco-level analysis
   void processMcRec(McTableCollision const& mcCollision,
                     McTableTracks const& mcTracks,
@@ -553,7 +553,7 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<true>(mcCollision, mcTracks, mcEmcClusters, matchedTracks, mcParticles);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", true);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", false);
 
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
