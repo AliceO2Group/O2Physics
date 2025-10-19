@@ -303,7 +303,7 @@ struct HfCorrelatorHfeHadrons {
         int nElHadUSCorr = 0;
         if (eTrack.nElPairLS() > 0) {
           for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-            if (eTrack.invariantMass() <= invariantMassEl) {
+            if (eTrack.invariantMass() <= invariantMassNonHfe) {
               ++nElHadLSCorr;
               registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
             }
@@ -311,7 +311,7 @@ struct HfCorrelatorHfeHadrons {
         }
         if (eTrack.nElPairUS() > 0) {
           for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-            if (eTrack.invariantMass() <= invariantMassEl) {
+            if (eTrack.invariantMass() <= invariantMassNonHfe) {
               registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
               ++nElHadUSCorr;
             }
