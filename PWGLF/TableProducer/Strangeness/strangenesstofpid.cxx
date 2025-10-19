@@ -101,6 +101,7 @@ struct strangenesstofpid {
   Configurable<int> calculationMethod{"calculationMethod", 0, "algorithm for TOF calculation. 0: fast analytical withouot eloss, 1: O2 Propagator + trackLTIntegral (slow), 2: both methods and do comparison studies (slow)"};
   Configurable<int> calculateV0s{"calculateV0s", -1, "calculate V0-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
+  Configurable<bool> reassociateTracks{"reassociateTracks", true, "if true, reassociate tracks to the collision the V0 or cascade belongs to. Relevant especially at high IR"};
 
   // auxiliary / debug tables as desired
   Configurable<int> calculateV0TOFPIDs{"calculateV0TOFPIDs", -1, "calculate V0TOFPIDs table (0: no, 1: yes, -1: auto)"};
@@ -1257,7 +1258,7 @@ struct strangenesstofpid {
         pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
         pTof.tofExpMom = pTra.tofExpMom();
-        pTof.tofEvTime = collisionEventTime[V0.collisionId()];
+        pTof.tofEvTime = reassociateTracks?collisionEventTime[V0.collisionId()]:pTra.tofEvTime();
         pTof.tofSignal = pTra.tofSignal();
         pTof.length = pTra.length();
         pTof.tpcNSigmaPi = pTra.tpcNSigmaPi();
@@ -1268,7 +1269,7 @@ struct strangenesstofpid {
         nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
         nTof.tofExpMom = nTra.tofExpMom();
-        nTof.tofEvTime = collisionEventTime[V0.collisionId()];
+        nTof.tofEvTime = reassociateTracks?collisionEventTime[V0.collisionId()]:nTra.tofEvTime();
         nTof.tofSignal = nTra.tofSignal();
         nTof.length = nTra.length();
         nTof.tpcNSigmaPi = nTra.tpcNSigmaPi();
@@ -1312,7 +1313,7 @@ struct strangenesstofpid {
         pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
         pTof.tofExpMom = pTra.tofExpMom();
-        pTof.tofEvTime = collisionEventTime[cascade.collisionId()];
+        pTof.tofEvTime = reassociateTracks?collisionEventTime[cascade.collisionId()]:pTra.tofEvTime();
         pTof.tofSignal = pTra.tofSignal();
         pTof.length = pTra.length();
         pTof.tpcNSigmaPi = pTra.tpcNSigmaPi();
@@ -1323,7 +1324,7 @@ struct strangenesstofpid {
         nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
         nTof.tofExpMom = nTra.tofExpMom();
-        nTof.tofEvTime = collisionEventTime[cascade.collisionId()];
+        nTof.tofEvTime = reassociateTracks?collisionEventTime[cascade.collisionId()]:nTra.tofEvTime();
         nTof.tofSignal = nTra.tofSignal();
         nTof.length = nTra.length();
         nTof.tpcNSigmaPi = nTra.tpcNSigmaPi();
@@ -1334,7 +1335,7 @@ struct strangenesstofpid {
         bTof.hasTPC = bTra.hasTPC();
         bTof.hasTOF = bTra.hasTOF();
         bTof.tofExpMom = bTra.tofExpMom();
-        bTof.tofEvTime = collisionEventTime[cascade.collisionId()];
+        bTof.tofEvTime = reassociateTracks?collisionEventTime[cascade.collisionId()]:bTra.tofEvTime();
         bTof.tofSignal = bTra.tofSignal();
         bTof.length = bTra.length();
         bTof.tpcNSigmaPi = bTra.tpcNSigmaPi();
@@ -1410,7 +1411,7 @@ struct strangenesstofpid {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.posTrackExtraId()]);
           pTof.collisionId = pTofExt.straCollisionId();
           pTof.tofExpMom = pTofExt.tofExpMom();
-          pTof.tofEvTime = collision.eventTime();
+          pTof.tofEvTime = reassociateTracks.value?collision.eventTime():pTofExt.tofEvTime();
           pTof.tofSignal = pTofExt.tofSignal();
           pTof.length = pTofExt.length();
         }
@@ -1424,7 +1425,7 @@ struct strangenesstofpid {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.negTrackExtraId()]);
           nTof.collisionId = nTofExt.straCollisionId();
           nTof.tofExpMom = nTofExt.tofExpMom();
-          nTof.tofEvTime = collision.eventTime();
+          nTof.tofEvTime = reassociateTracks.value?collision.eventTime():nTofExt.tofEvTime();
           nTof.tofSignal = nTofExt.tofSignal();
           nTof.length = nTofExt.length();
         }
@@ -1472,7 +1473,7 @@ struct strangenesstofpid {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.posTrackExtraId()]);
           pTof.collisionId = pTofExt.straCollisionId();
           pTof.tofExpMom = pTofExt.tofExpMom();
-          pTof.tofEvTime = collision.eventTime();
+          pTof.tofEvTime = reassociateTracks.value?collision.eventTime():pTofExt.tofEvTime();
           pTof.tofSignal = pTofExt.tofSignal();
           pTof.length = pTofExt.length();
         }
@@ -1486,7 +1487,7 @@ struct strangenesstofpid {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.negTrackExtraId()]);
           nTof.collisionId = nTofExt.straCollisionId();
           nTof.tofExpMom = nTofExt.tofExpMom();
-          nTof.tofEvTime = collision.eventTime();
+          nTof.tofEvTime = reassociateTracks.value?collision.eventTime():nTofExt.tofEvTime();
           nTof.tofSignal = nTofExt.tofSignal();
           nTof.length = nTofExt.length();
         }
@@ -1500,7 +1501,7 @@ struct strangenesstofpid {
           auto bTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.bachTrackExtraId()]);
           bTof.collisionId = bTofExt.straCollisionId();
           bTof.tofExpMom = bTofExt.tofExpMom();
-          bTof.tofEvTime = collision.eventTime();
+          bTof.tofEvTime = reassociateTracks.value?collision.eventTime():bTofExt.tofEvTime();
           bTof.tofSignal = bTofExt.tofSignal();
           bTof.length = bTofExt.length();
         }
