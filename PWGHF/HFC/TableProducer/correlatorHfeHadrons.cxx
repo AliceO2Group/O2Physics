@@ -66,7 +66,7 @@ struct HfCorrelatorHfeHadrons {
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
 
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
-  Configurable<float> invariantMassEl{"invariantMassEl", 0.14f, "max Invariant Mass for Photonic electron"};
+  Configurable<float> invariantMassNonHfe{"invariantMassNonHfe", 0.14f, "max Invariant Mass for Photonic electron"};
   // Associated Hadron selection
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1f, "Transverse momentum range for associated hadron tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8f, "Eta range  for associated hadron tracks"};
@@ -254,7 +254,7 @@ struct HfCorrelatorHfeHadrons {
           registry.fill(HIST("hLSElectronBin"), poolBin);
           registry.fill(HIST("hLikeMass"), massLike);
 
-          if (massLike <= invariantMassEl) {
+          if (massLike <= invariantMassNonHfe) {
             ++nElectronLS;
             registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
           }
@@ -267,7 +267,7 @@ struct HfCorrelatorHfeHadrons {
           registry.fill(HIST("hULSElectronBin"), poolBin);
           registry.fill(HIST("hUnLikeMass"), massUnLike);
 
-          if (massUnLike <= invariantMassEl) {
+          if (massUnLike <= invariantMassNonHfe) {
             ++nElectronUS;
             registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
           }
@@ -394,7 +394,7 @@ struct HfCorrelatorHfeHadrons {
     fillCorrelation(collision, electron, tracks, bc);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
 
   // =======  Process starts for McRec, Same event ============
 
@@ -406,7 +406,7 @@ struct HfCorrelatorHfeHadrons {
     fillCorrelation(mcCollision, mcElectron, mcTracks, bc);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
 
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electron)
   {
