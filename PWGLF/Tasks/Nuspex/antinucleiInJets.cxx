@@ -554,15 +554,21 @@ struct AntinucleiInJets {
   {
     // Keep only pi, K, p, e, mu
     int pdg = std::abs(particle.pdgCode());
-    if (!(pdg == 211 || pdg == 321 || pdg == 2212 || pdg == 11 || pdg == 13))
+    if (!(pdg == PDG_t::kPiPlus || pdg == PDG_t::kKPlus || pdg == PDG_t::kProton || pdg == PDG_t::kElectron || pdg == PDG_t::kMuonMinus))
       return false;
+
+    // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
+    static constexpr int kCharmQuark = 4;
+    static constexpr int kBottomQuark = 5;
+    static constexpr int hundreds = 100;
+    static constexpr int thousands = 1000;
 
     // Check if particle is from heavy-flavor decay
     bool fromHF = false;
     if (particle.has_mothers()) {
       auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
       int motherPdg = std::abs(mother.pdgCode());
-      fromHF = (motherPdg / 100 == 4 || motherPdg / 100 == 5 || motherPdg / 1000 == 4 || motherPdg / 1000 == 5);
+      fromHF = (motherPdg / hundreds == kCharmQuark || motherPdg / hundreds == kBottomQuark || motherPdg / thousands == kCharmQuark || motherPdg / thousands == kBottomQuark);
     }
 
     // Select only physical primary particles or from heavy-flavor
@@ -1760,7 +1766,7 @@ struct AntinucleiInJets {
       for (const auto& particle : mcParticles) {
 
         // Select physical primary particles or HF decay products
-        if (!isPhysicalPrimaryOrFromHF(particle,mcParticles))
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
           continue;
 
         // Select particles within acceptance
