@@ -129,13 +129,6 @@ struct TreeWriterTpcV0 {
     DaughterProton
   };
 
-  Filter trackFilter = (trackSelection.node() == static_cast<int>(TrackSelectionNoCut)) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionGlobalTrack)) && requireGlobalTrackInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionTrackWoPtEta)) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionGlobalTrackWoDCA)) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionQualityTracks)) && requireQualityTracksInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionInAcceptanceTracks)) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-
   ctpRateFetcher mRateFetcher;
 
   struct V0Daughter {
@@ -465,6 +458,9 @@ struct TreeWriterTpcV0 {
       }
       const auto& posTrack = v0.posTrack_as<soa::Filtered<TrksType>>();
       const auto& negTrack = v0.negTrack_as<soa::Filtered<TrksType>>();
+      if (!(isTrackSelected(posTrack, trackSelection) && isTrackSelected(negTrack, trackSelection))) {
+        continue;
+      }
 
       const V0Mother v0Mother = createV0Mother(v0Id);
       const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrack, v0Id, v0Mother.posDaughterId, true);
@@ -481,6 +477,9 @@ struct TreeWriterTpcV0 {
         continue;
       }
       const auto& bachTrack = casc.bachelor_as<soa::Filtered<TrksType>>();
+      if (!isTrackSelected(bachTrack, trackSelection)) {
+        continue;
+      }
       const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
       // Omega and antiomega
       fillDaughterTrack(casc, bachTrack, bachDaughter);
@@ -566,6 +565,9 @@ struct TreeWriterTpcV0 {
         }
         const auto& posTrack = v0.posTrack_as<TrksType>();
         const auto& negTrack = v0.negTrack_as<TrksType>();
+        if (!(isTrackSelected(posTrack, trackSelection) && isTrackSelected(negTrack, trackSelection))) {
+          continue;
+        }
 
         const auto& [posTrackQA, existPosTrkQA] = getTrackQA(posTrack);
         const auto& [negTrackQA, existNegTrkQA] = getTrackQA(negTrack);
@@ -585,6 +587,9 @@ struct TreeWriterTpcV0 {
           continue;
         }
         const auto& bachTrack = casc.bachelor_as<TrksType>();
+        if (!isTrackSelected(bachTrack, trackSelection)) {
+          continue;
+        }
         const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
         const auto& [bachTrackQA, existBachTrkQA] = getTrackQA(bachTrack);
         // Omega and antiomega
@@ -962,12 +967,7 @@ struct TreeWriterTPCTOF {
       }
       rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
       for (auto const& trk : tracksWithITSPid) {
-        if (!((trackSelection == TrackSelectionNoCut) ||
-              ((trackSelection == TrackSelectionGlobalTrack) && trk.isGlobalTrack()) ||
-              ((trackSelection == TrackSelectionTrackWoPtEta) && trk.isGlobalTrackWoPtEta()) ||
-              ((trackSelection == TrackSelectionGlobalTrackWoDCA) && trk.isGlobalTrackWoDCA()) ||
-              ((trackSelection == TrackSelectionQualityTracks) && trk.isQualityTrack()) ||
-              ((trackSelection == TrackSelectionInAcceptanceTracks) && trk.isInAcceptanceTrack()))) {
+        if (!isTrackSelected(trk, trackSelection)) {
           continue;
         }
         // get the corresponding trackQA using labelTracks2TracKQA and get variables of interest
