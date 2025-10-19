@@ -15,6 +15,7 @@
 /// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>
 /// \author Christian Sonnabend <christian.sonnabend@cern.ch>
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #include "tpcSkimsTableCreator.h"
 
@@ -283,16 +284,16 @@ struct TreeWriterTpcV0 {
                  id,
                  nSigmaTPC,
                  nSigmaTOF,
+                 runnumber,
+                 trackOcc,
+                 ft0Occ,
+                 hadronicRate,
                  alpha,
                  qt,
                  cosPA,
                  pT,
                  v0radius,
-                 gammapsipair,
-                 runnumber,
-                 trackOcc,
-                 ft0Occ,
-                 hadronicRate);
+                 gammapsipair);
     }
   };
 
@@ -340,16 +341,16 @@ struct TreeWriterTpcV0 {
                                 id,
                                 nSigmaTPC,
                                 nSigmaTOF,
+                                runnumber,
+                                trackOcc,
+                                ft0Occ,
+                                hadronicRate,
                                 alpha,
                                 qt,
                                 cosPA,
                                 pT,
                                 v0radius,
                                 gammapsipair,
-                                runnumber,
-                                trackOcc,
-                                ft0Occ,
-                                hadronicRate,
                                 existTrkQA ? trackQA.tpcdEdxNorm() : -999);
       } else {
         rowTPCTreeWithTrkQA(usedDedx,
@@ -368,16 +369,16 @@ struct TreeWriterTpcV0 {
                             id,
                             nSigmaTPC,
                             nSigmaTOF,
+                            runnumber,
+                            trackOcc,
+                            ft0Occ,
+                            hadronicRate,
                             alpha,
                             qt,
                             cosPA,
                             pT,
                             v0radius,
                             gammapsipair,
-                            runnumber,
-                            trackOcc,
-                            ft0Occ,
-                            hadronicRate,
                             bcGlobalIndex,
                             bcTimeFrameId,
                             bcBcInTimeFrame,
@@ -823,7 +824,7 @@ struct TreeWriterTPCTOF {
 
   /// Function to fill trees
   template <bool DoCorrectDeDx = false, typename T, typename C>
-  void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const double hadronicRate)
+  void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const double hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -862,7 +863,8 @@ struct TreeWriterTPCTOF {
                     runnumber,
                     trackOcc,
                     ft0Occ,
-                    hadronicRate);
+                    hadronicRate,
+                    nSigmaITS);
     }
   };
 
@@ -903,11 +905,11 @@ struct TreeWriterTPCTOF {
                                    id,
                                    nSigmaTPC,
                                    nSigmaTOF,
-                                   nSigmaITS,
                                    runnumber,
                                    trackOcc,
                                    ft0Occ,
                                    hadronicRate,
+                                   nSigmaITS,
                                    existTrkQA ? trackQA.tpcdEdxNorm() : -999);
       } else {
         rowTPCTOFTreeWithTrkQA(usedEdx,
@@ -926,11 +928,11 @@ struct TreeWriterTPCTOF {
                                id,
                                nSigmaTPC,
                                nSigmaTOF,
-                               nSigmaITS,
                                runnumber,
                                trackOcc,
                                ft0Occ,
                                hadronicRate,
+                               nSigmaITS,
                                bcGlobalIndex,
                                bcTimeFrameId,
                                bcBcInTimeFrame,
@@ -1011,7 +1013,7 @@ struct TreeWriterTPCTOF {
             ((trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly) ||
              (trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof)) &&
             downsampleTsalisCharged(trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass)) {
-          fillSkimmedTPCTOFTable<IsCorrectedDeDx>(trk, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate);
+          fillSkimmedTPCTOFTable<IsCorrectedDeDx>(trk, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate);
         }
       }
     } /// Loop tracks
