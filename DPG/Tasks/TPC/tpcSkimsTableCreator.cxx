@@ -429,7 +429,7 @@ struct TreeWriterTpcV0 {
   }
 
   template <bool IsCorrectedDeDx, typename TrksType>
-  void runStandard(Colls::iterator const& collision, soa::Filtered<TrksType> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs)
+  void runStandard(Colls::iterator const& collision, V0sWithID const& v0s, CascsWithID const& cascs)
   {
     /// Check event slection
     if (!isEventSelected(collision, applyEvSel)) {
@@ -439,7 +439,7 @@ struct TreeWriterTpcV0 {
     const int runnumber = bc.runNumber();
     const float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
 
-    rowTPCTree.reserve(tracks.size());
+    rowTPCTree.reserve(2 * v0s.size() + cascs.size());
 
     auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter) {
       const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
@@ -456,8 +456,8 @@ struct TreeWriterTpcV0 {
       if (v0Id == MotherUndef) {
         continue;
       }
-      const auto& posTrack = v0.posTrack_as<soa::Filtered<TrksType>>();
-      const auto& negTrack = v0.negTrack_as<soa::Filtered<TrksType>>();
+      const auto& posTrack = v0.posTrack_as<TrksType>();
+      const auto& negTrack = v0.negTrack_as<TrksType>();
       if (!(isTrackSelected(posTrack, trackSelection) && isTrackSelected(negTrack, trackSelection))) {
         continue;
       }
@@ -476,7 +476,7 @@ struct TreeWriterTpcV0 {
       if (cascId == MotherUndef) {
         continue;
       }
-      const auto& bachTrack = casc.bachelor_as<soa::Filtered<TrksType>>();
+      const auto& bachTrack = casc.bachelor_as<TrksType>();
       if (!isTrackSelected(bachTrack, trackSelection)) {
         continue;
       }
@@ -487,25 +487,23 @@ struct TreeWriterTpcV0 {
   }
 
   /// Apply a track quality selection with a filter!
-  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
+  void processStandard(Colls::iterator const& collision, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
   {
-    runStandard<false, Trks>(collision, tracks, v0s, cascs);
+    runStandard<false, Trks>(collision, v0s, cascs);
   } /// process Standard
   PROCESS_SWITCH(TreeWriterTpcV0, processStandard, "Standard V0 Samples for PID", true);
 
-  void processStandardWithCorrecteddEdx(Colls::iterator const& collision, soa::Filtered<TrksWithDEdxCorrection> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
+  void processStandardWithCorrecteddEdx(Colls::iterator const& collision, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
   {
-    runStandard<true, TrksWithDEdxCorrection>(collision, tracks, v0s, cascs);
+    runStandard<true, TrksWithDEdxCorrection>(collision, v0s, cascs);
   } /// process StandardWithCorrecteddEdx
   PROCESS_SWITCH(TreeWriterTpcV0, processStandardWithCorrecteddEdx, "Standard V0 Samples for PID with corrected dEdx", false);
 
-  Preslice<Trks> perCollisionTracks = aod::track::collisionId;
   Preslice<V0sWithID> perCollisionV0s = aod::v0data::collisionId;
   Preslice<CascsWithID> perCollisionCascs = aod::cascdata::collisionId;
-  Preslice<TrksWithDEdxCorrection> perCollisionTracksWithNewDEdx = aod::track::collisionId;
 
   template <bool IsCorrectedDeDx, bool IsWithdEdx, typename TrksType, typename BCType>
-  void runWithTrQAGeneric(Colls const& collisions, TrksType const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::TracksQAVersion const& tracksQA, Preslice<TrksType> const& perCollisionTracksType)
+  void runWithTrQAGeneric(Colls const& collisions, TrksType const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::TracksQAVersion const& tracksQA)
   {
     std::vector<int64_t> labelTrack2TrackQA(myTracks.size(), -1);
     for (const auto& trackQA : tracksQA) {
@@ -514,7 +512,6 @@ struct TreeWriterTpcV0 {
     }
     for (const auto& collision : collisions) {
       /// Check event slection
-      const auto& tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
@@ -533,9 +530,9 @@ struct TreeWriterTpcV0 {
         bcBcInTimeFrame = bc.bcInTF();
       }
       if constexpr (IsWithdEdx) {
-        rowTPCTreeWithdEdxTrkQA.reserve(tracks.size());
+        rowTPCTreeWithdEdxTrkQA.reserve(2 * v0s.size() + cascs.size());
       } else {
-        rowTPCTreeWithTrkQA.reserve(tracks.size());
+        rowTPCTreeWithTrkQA.reserve(2 * v0s.size() + cascs.size());
       }
 
       auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter, const aod::TracksQA& trackQAInstance, const bool existTrkQA) {
@@ -600,25 +597,25 @@ struct TreeWriterTpcV0 {
 
   void processWithdEdxTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
   {
-    runWithTrQAGeneric<false, true, Trks, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA, perCollisionTracks);
+    runWithTrQAGeneric<false, true, Trks, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA);
   } /// process with dEdx from TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQA, "Standard V0 Samples with dEdx from Track QA for PID", false);
 
   void processWithdEdxTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
   {
-    runWithTrQAGeneric<true, true, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA, perCollisionTracksWithNewDEdx);
+    runWithTrQAGeneric<true, true, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA);
   } /// process with dEdx from TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQAWithCorrecteddEdx, "Standard V0 Samples with dEdx from Track QA for PID with corrected dEdx", false);
 
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
-    runWithTrQAGeneric<false, false, Trks, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA, perCollisionTracks);
+    runWithTrQAGeneric<false, false, Trks, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
   } /// process with TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQA, "Standard V0 Samples with Track QA for PID", false);
 
   void processWithTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
-    runWithTrQAGeneric<true, false, TrksWithDEdxCorrection, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA, perCollisionTracksWithNewDEdx);
+    runWithTrQAGeneric<true, false, TrksWithDEdxCorrection, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
   } /// process with TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQAWithCorrecteddEdx, "Standard V0 Samples with Track QA for PID with corrected dEdx", false);
 
