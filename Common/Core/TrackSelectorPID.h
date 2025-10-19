@@ -24,6 +24,8 @@
 
 #include <cstdint>
 
+using namespace o2::constants::physics;
+
 /// Class for track selection using PID detectors
 
 struct TrackSelectorPID {
@@ -127,6 +129,8 @@ class TrackSelectorPidBase
       nSigma = track.tpcNSigmaKa();
     } else if constexpr (pdg == kProton) {
       nSigma = track.tpcNSigmaPr();
+    } else if constexpr (pdg == kDeuteron) {
+      nSigma = track.tpcNSigmaDe();
     } else {
       errorPdg();
     }
@@ -221,6 +225,8 @@ class TrackSelectorPidBase
       nSigma = track.tofNSigmaKa();
     } else if constexpr (pdg == kProton) {
       nSigma = track.tofNSigmaPr();
+    } else if constexpr (pdg == kDeuteron) {
+      nSigma = track.tofNSigmaDe();
     } else {
       errorPdg();
     }
@@ -551,6 +557,8 @@ class TrackSelectorPidBase
       return track.bayesID() == o2::track::PID::Kaon;
     } else if constexpr (pdg == kProton) {
       return track.bayesID() == o2::track::PID::Proton;
+    } else if constexpr (pdg == kDeuteron) {
+      return track.bayesID() == o2::track::PID::Deuteron;
     } else {
       errorPdg();
       return false;
@@ -579,6 +587,8 @@ class TrackSelectorPidBase
       prob = track.bayesKa();
     } else if constexpr (pdg == kProton) {
       prob = track.bayesPr();
+    } else if constexpr (pdg == kDeuteron) {
+      prob = track.bayesDe();
     } else {
       errorPdg();
     }
@@ -661,5 +671,6 @@ using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>; // Mu
 using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;    // Pi
 using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;     // Ka
 using TrackSelectorPr = TrackSelectorPidBase<kProton>;    // Pr
+using TrackSelectorDe = TrackSelectorPidBase<kDeuteron>;  // De
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_

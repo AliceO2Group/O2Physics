@@ -164,6 +164,14 @@ DECLARE_SOA_TABLE(HfSelLc, "AOD", "HFSELLC", //!
 DECLARE_SOA_TABLE(HfMlLcToPKPi, "AOD", "HFMLLc", //!
                   hf_sel_candidate_lc::MlProbLcToPKPi, hf_sel_candidate_lc::MlProbLcToPiKP);
 
+namespace hf_sel_candidate_cd
+{
+DECLARE_SOA_COLUMN(IsSelCdToDeKPi, isSelCdToDeKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelCdToPiKDe, isSelCdToPiKDe, int); //!
+} // namespace hf_sel_candidate_cd
+DECLARE_SOA_TABLE(HfSelCd, "AOD", "HFSELCD", //!
+                  hf_sel_candidate_cd::IsSelCdToDeKPi, hf_sel_candidate_cd::IsSelCdToPiKDe);
+
 namespace hf_sel_candidate_lc_alice3
 {
 DECLARE_SOA_COLUMN(IsSelLcToPKPiNoPid, isSelLcToPKPiNoPid, int);                   //!
