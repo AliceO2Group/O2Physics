@@ -18,22 +18,6 @@
 
 #include "tpcSkimsTableCreator.h"
 
-#include <CCDB/BasicCCDBManager.h>
-
-#include <cmath>
-#include <string>
-#include <utility>
-#include <vector>
-/// ROOT
-#include "TRandom3.h"
-/// O2
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-/// O2Physics
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -47,6 +31,21 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTPCBase.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "TRandom3.h"
+
+#include <cmath>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
