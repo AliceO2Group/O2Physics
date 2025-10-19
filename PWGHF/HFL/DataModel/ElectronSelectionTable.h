@@ -78,17 +78,17 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
 // definition of columns and tables for HfcorrElectron Selection
 namespace hf_corr_sel_electron
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //! collisioniD of the electron track
-DECLARE_SOA_INDEX_COLUMN(Track, track);                        //! trackid of of the electron track
-DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);                 //! pseudorapidity of the electron track
-DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of the electron track
-DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
-DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
-DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
-DECLARE_SOA_COLUMN(InvariantMass, invariantMass, bool);        //! invariant mass of the non-Hfelectron
-DECLARE_SOA_COLUMN(NElPairLS, nElPairLS, int);                 //! Number of Like sign electron pair
-DECLARE_SOA_COLUMN(NElPairUS, nElPairUS, int);                 //! Number of UnLike sign electron pair
-DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron information
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                      //! collisioniD of the electron track
+DECLARE_SOA_INDEX_COLUMN(Track, track);                              //! trackid of of the electron track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);                       //! pseudorapidity of the electron track
+DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                       //! azimuth of the electron track
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                         //! transverse momentum of the electron track
+DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float);       //! tpcNSigma of the electron track(TPC PID)
+DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float);       //! tofNSigma of the electron track(TOF PID)
+DECLARE_SOA_COLUMN(InvariantMassNonHfe, invariantMassNonHfe, float); //! invariant mass of the non-Hfelectron
+DECLARE_SOA_COLUMN(NElPairLS, nElPairLS, int);                       //! Number of Like sign electron pair
+DECLARE_SOA_COLUMN(NElPairUS, nElPairUS, int);                       //! Number of UnLike sign electron pair
+DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                          //! electron information
 } // namespace hf_corr_sel_electron
 
 DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
@@ -99,7 +99,7 @@ DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   hf_corr_sel_electron::PtTrack,
                   hf_corr_sel_electron::TpcNSigmaElTrack,
                   hf_corr_sel_electron::TofNSigmaElTrack,
-                  hf_corr_sel_electron::InvariantMass,
+                  hf_corr_sel_electron::InvariantMassNonHfe,
                   hf_corr_sel_electron::NElPairLS,
                   hf_corr_sel_electron::NElPairUS,
                   hf_corr_sel_electron::IsEmcal);
