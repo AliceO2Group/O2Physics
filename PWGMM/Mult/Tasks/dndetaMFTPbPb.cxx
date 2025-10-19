@@ -933,7 +933,7 @@ struct DndetaMFTPbPb {
       hNevt->GetXaxis()->SetBinLabel(2, "Generated collisions");
       if (doprocessSecondariesMCInlcusive) {
         registry.add({"Events/EvtGenRec", ";status", {HistType::kTH1F, {{3, 0.5, 3.5}}}});
-        auto heff = registry.get<TH2>(HIST("Events/EvtGenRec"));
+        auto heff = registry.get<TH1>(HIST("Events/EvtGenRec"));
         auto* h = heff->GetXaxis();
         h->SetBinLabel(1, "All generated");
         h->SetBinLabel(2, "All reconstructed");
@@ -951,10 +951,11 @@ struct DndetaMFTPbPb {
       }
       if (doprocessSecondariesMCCentFT0C) {
         registry.add({"Events/Centrality/EvtGenRec", ";status;centrality", {HistType::kTH2F, {{3, 0.5, 3.5}, centralityAxis}}});
-        auto heff = registry.get<THnSparse>(HIST("Events/Centrality/EvtGenRec"));
-        heff->GetAxis(0)->SetBinLabel(1, "All generated");
-        heff->GetAxis(0)->SetBinLabel(2, "All reconstructed");
-        heff->GetAxis(0)->SetBinLabel(3, "Selected reconstructed");
+        auto heff = registry.get<TH2>(HIST("Events/Centrality/EvtGenRec"));
+        auto* h = heff->GetXaxis();
+        h->SetBinLabel(1, "All generated");
+        h->SetBinLabel(2, "All reconstructed");
+        h->SetBinLabel(3, "Selected reconstructed");
         registry.add({"Tracks/Centrality/THnRecAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, centralityAxis}}});
         registry.add({"Tracks/Centrality/THnRec", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, centralityAxis}}});
         registry.add({"Tracks/Centrality/THnRecNonAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, centralityAxis}}});
