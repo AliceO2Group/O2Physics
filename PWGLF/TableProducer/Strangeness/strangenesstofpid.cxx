@@ -1149,11 +1149,11 @@ struct strangenesstofpid {
         // de facto nsigma
         if (nSigmaCalibLoaded) {
           if (cascade.sign() < 0) {
-            casctof.nSigmaXiLaPr = (casctof.negDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
-            casctof.nSigmaOmLaPr = (casctof.negDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
+            casctof.nSigmaXiLaPi = (casctof.negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.p())) / hSigmaNegXiPi->Interpolate(cascade.p());
+            casctof.nSigmaOmLaPi = (casctof.negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.p())) / hSigmaNegOmPi->Interpolate(cascade.p());
           } else {
-            casctof.nSigmaXiLaPi = (casctof.negDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
-            casctof.nSigmaOmLaPi = (casctof.negDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
+            casctof.nSigmaXiLaPr = (casctof.negDeltaTimeAsXiPr - hMeanNegXiPr->Interpolate(cascade.p())) / hSigmaNegXiPr->Interpolate(cascade.p());
+            casctof.nSigmaOmLaPr = (casctof.negDeltaTimeAsOmPr - hMeanNegOmPr->Interpolate(cascade.p())) / hSigmaNegOmPr->Interpolate(cascade.p());
           }
         }
 
