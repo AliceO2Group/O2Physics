@@ -384,37 +384,7 @@ struct TreeWriterTpcV0 {
     }
   }
 
-  double tsalisCharged(const double pt, const double mass)
-  {
-    const double a = 6.81, b = 59.24;
-    const double c = 0.082, d = 0.151;
-    const double mt = std::sqrt(mass * mass + pt * pt);
-    const double n = a + b / sqrtSNN;
-    const double t = c + d / sqrtSNN;
-    const double p0 = n * t;
-    const double result = std::pow((1. + mt / p0), -n);
-    return result;
-  };
-
-  /// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
-  /// as in https://iopscience.iop.org/article/10.1088/2399-6528/aab00f/pdf
   TRandom3* fRndm = new TRandom3(0);
-  bool downsampleTsalisCharged(const double pt, const double factor1Pt, const double mass, const double maxPt)
-  {
-    if (factor1Pt < 0.) {
-      return true;
-    }
-    if (pt > maxPt) {
-      return true;
-    }
-    const double prob = tsalisCharged(pt, mass) * pt;
-    const double probNorm = tsalisCharged(1., mass);
-    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
-      return false;
-    } else {
-      return true;
-    }
-  };
 
   void init(o2::framework::InitContext&)
   {
@@ -479,7 +449,7 @@ struct TreeWriterTpcV0 {
     rowTPCTree.reserve(tracks.size());
 
     auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter) {
-      const bool passDownsamplig = downsampleTsalisCharged(dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, daughter.maxPt4dwnsmplTsalis);
+      const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
       const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < FloatEqualityTolerance;
       const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > FloatEqualityTolerance;
       if (passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
@@ -570,7 +540,7 @@ struct TreeWriterTpcV0 {
       }
 
       auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter, const aod::TracksQA& trackQAInstance, const bool existTrkQA) {
-        const bool passDownsamplig = downsampleTsalisCharged(dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, daughter.maxPt4dwnsmplTsalis);
+        const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
         const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < FloatEqualityTolerance;
         const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > FloatEqualityTolerance;
         if (passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
@@ -755,34 +725,7 @@ struct TreeWriterTPCTOF {
     double nSigmaTpcTpctof;
   };
 
-  double tsalisCharged(const double pt, const double mass)
-  {
-    const double a = 6.81, b = 59.24;
-    const double c = 0.082, d = 0.151;
-    double mt = std::sqrt(mass * mass + pt * pt);
-    double n = a + b / sqrtSNN;
-    double t = c + d / sqrtSNN;
-    double p0 = n * t;
-    double result = std::pow((1. + mt / p0), -n);
-    return result;
-  };
-
-  /// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
-  /// as in https://iopscience.iop.org/article/10.1088/2399-6528/aab00f/pdf
   TRandom3* fRndm = new TRandom3(0);
-  bool downsampleTsalisCharged(const double pt, const float factor1Pt, const double mass)
-  {
-    if (factor1Pt < 0.) {
-      return true;
-    }
-    const double prob = tsalisCharged(pt, mass) * pt;
-    const double probNorm = tsalisCharged(1., mass);
-    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
-      return false;
-    } else {
-      return true;
-    }
-  };
 
   /// Function to fill trees
   template <bool DoCorrectDeDx = false, typename T, typename C>
@@ -963,7 +906,7 @@ struct TreeWriterTPCTOF {
         if ((!tofTrack->isApplyHardCutOnly || trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly) &&
             ((trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly) ||
              (trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof)) &&
-            downsampleTsalisCharged(trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass)) {
+            downsampleTsalisCharged(fRndm, trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass, sqrtSNN)) {
           fillSkimmedTPCTOFTable<IsCorrectedDeDx>(trk, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate);
         }
       }
@@ -1047,7 +990,7 @@ struct TreeWriterTPCTOF {
           if ((!tofTrack->isApplyHardCutOnly || trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly) &&
               ((trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly) ||
                (trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof)) &&
-              downsampleTsalisCharged(trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass)) {
+              downsampleTsalisCharged(fRndm, trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass, sqrtSNN)) {
             fillSkimmedTPCTOFTableWithTrkQAGeneric<IsCorrectedDeDx, IsWithdEdx>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
         }
