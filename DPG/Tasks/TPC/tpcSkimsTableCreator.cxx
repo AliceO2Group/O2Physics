@@ -19,6 +19,8 @@
 
 #include "tpcSkimsTableCreator.h"
 
+#include "utilsTpcSkimsTableCreator.h"
+
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -54,6 +56,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::dataformats;
+using namespace o2::dpg_tpcskimstablecreator;
 
 struct TreeWriterTpcV0 {
 
@@ -124,21 +127,6 @@ struct TreeWriterTpcV0 {
     DaughterPion,
     DaughterKaon,
     DaughterProton
-  };
-
-  enum {
-    TrackSelectionNoCut = 0,
-    TrackSelectionGlobalTrack,
-    TrackSelectionTrackWoPtEta,
-    TrackSelectionGlobalTrackWoDCA,
-    TrackSelectionQualityTracks,
-    TrackSelectionInAcceptanceTracks
-  };
-
-  enum {
-    EventSelectionNo = 0,
-    EventSelectionRun2,
-    EventSelectionRun3
   };
 
   Filter trackFilter = (trackSelection.node() == static_cast<int>(TrackSelectionNoCut)) ||
@@ -428,22 +416,6 @@ struct TreeWriterTpcV0 {
     }
   };
 
-  /// Event selection
-  template <typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
-  {
-    if (applyEvSel == EventSelectionRun2) {
-      if (!collision.sel7()) {
-        return false;
-      }
-    } else if (applyEvSel == EventSelectionRun3) {
-      if (!collision.sel8()) {
-        return false;
-      }
-    }
-    return true;
-  };
-
   void init(o2::framework::InitContext&)
   {
     const std::array<bool, 7> doprocess{doprocessStandard, doprocessStandardWithCorrecteddEdx, doprocessWithdEdxTrQA, doprocessWithdEdxTrQAWithCorrecteddEdx, doprocessWithTrQA, doprocessWithTrQAWithCorrecteddEdx, doprocessDummy};
@@ -497,7 +469,7 @@ struct TreeWriterTpcV0 {
   void runStandard(Colls::iterator const& collision, soa::Filtered<TrksType> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs)
   {
     /// Check event slection
-    if (!isEventSelected(collision, tracks)) {
+    if (!isEventSelected(collision, applyEvSel)) {
       return;
     }
     const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -574,7 +546,7 @@ struct TreeWriterTpcV0 {
     for (const auto& collision : collisions) {
       /// Check event slection
       const auto& tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
-      if (!isEventSelected(collision, tracks)) {
+      if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
       const auto& v0s = myV0s.sliceBy(perCollisionV0s, collision.globalIndex());
@@ -756,21 +728,6 @@ struct TreeWriterTPCTOF {
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
-
-  enum {
-    TrackSelectionNoCut = 0,
-    TrackSelectionGlobalTrack,
-    TrackSelectionTrackWoPtEta,
-    TrackSelectionGlobalTrackWoDCA,
-    TrackSelectionQualityTracks,
-    TrackSelectionInAcceptanceTracks
-  };
-
-  enum {
-    EventSelectionNo = 0,
-    EventSelectionRun2,
-    EventSelectionRun3
-  };
 
   Filter trackFilter = (trackSelection.node() == static_cast<int>(TrackSelectionNoCut)) ||
                        ((trackSelection.node() == static_cast<int>(TrackSelectionGlobalTrack)) && requireGlobalTrackInFilter()) ||
@@ -955,22 +912,6 @@ struct TreeWriterTPCTOF {
     }
   }
 
-  /// Event selection
-  template <typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
-  {
-    if (applyEvSel == EventSelectionRun2) {
-      if (!collision.sel7()) {
-        return false;
-      }
-    } else if (applyEvSel == EventSelectionRun3) {
-      if (!collision.sel8()) {
-        return false;
-      }
-    }
-    return true;
-  };
-
   void init(o2::framework::InitContext&)
   {
     const std::array<bool, 7> doprocess{doprocessStandard, doprocessStandardWithCorrecteddEdx, doprocessWithdEdxTrQA, doprocessWithdEdxTrQAWithCorrecteddEdx, doprocessWithTrQA, doprocessWithTrQAWithCorrecteddEdx, doprocessDummy};
@@ -998,7 +939,7 @@ struct TreeWriterTPCTOF {
   void runStandard(Colls::iterator const& collision, soa::Filtered<TrksType> const& tracks)
   {
     /// Check event selection
-    if (!isEventSelected(collision, tracks)) {
+    if (!isEventSelected(collision, applyEvSel)) {
       return;
     }
     const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1055,7 +996,7 @@ struct TreeWriterTPCTOF {
     for (const auto& collision : collisions) {
       /// Check event selection
       const auto& tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
-      if (!isEventSelected(collision, tracks)) {
+      if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
       const auto& tracksWithITSPid = soa::Attach<TrksType,
