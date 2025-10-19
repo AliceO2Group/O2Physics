@@ -17,6 +17,7 @@
 
 #include "Tools/ML/model.h"
 
+#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/O2DatabasePDGPlugin.h>
@@ -45,7 +46,6 @@ struct ParticleCompositionCorrection {
 
   /*
    backlog:
-   - store final neural networks in ccdb and implement accessing them
    - support collision systems beyond pp
    - add QA task illustrating improved mc/data matching of DCA distributions after scaling of secondaries
    - extend PCC weight table by columns with systematic variations (up/down)
@@ -54,14 +54,18 @@ struct ParticleCompositionCorrection {
    */
 
   Service<o2::framework::O2DatabasePDG> pdg;
+  o2::ccdb::CcdbApi ccdbApi;
+
+  Configurable<bool> skipAll{"skipAll", false, "run table producer in dummy mode, i.e. skip all computations and fill with 1"};
+  Configurable<bool> skipSec{"skipSec", false, "dont calculate weights for secondaries"};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
-  Configurable<bool> skipSec{"skipSec", false, "dont calculate weights for secondaries"};
   Configurable<bool> enableQAHistos{"enableQAHistos", true, "enable qa histograms showing the effect of the PCC"};
 
-  Configurable<std::string> modelNameData{"modelNameData", "ParticleFractions_pp_data.onnx", "Path to the .onnx file containing the particle fractions in data"};
-  Configurable<std::string> modelNameMC{"modelNameMC", "ParticleFractions_pp_pythia.onnx", "Path to the .onnx file containing the particle fractions in MC"};
+  Configurable<std::string> ccdbBasePath{"ccdbBasePath", "/Users/m/makruger/", "ccdb directory contianing the particle fraction networks"};
+  Configurable<std::string> modelPathData{"modelPathData", "PCC/data/pp", "Path to the .onnx file containing the particle fractions in data"};
+  Configurable<std::string> modelPathMC{"modelPathMC", "PCC/pythia/pp", "Path to the .onnx file containing the particle fractions in MC"};
 
   OnnxModel particleFractionsData;
   OnnxModel particleFractionsMC;
@@ -80,8 +84,18 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
 void ParticleCompositionCorrection::init(InitContext const&)
 {
-  particleFractionsData.initModel(modelNameData.value, true);
-  particleFractionsMC.initModel(modelNameMC.value, true);
+  if (skipAll) {
+    return;
+  }
+  if (!ccdbBasePath.value.empty()) {
+    ccdbApi.init("http://ccdb-test.cern.ch:8080");
+    static const int64_t dummyTimeStamp = 2;
+    if (!ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathData.value, modelPathData.value, {}, dummyTimeStamp, false, "ParticleFractions_Data.onnx") || !ccdbApi.retrieveBlob(ccdbBasePath.value + modelPathMC.value, modelPathMC.value, {}, dummyTimeStamp, false, "ParticleFractions_MC.onnx")) {
+      LOGP(fatal, "Could not download particle fraction networks!");
+    }
+  }
+  particleFractionsData.initModel(modelPathData.value + "/ParticleFractions_Data.onnx", true);
+  particleFractionsMC.initModel(modelPathMC.value + "/ParticleFractions_MC.onnx", true);
 
   if (enableQAHistos) {
     std::vector<double> ptBinEdges = {0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75,
@@ -129,7 +143,7 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
     float weight = 1.f;
 
     // calculate weights only inside the configured kinematic range
-    if (std::abs(particle.eta()) < etaCut && particle.pt() > ptMinCut && particle.pt() < ptMaxCut) {
+    if (!skipAll && std::abs(particle.eta()) < etaCut && particle.pt() > ptMinCut && particle.pt() < ptMaxCut) {
       auto refParticleID = particle.index();
 
       // find initial particle of secondaries from decays or interactions with material
@@ -165,6 +179,8 @@ void ParticleCompositionCorrection::process(aod::McCollisions::iterator const&, 
           {PDG_t::kSigma0, 3.f},
           {PDG_t::kXiMinus, 3.f},
           // TODO: potentially extend by xi0/eta/omega/rho/phi/Delta...
+          // pdg codes defined in AliceO2/Common/Constants/include/CommonConstants/PhysicsConstants.h
+          // e.g. o2::constants::physics::Pdg::kEta
         };
 
         if (auto iterMapPID = mapPID.find(absPDGCode); iterMapPID != mapPID.end()) {
