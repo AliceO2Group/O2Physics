@@ -35,6 +35,7 @@
 #include "Framework/runDataProcessing.h"
 /// O2Physics
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
@@ -62,8 +63,8 @@ struct TreeWriterTpcV0 {
   using TrksWithDEdxCorrection = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection, aod::DEdxsCorrected>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
-  using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID>;
-  using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID>;
+  using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID, aod::V0TOFNSigmas>;
+  using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID, aod::CascTOFNSigmas>;
 
   /// Tables to be produced
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
@@ -162,18 +163,18 @@ struct TreeWriterTpcV0 {
     bool rejectNoTofDauTrack{false};
   };
 
-  template <bool IsCorrectedDeDx, typename T>
-  V0Daughter createV0Daughter(const T& track, const int daughterId)
+  template <bool IsCorrectedDeDx, typename V0Casc, typename T>
+  V0Daughter createV0Daughter(const V0Casc& v0Casc, const T& track, const int motherId, const int daughterId, const bool isPositive = true)
   {
     switch (daughterId) {
       case DaughterElectron:
-        return V0Daughter{downsamplingTsalisElectrons, MassElectron, maxPt4dwnsmplTsalisElectrons, track.tpcNSigmaEl(), track.tofNSigmaEl(), track.tpcExpSignalEl(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidElectron, dwnSmplFactorEl, nSigmaTofDauTrackEl, rejectNoTofDauTrackEl};
+        return V0Daughter{downsamplingTsalisElectrons, MassElectron, maxPt4dwnsmplTsalisElectrons, track.tpcNSigmaEl(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalEl(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidElectron, dwnSmplFactorEl, nSigmaTofDauTrackEl, rejectNoTofDauTrackEl};
       case DaughterPion:
-        return V0Daughter{downsamplingTsalisPions, MassPiPlus, maxPt4dwnsmplTsalisPions, track.tpcNSigmaPi(), track.tofNSigmaPi(), track.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidPion, dwnSmplFactorPi, nSigmaTofDauTrackPi, rejectNoTofDauTrackPi};
+        return V0Daughter{downsamplingTsalisPions, MassPiPlus, maxPt4dwnsmplTsalisPions, track.tpcNSigmaPi(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidPion, dwnSmplFactorPi, nSigmaTofDauTrackPi, rejectNoTofDauTrackPi};
       case DaughterProton:
-        return V0Daughter{downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidProton, dwnSmplFactorPr, nSigmaTofDauTrackPr, rejectNoTofDauTrackPr};
+        return V0Daughter{downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons, track.tpcNSigmaPr(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidProton, dwnSmplFactorPr, nSigmaTofDauTrackPr, rejectNoTofDauTrackPr};
       case DaughterKaon:
-        return V0Daughter{downsamplingTsalisKaons, MassKPlus, maxPt4dwnsmplTsalisKaons, track.tpcNSigmaKa(), track.tofNSigmaKa(), track.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidKaon, dwnSmplFactorKa, nSigmaTofDauTrackKa, rejectNoTofDauTrackKa};
+        return V0Daughter{downsamplingTsalisKaons, MassKPlus, maxPt4dwnsmplTsalisKaons, track.tpcNSigmaKa(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidKaon, dwnSmplFactorKa, nSigmaTofDauTrackKa, rejectNoTofDauTrackKa};
       default: {
         LOGP(fatal, "createV0Daughter: unknown daughterId");
         return V0Daughter();
@@ -204,7 +205,41 @@ struct TreeWriterTpcV0 {
     }
   }
 
-  /// Funktion to fill skimmed tables
+  float getStrangenessTofNSigma(V0sWithID::iterator const& v0, const int motherId, const int daughterId, const bool isPositive)
+  {
+    if (motherId == MotherGamma && daughterId == DaughterElectron) {
+      return -999.f;
+    } else if (motherId == MotherK0S && daughterId == DaughterPion) {
+      if (isPositive)
+        return v0.tofNSigmaK0PiPlus();
+      else
+        return v0.tofNSigmaK0PiMinus();
+    } else if (motherId == MotherLambda) {
+      if (daughterId == DaughterProton && isPositive)
+        return v0.tofNSigmaLaPr();
+      else if (daughterId == DaughterPion && !isPositive)
+        return v0.tofNSigmaLaPi();
+    } else if (motherId == MotherAntiLambda) {
+      if (daughterId == DaughterProton && !isPositive)
+        return v0.tofNSigmaALaPr();
+      else if (daughterId == DaughterPion && isPositive)
+        return v0.tofNSigmaALaPi();
+    }
+
+    LOGP(fatal, "getStrangenessTofNSigma for V0: wrong combination of motherId, daughterId and sign");
+    return -999.f;
+  }
+
+  float getStrangenessTofNSigma(CascsWithID::iterator const& casc, const int motherId, const int daughterId, bool)
+  {
+    if ((motherId == MotherOmega || motherId == MotherAntiOmega) && daughterId == DaughterKaon)
+      return casc.tofNSigmaOmKa();
+
+    LOGP(fatal, "getStrangenessTofNSigma for cascade: wrong combination of motherId and daughterId");
+    return -999.f;
+  }
+
+  /// Function to fill skimmed tables
   template <bool DoUseCorrectedDeDx = false, typename T, typename C, typename V0Casc>
   void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate)
   {
@@ -477,15 +512,16 @@ struct TreeWriterTpcV0 {
 
     /// Loop over v0 candidates
     for (const auto& v0 : v0s) {
-      if (v0.v0addid() == MotherUndef) {
+      const auto v0Id = v0.v0addid();
+      if (v0Id == MotherUndef) {
         continue;
       }
       const auto& posTrack = v0.posTrack_as<soa::Filtered<TrksType>>();
       const auto& negTrack = v0.negTrack_as<soa::Filtered<TrksType>>();
 
-      const V0Mother v0Mother = createV0Mother(v0.v0addid());
-      const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(posTrack, v0Mother.posDaughterId);
-      const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(negTrack, v0Mother.negDaughterId);
+      const V0Mother v0Mother = createV0Mother(v0Id);
+      const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrack, v0Id, v0Mother.posDaughterId, true);
+      const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(v0, negTrack, v0Id, v0Mother.negDaughterId, false);
 
       fillDaughterTrack(v0, posTrack, posDaughter);
       fillDaughterTrack(v0, negTrack, negDaughter);
@@ -493,11 +529,12 @@ struct TreeWriterTpcV0 {
 
     /// Loop over cascade candidates
     for (const auto& casc : cascs) {
-      if (casc.cascaddid() == MotherUndef) {
+      const auto cascId = casc.cascaddid();
+      if (cascId == MotherUndef) {
         continue;
       }
       const auto& bachTrack = casc.bachelor_as<soa::Filtered<TrksType>>();
-      const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(bachTrack, DaughterKaon);
+      const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
       // Omega and antiomega
       fillDaughterTrack(casc, bachTrack, bachDaughter);
     }
@@ -576,7 +613,8 @@ struct TreeWriterTpcV0 {
 
       /// Loop over v0 candidates
       for (const auto& v0 : v0s) {
-        if (v0.v0addid() == MotherUndef) {
+        const auto v0Id = v0.v0addid();
+        if (v0Id == MotherUndef) {
           continue;
         }
         const auto& posTrack = v0.posTrack_as<TrksType>();
@@ -585,9 +623,9 @@ struct TreeWriterTpcV0 {
         const auto& [posTrackQA, existPosTrkQA] = getTrackQA(posTrack);
         const auto& [negTrackQA, existNegTrkQA] = getTrackQA(negTrack);
 
-        const V0Mother v0Mother = createV0Mother(v0.v0addid());
-        const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(posTrack, v0Mother.posDaughterId);
-        const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(negTrack, v0Mother.negDaughterId);
+        const V0Mother v0Mother = createV0Mother(v0Id);
+        const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrack, v0Id, v0Mother.posDaughterId, true);
+        const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(v0, negTrack, v0Id, v0Mother.negDaughterId, false);
 
         fillDaughterTrack(v0, posTrack, posDaughter, posTrackQA, existPosTrkQA);
         fillDaughterTrack(v0, negTrack, negDaughter, negTrackQA, existNegTrkQA);
@@ -595,11 +633,12 @@ struct TreeWriterTpcV0 {
 
       /// Loop over cascade candidates
       for (const auto& casc : cascs) {
-        if (casc.cascaddid() == MotherUndef) {
+        const auto cascId = casc.cascaddid();
+        if (cascId == MotherUndef) {
           continue;
         }
         const auto& bachTrack = casc.bachelor_as<TrksType>();
-        const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(bachTrack, DaughterKaon);
+        const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
         const auto& [bachTrackQA, existBachTrkQA] = getTrackQA(bachTrack);
         // Omega and antiomega
         fillDaughterTrack(casc, bachTrack, bachDaughter, bachTrackQA, existBachTrkQA);
