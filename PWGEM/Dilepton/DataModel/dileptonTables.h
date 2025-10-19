@@ -214,8 +214,11 @@ using EMSWTriggerBit = EMSWTriggerBits::iterator;
 DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTINFO", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<1>); //! independent table. Don't join anything.
 using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerCounters, "AOD", "EMSWTCOUNTER", emevent::IsAnalyzed, emevent::IsAnalyzedToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
-using EMSWTriggerCounter = EMSWTriggerCounters::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerATCounters, "AOD", "EMSWTAT", emevent::IsAnalyzed, o2::soa::Marker<1>); //! independent table. Don't join anything.
+using EMSWTriggerATCounter = EMSWTriggerATCounters::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerTOICounters, "AOD", "EMSWTTOI", emevent::IsAnalyzedToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
+using EMSWTriggerTOICounter = EMSWTriggerTOICounters::iterator;
 
 DECLARE_SOA_TABLE(EMSWTriggerBitsTMP, "AOD", "EMSWTBITTMP", emevent::SWTAliasTmp, o2::soa::Marker<2>); //! joinable to aod::Collisions
 using EMSWTriggerBitTMP = EMSWTriggerBitsTMP::iterator;
@@ -223,8 +226,11 @@ using EMSWTriggerBitTMP = EMSWTriggerBitsTMP::iterator;
 DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTINFOTMP", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<2>);
 using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerCountersTMP, "AOD", "EMSWTCOUNTERTMP", emevent::IsAnalyzed, emevent::IsAnalyzedToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
-using EMSWTriggerCounterTMP = EMSWTriggerCountersTMP::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerATCountersTMP, "AOD", "EMSWTATTMP", emevent::IsAnalyzed, o2::soa::Marker<2>); //! independent table. Don't join anything.
+using EMSWTriggerATCounterTMP = EMSWTriggerATCountersTMP::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerTOICountersTMP, "AOD", "EMSWTTOITMP", emevent::IsAnalyzedToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
+using EMSWTriggerTOICounterTMP = EMSWTriggerTOICountersTMP::iterator;
 
 DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
