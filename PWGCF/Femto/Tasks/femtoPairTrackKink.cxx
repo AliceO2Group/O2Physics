@@ -28,10 +28,14 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <string>
@@ -67,7 +71,7 @@ struct FemtoPairTrackKink {
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
+  Preslice<Tracks> perColTracks = aod::femtobase::stored::collisionId;
 
   // setup for daughters
   trackhistmanager::ConfKinkChaDauBinning confChaDauBinning;
@@ -76,7 +80,7 @@ struct FemtoPairTrackKink {
   kinkbuilder::ConfSigmaSelection1 sigmaSelection;
   kinkhistmanager::ConfSigmaBinning1 confSigmaBinning;
   Partition<Sigmas> sigmaPartition = MAKE_SIGMA_PARTITION(sigmaSelection);
-  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::fColId;
+  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::collisionId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
