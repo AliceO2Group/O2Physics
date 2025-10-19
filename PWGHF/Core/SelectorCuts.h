@@ -1520,8 +1520,7 @@ static const std::vector<std::string> labelsCutVar = {"max pKpi mass Lc", "max p
 namespace hf_cuts_cd_to_de_k_pi
 {
 static constexpr int NBinsPt = 6;
-static constexpr int NCutVars = 11;
-static constexpr int NCutKfVars = 12;
+static constexpr int NCutVars = 10;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double BinsPt[NBinsPt + 1] = {
@@ -1535,21 +1534,12 @@ constexpr double BinsPt[NBinsPt + 1] = {
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts                m,  ptP, ptK, ptPi, chi2PCA, dL, cosp, dLXY, NdLXY, ImpParXY, mass(Kpi)
-constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.},  /* 0  < pT < 2  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.},  /* 2  < pT < 4  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.},  /* 4  < pT < 6  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.},  /* 6  < pT < 8  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.},  /* 8  < pT < 12 */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.}}; /* 12 < pT < 24 */
-
-// default value for the cuts                    Chi2Prim      Chi2Geo       DCA, cm     Chi2Geo  Chi2Topo
-//                                               P   K  Pi  KPi PPi  PK  KPi    PPi   PK   ↓  LdL  ↓
-constexpr double CutsKf[NBinsPt][NCutKfVars] = {{3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 0  < pT < 2  */
-                                                {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 2  < pT < 4  */
-                                                {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 4  < pT < 6  */
-                                                {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 6  < pT < 8  */
-                                                {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.},  /* 8  < pT < 12 */
-                                                {3., 3., 3., 3., 3., 3., 0.01, 0.01, 0.01, 3., 5., 5.}}; /* 12 < pT < 24 */
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 0  < pT < 2  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 2  < pT < 4  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 4  < pT < 6  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 6  < pT < 8  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 8  < pT < 12 */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10}}; /* 12 < pT < 24 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -1561,7 +1551,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 5"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT De", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "impParXY", "mass (Kpi)"};
+static const std::vector<std::string> labelsCutVar = {"m", "pT De", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "impParXY"};
 } // namespace hf_cuts_cd_to_de_k_pi
 
 } // namespace o2::analysis
