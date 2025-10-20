@@ -241,6 +241,7 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<bool> confIsApplyTrkCutMCTruth{"confIsApplyTrkCutMCTruth", false, "Apply eta, pT selection cut on MCTruth tracks "};
+    Configurable<bool> confIsOnlyPrimary{"confIsOnlyPrimary", false, "Select only primaries"};
   } ConfFilterCuts;
 
   Filter globalCutFilter = requireGlobalTrackInFilter();
@@ -1367,6 +1368,13 @@ struct FemtoUniverseProducerTask {
           continue;
         }
       }
+
+      if (ConfFilterCuts.confIsOnlyPrimary) {
+        if (!mc.isPhysicalPrimary()) {
+          return;
+        }
+      }
+
       std::vector<int> childIDs = {0, 0};
       outputParts(outputCollision.lastIndex(),
                   mc.pt(),
