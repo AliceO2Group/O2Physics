@@ -81,14 +81,14 @@ struct lumiStabilityLightIons {
                       kBCE = 3,
                       kBCL = 4 };
 
-  static constexpr std::string_view nBCsVsTimeHistNames[5][5] =
+  static constexpr std::string_view NBCsVsTimeHistNames[5][5] =
     {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime"},
      {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime"},
      {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime"},
      {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime"},
      {"1ZNC/BC_A/nBCsVsTime", "1ZNC/BC_B/nBCsVsTime", "1ZNC/BC_C/nBCsVsTime", "1ZNC/BC_E/nBCsVsTime", "1ZNC/BC_L/nBCsVsTime"}};
 
-  static constexpr std::string_view nBCsVsBCIDHistNames[5][5] =
+  static constexpr std::string_view NBCsVsBCIDHistNames[5][5] =
     {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID"},
      {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID"},
      {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID"},
@@ -113,8 +113,8 @@ struct lumiStabilityLightIons {
       if ((iTrigger == 0) || (iTrigger == 1 && cfgDoFT0Vtx) || (iTrigger == 2 && cfgDoFT0CE) || (iTrigger == 3 && cfgDoFDD) || (iTrigger == 4 && cfgDo1ZNC)) {
         for (int iBCCategory = 0; iBCCategory < nBCCategories; iBCCategory++) {
           if ((iBCCategory == 0 && cfgDoBCA) || (iBCCategory == 1 && cfgDoBCB) || (iBCCategory == 2 && cfgDoBCC) || (iBCCategory == 3 && cfgDoBCE) || (iBCCategory == 4 && cfgDoBCL)) {
-            mHistManager.add(Form("%s", std::string(nBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {timeAxis});
-            mHistManager.add(Form("%s", std::string(nBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1F, {bcIDAxis});
+            mHistManager.add(Form("%s", std::string(NBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {timeAxis});
+            mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1F, {bcIDAxis});
           }
         }
       }
@@ -186,8 +186,8 @@ struct lumiStabilityLightIons {
   template <int iTrigger, int iBCCategory>
   void fillHistograms(float timeSinceSOF, int64_t localBC)
   {
-    mHistManager.fill(HIST(nBCsVsTimeHistNames[iTrigger][iBCCategory]), timeSinceSOF);
-    mHistManager.fill(HIST(nBCsVsBCIDHistNames[iTrigger][iBCCategory]), localBC);
+    mHistManager.fill(HIST(NBCsVsTimeHistNames[iTrigger][iBCCategory]), timeSinceSOF);
+    mHistManager.fill(HIST(NBCsVsBCIDHistNames[iTrigger][iBCCategory]), localBC);
   }
 
   void process(MyBCs const& bcs, aod::FT0s const&)
