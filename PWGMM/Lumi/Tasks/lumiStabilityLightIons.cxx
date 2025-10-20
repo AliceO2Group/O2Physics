@@ -38,7 +38,7 @@ o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-struct lumiStabilityLightIons {
+struct LumiStabilityLightIons {
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of FT0 in RCT"};
   Configurable<bool> cfgDoFT0Vtx{"cfgDoFT0Vtx", true, "Create and fill histograms for the FT0 vertex trigger"};
   Configurable<bool> cfgDoFT0CE{"cfgDoFT0CE", true, "Create and fill histograms for the FT0 centrality trigger"};
@@ -69,13 +69,13 @@ struct lumiStabilityLightIons {
   HistogramRegistry mHistManager{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   const int nTriggers = 5;
-  enum triggerAliases { kAllBCs = 0,
+  enum TriggerAliases { kAllBCs = 0,
                         kFT0Vtx = 1,
                         kFT0CE = 2,
                         kFDD = 3,
                         k1ZNC = 4 };
   const int nBCCategories = 5;
-  enum bccategories { kBCA = 0,
+  enum BCCategories { kBCA = 0,
                       kBCB = 1,
                       kBCC = 2,
                       kBCE = 3,
@@ -110,9 +110,9 @@ struct lumiStabilityLightIons {
     AxisSpec timeAxis{1200, 0., 1200., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{3600, 0., 3600., "#bf{BC ID in orbit}"};
 
     for (int iTrigger = 0; iTrigger < nTriggers; iTrigger++) {
-      if ((iTrigger == 0) || (iTrigger == 1 && cfgDoFT0Vtx) || (iTrigger == 2 && cfgDoFT0CE) || (iTrigger == 3 && cfgDoFDD) || (iTrigger == 4 && cfgDo1ZNC)) {
+      if ((iTrigger == kAllBCs) || (iTrigger == kFT0Vtx && cfgDoFT0Vtx) || (iTrigger == kFT0CE && cfgDoFT0CE) || (iTrigger == kFDD && cfgDoFDD) || (iTrigger == k1ZNC && cfgDo1ZNC)) {
         for (int iBCCategory = 0; iBCCategory < nBCCategories; iBCCategory++) {
-          if ((iBCCategory == 0 && cfgDoBCA) || (iBCCategory == 1 && cfgDoBCB) || (iBCCategory == 2 && cfgDoBCC) || (iBCCategory == 3 && cfgDoBCE) || (iBCCategory == 4 && cfgDoBCL)) {
+          if ((iBCCategory == kBCA && cfgDoBCA) || (iBCCategory == kBCB && cfgDoBCB) || (iBCCategory == kBCC && cfgDoBCC) || (iBCCategory == kBCE && cfgDoBCE) || (iBCCategory == kBCL && cfgDoBCL)) {
             mHistManager.add(Form("%s", std::string(NBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {timeAxis});
             mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1F, {bcIDAxis});
           }
@@ -306,5 +306,5 @@ struct lumiStabilityLightIons {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc);
-  return WorkflowSpec{adaptAnalysisTask<lumiStabilityLightIons>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LumiStabilityLightIons>(cfgc)};
 }

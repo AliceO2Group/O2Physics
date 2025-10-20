@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(lumistab
         O2::ReconstructionDataFormats
         COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lumistablightions
+o2physics_add_dpl_workflow(lumi-stability-light-ions
         SOURCES lumiStabilityLightIons.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCCDB O2Physics::AnalysisCore
         COMPONENT_NAME Analysis)
