@@ -407,10 +407,10 @@ struct nucleiQC {
           if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
             return;
         }
-        
+
         if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
           return;
-        
+
         if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
           return;
 
@@ -428,8 +428,8 @@ struct nucleiQC {
           return;
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
 
-        //nuclei::SlimCandidate candidate;
-        //candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
+        // nuclei::SlimCandidate candidate;
+        // candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
 
         mNucleiCandidates.emplace_back(candidate);
         dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
@@ -440,14 +440,14 @@ struct nucleiQC {
     const int mcCollisionId = collision.mcCollisionId();
     auto mcParticlesThisCollision = mcParticles.sliceBy(mMcParticlesPerCollision, mcCollisionId);
     mcParticlesThisCollision.bindExternalIndices(&mcParticles);
-    
+
     for (const auto& particle : mcParticlesThisCollision) {
       if (std::find(mFilledMcParticleIds.begin(), mFilledMcParticleIds.end(), particle.globalIndex()) != mFilledMcParticleIds.end())
         continue;
-      
+
       if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
         continue;
-      
+
       int iSpecies = nuclei::getSpeciesFromPdg(particle.pdgCode());
       if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), iSpecies) == mSpeciesToProcess.end())
         continue;
