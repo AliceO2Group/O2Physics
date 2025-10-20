@@ -240,6 +240,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confDcaXYCustom1Cut{"confDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
     Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<bool> confIsApplyTrkCutMCTruth{"confIsApplyTrkCutMCTruth", false, "Apply eta, pT selection cut on MCTruth tracks "};
   } ConfFilterCuts;
 
   Filter globalCutFilter = requireGlobalTrackInFilter();
@@ -1361,7 +1362,11 @@ struct FemtoUniverseProducerTask {
   void fillTracksMCTruth(MCParticlesType const& mcParticles)
   {
     for (const auto& mc : mcParticles) { // Loop over all MC Truth particles
-
+      if (ConfFilterCuts.confIsApplyTrkCutMCTruth) {
+        if (std::abs(mc.eta()) > ConfFilterCuts.confEtaFilterCut || mc.pt() < ConfFilterCuts.confPtLowFilterCut || mc.pt() > ConfFilterCuts.confPtHighFilterCut) {
+          continue;
+        }
+      }
       std::vector<int> childIDs = {0, 0};
       outputParts(outputCollision.lastIndex(),
                   mc.pt(),
