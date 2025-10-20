@@ -257,6 +257,7 @@ struct HfCorrelatorDsHadrons {
     AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
+    const AxisSpec axisPid{20, -10.f, 10.f, "n #sigma"};
 
     // Histograms for data analysis
     registry.add("hCollisionPoolBin", "Ds candidates collision pool bin", {HistType::kTH1F, {axisPoolBin}});
@@ -278,6 +279,14 @@ struct HfCorrelatorDsHadrons {
       registry.add("hMassDsData", "Ds candidates mass", {HistType::kTH1F, {axisMassD}});
       registry.add("hDsPoolBin", "Ds candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
       registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
+      if (pidTrkApplied) {
+        registry.add("hTpcNSigmaPIDpion", "n sigma tpc for pion hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hTpcNSigmaPIDkaon", "n sigma tpc for kaon hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hTpcNSigmaPIDproton", "n sigma tpc for proton hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hTofNSigmaPIDpion", "n sigma tof for pion hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hTofNSigmaPIDkaon", "n sigma tof for kaon hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hTofNSigmaPIDproton", "n sigma tof for proton hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+      }
     }
     // Histograms for MC Reco analysis
     if (fillHistoMcRec) {
@@ -754,7 +763,8 @@ struct HfCorrelatorDsHadrons {
                 if (pidTrkApplied) {
                   if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKPlus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKMinus))) { // LS pairs
                     registry.fill(HIST("hCorrKaonsLSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  } else { // ULS pairs
+                  }
+                  if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKMinus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKPlus))) { // ULS pairs
                     registry.fill(HIST("hCorrKaonsULSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
                   }
                 }
@@ -821,6 +831,12 @@ struct HfCorrelatorDsHadrons {
           if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
           }
+          registry.fill(HIST("hTpcNSigmaPIDpion"), track.tpcNSigmaPi(), track.pt());
+          registry.fill(HIST("hTpcNSigmaPIDkaon"), track.tpcNSigmaKa(), track.pt());
+          registry.fill(HIST("hTpcNSigmaPIDproton"), track.tpcNSigmaPr(), track.pt());
+          registry.fill(HIST("hTofNSigmaPIDpion"), track.tofNSigmaPi(), track.pt());
+          registry.fill(HIST("hTofNSigmaPIDkaon"), track.tofNSigmaKa(), track.pt());
+          registry.fill(HIST("hTofNSigmaPIDproton"), track.tofNSigmaPr(), track.pt());
         }
         assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
