@@ -282,6 +282,7 @@ struct LfMyV0s {
     registryData.add("V0LambdaprotonPhi", "V0LambdaprotonPhi", {HistType::kTH1F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}}});
 
     registryData.add("profileAntiLambda", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("TProfile1DLambdasinphiInJet", "#Delta #theta vs sin(phi)", {HistType::kTProfile, {{200, 0.0, TMath::Pi()}}});
     registryData.add("hAntiLambdamassandSinPhi", "hAntiLambdaPhiandSinPhi", kTH2F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}, {200, -1, 1}});
 
     registryData.add("TProfile2DLambdaPtMassSinPhi", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
@@ -292,6 +293,7 @@ struct LfMyV0s {
     registryData.add("TProfile2DLambdaPtMassCosSquareTheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryData.add("TProfile2DAntiLambdaPtMassCosSquareTheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryData.add("TProfile2DLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, TProfile2DaxisMass});
+    registryData.add("TProfile2DLambdaMassDeltaTheta", "", kTProfile2D, {{200, 0, TMath::Pi(), "#Delta#theta"}, TProfile2DaxisMass});
     registryData.add("TProfile2DAntiLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, TProfile2DaxisMass});
     registryData.add("hprotonThetaInLab", "hprotonThetaInLab", kTH1F, {axisTheta});
     registryData.add("hprotonThetaInV0", "hprotonThetaInV0", kTH1F, {axisTheta});
@@ -1279,6 +1281,10 @@ struct LfMyV0s {
 
         TMatrixD lambdaInJet(4, 1);
         lambdaInJet = MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
+        double cosThetaLambdaInJet = lambdaInJet(3, 0) / sqrt(lambdaInJet(1, 0) * lambdaInJet(1, 0) + lambdaInJet(2, 0) * lambdaInJet(2, 0) + lambdaInJet(3, 0) * lambdaInJet(3, 0));
+        double lambdasinphiInJet = lambdaInJet(2, 0) / sqrt(lambdaInJet(1, 0) * lambdaInJet(1, 0) + lambdaInJet(2, 0) * lambdaInJet(2, 0));
+        registryData.fill(HIST("TProfile2DLambdaMassDeltaTheta"), TMath::ACos(cosThetaLambdaInJet), candidate.mLambda(), lambdasinphiInJet);
+        registryData.fill(HIST("TProfile1DLambdasinphiInJet"), TMath::ACos(cosThetaLambdaInJet), lambdasinphiInJet);
 
         TMatrixD lambdaInJetV0(4, 1);
         lambdaInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
