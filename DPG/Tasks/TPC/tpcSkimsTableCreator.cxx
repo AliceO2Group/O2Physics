@@ -95,7 +95,7 @@ struct TreeWriterTpcV0 {
   Configurable<bool> rejectNoTofDauTrackKa{"rejectNoTofDauTrackKa", false, "reject not matched to TOF kaon daughter tracks"};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactorPi{"dwnSmplFactorPi", 1., "downsampling factor for pions, default fraction to keep is 1."};
@@ -442,10 +442,11 @@ struct TreeWriterTpcV0 {
     rowTPCTree.reserve(2 * v0s.size() + cascs.size());
 
     auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter) {
+      const bool passTrackSelection = isTrackSelected(dauTrack, trackSelection);
       const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
       const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < FloatEqualityTolerance;
       const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > FloatEqualityTolerance;
-      if (passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
+      if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
         fillSkimmedV0Table<IsCorrectedDeDx>(mother, dauTrack, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate);
       }
     };
@@ -458,9 +459,6 @@ struct TreeWriterTpcV0 {
       }
       const auto& posTrack = v0.posTrack_as<TrksType>();
       const auto& negTrack = v0.negTrack_as<TrksType>();
-      if (!(isTrackSelected(posTrack, trackSelection) && isTrackSelected(negTrack, trackSelection))) {
-        continue;
-      }
 
       const V0Mother v0Mother = createV0Mother(v0Id);
       const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrack, v0Id, v0Mother.posDaughterId, true);
@@ -477,9 +475,6 @@ struct TreeWriterTpcV0 {
         continue;
       }
       const auto& bachTrack = casc.bachelor_as<TrksType>();
-      if (!isTrackSelected(bachTrack, trackSelection)) {
-        continue;
-      }
       const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
       // Omega and antiomega
       fillDaughterTrack(casc, bachTrack, bachDaughter);
@@ -536,10 +531,11 @@ struct TreeWriterTpcV0 {
       }
 
       auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter, const aod::TracksQA& trackQAInstance, const bool existTrkQA) {
+        const bool passTrackSelection = isTrackSelected(dauTrack, trackSelection);
         const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
         const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < FloatEqualityTolerance;
         const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > FloatEqualityTolerance;
-        if (passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
+        if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
           fillSkimmedV0TableWithTrQAGeneric<IsCorrectedDeDx, IsWithdEdx>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
       };
@@ -562,9 +558,6 @@ struct TreeWriterTpcV0 {
         }
         const auto& posTrack = v0.posTrack_as<TrksType>();
         const auto& negTrack = v0.negTrack_as<TrksType>();
-        if (!(isTrackSelected(posTrack, trackSelection) && isTrackSelected(negTrack, trackSelection))) {
-          continue;
-        }
 
         const auto& [posTrackQA, existPosTrkQA] = getTrackQA(posTrack);
         const auto& [negTrackQA, existNegTrkQA] = getTrackQA(negTrack);
@@ -584,9 +577,6 @@ struct TreeWriterTpcV0 {
           continue;
         }
         const auto& bachTrack = casc.bachelor_as<TrksType>();
-        if (!isTrackSelected(bachTrack, trackSelection)) {
-          continue;
-        }
         const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
         const auto& [bachTrackQA, existBachTrkQA] = getTrackQA(bachTrack);
         // Omega and antiomega
