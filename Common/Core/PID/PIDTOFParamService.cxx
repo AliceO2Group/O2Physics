@@ -16,7 +16,7 @@
 /// \brief  Implementation of the TOF PID service for the detector response
 ///
 
-#include "PIDTOFService.h"
+#include "PIDTOFParamService.h"
 
 #include <Framework/CommonServices.h>
 #include <Framework/Plugins.h>
