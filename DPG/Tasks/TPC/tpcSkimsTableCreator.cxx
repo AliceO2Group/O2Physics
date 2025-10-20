@@ -83,14 +83,15 @@ struct TreeWriterTpcV0 {
   constexpr static float NSigmaTofUnmatched{-1e6f};
   constexpr static float NSigmaTofUnmatchedEqualityTolerance{1000.f};
 
+  // an arbitrary value of "N sigma TOF" assigned to electorns (for uniformity reasons)
+  constexpr static float NSigmaTofElectorn{1000.f};
+
   /// Configurables
   Configurable<float> nSigmaTofDauTrackPi{"nSigmaTofDauTrackPi", 999.f, "n-sigma TOF cut on the pion daughter tracks"};
   Configurable<float> nSigmaTofDauTrackPr{"nSigmaTofDauTrackPr", 999.f, "n-sigma TOF cut on the proton daughter tracks"};
-  Configurable<float> nSigmaTofDauTrackEl{"nSigmaTofDauTrackEl", 999.f, "n-sigma TOF cut on the electron daughter tracks"};
   Configurable<float> nSigmaTofDauTrackKa{"nSigmaTofDauTrackKa", 999.f, "n-sigma TOF cut on the kaon daughter tracks"};
   Configurable<bool> rejectNoTofDauTrackPi{"rejectNoTofDauTrackPi", false, "reject not matched to TOF pion daughter tracks"};
   Configurable<bool> rejectNoTofDauTrackPr{"rejectNoTofDauTrackPr", false, "reject not matched to TOF proton daughter tracks"};
-  Configurable<bool> rejectNoTofDauTrackEl{"rejectNoTofDauTrackEl", false, "reject not matched to TOF electron daughter tracks"};
   Configurable<bool> rejectNoTofDauTrackKa{"rejectNoTofDauTrackKa", false, "reject not matched to TOF kaon daughter tracks"};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
@@ -148,7 +149,7 @@ struct TreeWriterTpcV0 {
   {
     switch (daughterId) {
       case DaughterElectron:
-        return V0Daughter{downsamplingTsalisElectrons, MassElectron, maxPt4dwnsmplTsalisElectrons, track.tpcNSigmaEl(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalEl(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidElectron, dwnSmplFactorEl, nSigmaTofDauTrackEl, rejectNoTofDauTrackEl};
+        return V0Daughter{downsamplingTsalisElectrons, MassElectron, maxPt4dwnsmplTsalisElectrons, track.tpcNSigmaEl(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalEl(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidElectron, dwnSmplFactorEl, NSigmaTofElectorn + 1.f, false};
       case DaughterPion:
         return V0Daughter{downsamplingTsalisPions, MassPiPlus, maxPt4dwnsmplTsalisPions, track.tpcNSigmaPi(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidPion, dwnSmplFactorPi, nSigmaTofDauTrackPi, rejectNoTofDauTrackPi};
       case DaughterProton:
@@ -188,7 +189,7 @@ struct TreeWriterTpcV0 {
   float getStrangenessTofNSigma(V0sWithID::iterator const& v0, const int motherId, const int daughterId, const bool isPositive)
   {
     if (motherId == MotherGamma && daughterId == DaughterElectron) {
-      return -999.f;
+      return NSigmaTofElectorn;
     } else if (motherId == MotherK0S && daughterId == DaughterPion) {
       if (isPositive)
         return v0.tofNSigmaK0PiPlus();
