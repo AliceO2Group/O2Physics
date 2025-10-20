@@ -118,7 +118,6 @@ enum ChannelsProtonPid {
   LcToPK0S,
   NChannelsProtonPid
 };
-
 // kaon PID (opposite-sign track in 3-prong decays)
 constexpr int ChannelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
 constexpr int ChannelsDeuteronPid = ChannelsProtonPid::NChannelsProtonPid + 1;
@@ -1658,7 +1657,6 @@ struct HfTrackIndexSkimCreator {
       const auto binPt = findBin(&binsPt3Prong[iDecay3P], pt);
       // return immediately if it is outside the defined pT bins
       if (binPt == -1) {
-
         CLRBIT(isSelected, iDecay3P);
         whichHypo[iDecay3P] = 0;
         if (config.debug) {
