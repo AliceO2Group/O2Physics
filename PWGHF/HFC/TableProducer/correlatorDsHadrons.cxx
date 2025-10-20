@@ -330,6 +330,7 @@ struct HfCorrelatorDsHadrons {
       if (pidTrkApplied) {
         registry.add("hCorrKaonsLSPairs", "Ds-kaon correlations LS MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
         registry.add("hCorrKaonsULSPairs", "Ds-kaon correlations ULS MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+        registry.add("hDsWoKaons", "Collisions with Ds mesons without kaons", {HistType::kTH1F, {{1, -0.5, 0.5, "n coll w/o kaons"}}});
       }
     }
   }
@@ -733,6 +734,9 @@ struct HfCorrelatorDsHadrons {
                 prongsId[counterDaughters - 1] = daughI.globalIndex();
               }
             }
+
+            int numberOfCorrKaons = 0;
+
             // Ds Hadron correlation dedicated section
             for (const auto& particleAssoc : groupedMcParticles) {
               if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
@@ -763,9 +767,11 @@ struct HfCorrelatorDsHadrons {
                 if (pidTrkApplied) {
                   if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKPlus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKMinus))) { // LS pairs
                     registry.fill(HIST("hCorrKaonsLSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                    numberOfCorrKaons++;
                   }
                   if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKMinus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKPlus))) { // ULS pairs
                     registry.fill(HIST("hCorrKaonsULSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                    numberOfCorrKaons++;
                   }
                 }
               }
@@ -783,6 +789,9 @@ struct HfCorrelatorDsHadrons {
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
             }
           } // end loop generated particles
+          if (numberOfCorrKaons == 0) {
+            registry.fill(HIST("hDsWoKaons"), numberOfCorrKaons);
+          }
         } // end loop generated Ds
       } // end loop reconstructed collision
     } // end loop generated collision
