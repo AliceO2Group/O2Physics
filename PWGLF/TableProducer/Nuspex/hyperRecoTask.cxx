@@ -798,7 +798,7 @@ struct hyperRecoTask {
                     hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
-                    hypCand.isReco, hypCand.isFakeHeOnITSLayer, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, 1);
+                    hypCand.isReco, hypCand.isFakeHeOnITSLayer, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, 1, 0);
     }
 
     // now we fill only the signal candidates that were not reconstructed
@@ -811,12 +811,15 @@ struct hyperRecoTask {
       std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
       std::array<float, 3> momHe3;
       bool isHeFound = false;
+      int mcProcess = {0};
       for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
           momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
           isHeFound = true;
-          break;
+        }
+        if (mcDaught.pdgCode() != PDG_t::kElectron) { // we do not care about delta electrons
+          mcProcess = mcDaught.getProcess();
         }
       }
       if (mcPart.pdgCode() > 0) {
@@ -870,7 +873,7 @@ struct hyperRecoTask {
                     -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
-                    hypCand.isReco, -1, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, isHeFound);
+                    hypCand.isReco, -1, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection, isHeFound, mcProcess);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
