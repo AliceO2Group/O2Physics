@@ -10,14 +10,14 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   PIDTOFService.h
+/// \file   PIDTOFParamService.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \since  30/06/2025
 /// \brief  Implementation of the TOF PID service for the detector response
 ///
 
-#ifndef COMMON_CORE_PID_PIDTOFSERVICE_H_
-#define COMMON_CORE_PID_PIDTOFSERVICE_H_
+#ifndef COMMON_CORE_PID_PIDTOFPARAMSERVICE_H_
+#define COMMON_CORE_PID_PIDTOFPARAMSERVICE_H_
 
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/MetadataHelper.h"
@@ -202,4 +202,4 @@ struct TOFResponse : o2::framework::LoadableServicePlugin<TOFResponseImpl> {
 
 } // namespace o2::pid::tof
 
-#endif // COMMON_CORE_PID_PIDTOFSERVICE_H_
+#endif // COMMON_CORE_PID_PIDTOFPARAMSERVICE_H_

@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   PIDTOFService.cxx
+/// \file   PIDTOFParamService.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \since  30/06/2025
 /// \brief  Implementation of the TOF PID service for the detector response
