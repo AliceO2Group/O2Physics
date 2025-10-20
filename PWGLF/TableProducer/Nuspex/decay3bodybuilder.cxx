@@ -776,9 +776,9 @@ struct decay3bodyBuilder {
 
         // set flag if selected reco collision has matched gen collision
         if (collision.mcCollisionId() >= 0) { // reco collision is matched to gen collision
-          this3BodyMCInfo.isSurvivedEventSel = isGoodCollision[collision.mcCollisionId()];
+          this3BodyMCInfo.survivedEventSel = isGoodCollision[collision.mcCollisionId()];
         } else {
-          this3BodyMCInfo.isSurvivedEventSel = false; // false if reco collision not matched to gen collision
+          this3BodyMCInfo.survivedEventSel = false; // false if reco collision not matched to gen collision
         }
 
         // check if daughters have MC particle
