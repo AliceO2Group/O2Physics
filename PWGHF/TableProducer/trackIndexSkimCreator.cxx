@@ -1826,14 +1826,14 @@ struct HfTrackIndexSkimCreator {
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
   template <bool UsePidForHfFiltersBdt>
-  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecays>& outputScores, auto& isSelected)
+  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecays - 1>& outputScores, auto& isSelected)
   {
     if (isSelected == 0) {
       return;
     }
 
     const float ptDummy = 1.f; // dummy pT value (only one pT bin)
-    for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
+    for (int iDecay3P{0}; iDecay3P < kN3ProngDecays - 1; ++iDecay3P) {
       if (TESTBIT(isSelected, iDecay3P) && hasMlModel3Prong[iDecay3P]) {
         bool isMlSel = false;
         if constexpr (UsePidForHfFiltersBdt) {
@@ -1871,12 +1871,6 @@ struct HfTrackIndexSkimCreator {
               registry.fill(HIST("ML/hMlScoreBkgXic"), outputScores[iDecay3P][0]);
               registry.fill(HIST("ML/hMlScorePromptXic"), outputScores[iDecay3P][1]);
               registry.fill(HIST("ML/hMlScoreNonpromptXic"), outputScores[iDecay3P][2]);
-              break;
-            }
-            case hf_cand_3prong::DecayType::CdToDeKPi: {
-              registry.fill(HIST("ML/hMlScoreBkgCd"), outputScores[iDecay3P][0]);
-              registry.fill(HIST("ML/hMlScorePromptCd"), outputScores[iDecay3P][1]);
-              registry.fill(HIST("ML/hMlScoreNonpromptCd"), outputScores[iDecay3P][2]);
               break;
             }
           }
@@ -2568,7 +2562,7 @@ struct HfTrackIndexSkimCreator {
               // 3-prong selections after secondary vertex
               applySelection3Prong(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
 
-              std::array<std::vector<float>, kN3ProngDecays> mlScores3Prongs;
+              std::array<std::vector<float>, kN3ProngDecays - 1> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
                 const std::vector<float> inputFeatures{trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos2.getPt(), dcaInfoPos2[0], dcaInfoPos2[1]};
                 std::vector<float> inputFeaturesLcPid{};
@@ -2825,7 +2819,7 @@ struct HfTrackIndexSkimCreator {
               // 3-prong selections after secondary vertex
               applySelection3Prong(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
 
-              std::array<std::vector<float>, kN3ProngDecays> mlScores3Prongs{};
+              std::array<std::vector<float>, kN3ProngDecays - 1> mlScores3Prongs{};
               if (config.applyMlForHfFilters) {
                 const std::vector<float> inputFeatures{trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg2.getPt(), dcaInfoNeg2[0], dcaInfoNeg2[1]};
                 std::vector<float> inputFeaturesLcPid{};

@@ -190,7 +190,7 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
     }
 
-    if (createLc && createXic && createCd && applyInvMassConstraint) {
+    if (createLc && createXic && applyInvMassConstraint) {
       LOGP(fatal, "Unable to apply invariant mass constraint due to ambiguity of mass hypothesis: only one of Lc and Xic and Cd can be reconstructed.");
     }
 
@@ -200,6 +200,8 @@ struct HfCandidateCreator3Prong {
     registry.add("hMass3PiKPi", "3-prong candidates;inv. mass (#pi K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{600, 1.6, 2.2}}});
     registry.add("hMass3KKPi", "3-prong candidates;inv. mass (KK #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{600, 1.7, 2.3}}});
     registry.add("hMass3PiKK", "3-prong candidates;inv. mass (#pi KK) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{600, 1.7, 2.3}}});
+    registry.add("hMass3DeKPi", "3-prong candidates;inv. mass (deK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{2000, 2.5, 4.5}}});
+    registry.add("hMass3PiKDe", "3-prong candidates;inv. mass (#pi Kde) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{2000, 2.5, 4.5}}});
     registry.add("hMass2KPi", "2-prong pairs;inv. mass (K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 0.8, 2.0}}});
     registry.add("hMass2PiK", "2-prong pairs;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 0.8, 2.0}}});
     registry.add("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
@@ -419,6 +421,8 @@ struct HfCandidateCreator3Prong {
         const auto massPiKPi = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus, MassPiPlus});
         const auto massKKPi = RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassKPlus, MassPiPlus});
         const auto massPiKK = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus, MassKPlus});
+        const auto massDeKPi = RecoDecay::m(arrayMomenta, std::array{MassDeuteron, MassKPlus, MassPiPlus});
+        const auto massPiKDe = RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus, MassDeuteron});
         const auto massKPi = RecoDecay::m(std::array{arrayMomenta.at(1), arrayMomenta.at(2)}, std::array{MassKPlus, MassPiPlus});
         const auto massPiK = RecoDecay::m(std::array{arrayMomenta.at(0), arrayMomenta.at(1)}, std::array{MassPiPlus, MassKPlus});
         registry.fill(HIST("hMass3PiKPi"), massPiKPi);
@@ -426,6 +430,8 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hMass3PiKP"), massPiKP);
         registry.fill(HIST("hMass3KKPi"), massKKPi);
         registry.fill(HIST("hMass3PiKK"), massPiKK);
+        registry.fill(HIST("hMass3DeKPi"), massDeKPi);
+        registry.fill(HIST("hMass3PiKDe"), massPiKDe);
         registry.fill(HIST("hMass2KPi"), massKPi);
         registry.fill(HIST("hMass2PiK"), massPiK);
       }
