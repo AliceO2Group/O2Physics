@@ -531,13 +531,13 @@ struct AssociateMCInfoDilepton {
 
         // mc label for tracks registered in MFT in global muons
         if (o2track.matchMFTTrackId() > -1) {
-          const auto& o2mfttrack = o2track.template matchMFTTrack_as<TMFTTracks>();
+          auto o2mfttrack = o2track.template matchMFTTrack_as<TMFTTracks>();
           if (!o2mfttrack.has_mcParticle()) {
             emmftmclabels(-1, 0);
             break;
           }
 
-          const auto& mco2mfttrack = o2mfttrack.template mcParticle_as<aod::McParticles>();
+          auto mco2mfttrack = o2mfttrack.template mcParticle_as<aod::McParticles>();
           if (!(fNewLabels.find(mco2mfttrack.globalIndex()) != fNewLabels.end())) {
             fNewLabels[mco2mfttrack.globalIndex()] = fCounters[0];
             fNewLabelsReversed[fCounters[0]] = mco2mfttrack.globalIndex();
