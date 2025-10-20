@@ -27,6 +27,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/MathConstants.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "Common/Core/RecoDecay.h"
 //
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -35,6 +36,8 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <cmath>
+
 //
 namespace extConfPar
 {
@@ -72,7 +75,6 @@ using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, a
 using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
 using MCTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
 
-//
 struct qaMatchEff {
   int lastRunNumber = -1;
   bool timeMonitorSetUp = false;
@@ -95,7 +97,6 @@ struct qaMatchEff {
   Configurable<bool> isCentralityRequired{"isCentralityRequired", false, "Boolean to switch the centrality selection on/off."};
   Configurable<bool> isRejectNearByEvent{"isRejectNearByEvent", false, "Boolean to switch the rejection of near by events on/off."};
   Configurable<bool> isEnableOccupancyCut{"isEnableOccupancyCut", false, "Boolean to switch the occupancy cut on/off."};
-  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROC cut for event selection"};
   struct : ConfigurableGroup {
     Configurable<float> centralityMinCut{"centralityMinCut", 0.0f, "Minimum centrality"};
     Configurable<float> centralityMaxCut{"centralityMaxCut", 100.0f, "Maximum centrality"};
@@ -144,21 +145,21 @@ struct qaMatchEff {
   //  TRD presence
   Configurable<int> isTRDThere{"isTRDThere", 2, "Integer to turn the presence of TRD off, on, don't care (0,1,anything else)"};
   Configurable<int> isTOFThere{"isTOFThere", 2, "Integer to turn the presence of TOF off, on, don't care (0,1,anything else)"};
-  //
+  
   Configurable<bool> isitMC{"isitMC", false, "Reading MC files, data if false"};
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
   // Histogram configuration
-  //
+  
   // histos bins
   Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
   Configurable<int> qoptBins{"qopt-bins", 500, "Number of Q/pt bins"};
-  //
+  
   // special histo, few particles explicitly stored, then pdg>3000
   Configurable<int> pdgBins{"pdg-bins", 14, "Number of pdg values counted"};
-  //
+  
   // histo axes
-  //
+  
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 20.f}, "pT binning"};
   ConfigurableAxis XBins{"XBins", {400, -2.f, 2.f}, "X binning"};
   ConfigurableAxis ZBins{"ZBins", {400, -20.f, 20.f}, "Z binning"};
@@ -171,23 +172,21 @@ struct qaMatchEff {
   // pdg codes vector
   std::vector<int> pdgChoice = {211, 213, 215, 217, 219, 221, 223, 321, 411, 521, 2212, 1114, 2214};
 
-  //
   // Tracks selection object
   TrackSelection cutObject;
-  //
+
   // do you want pt comparison 2d's ?
   Configurable<bool> makept2d{"makept2d", false, "choose if produce pt reco/TPC derived pt 2dims "};
-  //
+
   // common flags for PID
   Configurable<bool> isPIDPionRequired{"isPIDPionRequired", false, "choose if apply pion PID"};
   Configurable<bool> isPIDKaonRequired{"isPIDKaonRequired", false, "choose if apply kaon PID"};
   Configurable<bool> isPIDProtonRequired{"isPIDProtonRequired", false, "choose if apply proton PID"};
-  //
+
   // limit for z position of primary vertex
   Configurable<float> zPrimVtxMax{"zPrimVtxax", 999.f, "Maximum asbolute value of z of primary vertex"};
-  //
   // configuration for THnSparse's
-  //
+
   ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
   ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
   ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
@@ -1390,7 +1389,7 @@ struct qaMatchEff {
     /// Using pt calculated at the inner wall of TPC
     /// Caveat: tgl still from tracking: this is not the value of tgl at the
     /// inner wall of TPC
-    return track.tpcInnerParam() / sqrt(1.f + track.tgl() * track.tgl());
+    return track.tpcInnerParam() / std::sqrt(1.f + track.tgl() * track.tgl());
   }
 
   /// Function applying the kinematic selections
@@ -1544,7 +1543,8 @@ struct qaMatchEff {
       //
       // here n of clusters of TPC assigned to float for histos (and to hack it if needed) :)
       //
-      Float_t clustpc = (Float_t)track.tpcNClsFound();
+      float clustpc = track.tpcNClsFound();
+
       //      Float_t findcltpc = (Float_t)track.tpcNClsFindable();
       //      Float_t crowstpc = (Float_t)track.tpcNClsCrossedRows();
       //      Float_t finclusmincrotpc = (Float_t)track.tpcNClsFindableMinusCrossedRows();
@@ -1561,7 +1561,7 @@ struct qaMatchEff {
       countData++;
       //
       //  keep sign of track
-      Int_t signOfTrack = track.signed1Pt() > 0 ? 1 : -1;
+      int signOfTrack = track.signed1Pt() > 0 ? 1 : -1;
       //
       // PID sigmas
       if constexpr (!IS_MC) {
@@ -1598,16 +1598,16 @@ struct qaMatchEff {
       int sayPrim = -99, specind = -9999;
       if constexpr (IS_MC) {
         auto mcpart = track.mcParticle();
-        siPDGCode = mcpart.pdgCode();
-        tpPDGCode = TMath::Abs(siPDGCode);
+        auto siPDGCode = mcpart.pdgCode();
+        auto tpPDGCode = std::abs(siPDGCode);
         if (mcpart.isPhysicalPrimary()) {
           // histos.get<TH1>(HIST("MC/control/etahist_diff"))->Fill(mcpart.eta() - track.eta());
-          auto delta = mcpart.phi() - track.phi();
-          if (delta > PI) {
-            delta -= TwoPI;
+          auto delta = RecoDecay::constrainAngle(mcpart.phi() - track.phi(), -o2::constants::math::PI);
+          if (delta > o2::constants::math::PI) {
+            delta -= o2::constants::math::TwoPI;
           }
-          if (delta < -PI) {
-            delta += TwoPI;
+          if (delta < o2::constants::math::PI) {
+            delta += o2::constants::math::TwoPI;
           }
           // histos.get<TH1>(HIST("MC/control/phihist_diff"))->Fill(delta);
         }
@@ -3297,15 +3297,14 @@ struct qaMatchEff {
   void processMC(CollisionsEvSel::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
     if (isEnableEventSelection) {
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
-        return;
-      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
       }
     }
@@ -3325,15 +3324,14 @@ struct qaMatchEff {
       return;
     }
     if (isEnableEventSelection) {
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
-        return;
-      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
       }
     }
@@ -3355,19 +3353,11 @@ struct qaMatchEff {
   ////////////////////////////////////////////////////////////
   void processTrkIUMC(CollisionsMCEvSel::iterator const& collision, MCTracksIU const& tracks, aod::McParticles const& mcParticles)
   {
-    if (isEnableEventSelection) {
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
-        return;
-      }
-      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
-        return;
-      }
-    }
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }  
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
@@ -3392,15 +3382,14 @@ struct qaMatchEff {
       setUpTimeMonitoring(bcs);
     }
     if (isEnableEventSelection) {
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
-        return;
-      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
       }
     }
@@ -3423,15 +3412,14 @@ struct qaMatchEff {
       setUpTimeMonitoring(bcs);
     }
     if (isEnableEventSelection) {
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
-        return;
-      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
       }
     }
@@ -3468,19 +3456,11 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////////////
   void processTrkIUData(CollisionsEvSel::iterator const& collision, TracksIUPID const& tracks)
   {
-    if (isEnableEventSelection) {
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
-        return;
-      }
-      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-        if (doDebug)
-          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
-        return;
-      }
-    }
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }  
     fillHistograms<false>(tracks, tracks, tracks); // 2nd and 3rd arguments not used in this case
     fillGeneralHistos<false>(collision);
   }
