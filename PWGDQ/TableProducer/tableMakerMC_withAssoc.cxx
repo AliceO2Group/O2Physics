@@ -89,6 +89,12 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                         aod::McTrackLabels>;
+using MyBarrelTracksTunedWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                             aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                             aod::pidTPCFullKa, aod::pidTPCFullPr, aod::mcTPCTuneOnData,
+                                             aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                              aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                             aod::McTrackLabels>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MyMuonsRealignWithCov = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
@@ -111,6 +117,7 @@ constexpr static uint32_t gkEventMcFillMap = VarManager::ObjTypes::CollisionMC;
 constexpr static uint32_t gkEventMcFillMapWithCent = VarManager::ObjTypes::CollisionMC | VarManager::ObjTypes::CollisionCent;
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapTunedWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::MCTPCtuneOnData;
 // constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 // constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
@@ -263,7 +270,7 @@ struct TableMakerMC {
   {
     // Check whether barrel or muon are enabled
     bool isProcessBCenabled = context.mOptions.get<bool>("processPP");
-    bool isBarrelEnabled = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly"));
+    bool isBarrelEnabled = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyMcTuned") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly"));
     bool isMuonEnabled = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPMuonOnlyBasic") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbRealignedMuonOnly")) || context.mOptions.get<bool>("processPPMuonRefit");
     // Make sure at least one process function is enabled
     if (!(isProcessBCenabled || isBarrelEnabled || isMuonEnabled)) {
@@ -1449,11 +1456,19 @@ struct TableMakerMC {
   }
 
   void processPP(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                 MyBarrelTracksWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                 MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
                  aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
                  MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithMults, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMap>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
+  }
+
+  void processPPMcTuned(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
+                 MyBarrelTracksWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                 aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
+                 MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    fullSkimming<gkEventFillMapWithMults, gkTrackFillMapTunedWithCov, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMap>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
   }
 
   void processPPBarrelOnly(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
@@ -1461,6 +1476,13 @@ struct TableMakerMC {
                            MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithMults, gkTrackFillMapWithCov, 0u, 0u, gkEventMcFillMap>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
+  }
+
+  void processPPBarrelOnlyMcTuned(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
+                           MyBarrelTracksTunedWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
+                           MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    fullSkimming<gkEventFillMapWithMults, gkTrackFillMapTunedWithCov, 0u, 0u, gkEventMcFillMap>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
   }
 
   void processPPMuonOnlyBasic(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,

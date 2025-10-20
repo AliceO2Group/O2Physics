@@ -136,7 +136,8 @@ class VarManager : public TObject
     ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     MuonRealign = BIT(26),
     MuonCovRealign = BIT(27),
-    MFTCov = BIT(28)
+    MFTCov = BIT(28),
+    MCTPCtuneOnData = BIT(29)
   };
 
   enum PairCandidateType {
@@ -2389,6 +2390,10 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTRDPattern] = track.trdPattern();
 
     values[kTPCsignal] = track.tpcSignal();
+    if constexpr ((fillMap & MCTPCtuneOnData) > 0) {
+      // TPC signal without the gain correction for MC TPC tune on data
+      values[kTPCsignal] = track.mcTunedTPCSignal();
+    }
     values[kTRDsignal] = track.trdSignal();
 
     values[kDetectorMap] = track.detectorMap();
