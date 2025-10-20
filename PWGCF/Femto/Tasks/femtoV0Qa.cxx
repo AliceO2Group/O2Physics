@@ -45,16 +45,7 @@ using namespace o2::analysis::femto;
 
 struct FemtoV0Qa {
 
-  // setup for collisions
-  collisionbuilder::ConfCollisionFilters collisionSelection;
-  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
-
-  colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
-  colhistmanager::ConfCollisionBinning confCollisionBinning;
-
-  // using Collisions = o2::soa::Join<FUCols, FUColPos, FUColMults, FUColCents>;
-  using Collisions = FCols;
-  using Collision = Collisions::iterator;
+  using Collisions = o2::soa::Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
   using FilteredCollision = FilteredCollisions::iterator;
@@ -64,6 +55,13 @@ struct FemtoV0Qa {
   using Tracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
 
   SliceCache cache;
+
+  // setup for collisions
+  collisionbuilder::ConfCollisionSelection collisionSelection;
+  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
+  colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
+  colhistmanager::ConfCollisionBinning confCollisionBinning;
+  colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for lambdas
   v0builder::ConfLambdaSelection1 confLambdaSelection;
@@ -109,7 +107,7 @@ struct FemtoV0Qa {
   void init(InitContext&)
   {
     // create a map for histogram specs
-    auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+    auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init(&hRegistry, colHistSpec);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
@@ -130,7 +128,7 @@ struct FemtoV0Qa {
     }
   };
 
-  void processK0short(FilteredCollision const& col, K0shorts const& /*k0shorts*/, Tracks const& tracks)
+  void processK0short(FilteredCollision const& col, Tracks const& tracks, K0shorts const& /*k0shorts*/)
   {
     colHistManager.fill(col);
     auto k0shortSlice = k0shortPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
@@ -140,7 +138,7 @@ struct FemtoV0Qa {
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0short, "Process k0shorts", false);
 
-  void processLambda(FilteredCollision const& col, Lambdas const& /*lambdas*/, Tracks const& tracks)
+  void processLambda(FilteredCollision const& col, Tracks const& tracks, Lambdas const& /*lambdas*/)
   {
     colHistManager.fill(col);
     auto lambdaSlice = lambdaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);

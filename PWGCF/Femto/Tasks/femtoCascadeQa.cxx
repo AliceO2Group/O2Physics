@@ -46,7 +46,7 @@ using namespace o2::analysis::femto;
 struct FemtoCascadeQa {
 
   // setup tables
-  using Collisions = FCols;
+  using Collisions = Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
@@ -59,10 +59,11 @@ struct FemtoCascadeQa {
   SliceCache cache;
 
   // setup collisions
+  collisionbuilder::ConfCollisionSelection collisionSelection;
+  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
-  collisionbuilder::ConfCollisionFilters collisionSelection;
-  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
+  colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for xis
   cascadebuilder::ConfXiSelection confXiSelection;
@@ -109,7 +110,7 @@ struct FemtoCascadeQa {
   void init(InitContext&)
   {
     // create a map for histogram specs
-    auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+    auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init(&hRegistry, colHistSpec);
 
     auto bachelorHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confBachelorBinning, confBachelorQaBinning);

@@ -31,20 +31,19 @@
 
 namespace o2::aod
 {
-
 namespace femtocollisions
 {
-DECLARE_SOA_COLUMN(CollisionMask, collisionMask, femtodatatypes::CollsionsMaskType); //! Bitmask for collision selections
+DECLARE_SOA_COLUMN(CollisionMask, collisionMask, femtodatatypes::CollisionMaskType); //! Bitmask for collision selections
+DECLARE_SOA_COLUMN(CollisionTag, collisionTag, femtodatatypes::CollisionTagType);    //! Bitmask for collision selections
 
 DECLARE_SOA_COLUMN(PosX, posX, float);             //! x coordinate of vertex
 DECLARE_SOA_COLUMN(PosY, posY, float);             //! y coordinate of vertex
 DECLARE_SOA_COLUMN(PosZ, posZ, float);             //! z coordinate of vertex
 DECLARE_SOA_COLUMN(Mult, mult, float);             //! Multiplicity estimator set by producer
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (~= multiplicity percentile) estimator set by producer
-DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
+DECLARE_SOA_COLUMN(MagField, magField, int8_t);    //! Magnetic field in kG (5 kG at normal configuration and 2kG in low B field configuration)
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
-DECLARE_SOA_COLUMN(Occupancy, occupancy, float);   //! occupancy of the event
-DECLARE_SOA_COLUMN(Qn, qn, float);                 //! qn bins for dividing events
+DECLARE_SOA_COLUMN(Qn, qn, float);                 //! qn bins for dividing eventsfemtab
 } // namespace femtocollisions
 
 // table for basic collision information
@@ -53,19 +52,20 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FCols_001, "FCOL", 1, //! femto collisions
                                    femtocollisions::PosZ,
                                    femtocollisions::Mult,
                                    femtocollisions::Cent,
-                                   femtocollisions::Sphericity,
                                    femtocollisions::MagField);
 using FCols = FCols_001;
+using FCol = FCols::iterator;
+using StoredFCols = StoredFCols_001;
 
 // table for collisions selections
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! track masks
                                    femtocollisions::CollisionMask);
 using FColMasks = FColMasks_001;
+using StoredFColMasks = StoredFColMasks_001;
 
-// table for occupancy
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColOccs_001, "FCOLOCC", 1, //! occupancy
-                                   femtocollisions::Occupancy);
-using FColOccs = FColOccs_001;
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColSphericities_001, "FCOLSPHERICITY", 1, //! sphericity
+                                   femtocollisions::Sphericity);
+using FColSphericities = FColSphericities_001;
 
 // table for qn values
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColQns_001, "FCOLQN", 1, //! qn vector
@@ -100,7 +100,8 @@ namespace femtobase
 namespace stored
 {
 // static columns
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! collision index
+//
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! collision index of femto collision table
 DECLARE_SOA_COLUMN(SignedPt, signedPt, float);  //! signed pt
 DECLARE_SOA_COLUMN(Pt, pt, float);              //! pt
 DECLARE_SOA_COLUMN(Eta, eta, float);            //! eta
@@ -233,16 +234,19 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTracks_001, "FTRACK", 1, //! femto tracks
                                    femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FTracks = FTracks_001;
+using FTrack = FTracks::iterator;
+using StoredFTracks = StoredFTracks_001;
 
 // table for track selections and PID selections
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackMasks_001, "FTRACKMASK", 1, //! track masks
                                    femtotracks::TrackMask);
 using FTrackMasks = FTrackMasks_001;
+using StoredFTrackMasks = StoredFTrackMasks_001;
 
 // table for track DCA
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dcas
@@ -274,50 +278,50 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FElectronPids_001, "FELECTRONPID", 1, //! ful
                                    femtotracks::ItsNSigmaEl,
                                    femtotracks::TpcNSigmaEl,
                                    femtotracks::TofNSigmaEl,
-                                   femtotracks::TpcitsNSigmaEl<femtotracks::TpcNSigmaEl, femtotracks::TofNSigmaEl>,
-                                   femtotracks::TpctofNSigmaEl<femtotracks::TpcNSigmaEl, femtotracks::ItsNSigmaEl>);
+                                   femtotracks::TpcitsNSigmaEl<femtotracks::TpcNSigmaEl, femtotracks::ItsNSigmaEl>,
+                                   femtotracks::TpctofNSigmaEl<femtotracks::TpcNSigmaEl, femtotracks::TofNSigmaEl>);
 using FElectronPids = FElectronPids_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FPionPids_001, "FPIONPID", 1, //! full pion pid
                                    femtotracks::ItsNSigmaPi,
                                    femtotracks::TpcNSigmaPi,
                                    femtotracks::TofNSigmaPi,
-                                   femtotracks::TpcitsNSigmaPi<femtotracks::TpcNSigmaPi, femtotracks::TofNSigmaPi>,
-                                   femtotracks::TpctofNSigmaPi<femtotracks::TpcNSigmaPi, femtotracks::ItsNSigmaPi>);
+                                   femtotracks::TpcitsNSigmaPi<femtotracks::TpcNSigmaPi, femtotracks::ItsNSigmaPi>,
+                                   femtotracks::TpctofNSigmaPi<femtotracks::TpcNSigmaPi, femtotracks::TofNSigmaPi>);
 using FPionPids = FPionPids_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FKaonPids_001, "FKAONPID", 1, //! full kaon pid
                                    femtotracks::ItsNSigmaKa,
                                    femtotracks::TpcNSigmaKa,
                                    femtotracks::TofNSigmaKa,
-                                   femtotracks::TpcitsNSigmaKa<femtotracks::TpcNSigmaKa, femtotracks::TofNSigmaKa>,
-                                   femtotracks::TpctofNSigmaKa<femtotracks::TpcNSigmaKa, femtotracks::ItsNSigmaKa>);
+                                   femtotracks::TpcitsNSigmaKa<femtotracks::TpcNSigmaKa, femtotracks::ItsNSigmaKa>,
+                                   femtotracks::TpctofNSigmaKa<femtotracks::TpcNSigmaKa, femtotracks::TofNSigmaKa>);
 using FKaonPids = FKaonPids_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FProtonPids_001, "FPROTONPID", 1, //! full proton pid
                                    femtotracks::ItsNSigmaPr,
                                    femtotracks::TpcNSigmaPr,
                                    femtotracks::TofNSigmaPr,
-                                   femtotracks::TpcitsNSigmaPr<femtotracks::TpcNSigmaPr, femtotracks::TofNSigmaPr>,
-                                   femtotracks::TpctofNSigmaPr<femtotracks::TpcNSigmaPr, femtotracks::ItsNSigmaPr>);
+                                   femtotracks::TpcitsNSigmaPr<femtotracks::TpcNSigmaPr, femtotracks::ItsNSigmaPr>,
+                                   femtotracks::TpctofNSigmaPr<femtotracks::TpcNSigmaPr, femtotracks::TofNSigmaPr>);
 using FProtonPids = FProtonPids_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FDeuteronPids_001, "FDEUTERONPID", 1, //! full deuteron pid
                                    femtotracks::ItsNSigmaDe,
                                    femtotracks::TpcNSigmaDe,
                                    femtotracks::TofNSigmaDe,
-                                   femtotracks::TpcitsNSigmaDe<femtotracks::TpcNSigmaDe, femtotracks::TofNSigmaDe>,
-                                   femtotracks::TpctofNSigmaDe<femtotracks::TpcNSigmaDe, femtotracks::ItsNSigmaDe>);
+                                   femtotracks::TpcitsNSigmaDe<femtotracks::TpcNSigmaDe, femtotracks::ItsNSigmaDe>,
+                                   femtotracks::TpctofNSigmaDe<femtotracks::TpcNSigmaDe, femtotracks::TofNSigmaDe>);
 using FDeuteronPids = FDeuteronPids_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTritonPids_001, "FTRITONPID", 1, //! full triton pid
                                    femtotracks::ItsNSigmaTr,
                                    femtotracks::TpcNSigmaTr,
                                    femtotracks::TofNSigmaTr,
-                                   femtotracks::TpcitsNSigmaTr<femtotracks::TpcNSigmaTr, femtotracks::TofNSigmaTr>,
-                                   femtotracks::TpctofNSigmaTr<femtotracks::TpcNSigmaTr, femtotracks::ItsNSigmaTr>);
+                                   femtotracks::TpcitsNSigmaTr<femtotracks::TpcNSigmaTr, femtotracks::ItsNSigmaTr>,
+                                   femtotracks::TpctofNSigmaTr<femtotracks::TpcNSigmaTr, femtotracks::TofNSigmaTr>);
 using FTritonPids = FTritonPids_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FHeliumPids_001, "FHELIUMPID", 1, //! full helium3 pid
                                    femtotracks::ItsNSigmaHe,
                                    femtotracks::TpcNSigmaHe,
                                    femtotracks::TofNSigmaHe,
-                                   femtotracks::TpcitsNSigmaHe<femtotracks::TpcNSigmaHe, femtotracks::TofNSigmaHe>,
-                                   femtotracks::TpctofNSigmaHe<femtotracks::TpcNSigmaHe, femtotracks::ItsNSigmaHe>);
+                                   femtotracks::TpcitsNSigmaHe<femtotracks::TpcNSigmaHe, femtotracks::ItsNSigmaHe>,
+                                   femtotracks::TpctofNSigmaHe<femtotracks::TpcNSigmaHe, femtotracks::TofNSigmaHe>);
 using FHeliumPids = FHeliumPids_001;
 
 using FTrackPids = soa::Join<FElectronPids, FPionPids, FKaonPids, FProtonPids, FDeuteronPids, FTritonPids, FHeliumPids>;
@@ -342,8 +346,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhis_001, "FPHI", 1, //! femto phis
                                    femtotwotrackresonances::PosDauId,
                                    femtotwotrackresonances::NegDauId,
                                    femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FPhis = FPhis_001;
@@ -364,8 +368,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FKstar0s_001, "FKSTAR0", 1, //! femto k0star
                                    femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FKstar0s = FKstar0s_001;
@@ -383,8 +387,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0s_001, "FRHO0", 1, //! femto rho0s
                                    femtotwotrackresonances::PosDauId,
                                    femtotwotrackresonances::NegDauId,
                                    femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FRho0s = FRho0s_001;
@@ -421,8 +425,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! 
 // table for basic lambda information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdas_001, "FLAMBDA", 1, //! femto lambdas
                                    o2::soa::Index<>,
-                                   femtobase::stored::CollisionId, // use sign to differentiate between lambda (+1) and antilambda (-1)
-                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::CollisionId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between lambda (+1) and antilambda (-1)
                                    femtobase::stored::Eta,
                                    femtobase::stored::Phi,
                                    femtobase::stored::Mass, // mass of the lambda/antilambda depending on the sign of the pt
@@ -431,15 +435,17 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdas_001, "FLAMBDA", 1, //! femto lambdas
                                    femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FLambdas = FLambdas_001;
+using StoredFLambdas = StoredFLambdas_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! lambda masks
                                    femtov0s::Mask);
 using FLambdaMasks = FLambdaMasks_001;
+using StoredFLambdaMasks = StoredFLambdaMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lambda extra information
                                    femtobase::stored::MassAnti,          // put mass of antiparticle, i.e. antilambda mass for lambdas and vice versa
@@ -465,15 +471,17 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shorts_001, "FK0SHORT", 1, //! femto k0sho
                                    femtov0s::PosDauId,
                                    femtov0s::NegDauId,
                                    femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FK0shorts = FK0shorts_001;
+using StoredFK0shorts = StoredFK0shorts_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! k0short masks
                                    femtov0s::Mask);
 using FK0shortMasks = FK0shortMasks_001;
+using StoredFK0shortMasks = StoredFK0shortMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k0short extra information
                                    femtov0s::MassLambda,
@@ -487,6 +495,57 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k
                                    femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>);
 
 using FK0shortExtras = FK0shortExtras_001;
+
+namespace femtokinks
+{
+// columns for bit masks
+DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::KinkMaskType); //! Bitmask for kink selections
+
+// columns for debug information
+DECLARE_SOA_COLUMN(KinkAngle, kinkAngle, float);     //! Kink angle between mother and charged daughter at decay vertex
+DECLARE_SOA_COLUMN(DcaMothToPV, dcaMothToPV, float); //! DCA of the mother track to the primary vertex
+DECLARE_SOA_COLUMN(DcaDaugToPV, dcaDaugToPV, float); //! DCA of the charged daughter track to the primary vertex
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! x coordinate of decay vertex (relative to PV)
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! y coordinate of decay vertex (relative to PV)
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! z coordinate of decay vertex (relative to PV)
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse decay radius from PV
+
+// id column for charged daughter track
+DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
+} // namespace femtokinks
+
+// table for basic sigma minus information
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmas_001, "FSIGMA", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::CollisionId, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
+                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass,
+                                   femtokinks::ChaDauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FSigmas = FSigmas_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaMasks_001, "FSIGMAMASKS", 1,
+                                   femtokinks::Mask);
+using FSigmaMasks = FSigmaMasks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaExtras_001, "FSIGMAEXTRAS", 1,
+                                   femtokinks::KinkAngle,
+                                   femtokinks::DcaDaugToPV,
+                                   femtokinks::DcaMothToPV,
+                                   femtokinks::DecayVtxX,
+                                   femtokinks::DecayVtxY,
+                                   femtokinks::DecayVtxZ,
+                                   femtokinks::TransRadius);
+
+using FSigmaExtras = FSigmaExtras_001;
 
 namespace femtocascades
 {
@@ -523,8 +582,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXis_001, "FXI", 1, //! femto xis
                                    femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FXis = FXis_001;
@@ -557,8 +616,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Eta>,
-                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FOmegas = FOmegas_001;

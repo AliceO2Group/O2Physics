@@ -15,7 +15,6 @@
 
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
-#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
@@ -24,10 +23,13 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <map>
@@ -44,7 +46,7 @@ using namespace o2::analysis::femto;
 struct FemtoTwotrackresonanceQa {
 
   // setup tables
-  using Collisions = FCols;
+  using Collisions = Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
@@ -58,10 +60,11 @@ struct FemtoTwotrackresonanceQa {
   SliceCache cache;
 
   // setup for collisions
+  collisionbuilder::ConfCollisionSelection collisionSelection;
+  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
-  collisionbuilder::ConfCollisionFilters collisionSelection;
-  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
+  colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for phis
   twotrackresonancebuilder::ConfPhiSelection confPhiSelection;
@@ -116,7 +119,7 @@ struct FemtoTwotrackresonanceQa {
   void init(InitContext&)
   {
     // create a map for histogram specs
-    auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+    auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init(&hRegistry, colHistSpec);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);

@@ -64,6 +64,7 @@ DECLARE_SOA_COLUMN(VertexXY, vertexXY, double);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(VertexChi2, vertexChi2, double);
 DECLARE_SOA_COLUMN(NContrib, nContrib, int);
+DECLARE_SOA_COLUMN(InputMask, inputMask, uint64_t); //! CTP input mask
 
 // Information for FDD
 DECLARE_SOA_COLUMN(isFDD, isfdd, bool);
@@ -90,7 +91,7 @@ DECLARE_SOA_COLUMN(TimeAFV0, timeAfv0, double);     // Only FV0-A time
 DECLARE_SOA_COLUMN(ChargeAFV0, chargeAfv0, double); // Only FV0-A charge
 
 } // namespace full
-DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
+DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::InputMask, full::VertexX,
                   full::VertexY, full::VertexZ, full::GlobalBC,
                   full::VertexChi2, full::NContrib,
                   full::isFDD, full::TCMTriggerFDD,
@@ -103,21 +104,25 @@ DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
 
 DECLARE_SOA_TABLE(EventInfoFDD, "AOD", "EventInfoFDD",
                   full::TimeStamp, full::GlobalBC,
-                  full::TCMTriggerFDD, full::TimeAFDD,
+                  full::InputMask, full::TCMTriggerFDD, full::TimeAFDD,
                   full::TimeCFDD, full::IsCoinAmpFDDA,
                   full::IsCoinAmpFDDC, full::ChargeAFDD,
                   full::ChargeCFDD);
 
 DECLARE_SOA_TABLE(EventInfoFT0, "AOD", "EventInfoFT0",
                   full::TimeStamp, full::GlobalBC,
-                  full::TCMTriggerFT0, full::TimeAFT0,
+                  full::InputMask, full::TCMTriggerFT0, full::TimeAFT0,
                   full::TimeCFT0, full::ChargeAFT0,
                   full::ChargeCFT0);
 
 DECLARE_SOA_TABLE(EventInfoFV0, "AOD", "EventInfoFV0",
                   full::TimeStamp, full::GlobalBC,
-                  full::TCMTriggerFV0, full::TimeAFV0,
+                  full::InputMask, full::TCMTriggerFV0, full::TimeAFV0,
                   full::ChargeAFV0);
+
+DECLARE_SOA_TABLE(EventInfoCTP, "AOD", "EventInfoCTP",
+                  full::TimeStamp, full::GlobalBC,
+                  full::InputMask);
 
 } // namespace o2::aod
 
@@ -126,6 +131,7 @@ struct LumiFDDFT0 {
   Produces<o2::aod::EventInfoFDD> rowEventInfofdd;
   Produces<o2::aod::EventInfoFT0> rowEventInfoft0;
   Produces<o2::aod::EventInfoFV0> rowEventInfofv0;
+  Produces<o2::aod::EventInfoCTP> rowEventInfoCTP;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   const char* ccdbpath_grp = "GLO/Config/GRPMagField";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
@@ -134,6 +140,7 @@ struct LumiFDDFT0 {
   Configurable<uint64_t> fttimestamp{"fttimestamp", 1668080173000, "First time of time stamp"};
   Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
   Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
+  Configurable<bool> useRelTimeStamp{"useRelTimeStamp", false, "timestamp info stored as relative to fttimestamp"};
 
   HistogramRegistry histos{
     "histos",
@@ -304,7 +311,7 @@ struct LumiFDDFT0 {
       }
     } // fv0
 
-    rowEventInfo(relTS, refitX, refitY, refitZ, globalBC, chi2, nContrib, collision.has_foundFDD(),
+    rowEventInfo(relTS, bc.inputMask(), refitX, refitY, refitZ, globalBC, chi2, nContrib, collision.has_foundFDD(),
                  mTriggerFDD, timeaFDD, timecFDD, chargeaFDD, chargecFDD, collision.has_foundFT0(), mTriggerFT0, timeaFT0,
                  timecFT0, chargeaFT0, chargecFT0, collision.has_foundFV0(), mTriggerFV0, timeaFV0, chargeaFV0);
 
@@ -339,8 +346,19 @@ struct LumiFDDFT0 {
   };
   PROCESS_SWITCH(LumiFDDFT0, processFull, "Process FDD", true);
 
-  void processLite(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const&)
+  void processLite(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
+    // table to store CTP input mask, globalBC and timestamp
+    for (const auto& bc : bcs) {
+      if (!bc.timestamp())
+        continue;
+      if (useRelTimeStamp) {
+        Long64_t relTS = bc.timestamp() - fttimestamp;
+        rowEventInfoCTP(relTS, bc.globalBC(), bc.inputMask());
+      } else {
+        rowEventInfoCTP(bc.timestamp(), bc.globalBC(), bc.inputMask());
+      }
+    }
 
     // Scan over the FDD table and store charge and time along with globalBC
     for (auto& fdd : fdds) {
@@ -388,7 +406,7 @@ struct LumiFDDFT0 {
       bool isCoinA = checkAnyCoincidence(channelA);
       bool isCoinC = checkAnyCoincidence(channelC);
 
-      rowEventInfofdd(relTS, globalBC, fdd.triggerMask(), fdd.timeA(), fdd.timeC(), isCoinA, isCoinC, chargeaFDD, chargecFDD);
+      rowEventInfofdd(relTS, globalBC, bc.inputMask(), fdd.triggerMask(), fdd.timeA(), fdd.timeC(), isCoinA, isCoinC, chargeaFDD, chargecFDD);
     } // end of fdd table
 
     // Scan over the FT0 table and store charge and time along with globalBC
@@ -408,7 +426,7 @@ struct LumiFDDFT0 {
       for (auto amplitude : ft0.amplitudeC()) {
         chargecFT0 += amplitude;
       }
-      rowEventInfoft0(relTS, globalBC, ft0.triggerMask(), ft0.timeA(), ft0.timeC(), chargeaFT0, chargecFT0);
+      rowEventInfoft0(relTS, globalBC, bc.inputMask(), ft0.triggerMask(), ft0.timeA(), ft0.timeC(), chargeaFT0, chargecFT0);
     } // end of ft0 table
 
     // Scan over the FV0 table and store charge and time along with globalBC
@@ -425,7 +443,7 @@ struct LumiFDDFT0 {
       for (auto amplitude : fv0.amplitude()) {
         chargeaFV0 += amplitude;
       }
-      rowEventInfofv0(relTS, globalBC, fv0.triggerMask(), fv0.time(), chargeaFV0);
+      rowEventInfofv0(relTS, globalBC, bc.inputMask(), fv0.triggerMask(), fv0.time(), chargeaFV0);
     } // end of fv0 table
   };
   PROCESS_SWITCH(LumiFDDFT0, processLite, "Process FDD and FT0 info", false);
