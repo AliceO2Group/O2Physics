@@ -1456,7 +1456,7 @@ struct TableMakerMC {
   }
 
   void processPP(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                 MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                 MyBarrelTracksWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
                  aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
                  MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1464,7 +1464,7 @@ struct TableMakerMC {
   }
 
   void processPPMcTuned(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                 MyBarrelTracksWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                 MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
                  aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
                  MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1525,11 +1525,26 @@ struct TableMakerMC {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
   }
 
+  void processPbPbMcTuned(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
+                   MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                   aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
+                   MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapTunedWithCov, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
+  }
+
   void processPbPbBarrelOnly(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
                              MyBarrelTracksWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
                              MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u, 0u, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
+  }
+
+  void processPbPbBarrelOnlyMcTuned(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
+                             MyBarrelTracksTunedWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
+                             MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapTunedWithCov, 0u, 0u, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
   }
 
   void processPbPbWithFilterBarrelOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, aod::BCsWithTimestamps const& bcs,
@@ -1583,13 +1598,17 @@ struct TableMakerMC {
   }
 
   PROCESS_SWITCH(TableMakerMC, processPP, "Produce both barrel and muon skims, pp settings", false);
+  PROCESS_SWITCH(TableMakerMC, processPPMcTuned, "Produce both barrel and muon skims, pp settings, with MC-tuned dEdx", false);
   PROCESS_SWITCH(TableMakerMC, processPPBarrelOnly, "Produce only barrel skims, pp settings ", false);
+  PROCESS_SWITCH(TableMakerMC, processPPBarrelOnlyMcTuned, "Produce only barrel skims, pp settings, with MC-tuned dEdx", false);
   PROCESS_SWITCH(TableMakerMC, processPPMuonOnlyBasic, "Produce only muon skims, pp settings, no multiplicity", false);
   PROCESS_SWITCH(TableMakerMC, processPPMuonOnly, "Produce only muon skims, pp settings", false);
   PROCESS_SWITCH(TableMakerMC, processPPMuonRefit, "Produce only muon skims, pp settings", false);
   PROCESS_SWITCH(TableMakerMC, processPPRealignedMuonOnly, "Build realigned muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMakerMC, processPbPb, "Produce both barrel and muon skims, PbPb settings", false);
+  PROCESS_SWITCH(TableMakerMC, processPbPbMcTuned, "Produce both barrel and muon skims, PbPb settings, with MC-tuned dEdx", false);
   PROCESS_SWITCH(TableMakerMC, processPbPbBarrelOnly, "Produce only barrel skims, PbPb settings", false);
+  PROCESS_SWITCH(TableMakerMC, processPbPbBarrelOnlyMcTuned, "Produce only barrel skims, PbPb settings, with MC-tuned dEdx", false);
   PROCESS_SWITCH(TableMakerMC, processPbPbWithFilterBarrelOnly, "Produce only barrel skims, pp settings with rapidity gap filter ", false);
   PROCESS_SWITCH(TableMakerMC, processPbPbMuonOnly, "Produce only muon skims, PbPb settings", false);
   PROCESS_SWITCH(TableMakerMC, processPbPbRealignedMuonOnly, "Build realigned muon only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
