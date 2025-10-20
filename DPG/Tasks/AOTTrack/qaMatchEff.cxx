@@ -21,26 +21,27 @@
 //
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "CommonConstants/MathConstants.h"
+
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/RecoDecay.h"
+#include "CommonConstants/MathConstants.h"
 //
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 //
+#include <cmath>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
-#include <cmath>
 
 //
 namespace extConfPar
@@ -149,21 +150,21 @@ struct qaMatchEff {
   //  TRD presence
   Configurable<int> isTRDThere{"isTRDThere", 2, "Integer to turn the presence of TRD off, on, don't care (0,1,anything else)"};
   Configurable<int> isTOFThere{"isTOFThere", 2, "Integer to turn the presence of TOF off, on, don't care (0,1,anything else)"};
-  
+
   Configurable<bool> isitMC{"isitMC", false, "Reading MC files, data if false"};
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
   // Histogram configuration
-  
+
   // histos bins
   Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
   Configurable<int> qoptBins{"qopt-bins", 500, "Number of Q/pt bins"};
-  
+
   // special histo, few particles explicitly stored, then pdg>3000
   Configurable<int> pdgBins{"pdg-bins", 14, "Number of pdg values counted"};
-  
+
   // histo axes
-  
+
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 20.f}, "pT binning"};
   ConfigurableAxis XBins{"XBins", {400, -2.f, 2.f}, "X binning"};
   ConfigurableAxis ZBins{"ZBins", {400, -20.f, 20.f}, "Z binning"};
@@ -3361,7 +3362,7 @@ struct qaMatchEff {
       if (doDebug)
         LOGF(info, "Event selection not passed, skipping...");
       return;
-    }  
+    }
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
@@ -3464,7 +3465,7 @@ struct qaMatchEff {
       if (doDebug)
         LOGF(info, "Event selection not passed, skipping...");
       return;
-    }  
+    }
     fillHistograms<false>(tracks, tracks, tracks); // 2nd and 3rd arguments not used in this case
     fillGeneralHistos<false>(collision);
   }
