@@ -23,8 +23,8 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 
 namespace o2::aod
 {

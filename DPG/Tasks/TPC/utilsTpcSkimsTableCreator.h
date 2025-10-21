@@ -20,7 +20,7 @@
 #ifndef DPG_TASKS_TPC_UTILSTPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_UTILSTPCSKIMSTABLECREATOR_H_
 
-#include "TRandom3.h"
+#include <TRandom3.h>
 
 namespace o2::dpg_tpcskimstablecreator
 {
