@@ -1884,9 +1884,8 @@ struct HfTrackIndexSkimCreator {
       isSelected = 0;
       if (config.debug) {
         CLRBIT(cutStatus, 0);
-      } else {
-        return isSelected;
       }
+      return isSelected;
     }
 
     // D0 mass

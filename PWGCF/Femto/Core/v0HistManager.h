@@ -220,77 +220,76 @@ class V0HistManager
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(v0Prefix) + std::string(AnalysisDir);
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPt, HistTable), GetHistDesc(kPt, HistTable), GetHistType(kPt, HistTable), {V0Specs[kPt]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kEta, HistTable), GetHistDesc(kEta, HistTable), GetHistType(kEta, HistTable), {V0Specs[kEta]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPhi, HistTable), GetHistDesc(kPhi, HistTable), GetHistType(kPhi, HistTable), {V0Specs[kPhi]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kMass, HistTable), GetHistDesc(kMass, HistTable), GetHistType(kMass, HistTable), {V0Specs[kMass]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kSign, HistTable), GetHistDesc(kSign, HistTable), GetHistType(kSign, HistTable), {V0Specs[kSign]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {V0Specs[kPt]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {V0Specs[kEta]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {V0Specs[kPhi]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {V0Specs[kMass]});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {V0Specs[kSign]});
     }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       std::string qaDir = std::string(v0Prefix) + std::string(QaDir);
 
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kCosPa, HistTable), GetHistDesc(kCosPa, HistTable), GetHistType(kCosPa, HistTable), {V0Specs[kCosPa]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kDecayDauDca, HistTable), GetHistDesc(kDecayDauDca, HistTable), GetHistType(kDecayDauDca, HistTable), {V0Specs[kDecayDauDca]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kDecayVtxX, HistTable), GetHistDesc(kDecayVtxX, HistTable), GetHistType(kDecayVtxX, HistTable), {V0Specs[kDecayVtxX]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kDecayVtxY, HistTable), GetHistDesc(kDecayVtxY, HistTable), GetHistType(kDecayVtxY, HistTable), {V0Specs[kDecayVtxY]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kDecayVtxZ, HistTable), GetHistDesc(kDecayVtxZ, HistTable), GetHistType(kDecayVtxZ, HistTable), {V0Specs[kDecayVtxZ]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kDecayVtx, HistTable), GetHistDesc(kDecayVtx, HistTable), GetHistType(kDecayVtx, HistTable), {V0Specs[kDecayVtx]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kTransRadius, HistTable), GetHistDesc(kTransRadius, HistTable), GetHistType(kTransRadius, HistTable), {V0Specs[kTransRadius]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kCosPa, HistTable), getHistDesc(kCosPa, HistTable), getHistType(kCosPa, HistTable), {V0Specs[kCosPa]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayDauDca, HistTable), getHistDesc(kDecayDauDca, HistTable), getHistType(kDecayDauDca, HistTable), {V0Specs[kDecayDauDca]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxX, HistTable), getHistDesc(kDecayVtxX, HistTable), getHistType(kDecayVtxX, HistTable), {V0Specs[kDecayVtxX]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxY, HistTable), getHistDesc(kDecayVtxY, HistTable), getHistType(kDecayVtxY, HistTable), {V0Specs[kDecayVtxY]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxZ, HistTable), getHistDesc(kDecayVtxZ, HistTable), getHistType(kDecayVtxZ, HistTable), {V0Specs[kDecayVtxZ]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtx, HistTable), getHistDesc(kDecayVtx, HistTable), getHistType(kDecayVtx, HistTable), {V0Specs[kDecayVtx]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kTransRadius, HistTable), getHistDesc(kTransRadius, HistTable), getHistType(kTransRadius, HistTable), {V0Specs[kTransRadius]});
 
       // qa 2d
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsEta, HistTable), GetHistDesc(kPtVsEta, HistTable), GetHistType(kPtVsEta, HistTable), {V0Specs[kPtVsEta]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsPhi, HistTable), GetHistDesc(kPtVsPhi, HistTable), GetHistType(kPtVsPhi, HistTable), {V0Specs[kPtVsPhi]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPhiVsEta, HistTable), GetHistDesc(kPhiVsEta, HistTable), GetHistType(kPhiVsEta, HistTable), {V0Specs[kPhiVsEta]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsCosPa, HistTable), GetHistDesc(kPtVsCosPa, HistTable), GetHistType(kPtVsCosPa, HistTable), {V0Specs[kPtVsCosPa]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {V0Specs[kPtVsEta]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {V0Specs[kPtVsPhi]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {V0Specs[kPhiVsEta]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsCosPa, HistTable), getHistDesc(kPtVsCosPa, HistTable), getHistType(kPtVsCosPa, HistTable), {V0Specs[kPtVsCosPa]});
 
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kMassLambda, HistTable), GetHistDesc(kMassLambda, HistTable), GetHistType(kMassLambda, HistTable), {V0Specs[kMassLambda]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kMassAntiLambda, HistTable), GetHistDesc(kMassAntiLambda, HistTable), GetHistType(kMassAntiLambda, HistTable), {V0Specs[kMassAntiLambda]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kMassK0short, HistTable), GetHistDesc(kMassK0short, HistTable), GetHistType(kMassK0short, HistTable), {V0Specs[kMassK0short]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsLambdaMass, HistTable), GetHistDesc(kPtVsLambdaMass, HistTable), GetHistType(kPtVsLambdaMass, HistTable), {V0Specs[kPtVsLambdaMass]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsAntiLambdaMass, HistTable), GetHistDesc(kPtVsAntiLambdaMass, HistTable), GetHistType(kPtVsAntiLambdaMass, HistTable), {V0Specs[kPtVsAntiLambdaMass]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsK0shortMass, HistTable), GetHistDesc(kPtVsK0shortMass, HistTable), GetHistType(kPtVsK0shortMass, HistTable), {V0Specs[kPtVsK0shortMass]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kLambdaMassVsAntiLambdaMass, HistTable), GetHistDesc(kLambdaMassVsAntiLambdaMass, HistTable), GetHistType(kLambdaMassVsAntiLambdaMass, HistTable), {V0Specs[kLambdaMassVsAntiLambdaMass]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kK0shortMassVsLambdaMass, HistTable), GetHistDesc(kK0shortMassVsLambdaMass, HistTable), GetHistType(kK0shortMassVsLambdaMass, HistTable), {V0Specs[kK0shortMassVsLambdaMass]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kK0shortMassVsAntiLambdaMass, HistTable), GetHistDesc(kK0shortMassVsAntiLambdaMass, HistTable), GetHistType(kK0shortMassVsAntiLambdaMass, HistTable), {V0Specs[kK0shortMassVsAntiLambdaMass]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassLambda, HistTable), getHistDesc(kMassLambda, HistTable), getHistType(kMassLambda, HistTable), {V0Specs[kMassLambda]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassAntiLambda, HistTable), getHistDesc(kMassAntiLambda, HistTable), getHistType(kMassAntiLambda, HistTable), {V0Specs[kMassAntiLambda]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMassK0short, HistTable), getHistDesc(kMassK0short, HistTable), getHistType(kMassK0short, HistTable), {V0Specs[kMassK0short]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsLambdaMass, HistTable), getHistDesc(kPtVsLambdaMass, HistTable), getHistType(kPtVsLambdaMass, HistTable), {V0Specs[kPtVsLambdaMass]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsAntiLambdaMass, HistTable), getHistDesc(kPtVsAntiLambdaMass, HistTable), getHistType(kPtVsAntiLambdaMass, HistTable), {V0Specs[kPtVsAntiLambdaMass]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsK0shortMass, HistTable), getHistDesc(kPtVsK0shortMass, HistTable), getHistType(kPtVsK0shortMass, HistTable), {V0Specs[kPtVsK0shortMass]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaMassVsAntiLambdaMass, HistTable), getHistDesc(kLambdaMassVsAntiLambdaMass, HistTable), getHistType(kLambdaMassVsAntiLambdaMass, HistTable), {V0Specs[kLambdaMassVsAntiLambdaMass]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kK0shortMassVsLambdaMass, HistTable), getHistDesc(kK0shortMassVsLambdaMass, HistTable), getHistType(kK0shortMassVsLambdaMass, HistTable), {V0Specs[kK0shortMassVsLambdaMass]});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kK0shortMassVsAntiLambdaMass, HistTable), getHistDesc(kK0shortMassVsAntiLambdaMass, HistTable), getHistType(kK0shortMassVsAntiLambdaMass, HistTable), {V0Specs[kK0shortMassVsAntiLambdaMass]});
     }
   }
 
   template <typename T1, typename T2>
-  void fill(T1 const& v0candidate, T2 const& /*tracks*/)
+  void fill(T1 const& v0candidate, T2 const& tracks)
   {
-
     auto posDaughter = v0candidate.template posDau_as<T2>();
-    mPosDauManager.fill(posDaughter);
+    mPosDauManager.fill(posDaughter, tracks);
     auto negDaughter = v0candidate.template negDau_as<T2>();
-    mNegDauManager.fill(negDaughter);
+    mNegDauManager.fill(negDaughter, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt, HistTable)), v0candidate.pt());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(GetHistName(kEta, HistTable)), v0candidate.eta());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPhi, HistTable)), v0candidate.phi());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(GetHistName(kMass, HistTable)), v0candidate.mass());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt, HistTable)), v0candidate.pt());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), v0candidate.eta());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), v0candidate.phi());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), v0candidate.mass());
 
       if constexpr (modes::isEqual(v0, modes::V0::kLambda) || modes::isEqual(v0, modes::V0::kAntiLambda)) {
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(GetHistName(kSign, HistTable)), v0candidate.sign());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), v0candidate.sign());
       }
       if constexpr (modes::isEqual(v0, modes::V0::kK0short)) {
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(GetHistName(kSign, HistTable)), 0);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), 0);
       }
     }
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kCosPa, HistTable)), v0candidate.cosPa());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kDecayDauDca, HistTable)), v0candidate.dauDca());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtxX, HistTable)), v0candidate.decayVtxX());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtxY, HistTable)), v0candidate.decayVtxY());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtxZ, HistTable)), v0candidate.decayVtxZ());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtx, HistTable)), v0candidate.decayVtx());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kTransRadius, HistTable)), v0candidate.transRadius());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsEta, HistTable)), v0candidate.pt(), v0candidate.eta());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsPhi, HistTable)), v0candidate.pt(), v0candidate.phi());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPhiVsEta, HistTable)), v0candidate.phi(), v0candidate.eta());
-      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsCosPa, HistTable)), v0candidate.pt(), v0candidate.cosPa());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kCosPa, HistTable)), v0candidate.cosPa());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayDauDca, HistTable)), v0candidate.dauDca());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxX, HistTable)), v0candidate.decayVtxX());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxY, HistTable)), v0candidate.decayVtxY());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxZ, HistTable)), v0candidate.decayVtxZ());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtx, HistTable)), v0candidate.decayVtx());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kTransRadius, HistTable)), v0candidate.transRadius());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), v0candidate.pt(), v0candidate.eta());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), v0candidate.pt(), v0candidate.phi());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), v0candidate.phi(), v0candidate.eta());
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsCosPa, HistTable)), v0candidate.pt(), v0candidate.cosPa());
 
       if constexpr (modes::isEqual(v0, modes::V0::kLambda) || modes::isEqual(v0, modes::V0::kAntiLambda)) {
         float massLambda, massAntiLambda;
@@ -301,26 +300,27 @@ class V0HistManager
           massLambda = v0candidate.massAnti();
           massAntiLambda = v0candidate.mass();
         }
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kMassLambda, HistTable)), massLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kMassAntiLambda, HistTable)), massAntiLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kMassK0short, HistTable)), v0candidate.massK0short());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), massLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), massAntiLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), v0candidate.massK0short());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kLambdaMassVsAntiLambdaMass, HistTable)), massLambda, massAntiLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.massK0short(), massLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.massK0short(), massAntiLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassAntiLambda, HistTable)), massAntiLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassK0short, HistTable)), v0candidate.massK0short());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), massLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), massAntiLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), v0candidate.massK0short());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kLambdaMassVsAntiLambdaMass, HistTable)), massLambda, massAntiLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.massK0short(), massLambda);
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.massK0short(), massAntiLambda);
       }
+
       if constexpr (modes::isEqual(v0, modes::V0::kK0short)) {
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kMassLambda, HistTable)), v0candidate.massLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kMassAntiLambda, HistTable)), v0candidate.massAntiLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kMassK0short, HistTable)), v0candidate.mass());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), v0candidate.massLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), v0candidate.massAntiLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), v0candidate.mass());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kLambdaMassVsAntiLambdaMass, HistTable)), v0candidate.massLambda(), v0candidate.massAntiLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.mass(), v0candidate.massLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(GetHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.mass(), v0candidate.massAntiLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), v0candidate.massLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassAntiLambda, HistTable)), v0candidate.massAntiLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassK0short, HistTable)), v0candidate.mass());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), v0candidate.massLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), v0candidate.massAntiLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), v0candidate.mass());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kLambdaMassVsAntiLambdaMass, HistTable)), v0candidate.massLambda(), v0candidate.massAntiLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.mass(), v0candidate.massLambda());
+        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.mass(), v0candidate.massAntiLambda());
       }
     }
   }

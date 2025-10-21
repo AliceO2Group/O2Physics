@@ -160,6 +160,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
     Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
+    Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
   } ConfGeneral;
   Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfGeneral.confCentFT0Max);
@@ -239,6 +240,8 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confDcaXYCustom1Cut{"confDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
     Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<bool> confIsApplyTrkCutMCTruth{"confIsApplyTrkCutMCTruth", false, "Apply eta, pT selection cut on MCTruth tracks "};
+    Configurable<bool> confIsOnlyPrimary{"confIsOnlyPrimary", false, "Select only primaries"};
   } ConfFilterCuts;
 
   Filter globalCutFilter = requireGlobalTrackInFilter();
@@ -1360,6 +1363,17 @@ struct FemtoUniverseProducerTask {
   void fillTracksMCTruth(MCParticlesType const& mcParticles)
   {
     for (const auto& mc : mcParticles) { // Loop over all MC Truth particles
+      if (ConfFilterCuts.confIsApplyTrkCutMCTruth) {
+        if (std::abs(mc.eta()) > ConfFilterCuts.confEtaFilterCut || mc.pt() < ConfFilterCuts.confPtLowFilterCut || mc.pt() > ConfFilterCuts.confPtHighFilterCut) {
+          continue;
+        }
+      }
+
+      if (ConfFilterCuts.confIsOnlyPrimary) {
+        if (!mc.isPhysicalPrimary()) {
+          return;
+        }
+      }
 
       std::vector<int> childIDs = {0, 0};
       outputParts(outputCollision.lastIndex(),
@@ -2541,9 +2555,15 @@ struct FemtoUniverseProducerTask {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       getMagneticFieldTesla(bc);
       const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
-
+      bool colcheck = false;
       // fill the tables
-      const auto colcheck = fillCollisionsCentRun3<true>(col);
+
+      if (ConfGeneral.confIsCent) {
+        colcheck = fillCollisionsCentRun3<true>(col);
+      } else {
+        colcheck = fillCollisions<true>(col, groupedTracks);
+      }
+
       if (colcheck) {
         fillCollisionsCentRun3ColExtra<true>(col, ir);
         fillTracks<true>(groupedTracks);
