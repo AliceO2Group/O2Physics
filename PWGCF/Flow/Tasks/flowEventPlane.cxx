@@ -267,22 +267,12 @@ struct FlowEventPlane {
     return true;
   }
 
-  // Kinematic Selection
-  bool kinCutSelection(float const& pt, float const& rap, float const& ptMin, float const& ptMax, float const& rapMax)
-  {
-    if (pt <= ptMin || pt >= ptMax || rap >= rapMax) {
-      return false;
-    }
-
-    return true;
-  }
-
   // Track Selection
   template <typename T>
   bool selectTrack(T const& track)
   {
-    if (!kinCutSelection(track.pt(), std::abs(track.eta()), cTrackMinPt, cTrackMaxPt, cTrackEtaCut)) {
-      return false;
+    if (track.pt() <= cTrackMinPt || track.pt() >= cTrackMaxPt || std::abs(track.eta()) >= cTrackEtaCut) {
+      return false
     }
 
     if (cTrackGlobal && !track.isGlobalTrackWoDCA()) {
@@ -488,8 +478,8 @@ struct FlowEventPlane {
     fillCorrHist(vCollParam, vSP);
     histos.fill(HIST("Checks/hXaXc"), cent, vSP[kXa], vSP[kXc]);
     histos.fill(HIST("Checks/hYaYc"), cent, vSP[kYa], vSP[kYc]);
-    histos.fill(HIST("Checks/hPsiSPA"), cent, TMath::ATan2(vSP[kYa], vSP[kXa]));
-    histos.fill(HIST("Checks/hPsiSPC"), cent, TMath::ATan2(vSP[kYc], vSP[kXc]));
+    histos.fill(HIST("Checks/hPsiSPA"), cent, std::atan2(vSP[kYa], vSP[kXa]));
+    histos.fill(HIST("Checks/hPsiSPC"), cent, std::atan2(vSP[kYc], vSP[kXc]));
 
     // Directed flow
     float qac = vSP[kXa] * vSP[kXc] + vSP[kYa] * vSP[kYc];
@@ -507,8 +497,8 @@ struct FlowEventPlane {
       fillTrackHist(track);
 
       // Get directed flow
-      ux = TMath::Cos(track.phi());
-      uy = TMath::Sin(track.phi());
+      ux = std::cos(track.phi());
+      uy = std::sin(track.phi());
       v1a = ux * vSP[kXa] + uy * vSP[kYa];
       v1c = ux * vSP[kXc] + uy * vSP[kYc];
 
