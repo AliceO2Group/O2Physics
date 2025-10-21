@@ -419,7 +419,7 @@ struct LFNucleiBATask {
     }
 
     if (enableCentrality)
-      histos.add<TH2>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}, {binsPercentile, "Centrality FT0M"}});
+      histos.add<TH2>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH2F, {{1500, -15, 15}, {binsPercentile, "Centrality FT0M"}});
     else
       histos.add<TH1>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
@@ -2162,14 +2162,14 @@ struct LFNucleiBATask {
       spectraGen.add("helium/histGenPtHe", "generated particles", HistType::kTH1F, {ptHeAxis});
       spectraGen.add("helium/histGenPtHePrim", "generated particles", HistType::kTH1F, {ptHeAxis});
       if (enableCentrality)
-        spectraGen.add("helium/histGenPtHePrim", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
+        spectraGen.add("helium/histGenPtHePrimVsMult", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
       spectraGen.add("helium/histGenPtHeSec", "generated particles", HistType::kTH1F, {ptHeAxis});
       spectraGen.add("helium/histSecTransportPtHe", "generated particles", HistType::kTH1F, {ptHeAxis});
 
       spectraGen.add("helium/histGenPtantiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
       spectraGen.add("helium/histGenPtantiHePrim", "generated particles", HistType::kTH1F, {ptHeAxis});
       if (enableCentrality)
-        spectraGen.add("helium/histGenPtantiHePrim", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
+        spectraGen.add("helium/histGenPtantiHePrimVsMult", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
       spectraGen.add("helium/histGenPtantiHeSec", "generated particles", HistType::kTH1F, {ptHeAxis});
       spectraGen.add("helium/histSecTransportPtantiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
     }
@@ -5752,7 +5752,7 @@ struct LFNucleiBATask {
                 if (isWeakDecay) {
                   histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueSec_Z2"), 2 * hePt);
                   if (enableCentrality)
-                    histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueSecVsMult_Z2"), 2 * hePt);
+                    histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueSecVsMult_Z2"), 2 * hePt, event.centFT0M());
                   if (outFlagOptions.makeDCAAfterCutPlots) {
                     histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtHeliumTrueSec"), hePt, track.dcaXY());
                     histos.fill(HIST("tracks/helium/dca/after/hDCAzVsPtHeliumTrueSec"), hePt, track.dcaZ());
@@ -6304,10 +6304,9 @@ struct LFNucleiBATask {
         if (pdgCode == PDGHelium) {
           spectraGen.fill(HIST("helium/histGenPtHe"), ptMC);
           if (isPhysPrim) {
+            spectraGen.fill(HIST("helium/histGenPtHePrim"), ptMC);
             if (enableCentrality)
-              spectraGen.fill(HIST("helium/histGenPtHePrim"), ptMC, mcCollision.centFT0M());
-            else
-              spectraGen.fill(HIST("helium/histGenPtHePrim"), ptMC);
+              spectraGen.fill(HIST("helium/histGenPtHePrimVsMult"), ptMC, mcCollision.centFT0M());
           }
           if (!isPhysPrim && isProdByGen) {
             {
@@ -6324,10 +6323,9 @@ struct LFNucleiBATask {
         if (pdgCode == -PDGHelium) {
           spectraGen.fill(HIST("helium/histGenPtantiHe"), ptMC);
           if (isPhysPrim) {
+            spectraGen.fill(HIST("helium/histGenPtantiHePrim"), ptMC);
             if (enableCentrality)
-              spectraGen.fill(HIST("helium/histGenPtantiHePrim"), ptMC, mcCollision.centFT0M());
-            else
-              spectraGen.fill(HIST("helium/histGenPtantiHePrim"), ptMC);
+              spectraGen.fill(HIST("helium/histGenPtantiHePrimVsMult"), ptMC, mcCollision.centFT0M());
           }
           if (!isPhysPrim && isProdByGen) {
             {
