@@ -417,13 +417,13 @@ class HfFilterHelper
   }
   void setPtBinsSingleTracks(const std::vector<double>& ptBins) { mPtBinsTracks = ptBins; }
   void setPtBinsBeautyHadrons(const std::vector<double>& ptBins) { mPtBinsBeautyHadrons = ptBins; }
-  void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P, o2::framework::LabeledArray<double> cutsSingleToJPsi)
+  void setCutsSingleTrackBeauty(const o2::framework::LabeledArray<double>& cutsSingleTrack3P, const o2::framework::LabeledArray<double>& cutsSingleTrack4P, const o2::framework::LabeledArray<double>& cutsSingleToJPsi)
   {
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
     mCutsSingleTrackBeautyToJPsi = cutsSingleToJPsi;
   }
-  void setCutsBhadrons(o2::framework::LabeledArray<double> cutsBplus, o2::framework::LabeledArray<double> cutsB0toDstar, o2::framework::LabeledArray<double> cutsBc, o2::framework::LabeledArray<double> cutsB0, o2::framework::LabeledArray<double> cutsBs, o2::framework::LabeledArray<double> cutsLb, o2::framework::LabeledArray<double> cutsXib)
+  void setCutsBhadrons(const o2::framework::LabeledArray<double>& cutsBplus, const o2::framework::LabeledArray<double>& cutsB0toDstar, const o2::framework::LabeledArray<double>& cutsBc, const o2::framework::LabeledArray<double>& cutsB0, const o2::framework::LabeledArray<double>& cutsBs, const o2::framework::LabeledArray<double>& cutsLb, const o2::framework::LabeledArray<double>& cutsXib)
   {
     mCutsBhad[kBplus] = cutsBplus;
     mCutsBhad[kB0toDStar] = cutsB0toDstar;
@@ -433,7 +433,7 @@ class HfFilterHelper
     mCutsBhad[kLb] = cutsLb;
     mCutsBhad[kXib] = cutsXib;
   }
-  void setCutsBtoJPsi(o2::framework::LabeledArray<double> cuts)
+  void setCutsBtoJPsi(const o2::framework::LabeledArray<double>& cuts)
   {
     mCutsBhadToJPsi = cuts;
   }
@@ -554,7 +554,7 @@ class HfFilterHelper
     mMaxDcaXyXi = maxDcaxyXi;
     mMaxNsigmaXiDau = nSigma;
   }
-  void setCutsSingleTrackCharmBaryonBachelor(o2::framework::LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
+  void setCutsSingleTrackCharmBaryonBachelor(const o2::framework::LabeledArray<double>& cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
   void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPiCharmBaryonBachelor = nSigmaTpc;
