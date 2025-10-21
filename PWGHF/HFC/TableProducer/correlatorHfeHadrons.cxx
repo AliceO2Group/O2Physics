@@ -66,7 +66,7 @@ struct HfCorrelatorHfeHadrons {
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
 
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
-  Configurable<float> invariantMassNonHfe{"invariantMassNonHfe", 0.14f, "max Invariant Mass for Photonic electron"};
+  Configurable<float> invMassEEMax{"invMassEEMax", 0.14f, "max Invariant Mass for Photonic electron"};
   // Associated Hadron selection
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1f, "Transverse momentum range for associated hadron tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8f, "Eta range  for associated hadron tracks"};
@@ -254,7 +254,7 @@ struct HfCorrelatorHfeHadrons {
           registry.fill(HIST("hLSElectronBin"), poolBin);
           registry.fill(HIST("hLikeMass"), massLike);
 
-          if (massLike <= invariantMassNonHfe) {
+          if (massLike <= invMassEEMax) {
             ++nElectronLS;
             registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
           }
@@ -267,7 +267,7 @@ struct HfCorrelatorHfeHadrons {
           registry.fill(HIST("hULSElectronBin"), poolBin);
           registry.fill(HIST("hUnLikeMass"), massUnLike);
 
-          if (massUnLike <= invariantMassNonHfe) {
+          if (massUnLike <= invMassEEMax) {
             ++nElectronUS;
             registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
           }
@@ -303,7 +303,7 @@ struct HfCorrelatorHfeHadrons {
         int nElHadUSCorr = 0;
         if (eTrack.nElPairLS() > 0) {
           for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-            if (eTrack.invariantMassEE() <= invariantMassNonHfe) {
+            if (eTrack.invariantMassEE() <= invMassEEMax) {
               ++nElHadLSCorr;
               registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
             }
@@ -311,7 +311,7 @@ struct HfCorrelatorHfeHadrons {
         }
         if (eTrack.nElPairUS() > 0) {
           for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-            if (eTrack.invariantMassEE() <= invariantMassNonHfe) {
+            if (eTrack.invariantMassEE() <= invMassEEMax) {
               registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
               ++nElHadUSCorr;
             }
