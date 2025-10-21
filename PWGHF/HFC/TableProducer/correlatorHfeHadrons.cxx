@@ -249,7 +249,7 @@ struct HfCorrelatorHfeHadrons {
       float massUnLike = 0;
       if (eTrack.nElPairLS() > 0) {
         for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-          massLike = eTrack.invariantMass();
+          massLike = eTrack.invariantMassEE();
 
           registry.fill(HIST("hLSElectronBin"), poolBin);
           registry.fill(HIST("hLikeMass"), massLike);
@@ -262,7 +262,7 @@ struct HfCorrelatorHfeHadrons {
       }
       if (eTrack.nElPairUS() > 0) {
         for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-          massUnLike = eTrack.invariantMass();
+          massUnLike = eTrack.invariantMassEE();
 
           registry.fill(HIST("hULSElectronBin"), poolBin);
           registry.fill(HIST("hUnLikeMass"), massUnLike);
@@ -303,7 +303,7 @@ struct HfCorrelatorHfeHadrons {
         int nElHadUSCorr = 0;
         if (eTrack.nElPairLS() > 0) {
           for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-            if (eTrack.invariantMass() <= invariantMassNonHfe) {
+            if (eTrack.invariantMassEE() <= invariantMassNonHfe) {
               ++nElHadLSCorr;
               registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
             }
@@ -311,7 +311,7 @@ struct HfCorrelatorHfeHadrons {
         }
         if (eTrack.nElPairUS() > 0) {
           for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-            if (eTrack.invariantMass() <= invariantMassNonHfe) {
+            if (eTrack.invariantMassEE() <= invariantMassNonHfe) {
               registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
               ++nElHadUSCorr;
             }
@@ -387,11 +387,11 @@ struct HfCorrelatorHfeHadrons {
   // =======  Process starts for Data, Same event ============
 
   void processData(TableCollision const& collision,
-                   aod::HfCorrSelEl const& electron,
+                   aod::HfCorrSelEl const& electrons,
                    TableTracks const& tracks,
                    aod::BCsWithTimestamps const& bc)
   {
-    fillCorrelation(collision, electron, tracks, bc);
+    fillCorrelation(collision, electrons, tracks, bc);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
@@ -399,11 +399,11 @@ struct HfCorrelatorHfeHadrons {
   // =======  Process starts for McRec, Same event ============
 
   void processMcRec(McTableCollision const& mcCollision,
-                    aod::HfCorrSelEl const& mcElectron,
+                    aod::HfCorrSelEl const& mcElectrons,
                     McTableTracks const& mcTracks,
                     aod::BCsWithTimestamps const& bc)
   {
-    fillCorrelation(mcCollision, mcElectron, mcTracks, bc);
+    fillCorrelation(mcCollision, mcElectrons, mcTracks, bc);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
