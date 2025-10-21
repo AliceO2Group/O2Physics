@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(nuclei-batask
-    SOURCES LFNucleiBATask.cxx
+    SOURCES lfNucleiBATask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
