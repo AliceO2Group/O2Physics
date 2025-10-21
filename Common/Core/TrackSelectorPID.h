@@ -24,8 +24,6 @@
 
 #include <cstdint>
 
-using namespace o2::constants::physics;
-
 /// Class for track selection using PID detectors
 
 struct TrackSelectorPID {
@@ -44,6 +42,9 @@ class TrackSelectorPidBase
  public:
   /// Default constructor
   TrackSelectorPidBase() = default;
+
+  static constexpr float kPidNsigmaMin = -999.f;
+  static constexpr float kPidNsigmaMax = 999.f;
 
   /// Conversion operator
   template <uint64_t pdgNew>
@@ -113,7 +114,7 @@ class TrackSelectorPidBase
   bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = -999.f)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTpcMin < -999. && mNSigmaTpcMax > 999.) {
+    if (mNSigmaTpcMin < kPidNsigmaMin && mNSigmaTpcMax > kPidNsigmaMax) {
       return true;
     }
 
@@ -129,18 +130,18 @@ class TrackSelectorPidBase
       nSigma = track.tpcNSigmaKa();
     } else if constexpr (pdg == kProton) {
       nSigma = track.tpcNSigmaPr();
-    } else if constexpr (pdg == kDeuteron) {
+    } else if constexpr (pdg == o2::constants::physics::kDeuteron) {
       nSigma = track.tpcNSigmaDe();
     } else {
       errorPdg();
     }
 
     /// use custom TPC nσ, if a valid value is provided
-    if (tpcNSigmaCustom > -999.f) {
+    if (tpcNSigmaCustom > kPidNsigmaMin) {
       nSigma = tpcNSigmaCustom;
     }
 
-    if (mNSigmaTpcMinCondTof < -999. && mNSigmaTpcMaxCondTof > 999.) {
+    if (mNSigmaTpcMinCondTof < kPidNsigmaMin && mNSigmaTpcMaxCondTof > kPidNsigmaMax) {
       conditionalTof = true;
     } else {
       conditionalTof = mNSigmaTpcMinCondTof <= nSigma && nSigma <= mNSigmaTpcMaxCondTof;
@@ -209,7 +210,7 @@ class TrackSelectorPidBase
   bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = -999.f)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTofMin < -999. && mNSigmaTofMax > 999.) {
+    if (mNSigmaTofMin < kPidNsigmaMin && mNSigmaTofMax > kPidNsigmaMax) {
       return true;
     }
 
@@ -225,18 +226,18 @@ class TrackSelectorPidBase
       nSigma = track.tofNSigmaKa();
     } else if constexpr (pdg == kProton) {
       nSigma = track.tofNSigmaPr();
-    } else if constexpr (pdg == kDeuteron) {
+    } else if constexpr (pdg == o2::constants::physics::kDeuteron) {
       nSigma = track.tofNSigmaDe();
     } else {
       errorPdg();
     }
 
     /// use custom TOF nσ, if a valid value is provided
-    if (tofNSigmaCustom > -999.f) {
+    if (tofNSigmaCustom > kPidNsigmaMin) {
       nSigma = tofNSigmaCustom;
     }
 
-    if (mNSigmaTofMinCondTpc < -999. && mNSigmaTofMaxCondTpc > 999.) {
+    if (mNSigmaTofMinCondTpc < kPidNsigmaMin && mNSigmaTofMaxCondTpc > kPidNsigmaMax) {
       conditionalTpc = true;
     } else {
       conditionalTpc = mNSigmaTofMinCondTpc <= nSigma && nSigma <= mNSigmaTofMaxCondTpc;
@@ -307,7 +308,7 @@ class TrackSelectorPidBase
   bool isSelectedByRich(const T& track, bool& conditionalTof)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaRichMin < -999. && mNSigmaRichMax > 999.) {
+    if (mNSigmaRichMin < kPidNsigmaMin && mNSigmaRichMax > kPidNsigmaMax) {
       return true;
     }
 
@@ -327,7 +328,7 @@ class TrackSelectorPidBase
       errorPdg();
     }
 
-    if (mNSigmaRichMinCondTof < -999. && mNSigmaRichMaxCondTof > 999.) {
+    if (mNSigmaRichMinCondTof < kPidNsigmaMin && mNSigmaRichMaxCondTof > kPidNsigmaMax) {
       conditionalTof = true;
     } else {
       conditionalTof = mNSigmaRichMinCondTof <= nSigma && nSigma <= mNSigmaRichMaxCondTof;
@@ -470,23 +471,29 @@ class TrackSelectorPidBase
   template <typename T>
   bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
   {
+    static constexpr float kPidNsigmaInvalid = -1000.f;
+    static constexpr float kPidTofRichTransitionPMin = 0.4f;
+    static constexpr float kPidTofRichTransitionPMax = 0.6f;
+    static constexpr float kPidRichPionBandPMin = 1.0f;
+    static constexpr float kPidRichPionBandPMax = 2.0f;
+
     bool isSelTof = false;
     bool isSelRich = false;
     bool hasRich = track.richId() > -1;
     bool hasTof = isValidForTof(track);
     auto nSigmaTofEl = track.tofNSigmaEl();
     auto nSigmaTofPi = track.tofNSigmaPi();
-    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : -1000.;
-    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : -1000.;
+    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : kPidNsigmaInvalid;
+    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : kPidNsigmaInvalid;
     auto p = track.p();
 
     // TOF
-    if (useTof && hasTof && (p < 0.6)) {
-      if (p > 0.4 && hasRich) {
+    if (useTof && hasTof && (p < kPidTofRichTransitionPMax)) {
+      if (p > kPidTofRichTransitionPMin && hasRich) {
         if ((std::abs(nSigmaTofEl) < mNSigmaTofMax) && (std::abs(nSigmaRichEl) < mNSigmaRichMax)) {
           isSelTof = true; // is selected as electron by TOF and RICH
         }
-      } else if (p <= 0.4) {
+      } else if (p <= kPidTofRichTransitionPMin) {
         if (std::abs(nSigmaTofEl) < mNSigmaTofMax) {
           isSelTof = true; // is selected as electron by TOF
         }
@@ -505,7 +512,7 @@ class TrackSelectorPidBase
       if (std::abs(nSigmaRichEl) < mNSigmaRichMax) {
         isSelRich = true; // is selected as electron by RICH
       }
-      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > 1.0) && (p < 2.0)) {
+      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > kPidRichPionBandPMin) && (p < kPidRichPionBandPMax)) {
         isSelRich = false; // is selected as pion by RICH
       }
     } else {
@@ -557,7 +564,7 @@ class TrackSelectorPidBase
       return track.bayesID() == o2::track::PID::Kaon;
     } else if constexpr (pdg == kProton) {
       return track.bayesID() == o2::track::PID::Proton;
-    } else if constexpr (pdg == kDeuteron) {
+    } else if constexpr (pdg == o2::constants::physics::kDeuteron) {
       return track.bayesID() == o2::track::PID::Deuteron;
     } else {
       errorPdg();
@@ -587,7 +594,7 @@ class TrackSelectorPidBase
       prob = track.bayesKa();
     } else if constexpr (pdg == kProton) {
       prob = track.bayesPr();
-    } else if constexpr (pdg == kDeuteron) {
+    } else if constexpr (pdg == o2::constants::physics::kDeuteron) {
       prob = track.bayesDe();
     } else {
       errorPdg();
@@ -666,11 +673,11 @@ class TrackSelectorPidBase
 };
 
 // Predefined types
-using TrackSelectorEl = TrackSelectorPidBase<kElectron>;  // El
-using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>; // Mu
-using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;    // Pi
-using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;     // Ka
-using TrackSelectorPr = TrackSelectorPidBase<kProton>;    // Pr
-using TrackSelectorDe = TrackSelectorPidBase<kDeuteron>;  // De
+using TrackSelectorEl = TrackSelectorPidBase<kElectron>;                         // El
+using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>;                        // Mu
+using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;                           // Pi
+using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;                            // Ka
+using TrackSelectorPr = TrackSelectorPidBase<kProton>;                           // Pr
+using TrackSelectorDe = TrackSelectorPidBase<o2::constants::physics::kDeuteron>; // De
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_
