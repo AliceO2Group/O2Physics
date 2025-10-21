@@ -196,7 +196,7 @@ struct JetOutlierQATask {
       registry.add("h_track_pt_accepted_no_JJ_outlier", "track pT with no JJ outlier", {HistType::kTH1F, {{200, 0, 200}}});
       registry.add("h_track_pt_eta_accepted_no_JJ_outlier", "track pT vs eta with no JJ outlier;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{200, 0, 200}, {100, -5, 5}}});
       registry.add("h_track_pt_phi_accepted_no_JJ_outlier", "track pT vs phi with no JJ outlier;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{200, 0, 200}, {160, -1.0, 7.0}}});
-      registry.add("h_pt_hard_track_pt_no_JJ_outlier", "Tracks vs pThard;#frac{p_{T}}{#hat{p}};p_{T}", {HistType::kTH2F, {pThatAxis, {200, 0, 200}}});
+      registry.add("h_pt_hard_track_pt_accepted_no_JJ_outlier", "Tracks vs pThard;#frac{p_{T}}{#hat{p}};p_{T}", {HistType::kTH2F, {pThatAxis, {200, 0, 200}}});
       registry.add("h_track_pt_with_JJ_outlier", "track pT with JJ outlier", {HistType::kTH1F, {{200, 0, 200}}});
       registry.add("h_track_pt_eta_with_JJ_outlier", "track pT vs eta with JJ outlier;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{200, 0, 200}, {100, -5, 5}}});
       registry.add("h_track_pt_phi_with_JJ_outlier", "track pT vs phi with JJ outlier;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{200, 0, 200}, {160, -1.0, 7.0}}});
