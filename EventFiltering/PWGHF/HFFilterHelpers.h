@@ -415,8 +415,8 @@ class HfFilterHelper
     mForceTofProtonForFemto = forceTofProtons;
     mForceTofDeuteronForFemto = forceTofDeuterons;
   }
-  void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
-  void setPtBinsBeautyHadrons(std::vector<double> ptBins) { mPtBinsBeautyHadrons = ptBins; }
+  void setPtBinsSingleTracks(const std::vector<double>& ptBins) { mPtBinsTracks = ptBins; }
+  void setPtBinsBeautyHadrons(const std::vector<double>& ptBins) { mPtBinsBeautyHadrons = ptBins; }
   void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P, o2::framework::LabeledArray<double> cutsSingleToJPsi)
   {
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
@@ -583,7 +583,7 @@ class HfFilterHelper
 
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
 
-  void setMassResolParametrisation(std::string recoPass)
+  void setMassResolParametrisation(const std::string& recoPass)
   {
     if (recoPass == "2023_pass3") {
       mSigmaPars2Prongs[0] = 0.01424f;
@@ -610,7 +610,7 @@ class HfFilterHelper
 
   void setNumSigmaForDeltaMassCharmHadCut(float nSigma) { mNumSigmaDeltaMassCharmHad = nSigma; }
 
-  void setPreselDsToKKPi(std::vector<double> ptBins, o2::framework::LabeledArray<double> preselections)
+  void setPreselDsToKKPi(const std::vector<double>& ptBins, const o2::framework::LabeledArray<double>& preselections)
   {
     mPtBinsPreselDsToKKPi = ptBins;
     mPreselDsToKKPi = preselections;
@@ -679,7 +679,7 @@ class HfFilterHelper
   template <typename T>
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
   template <typename T>
-  int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
+  int computeNumberOfCandidates(const std::vector<std::vector<T>>& indices);
   template <typename T1>
   int setVtxConfiguration(T1& vertexer, bool useAbsDCA);
   template <typename V, typename T, typename C>
@@ -1838,7 +1838,7 @@ inline T HfFilterHelper::computeRelativeMomentum(const std::array<T, 3>& pTrack,
 /// Computation of the number of candidates in an event that do not share daughter tracks
 /// \return 0 or 1 in case of less than 2 independent candidates in a single event, 2 otherwise
 template <typename T>
-inline int HfFilterHelper::computeNumberOfCandidates(std::vector<std::vector<T>> indices)
+inline int HfFilterHelper::computeNumberOfCandidates(const std::vector<std::vector<T>>& indices)
 {
   if (indices.size() < 2) {
     return indices.size();
