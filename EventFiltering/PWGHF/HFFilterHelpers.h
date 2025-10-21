@@ -1504,14 +1504,14 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const int& activateQA, 
   float nSigmaPrTpc[2] = {v0.nSigmaPrTpcPos, v0.nSigmaPrTpcNeg};
   float nSigmaPrTof[2] = {v0.nSigmaPrTofPos, v0.nSigmaPrTofNeg};
   float pInTpc[2] = {v0.pinTpcPos, v0.pinTpcNeg};
-  float nClsTpc[2] = {v0.nClsFoundTpcPos, v0.nClsFoundTpcNeg};
-  float etaDaus[2] = {v0.etaPos, v0.etaNeg};
-  float signalTpc[2] = {v0.signalTpcPos, v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
+    float nClsTpc[2] = {v0.nClsFoundTpcPos, v0.nClsFoundTpcNeg};
+    float etaDaus[2] = {v0.etaPos, v0.etaNeg};
     for (int iDau{0}; iDau < 2; ++iDau) {
       nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
+    float signalTpc[2] = {v0.signalTpcPos, v0.signalTpcNeg};
     for (int iDau{0}; iDau < 2; ++iDau) {
       nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPr : kAntiPr);
     }
@@ -1664,9 +1664,8 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
   float nClsTpc[3] = {casc.nClsFoundTpcBach, casc.v0.nClsFoundTpcPos, casc.v0.nClsFoundTpcNeg};
   float nCrossedRowsTpc[3] = {casc.nClsCrossedRowsTpcBach, casc.v0.nClsCrossedRowsTpcPos, casc.v0.nClsCrossedRowsTpcNeg};
   float crossedRowsOverFindableClsTpc[3] = {casc.crossedRowsOverFindableClsTpcBach, casc.v0.crossedRowsOverFindableClsTpcPos, casc.v0.crossedRowsOverFindableClsTpcNeg};
-  float etaDaus[3] = {casc.etaBach, casc.v0.etaPos, casc.v0.etaNeg};
-  float signalTpc[3] = {casc.signalTpcBach, casc.v0.signalTpcPos, casc.v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
+    float etaDaus[3] = {casc.etaBach, casc.v0.etaPos, casc.v0.etaNeg};
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPi);
       if (iDau == 0) {
@@ -1675,6 +1674,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
       nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
+    float signalTpc[3] = {casc.signalTpcBach, casc.v0.signalTpcPos, casc.v0.signalTpcNeg};
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPi : kAntiPi);
       if (iDau == 0) {
