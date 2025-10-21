@@ -9,39 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <cmath>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "EMCALBase/Geometry.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-
-#include "CommonDataFormat/InteractionRecord.h"
-
-#include "TLorentzVector.h"
-#include "TVector3.h"
-
-// \struct Pi0QCTask
+/// \file emcalPi0Qc.cxx
 /// \brief Simple monitoring task for EMCal clusters
 /// \author Joshua Koenig <joshua.konig@cern.ch>, Goethe University Frankfurt
+/// \struct EmcalPi0Qc
 /// \since 25.05.2022
 ///
 /// This task is meant to be used for QC for the emcal using properties of the pi0
@@ -50,15 +21,48 @@
 /// For pilot beam data, instead of relying on the event selection, one can veto specific BC IDS using the flag
 /// fDoVetoBCID.
 
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <EMCALBase/Geometry.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TLorentzVector.h>
+#include <TString.h>
+#include <TVector3.h>
+
+#include <algorithm>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using collisionEvSelIt = o2::aod::Collision;
-using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>;
 using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
-using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
-using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
-using selectedAmbiguousCluster = o2::soa::Filtered<o2::aod::EMCALAmbiguousCluster>;
+using SelectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
 
 struct Photon {
   Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusid = 0)
@@ -106,7 +110,7 @@ struct Meson {
 
 struct EventMixVec {
 
-  void AddEvent(std::vector<Photon> vecGamma)
+  void addEvent(std::vector<Photon> vecGamma)
   {
     if (vecEvtMix.size() < nEVtMixSize) {
       vecEvtMix.push_back(vecGamma);
@@ -115,20 +119,12 @@ struct EventMixVec {
       vecEvtMix.push_back(vecGamma);
     }
   }
-  Photon* getPhoton(unsigned int iEvt, unsigned int iGamma)
-  {
-    if (vecEvtMix.size() >= iEvt)
-      return nullptr;
-    if (vecEvtMix[iEvt].size() >= iGamma)
-      return nullptr;
-    return &vecEvtMix[iEvt][iGamma];
-  }
 
   std::vector<std::vector<Photon>> vecEvtMix;
   unsigned int nEVtMixSize = 20;
 };
 
-struct Pi0QCTask {
+struct EmcalPi0Qc {
   HistogramRegistry mHistManager{"NeutralMesonHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
 
@@ -136,21 +132,21 @@ struct Pi0QCTask {
 
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
-  Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
-  Configurable<bool> mRequireCaloReadout{"RequireCaloReadout", 0, "require kTVXinEMC"};
-  Configurable<bool> mRequireEMCalCells{"RequireEMCalCells", 0, "require at least one EMC cell in each collision"};
-  Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
-  Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
-  Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
-  Configurable<int> mTimeMin{"TimeMinCut", -600, "apply min timing cut (in ns)"};
-  Configurable<int> mTimeMax{"TimeMaxCut", 900, "apply min timing cut (in ns)"};
-  Configurable<float> mClusterMinM02Cut{"MinM02Cut", 0.1, "apply min M02 cut"};
-  Configurable<float> mClusterMaxM02Cut{"MaxM02Cut", 0.7, "apply max M02 cut"};
-  Configurable<float> mMinEnergyCut{"MinEnergyCut", 0.7, "apply min cluster energy cut"};
-  Configurable<int> mMinNCellsCut{"MinNCellsCut", 1, "apply min cluster number of cell cut"};
-  Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
-  Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<bool> mSplitEMCalDCal{"SplitEMCalDCal", 0, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
+  Configurable<bool> mDoEventSel{"mDoEventSel", 0, "demand kINT7"};
+  Configurable<bool> mRequireCaloReadout{"mRequireCaloReadout", 0, "require kTVXinEMC"};
+  Configurable<bool> mRequireEMCalCells{"mRequireEMCalCells", 0, "require at least one EMC cell in each collision"};
+  Configurable<std::string> mVetoBCID{"mVetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
+  Configurable<std::string> mSelectBCID{"mSelectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
+  Configurable<double> mVertexCut{"mVertexCut", -1, "apply z-vertex cut with value in cm"};
+  Configurable<int> mTimeMin{"mTimeMin", -600, "apply min timing cut (in ns)"};
+  Configurable<int> mTimeMax{"mTimeMax", 900, "apply min timing cut (in ns)"};
+  Configurable<float> mClusterMinM02Cut{"mClusterMinM02Cut", 0.1, "apply min M02 cut"};
+  Configurable<float> mClusterMaxM02Cut{"mClusterMaxM02Cut", 0.7, "apply max M02 cut"};
+  Configurable<float> mMinEnergyCut{"mMinEnergyCut", 0.7, "apply min cluster energy cut"};
+  Configurable<int> mMinNCellsCut{"mMinNCellsCut", 1, "apply min cluster number of cell cut"};
+  Configurable<float> mMinOpenAngleCut{"mMinOpenAngleCut", 0.0202, "apply min opening angle cut"};
+  Configurable<std::string> mClusterDefinition{"mClusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  Configurable<bool> mSplitEMCalDCal{"mSplitEMCalDCal", 0, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
 
@@ -172,19 +168,15 @@ struct Pi0QCTask {
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
   {
-    // create histograms
-    using o2HistType = HistType;
-    using o2Axis = AxisSpec;
-
     // load geometry just in case we need it
     mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
 
     // create common axes
     LOG(info) << "Creating histograms";
-    const o2Axis bcAxis{3501, -0.5, 3500.5};
-    const o2Axis energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
+    const AxisSpec bcAxis{3501, -0.5, 3500.5};
+    const AxisSpec energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
 
-    mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{6, 0.5, 6.5}});
+    mHistManager.add("events", "events;;#it{count}", HistType::kTH1F, {{6, 0.5, 6.5}});
     auto heventType = mHistManager.get<TH1>(HIST("events"));
     heventType->GetXaxis()->SetBinLabel(1, "All events");
     heventType->GetXaxis()->SetBinLabel(2, "sel8 + readout");
@@ -192,37 +184,37 @@ struct Pi0QCTask {
     heventType->GetXaxis()->SetBinLabel(4, "z<10cm");
     heventType->GetXaxis()->SetBinLabel(5, "unique col");
     heventType->GetXaxis()->SetBinLabel(6, "EMCAL cell>0");
-    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
-    mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
+    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", HistType::kTH1F, {bcAxis});
+    mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", HistType::kTH1F, {bcAxis});
+    mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", HistType::kTH1F, {{200, -20, 20}});
+    mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", HistType::kTH1F, {{200, -20, 20}});
 
     // cluster properties
-    for (bool iBeforeCuts : {false, true}) {
-      const char* ClusterDirectory = iBeforeCuts ? "ClustersBeforeCuts" : "ClustersAfterCuts";
-      mHistManager.add(Form("%s/clusterE", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {energyAxis});
-      mHistManager.add(Form("%s/clusterE_SimpleBinning", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
-      mHistManager.add(Form("%s/clusterTime", ClusterDirectory), "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
-      mHistManager.add(Form("%s/clusterEtaPhi", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1, "#eta"}, {100, 0, 2 * TMath::Pi(), "#phi"}});
-      mHistManager.add(Form("%s/clusterM02", ClusterDirectory), "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
-      mHistManager.add(Form("%s/clusterM20", ClusterDirectory), "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
-      mHistManager.add(Form("%s/clusterNLM", ClusterDirectory), "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
-      mHistManager.add(Form("%s/clusterNCells", ClusterDirectory), "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
-      mHistManager.add(Form("%s/clusterDistanceToBadChannel", ClusterDirectory), "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
+    for (const bool& iBeforeCuts : {false, true}) {
+      const char* clusterDirectory = iBeforeCuts ? "ClustersBeforeCuts" : "ClustersAfterCuts";
+      mHistManager.add(Form("%s/clusterE", clusterDirectory), "Energy of cluster", HistType::kTH1F, {energyAxis});
+      mHistManager.add(Form("%s/clusterE_SimpleBinning", clusterDirectory), "Energy of cluster", HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
+      mHistManager.add(Form("%s/clusterTime", clusterDirectory), "Time of cluster", HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
+      mHistManager.add(Form("%s/clusterEtaPhi", clusterDirectory), "Eta and phi of cluster", HistType::kTH2F, {{100, -1, 1, "#eta"}, {100, 0, o2::constants::math::TwoPI, "#phi"}});
+      mHistManager.add(Form("%s/clusterM02", clusterDirectory), "M02 of cluster", HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
+      mHistManager.add(Form("%s/clusterM20", clusterDirectory), "M20 of cluster", HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
+      mHistManager.add(Form("%s/clusterNLM", clusterDirectory), "Number of local maxima of cluster", HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
+      mHistManager.add(Form("%s/clusterNCells", clusterDirectory), "Number of cells in cluster", HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
+      mHistManager.add(Form("%s/clusterDistanceToBadChannel", clusterDirectory), "Distance to bad channel", HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
     }
 
     // meson related histograms
-    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
-    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
-    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
+    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", HistType::kTH2F, {invmassBinning, pTBinning});
+    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", HistType::kTH2F, {invmassBinning, pTBinning});
+    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", HistType::kTH2F, {invmassBinning, pTBinning});
 
     if (mSplitEMCalDCal) {
-      mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPt_DCal", "invariant mass and pT of meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtBackground_DCal", "invariant mass and pT of background meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtMixedBackground_DCal", "invariant mass and pT of mixed background meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPt_DCal", "invariant mass and pT of meson candidates with both clusters on DCal", HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtBackground_DCal", "invariant mass and pT of background meson candidates with both clusters on DCal", HistType::kTH2F, {invmassBinning, pTBinning});
+      mHistManager.add("invMassVsPtMixedBackground_DCal", "invariant mass and pT of mixed background meson candidates with both clusters on DCal", HistType::kTH2F, {invmassBinning, pTBinning});
     }
 
     if (mVetoBCID->length()) {
@@ -247,10 +239,10 @@ struct Pi0QCTask {
     }
   }
 
-  PresliceUnsorted<selectedClusters> perCollision = o2::aod::emcalcluster::collisionId;
+  PresliceUnsorted<SelectedClusters> perCollision = o2::aod::emcalcluster::collisionId;
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollision(MyBCs const&, MyCollisions const& collisions, selectedClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells)
+  void processCollision(MyBCs const&, MyCollisions const& collisions, SelectedClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells)
   {
     std::unordered_map<uint64_t, int> cellGlobalBCs;
     // Build map of number of cells for corrected BCs using global BCs
@@ -265,7 +257,7 @@ struct Pi0QCTask {
       }
     }
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
 
       if (mDoEventSel && (!collision.sel8() || (mRequireCaloReadout && !collision.alias_bit(kTVXinEMC)))) { // Check sel8 and whether EMC was read out
@@ -298,16 +290,16 @@ struct Pi0QCTask {
       }
       mHistManager.fill(HIST("events"), 6); // Fill at least one non0 cell in EMCal of event histogram (Selected)
 
-      auto clusters_per_coll = clusters.sliceBy(perCollision, collision.collisionId());
-      ProcessClusters(clusters_per_coll);
-      ProcessMesons();
+      auto clustersPerColl = clusters.sliceBy(perCollision, collision.collisionId());
+      processClusters(clustersPerColl);
+      processMesons();
     }
   }
-  PROCESS_SWITCH(Pi0QCTask, processCollision, "Process clusters from collision", false);
+  PROCESS_SWITCH(EmcalPi0Qc, processCollision, "Process clusters from collision", false);
 
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
-  void processAmbiguous(o2::aod::BCs::iterator const& bc, selectedAmbiguousClusters const& clusters)
+  void processAmbiguous(o2::aod::BCs::iterator const& bc, SelectedAmbiguousClusters const& clusters)
   {
     LOG(debug) << "processAmbiguous";
     // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
@@ -323,16 +315,16 @@ struct Pi0QCTask {
     }
     mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
 
-    ProcessAmbiguousClusters(clusters);
-    ProcessMesons();
+    processAmbiguousClusters(clusters);
+    processMesons();
   }
-  PROCESS_SWITCH(Pi0QCTask, processAmbiguous, "Process Ambiguous clusters", false);
+  PROCESS_SWITCH(EmcalPi0Qc, processAmbiguous, "Process Ambiguous clusters", false);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
   template <typename Clusters>
-  void ProcessClusters(Clusters const& clusters)
+  void processClusters(Clusters const& clusters)
   {
-    LOG(debug) << "ProcessClusters";
+    LOG(debug) << "processClusters";
     // clear photon vector
     mPhotons.clear();
 
@@ -351,12 +343,12 @@ struct Pi0QCTask {
         LOG(info) << "Something went wrong with the collision ID";
       }
 
-      FillClusterQAHistos<decltype(cluster), 0>(cluster);
+      fillClusterQAHistos<decltype(cluster), 0>(cluster);
 
-      if (ClusterRejectedByCut(cluster))
+      if (clusterRejectedByCut(cluster))
         continue;
 
-      FillClusterQAHistos<decltype(cluster), 1>(cluster);
+      fillClusterQAHistos<decltype(cluster), 1>(cluster);
 
       // put clusters in photon vector
       mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
@@ -365,21 +357,21 @@ struct Pi0QCTask {
 
   /// \brief Process EMCAL clusters that are not matched to a collisions
   template <typename Clusters>
-  void ProcessAmbiguousClusters(Clusters const& clusters)
+  void processAmbiguousClusters(Clusters const& clusters)
   {
-    LOG(debug) << "ProcessClusters";
+    LOG(debug) << "processClusters";
     // clear photon vector
     mPhotons.clear();
 
     // loop over all clusters from accepted collision
     for (const auto& cluster : clusters) {
 
-      FillClusterQAHistos<decltype(cluster), 0>(cluster);
+      fillClusterQAHistos<decltype(cluster), 0>(cluster);
 
-      if (ClusterRejectedByCut(cluster))
+      if (clusterRejectedByCut(cluster))
         continue;
 
-      FillClusterQAHistos<decltype(cluster), 1>(cluster);
+      fillClusterQAHistos<decltype(cluster), 1>(cluster);
 
       // put clusters in photon vector
       mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
@@ -388,33 +380,33 @@ struct Pi0QCTask {
 
   /// \brief Fills the standard QA histograms for a given cluster
   template <typename Cluster, int BeforeCuts>
-  void FillClusterQAHistos(Cluster const& cluster)
+  void fillClusterQAHistos(Cluster const& cluster)
   {
     // In this implementation the cluster properties are directly loaded from the flat table,
     // in the future one should consider using the AnalysisCluster object to work with after loading.
-    static constexpr std::string_view clusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
-    static constexpr std::string_view clusterQAHistEnergySimpleBinning[2] = {"ClustersBeforeCuts/clusterE_SimpleBinning", "ClustersAfterCuts/clusterE_SimpleBinning"};
-    static constexpr std::string_view clusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
-    static constexpr std::string_view clusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
-    static constexpr std::string_view clusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
-    static constexpr std::string_view clusterQAHistM20[2] = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
-    static constexpr std::string_view clusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
-    static constexpr std::string_view clusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
-    static constexpr std::string_view clusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
-    mHistManager.fill(HIST(clusterQAHistEnergy[BeforeCuts]), cluster.energy());
-    mHistManager.fill(HIST(clusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy());
-    mHistManager.fill(HIST(clusterQAHistTime[BeforeCuts]), cluster.time());
-    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi());
-    mHistManager.fill(HIST(clusterQAHistM02[BeforeCuts]), cluster.m02());
-    mHistManager.fill(HIST(clusterQAHistM20[BeforeCuts]), cluster.m20());
-    mHistManager.fill(HIST(clusterQAHistNLM[BeforeCuts]), cluster.nlm());
-    mHistManager.fill(HIST(clusterQAHistNCells[BeforeCuts]), cluster.nCells());
-    mHistManager.fill(HIST(clusterQAHistDistanceToBadChannel[BeforeCuts]), cluster.distanceToBadChannel());
+    static constexpr std::string_view kClusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
+    static constexpr std::string_view kClusterQAHistEnergySimpleBinning[2] = {"ClustersBeforeCuts/clusterE_SimpleBinning", "ClustersAfterCuts/clusterE_SimpleBinning"};
+    static constexpr std::string_view kClusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
+    static constexpr std::string_view kClusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
+    static constexpr std::string_view kClusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
+    static constexpr std::string_view kClusterQAHistM20[2] = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
+    static constexpr std::string_view kClusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
+    static constexpr std::string_view kClusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
+    static constexpr std::string_view kClusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
+    mHistManager.fill(HIST(kClusterQAHistEnergy[BeforeCuts]), cluster.energy());
+    mHistManager.fill(HIST(kClusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy());
+    mHistManager.fill(HIST(kClusterQAHistTime[BeforeCuts]), cluster.time());
+    mHistManager.fill(HIST(kClusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi());
+    mHistManager.fill(HIST(kClusterQAHistM02[BeforeCuts]), cluster.m02());
+    mHistManager.fill(HIST(kClusterQAHistM20[BeforeCuts]), cluster.m20());
+    mHistManager.fill(HIST(kClusterQAHistNLM[BeforeCuts]), cluster.nlm());
+    mHistManager.fill(HIST(kClusterQAHistNCells[BeforeCuts]), cluster.nCells());
+    mHistManager.fill(HIST(kClusterQAHistDistanceToBadChannel[BeforeCuts]), cluster.distanceToBadChannel());
   }
 
   /// \brief Return a boolean that states, whether a cluster should be rejected by the applied cluster cuts
   template <typename Cluster>
-  bool ClusterRejectedByCut(Cluster const& cluster)
+  bool clusterRejectedByCut(Cluster const& cluster)
   {
     // apply basic cluster cuts
     if (cluster.energy() < mMinEnergyCut) {
@@ -440,9 +432,9 @@ struct Pi0QCTask {
   }
 
   /// \brief Process meson candidates, calculate invariant mass and pT and fill histograms
-  void ProcessMesons()
+  void processMesons()
   {
-    LOG(debug) << "ProcessMesons " << mPhotons.size();
+    LOG(debug) << "processMesons " << mPhotons.size();
 
     // if less then 2 clusters are found, skip event
     if (mPhotons.size() < 2)
@@ -467,22 +459,22 @@ struct Pi0QCTask {
         }
 
         // calculate background candidates (rotation background)
-        CalculateBackground(meson, ig1, ig2);
+        calculateBackground(meson, ig1, ig2);
       }
-      CalculateMixedBack(mPhotons[ig1]);
+      calculateMixedBack(mPhotons[ig1]);
     }
 
-    evtMix.AddEvent(mPhotons);
+    evtMix.addEvent(mPhotons);
   }
 
   /// \brief Calculate background (using rotation background method)
-  void CalculateBackground(const Meson& meson, unsigned int ig1, unsigned int ig2)
+  void calculateBackground(const Meson& meson, unsigned int ig1, unsigned int ig2)
   {
     // if less than 3 clusters are present, skip event
     if (mPhotons.size() < 3) {
       return;
     }
-    const double rotationAngle = M_PI / 2.0; // 0.78539816339; // rotaion angle 90°
+    const double rotationAngle = o2::constants::math::PIHalf; // 0.78539816339; // rotaion angle 90°
 
     TLorentzVector lvRotationPhoton1; // photon candidates which get rotated
     TLorentzVector lvRotationPhoton2; // photon candidates which get rotated
@@ -535,7 +527,7 @@ struct Pi0QCTask {
     }
   }
 
-  void CalculateMixedBack(Photon gamma)
+  void calculateMixedBack(Photon gamma)
   {
     for (unsigned int i = 0; i < evtMix.vecEvtMix.size(); ++i) {
       for (unsigned int ig1 = 0; ig1 < evtMix.vecEvtMix[i].size(); ++ig1) {
@@ -562,7 +554,7 @@ struct Pi0QCTask {
     std::vector<double> result;
     int nBinsPt = 179;
     double maxPt = 60;
-    for (Int_t i = 0; i < nBinsPt + 1; i++) {
+    for (int i = 0; i < nBinsPt + 1; i++) {
       if (i < 100) {
         result.emplace_back(0.10 * i);
       } else if (i < 140) {
@@ -580,7 +572,7 @@ struct Pi0QCTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollision", true}, {"processAmbiguous", false}}}),
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processAmbiguous", true}}})};
+    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAssociate"}, SetDefaultProcesses{{{"processCollision", true}, {"processAmbiguous", false}}}),  // o2-linter: disable=name/o2-task (adapted multiple times)
+    adaptAnalysisTask<EmcalPi0Qc>(cfgc, TaskName{"EmcalPi0QcAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processAmbiguous", true}}})}; // o2-linter: disable=name/o2-task (adapted multiple times)
   return workflow;
 }

@@ -757,7 +757,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   }
 
   // get the corresponding std::list containng identifiers to the needed variables to be filled
-  list varList = fVariablesMap[className];
+  auto const& varList = fVariablesMap[className];
 
   TIter next(hList);
 
@@ -777,26 +777,26 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   for (auto varIter = varList.begin(); varIter != varList.end(); varIter++) {
     h = next(); // get the histogram
     // decode information from the vector of indices
-    isProfile = (varIter->at(0) == 1 ? true : false);
-    isTHn = (varIter->at(1) > 0 ? true : false);
+    isProfile = ((*varIter)[0] == 1 ? true : false);
+    isTHn = ((*varIter)[1] > 0 ? true : false);
     if (isTHn) {
-      dimension = varIter->at(1);
+      dimension = (*varIter)[1];
     } else {
       dimension = (reinterpret_cast<TH1*>(h))->GetDimension();
     }
 
     // get the various variable indices
-    varW = varIter->at(2);
+    varW = (*varIter)[2];
     if (isTHn) {
       for (int i = 0; i < dimension; i++) {
-        fillValues[i] = values[varIter->at(3 + i)];
+        fillValues[i] = values[(*varIter)[3 + i]];
       }
     } else {
-      varX = varIter->at(3);
-      varY = varIter->at(4);
-      varZ = varIter->at(5);
-      varT = varIter->at(6);
-      isFillLabelx = (varIter->at(7) == 1 ? true : false);
+      varX = (*varIter)[3];
+      varY = (*varIter)[4];
+      varZ = (*varIter)[5];
+      varT = (*varIter)[6];
+      isFillLabelx = ((*varIter)[7] == 1 ? true : false);
     }
 
     if (!isTHn) {

@@ -138,9 +138,13 @@ auto slicedPerV0Candidate(T const& table, U const& candidate, V const& perV0Cand
 }
 
 template <typename T, typename U>
-bool isV0Particle(T const& particles, U const& particle)
+bool isV0Particle(T const& particles, U const& particle, bool v0ChargedDecaysOnly)
 {
-  return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true);
+  if (v0ChargedDecaysOnly) {
+    return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true);
+  } else {
+    return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPi0, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kNeutron, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{+kNeutron, +kPi0}, true);
+  }
 }
 
 enum JV0ParticleDecays {

@@ -135,14 +135,14 @@ struct HfTaskOmegac0ToOmegapi {
 
     if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
       axes.push_back(thnAxisCent);
-      axes.push_back(thnConfigAxisNumPvContr);
+      axes.emplace_back(thnConfigAxisNumPvContr);
     }
 
     if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
       axes.push_back(thnAxisCentMc);
-      axes.push_back(thnConfigAxisNumPvContr);
+      axes.emplace_back(thnConfigAxisNumPvContr);
       axesMcGen.push_back(thnAxisCentMc);
-      axesMcGen.push_back(thnConfigAxisNumPvContr);
+      axesMcGen.emplace_back(thnConfigAxisNumPvContr);
     }
 
     if (doprocessMcKFParticle || doprocessMcKFParticleMl || doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
@@ -168,16 +168,7 @@ struct HfTaskOmegac0ToOmegapi {
     registry.get<THnSparse>(HIST("hReco"))->Sumw2();
   }
 
-  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
-  /// \param candidate is candidate
-  /// \return centrality/multiplicity percentile of the collision
-  template <typename Coll>
-  float evaluateCentralityColl(const Coll& collision)
-  {
-    return o2::hf_centrality::getCentralityColl<Coll>(collision);
-  }
-
-  template <bool applyMl, typename CandType>
+  template <bool ApplyMl, typename CandType>
   void processData(const CandType& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -189,7 +180,7 @@ struct HfTaskOmegac0ToOmegapi {
         continue;
       }
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.mlProbOmegac()[0]);
       } else {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac());
@@ -197,12 +188,12 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-  template <bool applyMl, typename CandType, typename CollType>
+  template <bool ApplyMl, typename CandType, typename CollType>
   void processDataCent(const CandType& candidates, CollType const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedOmegacCandidates = applyMl ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId) : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
+      auto groupedOmegacCandidates = ApplyMl ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId) : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
       auto numPvContributors = collision.numContrib();
 
       for (const auto& candidate : groupedOmegacCandidates) {
@@ -214,9 +205,9 @@ struct HfTaskOmegac0ToOmegapi {
           continue;
         }
 
-        float cent = evaluateCentralityColl(collision);
+        float const cent = o2::hf_centrality::getCentralityColl(collision);
 
-        if constexpr (applyMl) {
+        if constexpr (ApplyMl) {
           registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(),
                         cent, numPvContributors, candidate.mlProbOmegac()[0]);
           if (fillTree) {
@@ -230,7 +221,7 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-  template <bool applyMl, typename CandType>
+  template <bool ApplyMl, typename CandType>
   void processMc(const CandType& candidates, Omegac0Gen const& mcParticles)
   {
     // MC rec.
@@ -242,7 +233,7 @@ struct HfTaskOmegac0ToOmegapi {
         continue;
       }
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
 
       } else {
@@ -262,13 +253,13 @@ struct HfTaskOmegac0ToOmegapi {
       if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hMcGen"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt);
       } else {
-        float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
         registry.fill(HIST("hMcGen"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt);
       }
     }
   }
 
-  template <bool applyMl, typename CandType, typename McCollisionWithCents>
+  template <bool ApplyMl, typename CandType, typename McCollisionWithCents>
   void processMcCent(const CandType& candidates, Omegac0Gen const& mcParticles,
                      CollisionsWithMcLabels const& collisions, McCollisionWithCents const&)
   {
@@ -282,10 +273,10 @@ struct HfTaskOmegac0ToOmegapi {
       }
 
       auto collision = candidate.template collision_as<CollisionsWithMcLabels>();
-      uint16_t numPvContributors = collision.numContrib();
-      float mcCent = evaluateCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+      uint16_t const numPvContributors = collision.numContrib();
+      float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
 
       } else {
@@ -309,12 +300,12 @@ struct HfTaskOmegac0ToOmegapi {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
 
-      float mcCent = evaluateCentralityColl(mcCollision);
+      float const mcCent = o2::hf_centrality::getCentralityColl(mcCollision);
 
       if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hMcGen"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt, mcCent, maxNumContrib);
       } else {
-        float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
         registry.fill(HIST("hMcGen"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt, mcCent, maxNumContrib);
       }
 
@@ -325,7 +316,7 @@ struct HfTaskOmegac0ToOmegapi {
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hMcGenWithRecoColl"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt, mcCent, maxNumContrib);
         } else {
-          float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           registry.fill(HIST("hMcGenWithRecoColl"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt, mcCent, maxNumContrib);
         }
       }

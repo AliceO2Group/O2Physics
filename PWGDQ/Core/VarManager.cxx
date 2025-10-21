@@ -27,6 +27,7 @@ std::map<TString, int> VarManager::fgVarNamesMap;
 bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
+float VarManager::fgzMatching = -77.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
 int VarManager::fgITSROFbias = 0;
@@ -241,7 +242,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
         return -999.0; // Return zero if species is invalid
-    };
+    }
 
     TH3F* calibMeanHist = reinterpret_cast<TH3F*>(fgCalibs[calibMean]);
     TH3F* calibSigmaHist = reinterpret_cast<TH3F*>(fgCalibs[calibSigma]);
@@ -291,7 +292,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
         return -999.0; // Return zero if species is invalid
-    };
+    }
 
     THnF* calibMeanHist = reinterpret_cast<THnF*>(fgCalibs[calibMean]);
     THnF* calibSigmaHist = reinterpret_cast<THnF*>(fgCalibs[calibSigma]);
@@ -345,7 +346,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
       default:
         return nSigmaValue; // unknown status, return the original nSigma value
         break;
-    };
+    }
   } else {
     // unknown calibration type, return the original nSigma value
     LOG(fatal) << "Unknown calibration type: " << fgCalibrationType;
@@ -444,6 +445,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCEventTime] = "MC event time";
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
+  fgVariableNames[kMCEventCentrFT0C] = "MC Centrality FT0C";
   fgVariableUnits[kMCEventGeneratorId] = "";
   fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
@@ -452,6 +454,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
+  fgVariableUnits[kMCEventCentrFT0C] = "%";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
@@ -1139,6 +1142,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairPt] = "GeV/c";
   fgVariableNames[kPairEta] = "#eta";
   fgVariableUnits[kPairEta] = "";
+  fgVariableNames[kPairRap] = "#rap";
+  fgVariableUnits[kPairRap] = "";
   fgVariableNames[kPairPhi] = "#varphi";
   fgVariableUnits[kPairPhi] = "rad.";
   fgVariableNames[kPairPhiv] = "#varphi_{V}";
@@ -1878,6 +1883,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPairPt"] = kPairPt;
   fgVarNamesMap["kPairPtDau"] = kPairPtDau;
   fgVarNamesMap["kPairEta"] = kPairEta;
+  fgVarNamesMap["kPairRap"] = kPairRap;
   fgVarNamesMap["kPairPhi"] = kPairPhi;
   fgVarNamesMap["kPairPhiv"] = kPairPhiv;
   fgVarNamesMap["kDileptonHadronKstar"] = kDileptonHadronKstar;

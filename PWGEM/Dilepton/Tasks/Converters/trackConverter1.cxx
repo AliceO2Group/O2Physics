@@ -31,7 +31,7 @@ struct trackConverter1 {
 
   void process(aod::EMPrimaryTracks_000 const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       track_001(track.collisionId(),
                 track.trackId(),
                 track.sign() / track.pt(),

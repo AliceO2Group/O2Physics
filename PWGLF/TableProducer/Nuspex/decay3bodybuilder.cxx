@@ -195,6 +195,7 @@ struct decay3bodyBuilder {
     Configurable<bool> selectPVPosZ3bodyMixing{"selectPVPosZ3bodyMixing", true, "Select same pvPosZ events in case of 3body mixing"};
     Configurable<float> maxDeltaPVPosZ3bodyMixing{"maxDeltaPVPosZ3bodyMixing", 1., "max difference between PV z position in case of 3body mixing"};
     // SVertexer selections
+    Configurable<bool> doApplySVertexerCuts{"doApplySVertexerCuts", false, "Apply SVertexer selections during event mixing"};
     Configurable<float> minPt2V0{"minPt2V0", 0.5, "Min Pt squared of V0"};
     Configurable<float> maxTgl2V0{"maxTgl2V0", 4, "Max tgl squared of V0"};
     Configurable<float> maxDCAXY2ToMeanVertex3bodyV0{"maxDCAXY2ToMeanVertex3bodyV0", 4, "Max DCA XY squared of V0 to mean vertex"};
@@ -737,7 +738,8 @@ struct decay3bodyBuilder {
                                            decay3bodyBuilderOpts.acceptTPCOnly,
                                            decay3bodyBuilderOpts.askOnlyITSMatch,
                                            decay3bodyBuilderOpts.calculateCovariance,
-                                           false /*isEventMixing*/)) {
+                                           false /*isEventMixing*/,
+                                           false /*applySVertexerCuts*/)) {
         continue;
       }
 
@@ -771,6 +773,13 @@ struct decay3bodyBuilder {
         // MC info
         resetMCInfo(this3BodyMCInfo);
         this3BodyMCInfo.isReco = true;
+
+        // set flag if selected reco collision has matched gen collision
+        if (collision.mcCollisionId() >= 0) { // reco collision is matched to gen collision
+          this3BodyMCInfo.survivedEventSel = isGoodCollision[collision.mcCollisionId()];
+        } else {
+          this3BodyMCInfo.survivedEventSel = false; // false if reco collision not matched to gen collision
+        }
 
         // check if daughters have MC particle
         if (!trackProton.has_mcParticle() || !trackPion.has_mcParticle() || !trackDeuteron.has_mcParticle()) {
@@ -907,7 +916,9 @@ struct decay3bodyBuilder {
                                    -1., -1., -1.,      // momPion
                                    -1., -1., -1.,      // momDeuteron
                                    -1., -1., -1.,      // trackDCAxyToPV: 0 - proton, 1 - pion, 2 - deuteron
-                                   -1., -1., -1.,      // trackDCAzToPV: 0 - proton, 1 - pion, 2 - deuteron
+                                   -1., -1., -1.,      // trackDCAToPV: 0 - proton, 1 - pion, 2 - deuteron
+                                   -1., -1., -1.,      // trackDCAxyToPVprop: 0 - proton, 1 - pion, 2 - deuteron
+                                   -1., -1., -1.,      // trackDCAToPVprop: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // daughterDCAtoSV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1.,                // daughterDCAtoSVaverage
                                    -1., -1.,           // cosPA, ctau
@@ -1065,9 +1076,11 @@ struct decay3bodyBuilder {
                              helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                              helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                              helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
-                             helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],    // 0 - proton, 1 - pion, 2 - deuteron
-                             helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
-                             helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAToPVprop[0], helper.decay3body.trackDCAToPVprop[1], helper.decay3body.trackDCAToPVprop[2],       // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2],          // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.daughterDCAtoSVaverage,
                              helper.decay3body.cosPA, helper.decay3body.ctau,
                              helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
@@ -1094,9 +1107,11 @@ struct decay3bodyBuilder {
                                helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                                helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                                helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
-                               helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],    // 0 - proton, 1 - pion, 2 - deuteron
-                               helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
-                               helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAToPVprop[0], helper.decay3body.trackDCAToPVprop[1], helper.decay3body.trackDCAToPVprop[2],       // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2],          // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.daughterDCAtoSVaverage,
                                helper.decay3body.cosPA, helper.decay3body.ctau,
                                helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
@@ -1140,7 +1155,8 @@ struct decay3bodyBuilder {
                                         decay3bodyBuilderOpts.acceptTPCOnly,
                                         decay3bodyBuilderOpts.askOnlyITSMatch,
                                         decay3bodyBuilderOpts.calculateCovariance,
-                                        true /*isEventMixing*/)) {
+                                        true, /*isEventMixing*/
+                                        mixingOpts.doApplySVertexerCuts /*applySVertexerCuts*/)) {
       // fill analysis tables with built candidate
       fillAnalysisTables();
       return;
@@ -1209,7 +1225,6 @@ struct decay3bodyBuilder {
     mcInfo.motherPdgCode = -1;
     mcInfo.daughterPrPdgCode = -1, mcInfo.daughterPiPdgCode = -1, mcInfo.daughterDePdgCode = -1;
     mcInfo.isDeuteronPrimary = false;
-    mcInfo.survivedEventSel = false;
     return;
   }
 
