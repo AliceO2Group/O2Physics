@@ -109,6 +109,7 @@ struct Chk892pp {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  Preslice<aod::V0s> perCollisionV0 = aod::v0data::collisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::PVMults>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi>;
@@ -153,7 +154,7 @@ struct Chk892pp {
     Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
     Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
-    Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+    Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", false, "Evt sel: check for offline selection"};
     Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", true, "Evt sel: triggerTVX selection (MB)"};
     Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", true, "Evt sel: apply TF border cut"};
     Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
@@ -171,6 +172,7 @@ struct Chk892pp {
   } EventCuts;
   RCTFlagsChecker rctChecker;
 
+  Configurable<bool> cfgFillQAPlots{"cfgFillQAPlots", false, "Fill QA plots"};
   Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
   /// PID Selections, pion
@@ -211,7 +213,7 @@ struct Chk892pp {
 
   // Secondary Selection
   struct : ConfigurableGroup {
-    Configurable<bool> cfgReturnFlag{"cfgReturnFlag", true, "Return Flag for debugging"};
+    Configurable<bool> cfgReturnFlag{"cfgReturnFlag", false, "Return Flag for debugging"};
     Configurable<bool> cfgSecondaryRequire{"cfgSecondaryRequire", true, "Secondary cuts on/off"};
     Configurable<bool> cfgSecondaryArmenterosCut{"cfgSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
     Configurable<bool> cfgSecondaryCrossMassHypothesisCut{"cfgSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
@@ -300,8 +302,8 @@ struct Chk892pp {
     histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{13, -0.5, 12.5, "Check"}});
     histos.add("QA/K0sCutFlow", "Check K0s cut (first-fail or pass)", HistType::kTH1F, {cutAxis});
     auto hcut = histos.get<TH1>(HIST("QA/K0sCutFlow"));
-    hcut->GetXaxis()->SetBinLabel(1, "TOTAL"); // 총 후보 수
-    hcut->GetXaxis()->SetBinLabel(2, "PASS");  // 최종 통과
+    hcut->GetXaxis()->SetBinLabel(1, "TOTAL");
+    hcut->GetXaxis()->SetBinLabel(2, "PASS");
     hcut->GetXaxis()->SetBinLabel(3, "DauDCA>max");
     hcut->GetXaxis()->SetBinLabel(4, "PosDCAtoPV<min");
     hcut->GetXaxis()->SetBinLabel(5, "NegDCAtoPV<min");
@@ -421,12 +423,7 @@ struct Chk892pp {
       histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
 
       histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxisQA, centAxis});
-      histos.add("EffKstar/genKstar_m", "Gen Kstar (|y|<0.5) invariant mass distribution", HistType::kTH1F, {invMassAxisReso});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxisQA, centAxis});
-      histos.add("EffKstar/recoKstar_m", "Kstar Reco (final all) invariant mass distribution", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
-      histos.add("EffKstar/recoKstar_m_rot", "Kstar Reco (final all) invariant mass distribution of Rot", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
-
-      histos.add("EffKstar/recoKstar_m_matched", "Kstar Reco matched (final all) invariant mass distribution", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
     }
 
     ccdb->setURL(CCDBConfig.cfgURL);
@@ -448,9 +445,9 @@ struct Chk892pp {
   float getCentrality(CollisionType const& collision)
   {
     if (cfgCentEst == kCentFT0C) {
-      return collision.multFT0C();
+      return collision.centFT0C();
     } else if (cfgCentEst == kCentFT0M) {
-      return collision.multFT0M();
+      return collision.centFT0M();
     } else {
       return kInvalidCentrality;
     }
@@ -865,12 +862,7 @@ struct Chk892pp {
       if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
         continue;
 
-      const double px = part.px(), py = part.py(), pz = part.pz(), e = part.e();
-      const double mgen2 = e * e - (px * px + py * py + pz * pz);
-      const double mgen = (mgen2 > 0.0) ? std::sqrt(mgen2) : 0.0;
-
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
-      histos.fill(HIST("EffKstar/genKstar_m"), mgen);
     }
   } // effKstarProcessGen
 
@@ -921,22 +913,6 @@ struct Chk892pp {
         lDecayDaughter_bach = LorentzVectorSetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
 
-        histos.fill(HIST("EffKstar/recoKstar_m"), lResoKstar.Pt(), lResoKstar.M());
-
-        if (BkgEstimationConfig.cfgFillRotBkg) {
-          for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++) {
-            auto lRotAngle = BkgEstimationConfig.cfgMinRot + i * ((BkgEstimationConfig.cfgMaxRot - BkgEstimationConfig.cfgMinRot) / (BkgEstimationConfig.cfgNrotBkg - 1));
-
-            lDaughterRot = lDecayDaughter_bach;
-            ROOT::Math::RotationZ rot(lRotAngle);
-            auto p3 = rot * lDaughterRot.Vect();
-            lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-            lResonanceRot = lDaughterRot + lResoSecondary;
-
-            histos.fill(HIST("EffKstar/recoKstar_m_rot"), lResonanceRot.Pt(), lResonanceRot.M());
-          }
-        }
-
         double ptgen = 0, ygen = 0;
         if (!matchRecoToTruthKstar(v0, bTrack, ptgen, ygen))
           continue;
@@ -947,7 +923,6 @@ struct Chk892pp {
         if (std::abs(yreco) > KstarCuts.cfgKstarMaxRap)
           continue;
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
-        histos.fill(HIST("EffKstar/recoKstar_m_matched"), ptreco, lResoKstar.M());
       }
     }
   } // effKstarProcessReco
@@ -972,15 +947,17 @@ struct Chk892pp {
       auto trkbNSigmaPiTOF = (istrkbhasTOF) ? bTrack.tofNSigmaPi() : -999.;
 
       if constexpr (!IsMix) {
-        // Bachelor pion QA plots
-        histos.fill(HIST("QA/before/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-        if (istrkbhasTOF) {
-          histos.fill(HIST("QA/before/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
-          histos.fill(HIST("QA/before/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+        if (cfgFillQAPlots) {
+          // Bachelor pion QA plots
+          histos.fill(HIST("QA/before/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
+          if (istrkbhasTOF) {
+            histos.fill(HIST("QA/before/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trkbpionpT"), trkbpt);
+          histos.fill(HIST("QA/before/trkbpionDCAxy"), bTrack.dcaXY());
+          histos.fill(HIST("QA/before/trkbpionDCAz"), bTrack.dcaZ());
         }
-        histos.fill(HIST("QA/before/trkbpionpT"), trkbpt);
-        histos.fill(HIST("QA/before/trkbpionDCAxy"), bTrack.dcaXY());
-        histos.fill(HIST("QA/before/trkbpionDCAz"), bTrack.dcaZ());
       }
 
       if (!trackCut(bTrack))
@@ -989,22 +966,23 @@ struct Chk892pp {
         continue;
 
       if constexpr (!IsMix) {
-        // Bachelor pion QA plots after applying cuts
-        histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-        if (istrkbhasTOF) {
-          histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
-          histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+        if (cfgFillQAPlots) {
+          // Bachelor pion QA plots after applying cuts
+          histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
+          if (istrkbhasTOF) {
+            histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trkbpionpT"), trkbpt);
+          histos.fill(HIST("QA/after/trkbpionDCAxy"), bTrack.dcaXY());
+          histos.fill(HIST("QA/after/trkbpionDCAz"), bTrack.dcaZ());
         }
-        histos.fill(HIST("QA/after/trkbpionpT"), trkbpt);
-        histos.fill(HIST("QA/after/trkbpionDCAxy"), bTrack.dcaXY());
-        histos.fill(HIST("QA/after/trkbpionDCAz"), bTrack.dcaZ());
       }
       trackIndicies.push_back(bTrack.index());
     }
 
     for (const auto& k0sCand : dTracks2) {
-      // auto posDauTrack = k0sCand.template posTrack_as<TrackCandidates>();
-      // auto negDauTrack = k0sCand.template negTrack_as<TrackCandidates>();
+
       auto posDauTrack = k0sCand.template posTrack_as<TrackTarget>();
       auto negDauTrack = k0sCand.template negTrack_as<TrackTarget>();
 
@@ -1035,36 +1013,38 @@ struct Chk892pp {
       lResoSecondary = LorentzVectorSetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
 
       if constexpr (!IsMix) {
-        // Seconddary QA plots
-        histos.fill(HIST("QA/before/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
-        if (istrkphasTOF) {
-          histos.fill(HIST("QA/before/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
-          histos.fill(HIST("QA/before/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+        if (cfgFillQAPlots) {
+          // Seconddary QA plots
+          histos.fill(HIST("QA/before/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
+          if (istrkphasTOF) {
+            histos.fill(HIST("QA/before/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trkppionpT"), trkppt);
+          histos.fill(HIST("QA/before/trkppionDCAxy"), posDauTrack.dcaXY());
+          histos.fill(HIST("QA/before/trkppionDCAz"), posDauTrack.dcaZ());
+
+          histos.fill(HIST("QA/before/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
+          if (istrknhasTOF) {
+            histos.fill(HIST("QA/before/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
+            histos.fill(HIST("QA/before/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/before/trknpionpT"), trknpt);
+          histos.fill(HIST("QA/before/trknpionDCAxy"), negDauTrack.dcaXY());
+          histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
+
+          histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
+          histos.fill(HIST("QA/before/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
+          histos.fill(HIST("QA/before/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
+
+          histos.fill(HIST("QA/before/hpT_Secondary"), trkkpt);
+          histos.fill(HIST("QA/before/hy_Secondary"), trkky);
+          histos.fill(HIST("QA/before/hRadiusSecondary"), trkkRadius);
+          histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
+          histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
+          histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
+          histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
         }
-        histos.fill(HIST("QA/before/trkppionpT"), trkppt);
-        histos.fill(HIST("QA/before/trkppionDCAxy"), posDauTrack.dcaXY());
-        histos.fill(HIST("QA/before/trkppionDCAz"), posDauTrack.dcaZ());
-
-        histos.fill(HIST("QA/before/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
-        if (istrknhasTOF) {
-          histos.fill(HIST("QA/before/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
-          histos.fill(HIST("QA/before/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
-        }
-        histos.fill(HIST("QA/before/trknpionpT"), trknpt);
-        histos.fill(HIST("QA/before/trknpionDCAxy"), negDauTrack.dcaXY());
-        histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
-
-        histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
-        histos.fill(HIST("QA/before/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
-        histos.fill(HIST("QA/before/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
-
-        histos.fill(HIST("QA/before/hpT_Secondary"), trkkpt);
-        histos.fill(HIST("QA/before/hy_Secondary"), trkky);
-        histos.fill(HIST("QA/before/hRadiusSecondary"), trkkRadius);
-        histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
-        histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
-        histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
-        histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
       }
 
       if (!SecondaryCuts.cfgByPassDauPIDSelection && !selectionPIDPion(posDauTrack))
@@ -1075,46 +1055,49 @@ struct Chk892pp {
         continue;
 
       if constexpr (!IsMix) {
-        // Seconddary QA plots after applying cuts
+        if (cfgFillQAPlots) {
+          // Seconddary QA plots after applying cuts
 
-        histos.fill(HIST("QA/after/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
-        if (istrkphasTOF) {
-          histos.fill(HIST("QA/after/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
-          histos.fill(HIST("QA/after/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          histos.fill(HIST("QA/after/trkppionTPCPID"), trkppt, trkpNSigmaPiTPC);
+          if (istrkphasTOF) {
+            histos.fill(HIST("QA/after/trkppionTOFPID"), trkppt, trkpNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trkppionTPCTOFPID"), trkpNSigmaPiTPC, trkpNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trkppionpT"), trkppt);
+          histos.fill(HIST("QA/after/trkppionDCAxy"), posDauTrack.dcaXY());
+          histos.fill(HIST("QA/after/trkppionDCAz"), posDauTrack.dcaZ());
+
+          histos.fill(HIST("QA/after/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
+          if (istrknhasTOF) {
+            histos.fill(HIST("QA/after/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
+            histos.fill(HIST("QA/after/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
+          }
+          histos.fill(HIST("QA/after/trknpionpT"), trknpt);
+          histos.fill(HIST("QA/after/trknpionDCAxy"), negDauTrack.dcaXY());
+          histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
+
+          histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
+          histos.fill(HIST("QA/after/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
+          histos.fill(HIST("QA/after/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
+
+          histos.fill(HIST("QA/after/hpT_Secondary"), trkkpt);
+          histos.fill(HIST("QA/after/hy_Secondary"), trkky);
+          histos.fill(HIST("QA/after/hRadiusSecondary"), trkkRadius);
+          histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
+          histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
+          histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
+          histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
         }
-        histos.fill(HIST("QA/after/trkppionpT"), trkppt);
-        histos.fill(HIST("QA/after/trkppionDCAxy"), posDauTrack.dcaXY());
-        histos.fill(HIST("QA/after/trkppionDCAz"), posDauTrack.dcaZ());
-
-        histos.fill(HIST("QA/after/trknpionTPCPID"), trknpt, trknNSigmaPiTPC);
-        if (istrknhasTOF) {
-          histos.fill(HIST("QA/after/trknpionTOFPID"), trknpt, trknNSigmaPiTOF);
-          histos.fill(HIST("QA/after/trknpionTPCTOFPID"), trknNSigmaPiTPC, trknNSigmaPiTOF);
-        }
-        histos.fill(HIST("QA/after/trknpionpT"), trknpt);
-        histos.fill(HIST("QA/after/trknpionDCAxy"), negDauTrack.dcaXY());
-        histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
-
-        histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
-        histos.fill(HIST("QA/after/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
-        histos.fill(HIST("QA/after/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
-
-        histos.fill(HIST("QA/after/hpT_Secondary"), trkkpt);
-        histos.fill(HIST("QA/after/hy_Secondary"), trkky);
-        histos.fill(HIST("QA/after/hRadiusSecondary"), trkkRadius);
-        histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
-        histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
-        histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
-        histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
         histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M());
       }
       k0sIndicies.push_back(k0sCand.index());
     }
 
     for (const auto& trackIndex : trackIndicies) {
+      auto bTrack = dTracks1.rawIteratorAt(trackIndex);
       for (const auto& k0sIndex : k0sIndicies) {
-        auto bTrack = dTracks1.rawIteratorAt(trackIndex);
         auto k0sCand = dTracks2.rawIteratorAt(k0sIndex);
+
         auto trkkMass = k0sCand.mK0Short();
 
         lDecayDaughter_bach = LorentzVectorSetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
@@ -1123,8 +1106,10 @@ struct Chk892pp {
 
         // QA plots
         if constexpr (!IsMix) {
-          histos.fill(HIST("QA/before/KstarRapidity"), lResoKstar.Rapidity());
-          histos.fill(HIST("QA/before/kstarinvmass"), lResoKstar.M());
+          if (cfgFillQAPlots) {
+            histos.fill(HIST("QA/before/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/before/kstarinvmass"), lResoKstar.M());
+          }
         }
 
         if (lResoKstar.Rapidity() > KstarCuts.cfgKstarMaxRap || lResoKstar.Rapidity() < KstarCuts.cfgKstarMinRap)
@@ -1132,15 +1117,19 @@ struct Chk892pp {
 
         if constexpr (!IsMix) {
           unsigned int typeKstar = bTrack.sign() > 0 ? BinType::kKstarP : BinType::kKstarN;
+          if (cfgFillQAPlots) {
 
-          histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
-          histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
+            histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
+            histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
+          }
           histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M());
 
           if (BkgEstimationConfig.cfgFillRotBkg) {
             for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++) {
               auto lRotAngle = BkgEstimationConfig.cfgMinRot + i * ((BkgEstimationConfig.cfgMaxRot - BkgEstimationConfig.cfgMinRot) / (BkgEstimationConfig.cfgNrotBkg - 1));
-              histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              if (cfgFillQAPlots) {
+                histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
+              }
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
                 // lDaughterRot.RotateZ(lRotAngle);
@@ -1186,7 +1175,7 @@ struct Chk892pp {
       return;
     colCuts.fillQA(collision);
 
-    fillHistograms<false, false>(collision, tracks, v0s); // second order
+    fillHistograms<false, false>(collision, tracks, v0s);
   }
   PROCESS_SWITCH(Chk892pp, processData, "Process Event for data without Partitioning", false);
 
@@ -1201,21 +1190,29 @@ struct Chk892pp {
     effK0sProcessReco(v0s);
     effKstarProcessGen(mcpart);
     effKstarProcessReco(v0s, tracks);
-
-    for (auto const& collision : events) {
-      if (!collision.has_mcCollision())
-        continue;
-      const auto mcid = collision.mcCollisionId();
-
-      auto it = centByMcIds.find(mcid);
-      if (it == centByMcIds.end())
-        continue;
-
-      lCentrality = it->second;
-      fillHistograms<true, false>(collision, tracks, v0s);
-    }
   }
-  PROCESS_SWITCH(Chk892pp, processMC, "Process Event for MC", true);
+  PROCESS_SWITCH(Chk892pp, processMC, "Process Event for MC", false);
+
+  void processMCQA(MCEventCandidates::iterator const& collision,
+                   MCTrackCandidates const& tracks,
+                   MCV0Candidates const& v0s,
+                   aod::BCsWithTimestamps const&)
+  {
+    if (!colCuts.isSelected(collision))
+      return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
+
+    lCentrality = getCentrality(collision);
+    if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
+      return;
+    if (!collision.isInelGt0())
+      return;
+    colCuts.fillQA(collision);
+
+    fillHistograms<true, false>(collision, tracks, v0s);
+  }
+  PROCESS_SWITCH(Chk892pp, processMCQA, "Process Event for MC and fill QA plots", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

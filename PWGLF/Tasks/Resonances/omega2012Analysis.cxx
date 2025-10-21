@@ -28,6 +28,8 @@
 
 #include <Math/Vector4D.h>
 
+#include <set>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -128,6 +130,10 @@ struct Omega2012Analysis {
   Configurable<std::vector<float>> cPionTPCNSigmaCuts{"cPionTPCNSigmaCuts", {3.0f, 3.0f, 2.0f, 2.0f}, "TPC NSigma cuts per pT bin (pion)"};
   Configurable<std::vector<float>> cPionTOFNSigmaCuts{"cPionTOFNSigmaCuts", {3.0f, 3.0f, 3.0f, 3.0f}, "TOF NSigma cuts per pT bin (pion)"};
   Configurable<std::vector<int>> cPionTOFRequired{"cPionTOFRequired", {0, 0, 1, 1}, "Require TOF per pT bin (pion)"};
+
+  // Xi1530 mass window cut
+  Configurable<float> cXi1530Mass{"cXi1530Mass", 1.53, "Xi(1530) mass (GeV/c^2)"};
+  Configurable<float> cXi1530MassWindow{"cXi1530MassWindow", 0.01, "Xi(1530) mass window (GeV/c^2)"};
 
   // PDG masses
   double massK0 = MassK0Short;
@@ -475,6 +481,21 @@ struct Omega2012Analysis {
     return true;
   }
 
+  // Xi1530 mass window cut
+  template <typename XiType, typename PionType>
+  bool xi1530MassCut(const XiType& xi, const PionType& pion)
+  {
+    // Calculate Xi + pion invariant mass
+    ROOT::Math::PxPyPzEVector pXi, pPion, pXi1530;
+    pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
+    pPion = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(pion.pt(), pion.eta(), pion.phi(), MassPionCharged));
+    pXi1530 = pXi + pPion;
+
+    // Check if mass is within Xi(1530) window
+    float massDiff = std::abs(pXi1530.M() - cXi1530Mass);
+    return massDiff < cXi1530MassWindow;
+  }
+
   // Primary-level cascade kinematics
   template <typename CascT>
   bool cascprimaryTrackCut(const CascT& c)
@@ -801,67 +822,106 @@ struct Omega2012Analysis {
   {
     auto cent = collision.cent();
 
+    // Collect track IDs used in xi and v0 construction to exclude them from pion selection
+    std::set<int> usedTrackIds;
+
+    // Collect track IDs from xi cascades
     for (const auto& xi : cascades) {
       if (!cascprimaryTrackCut(xi))
         continue;
       if (!casctopCut(xi))
         continue;
 
-      for (const auto& v0 : v0s) {
-        if (!v0CutEnhanced(collision, v0))
+      // Add xi daughter track IDs from cascadeIndices array (ordered: positive, negative, bachelor)
+      auto cascIndices = xi.cascadeIndices();
+      usedTrackIds.insert(cascIndices[0]); // positive track
+      usedTrackIds.insert(cascIndices[1]); // negative track
+      usedTrackIds.insert(cascIndices[2]); // bachelor track
+    }
+
+    // Collect track IDs from v0s
+    for (const auto& v0 : v0s) {
+      if (!v0CutEnhanced(collision, v0))
+        continue;
+
+      // Add v0 daughter track IDs from indices array
+      auto v0Indices = v0.indices();
+      usedTrackIds.insert(v0Indices[0]); // positive track
+      usedTrackIds.insert(v0Indices[1]); // negative track
+    }
+
+    // First loop: xi + pion to check xi1530 mass window
+    for (const auto& xi : cascades) {
+      if (!cascprimaryTrackCut(xi))
+        continue;
+      if (!casctopCut(xi))
+        continue;
+
+      for (const auto& pion : tracks) {
+        // Skip pion tracks that are already used in xi construction
+        if (usedTrackIds.find(pion.globalIndex()) != usedTrackIds.end()) {
+          continue;
+        }
+
+        // Pion QA before cuts
+        histos.fill(HIST("QAbefore/pionPt"), pion.pt());
+        histos.fill(HIST("QAbefore/pionEta"), pion.eta());
+
+        if constexpr (IsResoMicrotrack) {
+          histos.fill(HIST("QAbefore/pionDCAxy"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(pion.trackSelectionFlags()));
+          histos.fill(HIST("QAbefore/pionDCAz"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(pion.trackSelectionFlags()));
+          histos.fill(HIST("QAbefore/pionTPCNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(pion.pidNSigmaPiFlag()));
+          if (pion.hasTOF()) {
+            histos.fill(HIST("QAbefore/pionTOFNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(pion.pidNSigmaPiFlag()));
+          }
+        } else {
+          histos.fill(HIST("QAbefore/pionDCAxy"), pion.pt(), pion.dcaXY());
+          histos.fill(HIST("QAbefore/pionDCAz"), pion.pt(), pion.dcaZ());
+          histos.fill(HIST("QAbefore/pionTPCNSigma"), pion.pt(), pion.tpcNSigmaPi());
+          if (pion.hasTOF()) {
+            histos.fill(HIST("QAbefore/pionTOFNSigma"), pion.pt(), pion.tofNSigmaPi());
+          }
+          if constexpr (requires { pion.tpcNClsFound(); }) {
+            histos.fill(HIST("QAbefore/pionTPCNcls"), pion.tpcNClsFound());
+          }
+        }
+
+        if (!pionCut<IsResoMicrotrack>(pion))
           continue;
 
-        for (const auto& pion : tracks) {
-          // Pion QA before cuts
-          histos.fill(HIST("QAbefore/pionPt"), pion.pt());
-          histos.fill(HIST("QAbefore/pionEta"), pion.eta());
+        // Pion QA after cuts
+        histos.fill(HIST("QAafter/pionPt"), pion.pt());
+        histos.fill(HIST("QAafter/pionEta"), pion.eta());
 
-          if constexpr (IsResoMicrotrack) {
-            histos.fill(HIST("QAbefore/pionDCAxy"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(pion.trackSelectionFlags()));
-            histos.fill(HIST("QAbefore/pionDCAz"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(pion.trackSelectionFlags()));
-            histos.fill(HIST("QAbefore/pionTPCNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(pion.pidNSigmaPiFlag()));
-            if (pion.hasTOF()) {
-              histos.fill(HIST("QAbefore/pionTOFNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(pion.pidNSigmaPiFlag()));
-            }
-          } else {
-            histos.fill(HIST("QAbefore/pionDCAxy"), pion.pt(), pion.dcaXY());
-            histos.fill(HIST("QAbefore/pionDCAz"), pion.pt(), pion.dcaZ());
-            histos.fill(HIST("QAbefore/pionTPCNSigma"), pion.pt(), pion.tpcNSigmaPi());
-            if (pion.hasTOF()) {
-              histos.fill(HIST("QAbefore/pionTOFNSigma"), pion.pt(), pion.tofNSigmaPi());
-            }
-            if constexpr (requires { pion.tpcNClsFound(); }) {
-              histos.fill(HIST("QAbefore/pionTPCNcls"), pion.tpcNClsFound());
-            }
+        if constexpr (IsResoMicrotrack) {
+          histos.fill(HIST("QAafter/pionDCAxy"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(pion.trackSelectionFlags()));
+          histos.fill(HIST("QAafter/pionDCAz"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(pion.trackSelectionFlags()));
+          histos.fill(HIST("QAafter/pionTPCNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(pion.pidNSigmaPiFlag()));
+          if (pion.hasTOF()) {
+            histos.fill(HIST("QAafter/pionTOFNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(pion.pidNSigmaPiFlag()));
           }
+        } else {
+          histos.fill(HIST("QAafter/pionDCAxy"), pion.pt(), pion.dcaXY());
+          histos.fill(HIST("QAafter/pionDCAz"), pion.pt(), pion.dcaZ());
+          histos.fill(HIST("QAafter/pionTPCNSigma"), pion.pt(), pion.tpcNSigmaPi());
+          if (pion.hasTOF()) {
+            histos.fill(HIST("QAafter/pionTOFNSigma"), pion.pt(), pion.tofNSigmaPi());
+          }
+          if constexpr (requires { pion.tpcNClsFound(); }) {
+            histos.fill(HIST("QAafter/pionTPCNcls"), pion.tpcNClsFound());
+          }
+        }
 
-          if (!pionCut<IsResoMicrotrack>(pion))
+        // Check xi1530 mass window cut
+        if (!xi1530MassCut(xi, pion))
+          continue;
+
+        // Second loop: v0 for the selected xi-pion pair
+        for (const auto& v0 : v0s) {
+          if (!v0CutEnhanced(collision, v0))
             continue;
 
-          // Pion QA after cuts
-          histos.fill(HIST("QAafter/pionPt"), pion.pt());
-          histos.fill(HIST("QAafter/pionEta"), pion.eta());
-
-          if constexpr (IsResoMicrotrack) {
-            histos.fill(HIST("QAafter/pionDCAxy"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(pion.trackSelectionFlags()));
-            histos.fill(HIST("QAafter/pionDCAz"), pion.pt(), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(pion.trackSelectionFlags()));
-            histos.fill(HIST("QAafter/pionTPCNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(pion.pidNSigmaPiFlag()));
-            if (pion.hasTOF()) {
-              histos.fill(HIST("QAafter/pionTOFNSigma"), pion.pt(), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(pion.pidNSigmaPiFlag()));
-            }
-          } else {
-            histos.fill(HIST("QAafter/pionDCAxy"), pion.pt(), pion.dcaXY());
-            histos.fill(HIST("QAafter/pionDCAz"), pion.pt(), pion.dcaZ());
-            histos.fill(HIST("QAafter/pionTPCNSigma"), pion.pt(), pion.tpcNSigmaPi());
-            if (pion.hasTOF()) {
-              histos.fill(HIST("QAafter/pionTOFNSigma"), pion.pt(), pion.tofNSigmaPi());
-            }
-            if constexpr (requires { pion.tpcNClsFound(); }) {
-              histos.fill(HIST("QAafter/pionTPCNcls"), pion.tpcNClsFound());
-            }
-          }
-
-          // 4-vectors for 3-body
+          // 4-vectors for 3-body decay: Xi + K0s + pion
           ROOT::Math::PxPyPzEVector pXi, pK0s, pPion, pRes;
           pXi = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(xi.pt(), xi.eta(), xi.phi(), xi.mXi()));
           pK0s = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), massK0));

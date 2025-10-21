@@ -21,8 +21,9 @@
 #include <vector>
 
 using namespace o2;
+using namespace o2::framework;
 
-JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec& axisMultiplicity, AxisSpec& phiAxis, AxisSpec& etaAxis, AxisSpec& zvtAxis, AxisSpec& ptAxis, AxisSpec& massAxis, uint16_t multCorrMask, const TString& folder) : JFFlucAnalysis()
+JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec& axisMultiplicity, AxisSpec& phiAxis, AxisSpec& etaAxis, AxisSpec& zvtAxis, AxisSpec& ptAxis, AxisSpec& massAxis, AxisSpec& vnAxis, AxisSpec& fourAxisSC, AxisSpec& mixedAxis, AxisSpec& twoAxisSC, uint16_t multCorrMask, const TString& folder) : JFFlucAnalysis()
 {
 
   ph1[HIST_TH1_CENTRALITY] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_cent", folder.Data()), "multiplicity/centrality", {HistType::kTH1F, {axisMultiplicity}})).get();
@@ -39,8 +40,7 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
       multAxes.emplace_back(100, 0, 1000, "Nch PV");
     if (multCorrMask & aod::cfmultset::MultNTracksGlobal)
       multAxes.emplace_back(100, 0, 1000, "Nch Global");
-    registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
-    phs[HIST_THN_SPARSE_MULTCORR] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_multcorr", folder.Data()), "multiplicity/centrality correlations", {HistType::kTHnSparseF, multAxes})).get();
+    phs[HIST_THN_SPARSE_MULTCORR] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/multCorrelations", folder.Data()), "multiplicity/centrality correlations", {HistType::kTHnSparseF, multAxes})).get();
   } else {
     phs[HIST_THN_SPARSE_MULTCORR] = 0;
   }
@@ -51,12 +51,11 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   pht[HIST_THN_PTETA] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_pteta", folder.Data()), "(corrected) multiplicity/centrality, pT, eta, charge", {HistType::kTHnSparseF, {axisMultiplicity, ptAxis, etaAxis, chgAxis}})).get();
   AxisSpec hAxis = {kNH, -0.5, static_cast<double>(kNH - 1) + 0.5, "#it{n}"};
   AxisSpec kAxis = {nKL, -0.5, static_cast<double>(nKL - 1) + 0.5, "#it{k}"};
-  AxisSpec vnAxis = {2048, -0.1, 0.1, "#it{V}_#it{n}"};
-  pht[HIST_THN_SC_with_QC_4corr] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_SC_with_QC_4corr", folder.Data()), "SC_with_QC_4corr", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, hAxis, {2048, -0.001, 0.001, "correlation"}}})).get();
-  pht[HIST_THN_SC_with_QC_2corr] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_SC_with_QC_2corr", folder.Data()), "SC_with_QC_2corr", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, {2048, -0.1, 0.1, "correlation"}}})).get();
-  pht[HIST_THN_SC_with_QC_2corr_gap] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_SC_with_QC_2corr_gap", folder.Data()), "SC_with_QC_2corr_gap", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, {2048, -0.1, 0.1, "correlation"}}})).get();
+  pht[HIST_THN_SC_with_QC_4corr] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_SC_with_QC_4corr", folder.Data()), "SC_with_QC_4corr", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, hAxis, fourAxisSC}})).get();
+  pht[HIST_THN_SC_with_QC_2corr] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_SC_with_QC_2corr", folder.Data()), "SC_with_QC_2corr", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, twoAxisSC}})).get();
+  pht[HIST_THN_SC_with_QC_2corr_gap] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_SC_with_QC_2corr_gap", folder.Data()), "SC_with_QC_2corr_gap", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, twoAxisSC}})).get();
   for (UInt_t i = HIST_THN_V4V2star_2; i < HIST_THN_COUNT; ++i)
-    pht[i] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_corrC%02u", folder.Data(), i - HIST_THN_V4V2star_2), "correlator", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, {2048, -3.0, 3.0, "correlation"}}})).get();
+    pht[i] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_corrC%02u", folder.Data(), i - HIST_THN_V4V2star_2), "correlator", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, mixedAxis}})).get();
   for (UInt_t i = 0; i < HIST_THN_COUNT; ++i)
     pht[i]->Sumw2();
 

@@ -214,6 +214,9 @@ struct EbyeMaker {
   Configurable<bool> kUsePileUpCut{"kUsePileUpCut", false, "toggle strong correlation cuts (Run 2)"};
   Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
 
+  Configurable<float> kCentCutMin{"kCentCutMin", 0, "minimum accepted centrality"};
+  Configurable<float> kCentCutMax{"kCentCutMax", 100, "maximum accepted centrality"};
+
   Configurable<float> antidPtMin{"antidPtMin", 0.6f, "minimum antideuteron pT (GeV/c)"};
   Configurable<float> antidPtTof{"antidPtTof", 1.0f, "antideuteron pT to switch to TOF pid (GeV/c) "};
   Configurable<float> antidPtMax{"antidPtMax", 1.8f, "maximum antideuteron pT (GeV/c)"};
@@ -242,13 +245,10 @@ struct EbyeMaker {
   Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
   Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
-  Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
 
   Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
   Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
-  Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
-  Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
   Configurable<float> v0settingDcaV0Dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
   Configurable<float> v0settingDcaV0Pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
@@ -271,7 +271,6 @@ struct EbyeMaker {
   std::array<float, kNpart> nSigmaTpcCutLow;
   std::array<float, kNpart> nSigmaTpcCutUp;
   std::array<float, kNpart> tpcInnerParamMax;
-  std::array<float, kNpart> tofMassMax;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -339,6 +338,7 @@ struct EbyeMaker {
   {
     const float defItsChi2NClCut = 36.f;
     const float defNClCROverFind = 0.8f;
+    const float defMinChi2Cut = 0.f;
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
@@ -350,6 +350,7 @@ struct EbyeMaker {
         track.tpcNClsCrossedRows() < trackNcrossedRows ||
         track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > trackChi2Cut ||
+        track.tpcChi2NCl() < defMinChi2Cut ||
         track.itsChi2NCl() > defItsChi2NClCut) {
       return false;
     }
@@ -533,7 +534,6 @@ struct EbyeMaker {
     nSigmaTpcCutLow = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutLow};
     nSigmaTpcCutUp = std::array<float, kNpart>{antipNsigmaTpcCutUp, antidNsigmaTpcCutUp};
     tpcInnerParamMax = std::array<float, kNpart>{antipTpcInnerParamMax, antidTpcInnerParamMax};
-    tofMassMax = std::array<float, kNpart>{antipTofMassMax, antidTofMassMax};
   }
 
   template <class T>
@@ -600,7 +600,7 @@ struct EbyeMaker {
         const float maxTofChi2 = 3.f; // TODO: check if this is still needed
         bool hasTof = track.hasTOF() && track.tofChi2() < maxTofChi2;
 
-        if ((trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - kPartMass[iP]) < tofMassMaxQA)) && nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) { // for QA histograms
+        if ((trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof)) && nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) { // for QA histograms
           tofMass[iP]->Fill(centrality, trackPt, mass);
         }
 
@@ -616,7 +616,7 @@ struct EbyeMaker {
           continue;
         }
 
-        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - kPartMass[iP]) < tofMassMax[iP])) {
+        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof)) {
           CandidateTrack candTrack;
           candTrack.pt = track.sign() > 0. ? trackPt : -trackPt;
           candTrack.eta = trackEta;
@@ -925,13 +925,16 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
+      auto centrality = collision.centFT0C();
+      if (centrality < kCentCutMin || centrality > kCentCutMax)
+        continue;
+
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
       auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       v0TableThisCollision.bindExternalIndices(&tracks);
 
-      auto centrality = collision.centFT0C();
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 

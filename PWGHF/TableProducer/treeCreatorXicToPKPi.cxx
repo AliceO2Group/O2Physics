@@ -269,13 +269,13 @@ struct HfTreeCreatorXicToPKPi {
   /// \param doMc true to fill MC information
   /// \param massHypo mass hypothesis considered: 0 = PKPi, 1 = PiKP
   /// \param candidate is candidate
-  template <bool doMc = false, int massHypo = 0, typename T>
+  template <bool DoMc = false, int MassHypo = 0, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int candSwapped = 0;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       candSwapped = candidate.isCandidateSwapped();
@@ -285,10 +285,10 @@ struct HfTreeCreatorXicToPKPi {
     int selStatusPKPi = candidate.isSelXicToPKPi();
     int selStatusPiKP = candidate.isSelXicToPiKP();
 
-    if constexpr (massHypo == 0) { // Xic->PKPi
+    if constexpr (MassHypo == 0) { // Xic->PKPi
       selStatusPiKP *= -1;
       invMassXic = hfHelper.invMassXicToPKPi(candidate);
-    } else if constexpr (massHypo == 1) { // Xic->PiKP
+    } else if constexpr (MassHypo == 1) { // Xic->PiKP
       selStatusPKPi *= -1;
       invMassXic = hfHelper.invMassXicToPiKP(candidate);
     }
@@ -422,7 +422,7 @@ struct HfTreeCreatorXicToPKPi {
 
     for (const auto& candidate : selectedXicToPKPiCand) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -432,7 +432,7 @@ struct HfTreeCreatorXicToPKPi {
 
     for (const auto& candidate : selectedXicToPiKPCand) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -479,7 +479,7 @@ struct HfTreeCreatorXicToPKPi {
 
       for (const auto& candidate : reconstructedCandBkg) {
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }

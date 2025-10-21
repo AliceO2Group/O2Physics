@@ -19,20 +19,27 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/Utils/utilsSigmac.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DeviceSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
-#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework; // for Produces, Configuable
@@ -104,7 +111,7 @@ struct HfTreeCreatorSigmacCorrBkg {
     }
 
     /// BDT scores
-    if (candLcDauSc.mlProbLcToPiKP().size() > 0) {
+    if (!candLcDauSc.mlProbLcToPiKP().empty()) {
       outputMl.at(0) = candLcDauSc.mlProbLcToPiKP()[0]; /// bkg score
       outputMl.at(1) = candLcDauSc.mlProbLcToPiKP()[2]; /// non-prompt score
     }
@@ -141,10 +148,10 @@ struct HfTreeCreatorSigmacCorrBkg {
 
       /// tag immediately the Σc0,++(2455) and Σc0,++(2520) signal
       auto flagMcDecayChanScAbs = std::abs(candidateSc.flagMcMatchRec());
-      bool isTrueSigmac0 = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
-      bool isTrueSigmacPlusPlus = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
-      bool isTrueSigmacStar0 = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
-      bool isTrueSigmacStarPlusPlus = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
+      bool const isTrueSigmac0 = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
+      bool const isTrueSigmacPlusPlus = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
+      bool const isTrueSigmacStar0 = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
+      bool const isTrueSigmacStarPlusPlus = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
       if (isTrueSigmac0) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaC0);
@@ -152,21 +159,24 @@ struct HfTreeCreatorSigmacCorrBkg {
         /// the candidate that we reconstructed is a real Sigmac(2455, 2520), but later we look for correlated background sources
         /// let's continue
         continue;
-      } else if (isTrueSigmacPlusPlus) {
+      }
+      if (isTrueSigmacPlusPlus) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaCPlusPlus);
 
         /// the candidate that we reconstructed is a real Sigmac(2455, 2520), but later we look for correlated background sources
         /// let's continue
         continue;
-      } else if (isTrueSigmacStar0) {
+      }
+      if (isTrueSigmacStar0) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaCStar0);
 
         /// the candidate that we reconstructed is a real Sigmac(2455, 2520), but later we look for correlated background sources
         /// let's continue
         continue;
-      } else if (isTrueSigmacStarPlusPlus) {
+      }
+      if (isTrueSigmacStarPlusPlus) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaCStarPlusPlus);
 
@@ -192,7 +202,7 @@ struct HfTreeCreatorSigmacCorrBkg {
       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
       /// check if the candidate Lc and soft pion daugthers are not real Lc or pion
-      bool isLambdac = std::abs(candLcDauSc.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
+      bool const isLambdac = std::abs(candLcDauSc.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
       bool isPion = false;
       if (candSoftPiDauSc.has_mcParticle()) {
         isPion = std::abs(candSoftPiDauSc.template mcParticle_as<ParticlesLcSigmac>().pdgCode()) == kPiPlus;
@@ -258,7 +268,7 @@ struct HfTreeCreatorSigmacCorrBkg {
                                               candLcDauSc.template prong1_as<aod::TracksWMc>(),
                                               candLcDauSc.template prong2_as<aod::TracksWMc>()};
       int8_t signLambdac = 0;
-      int indexRecLc = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particles, arrayDaughtersLambdac, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &signLambdac, 2);
+      int const indexRecLc = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particles, arrayDaughtersLambdac, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &signLambdac, 2);
       if (indexRecLc < 0) {
         /// this should never happen, since we check above that the isLambdac==true
         LOG(fatal) << "Generated Lambdac not found. Not expected. Aborting.";
@@ -268,7 +278,7 @@ struct HfTreeCreatorSigmacCorrBkg {
         /// we should always enter here, since the Λc± is coming from a Λc±(2595, 2625) decay
         for (auto iMother = particleLc.mothersIds().front(); iMother <= particleLc.mothersIds().back(); ++iMother) {
           auto mother = particles.rawIteratorAt(iMother);
-          int pdgCodeMotherAbs = std::abs(mother.pdgCode());
+          int const pdgCodeMotherAbs = std::abs(mother.pdgCode());
           if (pdgCodeMotherAbs == o2::constants::physics::Pdg::kSigmaC0 || pdgCodeMotherAbs == o2::constants::physics::Pdg::kSigmaCPlusPlus) {
             /// the Λc± comes from a Σc0,++(2455)
             /// ==> we found a Λc±(2595, 2625) → Σc0,++(2455) π+,- decay!

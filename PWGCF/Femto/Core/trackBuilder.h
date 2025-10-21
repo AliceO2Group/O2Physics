@@ -375,7 +375,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->evaluateObservable(kTpcKaon, Track.tpcNSigmaKa());
     this->evaluateObservable(kTpcProton, Track.tpcNSigmaPr());
     this->evaluateObservable(kTpcDeuteron, Track.tpcNSigmaDe());
-    this->evaluateObservable(kTpctofTriton, Track.tpcNSigmaTr());
+    this->evaluateObservable(kTpcTriton, Track.tpcNSigmaTr());
     this->evaluateObservable(kTpcHelium, Track.tpcNSigmaHe());
 
     // tof pid
@@ -506,8 +506,8 @@ class TrackBuilder
                                    track.pt() * track.sign(),
                                    track.eta(),
                                    track.phi());
+      indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
     }
-
     if (mProduceTrackMasks) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
@@ -515,7 +515,6 @@ class TrackBuilder
         trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
       }
     }
-
     if (mProduceTrackDcas) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
@@ -533,7 +532,6 @@ class TrackBuilder
                                         track.beta(),
                                         track.mass());
     }
-
     if (mProduceElectronPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
@@ -583,7 +581,6 @@ class TrackBuilder
         trackProducts.producedHeliumPids(0, track.tpcNSigmaHe(), track.tofNSigmaHe());
       }
     }
-    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
@@ -643,8 +640,8 @@ class TrackBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
   bool collisionHasTooFewTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache)
   {
-    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
     if (trackSlice1.size() >= mLimitTrack1 && trackSlice2.size() >= mLimitTrack2) {
       return false;
     }
@@ -654,8 +651,8 @@ class TrackBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
   void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& indexMap, T6& cache, T7& newTrackTable, T8& newCollisionTable)
   {
-    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
 
     for (auto const& track : trackSlice1) {
       this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
