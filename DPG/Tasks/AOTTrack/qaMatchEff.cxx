@@ -37,20 +37,22 @@
 #include <vector>
 #include <set>
 #include <cmath>
-
+#include <TPDGCode.h>
 //
 namespace extConfPar
 {
-static constexpr int nParDCA = 1;
-static constexpr int nParVaDCA = 2;
+static constexpr int NParDCA = 1;
+static constexpr int NParVaDCA = 2;
 static const std::vector<std::string> parClassDCA{"TrVtx"};
 static const std::vector<std::string> parNameDCA{"dcaXY", "dcaZ"};
-static const float parTableDCA[nParDCA][nParVaDCA]{{9999.f, 99999.f}};
-static constexpr int nParPID = 2;
-static constexpr int nParVaPID = 6;
+static const float parTableDCA[NParDCA][NParVaDCA]{{9999.f, 99999.f}};
+static constexpr int NParPID = 2;
+static constexpr int NParVaPID = 6;
+static constexpr int kNumberOfITSLayers = 7;
+
 static const std::vector<std::string> parClassPID{"TPC", "TOF"};
 static const std::vector<std::string> parNamePID{"nSigPionMin", "nSigPionMax", "nSigKaonMin", "nSigKaonMax", "nSigProtonMin", "nSigProtonMax"};
-static const float parTablePID[nParPID][nParVaPID]{
+static const float parTablePID[NParPID][NParVaPID]{
   {-99999.f, 999999.f, -99999.f, 999999.f, -99999.f, 999999.f},
   {-99999.f, 999999.f, -99999.f, 999999.f, -99999.f, 999999.f}};
 } // namespace extConfPar
@@ -130,8 +132,8 @@ struct qaMatchEff {
   //
   //
   // DCA and PID cuts
-  Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
-  Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
+  Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], NParDCA, NParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
+  Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], NParPID, NParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
   // TPC
   Configurable<int> tpcNClusterMin{"tpcNClusterMin", 0, "Minimum number of clusters in TPC"};
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of crossed rows in TPC"};
@@ -248,7 +250,7 @@ struct qaMatchEff {
       cutObject.SetMaxChi2PerClusterITS(itsChi2Max);
       // ITS hitmap
       std::set<uint8_t> set_customITShitmap; // = {};
-      for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
+      for (int index_ITSlayer = 0; index_ITSlayer < kNumberOfITSLayers; index_ITSlayer++) {
         if ((customITShitmap & (1 << index_ITSlayer)) > 0) {
           set_customITShitmap.insert(static_cast<uint8_t>(index_ITSlayer));
         }
@@ -287,7 +289,7 @@ struct qaMatchEff {
       }
       if (customAnaTrkSel.isChangeAnalysisITSHitmap) {
         std::set<uint8_t> set_customITShitmap; // = {};
-        for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
+        for (int index_ITSlayer = 0; index_ITSlayer < kNumberOfITSLayers; index_ITSlayer++) {
           if ((customITShitmap & (1 << index_ITSlayer)) > 0) {
             set_customITShitmap.insert(static_cast<uint8_t>(index_ITSlayer));
           }
@@ -1502,7 +1504,7 @@ struct qaMatchEff {
     float hasdet = -999.f;
     //
     //
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       // choose if we keep the track according to the TRD presence requirement
       if ((isTRDThere == 1) && !track.hasTRD())
         continue;
@@ -1598,22 +1600,22 @@ struct qaMatchEff {
       int sayPrim = -99, specind = -9999;
       if constexpr (IS_MC) {
         auto mcpart = track.mcParticle();
-        auto siPDGCode = mcpart.pdgCode();
-        auto tpPDGCode = std::abs(siPDGCode);
-        if (mcpart.isPhysicalPrimary()) {
+        siPDGCode = mcpart.pdgCode();
+        tpPDGCode = std::abs(siPDGCode);
+        //if (mcpart.isPhysicalPrimary()) {
           // histos.get<TH1>(HIST("MC/control/etahist_diff"))->Fill(mcpart.eta() - track.eta());
-          auto delta = RecoDecay::constrainAngle(mcpart.phi() - track.phi(), -o2::constants::math::PI);
-          if (delta > o2::constants::math::PI) {
-            delta -= o2::constants::math::TwoPI;
-          }
-          if (delta < o2::constants::math::PI) {
-            delta += o2::constants::math::TwoPI;
-          }
+          // auto delta = RecoDecay::constrainAngle(mcpart.phi() - track.phi());
+          // if (delta > o2::constants::math::PI) {
+          //   delta -= o2::constants::math::TwoPI;
+          // }
+          // if (delta < o2::constants::math::PI) {
+          //   delta += o2::constants::math::TwoPI;
+          // }
           // histos.get<TH1>(HIST("MC/control/phihist_diff"))->Fill(delta);
-        }
+        //}
 
         /// MC info for THnSparse filling
-        sayPrim = -99;
+        int sayPrim = -99;
         specind = -9999;
         if (mcpart.isPhysicalPrimary())
           sayPrim = 0;
@@ -1683,7 +1685,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1700,7 +1702,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1717,7 +1719,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1734,7 +1736,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1751,7 +1753,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1768,7 +1770,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1785,7 +1787,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1802,7 +1804,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1819,7 +1821,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1836,7 +1838,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1853,7 +1855,7 @@ struct qaMatchEff {
         if (makethn) {
           if constexpr (IS_MC) {
             histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
-            if (siPDGCode == 211 || siPDGCode == 321) // pions and kaons together
+            if (siPDGCode == PDG_t::kPiPlus|| siPDGCode == PDG_t::kKPlus) // pions and kaons together
               histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), 10, signOfTrack, hasdet);
           } else {
             histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, signOfTrack, hasdet);
@@ -1888,19 +1890,19 @@ struct qaMatchEff {
 
       //  TPC clusters all pions MC truth
       //
-      if (tpPDGCode == 211) {
+      if (tpPDGCode == PDG_t::kPiPlus) {
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_piMC"))->Fill(clustpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC"))->Fill(findcltpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC"))->Fill(crowstpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC"))->Fill(crowstpc);
       }
-      if (tpPDGCode == 321) {
+      if (tpPDGCode == PDG_t::kKPlus) {
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC"))->Fill(clustpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC"))->Fill(findcltpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC"))->Fill(crowstpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC"))->Fill(crowstpc);
       }
-      if (tpPDGCode == 2212) {
+      if (tpPDGCode == PDG_t::kProton) {
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC"))->Fill(clustpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC"))->Fill(findcltpc);
         // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC"))->Fill(crowstpc);
@@ -2941,7 +2943,7 @@ struct qaMatchEff {
         } // end if secondaries from material
         //
         // protons only
-        if (tpPDGCode == 2212) {
+        if (tpPDGCode == PDG_t::kProton) {
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
             //
             // TPC clusters
@@ -3009,7 +3011,7 @@ struct qaMatchEff {
         }
         //
         // pions only
-        if (tpPDGCode == 211) {
+        if (tpPDGCode == PDG_t::kPiPlus) {
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
             //
             // TPC clusters
@@ -3119,7 +3121,7 @@ struct qaMatchEff {
         } // end pions only
         //
         // no primary/sec-d pions
-        if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
+        if (!((tpPDGCode == PDG_t::kPiPlus) && (mcpart.isPhysicalPrimary()))) {
           // gets the pdg code and finds its index in our vector
           itr_pdg = std::find(pdgChoice.begin(), pdgChoice.end(), tpPDGCode);
           if (itr_pdg != pdgChoice.cend())
@@ -3144,7 +3146,7 @@ struct qaMatchEff {
         } // end if not prim/sec-d pi
         //
         // kaons only
-        if (tpPDGCode == 321) {
+        if (tpPDGCode == PDG_t::kKPlus) {
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
             //
             // TPC clusters
@@ -3212,7 +3214,7 @@ struct qaMatchEff {
         }
         //
         // pions and kaons together
-        if (tpPDGCode == 211 || tpPDGCode == 321) {
+        if (tpPDGCode == PDG_t::kPiPlus || tpPDGCode == PDG_t::kKPlus) {
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
             histos.get<TH1>(HIST("MC/PID/pthist_tpc_piK"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/PID/phihist_tpc_piK"))->Fill(track.phi());
