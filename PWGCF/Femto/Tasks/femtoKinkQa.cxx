@@ -53,6 +53,7 @@ struct FemtoKinkQa {
 
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+  colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // using Collisions = o2::soa::Join<FUCols, FUColPos, FUColMults, FUColCents>;
   using Collisions = Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
@@ -95,7 +96,7 @@ struct FemtoKinkQa {
 
     sigmaHistManager.init(&hRegistry, sigmaHistSpec, chaDauHistSpec);
 
-    auto collisionHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+    auto collisionHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init(&hRegistry, collisionHistSpec);
   };
 
