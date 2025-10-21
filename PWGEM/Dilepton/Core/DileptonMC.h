@@ -47,6 +47,7 @@
 #include "Math/Vector4D.h"
 #include "TString.h"
 
+#include <algorithm>
 #include <array>
 #include <format>
 #include <map>
