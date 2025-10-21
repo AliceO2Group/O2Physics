@@ -1680,7 +1680,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
       if (iDau == 0) {
         continue;
       }
-      nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPr : kAntiPr);
+      nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], kAntiPr);
     }
   }
 
