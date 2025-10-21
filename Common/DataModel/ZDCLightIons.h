@@ -19,8 +19,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
