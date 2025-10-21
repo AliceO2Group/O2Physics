@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "tableHMPIDPbPb.h"
+#include "tableHMPID.h"
 
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
@@ -81,7 +81,7 @@ struct HmpidDeuteron {
     registryDA.add("hmpidCkovvsMom", "hmpidCkovvsMom", kTH2F, {{500, 0, 10., "#it{p} (GeV/#it{c})"}, {800, 0., 0.8, "#theta_{Ch} (rad)"}});
   }
 
-  void process(aod::HmpidAnalysisPbPb const& hmpidTable)
+  void process(aod::HmpidAnalysis const& hmpidTable)
   {
     for (const auto& hmpid : hmpidTable) {
 

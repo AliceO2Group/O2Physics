@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "tableHMPIDPbPb.h"
+#include "tableHMPID.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/trackUtilities.h"
@@ -38,14 +38,12 @@
 
 #include <string>
 
-// CREATE AND FILL TABLE FOR PBPB COLLISIONS
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-struct HmpidTableProducerPbPb {
+struct HmpidTableProducer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   const AxisSpec axisEvtCounter{1, 0, +1, ""};
@@ -56,7 +54,7 @@ struct HmpidTableProducerPbPb {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   } ccdbConfig;
 
-  Produces<aod::HmpidAnalysisPbPb> hmpidAnalysisPbPb;
+  Produces<aod::HmpidAnalysis> hmpidAnalysis;
 
   // using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
@@ -120,7 +118,7 @@ struct HmpidTableProducerPbPb {
       float centrality = col.centFV0A();
 
       /////FILL TABLE
-      hmpidAnalysisPbPb(
+      hmpidAnalysis(
         t.hmpidSignal(), globalTrack.phi(), globalTrack.eta(), t.hmpidMom(),
         globalTrack.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
         t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000,
@@ -134,4 +132,4 @@ struct HmpidTableProducerPbPb {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<HmpidTableProducerPbPb>(cfg)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<HmpidTableProducer>(cfg)}; }

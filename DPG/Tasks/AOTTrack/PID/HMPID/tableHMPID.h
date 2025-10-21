@@ -9,17 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPIDPP_H_
-#define DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPIDPP_H_
+#ifndef DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
+#define DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
+
 inline constexpr int kDimPhotonsCharge = 10;
 
-namespace variables_table // declaration of columns to create
+namespace variables_table
 {
 DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -60,10 +61,11 @@ DECLARE_SOA_COLUMN(TofNSigmaPr, tofNSigmaPr, float);
 DECLARE_SOA_COLUMN(TpcNSigmaDe, tpcNSigmaDe, float);
 DECLARE_SOA_COLUMN(TofNSigmaDe, tofNSigmaDe, float);
 
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+
 } // namespace variables_table
 
-// Definizione del SOA Table
-DECLARE_SOA_TABLE(HmpidAnalysisPp, "AOD", "HMPIDANALYSIS",
+DECLARE_SOA_TABLE(HmpidAnalysis, "AOD", "HMPIDANALYSIS",
                   variables_table::ChAngle,
                   variables_table::Phi,
                   variables_table::Eta,
@@ -97,8 +99,9 @@ DECLARE_SOA_TABLE(HmpidAnalysisPp, "AOD", "HMPIDANALYSIS",
                   variables_table::TpcNSigmaPr,
                   variables_table::TofNSigmaPr,
                   variables_table::TpcNSigmaDe,
-                  variables_table::TofNSigmaDe);
+                  variables_table::TofNSigmaDe,
+                  variables_table::Centrality);
 
 } // namespace o2::aod
 
-#endif // DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPIDPP_H_
+#endif // DPG_TASKS_AOTTRACK_PID_HMPID_TABLEHMPID_H_
