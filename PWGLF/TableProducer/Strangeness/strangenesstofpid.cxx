@@ -164,17 +164,17 @@ struct strangenesstofpid {
     ConfigurableAxis axisNSigma{"axisNSigma", {200, -10.0f, +10.0f}, "N(#sigma)"};
     ConfigurableAxis axisRatioMethods{"axisRatioMethods", {400, 0.9f, 1.9f}, "T_{method 1}/T_{method 0}"};
     ConfigurableAxis axisSnp{"axisSnp", {220, -1.1f, 1.1f}, "snp"};
-    
+
     // master p axis
     ConfigurableAxis axisP{"axisP", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
 
     // for zooming in at low values only (e-loss studies and effective correction)
     ConfigurableAxis axisSmallP{"axisSmallP", {250, 0.0f, 2.5f}, "p_{T} (GeV/c)"};
 
-    // for BC shift QA plots 
+    // for BC shift QA plots
     // binning to actually match BC shifts but show in picoseconds
-    const double bcShiftValuePS = o2::constants::lhc::LHCBunchSpacingNS*1000.0f; 
-    ConfigurableAxis axisBCshift{"axisBCshift", {130, -120.5f*bcShiftValuePS, 9.5f*bcShiftValuePS}, "time shift (ps)"};
+    const double bcShiftValuePS = o2::constants::lhc::LHCBunchSpacingNS * 1000.0f;
+    ConfigurableAxis axisBCshift{"axisBCshift", {130, -120.5f * bcShiftValuePS, 9.5f * bcShiftValuePS}, "time shift (ps)"};
 
     // very broad time axis
     ConfigurableAxis axisTimeLong{"axisTimeLong", {3000, -1500000.0f, 1500000.0f}, "time (ps)"};
@@ -422,11 +422,11 @@ struct strangenesstofpid {
     // per event
     histos.add("hCandidateCounter", "hCandidateCounter", kTH1F, {{500, -0.5f, 499.5f}});
 
-    histos.add("hV0PositiveBCShift", "hV0PositiveBCShift", kTH1F, {axes.axisBCshift});  
-    histos.add("hV0NegativeBCShift", "hV0NegativeBCShift", kTH1F, {axes.axisBCshift});  
-    histos.add("hCascadePositiveBCShift", "hCascadePositiveBCShift", kTH1F, {axes.axisBCshift});  
-    histos.add("hCascadeNegativeBCShift", "hCascadeNegativeBCShift", kTH1F, {axes.axisBCshift});  
-    histos.add("hCascadeBachelorBCShift", "hCascadeBachelorBCShift", kTH1F, {axes.axisBCshift});  
+    histos.add("hV0PositiveBCShift", "hV0PositiveBCShift", kTH1F, {axes.axisBCshift});
+    histos.add("hV0NegativeBCShift", "hV0NegativeBCShift", kTH1F, {axes.axisBCshift});
+    histos.add("hCascadePositiveBCShift", "hCascadePositiveBCShift", kTH1F, {axes.axisBCshift});
+    histos.add("hCascadeNegativeBCShift", "hCascadeNegativeBCShift", kTH1F, {axes.axisBCshift});
+    histos.add("hCascadeBachelorBCShift", "hCascadeBachelorBCShift", kTH1F, {axes.axisBCshift});
 
     histos.add("hTOFSignalPositive", "hTOFSignalPositive", kTH1F, {axes.axisTimeLong});
     histos.add("hTOFSignalNegative", "hTOFSignalNegative", kTH1F, {axes.axisTimeLong});
@@ -951,14 +951,14 @@ struct strangenesstofpid {
       // int incompatibilityReason = 0;
       // if (std::abs(v0tof.nSigmaPositiveK0ShortPi - o2::aod::v0data::kNoTOFValue) > o2::aod::v0data::kEpsilon && std::abs(v0tof.nSigmaPositiveK0ShortPi) > 4) {
       //   compatibleK0Short = false; // reject only if info present and incompatible
-      //   incompatibilityReason += 1; 
+      //   incompatibilityReason += 1;
       // }
       // if (std::abs(v0tof.nSigmaNegativeK0ShortPi - o2::aod::v0data::kNoTOFValue) > o2::aod::v0data::kEpsilon && std::abs(v0tof.nSigmaNegativeK0ShortPi) > 4) {
       //   compatibleK0Short = false; // reject only if info present and incompatible
-      //   incompatibilityReason += 2; 
+      //   incompatibilityReason += 2;
       // }
 
-      // if(!compatibleK0Short && passesQAcuts && k0ShortCandidate){        
+      // if(!compatibleK0Short && passesQAcuts && k0ShortCandidate){
       //   histos.fill(HIST("hIncompatibilityReason"), incompatibilityReason);
       //   // LOGF(info, "Incompatible K0, sigmas = (%.2f %.2f), lengths = (%.2f %.2f) tofSignals = (%.2f %.2f) evtimes = (%.2f %.2f)", v0tof.nSigmaPositiveK0ShortPi, v0tof.nSigmaNegativeK0ShortPi, lengthPositive, lengthNegative, pTof.tofSignal, nTof.tofSignal, pTof.tofEvTime, nTof.tofEvTime);
       // }
@@ -1367,34 +1367,34 @@ struct strangenesstofpid {
 
         auto pTra = V0.posTrack_as<TracksWithAllExtras>();
         auto nTra = V0.negTrack_as<TracksWithAllExtras>();
-        double deltaTimePos = 0.0f; 
-        double deltaTimeNeg = 0.0f; 
+        double deltaTimePos = 0.0f;
+        double deltaTimeNeg = 0.0f;
 
         auto collisionV0 = collisions.rawIteratorAt(V0.collisionId());
         auto bcV0 = bcs.rawIteratorAt(collisionV0.bcId());
 
-        if(pTra.collisionId()>=0){ 
+        if (pTra.collisionId() >= 0) {
           auto collisionPos = collisions.rawIteratorAt(pTra.collisionId());
           auto bcPos = bcs.rawIteratorAt(collisionPos.bcId());
           const int64_t deltaBcPos = bcPos.globalBC() - bcV0.globalBC();
-          deltaTimePos = o2::constants::lhc::LHCBunchSpacingNS*deltaBcPos*1000.0f; 
+          deltaTimePos = o2::constants::lhc::LHCBunchSpacingNS * deltaBcPos * 1000.0f;
           histos.fill(HIST("hV0PositiveBCShift"), deltaTimePos);
         }
 
-        if(nTra.collisionId()>=0){ 
+        if (nTra.collisionId() >= 0) {
           auto collisionNeg = collisions.rawIteratorAt(nTra.collisionId());
           auto bcNeg = bcs.rawIteratorAt(collisionNeg.bcId());
           const int64_t deltaBcNeg = bcNeg.globalBC() - bcV0.globalBC();
-          deltaTimeNeg = o2::constants::lhc::LHCBunchSpacingNS*deltaBcNeg*1000.0f; 
+          deltaTimeNeg = o2::constants::lhc::LHCBunchSpacingNS * deltaBcNeg * 1000.0f;
           histos.fill(HIST("hV0NegativeBCShift"), deltaTimeNeg);
         }
 
-        if(pTof.hasTOF){
+        if (pTof.hasTOF) {
           histos.fill(HIST("hTOFSignalPositive"), pTof.tofSignal);
           histos.fill(HIST("h2dTOFSignalPositive"), pTof.tofSignal, deltaTimePos);
         }
-        
-        if(nTof.hasTOF){
+
+        if (nTof.hasTOF) {
           histos.fill(HIST("hTOFSignalNegative"), nTof.tofSignal);
           histos.fill(HIST("h2dTOFSignalNegative"), nTof.tofSignal, deltaTimeNeg);
         }
@@ -1454,34 +1454,34 @@ struct strangenesstofpid {
         auto nTra = cascade.negTrack_as<TracksWithAllExtras>();
         auto bTra = cascade.bachelor_as<TracksWithAllExtras>();
 
-        double deltaTimePos = 0.0f; 
-        double deltaTimeNeg = 0.0f; 
-        double deltaTimeBach = 0.0f; 
+        double deltaTimePos = 0.0f;
+        double deltaTimeNeg = 0.0f;
+        double deltaTimeBach = 0.0f;
 
         auto collisionCascade = collisions.rawIteratorAt(cascade.collisionId());
         auto bcV0 = bcs.rawIteratorAt(collisionCascade.bcId());
 
-        if(pTra.collisionId()>=0){ 
+        if (pTra.collisionId() >= 0) {
           auto collisionPos = collisions.rawIteratorAt(pTra.collisionId());
           auto bcPos = bcs.rawIteratorAt(collisionPos.bcId());
           const int64_t deltaBcPos = bcPos.globalBC() - bcV0.globalBC();
-          deltaTimePos = o2::constants::lhc::LHCBunchSpacingNS*deltaBcPos*1000.0f; 
+          deltaTimePos = o2::constants::lhc::LHCBunchSpacingNS * deltaBcPos * 1000.0f;
           histos.fill(HIST("hCascadePositiveBCShift"), deltaTimePos);
         }
 
-        if(nTra.collisionId()>=0){ 
+        if (nTra.collisionId() >= 0) {
           auto collisionNeg = collisions.rawIteratorAt(nTra.collisionId());
           auto bcNeg = bcs.rawIteratorAt(collisionNeg.bcId());
           const int64_t deltaBcNeg = bcNeg.globalBC() - bcV0.globalBC();
-          deltaTimeNeg = o2::constants::lhc::LHCBunchSpacingNS*deltaBcNeg*1000.0f; 
+          deltaTimeNeg = o2::constants::lhc::LHCBunchSpacingNS * deltaBcNeg * 1000.0f;
           histos.fill(HIST("hCascadeNegativeBCShift"), deltaTimeNeg);
         }
 
-        if(bTra.collisionId()>=0){ 
+        if (bTra.collisionId() >= 0) {
           auto collisionBach = collisions.rawIteratorAt(bTra.collisionId());
           auto bcBach = bcs.rawIteratorAt(collisionBach.bcId());
           const int64_t deltaBcBach = bcBach.globalBC() - bcV0.globalBC();
-          deltaTimeBach = o2::constants::lhc::LHCBunchSpacingNS*deltaBcBach*1000.0f; 
+          deltaTimeBach = o2::constants::lhc::LHCBunchSpacingNS * deltaBcBach * 1000.0f;
           histos.fill(HIST("hCascadeNegativeBCShift"), deltaTimeBach);
         }
 
@@ -1594,11 +1594,11 @@ struct strangenesstofpid {
         if (tofIndices[V0.posTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.posTrackExtraId()]);
 
-          if(pTofExt.straCollisionId()>=0){
-            // extract BC for BC time shift 
+          if (pTofExt.straCollisionId() >= 0) {
+            // extract BC for BC time shift
             auto collisionTrack = collisions.rawIteratorAt(pTofExt.straCollisionId());
             const int64_t deltaBc = collisionTrack.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS*deltaBc*1000.0f; 
+            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
             histos.fill(HIST("hV0PositiveBCShift"), deltaTimeBc);
             deltaTimeBcPos = deltaTimeBc;
 
@@ -1619,11 +1619,11 @@ struct strangenesstofpid {
         if (tofIndices[V0.negTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.negTrackExtraId()]);
 
-          if(nTofExt.straCollisionId()>=0){
-            // extract BC for BC time shift 
+          if (nTofExt.straCollisionId() >= 0) {
+            // extract BC for BC time shift
             auto collisionTrack = collisions.rawIteratorAt(nTofExt.straCollisionId());
             const int64_t deltaBc = collisionTrack.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS*deltaBc*1000.0f; 
+            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
             histos.fill(HIST("hV0NegativeBCShift"), deltaTimeBc);
             deltaTimeBcNeg = deltaTimeBc;
 
@@ -1635,12 +1635,12 @@ struct strangenesstofpid {
             nTof.length = nTofExt.length();
           }
         }
-        if(pTof.hasTOF){
+        if (pTof.hasTOF) {
           histos.fill(HIST("hTOFSignalPositive"), pTof.tofSignal);
           histos.fill(HIST("h2dTOFSignalPositive"), pTof.tofSignal, deltaTimeBcPos);
         }
-        
-        if(nTof.hasTOF){
+
+        if (nTof.hasTOF) {
           histos.fill(HIST("hTOFSignalNegative"), nTof.tofSignal);
           histos.fill(HIST("h2dTOFSignalNegative"), nTof.tofSignal, deltaTimeBcNeg);
         }
@@ -1687,11 +1687,11 @@ struct strangenesstofpid {
         if (tofIndices[cascade.posTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.posTrackExtraId()]);
 
-          if(pTofExt.straCollisionId()>=0){
-            // extract BC for BC time shift 
+          if (pTofExt.straCollisionId() >= 0) {
+            // extract BC for BC time shift
             auto collisionTrack = collisions.rawIteratorAt(pTofExt.straCollisionId());
             const int64_t deltaBc = collisionTrack.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS*deltaBc*1000.0f; 
+            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
             histos.fill(HIST("hCascadePositiveBCShift"), deltaTimeBc);
 
             pTof.collisionId = pTofExt.straCollisionId();
@@ -1710,11 +1710,11 @@ struct strangenesstofpid {
         if (tofIndices[cascade.negTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.negTrackExtraId()]);
 
-          if(nTofExt.straCollisionId()>=0){
-            // extract BC for BC time shift 
+          if (nTofExt.straCollisionId() >= 0) {
+            // extract BC for BC time shift
             auto collisionTrack = collisions.rawIteratorAt(nTofExt.straCollisionId());
             const int64_t deltaBc = collisionTrack.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS*deltaBc*1000.0f; 
+            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
             histos.fill(HIST("hCascadeNegativeBCShift"), deltaTimeBc);
 
             nTof.collisionId = nTofExt.straCollisionId();
@@ -1733,11 +1733,11 @@ struct strangenesstofpid {
         if (tofIndices[cascade.bachTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto bTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.bachTrackExtraId()]);
 
-          if(bTofExt.straCollisionId()>=0){
-            // extract BC for BC time shift 
+          if (bTofExt.straCollisionId() >= 0) {
+            // extract BC for BC time shift
             auto collisionTrack = collisions.rawIteratorAt(bTofExt.straCollisionId());
             const int64_t deltaBc = collisionTrack.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS*deltaBc*1000.0f; 
+            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
             histos.fill(HIST("hCascadeBachelorBCShift"), deltaTimeBc);
 
             bTof.collisionId = bTofExt.straCollisionId();
