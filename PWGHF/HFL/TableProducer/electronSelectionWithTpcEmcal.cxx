@@ -61,6 +61,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Produces<aod::HfCorrSelEl> hfElectronSelection;
   Produces<aod::HfMcGenSelEl> hfGenElectronSel;
 
+  // select the emcal or dcal acceptance
   enum EMCalRegion {
     NoAcceptance = 0,
     EMCalAcceptance = 1,
@@ -71,8 +72,11 @@ struct HfElectronSelectionWithTpcEmcal {
   KFParticle kfNonHfe;
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
   Configurable<bool> fillTrackInfo{"fillTrackInfo", true, "Fill histograms with Track Information info before track match"};
-  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms"};
   Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
+
+  // select the emcal or dcal acceptance
+  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms"};
+
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
