@@ -577,7 +577,7 @@ struct HfFemtoDreamProducer {
       }
     }
     isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
-    
+
     aod::femtodreamcollision::BitMaskType bitTrack = 0;
     if (isTrackFilled) {
       bitTrack |= 1 << 0;
