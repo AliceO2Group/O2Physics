@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file antinucleiTask.cxx
+/// \file antiNucleiTask.cxx
 /// \brief A task to analyse Anti-nuclei
 /// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
@@ -48,7 +48,7 @@ static const int minTpcCrossedRowsCut = 70;
 static const float maxVertexZCut = 10.f;
 } // namespace
 
-struct antinucleiTask {
+struct antiNucleiTask {
   // Histogram registry: for holding histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -138,7 +138,7 @@ struct antinucleiTask {
     // Track Selection
     for (const auto& track : tracks) {
 
-      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / o2::constants::physics::MassDeuteron), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam()), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
       double expSigma{expBethe * cfgBetheBlochParams->get("resolution")};
       float tpcNSigmaDeuteron = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 
@@ -165,11 +165,11 @@ struct antinucleiTask {
     }
   }
 
-  PROCESS_SWITCH(antinucleiTask, process, "process", true);
+  PROCESS_SWITCH(antiNucleiTask, process, "process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<antinucleiTask>(cfgc)};
+    adaptAnalysisTask<antiNucleiTask>(cfgc)};
 }
