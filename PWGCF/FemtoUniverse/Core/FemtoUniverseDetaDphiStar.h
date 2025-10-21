@@ -585,7 +585,7 @@ class FemtoUniverseDetaDphiStar
       }
 
       if (IsDphiAvgOrDist) {
-        if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+        if ((dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
           return true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {

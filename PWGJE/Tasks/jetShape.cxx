@@ -100,13 +100,16 @@ struct JetShapeTask {
                               {"event/vertexz", ";Vtx_{z} (cm);Entries", {HistType::kTH1F, {{100, -20, 20}}}},
                               {"eventCounter", "eventCounter", {HistType::kTH1F, {{1, 0, +1, ""}}}},
                               {"ptVsCentrality", "ptvscentrality", {HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}}}},
-                              {"ptResolution", "ptResolution", {HistType::kTH2F, {{50, 0, ptMax}, {100, -1.0, +1.0}}}},
-                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTH1F, {{50, 0, ptMax}}}},
-                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTH1F, {{50, 0, ptMax}}}},
-                              {"ptHistogramProton", "ptHistogramProton", {HistType::kTH1F, {{50, 0, ptMax}}}},
-                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTH1F, {{50, 0, ptMax}}}},
-                              {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTH1F, {{50, 0, ptMax}}}},
-                              {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTH1F, {{50, 0, ptMax}}}}}};
+                              {"ptResolution", "ptResolution", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {100, -1.0, +1.0}}}},
+                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramProton", "ptHistogramProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptHistogramProtonTof", "ptHistogramProtonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
+                              {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}}};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -412,6 +415,17 @@ struct JetShapeTask {
             registry.fill(HIST("ptHistogramKaon"), mcParticle.pt());
           if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
             registry.fill(HIST("ptHistogramProton"), mcParticle.pt());
+        }
+
+        if (track.hasTOF()) {
+          if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+              registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt());
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+              registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt());
+            if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+              registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt());
+          }
         }
       }
     }

@@ -56,7 +56,7 @@ struct LightIonsEvSelQa {
   Configurable<int> nBinsTracks{"nBinsTracks", 450, "N bins in n tracks histo"};                            // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> nMaxTracks{"nMaxTracks", 450, "N max in n tracks histo"};                               // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 450, "N max in n tracks histo"};                   // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<int> nBinsMultFwd{"nBinsMultFwd", 1000, "N bins in mult fwd histo"};                         // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> nBinsMultFwd{"nBinsMultFwd", 800, "N bins in mult fwd histo"};                          // o2-linter: disable=name/configurable (temporary fix)
   Configurable<float> nMaxMultFwd{"nMaxMultFwd", 100000, "N max in mult fwd histo"};                        // o2-linter: disable=name/configurable (temporary fix)
   Configurable<float> timeBinWidthInSec{"TimeBinWidthInSec", 10, "Width of time bins in seconds"};          // o2-linter: disable=name/configurable (temporary fix)
 
@@ -64,6 +64,8 @@ struct LightIonsEvSelQa {
   Configurable<float> safetyDiffVzMargin{"SafetyDiffVzMargin", 0.5, "margin for diff vZ, cm"}; // o2-linter: disable=name/configurable (temporary fix)
 
   Configurable<int> confUseDiffVzCutFromEvSel{"UseDiffVzCutFromEvSel", 0, "0 - custom diffVz cut from this task, 1 - cut from event selection"}; // o2-linter: disable=name/configurable (temporary fix)
+
+  Configurable<bool> isMC{"isMC", false, "Run MC"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -137,11 +139,15 @@ struct LightIonsEvSelQa {
     const AxisSpec axisVtxZ{800, -20., 20., ""};
     const AxisSpec axisBcDiff{600, -300., 300., "bc difference"};
 
-    const AxisSpec axisNcontrib{801, -0.5, 800.5, "n contributors"};
+    const AxisSpec axisNcontrib{601, -0.5, 600.5, "n contributors"};
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
 
     AxisSpec axisVertexChi2{100, 0, 500, "Chi2 of vertex fit"};
     AxisSpec axisVertexChi2perContrib{100, 0, 10, "Chi2 of vertex fit"};
+
+    const AxisSpec axisTimeDiff{100, -10., 10., ""};
+    const AxisSpec axisTimeSum{100, -10., 10., ""};
+    const AxisSpec axisZNampl{200, 0, 3000, ""};
 
     histos.add("noSpecSelections/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noSpecSelections/hBcOrigNoSel8", "", kTH1F, {axisBCs});
@@ -165,6 +171,7 @@ struct LightIonsEvSelQa {
     histos.add("noSpecSelections/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("noSpecSelections/hVertexChi2VsNcontrib", "", kTH2F, {axisNcontrib, axisVertexChi2perContrib});
     histos.add("noSpecSelections/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
+    histos.add("noSpecSelections/hTimeZAC", "ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {axisTimeDiff, axisTimeSum});
 
     histos.add("noPU/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noPU/hBcOrigNoSel8", "", kTH1F, {axisBCs});
@@ -187,6 +194,8 @@ struct LightIonsEvSelQa {
     histos.add("noPU/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("noPU/hVertexChi2VsNcontrib", "", kTH2F, {axisNcontrib, axisVertexChi2perContrib});
     histos.add("noPU/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
+    histos.add("noPU/hTimeZAC", "ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {axisTimeDiff, axisTimeSum});
+    histos.add("noPU/hAmplZAC", "ZNC vs ZNA", kTH2F, {axisZNampl, axisZNampl});
 
     histos.add("noPU_pvTOFmatched/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noPU_pvTOFmatched/hBcTVX", "", kTH1F, {axisBCs});
@@ -394,6 +403,7 @@ struct LightIonsEvSelQa {
     histos.add("noPU_lowMultCut/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("noPU_lowMultCut/hVertexChi2VsNcontrib", "", kTH2F, {axisNcontrib, axisVertexChi2perContrib});
     histos.add("noPU_lowMultCut/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
+    histos.add("noPU_lowMultCut/hTimeZAC", "ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {axisTimeDiff, axisTimeSum});
 
     histos.add("highMultCloudCut/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("highMultCloudCut/hBcOrigNoSel8", "", kTH1F, {axisBCs});
@@ -420,6 +430,7 @@ struct LightIonsEvSelQa {
     histos.add("noPU_highMultCloudCut/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("noPU_highMultCloudCut/hVertexChi2VsNcontrib", "", kTH2F, {axisNcontrib, axisVertexChi2perContrib});
     histos.add("noPU_highMultCloudCut/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
+    histos.add("noPU_highMultCloudCut/hTimeZAC", "ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {axisTimeDiff, axisTimeSum});
 
     histos.add("noPU_badVzDiff/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noPU_badVzDiff/hBcTVX", "", kTH1F, {axisBCs});
@@ -559,6 +570,7 @@ struct LightIonsEvSelQa {
     histos.add("noPU_cutByVzDiff_pvTOF/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("noPU_cutByVzDiff_pvTOF/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("noPU_cutByVzDiff_pvTOF/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
+    histos.add("noPU_cutByVzDiff_pvTOF/hTimeZAC", "ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {axisTimeDiff, axisTimeSum});
 
     histos.add("noPU_cutByVzDiff_noFT0activityNearby/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noPU_cutByVzDiff_noFT0activityNearby/hBcTVX", "", kTH1F, {axisBCs});
@@ -579,8 +591,46 @@ struct LightIonsEvSelQa {
     histos.add("noPU_cutByVzDiff_noFT0activityNearby/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("noPU_cutByVzDiff_noFT0activityNearby/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
 
+    histos.add("noPU_CutOnZNACtime/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("noPU_CutOnZNACtime/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU_CutOnZNACtime/hBcOrig", "", kTH1F, {axisBCs});
+    histos.add("noPU_CutOnZNACtime/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU_CutOnZNACtime/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_CutOnZNACtime/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU_CutOnZNACtime/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU_CutOnZNACtime/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_CutOnZNACtime/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_CutOnZNACtime/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU_CutOnZNACtime/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU_CutOnZNACtime/hTVXvsBcDiffwrtOrigBc", "", kTH1F, {axisBcDiff});
+    histos.add("noPU_CutOnZNACtime/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU_CutOnZNACtime/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU_CutOnZNACtime/hNPVvsNch", "", kTH2F, {axisNcontrib, axisNcontrib});
+    histos.add("noPU_CutOnZNACtime/hTimeZAC", "ZNC-ZNA time (ns); ZNC+ZNA time (ns)", kTH2F, {axisTimeDiff, axisTimeSum});
+    histos.add("noPU_CutOnZNACtime/hAmplZAC", "ZNC vs ZNA", kTH2F, {axisZNampl, axisZNampl});
+
+    histos.add("noPU_AntiCutOnZNACtime/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_AntiCutOnZNACtime/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_AntiCutOnZNACtime/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_AntiCutOnZNACtime/hAmplZAC", "ZNC vs ZNA", kTH2F, {axisZNampl, axisZNampl});
+
+    histos.add("noPU_AntiCutOnZNAampl/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_AntiCutOnZNAampl/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_AntiCutOnZNAampl/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_AntiCutOnZNAampl/hAmplZAC", "ZNC vs ZNA", kTH2F, {axisZNampl, axisZNampl});
+
+    //
     histos.add("hNcontribColFromData", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAccFromData", "", kTH1F, {axisNcontrib});
+
+    // MC QA
+    const AxisSpec axisVtxZdiff{400, -10., 10., ""};
+    histos.add("MC/hMCdataVzDiff", "", kTH2F, {axisNcontrib, axisVtxZdiff});
+    histos.add("MC/hMCdataBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("MC/hMCdataFoundBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("MCsel8/hMCdataVzDiff", "", kTH2F, {axisNcontrib, axisVtxZdiff});
+    histos.add("MCsel8/hMCdataBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("MCsel8/hMCdataFoundBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
   }
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
@@ -604,6 +654,7 @@ struct LightIonsEvSelQa {
     ColEvSels const& cols,
     FullTracksIU const& tracks,
     BCsRun3 const& bcs,
+    aod::Zdcs const&,
     aod::FT0s const&)
   {
     int runNumber = bcs.iteratorAt(0).runNumber();
@@ -904,6 +955,17 @@ struct LightIonsEvSelQa {
         histos.fill(HIST("multT0M_vs_multSumFT0"), multT0M, multT0M_uncorr);
       }
 
+      float timeZNA = foundBC.has_zdc() ? foundBC.zdc().timeZNA() : -999.f;
+      float timeZNC = foundBC.has_zdc() ? foundBC.zdc().timeZNC() : -999.f;
+      float znSum = timeZNA + timeZNC;
+      float znDiff = timeZNA - timeZNC;
+      // bool goodZNACtime = fabs(znSum) < 2 && fabs(znDiff) < 2;
+      bool goodZNACtime = (timeZNA > -6 && timeZNA < 4) && (timeZNC > -6 && timeZNC < 4);
+
+      float multZNA = foundBC.has_zdc() ? foundBC.zdc().energyCommonZNA() : -999;
+      float multZNC = foundBC.has_zdc() ? foundBC.zdc().energyCommonZNC() : -999;
+      bool cutZNACampl = multZNA < 400 && multZNC < 400;
+
       // vZ diff (FT0 vs by tracks)
       bool badVzDiff = 0;
       if (confUseDiffVzCutFromEvSel)
@@ -968,11 +1030,14 @@ struct LightIonsEvSelQa {
       histos.fill(HIST("noSpecSelections/hBcColNoSel8"), localBC);
       histos.fill(HIST("noSpecSelections/hBcOrigNoSel8"), bcOriginal);
       histos.fill(HIST("noSpecSelections/Vz"), vZ);
+      histos.fill(HIST("noSpecSelections/hTimeZAC"), znDiff, znSum);
 
       if (noPU) {
         histos.fill(HIST("noPU/hBcColNoSel8"), localBC);
         histos.fill(HIST("noPU/hBcOrigNoSel8"), bcOriginal);
         histos.fill(HIST("noPU/Vz"), vZ);
+        histos.fill(HIST("noPU/hTimeZAC"), znDiff, znSum);
+        histos.fill(HIST("noPU/hAmplZAC"), multZNA, multZNC);
       }
       if (noPU && pvTOFmatched) {
         histos.fill(HIST("noPU_pvTOFmatched/hBcColNoSel8"), localBC);
@@ -1028,6 +1093,7 @@ struct LightIonsEvSelQa {
       if (noPU && underLine) {
         histos.fill(HIST("noPU_lowMultCut/hBcColNoSel8"), localBC);
         histos.fill(HIST("noPU_lowMultCut/hBcOrigNoSel8"), bcOriginal);
+        histos.fill(HIST("noPU_lowMultCut/hTimeZAC"), znDiff, znSum);
       }
       if (grassOnTheRight) {
         histos.fill(HIST("highMultCloudCut/hBcColNoSel8"), localBC);
@@ -1036,9 +1102,11 @@ struct LightIonsEvSelQa {
       if (noPU && grassOnTheRight) {
         histos.fill(HIST("noPU_highMultCloudCut/hBcColNoSel8"), localBC);
         histos.fill(HIST("noPU_highMultCloudCut/hBcOrigNoSel8"), bcOriginal);
+        histos.fill(HIST("noPU_highMultCloudCut/hTimeZAC"), znDiff, znSum);
       }
       if (noPU && !badVzDiff && pvTOFmatched) { // noPileup_cutByVzDiff_pvTOF_noFT0act
         histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hBcColNoSel8"), localBC);
+        histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hTimeZAC"), znDiff, znSum);
       }
 
       // only here cut on sel8:
@@ -1223,6 +1291,14 @@ struct LightIonsEvSelQa {
         histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
         histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/hColTimeResVsNcontrib"), nContributors, timeRes);
         histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/hNPVvsNch"), nPVtracks, nGlobalTracksAll);
+      }
+      if (noPU && goodZNACtime) {
+        histos.fill(HIST("noPU_CutOnZNACtime/hBcTVX"), localBC);
+        histos.fill(HIST("noPU_CutOnZNACtime/hBcOrig"), bcOriginal);
+        histos.fill(HIST("noPU_CutOnZNACtime/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU_CutOnZNACtime/hColTimeResVsNcontrib"), nContributors, timeRes);
+        histos.fill(HIST("noPU_CutOnZNACtime/hNPVvsNch"), nPVtracks, nGlobalTracksAll);
+        histos.fill(HIST("noPU_CutOnZNACtime/hTimeZAC"), znDiff, znSum);
       }
 
       if (foundBC.has_ft0()) {
@@ -1417,6 +1493,14 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/nTracksPV_vs_T0C"), multT0C, nPVtracks);
           // histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracksPV);
         }
+        if (noPU && goodZNACtime) {
+          histos.fill(HIST("noPU_CutOnZNACtime/hBcFT0"), localBC);
+          histos.fill(HIST("noPU_CutOnZNACtime/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU_CutOnZNACtime/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_CutOnZNACtime/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU_CutOnZNACtime/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU_CutOnZNACtime/hAmplZAC"), multZNA, multZNC);
+        }
       }
 
       if (foundBC.has_fv0a()) {
@@ -1533,6 +1617,23 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/hBcFV0"), localBC);
           histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/nTracksPV_vs_V0A"), multV0A, nPVtracks);
           // histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracksPV);
+        }
+
+        if (noPU && goodZNACtime) {
+          histos.fill(HIST("noPU_CutOnZNACtime/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_CutOnZNACtime/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+        }
+        if (noPU && !goodZNACtime) {
+          histos.fill(HIST("noPU_AntiCutOnZNACtime/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_AntiCutOnZNACtime/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_AntiCutOnZNACtime/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_AntiCutOnZNACtime/hAmplZAC"), multZNA, multZNC);
+        }
+        if (noPU && !cutZNACampl) {
+          histos.fill(HIST("noPU_AntiCutOnZNAampl/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_AntiCutOnZNAampl/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_AntiCutOnZNAampl/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_AntiCutOnZNAampl/hAmplZAC"), multZNA, multZNC);
         }
       }
       if (foundBC.has_zdc()) {
@@ -1661,13 +1762,50 @@ struct LightIonsEvSelQa {
       if (noPU && !badVzDiff && noFT0activityNearby) {
         histos.fill(HIST("noPU_cutByVzDiff_noFT0activityNearby/hTVXvsBcDiffwrtOrigBc"), bcDiffWrtOriginal);
       }
-
+      if (noPU && goodZNACtime) {
+        histos.fill(HIST("noPU_CutOnZNACtime/hTVXvsBcDiffwrtOrigBc"), bcDiffWrtOriginal);
+      }
     } // end of collisions loop
   }
   PROCESS_SWITCH(LightIonsEvSelQa, processRun3, "Process Run3 tracking vs detector occupancy QA", true);
+
+  // ### MC QA
+  using ColEvSelsWithMCLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>; //, aod::CentFT0Cs>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
+  void processMC(ColEvSelsWithMCLabels const& collisions,
+                 BCsInfo const&,
+                 aod::McCollisions const&)
+  {
+    for (const auto& col : collisions) {
+      bool isSel8 = col.sel8();
+      if (col.has_mcCollision()) {
+        const auto mcCollision = col.mcCollision();
+        LOGP(debug, "col.posZ() = {}, mcCollision.posZ() = {}", col.posZ(), mcCollision.posZ());
+        histos.fill(HIST("MC/hMCdataVzDiff"), col.numContrib(), col.posZ() - mcCollision.posZ());
+
+        auto bc = col.bc_as<BCsInfo>();
+        auto mcBc = mcCollision.bc_as<BCsInfo>();
+        auto foundBC = col.foundBC_as<BCsInfo>();
+
+        LOGP(debug, "col.bc().globalBC() = {}, mcCollision.bc().globalBC() = {}", col.bc().globalBC(), mcCollision.bc().globalBC());
+        histos.fill(HIST("MC/hMCdataBcDiffVsMult"), col.numContrib(), bc.globalBC() - mcBc.globalBC());
+        histos.fill(HIST("MC/hMCdataFoundBcDiffVsMult"), col.numContrib(), foundBC.globalBC() - mcBc.globalBC());
+
+        if (isSel8) {
+          histos.fill(HIST("MCsel8/hMCdataVzDiff"), col.numContrib(), col.posZ() - mcCollision.posZ());
+          histos.fill(HIST("MCsel8/hMCdataBcDiffVsMult"), col.numContrib(), bc.globalBC() - mcBc.globalBC());
+          histos.fill(HIST("MCsel8/hMCdataFoundBcDiffVsMult"), col.numContrib(), foundBC.globalBC() - mcBc.globalBC());
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(LightIonsEvSelQa, processMC, "Process MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec
+  defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<LightIonsEvSelQa>(cfgc)};

@@ -47,6 +47,7 @@ enum LimitType { kUpperLimit,            ///< simple upper limit for the value, 
                  kAbsLowerFunctionLimit, ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
                  kEqual,                 ///< values need to be equal, e.g. sign = 1
                  kEqualArray,            ///< values inside an array need to be equal
+                 kLimitTypeLast
 };
 
 std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
@@ -175,7 +176,7 @@ class SelectionContainer
     mComments = comments;
   }
 
-  std::vector<std::string> getComments() const { return mComments; }
+  std::vector<std::string> const& getComments() const { return mComments; }
 
   /// \brief Update selection limits using internal functions evaluated at a given value.
   /// \param value Input value to evaluate functions at.
@@ -250,7 +251,7 @@ class SelectionContainer
 
   /// \brief Evaluate which selection criteria are fulfilled for a given value.
   /// \param values Values of the observable to evaluate
-  void evaluate(std::vector<T>& values)
+  void evaluate(std::vector<T> const& values)
   {
     if (values.size() != mSelectionValues.size()) {
       LOG(fatal) << "Wrong number of values have been passed";
@@ -341,11 +342,11 @@ class SelectionContainer
 
   /// \brief Get a copy of all selection values.
   /// \return Vector of selection values.
-  std::vector<T> getSelectionValues() const { return mSelectionValues; }
+  std::vector<T> const& getSelectionValues() const { return mSelectionValues; }
 
   /// \brief Get a copy of all selection values.
   /// \return Vector of selection values.
-  std::vector<TF1> getSelectionFunction() const { return mSelectionFunctions; }
+  std::vector<TF1> const& getSelectionFunction() const { return mSelectionFunctions; }
 
   /// \brief Check if this container is marked as minimal cut.
   /// \return True if minimal cut, false otherwise.
@@ -359,7 +360,7 @@ class SelectionContainer
   std::vector<T> mSelectionValues = {};                      ///< Values used for the selection
   std::vector<std::string> mComments = {};                   ///< Comments for the values
   std::vector<TF1> mSelectionFunctions = {};                 ///< Function used for the selection
-  limits::LimitType mLimitType;                              ///< Limit type of selection
+  limits::LimitType mLimitType = limits::kLimitTypeLast;     ///< Limit type of selection
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< bitmask for the observable
   bool mSkipMostPermissiveBit = false;                       ///< whether to skip the last bit or not
   bool mIsMinimalCut = false;                                ///< whether to use this observable for minimal selection or not

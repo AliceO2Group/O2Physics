@@ -380,7 +380,7 @@ struct nucleiQC {
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAzVsPtVsCentrality"), candidate.pt, candidate.DCAz, candidate.centrality);
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3BetaVsPtVsCentrality"), candidate.pt, candidate.beta, candidate.centrality);
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3dEdxVsPVsCentrality"), candidate.pt, candidate.TPCsignal, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3ClusterSizeVsPtVsCentrality"), mPidManagers[kIndex].getClusterSizeCosLambdaITS(candidate.clusterSizesITS, candidate.eta), candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3ClusterSizeVsPtVsCentrality"), candidate.pt, mPidManagers[kIndex].getClusterSizeCosLambdaITS(candidate.clusterSizesITS, candidate.eta), candidate.centrality);
     }
   }
 
@@ -409,7 +409,7 @@ struct nucleiQC {
         if (track.has_mcParticle()) {
           const auto& particle = track.mcParticle();
           if (cfgDoCheckPdgCode) {
-            if (particle.pdgCode() != nuclei::pdgCodes[kSpeciesRt])
+            if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
               return;
           }
           if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax) {

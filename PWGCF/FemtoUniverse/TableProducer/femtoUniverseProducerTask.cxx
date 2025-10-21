@@ -160,6 +160,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
     Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
+    Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
   } ConfGeneral;
   Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfGeneral.confCentFT0Max);
@@ -188,6 +189,7 @@ struct FemtoUniverseProducerTask {
     Configurable<std::vector<float>> confTrkDCAzMax{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kDCAzMax, "Track selection: ")}; /// \todo Reintegrate PID to the general selection container
     Configurable<std::vector<float>> confTrkPIDnSigmaMax{FemtoUniverseTrackSelection::getSelectionName(femto_universe_track_selection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femto_universe_track_selection::kPIDnSigmaMax, "Track selection: ")};
     Configurable<std::vector<int>> confTrkPIDspecies{"confTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID (Pion=2, Kaon=3, Proton=4, Deuteron=5)"};
+    Configurable<bool> confIsOnlyMCTrack{"confIsOnlyMCTrack", false, "Enable filling of only MC Tracks"};
     // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
   } ConfTrkSelection;
 
@@ -238,6 +240,8 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confDcaXYCustom1Cut{"confDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
     Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<bool> confIsApplyTrkCutMCTruth{"confIsApplyTrkCutMCTruth", false, "Apply eta, pT selection cut on MCTruth tracks "};
+    Configurable<bool> confIsOnlyPrimary{"confIsOnlyPrimary", false, "Select only primaries"};
   } ConfFilterCuts;
 
   Filter globalCutFilter = requireGlobalTrackInFilter();
@@ -735,6 +739,12 @@ struct FemtoUniverseProducerTask {
                          -999., -999., -999., -999., -999., -999., -999., particle.tofNSigmaXiLaPi(),
                          particle.tofNSigmaXiLaPr(), particle.tofNSigmaXiPi(), particle.tofNSigmaOmLaPi(),
                          particle.tofNSigmaOmLaPr(), particle.tofNSigmaOmKa(),
+                         particle.dcacascdaughters(), particle.cascradius(),
+                         particle.x(), particle.y(), particle.z(), -999.);
+      } else {
+        outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999.,
                          particle.dcacascdaughters(), particle.cascradius(),
                          particle.x(), particle.y(), particle.z(), -999.);
       }
@@ -1334,6 +1344,38 @@ struct FemtoUniverseProducerTask {
 
       childIDs[0] = rowPos;
       childIDs[1] = rowNeg;
+      outputParts(outputCollision.lastIndex(),
+                  mc.pt(),
+                  mc.eta(),
+                  mc.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                  0,
+                  0,
+                  mc.pdgCode(),
+                  childIDs,
+                  0,
+                  0);
+      fillMCTruthParticle(mc, aod::femtouniverseparticle::ParticleType::kMCTruthTrack);
+    }
+  }
+
+  template <typename MCParticlesType>
+  void fillTracksMCTruth(MCParticlesType const& mcParticles)
+  {
+    for (const auto& mc : mcParticles) { // Loop over all MC Truth particles
+      if (ConfFilterCuts.confIsApplyTrkCutMCTruth) {
+        if (std::abs(mc.eta()) > ConfFilterCuts.confEtaFilterCut || mc.pt() < ConfFilterCuts.confPtLowFilterCut || mc.pt() > ConfFilterCuts.confPtHighFilterCut) {
+          continue;
+        }
+      }
+
+      if (ConfFilterCuts.confIsOnlyPrimary) {
+        if (!mc.isPhysicalPrimary()) {
+          return;
+        }
+      }
+
+      std::vector<int> childIDs = {0, 0};
       outputParts(outputCollision.lastIndex(),
                   mc.pt(),
                   mc.eta(),
@@ -2513,9 +2555,15 @@ struct FemtoUniverseProducerTask {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       getMagneticFieldTesla(bc);
       const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
-
+      bool colcheck = false;
       // fill the tables
-      const auto colcheck = fillCollisionsCentRun3<true>(col);
+
+      if (ConfGeneral.confIsCent) {
+        colcheck = fillCollisionsCentRun3<true>(col);
+      } else {
+        colcheck = fillCollisions<true>(col, groupedTracks);
+      }
+
       if (colcheck) {
         fillCollisionsCentRun3ColExtra<true>(col, ir);
         fillTracks<true>(groupedTracks);
@@ -2534,7 +2582,11 @@ struct FemtoUniverseProducerTask {
         if (colcheck) {
           auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
           outputCollExtra(1.0, 1.0);
-          fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+          if (!ConfTrkSelection.confIsOnlyMCTrack) {
+            fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+          } else {
+            fillTracksMCTruth(groupedMCParticles);
+          }
         }
       }
     }

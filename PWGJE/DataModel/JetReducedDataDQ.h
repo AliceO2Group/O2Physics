@@ -148,14 +148,6 @@ DECLARE_SOA_TABLE(JDielectron6Dummys, "AOD", "JDIEL6DUMMY",
                   jdummydq::DummyDQ,
                   o2::soa::Marker<6>);
 
-DECLARE_SOA_TABLE(JDielectron7Dummys, "AOD", "JDIEL7DUMMY",
-                  jdummydq::DummyDQ,
-                  o2::soa::Marker<7>);
-
-DECLARE_SOA_TABLE(JDielectron8Dummys, "AOD", "JDIEL8DUMMY",
-                  jdummydq::DummyDQ,
-                  o2::soa::Marker<8>);
-
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JETREDUCEDDATADQ_H_

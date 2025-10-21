@@ -27,10 +27,14 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <string>
@@ -67,7 +71,7 @@ struct FemtoPairTrackV0 {
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
+  Preslice<Tracks> perColTracks = aod::femtobase::stored::collisionId;
 
   // setup for daughters
   trackhistmanager::ConfV0PosDauBinning confPosDauBinning;
@@ -77,13 +81,13 @@ struct FemtoPairTrackV0 {
   v0builder::ConfLambdaSelection1 lambdaSelection;
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
   Partition<Lambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(lambdaSelection);
-  Preslice<Lambdas> perColLambdas = aod::femtobase::stored::fColId;
+  Preslice<Lambdas> perColLambdas = aod::femtobase::stored::collisionId;
 
   // setup k0shorts
   v0builder::ConfK0shortSelection1 k0shortSelection;
   v0histmanager::ConfK0shortBinning1 confK0shortBinning;
   Partition<K0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection);
-  Preslice<K0shorts> perColk0shorts = aod::femtobase::stored::fColId;
+  Preslice<K0shorts> perColk0shorts = aod::femtobase::stored::collisionId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -91,8 +95,8 @@ struct FemtoPairTrackV0 {
   pairbuilder::PairTrackV0Builder<
     trackhistmanager::PrefixTrack1,
     v0histmanager::PrefixLambda1,
-    trackhistmanager::PrefixV0PosDaughter,
-    trackhistmanager::PrefixV0NegDaughter,
+    trackhistmanager::PrefixV0PosDaughter1,
+    trackhistmanager::PrefixV0NegDaughter1,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
     closepairrejection::PrefixTrackV0Se,
@@ -104,8 +108,8 @@ struct FemtoPairTrackV0 {
   pairbuilder::PairTrackV0Builder<
     trackhistmanager::PrefixTrack1,
     v0histmanager::PrefixK0short1,
-    trackhistmanager::PrefixV0PosDaughter,
-    trackhistmanager::PrefixV0NegDaughter,
+    trackhistmanager::PrefixV0PosDaughter1,
+    trackhistmanager::PrefixV0NegDaughter1,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
     closepairrejection::PrefixTrackV0Se,
