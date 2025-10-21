@@ -792,8 +792,8 @@ struct strangenesstofpid {
                             std::abs(pTof.tpcNSigmaPi) < v0Group.qaTPCNSigma &&
                             std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma;
 
-    bool pValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(pTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
-    bool nValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(nTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+    bool pValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(pTof.tofSignal) > o2::aod::v0data::kEpsilon) : true;
+    bool nValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(nTof.tofSignal) > o2::aod::v0data::kEpsilon) : true;
 
     //_____________________________________________________________________________________________
     // Actual calculation
@@ -1062,9 +1062,9 @@ struct strangenesstofpid {
                               std::abs(nTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma &&
                               std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma;
 
-    bool pValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(pTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
-    bool nValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(nTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
-    bool bValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(bTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+    bool pValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(pTof.tofSignal) > o2::aod::v0data::kEpsilon) : true;
+    bool nValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(nTof.tofSignal) > o2::aod::v0data::kEpsilon) : true;
+    bool bValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(bTof.tofSignal) > o2::aod::v0data::kEpsilon) : true;
 
     //_____________________________________________________________________________________________
     // Actual calculation
