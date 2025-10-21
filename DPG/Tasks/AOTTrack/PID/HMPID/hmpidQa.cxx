@@ -319,9 +319,9 @@ struct HmpidQa {
       const float distanceMipToTrack = std::hypot(hmpid.xTrack() - hmpid.xMip(), hmpid.yTrack() - hmpid.yMip());
 
       // quality conditions to check
-      bool physicalChAngle = (hmpid.chAngle() > 0);
-      bool mipChargeCondition = (hmpid.chargeMip() > cutQmip);
-      bool distanceCondition = (distanceMipToTrack < cutDistanceMipTrack);
+      const bool physicalChAngle = (hmpid.chAngle() > 0);
+      const bool mipChargeCondition = (hmpid.chargeMip() > cutQmip);
+      const bool distanceCondition = (distanceMipToTrack < cutDistanceMipTrack);
 
       // fill histograms
       histos.fill(HIST("hmpidMomvsTrackMom"), std::fabs(hmpid.momentumTrack()), std::fabs(hmpid.momentumHmpid()));
