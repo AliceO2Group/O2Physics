@@ -30,16 +30,16 @@ namespace o2::aod
 {
 namespace tpcskims
 {
-DECLARE_SOA_COLUMN(InvDeDxExpTPC, invdEdxExpTPC, float);
+DECLARE_SOA_COLUMN(InvDeDxExpTPC, invDeDxExpTPC, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(BetaGamma, bg, float);
+DECLARE_SOA_COLUMN(BetaGamma, betaGamma, float);
 DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPCPID, normNClustersTPCPID, float);
-DECLARE_SOA_COLUMN(PidIndex, pidIndexTPC, uint8_t);
-DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
-DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
-DECLARE_SOA_COLUMN(NSigITS, nsigITS, float);
+DECLARE_SOA_COLUMN(PidIndex, pidIndex, uint8_t);
+DECLARE_SOA_COLUMN(NSigTPC, nSigTPC, float);
+DECLARE_SOA_COLUMN(NSigTOF, nSigTOF, float);
+DECLARE_SOA_COLUMN(NSigITS, nSigITS, float);
 DECLARE_SOA_COLUMN(AlphaV0, alphaV0, float);
 DECLARE_SOA_COLUMN(QtV0, qtV0, float);
 DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
