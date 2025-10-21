@@ -40,7 +40,7 @@ constexpr double BinsPtTrack[NBinsPtTrack + 1] = {
   2.0,
   3.0,
   1000.0};
-auto vecBinsPtTrack = std::vector<double>{BinsPtTrack, BinsPtTrack + NBinsPtTrack + 1};
+const auto vecBinsPtTrack = std::vector<double>{BinsPtTrack, BinsPtTrack + NBinsPtTrack + 1};
 
 // default values for the dca_xy and dca_z cuts of displaced tracks
 constexpr double CutsTrack[NBinsPtTrack][NCutVarsTrack] = {{0.0000, 10., 0.0000, 100.},  /* 0   < pt < 0.5 */
@@ -86,7 +86,7 @@ static constexpr int NCutBdtScores = 3;
 constexpr double BinsPt[NBinsPt + 1] = {
   0.,
   1000.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutBdtScores] = {{0.1, 0.5, 0.5}};
@@ -134,7 +134,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   16.,
   24.,
   50.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the ML model paths, one model per pT bin
 static const std::vector<std::string> modelPaths = {
@@ -142,7 +142,7 @@ static const std::vector<std::string> modelPaths = {
 
 // default values for the cut directions
 constexpr int CutDir[NCutScores] = {CutGreater, CutSmaller, CutSmaller};
-auto vecCutDir = std::vector<int>{CutDir, CutDir + NCutScores};
+const auto vecCutDir = std::vector<int>{CutDir, CutDir + NCutScores};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutScores] = {
@@ -190,7 +190,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   1.,
   5.,
   1000.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{1.65, 2.15, 0.5, 100.},  /* 1 < pt < 5 */
@@ -214,7 +214,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   1.,
   5.,
   1000.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{1.75, 2.05, 0.7, 0.02},  /* 1 < pt < 5 */
@@ -237,7 +237,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   1.,
   5.,
   1000.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{1.70, 2.15, 0.7, 0.02, 0.02},  /* 1 < pt < 5 */
@@ -260,7 +260,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   1.,
   5.,
   1000.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.17, 0.05},  /* 1 < pt < 5 */
@@ -306,7 +306,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   36.0,
   50.0,
   100.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.400, 350. * 1E-4, 0.8, 0.5, 0.5, 1000. * 1E-4, 1000. * 1E-4, -5000. * 1E-8, 0.80, 0., 0., 10., 10., 0.06, 0.5},   /* 0   < pT < 0.5 */
@@ -400,7 +400,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   36.0,
   50.0,
   100.0};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -480,7 +480,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   24.,
   36.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts                m,  ptP, ptK, ptPi, chi2PCA, dL, cosp, dLXY, NdLXY, ImpParXY, mass(Kpi)
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10, -1.},  /* 0  < pT < 1  */
@@ -541,7 +541,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   8.,
   12.,
   24.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // mLc(GeV)     mK0s(GeV)     mLambdas(GeV)    mGammas(GeV)    ptp     ptK0sdau     ptK0s     d0p     d0K0
@@ -589,7 +589,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   16.,
   24.,
   36.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // selections from pp at 5 TeV 2017 analysis https://alice-notes.web.cern.ch/node/808
@@ -640,7 +640,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   16.,
   24.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // selections from pp at 5 TeV 2017 analysis https://alice-notes.web.cern.ch/node/808
@@ -682,7 +682,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   6.0,
   12.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // pi_pT
@@ -702,6 +702,97 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"pT pi from Omegac"};
 } // namespace hf_cuts_omegac_to_omega_pi
 
+namespace hf_cuts_omegacxic_to_omega_ka
+{
+static constexpr int NBinsPt = 4;
+static constexpr int NCutVars = 1;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+
+  1.0,
+  2.0,
+  4.0,
+  6.0,
+  12.0};
+
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+// pi_pT
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.2},  /* 1 < pt < 2 */
+                                            {0.2},  /* 2 < pt < 4 */
+                                            {0.6},  /* 4 < pt < 6 */
+                                            {0.8}}; /* 6 < pt < 12 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"pT Ka from Omegac"};
+} // namespace hf_cuts_omegacxic_to_omega_ka
+
+namespace hf_cuts_xic_to_xi_pi
+{
+static constexpr int NBinsPt = 11;
+static constexpr int NCutVars = 28;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0.0,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  6.0,
+  8.0,
+  10.0,
+  12.0,
+  16.0,
+  24.0};
+
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.2, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 0 < pt < 1 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 1 < pt < 2 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 2 < pt < 3 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 3 < pt < 4 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 4 < pt < 5 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 5 < pt < 6 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 6 < pt < 8 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 8 < pt < 10 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 10 < pt < 12 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 12 < pt < 16 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4}}; /* 16 < pt < 24 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"ptPiFromCharmBaryon", "cosPACasc", "cosPAV0", "cosPaCascToXic", "cosPaV0ToCasc",
+                                                      "dcaCharmBaryonDau", "dcaCascDau", "dcaV0Dau", "dcaXYToPvCascDau", "dcaXYToPvV0Dau0", "dcaXYToPvV0Dau1", "kfDcaXYPiFromXic", "kfDcaXYCascToPv",
+                                                      "chi2GeoXic", "chi2GeoCasc", "chi2GeoV0",
+                                                      "chi2TopoXicToPv", "chi2TopoPiFromXicToPv", "chi2TopoCascToPv", "chi2TopoV0ToPv", "chi2TopoV0ToCasc", "chi2TopoCascToXic",
+                                                      "cascldl", "v0ldl", "decayLenXYXic", "decayLenXYCasc", "decayLenXYLambda", "cTauXic"};
+} // namespace hf_cuts_xic_to_xi_pi
+
 namespace hf_cuts_xic_to_p_k_pi
 {
 static constexpr int NBinsPt = 10;
@@ -720,7 +811,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   24.,
   36.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts                m    ptP  ptK  ptPi chi2PCA dL   cosp, dLXY, NdL, ct, ImpParXY
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.400, 0.4, 0.4, 0.4, 1e-5, 0.005, 0.8, 0.005, 4., 2., 0.},  /* 0  < pT < 1  */
@@ -753,8 +844,8 @@ static const std::vector<std::string> labelsCutVar = {"m", "pT p", "pT K", "pT P
 
 namespace hf_cuts_xic_to_xi_pi_pi
 {
-static constexpr int NBinsPt = 10;
-static constexpr int NCutVars = 12;
+static constexpr int NBinsPt = 13;
+static constexpr int NCutVars = 13;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double BinsPt[NBinsPt + 1] = {
@@ -765,23 +856,29 @@ constexpr double BinsPt[NBinsPt + 1] = {
   4.,
   5.,
   6.,
+  7.,
   8.,
+  9.,
+  10.,
+  11.,
   12.,
-  24.,
-  36.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+  20.};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
-// default values for the cuts               m   ptXi ptPi0 ptPi1 chi2PCA dL dLXY cosp cospXY impParXY Xi Pi0 Pi1
-constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 0  < pT < 1  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 1  < pT < 2  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 2  < pT < 3  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 3  < pT < 4  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 4  < pT < 5  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 5  < pT < 6  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 6  < pT < 8  */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 8  < pT < 10 */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1},  /* 12 < pT < 24 */
-                                            {0.4, 0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1, 0.1}}; /* 24 < pT < 36 */
+// default values for the cuts                m    Y   Eta EtaPi EtaXi pT Pi0 Pi1 Sum chi2SV dL dLXY invMass Xi-Pi pairs
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 0  < pT < 1  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 1  < pT < 2  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 2  < pT < 3  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 3  < pT < 4  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 4  < pT < 5  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 5  < pT < 6  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 6  < pT < 7  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 7  < pT < 8  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 8  < pT < 9  */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 9  < pT < 10 */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 10 < pT < 11 */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4},  /* 11 < pT < 12 */
+                                            {0.4, 0.8, 0.8, 0.8, 1.0, 0.1, 0.1, 0.2, 100, 0.0, 0.0, 2.4, 2.4}}; /* 12 < pT < 20 */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -794,10 +891,13 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 6",
   "pT bin 7",
   "pT bin 8",
-  "pT bin 9"};
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11",
+  "pT bin 12"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT Xi", "pT Pi0", "pT Pi1", "chi2PCA", "max decay length", "max decay length XY", "cos pointing angle", "cos pointing angle XY", "max impParXY Xi", "max impParXY Pi0", "max impParXY Pi1"};
+static const std::vector<std::string> labelsCutVar = {"m", "y", "eta", "eta Pi from XicPlus", "eta Xi Daughters", "pT Pi0", "pT Pi1", "pT Pi0 + Pi1", "chi2SV", "min decay length", "min decay length XY", "max inv mass Xi-Pi0", "max inv mass Xi-Pi1"};
 } // namespace hf_cuts_xic_to_xi_pi_pi
 
 namespace hf_cuts_xicc_to_p_k_pi_pi
@@ -818,7 +918,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   24.,
   36.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.400, 0.5, 0.2, 1.e-3, 10.0, 1.e-3, 10.0, 9999., 1.e-3, 0.0, 50.0, 50.0, 0.8, 0.8},  /* 0  < pT < 1  */
@@ -867,7 +967,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   10.0,
   15.0,
 };
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.5, 0.2, 0.4, 1, 1.},  /* 0   < pT < 0.5 */
@@ -914,7 +1014,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   10.0,
   16.0,
 };
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 0   < pT < 0.5 */
@@ -964,7 +1064,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   20.0,
   24.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA chi2PCA d0D d0Pi pTD pTPi B0DecayLength B0DecayLengthXY IPProd DeltaMD CthetaStr
@@ -1018,7 +1118,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   16.0,
   24.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA chi2PCA d0Ds d0Pi pTDs pTPi BsDecayLength BsDecayLengthXY IPProd
@@ -1071,7 +1171,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   20.0,
   24.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi JpsiIPProd
@@ -1127,7 +1227,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   20.0,
   24.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA d0D0 d0Pi pTD0 pTPi BDecayLength BDecayLengthXY IPProd DeltaMD0 CthetaStr
@@ -1183,7 +1283,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   20.0,
   24.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi JpsiIPProd
@@ -1239,7 +1339,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   20.0,
   24.0};
 
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA chi2PCA d0Lc d0Pi pTLc pTPi LbDecayLength LbDecayLengthXY IPProd DeltaMLc CthetaStr
@@ -1292,7 +1392,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   10.0,
   15.0,
 };
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 //                                            m   CPA  d0Jpsi  d0Pi pTJpsi pTPi chi2PCA
@@ -1339,7 +1439,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   10.0,
   15.0,
 };
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 //                                            m   CPA  d0Jpsi  d0gamma pTJpsi pTgamma chi2PCA
@@ -1385,7 +1485,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   24.,
   36.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.03, 0.03},  /* 0  < pT < 1  */

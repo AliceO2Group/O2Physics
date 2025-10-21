@@ -9,13 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file gammaConvDefinitions.h
 /// \brief commonly used definitions for gammaConv tasks
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_UTILS_GAMMACONVDEFINITIONS_H_
 #define PWGEM_PHOTONMESON_UTILS_GAMMACONVDEFINITIONS_H_
 
-#include "Framework/AnalysisTask.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/HistogramSpec.h>
 
 using namespace o2::framework;
 

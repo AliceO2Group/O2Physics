@@ -44,7 +44,7 @@ enum EventRejection {
   NEventRejection
 };
 
-o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
+inline o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram

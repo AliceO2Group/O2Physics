@@ -11,35 +11,39 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <iostream>
-#include <vector>
-#include <map>
-#include <string>
-#include <memory>
-#include <cstring>
-#include <TH1.h>
-#include <THashList.h>
-#include <TString.h>
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TH1.h>
+#include <THashList.h>
+#include <TString.h>
+
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -179,8 +183,8 @@ struct DQBarrelTrackSelection {
 
   Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
 

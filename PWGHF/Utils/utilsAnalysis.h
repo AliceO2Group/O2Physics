@@ -35,9 +35,9 @@ enum BHadMothers { NotMatched = 0,
                    LambdaBZero };
 
 /// Convert the B hadron mother PDG for non prompt candidates to a flag
-/// \param pdg of the b hadron mother
+/// \param flagBHad pdg of the b hadron mother
 /// \return integer map to specific mothers' PDG codes
-BHadMothers getBHadMotherFlag(const int flagBHad)
+inline BHadMothers getBHadMotherFlag(const int flagBHad)
 {
   if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
     return BHadMothers::BPlus;
@@ -54,21 +54,21 @@ BHadMothers getBHadMotherFlag(const int flagBHad)
   return BHadMothers::NotMatched;
 }
 
-/// Finds pT bin in an array.
-/// \param bins  array of pT bins
-/// \param value  pT
+/// Finds bin in an array that contains a value.
+/// \param bins  array of bins
+/// \param value  value to find
 /// \return index of the pT bin
 /// \note Accounts for the offset so that pT bin array can be used to also configure a histogram axis.
-template <typename T1, typename T2>
-int findBin(T1 const& binsPt, T2 value)
+template <typename TArrayPt, typename TNumber>
+int findBin(TArrayPt const& bins, TNumber const value)
 {
-  if (value < binsPt->front()) {
+  if (value < bins->front()) {
     return -1;
   }
-  if (value >= binsPt->back()) {
+  if (value >= bins->back()) {
     return -1;
   }
-  return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
+  return std::distance(bins->begin(), std::upper_bound(bins->begin(), bins->end(), value)) - 1;
 }
 
 /// Single-track cut on DCAxy and DCAz
@@ -78,8 +78,12 @@ int findBin(T1 const& binsPt, T2 value)
 /// \param dcaXY is the prong dcaXY
 /// \param dcaZ is the prong dcaZ
 /// \return true if track passes all cuts
-template <typename T1, typename T2>
-bool isSelectedTrackDca(T1 const& binsPt, T2 const& cuts, const float pt, const float dcaXY, const float dcaZ)
+template <typename TArrayPt, typename TArrayCuts>
+bool isSelectedTrackDca(TArrayPt const& binsPt,
+                        TArrayCuts const& cuts,
+                        const float pt,
+                        const float dcaXY,
+                        const float dcaZ)
 {
   auto binPt = findBin(binsPt, pt);
   if (binPt == -1) {
@@ -105,8 +109,10 @@ bool isSelectedTrackDca(T1 const& binsPt, T2 const& cuts, const float pt, const 
 /// \param itsNClustersFoundMin is the minimum number of ITS clusters
 /// \param itsChi2PerClusterMax is the maximum value of chi2 fit over ITS clusters
 /// \return true if track passes all cuts
-template <typename T>
-bool isSelectedTrackItsQuality(T const& track, const int itsNClustersFoundMin, const float itsChi2PerClusterMax)
+template <typename TTrack>
+bool isSelectedTrackItsQuality(TTrack const& track,
+                               const int itsNClustersFoundMin,
+                               const float itsChi2PerClusterMax)
 {
   if (track.itsNCls() < itsNClustersFoundMin) {
     return false;
@@ -124,8 +130,12 @@ bool isSelectedTrackItsQuality(T const& track, const int itsNClustersFoundMin, c
 /// \param tpcNCrossedRowsOverFindableClustersMin is the minimum of TPC CrossedRows/FindableClusters value
 /// \param tpcChi2PerClusterMax is the maximum value of chi2 fit over TPC clusters
 /// \return true if track passes all cuts
-template <typename T>
-bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, const int tpcNCrossedRowsMin, const float tpcNCrossedRowsOverFindableClustersMin, const float tpcChi2PerClusterMax)
+template <typename TTrack>
+bool isSelectedTrackTpcQuality(TTrack const& track,
+                               const int tpcNClustersFoundMin,
+                               const int tpcNCrossedRowsMin,
+                               const float tpcNCrossedRowsOverFindableClustersMin,
+                               const float tpcChi2PerClusterMax)
 {
   if (track.tpcNClsFound() < tpcNClustersFoundMin) {
     return false;
@@ -142,7 +152,7 @@ bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, c
   return true;
 }
 
-/// Mass selection of 2 or 3 prong canidates in triggered data analysis
+/// Mass selection of 2 or 3 prong candidates in triggered data analysis
 /// \tparam nProngs switch between 2-prong and 3-prong selection
 /// \param invMass is the invariant mass of the candidate
 /// \param pdgMass is the pdg Mass of the candidate particle
@@ -150,10 +160,13 @@ bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, c
 /// \param cutConfig is the struct with the pt-dependent mass configurations
 /// \return true if candidate passes selection
 template <typename Config>
-bool isCandidateInMassRange(const float& invMass, const double& pdgMass, const float& pt, Config const& cutConfig)
+bool isCandidateInMassRange(const float invMass,
+                            const double pdgMass,
+                            const float pt,
+                            Config const& cutConfig)
 {
-  float peakMean = (pt < cutConfig.ptDeltaMassMax.value) ? ((pdgMass + cutConfig.deltaMassPars->get("constant")) + cutConfig.deltaMassPars->get("linear") * pt) : pdgMass;
-  float peakWidth = cutConfig.sigmaPars->get("constant") + cutConfig.sigmaPars->get("linear") * pt;
+  const float peakMean = (pt < cutConfig.ptDeltaMassMax.value) ? ((pdgMass + cutConfig.deltaMassPars->get("constant")) + cutConfig.deltaMassPars->get("linear") * pt) : pdgMass;
+  const float peakWidth = cutConfig.sigmaPars->get("constant") + cutConfig.sigmaPars->get("linear") * pt;
 
   return (!(std::abs(invMass - peakMean) > cutConfig.nSigmaMax.value * peakWidth && pt < cutConfig.ptMassCutMax.value));
 }
@@ -164,9 +177,9 @@ struct HfTrigger2ProngCuts : o2::framework::ConfigurableGroup {
 
   static constexpr float DefaultDeltaMassPars[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float DefaultSigmaPars[1][2] = {{0.01424f, 0.00178f}};
-  o2::framework::Configurable<float> nSigmaMax{"nSigmaMax", 2, "Maximum number of sigmas for pT-differential mass cut for 2-prong candidates"};
-  o2::framework::Configurable<float> ptDeltaMassMax{"ptDeltaMassMax", 10., "Max pT to apply delta mass shift to PDG mass value for 2-prong candidates"};
-  o2::framework::Configurable<float> ptMassCutMax{"ptMassCutMax", 9999., "Max pT to apply pT-differential cut for 2-prong candidates"};
+  o2::framework::Configurable<float> nSigmaMax{"nSigmaMax", 2.f, "Maximum number of sigmas for pT-differential mass cut for 2-prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMassMax{"ptDeltaMassMax", 10.f, "Max pT to apply delta mass shift to PDG mass value for 2-prong candidates"};
+  o2::framework::Configurable<float> ptMassCutMax{"ptMassCutMax", 9999.f, "Max pT to apply pT-differential cut for 2-prong candidates"};
   o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars{"deltaMassPars", {DefaultDeltaMassPars[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 2-prong trigger mass cut"};
   o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars{"sigmaPars", {DefaultSigmaPars[0], 2, {"constant", "linear"}}, "sigma parameters for HF 2-prong trigger mass cut"};
 };
@@ -178,8 +191,8 @@ struct HfTrigger3ProngCuts : o2::framework::ConfigurableGroup {
   static constexpr float DefaultDeltaMassPars[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float DefaultSigmaPars[1][2] = {{0.00796f, 0.00176f}};
   o2::framework::Configurable<float> nSigmaMax{"nSigmaMax", 2, "Maximum number of sigmas for pT-differential mass cut for 3-prong candidates"};
-  o2::framework::Configurable<float> ptDeltaMassMax{"ptDeltaMassMax", 10., "Max pT to apply delta mass shift to PDG mass value for 3-prong candidates"};
-  o2::framework::Configurable<float> ptMassCutMax{"ptMassCutMax", 9999., "Max pT to apply pT-differential cut for 3-prong candidates"};
+  o2::framework::Configurable<float> ptDeltaMassMax{"ptDeltaMassMax", 10.f, "Max pT to apply delta mass shift to PDG mass value for 3-prong candidates"};
+  o2::framework::Configurable<float> ptMassCutMax{"ptMassCutMax", 9999.f, "Max pT to apply pT-differential cut for 3-prong candidates"};
   o2::framework::Configurable<o2::framework::LabeledArray<float>> deltaMassPars{"deltaMassPars", {DefaultDeltaMassPars[0], 2, {"constant", "linear"}}, "delta mass parameters for HF 3-prong trigger mass cut"};
   o2::framework::Configurable<o2::framework::LabeledArray<float>> sigmaPars{"sigmaPars", {DefaultSigmaPars[0], 2, {"constant", "linear"}}, "sigma parameters for HF 3-prong trigger mass cut"};
 };

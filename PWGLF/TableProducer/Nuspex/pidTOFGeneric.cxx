@@ -11,33 +11,37 @@
 
 ///
 /// \file   pidTOFGeneric.cxx
-/// \origin Based on pidTOFBase.cxx
+/// \origin Based on pidTOFMerged.cxx
 /// \brief  Task to produce event Time obtained from TOF and FT0.
-///         In order to redo TOF PID for tracks which are linked to wrong collisions
+///         In order to redo TOF PID for secondary tracks which are linked to wrong collisions
+/// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 ///
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 // O2 includes
 #include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
+#include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
+#include "PWGLF/Utils/pidTOFGeneric.h"
+
 #include "Common/Core/TableHelper.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "PID/ParamBase.h"
 #include "PID/PIDTOF.h"
-#include "PWGLF/DataModel/pidTOFGeneric.h"
+#include "PID/ParamBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,13 +49,19 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
+o2::common::core::MetadataHelper metadataInfo;
+
 /// Selection criteria for tracks used for TOF event time
 float trackSampleMinMomentum = 0.5f;
 float trackSampleMaxMomentum = 2.f;
 template <typename trackType>
 bool filterForTOFEventTime(const trackType& tr)
 {
-  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
+  return (tr.hasTOF() &&
+          tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum &&
+          tr.hasITS() &&
+          tr.hasTPC() &&
+          (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
 } // accept all
 
 /// Specialization of TOF event time maker
@@ -69,342 +79,275 @@ o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& track
 }
 
 /// Task to produce the event time tables for generic TOF PID
+/// Modified based on pidTOFMerge.cxx
 struct pidTOFGeneric {
   // Tables to produce
   Produces<o2::aod::EvTimeTOFFT0> tableEvTime;                 // Table for global event time
   Produces<o2::aod::EvTimeTOFFT0ForTrack> tableEvTimeForTrack; // Table for event time after removing bias from the track
-  static constexpr float diamond = 6.0;                        // Collision diamond used in the estimation of the TOF event time
-  static constexpr float errDiamond = diamond * 33.356409f;
-  static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
+  static constexpr bool kRemoveTOFEvTimeBias = true;           // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
+  static constexpr float kDiamond = 6.0;                       // Collision diamond used in the estimation of the TOF event time
+  static constexpr float kErrDiamond = kDiamond * 33.356409f;
+  static constexpr float kWeightDiamond = 1.f / (kErrDiamond * kErrDiamond);
 
   bool enableTable = false;
-  // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
+
   Configurable<bool> fastTOFPID{"fastTOFPID", false, "Flag to enable computeEvTimeFast for evTimeMaker"};
-  // CCDB configuration (inherited from TOF signal task)
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   // Event time configurations
   Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
   Configurable<float> maxMomentum{"maxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
   Configurable<float> maxEvTimeTOF{"maxEvTimeTOF", 100000.0f, "Maximum value of the TOF event time"};
   Configurable<bool> sel8TOFEvTime{"sel8TOFEvTime", false, "Flag to compute the ev. time only for events that pass the sel8 ev. selection"};
+  Configurable<int> mComputeEvTimeWithTOF{"computeEvTimeWithTOF", -1, "Compute ev. time with TOF. -1 (autoset), 0 no, 1 yes"};
+  Configurable<int> mComputeEvTimeWithFT0{"computeEvTimeWithFT0", -1, "Compute ev. time with FT0. -1 (autoset), 0 no, 1 yes"};
   Configurable<int> maxNtracksInSet{"maxNtracksInSet", 10, "Size of the set to consider for the TOF ev. time computation"};
-  // TOF Calib configuration
-  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
-  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
-  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
-  Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
-  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
-  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+
+  // TOF response and input parameters
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::aod::pidtofgeneric::TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (inheritFromBaseTask.value) {
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
-        LOG(fatal) << "Could not get ccdb-url from tof-signal task";
+    mTOFCalibConfig.metadataInfo = metadataInfo;
+    mTOFCalibConfig.inheritFromBaseTask(initContext);
+    // Checking that the table is requested in the workflow and enabling it
+    enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0") || isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0ForTrack");
+    if (!enableTable) {
+      LOG(info) << "Table for global Event time is not required, disabling it";
+      // return;  //TODO: uncomment this line
+    }
+    enableTable = true; // Force enabling the table for now
+    LOG(info) << "Table EvTimeTOFFT0 enabled!";
+
+    if (mTOFCalibConfig.autoSetProcessFunctions()) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        }
       }
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
-        LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
+    }
+
+    if (metadataInfo.isFullyDefined()) {
+      if (!metadataInfo.isRun3()) {
+        LOG(fatal) << "Run3 process not supported in pidTOFGeneric task";
       }
     }
 
     trackSampleMinMomentum = minMomentum;
     trackSampleMaxMomentum = maxMomentum;
     LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;
-    // Check that both processes are not enabled
-    int nEnabled = 0;
-    if (doprocessNoFT0 == true) {
-      LOGF(info, "Enabling process function: processNoFT0");
-      nEnabled++;
-    }
-    if (doprocessFT0 == true) {
-      LOGF(info, "Enabling process function: processFT0");
-      nEnabled++;
-    }
-    if (doprocessOnlyFT0 == true) {
-      LOGF(info, "Enabling process function: processOnlyFT0");
-      nEnabled++;
-    }
-    if (nEnabled > 1) {
-      LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
-    }
-    // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0") || isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0ForTrack");
-    if (!enableTable) {
-      LOG(info) << "Table for global Event time is not required, disabling it";
-      return;
-    }
-    LOG(info) << "Table EvTimeTOFFT0 enabled!";
 
     if (sel8TOFEvTime.value == true) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
     }
-    // Getting the parametrization parameters
-    ccdb->setURL(url.value);
-    ccdb->setTimestamp(timestamp.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    //
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
 
-    // TODO: implement the automatic pass name detection from metadata
-    if (passName.value == "") {
-      passName.value = "unanchored"; // temporary default
-      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << passName.value << "'";
-    }
-    LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
-
-    const std::string fname = paramFileName.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << parametrizationPath.value;
-      if (1) {
-        o2::tof::ParameterCollection paramCollection;
-        paramCollection.loadParamFromFile(fname, parametrizationPath.value);
-        LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
-          if (fatalOnPassNotAvailable) {
-            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-          } else {
-            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-          }
-        } else {
-          mRespParamsV2.setShiftParameters(paramCollection.getPars(passName.value));
-          mRespParamsV2.printShiftParameters();
-        }
-      } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
-      }
-    } else if (loadResponseFromCCDB) { // Loading it from CCDB
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
-
-      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
-      paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
-        if (fatalOnPassNotAvailable) {
-          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-        } else {
-          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-        }
-      } else {
-        mRespParamsV2.setShiftParameters(paramCollection->getPars(passName.value));
-        mRespParamsV2.printShiftParameters();
-      }
-    }
-    mRespParamsV2.print();
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
   }
 
+  void process(aod::BCs const&) {}
+
   ///
-  /// Process function to prepare the event time on Run 3 data without the FT0
-  using TrksEvTime = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal>;
+  /// Process function to prepare the event for each track on Run 3 data without the FT0
   // Define slice per collision
-  Preslice<TrksEvTime> perCollision = aod::track::collisionId;
-  template <o2::track::PID::ID pid>
-  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
-  using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  void processNoFT0(TrksEvTime& tracks,
-                    EvTimeCollisions const& collisions)
-  {
-    if (!enableTable) {
-      return;
-    }
-    tableEvTime.reserve(collisions.size());
-    tableEvTimeForTrack.reserve(tracks.size());
-
-    // for tracks not assigned to a collision
-    for (auto track : tracks) {
-      if (!track.has_collision()) {
-        tableEvTimeForTrack(0.f, 999.f);
-      }
-    }
-
-    for (auto const& collision : collisions) { // Loop on collisions
-      const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
-      if ((sel8TOFEvTime.value == true) && !collision.sel8()) {
-        tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
-        for (int i = 0; i < tracksInCollision.size(); i++) {
-          tableEvTimeForTrack(0.f, 999.f);
-        }
-        continue;
-      }
-
-      // First make table for event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond, fastTOFPID);
-      int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
-      float et = evTimeTOF.mEventTime;
-      float erret = evTimeTOF.mEventTimeError;
-
-      if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
-      } else {
-        et = 0.f;
-        erret = errDiamond;
-      }
-      tableEvTime(et, erret, et, erret, 0.f, 999.f);
-      for (auto const& track : tracksInCollision) {
-        evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(track, nGoodTracksForTOF, et, erret, 2);
-        if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
-        } else {
-          et = 0.f;
-          erret = errDiamond;
-        }
-        tableEvTimeForTrack(et, erret);
-      }
-    }
-  }
-  PROCESS_SWITCH(pidTOFGeneric, processNoFT0, "Process without FT0", false);
-
-  ///
-  /// Process function to prepare the event for each track on Run 3 data with the FT0
+  using Run3Cols = aod::Collisions;
+  using EvTimeCollisions = soa::Join<Run3Cols, aod::EvSels>;
   using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
-  void processFT0(TrksEvTime& tracks,
-                  aod::FT0s const&,
-                  EvTimeCollisionsFT0 const& collisions)
+  using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
+  using Run3TrksWtof = soa::Join<Run3Trks, aod::TOFSignal>;
+  Preslice<Run3TrksWtof> perCollision = aod::track::collisionId;
+  template <o2::track::PID::ID pid>
+  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
+
+  void processRun3(Run3TrksWtof const& tracks,
+                   aod::FT0s const&,
+                   EvTimeCollisionsFT0 const& collisions,
+                   aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTable) {
       return;
     }
+    LOG(debug) << "Processing Run3 data for TOF event time";
+
     tableEvTime.reserve(collisions.size());
     tableEvTimeForTrack.reserve(tracks.size());
-    std::vector<float> tEvTimeForTrack;
-    std::vector<float> tEvTimeErrForTrack;
-    tEvTimeForTrack.resize(tracks.size());
-    tEvTimeErrForTrack.resize(tracks.size());
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
-    // for tracks not assigned to a collision
-    for (auto track : tracks) {
-      if (!track.has_collision()) {
-        tEvTimeForTrack[track.globalIndex()] = 0.f;
-        tEvTimeErrForTrack[track.globalIndex()] = 999.f;
+    // Autoset the processing mode for the event time computation
+    if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
+      switch (mTOFCalibConfig.collisionSystem()) {
+        case CollisionSystemType::kCollSyspp: // pp
+          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
+          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
+          break;
+        case CollisionSystemType::kCollSysPbPb: // PbPb
+          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
+          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
+          break;
+        default:
+          LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
+          break;
       }
     }
+    LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
-    for (auto const& collision : collisions) { // Loop on collisions
-      const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
-      if ((sel8TOFEvTime.value == true) && !collision.sel8()) {
-        tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
-        for (auto track : tracksInCollision) {
-          tEvTimeForTrack[track.globalIndex()] = 0.f;
-          tEvTimeErrForTrack[track.globalIndex()] = 999.f;
+    if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
+      int lastCollisionId = -1;                                                                                       // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                                  // Loop on collisions
+        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+          tableEvTimeForTrack(0.f, 999.f);
+          continue;
         }
-        continue;
-      }
-
-      // Compute the TOF event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond, fastTOFPID);
-
-      float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
-      float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
-
-      float eventTime = 0.f;
-      float sumOfWeights = 0.f;
-      float weight = 0.f;
-
-      if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
-        weight = 1.f / (t0TOF[1] * t0TOF[1]);
-        eventTime += t0TOF[0] * weight;
-        sumOfWeights += weight;
-      }
-
-      if (collision.has_foundFT0()) { // T0 measurement is available
-        // const auto& ft0 = collision.foundFT0();
-        if (collision.t0ACValid()) {
-          t0AC[0] = collision.t0AC() * 1000.f;
-          t0AC[1] = collision.t0resolution() * 1000.f;
+        if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
+          continue;
         }
+        /// Create new table for the tracks in a collision
+        lastCollisionId = t.collisionId(); /// Cache last collision ID
 
-        weight = 1.f / (t0AC[1] * t0AC[1]);
-        eventTime += t0AC[0] * weight;
-        sumOfWeights += weight;
-      }
+        const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
+        const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
-      if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
-        eventTime = 0;
-        sumOfWeights = weightDiamond;
-      }
-      tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], t0AC[0], t0AC[1]);
+        // Compute the TOF event time
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond, fastTOFPID);
 
-      int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
-      for (auto const& track : tracksInCollision) {
-        // Reset the event time
-        eventTime = 0.f;
-        sumOfWeights = 0.f;
-        weight = 0.f;
-        // Remove the bias on TOF ev. time
-        evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(track, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
-        if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+        float t0AC[2] = {.0f, 999.f};                                                                                             // Value and error of T0A or T0C or T0AC
+        float t0TOF[2] = {static_cast<float_t>(evTimeMakerTOF.mEventTime), static_cast<float_t>(evTimeMakerTOF.mEventTimeError)}; // Value and error of TOF
+
+        int nGoodTracksForTOF = 0;
+        float eventTime = 0.f;
+        float sumOfWeights = 0.f;
+        float weight = 0.f;
+
+        if (t0TOF[1] < kErrDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
           weight = 1.f / (t0TOF[1] * t0TOF[1]);
           eventTime += t0TOF[0] * weight;
           sumOfWeights += weight;
         }
 
-        // Add the contribution from FT0 if it is available, t0AC is already calculated
-        if (collision.has_foundFT0()) {
+        if (collision.has_foundFT0()) { // T0 measurement is available
+          // const auto& ft0 = collision.foundFT0();
+          if (collision.t0ACValid()) {
+            t0AC[0] = collision.t0AC() * 1000.f;
+            t0AC[1] = collision.t0resolution() * 1000.f;
+          }
+
           weight = 1.f / (t0AC[1] * t0AC[1]);
           eventTime += t0AC[0] * weight;
           sumOfWeights += weight;
         }
 
-        if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
-          eventTime = 0;
-          sumOfWeights = weightDiamond;
-        }
-        tEvTimeForTrack[track.globalIndex()] = eventTime / sumOfWeights;
-        tEvTimeErrForTrack[track.globalIndex()] = sqrt(1. / sumOfWeights);
-      }
-    }
-    for (int i = 0; i < tracks.size(); i++) {
-      tableEvTimeForTrack(tEvTimeForTrack[i], tEvTimeErrForTrack[i]);
-    }
-  }
-  PROCESS_SWITCH(pidTOFGeneric, processFT0, "Process with FT0", true);
+        tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights), t0TOF[0], t0TOF[1], t0AC[0], t0AC[1]);
 
-  ///
-  /// Process function to prepare the event time on Run 3 data with only the FT0
-  void processOnlyFT0(EvTimeCollisionsFT0 const& collisions,
-                      TrksEvTime& tracks,
-                      aod::FT0s const&)
-  {
-    if (!enableTable) {
-      return;
-    }
-    tableEvTime.reserve(collisions.size());
-    tableEvTimeForTrack.reserve(tracks.size());
-
-    // for tracks not assigned to a collision
-    for (auto track : tracks) {
-      if (!track.has_collision()) {
-        tableEvTimeForTrack(0.f, 999.f);
-      }
-    }
-
-    for (auto const& collision : collisions) {
-      const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
-      if (collision.has_foundFT0()) { // T0 measurement is available
-        // const auto& ft0 = collision.foundFT0();
-        if (collision.t0ACValid()) {
-          tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f, 0.f, 999.f, collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
-          for (int i = 0; i < tracks.size(); i++) {
-            tableEvTimeForTrack(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+        for (auto const& trk : tracksInCollision) { // Loop on Tracks
+          // Reset the event time
+          eventTime = 0.f;
+          sumOfWeights = 0.f;
+          weight = 0.f;
+          // Remove the bias on TOF ev. time
+          if constexpr (kRemoveTOFEvTimeBias) {
+            evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
-          return;
+          if (t0TOF[1] < kErrDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
+            weight = 1.f / (t0TOF[1] * t0TOF[1]);
+            eventTime += t0TOF[0] * weight;
+            sumOfWeights += weight;
+          }
+
+          if (collision.has_foundFT0()) { // T0 measurement is available
+            // const auto& ft0 = collision.foundFT0();
+            if (collision.t0ACValid()) {
+              t0AC[0] = collision.t0AC() * 1000.f;
+              t0AC[1] = collision.t0resolution() * 1000.f;
+            }
+
+            weight = 1.f / (t0AC[1] * t0AC[1]);
+            eventTime += t0AC[0] * weight;
+            sumOfWeights += weight;
+          }
+
+          if (sumOfWeights < kWeightDiamond) { // avoiding sumOfWeights = 0 or worse that kDiamond
+            eventTime = 0;
+            sumOfWeights = kWeightDiamond;
+          }
+          tableEvTimeForTrack(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
         }
       }
-      tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
-      for (int i = 0; i < tracksInCollision.size(); i++) {
-        tableEvTimeForTrack(0.f, 999.f);
+    } else if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 0) {
+      int lastCollisionId = -1;                                                                                    // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                               // Loop on collisions
+        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+          tableEvTimeForTrack(0.f, 999.f);
+          continue;
+        }
+        if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
+          continue;
+        }
+        /// Create new table for the tracks in a collision
+        lastCollisionId = t.collisionId(); /// Cache last collision ID
+
+        const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
+
+        // First make table for event time
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond, fastTOFPID);
+        int nGoodTracksForTOF = 0;
+        float et = evTimeMakerTOF.mEventTime;
+        float erret = evTimeMakerTOF.mEventTimeError;
+
+        if (erret < kErrDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
+        } else {
+          et = 0.f;
+          erret = kErrDiamond;
+        }
+        tableEvTime(et, erret, et, erret, 0.f, 999.f);
+
+        for (auto const& trk : tracksInCollision) { // Loop on Tracks
+          if constexpr (kRemoveTOFEvTimeBias) {
+            evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
+          }
+          if (erret < kErrDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
+          } else {
+            et = 0.f;
+            erret = kErrDiamond;
+          }
+          tableEvTimeForTrack(et, erret);
+        }
       }
+    } else if (mComputeEvTimeWithTOF == 0 && mComputeEvTimeWithFT0 == 1) {
+      for (const auto& track : tracks) {
+        if (!track.has_collision()) {
+          tableEvTimeForTrack(0.f, 999.f);
+        }
+      }
+
+      for (auto const& collision : collisions) {
+        const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
+        if (collision.has_foundFT0()) { // T0 measurement is available
+          // const auto& ft0 = collision.foundFT0();
+          if (collision.t0ACValid()) {
+            tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f, 0.f, 999.f, collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+            for (int i = 0; i < tracksInCollision.size(); i++) {
+              tableEvTimeForTrack(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+            }
+            continue;
+          }
+        }
+        tableEvTime(0.f, 999.f, 0.f, 999.f, 0.f, 999.f);
+        for (int i = 0; i < tracksInCollision.size(); i++) {
+          tableEvTimeForTrack(0.f, 999.f);
+        }
+      }
+    } else {
+      LOG(fatal) << "Invalid configuration for TOF event time computation";
     }
   }
-  PROCESS_SWITCH(pidTOFGeneric, processOnlyFT0, "Process only with FT0", false);
+  PROCESS_SWITCH(pidTOFGeneric, processRun3, "Process the Run3 data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<pidTOFGeneric>(cfgc)};
 }

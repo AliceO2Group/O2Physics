@@ -14,12 +14,15 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/RecoDecay.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -85,14 +88,14 @@ struct HfTaskCorrelationHfeHadrons {
 
   PROCESS_SWITCH(HfTaskCorrelationHfeHadrons, process, "Process ", false);
 
-  void processMcGen(aod::HfEHadronMcPair const& McGenpairEntries)
+  void processMcGen(aod::HfEHadronMcPair const& mcGenpairEntries)
   {
     double deltaPhi = -999;
     double deltaEta = -999;
     double ptHadron = -999;
     double ptElectron = -999;
 
-    for (const auto& pairEntry : McGenpairEntries) {
+    for (const auto& pairEntry : mcGenpairEntries) {
 
       deltaPhi = pairEntry.deltaPhi();
       deltaEta = pairEntry.deltaEta();
@@ -100,7 +103,7 @@ struct HfTaskCorrelationHfeHadrons {
       ptHadron = pairEntry.ptHadron();
 
       registry.fill(HIST("hMcGenInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-      if (pairEntry.isNonHfEHCorr()) {
+      if (pairEntry.isNonHfEHCorr() != 0) {
 
         registry.fill(HIST("hMcGenNonHfEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
       }

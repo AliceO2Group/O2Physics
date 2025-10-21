@@ -23,6 +23,7 @@
 
 #include "TParticlePDG.h"
 
+#include <cmath>
 #include <vector>
 
 namespace o2
@@ -69,7 +70,7 @@ bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase 
   ParticlesEtaAndCharge.resize(nParticles);
 
   auto etaChargeConditionFunc = [](EtaCharge elem) {
-    return ((TMath::Abs(elem.eta) < 1.0) && (TMath::Abs(elem.charge) > 0.001));
+    return ((std::abs(elem.eta) < 1.0) && (std::abs(elem.charge) > 0.001));
   };
 
   if (std::count_if(ParticlesEtaAndCharge.begin(), ParticlesEtaAndCharge.end(), etaChargeConditionFunc) > nChToSatisfySelection) {

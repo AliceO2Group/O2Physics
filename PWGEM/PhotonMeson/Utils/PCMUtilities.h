@@ -9,17 +9,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \commonly used for PCM analyses.
+/// \file PCMUtilities.h
+/// \brief helper functions commonly used for PCM analyses.
 /// \author daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 
-#include <TVector2.h>
-#include "DCAFitter/HelixHelper.h"
-#include "DetectorsBase/Propagator.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <DetectorsBase/Propagator.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+
+#include <TVector2.h>
+
+#include <array>
+#include <cmath>
+
+#include <math.h>
 
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
@@ -64,8 +74,8 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-  float alphaPos = M_PI + std::atan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
-  float alphaNeg = M_PI + std::atan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
+  float alphaPos = o2::constants::math::PI + std::atan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
+  float alphaNeg = o2::constants::math::PI + std::atan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
 
   float vertexXPos = helixPos.xC + helixPos.rC * std::cos(alphaPos);
   float vertexYPos = helixPos.yC + helixPos.rC * std::sin(alphaPos);
@@ -105,79 +115,79 @@ inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrac
   Vtx_recalculationParCov<TrackPrecision>(prop, trackPosInformation, trackNegInformation, xyz, matCorr);
 }
 //_______________________________________________________________________
-template <typename TV0>
-float getPtResolution(TV0 const& v0)
-{
-  float px = v0.px();
-  float py = v0.py();
-  float pt = v0.pt();
-  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-  float pxy_err = v0.sigmaPxPy();
-  return std::sqrt(std::pow(px / pt * px_err, 2) + std::pow(py / pt * py_err, 2) + 2.f * px / pt * py / pt * pxy_err);
-}
-//_______________________________________________________________________
-template <typename TV0>
-float getPhiResolution(TV0 const& v0)
-{
-  float px = v0.px();
-  float py = v0.py();
-  float pt = v0.pt();
-  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-  float pxy_err = v0.sigmaPxPy();
-  return std::sqrt(std::pow(px / pt / pt * py_err, 2) + std::pow(py / pt / pt * px_err, 2) - 2.f * px / pt / pt * py / pt / pt * pxy_err);
-}
-//_______________________________________________________________________
-template <typename TV0>
-float getThetaResolution(TV0 const& v0)
-{
-  float px = v0.px();
-  float py = v0.py();
-  float pz = v0.pz();
-  float pt = v0.pt();
-  float p = v0.p();
-  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-  float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-  float pxy_err = v0.sigmaPxPy();
-  float pyz_err = v0.sigmaPyPz();
-  float pzx_err = v0.sigmaPzPx();
-  return std::sqrt(std::pow(pz * pz / p / p, 2) * (std::pow(px / pz / pt * px_err, 2) + std::pow(py / pz / pt * py_err, 2) + std::pow(pt / pz / pz * pz_err, 2) + 2.f * (px * py / pz / pz / pt / pt * pxy_err - py / pz / pz / pz * pyz_err - px / pz / pz / pz * pzx_err)));
-}
-//_______________________________________________________________________
-template <typename TV0>
-float getEtaResolution(TV0 const& v0)
-{
-  float px = v0.px();
-  float py = v0.py();
-  float pz = v0.pz();
-  float pt = v0.pt();
-  float p = v0.p();
-  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-  float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-  float pxy_err = v0.sigmaPxPy();
-  float pyz_err = v0.sigmaPyPz();
-  float pzx_err = v0.sigmaPzPx();
-  return std::sqrt(std::pow(1.f / p / pt / pt, 2) * (std::pow(pz * px * px_err, 2) + std::pow(pz * py * py_err, 2) + std::pow(pt * pt * pz_err, 2) + 2.f * (pz * pz * px * py * pxy_err - pt * pt * py * pz * pyz_err - pt * pt * pz * px * pzx_err)));
-}
-//_______________________________________________________________________
-template <typename TV0>
-float getPResolution(TV0 const& v0)
-{
-  float px = v0.px();
-  float py = v0.py();
-  float pz = v0.pz();
-  float p = v0.p();
-  float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-  float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-  float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-  float pxy_err = v0.sigmaPxPy();
-  float pyz_err = v0.sigmaPyPz();
-  float pzx_err = v0.sigmaPzPx();
-  return std::sqrt(std::pow(1.f / p, 2) * (std::pow(px * px_err, 2) + std::pow(py * py_err, 2) + std::pow(pz * pz_err, 2) + 2.f * (px * py * pxy_err + py * pz * pyz_err + pz * px * pzx_err)));
-}
+// template <typename TV0>
+// float getPtResolution(TV0 const& v0)
+// {
+//   float px = v0.px();
+//   float py = v0.py();
+//   float pt = v0.pt();
+//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+//   float pxy_err = v0.sigmaPxPy();
+//   return std::sqrt(std::pow(px / pt * px_err, 2) + std::pow(py / pt * py_err, 2) + 2.f * px / pt * py / pt * pxy_err);
+// }
+// //_______________________________________________________________________
+// template <typename TV0>
+// float getPhiResolution(TV0 const& v0)
+// {
+//   float px = v0.px();
+//   float py = v0.py();
+//   float pt = v0.pt();
+//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+//   float pxy_err = v0.sigmaPxPy();
+//   return std::sqrt(std::pow(px / pt / pt * py_err, 2) + std::pow(py / pt / pt * px_err, 2) - 2.f * px / pt / pt * py / pt / pt * pxy_err);
+// }
+// //_______________________________________________________________________
+// template <typename TV0>
+// float getThetaResolution(TV0 const& v0)
+// {
+//   float px = v0.px();
+//   float py = v0.py();
+//   float pz = v0.pz();
+//   float pt = v0.pt();
+//   float p = v0.p();
+//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
+//   float pxy_err = v0.sigmaPxPy();
+//   float pyz_err = v0.sigmaPyPz();
+//   float pzx_err = v0.sigmaPzPx();
+//   return std::sqrt(std::pow(pz * pz / p / p, 2) * (std::pow(px / pz / pt * px_err, 2) + std::pow(py / pz / pt * py_err, 2) + std::pow(pt / pz / pz * pz_err, 2) + 2.f * (px * py / pz / pz / pt / pt * pxy_err - py / pz / pz / pz * pyz_err - px / pz / pz / pz * pzx_err)));
+// }
+// //_______________________________________________________________________
+// template <typename TV0>
+// float getEtaResolution(TV0 const& v0)
+// {
+//   float px = v0.px();
+//   float py = v0.py();
+//   float pz = v0.pz();
+//   float pt = v0.pt();
+//   float p = v0.p();
+//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
+//   float pxy_err = v0.sigmaPxPy();
+//   float pyz_err = v0.sigmaPyPz();
+//   float pzx_err = v0.sigmaPzPx();
+//   return std::sqrt(std::pow(1.f / p / pt / pt, 2) * (std::pow(pz * px * px_err, 2) + std::pow(pz * py * py_err, 2) + std::pow(pt * pt * pz_err, 2) + 2.f * (pz * pz * px * py * pxy_err - pt * pt * py * pz * pyz_err - pt * pt * pz * px * pzx_err)));
+// }
+// //_______________________________________________________________________
+// template <typename TV0>
+// float getPResolution(TV0 const& v0)
+// {
+//   float px = v0.px();
+//   float py = v0.py();
+//   float pz = v0.pz();
+//   float p = v0.p();
+//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
+//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
+//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
+//   float pxy_err = v0.sigmaPxPy();
+//   float pyz_err = v0.sigmaPyPz();
+//   float pzx_err = v0.sigmaPzPx();
+//   return std::sqrt(std::pow(1.f / p, 2) * (std::pow(px * px_err, 2) + std::pow(py * py_err, 2) + std::pow(pz * pz_err, 2) + 2.f * (px * py * pxy_err + py * pz * pyz_err + pz * px * pzx_err)));
+// }
 //_______________________________________________________________________
 //_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

@@ -14,21 +14,36 @@
 ///
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
-#include <string>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelectorPID.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseLbToLcPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -79,7 +94,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
 
   o2::analysis::HfMlResponseLbToLcPi<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -142,7 +157,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
   /// \param hfCandsLb Lb candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the charm-hadron data creator
-  template <bool withLcMl, typename Cands>
+  template <bool WithLcMl, typename Cands>
   void runSelection(Cands const& hfCandsLb,
                     TracksPion const&,
                     HfCandLbConfigs const&)
@@ -166,7 +181,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
         continue;
       }
 
-      if constexpr (withLcMl) { // we include it in the topological selections
+      if constexpr (WithLcMl) { // we include it in the topological selections
         if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandLb, cutsLcMl, binsPtLcMl)) {
           hfSelLbToLcPiCandidate(statusLbToLcPi);
           if (applyLbMl) {
@@ -205,8 +220,8 @@ struct HfCandidateSelectorLbToLcPiReduced {
 
       if (applyLbMl) {
         // Lb ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withLcMl>(hfCandLb, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandLb, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithLcMl>(hfCandLb, trackPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandLb, outputMl);
         hfMlLbToLcPiCandidate(outputMl[1]);
 
         if (!isSelectedMl) {

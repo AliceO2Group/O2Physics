@@ -73,6 +73,9 @@ struct cascademlselection {
   o2::ml::OnnxModel mlModelOmegaMinus;
   o2::ml::OnnxModel mlModelOmegaPlus;
 
+  // Custom grouping
+  std::vector<std::vector<int>> cascadesGrouped;
+
   std::map<std::string, std::string> metadata;
 
   Produces<aod::CascXiMLScores> xiMLSelections;    // optionally aggregate information from ML output for posterior analysis (derived data)
@@ -261,30 +264,52 @@ struct cascademlselection {
     }
   }
 
-  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision, CascDerivedDatas const& cascades)
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, CascDerivedDatas const& cascades)
   {
-    initCCDB(collision);
+    // Custom grouping
+    cascadesGrouped.clear();
+    cascadesGrouped.resize(collisions.size());
 
-    histos.fill(HIST("hEventVertexZ"), collision.posZ());
-    for (auto& casc : cascades) {
-      nCandidates++;
-      if (nCandidates % 50000 == 0) {
-        LOG(info) << "Candidates processed: " << nCandidates;
+    for (const auto& cascade : cascades) {
+      cascadesGrouped[cascade.straCollisionId()].push_back(cascade.globalIndex());
+    }
+
+    for (const auto& collision : collisions) {
+      initCCDB(collision);
+
+      histos.fill(HIST("hEventVertexZ"), collision.posZ());
+      for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
+        auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
+        nCandidates++;
+        if (nCandidates % 50000 == 0) {
+          LOG(info) << "Candidates processed: " << nCandidates;
+        }
+        processCandidate(casc);
       }
-      processCandidate(casc);
     }
   }
-  void processStandardData(aod::Collision const& collision, CascOriginalDatas const& cascades)
+  void processStandardData(aod::Collisions const& collisions, CascOriginalDatas const& cascades)
   {
-    initCCDB(collision);
+    // Custom grouping
+    cascadesGrouped.clear();
+    cascadesGrouped.resize(collisions.size());
 
-    histos.fill(HIST("hEventVertexZ"), collision.posZ());
-    for (auto& casc : cascades) {
-      nCandidates++;
-      if (nCandidates % 50000 == 0) {
-        LOG(info) << "Candidates processed: " << nCandidates;
+    for (const auto& cascade : cascades) {
+      cascadesGrouped[cascade.collisionId()].push_back(cascade.globalIndex());
+    }
+
+    for (const auto& collision : collisions) {
+      initCCDB(collision);
+
+      histos.fill(HIST("hEventVertexZ"), collision.posZ());
+      for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
+        auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
+        nCandidates++;
+        if (nCandidates % 50000 == 0) {
+          LOG(info) << "Candidates processed: " << nCandidates;
+        }
+        processCandidate(casc);
       }
-      processCandidate(casc);
     }
   }
 

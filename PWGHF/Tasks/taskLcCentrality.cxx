@@ -16,18 +16,27 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/Centrality.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Variant.h>
+
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -36,11 +45,11 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
+  ConfigParamSpec const optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
   workflowOptions.push_back(optionDoMC);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLcCentrality {
@@ -82,11 +91,11 @@ struct HfTaskLcCentrality {
   void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
-    float centrality = collision.centRun2V0M();
+    float const centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
@@ -157,7 +166,7 @@ struct HfTaskLcCentralityMc {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {

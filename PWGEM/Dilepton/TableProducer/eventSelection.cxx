@@ -43,7 +43,7 @@ struct EMEventSelection {
 
   // for RCT
   Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
-  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
   Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
 
@@ -60,6 +60,8 @@ struct EMEventSelection {
   Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. occupancy"};
   Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. occupancy"};
   Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+
+  Configurable<bool> cfgRequireTVXinEMC{"cfgRequireTVXinEMC", false, "require kTVXinEMC (only for EMC analyses)"};
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
@@ -110,6 +112,10 @@ struct EMEventSelection {
     }
 
     if (!(cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < cfgFT0COccupancyMax)) {
+      return false;
+    }
+
+    if (cfgRequireTVXinEMC && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
       return false;
     }
 

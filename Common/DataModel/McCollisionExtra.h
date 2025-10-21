@@ -14,15 +14,17 @@
 #ifndef COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
 #define COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
 
+#include <Framework/AnalysisDataModel.h>
+
 #include <cmath>
-#include "Framework/AnalysisDataModel.h"
+#include <cstdint>
 
 namespace o2::aod
 {
 namespace mccollisionprop
 {
-DECLARE_SOA_COLUMN(NumRecoCollision, numRecoCollision, int);     //! stores N times this PV was recoed
-DECLARE_SOA_COLUMN(BestCollisionIndex, bestCollisionIndex, int); //! stores N times this PV was recoed
+DECLARE_SOA_COLUMN(NumRecoCollision, numRecoCollision, int);             //! stores N times this PV was recoed
+DECLARE_SOA_COLUMN(BestCollisionIndex, bestCollisionIndex, int);         //! stores N times this PV was recoed
 DECLARE_SOA_COLUMN(BestCollisionCentFT0C, bestCollisionCentFT0C, float); //! stores best FT0C centrality
 
 // collision MC context (neighbours contain PoI?)

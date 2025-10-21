@@ -15,13 +15,16 @@
 #ifndef PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 #define PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 
-#include <experimental/type_traits>
 #include "JQVectors.h"
+
 #include <TComplex.h>
-#include <TNamed.h>
 #include <TH1.h>
 #include <THn.h>
 #include <THnSparse.h>
+#include <TNamed.h>
+
+#include <experimental/type_traits>
+#include <vector>
 
 class JFFlucAnalysis : public TNamed
 {
@@ -61,7 +64,6 @@ class JFFlucAnalysis : public TNamed
   enum HIST_THN {
     HIST_THN_PHIETAZ,
     HIST_THN_PTETA,
-    HIST_THN_PHIETA,
     HIST_THN_SC_with_QC_4corr,
     HIST_THN_SC_with_QC_2corr,
     HIST_THN_SC_with_QC_2corr_gap,
@@ -98,6 +100,7 @@ class JFFlucAnalysis : public TNamed
   enum HIST_THN_SPARSE {
     HIST_THN_SPARSE_VN,
     HIST_THN_SPARSE_VN_VN,
+    HIST_THN_SPARSE_MULTCORR,
     HIST_THN_SPARSE_COUNT
   };
   enum {
@@ -144,29 +147,42 @@ class JFFlucAnalysis : public TNamed
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
   template <class T>
   using hasSign = decltype(std::declval<T&>().sign());
+  template <class T>
+  using hasMultSet = decltype(std::declval<T&>().multiplicities());
 
   template <class JInputClass>
   inline void FillQA(JInputClass& inputInst, UInt_t type = 0u)
   {
-    ph1[HIST_TH1_CENTRALITY]->Fill(fCent);
-    ph1[HIST_TH1_IMPACTPARAM]->Fill(fImpactParameter);
+    if (type == 0u) {
+      ph1[HIST_TH1_CENTRALITY]->Fill(fCent);
+      ph1[HIST_TH1_ZVERTEX]->Fill(fVertex);
+      ph1[HIST_TH1_IMPACTPARAM]->Fill(fImpactParameter);
+    }
 
     for (auto& track : inputInst) {
       Double_t corrInv = 1.0;
       using JInputClassIter = typename JInputClass::iterator;
       if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
-        corrInv /= track.weightEff();
+        corrInv *= track.weightEff();
       if constexpr (std::experimental::is_detected<hasSign, const JInputClassIter>::value)
         pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), track.sign(), corrInv);
       else
         pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), 0.0, corrInv);
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
-      pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
       pht[HIST_THN_PHIETAZ]->Fill(fCent, static_cast<Double_t>(type), track.phi(), track.eta(), fVertex, corrInv);
     }
+  }
 
-    ph1[HIST_TH1_ZVERTEX]->Fill(fVertex);
+  template <class JEventClass>
+  inline void FillMultSet(JEventClass& event)
+  {
+    //
+    if constexpr (std::experimental::is_detected<hasMultSet, const JEventClass>::value) {
+      // need to convert to vec of doubles since THnSparse has no way to fill vec of floats directly
+      std::vector<double> v(event.multiplicities().begin(), event.multiplicities().end());
+      phs[HIST_THN_SPARSE_MULTCORR]->Fill(v.data());
+    }
   }
 
 #define kcNH kH4 // max second dimension + 1

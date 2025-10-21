@@ -516,8 +516,10 @@ struct strangenessFilter {
       o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", run);
       o2::base::Propagator::initFieldFromGRP(grpmag);
       mBz = static_cast<float>(grpmag->getNominalL3Field());
-      mMeanMultT0C = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0C", run);
-      mMeanMultT0A = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0A", run);
+      if (useNormalisedMult)
+        mMeanMultT0C = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0C", run);
+      if (useNormalisedMult)
+        mMeanMultT0A = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0A", run);
 
       mDCAFitter.setBz(mBz);
       mDCAFitter.setPropagateToPCA(propToDCA);

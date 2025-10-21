@@ -50,7 +50,7 @@ using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct vpPairQC {
@@ -126,12 +126,13 @@ struct vpPairQC {
     Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
     Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
     Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
+    Configurable<float> cfgRefR{"cfgRefR", 1.2, "reference R (in m) for extrapolation"}; // https://cds.cern.ch/record/1419204
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTOFif), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif : 4, kPIDML : 5]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
-    Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
-    Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
+    // Configurable<float> cfg_min_TPCNsigmaMu{"cfg_min_TPCNsigmaMu", -0.0, "min. TPC n sigma for muon exclusion"};
+    // Configurable<float> cfg_max_TPCNsigmaMu{"cfg_max_TPCNsigmaMu", +0.0, "max. TPC n sigma for muon exclusion"};
     Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -0.0, "min. TPC n sigma for pion exclusion"};
     Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +0.0, "max. TPC n sigma for pion exclusion"};
     Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -0.0, "min. TPC n sigma for kaon exclusion"};
@@ -257,15 +258,15 @@ struct vpPairQC {
     fRegistry.add("Track/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
     fRegistry.add("Track/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {160, 0, 16}}, false);
     fRegistry.add("Track/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // fRegistry.add("Track/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/positive/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/positive/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/positive/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/positive/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/positive/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("Track/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // fRegistry.add("Track/positive/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // fRegistry.add("Track/positive/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // fRegistry.add("Track/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // fRegistry.add("Track/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.addClone("Track/positive/", "Track/negative/");
 
     const AxisSpec axis_mass{50, 0, 0.05, "m_{ee} (GeV/c^{2})"};
@@ -335,7 +336,7 @@ struct vpPairQC {
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
     fDielectronCut.SetTPCNsigmaElRange(dielectroncuts.cfg_min_TPCNsigmaEl, dielectroncuts.cfg_max_TPCNsigmaEl);
-    fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
+    // fDielectronCut.SetTPCNsigmaMuRange(dielectroncuts.cfg_min_TPCNsigmaMu, dielectroncuts.cfg_max_TPCNsigmaMu);
     fDielectronCut.SetTPCNsigmaPiRange(dielectroncuts.cfg_min_TPCNsigmaPi, dielectroncuts.cfg_max_TPCNsigmaPi);
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
@@ -381,7 +382,7 @@ struct vpPairQC {
       return false;
     }
 
-    if (!fDielectronCut.IsSelectedPair(t1, t2, d_bz)) {
+    if (!fDielectronCut.IsSelectedPair(t1, t2, d_bz, dielectroncuts.cfgRefR)) {
       return false;
     }
 
@@ -420,11 +421,6 @@ struct vpPairQC {
     if (track.sign() > 0) {
       fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
-      fRegistry.fill(HIST("Track/positive/hPResolution"), track.p(), sigmaP(track) / track.p());
-      fRegistry.fill(HIST("Track/positive/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/positive/hThetaResolution"), track.p(), sigmaTheta(track));
-      fRegistry.fill(HIST("Track/positive/hEtaResolution"), track.p(), sigmaEta(track));
-      fRegistry.fill(HIST("Track/positive/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
@@ -445,23 +441,18 @@ struct vpPairQC {
       fRegistry.fill(HIST("Track/positive/hTOFbeta"), track.p(), track.beta());
       fRegistry.fill(HIST("Track/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      // fRegistry.fill(HIST("Track/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
       fRegistry.fill(HIST("Track/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
       fRegistry.fill(HIST("Track/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
       fRegistry.fill(HIST("Track/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
       fRegistry.fill(HIST("Track/positive/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/positive/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
-      fRegistry.fill(HIST("Track/positive/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
-      fRegistry.fill(HIST("Track/positive/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
-      fRegistry.fill(HIST("Track/positive/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
+      // fRegistry.fill(HIST("Track/positive/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
+      // fRegistry.fill(HIST("Track/positive/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+      // fRegistry.fill(HIST("Track/positive/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
+      // fRegistry.fill(HIST("Track/positive/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
     } else {
       fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
-      fRegistry.fill(HIST("Track/negative/hPResolution"), track.p(), sigmaP(track) / track.p());
-      fRegistry.fill(HIST("Track/negative/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/negative/hThetaResolution"), track.p(), sigmaTheta(track));
-      fRegistry.fill(HIST("Track/negative/hEtaResolution"), track.p(), sigmaEta(track));
-      fRegistry.fill(HIST("Track/negative/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
@@ -482,15 +473,15 @@ struct vpPairQC {
       fRegistry.fill(HIST("Track/negative/hTOFbeta"), track.p(), track.beta());
       fRegistry.fill(HIST("Track/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+      // fRegistry.fill(HIST("Track/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
       fRegistry.fill(HIST("Track/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
       fRegistry.fill(HIST("Track/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
       fRegistry.fill(HIST("Track/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
       fRegistry.fill(HIST("Track/negative/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/negative/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
-      fRegistry.fill(HIST("Track/negative/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
-      fRegistry.fill(HIST("Track/negative/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
-      fRegistry.fill(HIST("Track/negative/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
+      // fRegistry.fill(HIST("Track/negative/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
+      // fRegistry.fill(HIST("Track/negative/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+      // fRegistry.fill(HIST("Track/negative/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
+      // fRegistry.fill(HIST("Track/negative/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
     }
   }
 

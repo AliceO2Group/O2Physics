@@ -18,13 +18,13 @@
 #define COMMON_CCDB_RCTSELECTIONFLAGS_H_
 
 #include <CommonUtils/EnumFlags.h>
-#include <Rtypes.h>
-#include <TMath.h>
 
-#include <stdexcept>
 #include <algorithm>
+#include <concepts>
+#include <cstdint>
+#include <initializer_list>
+#include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace o2::aod::rctsel
 {
@@ -75,7 +75,15 @@ enum RCTSelectionFlags {
   kTPCLimAccMCRepr,
   kTRDBad,
   kZDCBad,
-  kNRCTSelectionFlags
+  kNRCTSelectionFlags,
+  kDummy24,
+  kDummy25,
+  kDummy26,
+  kDummy27,
+  kDummy28,
+  kDummy29,
+  kDummy30,
+  kCcdbObjectLoaded
 };
 
 template <typename T>
@@ -98,15 +106,20 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
   // - "CBT"
   // - "CBT_hadronPID"
   // - "CBT_electronPID"
-  // - "CCBT_calo"
+  // - "CBT_calo"
   // - "CBT_muon"
   // - "CBT_muon_glo"
   // The checkZDC boolean flag controls whether to iclude the ZDC quality in all the pre-defined selections (for Pb-Pb data)
   // The treatLimitedAcceptanceAsBad boolean flag controls whether "LimitedAcceptanceMCReproducible" flags should be
   // treated as Bad and the corresponding events excluded
-  explicit RCTFlagsChecker(const std::string& label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false)
+  // The checkTableValidity boolean flag controls whether events without a corresponding valid RCT CCDB object should be
+  // treated as Bad and excluded
+  explicit RCTFlagsChecker(const std::string& label,
+                           bool checkZDC = false,
+                           bool treatLimitedAcceptanceAsBad = false,
+                           bool checkTableValidity = false)
   {
-    init(label, checkZDC, treatLimitedAcceptanceAsBad);
+    init(label, checkZDC, treatLimitedAcceptanceAsBad, checkTableValidity);
   }
 
   // Initialize the object from an initializer list of RCTSelectionFlags values
@@ -127,7 +140,12 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
   // The checkZDC boolean flag controls whether to iclude the ZDC quality in all the pre-defined selections (for Pb-Pb data)
   // The treatLimitedAcceptanceAsBad boolean flag controls whether "LimitedAcceptanceMCReproducible" flags should be
   // treated as Bad and the corresponding events excluded
-  void init(const std::string& label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false)
+  // The checkTableValidity boolean flag controls whether events without a corresponding valid RCT CCDB object should be
+  // treated as Bad and excluded
+  void init(const std::string& label,
+            bool checkZDC = false,
+            bool treatLimitedAcceptanceAsBad = false,
+            bool checkTableValidity = false)
   {
     auto setFlags = [this](std::initializer_list<RCTSelectionFlags> flags) {
       std::for_each(flags.begin(),
@@ -182,14 +200,19 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
     if (checkZDC) {
       set(kZDCBad);
     }
+
+    if (checkTableValidity) {
+      set(kCcdbObjectLoaded);
+    }
   }
 
   // Check the RCT column of a given event selection table.
   // The function returns true if none of the checked flags is set in the RCT column.
   bool checkTable(const HasRCTFlags auto& table)
   {
+    // throw an exception if none of the bits in the checker mask is set
     if (!any()) {
-      throw std::out_of_range("RCTFlagsCheckerAlt with empty RCTSelectionFlags bits mask");
+      throw std::out_of_range("RCTFlagsChecker has empty RCTSelectionFlags bits mask");
     }
 
     // bitmask of the current table
@@ -199,6 +222,13 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
 
     // return true if none of the checked bits is set in the table bitmask
     return ((tableBits & flagsBits) == 0);
+  }
+
+  // Check the validity of the RCT column of a given event selection table.
+  // The function returns true if the RCT CCDB object was correctly fetched (bit31 == 0).
+  bool isTableValid(const HasRCTFlags auto& table)
+  {
+    return (table.rct_bit(kCcdbObjectLoaded) == 0);
   }
 
   bool operator()(const HasRCTFlags auto& table)

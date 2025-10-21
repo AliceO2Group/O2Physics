@@ -9,16 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \commonly used for MC analysis.
+/// \file MCUtilities.h
+/// \brief commonly used for MC analysis.
 /// \author daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <TPDGCode.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <vector>
 
 //_______________________________________________________________________
@@ -50,7 +52,7 @@ int IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
       if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
         auto mp = mcTracks.iteratorAt(motherid);
         int pdg_mother = mp.pdgCode();
-        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 130 || abs(pdg_mother) == 3122) {
+        if (std::abs(pdg_mother) == kK0Short || std::abs(pdg_mother) == kK0Long || std::abs(pdg_mother) == kLambda0) {
           // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
           return motherid;
         }
@@ -90,32 +92,36 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
 // Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
 // E.g. Find the gamma that was created in a pi0 or eta decay
 template <typename T, typename TMCs, typename TTargetPDGs>
-int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50)
+int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50) // o2-linter: disable=pdg/explicit-code (false positive)
 {
-  if (!mcparticle.has_mothers() || Depth < 1)
+  if (!mcparticle.has_mothers() || Depth < 1) {
     return -1;
+  }
 
   int motherid = mcparticle.mothersIds()[0];
   auto mother = mcparticles.iteratorAt(motherid);
-  if (std::find(motherpdgs.begin(), motherpdgs.end(), mother.pdgCode()) != motherpdgs.end())
+  if (std::find(motherpdgs.begin(), motherpdgs.end(), mother.pdgCode()) != motherpdgs.end()) {
     return mcparticle.globalIndex(); // The mother has the required pdg code, so return its daughters global mc particle code.
-  else
+  } else {
     return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
+  }
 }
 //_______________________________________________________________________
 template <typename T, typename TMCs>
 int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
 {
   // is election from photon conversion? returns index of mother photon
-  if (abs(mctrack.pdgCode()) != 11)
+  if (std::abs(mctrack.pdgCode()) != kElectron) {
     return -1;
-  if (mctrack.producedByGenerator())
+  }
+  if (mctrack.producedByGenerator()) {
     return -1;
+  }
   if (mctrack.has_mothers()) {
     int motherid = mctrack.mothersIds()[0]; // first mother
     auto mp = mcTracks.iteratorAt(motherid);
     int pdg_mother = mp.pdgCode();
-    if (pdg_mother == 22) {
+    if (pdg_mother == kGamma) {
       return motherid;
     }
   } else {
@@ -191,7 +197,7 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   }
   std::vector<int> pdgs;
   pdgs.reserve(target_pdgs.size());
-  for (auto& daughterId : daughtersIds) {
+  for (const auto& daughterId : daughtersIds) {
     if (daughterId < 0) {
       pdgs.clear();
       pdgs.shrink_to_fit();
@@ -226,21 +232,21 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
 template <typename TMCPhoton, typename TMCParticles>
 bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_gen, const float max_eta_gen, const float margin_z_mc, TMCParticles const& mcparticles)
 {
-  if (std::abs(mcphoton.pdgCode()) != 22) {
+  if (std::abs(mcphoton.pdgCode()) != kGamma) {
     return false;
   }
 
   auto daughtersIds = mcphoton.daughtersIds();
-  if (daughtersIds.size() != 2) {
+  if (daughtersIds.size() != 2) { // o2-linter: disable=magic-number (2 is not that magic in this context)
     return false;
   }
 
-  for (auto& daughterId : daughtersIds) {
+  for (const auto& daughterId : daughtersIds) {
     if (daughterId < 0) {
       return false;
     }
     auto daughter = mcparticles.iteratorAt(daughterId);
-    if (std::abs(daughter.pdgCode()) != 11) {
+    if (std::abs(daughter.pdgCode()) != kElectron) {
       return false;
     }
 
@@ -248,9 +254,9 @@ bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_
       return false;
     }
 
-    float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+    float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2));
     // LOGF(info, "daughterId = %d , pdg = %d , vx = %f , vy = %f , vz = %f, rxy = %f", daughterId, daughter.pdgCode(), daughter.vx(), daughter.vy(), daughter.vz(), rxy_gen_e);
-    if (rxy_gen_e > max_r_gen || rxy_gen_e < abs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen))) - margin_z_mc) {
+    if (rxy_gen_e > max_r_gen || rxy_gen_e < std::abs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen))) - margin_z_mc) {
       return false;
     }
   } // end of daughter loop
@@ -262,11 +268,13 @@ template <typename TMCParticle, typename TMCParticles>
 bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
 {
   auto daughtersIds = mcParticle.daughtersIds();
-  if (daughtersIds.size() != 2)
+  if (daughtersIds.size() != 2) { // o2-linter: disable=magic-number (2 is not that magic in this context)
     return false;
-  for (auto& daughterId : daughtersIds) {
-    if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+  }
+  for (const auto& daughterId : daughtersIds) {
+    if (mcParticles.iteratorAt(daughterId).pdgCode() != kGamma) {
       return false;
+    }
   }
   return true;
 }

@@ -22,10 +22,15 @@
 #ifndef PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 #define PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
+/// this data model uses the LF one, add here
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 // Simple checker
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))

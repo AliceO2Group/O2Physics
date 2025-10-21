@@ -14,30 +14,36 @@
 ///
 /// \author Joachim C. K. B. Hansen
 
+#include "FFitWeights.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EseTable.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Qvectors.h"
+
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <string>
-#include <algorithm>
-#include <numeric>
-#include <vector>
 #include <tuple>
 #include <unordered_map>
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "Common/DataModel/EseTable.h"
-#include "Common/DataModel/Qvectors.h"
-#include "FFitWeights.h"
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

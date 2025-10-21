@@ -14,35 +14,36 @@
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include <CCDB/BasicCCDBManager.h>
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCollisionSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniversePhiSelection.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
-#include "Framework/ASoAHelpers.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "Math/Vector4D.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "TMath.h"
-#include "TLorentzVector.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 namespace o2::aod
 {
@@ -71,7 +72,7 @@ int getRowDaughters(int daughID, T const& vecID)
   return rowInPrimaryTrackTableDaugh;
 }
 
-struct femtoUniverseProducerMCTruthTask {
+struct FemtoUniverseProducerMCTruthTask {
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
@@ -83,30 +84,30 @@ struct femtoUniverseProducerMCTruthTask {
   // Produces<aod::FdMCParticles> outputPartsMC;
 
   // Analysis configs
-  Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
-  Configurable<bool> ConfIsMC{"ConfIsMC", false, "Running on MC; implemented only for Run3"};
-  Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
-  Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtouniverse tables"};
-  Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", true, "Activate filling of Phi into femtouniverse tables"};
-  Configurable<std::vector<int>> ConfPDGCodes{"ConfPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
-  Configurable<bool> ConfAnalysisWithPID{"ConfAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles"};
+  Configurable<bool> confIsRun3{"confIsRun3", false, "Running on Run3 or pilot"};
+  Configurable<bool> confIsMC{"confIsMC", false, "Running on MC; implemented only for Run3"};
+  Configurable<bool> confIsForceGRP{"confIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
+  Configurable<std::vector<int>> confPDGCodes{"confPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
+  Configurable<bool> confAnalysisWithPID{"confAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles"};
 
   /// Event cuts
-  Configurable<bool> ConfEvtUseTPCmult{"ConfEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
-  Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
-  Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
-  Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
+  Configurable<float> confEvtZvtx{"confEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<bool> confEvtTriggerCheck{"confEvtTriggerCheck", true, "Evt sel: check for trigger"};
+  Configurable<int> confEvtTriggerSel{"confEvtTriggerSel", kINT7, "Evt sel: trigger"};
+  Configurable<bool> confEvtOfflineCheck{"confEvtOfflineCheck", false, "Evt sel: check for offline selection"};
+  Configurable<float> confCentFT0Min{"confCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
+  Configurable<float> confCentFT0Max{"confCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
+  Configurable<bool> confDoSpher{"confDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
 
   // Track cuts
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfPtLowFilterCut{"ConfPtLowFilterCut", 0.14, "Lower limit for Pt for the filtering tracks"};   // pT low
-    Configurable<float> ConfPtHighFilterCut{"ConfPtHighFilterCut", 5.0, "Higher limit for Pt for the filtering tracks"}; // pT high
-    Configurable<float> ConfEtaFilterCut{"ConfEtaFilterCut", 0.8, "Eta cut for the filtering tracks"};
+    Configurable<float> confPtLowFilterCut{"confPtLowFilterCut", 0.14, "Lower limit for Pt for the filtering tracks"};   // pT low
+    Configurable<float> confPtHighFilterCut{"confPtHighFilterCut", 5.0, "Higher limit for Pt for the filtering tracks"}; // pT high
+    Configurable<float> confEtaFilterCut{"confEtaFilterCut", 0.8, "Eta cut for the filtering tracks"};
   } ConfFilteringTracks;
+
+  // D0/D0bar cuts
+  Configurable<float> yD0CandGenMax{"yD0CandGenMax", 0.5, "Rapidity cut for the D0/D0bar mesons"};
 
   FemtoUniverseCollisionSelection colCuts;
   FemtoUniverseTrackSelection trackCuts;
@@ -118,7 +119,7 @@ struct femtoUniverseProducerMCTruthTask {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3, ConfCentFT0Min, ConfCentFT0Max);
+    colCuts.setCuts(confEvtZvtx, confEvtTriggerCheck, confEvtTriggerSel, confEvtOfflineCheck, confIsRun3, confCentFT0Min, confCentFT0Max);
 
     colCuts.init(&qaRegistry);
     trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
@@ -135,16 +136,23 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillCollisions(CollisionType const& col, TrackType const& /*tracks*/)
+  void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
-    for (auto& c : col) {
+    for (const auto& c : col) {
       const auto vtxZ = c.posZ();
-      const auto spher = 0; // colCuts.computeSphericity(col, tracks);
-      int mult = 0;
-      int multNtr = 0;
+      float mult = confIsRun3 ? c.multFV0M() : 0.5 * (c.multFV0M());
+      int multNtr = confIsRun3 ? c.multNTracksPV() : c.multTracklets();
 
+      // Removing collisions with Zvtx > 10 cm
+      if (std::abs(vtxZ) > confEvtZvtx) {
+        continue;
+      }
       // colCuts.fillQA(c); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+      if (confDoSpher) {
+        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      } else {
+        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+      }
     }
   }
 
@@ -153,26 +161,24 @@ struct femtoUniverseProducerMCTruthTask {
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
 
-    for (auto& particle : tracks) {
+    for (const auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
 
-      if (particle.eta() < -ConfFilteringTracks.ConfEtaFilterCut || particle.eta() > ConfFilteringTracks.ConfEtaFilterCut)
-        continue;
-      if (particle.pt() < ConfFilteringTracks.ConfPtLowFilterCut || particle.pt() > ConfFilteringTracks.ConfPtHighFilterCut)
+      if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut)
         continue;
 
-      uint32_t pdgCode = (uint32_t)particle.pdgCode();
+      int pdgCode = particle.pdgCode();
 
-      if (ConfAnalysisWithPID) {
+      if (confAnalysisWithPID) {
         bool pass = false;
-        std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
-        for (uint32_t pdg : tmpPDGCodes) {
-          if (pdgCode == 333) { // phi meson
+        std::vector<int> tmpPDGCodes = confPDGCodes; // necessary due to some features of the Configurable
+        for (auto const& pdg : tmpPDGCodes) {
+          if (pdgCode == Pdg::kPhi) { // phi meson
             pass = true;
-          } else if (pdgCode == 421) { // D0 meson
+          } else if (std::abs(pdgCode) == Pdg::kD0) { // D0(bar) meson
             pass = true;
-          } else if (pdgCode == 411) { // D+ meson
+          } else if (pdgCode == Pdg::kDPlus) { // D+ meson
             pass = true;
           } else if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (particle.isPhysicalPrimary())
@@ -181,6 +187,31 @@ struct femtoUniverseProducerMCTruthTask {
         }
         if (!pass)
           continue;
+      }
+
+      // check if D0/D0bar mesons pass the rapidity cut
+      // if pass then saving the orgin of D0/D0bar
+      // check if tracks (besides D0/D0bar) pass pseudorapidity cut
+      int8_t origin = -99;
+      if (std::abs(particle.pdgCode()) == Pdg::kD0) {
+        if (std::abs(particle.y()) > yD0CandGenMax) {
+          continue;
+        } else {
+          origin = RecoDecay::getCharmHadronOrigin(tracks, particle);
+        }
+      } else {
+        if (std::abs(particle.eta()) > ConfFilteringTracks.confEtaFilterCut) {
+          continue;
+        } else {
+          origin = -99;
+        }
+      }
+
+      /// check if we end-up with the correct final state using MC info
+      int8_t sign = 0;
+      if (std::abs(pdgCode) == Pdg::kD0 && !RecoDecay::isMatchedMCGen(tracks, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        /// check if we have D0(bar) → π± K∓
+        continue;
       }
 
       // we cannot use isSelectedMinimal since it takes Ncls
@@ -204,8 +235,8 @@ struct femtoUniverseProducerMCTruthTask {
                   pdgCode,
                   pdgCode,
                   childIDs,
-                  0,
-                  0);
+                  origin,
+                  -999.);
     }
   }
 
@@ -220,11 +251,11 @@ struct femtoUniverseProducerMCTruthTask {
     fillCollisions(collisions, mcParticles);
     fillParticles(mcParticles);
   }
-  PROCESS_SWITCH(femtoUniverseProducerMCTruthTask, processTrackMC, "Provide MC data for track analysis", true);
+  PROCESS_SWITCH(FemtoUniverseProducerMCTruthTask, processTrackMC, "Provide MC data for track analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<femtoUniverseProducerMCTruthTask>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<FemtoUniverseProducerMCTruthTask>(cfgc)};
   return workflow;
 }

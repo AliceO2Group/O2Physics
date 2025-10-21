@@ -18,7 +18,7 @@
 #ifndef COMMON_CORE_COLLISIONTYPEHELPER_H_
 #define COMMON_CORE_COLLISIONTYPEHELPER_H_
 
-#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <DataFormatsParameters/GRPLHCIFData.h>
 
 #include <string>
 
@@ -34,7 +34,10 @@ struct CollisionSystemType {
   static constexpr collType kCollSysPbPb = 1;   // PbPb
   static constexpr collType kCollSysXeXe = 2;   // XeXe
   static constexpr collType kCollSyspPb = 3;    // pPb
-  static constexpr collType kNCollSys = 4;      // Number of collision systems
+  static constexpr collType kCollSysOO = 4;     // OO (Oxygen-Oxygen)
+  static constexpr collType kCollSyspO = 5;     // pO (proton-Oxygen)
+  static constexpr collType kCollSysNeNe = 6;   // NeNe (Neon-Neon)
+  static constexpr collType kNCollSys = 7;      // Number of collision systems
 
   static std::string getCollisionSystemName(collType collSys);
 

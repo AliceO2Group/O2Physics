@@ -19,6 +19,11 @@
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
+#include "Tools/ML/MlResponse.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <cstdint>
 #include <vector>
 
 // Fill the map of available input features

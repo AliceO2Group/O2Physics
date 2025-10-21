@@ -14,21 +14,25 @@
 ///
 /// \author Min-jae Kim <minjae.kim@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 // #include <TLorentzVector.h>
+#include "PWGLF/DataModel/LFResonanceTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
 #include "Math/Vector4D.h"
 #include "TF1.h"
 #include "TRandom3.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/RecoDecay.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -36,7 +40,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
-// Service<o2::framework::O2DatabasePDG> pdgDB;
+Service<o2::framework::O2DatabasePDG> pdgDB;
 
 enum {
   kData = 0,
@@ -57,6 +61,10 @@ struct Xi1530Analysisqa {
   SliceCache cache;
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  Preslice<aod::ResoMicroTracks> perResoCollision =
+    aod::resodaughter::resoCollisionId;
+  Preslice<aod::ResoCascades> perResoCollisionCasc =
+    aod::resodaughter::resoCollisionId;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
@@ -65,7 +73,7 @@ struct Xi1530Analysisqa {
   // Associated with histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
-  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0, 110.0}, "Binning of the centrality axis"};
 
   Configurable<float> cInvMassStart{"cInvMassStart", 1.4, "Invariant mass start"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 3.0, "Invariant mass end"};
@@ -98,8 +106,8 @@ struct Xi1530Analysisqa {
   Configurable<int> cfgTPCRows{"cfgTPCRows", 80, "Minimum Number of TPC Crossed Rows "};
   Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.8, "Minimum of TPC Crossed Rows to Findable Clusters"}; // Minmimum
 
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", true, "Require TPC Refit"};
-  Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", true, "Require ITS Refit"};
+  // Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", true, "Require TPC Refit"}; //refit is included in global track selection
+  // Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", true, "Require ITS Refit"};
 
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
@@ -200,7 +208,6 @@ struct Xi1530Analysisqa {
 
   // MC Event selection //
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
-  Configurable<bool> cIsPhysicalPrimaryMC{"cIsPhysicalPrimaryMC", true, "Physical primary selection for a MC Parent"};
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
 
@@ -209,8 +216,10 @@ struct Xi1530Analysisqa {
   Configurable<float> cMaxPtMotherCut{"cMaxPtMotherCut", 9.0, "Maximum pt of mother cut"};
   Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 3.0, "Maximum Minv of mother cut"};
 
-  Configurable<bool> cMicroTrack{"cMicroTrack", false, "Using Micro track for first pion"};
-  Configurable<bool> studyStableXi{"studyStableXi", true, "Study stable Xi"};
+  Configurable<bool> studyStableXi{"studyStableXi", false, "Study stable Xi"};
+
+  Configurable<bool> cMCCent{"cMCCent", true, "Using calibrated MC centrality (for FT0M)"};
+  Configurable<bool> cRecoINELgt0{"cRecoINELgt0", true, "check if INEL>0 for reco events"};
   TRandom* rn = new TRandom();
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
@@ -251,11 +260,11 @@ struct Xi1530Analysisqa {
       // event histograms
       histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
       histos.add("QAevent/hVertexZSameE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
-      histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+      histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {centAxis});
 
       histos.add("QAevent/hEvtCounterMixedE", "Number of analyzed Mixed Events", HistType::kTH1F, {{1, 0.5, 1.5}});
       histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
-      histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+      histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {centAxis});
     }
 
     if (invMass1D) {
@@ -456,10 +465,10 @@ struct Xi1530Analysisqa {
     }
     if (cfgHasTOF && !track.hasTOF())
       return false;
-    if (cfgUseITSRefit && !track.passedITSRefit())
-      return false;
-    if (cfgUseTPCRefit && !track.passedTPCRefit())
-      return false;
+    // if (cfgUseITSRefit && !track.passedITSRefit())
+    //   return false;
+    // if (cfgUseTPCRefit && !track.passedTPCRefit())
+    //   return false;
     if (cfgPVContributor && !track.isPVContributor())
       return false;
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
@@ -467,7 +476,7 @@ struct Xi1530Analysisqa {
     return true;
   }
 
-  bool hasSubsystemInfo(float Nsigma) // this will be replaced // .hasXX() was not appied in resocascade yet
+  bool hasSubsystemInfo(float Nsigma)
   {
     return std::abs(Nsigma) < cPIDBound;
   }
@@ -492,7 +501,7 @@ struct Xi1530Analysisqa {
     return true;
   }
 
-  // Secondary track selection for cascades  // need to more information,
+  // Secondary track selection for cascades //
 
   // Topological cuts for cascades
   template <typename TracksTypeCasc>
@@ -663,20 +672,20 @@ struct Xi1530Analysisqa {
     return lConsistentWithXi && lConsistentWithLambda;
   }
 
-  template <bool IsResoMicrotrack, bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename TracksTypeCasc>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeCasc& dTracks2) // Order: ResoColl, ResoTrack, ResoCascTrack
+  template <bool IsResoMicrotrack, bool IsMC, bool IsMix, typename CollisionType, typename CenMult, typename TracksType, typename TracksTypeCasc>
+  void fillHistograms(const CollisionType& collision, const CenMult& multiplicity, const TracksType& dTracks1, const TracksTypeCasc& dTracks2) // Order: ResoColl, ResoTrack, ResoCascTrack
   {
-    auto multiplicity = collision.cent();
+    // auto multiplicity = collision.cent();
 
     {
       if constexpr (!IsMix) {
         histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
-        histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), collision.cent());
+        histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), multiplicity);
         histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
         histos.fill(HIST("TestME/hnTrksSameE"), dTracks1.size());
       } else {
         histos.fill(HIST("QAevent/hVertexZMixedE"), collision.posZ());
-        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), collision.cent());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), multiplicity);
         histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision.globalIndex());
         histos.fill(HIST("TestME/hnTrksMixedE"), dTracks1.size());
       }
@@ -742,7 +751,7 @@ struct Xi1530Analysisqa {
       float trk2NSigmaPiNegTOF = trk2.daughterTOFNSigmaNegPi();
 
       if constexpr (!IsMix) {
-        //// QA plots before the selection // need to pt for cascade tracks
+        //// QA plots before the selection //
         //  --- PID QA
         if (pidPlots) {
           histos.fill(HIST("QAbefore/TPC_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
@@ -750,7 +759,6 @@ struct Xi1530Analysisqa {
             histos.fill(HIST("QAbefore/TOF_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
             histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_first_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
           }
-          // hasSubsystemInfo is Temporary, it will be replaced.
 
           histos.fill(HIST("QAbefore/TPC_Nsigma_pi_bachelor_all"), multiplicity, 0, trk2NSigmaPiBachelorTPC); // can't take pt information for the cascade secondary
           if (hasSubsystemInfo(trk2NSigmaPiBachelorTOF)) {
@@ -818,10 +826,6 @@ struct Xi1530Analysisqa {
 
       if (!casctopCut(trk2))
         continue;
-
-      // TPCncluster distributions
-      // histos.fill(HIST("TPCncluster/TPCnclusterpifirst"), trk1.tpcNClsFound());
-      // histos.fill(HIST("TPCncluster/TPCnclusterPhipifirst"), trk1.tpcNClsFound(), trk1.phi());
 
       if constexpr (!IsMix) {
         //// QA plots after the selection
@@ -1048,25 +1052,116 @@ struct Xi1530Analysisqa {
     }
   }
 
-  void processData(aod::ResoCollision const& resoCollision, aod::ResoTracks const& resoTracks, aod::ResoCascades const& cascTracks)
+  void processData(aod::ResoCollision const& resoCollision,
+                   aod::ResoCollisionColls const& collisionIndex,
+                   soa::Join<aod::Collisions, aod::PVMults> const& collisions,
+                   aod::ResoTracks const& resoTracks,
+                   aod::ResoCascades const& cascTracks)
   {
+    if (cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+    }
 
     histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
-    fillHistograms<false, false, false>(resoCollision, resoTracks, cascTracks);
+    auto multiplicity = resoCollision.cent();
+    fillHistograms<false, false, false>(resoCollision, multiplicity, resoTracks, cascTracks);
   }
 
+  // Reconstructed level MC for the track
   void processMC(ResoMCCols::iterator const& resoCollision,
+                 aod::ResoCollisionColls const& collisionIndex,
+                 soa::Join<aod::ResoCollisionCandidatesMC, aod::PVMults> const& collisionsMC,
                  soa::Join<aod::ResoCascades, aod::ResoMCCascades> const& cascTracks,
-                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoTracks)
+                 soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoTracks,
+                 soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
+    float multiplicity;
+    if (cMCCent && cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else if (!cMCCent && cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      multiplicity = resoCollision.cent();
+    } else if (cMCCent && !cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else {
+      multiplicity = resoCollision.cent();
+    }
+
     if (!resoCollision.isInAfterAllCuts() || (std::abs(resoCollision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
-    fillHistograms<false, true, false>(resoCollision, resoTracks, cascTracks);
+
+    fillHistograms<false, true, false>(resoCollision, multiplicity, resoTracks, cascTracks);
   }
 
-  void processMCTrue(ResoMCCols::iterator const& resoCollision, aod::ResoMCParents const& resoParents)
+  // Truth level MC for the track with reco event
+  void processMCTrue(ResoMCCols::iterator const& resoCollision,
+                     aod::ResoCollisionColls const& collisionIndex,
+                     aod::ResoMCParents const& resoParents,
+                     aod::ResoCollisionCandidatesMC const& collisionsMC,
+                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    auto multiplicity = resoCollision.cent();
+    float multiplicity;
+    if (cMCCent && cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else if (!cMCCent && cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      multiplicity = resoCollision.cent();
+    } else if (cMCCent && !cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else {
+      multiplicity = resoCollision.cent();
+    }
+
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != kXiStar || std::abs(part.y()) >= cfgRapidityCut)
         continue;
@@ -1074,9 +1169,6 @@ struct Xi1530Analysisqa {
       bool pass2 = std::abs(part.daughterPDG1()) == kXiMinus || std::abs(part.daughterPDG2()) == kXiMinus;
 
       if (!pass1 || !pass2)
-        continue;
-
-      if (cIsPhysicalPrimaryMC && !part.isPhysicalPrimary())
         continue;
 
       if (part.pdgCode() > 0) // INELt0 or INEL
@@ -1115,11 +1207,25 @@ struct Xi1530Analysisqa {
     }
   }
 
-  void processDataMicro(aod::ResoCollision const& resoCollision, aod::ResoMicroTracks const& resomicrotracks, aod::ResoCascades const& cascTracks)
+  void processDataMicro(aod::ResoCollision const& resoCollision,
+                        aod::ResoCollisionColls const& collisionIndex,
+                        soa::Join<aod::Collisions, aod::PVMults> const& collisions,
+                        aod::ResoMicroTracks const& resomicrotracks,
+                        aod::ResoCascades const& cascTracks)
   {
+    if (cRecoINELgt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+    }
 
     histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
-    fillHistograms<true, false, false>(resoCollision, resomicrotracks, cascTracks);
+    auto multiplicity = resoCollision.cent();
+    fillHistograms<true, false, false>(resoCollision, multiplicity, resomicrotracks, cascTracks);
   }
 
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
@@ -1137,16 +1243,21 @@ struct Xi1530Analysisqa {
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
 
       histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
-      fillHistograms<false, false, true>(collision1, tracks1, tracks2);
+      auto multiplicity = collision1.cent();
+      fillHistograms<false, false, true>(collision1, multiplicity, tracks1, tracks2);
     }
   }
   void processDataDF(aod::ResoCollisionDF const& resoCollision, aod::ResoTrackDFs const& resotracks, aod::ResoCascadeDFs const& cascTracks)
   {
-
-    fillHistograms<false, false, false>(resoCollision, resotracks, cascTracks);
+    auto multiplicity = resoCollision.cent();
+    fillHistograms<false, false, false>(resoCollision, multiplicity, resotracks, cascTracks);
   }
 
-  void processMEMicro(aod::ResoCollisions const& resoCollisions, aod::ResoMicroTracks const& resomicrotracks, aod::ResoCascades const& cascTracks)
+  void processMEMicro(aod::ResoCollisions const& resoCollisions,
+                      aod::ResoCollisionColls const& collisionIndex,
+                      soa::Join<aod::Collisions, aod::PVMults> const& collisions,
+                      aod::ResoMicroTracks const& resomicrotracks,
+                      aod::ResoCascades const& cascTracks)
   {
     auto tracksTuple = std::make_tuple(resomicrotracks, cascTracks);
 
@@ -1155,8 +1266,19 @@ struct Xi1530Analysisqa {
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
 
+      if (cRecoINELgt0) {
+        const auto rcIdx = collision1.globalIndex();
+        auto linkRow = collisionIndex.iteratorAt(rcIdx);
+        auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+        auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+
+        if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+          continue;
+      }
       histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
-      fillHistograms<true, false, true>(collision1, tracks1, tracks2);
+      auto multiplicity = collision1.cent();
+      fillHistograms<true, false, true>(collision1, multiplicity, tracks1, tracks2);
     }
   }
 

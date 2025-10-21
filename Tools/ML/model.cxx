@@ -42,17 +42,17 @@ namespace ml
 std::string OnnxModel::printShape(const std::vector<int64_t>& v)
 {
   std::stringstream ss("");
-  for (size_t i = 0; i < v.size() - 1; i++)
+  for (std::size_t i = 0; i < v.size() - 1; i++)
     ss << v[i] << "x";
   ss << v[v.size() - 1];
   return ss.str();
 }
 
-bool OnnxModel::checkHyperloop(bool verbose)
+bool OnnxModel::checkHyperloop(const bool verbose)
 {
   /// Testing hyperloop core settings
   const char* alienCores = gSystem->Getenv("ALIEN_JDL_CPUCORES");
-  bool alienCoresFound = (alienCores != NULL);
+  const bool alienCoresFound = (alienCores != NULL);
   if (alienCoresFound) {
     if (verbose) {
       LOGP(info, "Hyperloop test/Grid job detected! Number of cores = {}. Setting threads anyway to 1.", alienCores);
@@ -68,7 +68,7 @@ bool OnnxModel::checkHyperloop(bool verbose)
   return alienCoresFound;
 }
 
-void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int threads, uint64_t from, uint64_t until)
+void OnnxModel::initModel(const std::string& localPath, const bool enableOptimizations, const int threads, const uint64_t from, const uint64_t until)
 {
 
   assert(from <= until);
@@ -90,26 +90,26 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "onnx-model");
   mSession = std::make_shared<Ort::Session>(*mEnv, modelPath.c_str(), sessionOptions);
 
-  Ort::AllocatorWithDefaultOptions tmpAllocator;
-  for (size_t i = 0; i < mSession->GetInputCount(); ++i) {
+  Ort::AllocatorWithDefaultOptions const tmpAllocator;
+  for (std::size_t i = 0; i < mSession->GetInputCount(); ++i) {
     mInputNames.push_back(mSession->GetInputNameAllocated(i, tmpAllocator).get());
   }
-  for (size_t i = 0; i < mSession->GetInputCount(); ++i) {
+  for (std::size_t i = 0; i < mSession->GetInputCount(); ++i) {
     mInputShapes.emplace_back(mSession->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
   }
-  for (size_t i = 0; i < mSession->GetOutputCount(); ++i) {
+  for (std::size_t i = 0; i < mSession->GetOutputCount(); ++i) {
     mOutputNames.push_back(mSession->GetOutputNameAllocated(i, tmpAllocator).get());
   }
-  for (size_t i = 0; i < mSession->GetOutputCount(); ++i) {
+  for (std::size_t i = 0; i < mSession->GetOutputCount(); ++i) {
     mOutputShapes.emplace_back(mSession->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
   }
   LOG(info) << "Input Nodes:";
-  for (size_t i = 0; i < mInputNames.size(); i++) {
+  for (std::size_t i = 0; i < mInputNames.size(); i++) {
     LOG(info) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);
   }
 
   LOG(info) << "Output Nodes:";
-  for (size_t i = 0; i < mOutputNames.size(); i++) {
+  for (std::size_t i = 0; i < mOutputNames.size(); i++) {
     LOG(info) << "\t" << mOutputNames[i] << " : " << printShape(mOutputShapes[i]);
   }
 
@@ -121,7 +121,7 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
   LOG(info) << "--- Model initialized! ---";
 }
 
-void OnnxModel::setActiveThreads(int threads)
+void OnnxModel::setActiveThreads(const int threads)
 {
   activeThreads = threads;
   if (!checkHyperloop(false)) {

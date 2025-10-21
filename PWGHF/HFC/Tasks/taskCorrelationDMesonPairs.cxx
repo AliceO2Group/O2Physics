@@ -14,14 +14,20 @@
 ///
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <THnSparse.h>
+
+#include <sys/types.h>
+
+#include <Rtypes.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -88,28 +94,29 @@ struct HfTaskCorrelationDMesonPairs {
   {
     if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar))) {
       return Signal;
-    } else if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD))) {
-      return Reflected;
-    } else if ((TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) ||
-               (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar)))) {
-      return Bkg;
-    } else {
-      return Default;
     }
+    if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD))) {
+      return Reflected;
+    }
+    if ((TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) ||
+        (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar)))) {
+      return Bkg;
+    }
+    return Default;
   }
 
   void processData(aod::D0Pair const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      float ptCand1 = pairEntry.ptCand1();
-      float ptCand2 = pairEntry.ptCand2();
-      float massDCand1 = pairEntry.mDCand1();
-      float massDbarCand1 = pairEntry.mDbarCand1();
-      float massDCand2 = pairEntry.mDCand2();
-      float massDbarCand2 = pairEntry.mDbarCand2();
-      float yCand1 = pairEntry.yCand1();
-      float yCand2 = pairEntry.yCand2();
+      float const ptCand1 = pairEntry.ptCand1();
+      float const ptCand2 = pairEntry.ptCand2();
+      float const massDCand1 = pairEntry.mDCand1();
+      float const massDbarCand1 = pairEntry.mDbarCand1();
+      float const massDCand2 = pairEntry.mDCand2();
+      float const massDbarCand2 = pairEntry.mDbarCand2();
+      float const yCand1 = pairEntry.yCand1();
+      float const yCand2 = pairEntry.yCand2();
       auto pairType = pairEntry.pairType();
       auto d0Type1 = getD0Type(pairEntry.candidateType1());
       auto d0Type2 = getD0Type(pairEntry.candidateType2());
@@ -135,14 +142,14 @@ struct HfTaskCorrelationDMesonPairs {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double ptParticle1 = pairEntry.ptCand1();
-      double ptParticle2 = pairEntry.ptCand2();
-      float massDParticle1 = pairEntry.mDCand1();
-      float massDbarParticle1 = pairEntry.mDbarCand1();
-      float massDParticle2 = pairEntry.mDCand2();
-      float massDbarParticle2 = pairEntry.mDbarCand2();
-      float yParticle1 = pairEntry.yCand1();
-      float yParticle2 = pairEntry.yCand2();
+      double const ptParticle1 = pairEntry.ptCand1();
+      double const ptParticle2 = pairEntry.ptCand2();
+      float const massDParticle1 = pairEntry.mDCand1();
+      float const massDbarParticle1 = pairEntry.mDbarCand1();
+      float const massDParticle2 = pairEntry.mDCand2();
+      float const massDbarParticle2 = pairEntry.mDbarCand2();
+      float const yParticle1 = pairEntry.yCand1();
+      float const yParticle2 = pairEntry.yCand2();
       auto pairType = pairEntry.pairType();
       auto d0Type1 = getD0Type(pairEntry.candidateType1());
       auto d0Type2 = getD0Type(pairEntry.candidateType2());

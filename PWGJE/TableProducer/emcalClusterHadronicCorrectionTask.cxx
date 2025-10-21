@@ -87,7 +87,7 @@ struct EmcalClusterHadronicCorrectionTask {
     registry.add("h_Ecluster2", "; Ecluster2 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
     registry.add("h_EclusterAll1", "; EclusterAll1 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
     registry.add("h_EclusterAll2", "; EclusterAll2 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
-    registry.add("h_ClsTime", "Cluster time distribution of uncorrected cluster E; #it{t}_{cls} (ns); entries", {HistType::kTH1F, {{500, -250., 250.}}});
+    registry.add("h_ClsTime", "Cluster time distribution of uncorrected cluster E; #it{t}_{cls} (ns); entries", {HistType::kTH1F, {{1500, -600., 900.}}});
     registry.add("h_ClsM02", "Cluster M02 distribution of uncorrected cluster E; #it{M}_{02}; entries", {HistType::kTH1F, {{400, 0., 5.}}});
     registry.add("h2_ClsEvsNmatches", "Original cluster energy vs Nmatches; Cls E w/o correction (GeV); Nmatches", {HistType::kTH2F, {{350, 0., 350.}, {100, -0.5, 21.}}});
     registry.add("h2_ClsEvsEcluster1", "; Cls E w/o correction (GeV); Ecluster1 (GeV)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
@@ -161,11 +161,12 @@ struct EmcalClusterHadronicCorrectionTask {
         if (matchedTrack.pt() < minTrackPt) {
           continue;
         }
-        double mom = abs(matchedTrack.p());
+        double mom = std::abs(matchedTrack.p());
         registry.fill(HIST("h_matchedtracks"), 1);
 
         // CASE 1: skip tracks with a very low pT
-        if (mom < 1e-6) {
+        constexpr double kMinMom = 1e-6;
+        if (mom < kMinMom) {
           continue;
         } // end CASE 1
 
@@ -176,8 +177,8 @@ struct EmcalClusterHadronicCorrectionTask {
 
         // Perform dEta/dPhi matching
         auto emcTrack = (emcTracks.sliceBy(perTrackMatchedTrack, matchedTrack.globalIndex())).iteratorAt(0);
-        double dEta = emcTrack.etaEmcal() - cluster.eta();
-        double dPhi = TVector2::Phi_mpi_pi(emcTrack.phiEmcal() - cluster.phi());
+        double dEta = emcTrack.etaDiff();
+        double dPhi = emcTrack.phiDiff();
 
         // Apply the eta and phi matching thresholds
         // dEta and dPhi cut : ensures that the matched track is within the desired eta/phi window
@@ -188,7 +189,7 @@ struct EmcalClusterHadronicCorrectionTask {
           auto trackPhiHigh = +funcPtDepPhi.Eval(mom);
           auto trackPhiLow = -funcPtDepPhi.Eval(mom);
 
-          if ((dPhi < trackPhiHigh && dPhi > trackPhiLow) && fabs(dEta) < trackEtaMax) {
+          if ((dPhi < trackPhiHigh && dPhi > trackPhiLow) && std::fabs(dEta) < trackEtaMax) {
             if (nMatches == 0) {
               closestTrkP = mom;
             }
@@ -197,7 +198,7 @@ struct EmcalClusterHadronicCorrectionTask {
           }
         } else {
           // Do fixed dEta/dPhi matching (non-pT dependent)
-          if (fabs(dEta) >= minDEta || fabs(dPhi) >= minDPhi) {
+          if (std::fabs(dEta) >= minDEta || std::fabs(dPhi) >= minDPhi) {
             continue; // Skip this track if outside the fixed cut region
           }
 

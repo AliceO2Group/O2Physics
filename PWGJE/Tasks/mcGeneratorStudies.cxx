@@ -60,6 +60,7 @@ struct MCGeneratorStudies {
   Configurable<bool> mRequireNoSameBunchPileup{"mRequireNoSameBunchPileup", true, "require no same bunch pileup in event cut"};
   Configurable<bool> mRequireGoodZvtxFT0vsPV{"mRequireGoodZvtxFT0vsPV", true, "require good Zvtx between FT0 vs. PV in event cut"};
   Configurable<bool> mRequireEMCReadoutInMB{"mRequireEMCReadoutInMB", true, "require the EMC to be read out in an MB collision (kTVXinEMC)"};
+  Configurable<bool> mRequireEMCReadoutInL0{"mRequireEMCReadoutInL0", false, "require the EMC to be read out by L0 trigger"};
 
   void init(InitContext const&)
   {
@@ -159,7 +160,7 @@ struct MCGeneratorStudies {
               continue;
             else if (mSelectOnlyChargedParticles && TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode())->Charge())
               continue;
-            if (fabs(mcParticle.y()) > mRapidityCut)
+            if (std::abs(mcParticle.y()) > mRapidityCut)
               continue;
             if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
               continue;
@@ -186,7 +187,7 @@ struct MCGeneratorStudies {
           continue;
         else if (mSelectOnlyChargedParticles && TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode())->Charge())
           continue;
-        if (fabs(mcParticle.y()) > mRapidityCut)
+        if (std::abs(mcParticle.y()) > mRapidityCut)
           continue;
         if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
           continue;
@@ -198,7 +199,7 @@ struct MCGeneratorStudies {
           mHistManager.fill(HIST("Yield_Accepted"), mcParticle.pt());
         if (!mRequireTVX || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
           mHistManager.fill(HIST("Yield_T"), mcParticle.pt());
-          if (abs(collision.posZ()) < mVertexCut) {
+          if (std::abs(collision.posZ()) < mVertexCut) {
             mHistManager.fill(HIST("Yield_TZ"), mcParticle.pt());
             if (!mRequireSel8 || collision.sel8()) {
               mHistManager.fill(HIST("Yield_TZS"), mcParticle.pt());
@@ -207,9 +208,11 @@ struct MCGeneratorStudies {
                 if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
                   mHistManager.fill(HIST("Yield_TZSGU"), mcParticle.pt());
                   if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC))) {
-                    mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
-                    if (isAccepted(mcParticle, mcParticles))
-                      mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
+                    if (!mRequireEMCReadoutInL0 || (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7))) {
+                      mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
+                      if (isAccepted(mcParticle, mcParticles))
+                        mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
+                    }
                   }
                 }
               }
@@ -271,7 +274,7 @@ struct MCGeneratorStudies {
       fRegistry->fill(HIST("hEMCollisionCounter"), 7.0);
     if (collision.sel8())
       fRegistry->fill(HIST("hEMCollisionCounter"), 8.0);
-    if (abs(collision.posZ()) < 10.0)
+    if (std::abs(collision.posZ()) < 10.0)
       fRegistry->fill(HIST("hEMCollisionCounter"), 9.0);
     if (collision.alias_bit(kTVXinEMC))
       fRegistry->fill(HIST("hEMCollisionCounter"), 10.0);
@@ -284,7 +287,7 @@ struct MCGeneratorStudies {
     fRegistry->fill(HIST("hCollisionCounter"), 1);
     if (!mRequireTVX || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       fRegistry->fill(HIST("hCollisionCounter"), 2);
-      if (abs(collision.posZ()) < mVertexCut) {
+      if (std::abs(collision.posZ()) < mVertexCut) {
         fRegistry->fill(HIST("hCollisionCounter"), 3);
         if (!mRequireSel8 || collision.sel8()) {
           fRegistry->fill(HIST("hCollisionCounter"), 4);
@@ -292,8 +295,11 @@ struct MCGeneratorStudies {
             fRegistry->fill(HIST("hCollisionCounter"), 5);
             if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
               fRegistry->fill(HIST("hCollisionCounter"), 6);
-              if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)))
-                fRegistry->fill(HIST("hCollisionCounter"), 7);
+              if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC))) {
+                if (!mRequireEMCReadoutInL0 || (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7))) {
+                  fRegistry->fill(HIST("hCollisionCounter"), 7);
+                }
+              }
             }
           }
         }

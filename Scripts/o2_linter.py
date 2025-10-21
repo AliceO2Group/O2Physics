@@ -248,7 +248,7 @@ class TestSpec:
         if self.name in line:
             self.n_disabled += 1
             # Look for a comment with a reason for disabling.
-            if re.search(r" \([\w\s]{3,}\)", line):
+            if re.search(r" \(.{3,}\)", line):
                 return True
         return False
 

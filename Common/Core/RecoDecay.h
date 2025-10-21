@@ -17,21 +17,20 @@
 #ifndef COMMON_CORE_RECODECAY_H_
 #define COMMON_CORE_RECODECAY_H_
 
-// C++ includes
-#include <algorithm> // std::find
-#include <array>     // std::array
-#include <cmath>     // std::abs, std::sqrt
-#include <cstdio>
-#include <tuple>   // std::apply
-#include <utility> // std::move
-#include <vector>  // std::vector
+#include <CommonConstants/MathConstants.h>
 
-// ROOT includes
 #include <TMCProcess.h> // for VMC Particle Production Process
 #include <TPDGCode.h>   // for PDG codes
 
-// O2 includes
-#include "CommonConstants/MathConstants.h"
+#include <algorithm>   // std::find
+#include <array>       // std::array
+#include <cmath>       // std::abs, std::sqrt
+#include <cstddef>     // std::size_t
+#include <cstdint>     // intX_t
+#include <tuple>       // std::apply
+#include <type_traits> // std::decay_t
+#include <utility>     // std::move
+#include <vector>      // std::vector
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -43,11 +42,18 @@
 
 struct RecoDecay {
   // mapping of charm-hadron origin type
-  enum OriginType { None = 0,
-                    Prompt,
-                    NonPrompt };
+  enum OriginType {
+    None = 0,
+    Prompt,
+    NonPrompt
+  };
 
-  static constexpr int8_t StatusCodeAfterFlavourOscillation = 92; // decay products after B0(s) flavour oscillation
+  static constexpr int8_t StatusCodeAfterFlavourOscillation{92}; // decay products after B0(s) flavour oscillation
+  static constexpr int PdgQuarkMax{8};                           // largest quark PDG code; o2-linter: disable=pdg/explicit-code (t' does not have a named constant.)
+  static constexpr int PdgBosonMin{PDG_t::kGluon};               // smallest boson (gauge or H) PDG code
+  static constexpr int PdgBosonMax{37};                          // largest boson (gauge or H) PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
+  static constexpr int PdgDivisorMeson{100};                     // order of magnitude of the meson PDG codes
+  static constexpr int PdgDivisorBaryon{1000};                   // order of magnitude of the baryon PDG codes
 
   // Auxiliary functions
 
@@ -110,7 +116,7 @@ struct RecoDecay {
 
   /// Calculates scalar product of vectors.
   /// \note Promotes numbers to double to avoid precision loss in float multiplication.
-  /// \param N  dimension
+  /// \tparam N  dimension
   /// \param vec1,vec2  vectors
   /// \return scalar product
   template <std::size_t N, typename T, typename U>
@@ -137,7 +143,7 @@ struct RecoDecay {
   }
 
   /// Calculates magnitude squared of a vector.
-  /// \param N  dimension
+  /// \tparam N  dimension
   /// \param vec  vector
   /// \return magnitude squared
   template <std::size_t N, typename T>
@@ -435,7 +441,7 @@ struct RecoDecay {
   }
 
   /// Calculates invariant mass squared from momenta and masses of several particles (prongs).
-  /// \param N  number of prongs
+  /// \tparam N  number of prongs
   /// \param arrMom  array of N 3-momentum arrays
   /// \param arrMass  array of N masses (in the same order as arrMom)
   /// \return invariant mass squared
@@ -445,7 +451,7 @@ struct RecoDecay {
     std::array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
     double energyTot{0.};                       // candidate energy
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
-      for (std::size_t iMom = 0; iMom < 3; ++iMom) {
+      for (std::size_t iMom = 0; iMom < 3; ++iMom) { // o2-linter: disable=magic-number ({x, y, z} coordinates)
         momTotal[iMom] += arrMom[iProng][iMom];
       } // loop over momentum components
       energyTot += e(arrMom[iProng], arrMass[iProng]);
@@ -535,6 +541,7 @@ struct RecoDecay {
   }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param pdgMother  expected mother PDG code
@@ -613,7 +620,7 @@ struct RecoDecay {
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPdgFinal  array of PDG codes of particles to be considered final if found
@@ -686,7 +693,7 @@ struct RecoDecay {
   }
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
-  /// \tparam acceptFlavourOscillation  switch to accept flavour oscillastion (i.e. B0 -> B0bar -> D+pi-)
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
   /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \tparam acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
   /// \tparam acceptTrackDecay  switch to accept candidates with daughter tracks of pions and kaons which decayed
@@ -732,7 +739,7 @@ struct RecoDecay {
         if (!arrDaughters[iProng].has_mcParticle()) {
           return -1;
         }
-        auto particleI = arrDaughters[iProng].mcParticle();                                // ith daughter particle
+        auto particleI = arrDaughters[iProng].template mcParticle_as<T>();                 // ith daughter particle
         if (std::abs(particleI.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
           coefFlavourOscillation = -1;                                                     // select the sign of the mother after oscillation (and not before)
           break;
@@ -744,17 +751,17 @@ struct RecoDecay {
       if (!arrDaughters[iProng].has_mcParticle()) {
         return -1;
       }
-      auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
+      auto particleI = arrDaughters[iProng].template mcParticle_as<T>(); // ith daughter particle
       if constexpr (acceptTrackDecay) {
         // Replace the MC particle associated with the prong by its mother for π → μ and K → π.
         auto motherI = particleI.template mothers_first_as<T>();
         auto pdgI = std::abs(particleI.pdgCode());
         auto pdgMotherI = std::abs(motherI.pdgCode());
-        if (pdgI == kMuonMinus && pdgMotherI == kPiPlus) {
+        if (pdgI == PDG_t::kMuonMinus && pdgMotherI == PDG_t::kPiPlus) {
           // π → μ
           nPiToMuLocal++;
           particleI = motherI;
-        } else if (pdgI == kPiPlus && pdgMotherI == kKPlus) {
+        } else if (pdgI == PDG_t::kPiPlus && pdgMotherI == PDG_t::kKPlus) {
           // K → π
           nKaToPiLocal++;
           particleI = motherI;
@@ -871,7 +878,8 @@ struct RecoDecay {
   }
 
   /// Checks whether the MC particle is the expected one.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param pdgParticle  expected particle PDG code
@@ -890,7 +898,8 @@ struct RecoDecay {
   }
 
   /// Check whether the MC particle is the expected one and whether it decayed via the expected decay channel.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param pdgParticle  expected particle PDG code
@@ -1014,7 +1023,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
-    if (pdgParticle / 100 == kCharm || pdgParticle / 1000 == kCharm) {
+    if (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || pdgParticle / PdgDivisorBaryon == PDG_t::kCharm) {
       couldBePrompt = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1024,11 +1033,11 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          // we exit immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
+          // we exit immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
+            if (pdgParticleIMother <= PdgQuarkMax || (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax)) {
               return OriginType::Prompt;
             }
           }
@@ -1047,22 +1056,22 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / 100 == kBottom || // b mesons
-                    pdgParticleIMother / 1000 == kBottom)  // b baryons
+                if (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                    pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (pdgParticleIMother == kBottom) { // b quark
+              if (pdgParticleIMother == PDG_t::kBottom) { // b quark
                 return OriginType::NonPrompt;
               }
-              if (pdgParticleIMother == kCharm) { // c quark
+              if (pdgParticleIMother == PDG_t::kCharm) { // c quark
                 return OriginType::Prompt;
               }
             } else {
               if (
-                (pdgParticleIMother / 100 == kBottom || // b mesons
-                 pdgParticleIMother / 1000 == kBottom)  // b baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1070,8 +1079,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt;
               }
               if (
-                (pdgParticleIMother / 100 == kCharm || // c mesons
-                 pdgParticleIMother / 1000 == kCharm)  // c baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kCharm || // c mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
               ) {
                 couldBePrompt = true;
               }
@@ -1112,7 +1121,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBeCharm = false;
-    if (pdgParticle / 100 == kCharm || pdgParticle / 1000 == kCharm) {
+    if (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || pdgParticle / PdgDivisorBaryon == PDG_t::kCharm) {
       couldBeCharm = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1122,21 +1131,21 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          // we break immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
+          // we break immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
+            if (pdgParticleIMother <= PdgQuarkMax || (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax)) {
               // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
-                (pdgParticle / 100 == kBottom || // b mesons
-                 pdgParticle / 1000 == kBottom)  // b baryons
+                (pdgParticle / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                 pdgParticle / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
               ) {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticle / 100 == kCharm || // c mesons
-                 pdgParticle / 1000 == kCharm)  // c baryons
+                (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || // c mesons
+                 pdgParticle / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
               ) {
                 return OriginType::Prompt; // charm
               }
@@ -1160,22 +1169,22 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / 100 == kBottom || // b mesons
-                    pdgParticleIMother / 1000 == kBottom)  // b baryons
+                if (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                    pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (pdgParticleIMother == kBottom) { // b quark
-                return OriginType::NonPrompt;      // beauty
+              if (pdgParticleIMother == PDG_t::kBottom) { // b quark
+                return OriginType::NonPrompt;             // beauty
               }
-              if (pdgParticleIMother == kCharm) { // c quark
-                return OriginType::Prompt;        // charm
+              if (pdgParticleIMother == PDG_t::kCharm) { // c quark
+                return OriginType::Prompt;               // charm
               }
             } else {
               if (
-                (pdgParticleIMother / 100 == kBottom || // b mesons
-                 pdgParticleIMother / 1000 == kBottom)  // b baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1183,8 +1192,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticleIMother / 100 == kCharm || // c mesons
-                 pdgParticleIMother / 1000 == kCharm)  // c baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kCharm || // c mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
               ) {
                 couldBeCharm = true;
               }

@@ -42,17 +42,21 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
-using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
+using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 using MyTrackMC = MyTracksMC::iterator;
 
 struct skimmerPrimaryElectronFromDalitzEE {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
+  Preslice<aod::V0PhotonsKF> perCol_pcm = o2::aod::v0photonkf::collisionId;
   Produces<aod::EMPrimaryElectronsFromDalitz> emprimaryelectrons;
+  Produces<aod::EMPrimaryElectronsDeDxMC> emprimaryelectronsDeDxMC;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -69,7 +73,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
+  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};
@@ -86,6 +90,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
   Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"};
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
+  Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
+  Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view dileptonSigns[3] = {"uls/", "lspp/", "lsmm/"};
@@ -97,6 +103,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
   void init(InitContext&)
   {
+    if (doprocessRec && doprocessRec_SWT) {
+      LOGF(fatal, "Cannot enable doprocessRec and doprocessRec_SWT at the same time. Please choose one.");
+    }
+
     mRunNumber = 0;
     d_bz = 0;
 
@@ -108,7 +118,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {400, -2.0f, 2.0f}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
-    fRegistry.add("Track/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+    fRegistry.add("Track/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0, 10}, {100, 0, 0.1}}, false);
     fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/hDCAxy_Pt", "DCA_{xy} vs. pT;p_{T} (GeV/c);DCA_{xy} (cm)", kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
     fRegistry.add("Track/hDCAz_Pt", "DCA_{z} vs. pT;p_{T} (GeV/c);DCA_{z} (cm)", kTH2F, {{200, 0, 10}, {200, -1, 1}}, false);
@@ -124,12 +134,13 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
     fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
     // ITS
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{400, 0, 40}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
     fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
     fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
@@ -202,7 +213,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    if (track.itsChi2NCl() > maxchi2its) {
+    if (track.itsChi2NCl() < 0.f || maxchi2its < track.itsChi2NCl()) {
       return false;
     }
 
@@ -218,7 +229,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     }
 
     if (track.hasTPC()) {
-      if (track.tpcChi2NCl() > maxchi2tpc) {
+      if (track.tpcChi2NCl() < 0.f || maxchi2tpc < track.tpcChi2NCl()) {
         return false;
       }
 
@@ -300,80 +311,90 @@ struct skimmerPrimaryElectronFromDalitzEE {
     return true;
   }
 
-  template <typename TCollision, typename TTrack>
+  template <bool isMC, typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-    if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
-      emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
-                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
-                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
-                         track.tpcChi2NCl(), track.tpcInnerParam(),
-                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaPi(),
-                         track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), track.tgl());
+    emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
+                       track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
+                       track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
+                       track.tpcChi2NCl(), track.tpcInnerParam(),
+                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
+                       track.beta(), track.tofNSigmaEl(),
+                       track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap());
 
-      fRegistry.fill(HIST("Track/hPt"), track.pt());
-      fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
-      fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
-      fRegistry.fill(HIST("Track/hRelDeltaPt"), track.pt(), track.sigma1Pt() * track.pt());
-      fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
-      fRegistry.fill(HIST("Track/hDCAxy_Pt"), track.pt(), track.dcaXY());
-      fRegistry.fill(HIST("Track/hDCAz_Pt"), track.pt(), track.dcaZ());
-      fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
-      fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
-      fRegistry.fill(HIST("Track/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
-
-      fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
-      fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
-      fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
-      fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-      fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-      fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-      fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-      fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-
-      fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
-      fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
-      fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
-
-      fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
-      fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
-      fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-
-      int total_cluster_size = 0, nl = 0;
-      for (unsigned int layer = 0; layer < 7; layer++) {
-        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
-        if (cluster_size_per_layer > 0) {
-          nl++;
-        }
-        total_cluster_size += cluster_size_per_layer;
-      }
-
-      int total_cluster_size_ib = 0, nl_ib = 0;
-      for (unsigned int layer = 0; layer < 3; layer++) {
-        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
-        if (cluster_size_per_layer > 0) {
-          nl_ib++;
-        }
-        total_cluster_size_ib += cluster_size_per_layer;
-      }
-
-      int total_cluster_size_ob = 0, nl_ob = 0;
-      for (unsigned int layer = 3; layer < 7; layer++) {
-        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
-        if (cluster_size_per_layer > 0) {
-          nl_ob++;
-        }
-        total_cluster_size_ob += cluster_size_per_layer;
-      }
-      fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())));
-      fRegistry.fill(HIST("Track/hMeanClusterSizeITSib"), track.p(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(track.tgl())));
-      fRegistry.fill(HIST("Track/hMeanClusterSizeITSob"), track.p(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(track.tgl())));
-
-      stored_trackIds.emplace_back(std::make_pair(collision.globalIndex(), track.globalIndex()));
+    if constexpr (isMC) {
+      emprimaryelectronsDeDxMC(track.mcTunedTPCSignal());
     }
+  }
+
+  template <bool isMC, typename TTrack>
+  void fillTrackHistograms(TTrack const& track)
+  {
+    float mcTunedTPCSignal = 0.f;
+    if constexpr (isMC) {
+      mcTunedTPCSignal = track.mcTunedTPCSignal();
+    }
+
+    fRegistry.fill(HIST("Track/hPt"), track.pt());
+    fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
+    fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
+    fRegistry.fill(HIST("Track/hRelDeltaPt"), track.pt(), track.sigma1Pt() * track.pt());
+    fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
+    fRegistry.fill(HIST("Track/hDCAxy_Pt"), track.pt(), track.dcaXY());
+    fRegistry.fill(HIST("Track/hDCAz_Pt"), track.pt(), track.dcaZ());
+    fRegistry.fill(HIST("Track/hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
+    fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
+    fRegistry.fill(HIST("Track/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+
+    fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
+    fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
+    fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
+    fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+    fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+    fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+    fRegistry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
+    fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+    fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
+
+    fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
+    fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
+    fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+    fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+
+    fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
+    fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
+    fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
+
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 0; layer < 7; layer++) {
+      int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+      if (cluster_size_per_layer > 0) {
+        nl++;
+      }
+      total_cluster_size += cluster_size_per_layer;
+    }
+
+    int total_cluster_size_ib = 0, nl_ib = 0;
+    for (unsigned int layer = 0; layer < 3; layer++) {
+      int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+      if (cluster_size_per_layer > 0) {
+        nl_ib++;
+      }
+      total_cluster_size_ib += cluster_size_per_layer;
+    }
+
+    int total_cluster_size_ob = 0, nl_ob = 0;
+    for (unsigned int layer = 3; layer < 7; layer++) {
+      int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+      if (cluster_size_per_layer > 0) {
+        nl_ob++;
+      }
+      total_cluster_size_ob += cluster_size_per_layer;
+    }
+    fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())));
+    fRegistry.fill(HIST("Track/hMeanClusterSizeITSib"), track.p(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(track.tgl())));
+    fRegistry.fill(HIST("Track/hMeanClusterSizeITSob"), track.p(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(track.tgl())));
   }
 
   template <bool isMC, int pairtype, typename TCollision, typename TTracks1, typename TTracks2>
@@ -398,9 +419,35 @@ struct skimmerPrimaryElectronFromDalitzEE {
         if (v12.M() > maxMee) { // don't store
           continue;
         }
-        fillTrackTable(collision, t1);
-        fillTrackTable(collision, t2);
-      } // end of pairing
+
+        if (v12.M() < slope * phiv + intercept) {
+          continue;
+        }
+
+        if (t1.sign() > 0) { // for positron
+          if (std::find(acceptedPosTrackIds_per_collision.begin(), acceptedPosTrackIds_per_collision.end(), t1.globalIndex()) == acceptedPosTrackIds_per_collision.end()) {
+            fillTrackHistograms<isMC>(t1);
+            acceptedPosTrackIds_per_collision.emplace_back(t1.globalIndex());
+          }
+        } else { // for electron
+          if (std::find(acceptedNegTrackIds_per_collision.begin(), acceptedNegTrackIds_per_collision.end(), t1.globalIndex()) == acceptedNegTrackIds_per_collision.end()) {
+            fillTrackHistograms<isMC>(t1);
+            acceptedNegTrackIds_per_collision.emplace_back(t1.globalIndex());
+          }
+        }
+
+        if (t2.sign() > 0) { // for positron
+          if (std::find(acceptedPosTrackIds_per_collision.begin(), acceptedPosTrackIds_per_collision.end(), t2.globalIndex()) == acceptedPosTrackIds_per_collision.end()) {
+            fillTrackHistograms<isMC>(t2);
+            acceptedPosTrackIds_per_collision.emplace_back(t2.globalIndex());
+          }
+        } else { // for electron
+          if (std::find(acceptedNegTrackIds_per_collision.begin(), acceptedNegTrackIds_per_collision.end(), t2.globalIndex()) == acceptedNegTrackIds_per_collision.end()) {
+            fillTrackHistograms<isMC>(t2);
+            acceptedNegTrackIds_per_collision.emplace_back(t2.globalIndex());
+          }
+        }
+      } // end of ULS pairing
     } else { // LS
       for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
         if (!checkTrack<isMC>(collision, t1) || !checkTrack<isMC>(collision, t2)) {
@@ -416,18 +463,20 @@ struct skimmerPrimaryElectronFromDalitzEE {
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
         fRegistry.fill(HIST("Pair/") + HIST(dileptonSigns[pairtype]) + HIST("hMvsPt"), v12.M(), v12.Pt());
         fRegistry.fill(HIST("Pair/") + HIST(dileptonSigns[pairtype]) + HIST("hMvsPhiV"), phiv, v12.M());
-      } // end of pairing
+      } // end of LS pairing
     }
   }
 
-  std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max;
+  std::vector<int> acceptedPosTrackIds_per_collision;
+  std::vector<int> acceptedNegTrackIds_per_collision;
+  std::vector<std::pair<int, int>> stored_trackIds;
+  Filter trackFilter = minpt < o2::aod::track::pt && nabs(o2::aod::track::eta) < maxeta && o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
   // ---------- for data ----------
-  void processRec(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  void processRec(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks, aod::V0PhotonsKF const& v0photons)
   {
     stored_trackIds.reserve(tracks.size());
 
@@ -438,18 +487,34 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      if (collision.ngpcm() < 1) {
-        continue;
-      }
-
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
+      const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
+      acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
 
       fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (fillLS) {
         fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
         fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
       }
+
+      if ((v0photons_per_coll.size() >= 1 && acceptedPosTrackIds_per_collision.size() >= 1 && acceptedNegTrackIds_per_collision.size() >= 1) || (acceptedPosTrackIds_per_collision.size() >= 2 && acceptedNegTrackIds_per_collision.size() >= 2)) {
+        // LOGF(info, "v0photons_per_coll.size() = %d, acceptedPosTrackIds_per_collision.size() = %d, acceptedNegTrackIds_per_collision.size() = %d", v0photons_per_coll.size(), acceptedPosTrackIds_per_collision.size(), acceptedNegTrackIds_per_collision.size());
+        for (const auto& posId : acceptedPosTrackIds_per_collision) {
+          const auto& pos = tracks.rawIteratorAt(posId);
+          fillTrackTable<false>(collision, pos);
+        }
+        for (const auto& eleId : acceptedNegTrackIds_per_collision) {
+          const auto& ele = tracks.rawIteratorAt(eleId);
+          fillTrackTable<false>(collision, ele);
+        }
+      }
+
+      acceptedPosTrackIds_per_collision.clear();
+      acceptedPosTrackIds_per_collision.shrink_to_fit();
+      acceptedNegTrackIds_per_collision.clear();
+      acceptedNegTrackIds_per_collision.shrink_to_fit();
     } // end of collision loop
 
     stored_trackIds.clear();
@@ -457,36 +522,101 @@ struct skimmerPrimaryElectronFromDalitzEE {
   }
   PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec, "process reconstructed info only", true); // standalone
 
-  using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
-  Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
-  Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
-  // ---------- for MC ----------
-  void processMC(MyCollisionsMC const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
+  void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks, aod::V0PhotonsKF const& v0photons)
   {
     stored_trackIds.reserve(tracks.size());
 
     for (const auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      if (!collision.isSelected()) {
+        continue;
+      }
+
+      if (collision.swtaliastmp_raw() == 0) {
+        continue;
+      }
+
+      const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
+      const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
+      acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
+
+      fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+      if (fillLS) {
+        fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+        fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+      }
+
+      if ((v0photons_per_coll.size() >= 1 && acceptedPosTrackIds_per_collision.size() >= 1 && acceptedNegTrackIds_per_collision.size() >= 1) || (acceptedPosTrackIds_per_collision.size() >= 2 && acceptedNegTrackIds_per_collision.size() >= 2)) {
+        // LOGF(info, "v0photons_per_coll.size() = %d, acceptedPosTrackIds_per_collision.size() = %d, acceptedNegTrackIds_per_collision.size() = %d", v0photons_per_coll.size(), acceptedPosTrackIds_per_collision.size(), acceptedNegTrackIds_per_collision.size());
+        for (const auto& posId : acceptedPosTrackIds_per_collision) {
+          const auto& pos = tracks.rawIteratorAt(posId);
+          fillTrackTable<false>(collision, pos);
+        }
+        for (const auto& eleId : acceptedNegTrackIds_per_collision) {
+          const auto& ele = tracks.rawIteratorAt(eleId);
+          fillTrackTable<false>(collision, ele);
+        }
+      }
+
+      acceptedPosTrackIds_per_collision.clear();
+      acceptedPosTrackIds_per_collision.shrink_to_fit();
+      acceptedNegTrackIds_per_collision.clear();
+      acceptedNegTrackIds_per_collision.shrink_to_fit();
+    } // end of collision loop
+
+    stored_trackIds.clear();
+    stored_trackIds.shrink_to_fit();
+  }
+  PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec_SWT, "process reconstructed info with CEFP", false); // with cefp
+
+  using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
+  Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
+  Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
+  // ---------- for MC ----------
+  void processMC(MyCollisionsMC const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::V0PhotonsKF const& v0photons)
+  {
+    stored_trackIds.reserve(tracks.size());
+
+    for (const auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
       if (!collision.has_mcCollision()) {
         continue;
       }
       if (!collision.isSelected()) {
         continue;
       }
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
 
-      if (collision.ngpcm() < 1) {
-        continue;
-      }
-
-      auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
+      const auto& posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      const auto& negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
+      acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
 
       fillPairInfo<true, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
       if (fillLS) {
         fillPairInfo<true, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
         fillPairInfo<true, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
       }
+      if ((v0photons_per_coll.size() >= 1 && acceptedPosTrackIds_per_collision.size() >= 1 && acceptedNegTrackIds_per_collision.size() >= 1) || (acceptedPosTrackIds_per_collision.size() >= 2 && acceptedNegTrackIds_per_collision.size() >= 2)) {
+        // LOGF(info, "v0photons_per_coll.size() = %d, acceptedPosTrackIds_per_collision.size() = %d, acceptedNegTrackIds_per_collision.size() = %d", v0photons_per_coll.size(), acceptedPosTrackIds_per_collision.size(), acceptedNegTrackIds_per_collision.size());
+        for (const auto& posId : acceptedPosTrackIds_per_collision) {
+          const auto& pos = tracks.rawIteratorAt(posId);
+          fillTrackTable<true>(collision, pos);
+        }
+        for (const auto& eleId : acceptedNegTrackIds_per_collision) {
+          const auto& ele = tracks.rawIteratorAt(eleId);
+          fillTrackTable<true>(collision, ele);
+        }
+      }
+
+      acceptedPosTrackIds_per_collision.clear();
+      acceptedPosTrackIds_per_collision.shrink_to_fit();
+      acceptedNegTrackIds_per_collision.clear();
+      acceptedNegTrackIds_per_collision.shrink_to_fit();
     } // end of collision loop
 
     stored_trackIds.clear();

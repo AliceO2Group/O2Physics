@@ -16,22 +16,22 @@
 #ifndef PWGUD_CORE_UDHELPERS_H_
 #define PWGUD_CORE_UDHELPERS_H_
 
-#include <vector>
-#include <bitset>
+#include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/UPCHelpers.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsFIT/Triggers.h"
+#include "DataFormatsFT0/Digit.h"
+#include "Framework/Logger.h"
 
 #include "TLorentzVector.h"
-#include "Framework/Logger.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "CommonConstants/LHCConstants.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGCutparHolder.h"
 
-using namespace o2;
-using namespace o2::framework;
+#include <bitset>
+#include <vector>
 
 // namespace with helpers for UD framework
 namespace udhelpers
@@ -674,7 +674,7 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 // -----------------------------------------------------------------------------
 // extract FIT information
 template <typename BC, typename BCS>
-void getFITinfo(upchelpers::FITInfo& info, BC& bc, BCS const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+void getFITinfo(upchelpers::FITInfo& info, BC& bc, BCS const& bcs, o2::aod::FT0s const& ft0s, o2::aod::FV0As const& fv0as, o2::aod::FDDs const& fdds)
 {
   // FV0A
   if (bc.has_foundFV0()) {
@@ -713,24 +713,24 @@ void getFITinfo(upchelpers::FITInfo& info, BC& bc, BCS const& bcs, aod::FT0s con
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& /*lims*/, SliceCache& cache)
+bool cleanZDC(T const& bc, o2::aod::Zdcs& zdcs, std::vector<float>& /*lims*/, o2::framework::SliceCache& cache)
 {
-  const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex(), cache);
+  const auto& ZdcBC = zdcs.sliceByCached(o2::aod::zdc::bcId, bc.globalIndex(), cache);
   return (ZdcBC.size() == 0);
 }
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, SliceCache& cache)
+bool cleanCalo(T const& bc, o2::aod::Calos& calos, std::vector<float>& /*lims*/, o2::framework::SliceCache& cache)
 {
-  const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex(), cache);
+  const auto& CaloBC = calos.sliceByCached(o2::aod::calo::bcId, bc.globalIndex(), cache);
   return (CaloBC.size() == 0);
 }
 
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, aod::McCollisions, aod::McParticles)
+int64_t sameMCCollision(T tracks, o2::aod::McCollisions, o2::aod::McParticles)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

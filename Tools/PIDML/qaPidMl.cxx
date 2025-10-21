@@ -14,17 +14,28 @@
 /// \author Łukasz Sawicki
 /// \since
 
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include <TParameter.h>
-#include <TPDGCode.h>
 #include "Tools/PIDML/pidOnnxModel.h"
+//
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <cstddef>
+#include <string>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;
@@ -311,7 +322,7 @@ struct QaPidMl {
 
   static constexpr float kCertaintyThreshold = 0.5f;
 
-  int getParticlePdg(float pidCertainties[])
+  int getParticlePdg(const float pidCertainties[])
   {
     // index of the biggest value in an array
     int index = 0;

@@ -14,22 +14,34 @@
 ///
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
-#include <memory>
-#include <utility>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+
+#include <TH1.h>
+
+#include <array>
+#include <cmath>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
+#include <utility>
 
 using namespace o2;
 using namespace o2::aod;
@@ -86,7 +98,7 @@ struct HfCandidateCreatorLbReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // histograms
-    registry.add("hMassLambdaLbToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hMassLambdaB0ToLcPi", "2-prong candidates;inv. mass (#Lambda_{b}^{0} #rightarrow #Lambda_{c}^{#plus}#pi^{#minus} #rightarrow pK^{#minus}#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -97,8 +109,8 @@ struct HfCandidateCreatorLbReduced {
   }
 
   template <typename Config>
-  inline std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
-                                                           float invMassWindowLcPiTolerance)
+  std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
+                                                    float invMassWindowLcPiTolerance)
   {
 
     myInvMassWindowLcPi = 0.0f;
@@ -106,11 +118,11 @@ struct HfCandidateCreatorLbReduced {
       myInvMassWindowLcPi = config.myInvMassWindowLcPi();
     }
 
-    float deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
-    float deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
+    float const deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
+    float const deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
 
-    float invMass2LcPiMin = deltaMin * deltaMin;
-    float invMass2LcPiMax = deltaMax * deltaMax;
+    float const invMass2LcPiMin = deltaMin * deltaMin;
+    float const invMass2LcPiMax = deltaMax * deltaMax;
 
     return {invMass2LcPiMin, invMass2LcPiMax};
   }
@@ -122,7 +134,7 @@ struct HfCandidateCreatorLbReduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2LcPiMin minimum Lb invariant-mass
   /// \param invMass2LcPiMax maximum Lb invariant-mass
-  template <bool withLcMl, typename Cands, typename Pions, typename Coll>
+  template <bool WithLcMl, typename Cands, typename Pions, typename Coll>
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsLcThisColl,
                             Pions const& tracksPionThisCollision,
@@ -211,7 +223,7 @@ struct HfCandidateCreatorLbReduced {
 
         rowCandidateProngs(candLc.globalIndex(), trackPion.globalIndex());
 
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           if (candLc.invMassHypo0() > 0) {
             rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo0(), candLc.mlScorePromptMassHypo0(), candLc.mlScoreNonpromptMassHypo0());
           } else {
@@ -296,7 +308,7 @@ struct HfCandidateCreatorLbReducedExpressions {
   /// \param checkDecayTypeMc
   /// \param rowsLcPiMcRec MC reco information on LcPi pairs
   /// \param candsLb prong global indices of Lb candidates
-  template <bool checkDecayTypeMc, typename McRec>
+  template <bool CheckDecayTypeMc, typename McRec>
   void fillLbMcRec(McRec const& rowsLcPiMcRec, HfRedLbProngs const& candsLb)
   {
     for (const auto& candLb : candsLb) {
@@ -307,7 +319,7 @@ struct HfCandidateCreatorLbReducedExpressions {
         }
         rowLbMcRec(rowLcPiMcRec.flagMcMatchRec(), rowLcPiMcRec.flagWrongCollision(), rowLcPiMcRec.debugMcRec(), rowLcPiMcRec.ptMother());
         filledMcInfo = true;
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowLbMcCheck(rowLcPiMcRec.pdgCodeBeautyMother(),
                        rowLcPiMcRec.pdgCodeCharmMother(),
                        rowLcPiMcRec.pdgCodeProng0(),
@@ -319,7 +331,7 @@ struct HfCandidateCreatorLbReducedExpressions {
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the LcPi creator
         rowLbMcRec(0, -1, -1, -1.f);
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowLbMcCheck(-1, -1, -1, -1, -1, -1);
         }
       }

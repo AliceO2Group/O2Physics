@@ -13,18 +13,18 @@
 /// \brief Task used to read the derived table produced by the tableMaker-association of DQ framework and extract observables on single muons needed for the HF-muon analysis.
 /// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -62,17 +62,17 @@ struct HfTaskSingleMuonReaderAssoc {
 
   void init(InitContext&)
   {
-    AxisSpec axisPt{200, 0., 100., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisEta{100, -4., -2., "#it{#eta}"};
-    AxisSpec axisDCA{2000, 0., 2., "#it{DCA}_{xy} (cm)"};
-    AxisSpec axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
-    AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
-    AxisSpec axisRabs{1000, 0, 100, "R at Absorber End (cm)"};
-    AxisSpec axisDeltaPt{10000, -50, 50, "#Delta #it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
+    AxisSpec const axisPt{200, 0., 100., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisEta{100, -4., -2., "#it{#eta}"};
+    AxisSpec const axisDCA{2000, 0., 2., "#it{DCA}_{xy} (cm)"};
+    AxisSpec const axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
+    AxisSpec const axisSign{5, -2.5, 2.5, "Charge"};
+    AxisSpec const axisRabs{1000, 0, 100, "R at Absorber End (cm)"};
+    AxisSpec const axisDeltaPt{10000, -50, 50, "#Delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
 
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisPt, axisEta, axisDCA, axisRabs, axisSign, axisChi2MatchMCHMFT, axisDeltaPt}, 7};
-    HistogramConfigSpec hVtxZ{HistType::kTH1F, {axisVtxZ}};
+    HistogramConfigSpec const hTHnMu{HistType::kTHnSparseF, {axisPt, axisEta, axisDCA, axisRabs, axisSign, axisChi2MatchMCHMFT, axisDeltaPt}, 7};
+    HistogramConfigSpec const hVtxZ{HistType::kTH1F, {axisVtxZ}};
 
     registry.add("hMuAfterCuts", "", hTHnMu);
     if (fillMcHist) {
@@ -114,10 +114,10 @@ struct HfTaskSingleMuonReaderAssoc {
       // histograms after acceptance cuts
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<TMuons>();
-        auto Dpt = muonType3.pt() - pt;
+        auto dpt = muonType3.pt() - pt;
 
-        singleMuon(pt, dcaXY, Dpt, chi2);
-        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+        singleMuon(pt, dcaXY, dpt, chi2);
+        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
       }
     }
   }
@@ -154,15 +154,15 @@ struct HfTaskSingleMuonReaderAssoc {
       // histograms after acceptance cuts
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<TMuons>();
-        auto Dpt = muonType3.pt() - pt;
+        auto dpt = muonType3.pt() - pt;
 
-        singleMuon(pt, dcaXY, Dpt, chi2);
-        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+        singleMuon(pt, dcaXY, dpt, chi2);
+        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
         if (muon.mcMask() == 0) {
-          registry.fill(HIST("hMuAfterCutsTrue"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+          registry.fill(HIST("hMuAfterCutsTrue"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
         }
         if (muon.mcMask() == 128) {
-          registry.fill(HIST("hMuAfterCutsFake"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+          registry.fill(HIST("hMuAfterCutsFake"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
         }
       }
     }

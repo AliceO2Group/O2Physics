@@ -22,15 +22,24 @@
 // - david.dobrigkeit.chinellato@cern.ch
 //
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "TH1F.h"
-#include "TH2F.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;

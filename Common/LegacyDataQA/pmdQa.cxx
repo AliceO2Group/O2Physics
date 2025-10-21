@@ -15,20 +15,23 @@
 /// \author Abhi Modak (abhi.modak@cern.ch)
 /// \since May 17, 2025
 
-#include <cstdlib>
-#include <cmath>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PmdTable.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TH1F.h"
-#include "TH2F.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod::run2;

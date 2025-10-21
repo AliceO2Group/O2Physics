@@ -15,15 +15,16 @@
 /// \brief  Implementation for QA tasks of the TOF PID quantities
 ///
 
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -135,7 +136,7 @@ struct tofPidQa {
   Configurable<float> ptDeltaTEtaPhiMapMin{"ptDeltaTEtaPhiMapMin", 1.45f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
   Configurable<float> ptDeltaTEtaPhiMapMax{"ptDeltaTEtaPhiMapMax", 1.55f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
-  Configurable<bool> enableVsMomentumHistograms{"enableVsMomentumHistograms", false, "Enables plots vs momentum instead of just pT (reduces memory footprint if off)"};
+  Configurable<int> enableVsMomentumHistograms{"enableVsMomentumHistograms", 0, "1: Enables plots vs momentum instead of just pT 2: Enables plots vs momentum vs eta instead of just pT (reduces memory footprint if off)"};
   Configurable<bool> requireGoodMatchTracks{"requireGoodMatchTracks", false, "Require good match tracks"};
   Configurable<float> pvContributorsMin{"pvContributorsMin", -10, "Minimum pvContributors"};
   Configurable<float> pvContributorsMax{"pvContributorsMax", 10000, "Maximum pvContributors"};
@@ -238,11 +239,16 @@ struct tofPidQa {
       return;
     }
 
-    if (enableVsMomentumHistograms) {
+    if (enableVsMomentumHistograms == 1) {
       histos.add(hdelta_evtime_fill[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
       histos.add(hdelta_evtime_tof[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
       histos.add(hdelta_evtime_ft0[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
       histos.add(hdelta_evtime_tofft0[id].data(), axisTitle, kTH2F, {pAxis, deltaAxis});
+    } else if (enableVsMomentumHistograms == 2) {
+      histos.add(hdelta_evtime_fill[id].data(), axisTitle, kTH3F, {pAxis, etaAxis, deltaAxis});
+      histos.add(hdelta_evtime_tof[id].data(), axisTitle, kTH3F, {pAxis, etaAxis, deltaAxis});
+      histos.add(hdelta_evtime_ft0[id].data(), axisTitle, kTH3F, {pAxis, etaAxis, deltaAxis});
+      histos.add(hdelta_evtime_tofft0[id].data(), axisTitle, kTH3F, {pAxis, etaAxis, deltaAxis});
     }
 
     if (splitSignalPerCharge) {
@@ -598,8 +604,10 @@ struct tofPidQa {
         // Filling info split per ev. time
         if (enableEvTimeSplitting) {
           if (t.isEvTimeTOF() && t.isEvTimeT0AC()) { // TOF + FT0 Ev. Time
-            if (enableVsMomentumHistograms) {
+            if (enableVsMomentumHistograms == 1) {
               histos.fill(HIST(hdelta_evtime_tofft0[id]), t.p(), diff);
+            } else if (enableVsMomentumHistograms == 2) {
+              histos.fill(HIST(hdelta_evtime_tofft0[id]), t.p(), t.eta(), diff);
             }
             if (splitSignalPerCharge) {
               histos.fill(HIST(hdelta_pt_evtime_tofft0[id]), t.pt(), diff, t.sign());
@@ -607,8 +615,10 @@ struct tofPidQa {
               histos.fill(HIST(hdelta_pt_evtime_tofft0[id]), t.pt(), diff);
             }
           } else if (t.isEvTimeT0AC()) { // FT0 Ev. Time
-            if (enableVsMomentumHistograms) {
+            if (enableVsMomentumHistograms == 1) {
               histos.fill(HIST(hdelta_evtime_ft0[id]), t.p(), diff);
+            } else if (enableVsMomentumHistograms == 2) {
+              histos.fill(HIST(hdelta_evtime_ft0[id]), t.p(), t.eta(), diff);
             }
             if (splitSignalPerCharge) {
               histos.fill(HIST(hdelta_pt_evtime_ft0[id]), t.pt(), diff, t.sign());
@@ -616,8 +626,10 @@ struct tofPidQa {
               histos.fill(HIST(hdelta_pt_evtime_ft0[id]), t.pt(), diff);
             }
           } else if (t.isEvTimeTOF()) { // TOF Ev. Time
-            if (enableVsMomentumHistograms) {
+            if (enableVsMomentumHistograms == 1) {
               histos.fill(HIST(hdelta_evtime_tof[id]), t.p(), diff);
+            } else if (enableVsMomentumHistograms == 2) {
+              histos.fill(HIST(hdelta_evtime_tof[id]), t.p(), t.eta(), diff);
             }
             if (splitSignalPerCharge) {
               histos.fill(HIST(hdelta_pt_evtime_tof[id]), t.pt(), diff, t.sign());
@@ -625,8 +637,10 @@ struct tofPidQa {
               histos.fill(HIST(hdelta_pt_evtime_tof[id]), t.pt(), diff);
             }
           } else { // No Ev. Time -> Fill Ev. Time
-            if (enableVsMomentumHistograms) {
+            if (enableVsMomentumHistograms == 1) {
               histos.fill(HIST(hdelta_evtime_fill[id]), t.p(), diff);
+            } else if (enableVsMomentumHistograms == 2) {
+              histos.fill(HIST(hdelta_evtime_fill[id]), t.p(), t.eta(), diff);
             }
             if (splitSignalPerCharge) {
               histos.fill(HIST(hdelta_pt_evtime_fill[id]), t.pt(), diff, t.sign());

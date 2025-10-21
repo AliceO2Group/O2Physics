@@ -91,6 +91,7 @@ struct kinkCandidate {
 struct kinkBuilder {
 
   enum PartType { kSigmaMinus = 0,
+                  kHypertriton,
                   kHyperhelium4sigma };
 
   Produces<aod::KinkCands> outputDataTable;
@@ -111,6 +112,7 @@ struct kinkBuilder {
   Configurable<float> nTPCClusMinDaug{"nTPCClusMinDaug", 80, "daug NTPC clusters cut"};
   Configurable<bool> askTOFforDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
   Configurable<bool> doSVRadiusCut{"doSVRadiusCut", true, "If true, apply the cut on the radius of the secondary vertex and tracksIU"};
+  Configurable<bool> updateMothTrackUsePV{"updateMothTrackUsePV", false, "If true, update the mother track parameters using the primary vertex"};
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -160,6 +162,11 @@ struct kinkBuilder {
       mothMass = o2::constants::physics::MassSigmaMinus;
       chargedDauMass = o2::constants::physics::MassPiMinus;
       neutDauMass = o2::constants::physics::MassNeutron;
+    } else if (hypoMoth == kHypertriton) {
+      charge = 1;
+      mothMass = o2::constants::physics::MassHyperTriton;
+      chargedDauMass = o2::constants::physics::MassTriton;
+      neutDauMass = o2::constants::physics::MassPi0;
     } else if (hypoMoth == kHyperhelium4sigma) {
       charge = 2;
       mothMass = o2::constants::physics::MassHyperHelium4;
@@ -198,6 +205,8 @@ struct kinkBuilder {
     AxisSpec massAxis(100, 1.1, 1.4, "m (GeV/#it{c}^{2})");
     if (hypoMoth == kSigmaMinus) {
       massAxis = AxisSpec{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
+    } else if (hypoMoth == kHypertriton) {
+      massAxis = AxisSpec{100, 2.94, 3.2, "m (GeV/#it{c}^{2})"};
     } else if (hypoMoth == kHyperhelium4sigma) {
       massAxis = AxisSpec{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
     }
@@ -311,6 +320,14 @@ struct kinkBuilder {
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
       if (std::abs(dcaInfoDaug[0]) < minDCADaugToPV) {
         continue;
+      }
+
+      if (updateMothTrackUsePV) {
+        // update the mother track parameters using the primary vertex
+        trackParCovMoth = trackParCovMothPV;
+        if (!trackParCovMoth.update(primaryVertex)) {
+          continue;
+        }
       }
 
       int nCand = 0;

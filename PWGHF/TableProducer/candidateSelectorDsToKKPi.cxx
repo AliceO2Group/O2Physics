@@ -15,21 +15,34 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politano <stefano.politano@cern.ch>, Politecnico and INFN Torino
 
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelectorPID.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDsToKKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -83,8 +96,8 @@ struct HfCandidateSelectorDsToKKPi {
 
   HfHelper hfHelper;
   o2::analysis::HfMlResponseDsToKKPi<float> hfMlResponse;
-  std::vector<float> outputMlDsToKKPi = {};
-  std::vector<float> outputMlDsToPiKK = {};
+  std::vector<float> outputMlDsToKKPi;
+  std::vector<float> outputMlDsToPiKK;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -138,12 +151,9 @@ struct HfCandidateSelectorDsToKKPi {
   template <typename T1>
   bool isSelectedCandidateProngDca(const T1& candidate)
   {
-    if (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
-        isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
-        isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2())) {
-      return true;
-    }
-    return false;
+    return static_cast<bool>(isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
+                             isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
+                             isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2()));
   }
 
   /// Candidate selections independent from the daugther-mass hypothesis
@@ -153,7 +163,7 @@ struct HfCandidateSelectorDsToKKPi {
   bool selection(const T1& candidate)
   {
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -197,7 +207,7 @@ struct HfCandidateSelectorDsToKKPi {
   template <typename T1, typename T2>
   bool selectionKKPi(const T1& candidate, const T2& trackKaon1, const T2& trackKaon2, const T2& trackPion)
   {
-    int pTBin = findBin(binsPt, candidate.pt());
+    int const pTBin = findBin(binsPt, candidate.pt());
     if (pTBin == -1) {
       return false;
     }
@@ -229,7 +239,7 @@ struct HfCandidateSelectorDsToKKPi {
   template <typename T1, typename T2>
   bool selectionPiKK(const T1& candidate, const T2& trackPion, const T2& trackKaon1, const T2& trackKaon2)
   {
-    int pTBin = findBin(binsPt, candidate.pt());
+    int const pTBin = findBin(binsPt, candidate.pt());
     if (pTBin == -1) {
       return false;
     }
@@ -265,7 +275,7 @@ struct HfCandidateSelectorDsToKKPi {
       outputMlDsToKKPi.clear();
       outputMlDsToPiKK.clear();
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) == 0) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
           hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
@@ -294,8 +304,8 @@ struct HfCandidateSelectorDsToKKPi {
         continue;
       }
 
-      bool topolDsToKKPi = selectionKKPi(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolDsToPiKK = selectionPiKK(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolDsToKKPi = selectionKKPi(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolDsToPiKK = selectionPiKK(candidate, trackPos1, trackNeg, trackPos2);
       if (!topolDsToKKPi && !topolDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
@@ -334,13 +344,13 @@ struct HfCandidateSelectorDsToKKPi {
         pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
       }
 
-      bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Rejected ||
-                           pidTrackNegKaon == TrackSelectorPID::Rejected ||
-                           pidTrackPos2Pion == TrackSelectorPID::Rejected);
+      bool const pidDsToKKPi = pidTrackPos1Kaon != TrackSelectorPID::Rejected &&
+                               pidTrackNegKaon != TrackSelectorPID::Rejected &&
+                               pidTrackPos2Pion != TrackSelectorPID::Rejected;
 
-      bool pidDsToPiKK = !(pidTrackPos1Pion == TrackSelectorPID::Rejected ||
-                           pidTrackNegKaon == TrackSelectorPID::Rejected ||
-                           pidTrackPos2Kaon == TrackSelectorPID::Rejected);
+      bool const pidDsToPiKK = pidTrackPos1Pion != TrackSelectorPID::Rejected &&
+                               pidTrackNegKaon != TrackSelectorPID::Rejected &&
+                               pidTrackPos2Kaon != TrackSelectorPID::Rejected;
 
       if (!pidDsToKKPi && !pidDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);

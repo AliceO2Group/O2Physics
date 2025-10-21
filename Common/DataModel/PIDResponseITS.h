@@ -22,13 +22,17 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSEITS_H_
 #define COMMON_DATAMODEL_PIDRESPONSEITS_H_
 
-// O2 includes
-#include "TableHelper.h"
+#include "Common/Core/TableHelper.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Array2D.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -83,6 +87,8 @@ struct ITSResponse {
   template <o2::track::PID::ID id>
   static float nSigmaITS(uint32_t itsClusterSizes, float momentum, float eta)
   {
+    unsigned int charge = (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) ? 2 : 1;
+    momentum *= charge;
     const float exp = expSignal<id>(momentum);
     const float average = averageClusterSize(itsClusterSizes);
     const float coslInv = 1. / std::cosh(eta);

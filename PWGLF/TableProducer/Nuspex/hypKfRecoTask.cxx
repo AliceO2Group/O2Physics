@@ -63,7 +63,7 @@ using CollisionsFull = soa::Join<aod::Collisions, aod::PIDMults, aod::EvSels, ao
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::pidTOFmass>;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 //----------------------------------------------------------------------------------------------------------------
 
 namespace

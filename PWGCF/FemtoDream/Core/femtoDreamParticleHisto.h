@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoDreamParticleHisto.h
+/// \file femtoDreamParticleHisto.h
 /// \brief FemtoDreamParticleHisto - Histogram class for tracks, V0s and cascades
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
@@ -18,11 +18,14 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 
-#include <TMath.h>
-#include <string>
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/HistogramRegistry.h"
+
+#include <TMath.h>
+
+#include <string>
 
 using namespace o2::framework;
 
@@ -71,6 +74,19 @@ class FemtoDreamParticleHisto
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassCascade").c_str(), "; M_{Cascade}; Entries", kTH1F, {InvMassAxis});
       mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassCascade").c_str(), "; p_{T} (GeV/#it{c{}); M_{Cascade}", kTH2F, {pTAxis, InvMassAxis});
+    }
+    if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kReso) {
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassReso").c_str(), "; M_{Reso}; Entries", kTH1F, {InvMassAxis}); // added for Phi !!
+      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassReso").c_str(), "; p_{T} (GeV/#it{c{}); M_{Reso}", kTH2F, {pTAxis, InvMassAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiReso").c_str(), "; M_{Reso}; Entries", kTH1F, {InvMassAxis}); // added for Phi !!
+      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassAntiReso").c_str(), "; p_{T} (GeV/#it{c{}); M_{Reso}", kTH2F, {pTAxis, InvMassAxis});
+    }
+    if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kResoChild) {
+
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassReso").c_str(), "; M_{Reso}; Entries", kTH1F, {InvMassAxis}); // added for Phi !!
+      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassReso").c_str(), "; p_{T} (GeV/#it{c{}); M_{Reso}", kTH2F, {pTAxis, InvMassAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiReso").c_str(), "; M_{Reso}; Entries", kTH1F, {InvMassAxis}); // added for Phi !!
+      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassAntiReso").c_str(), "; p_{T} (GeV/#it{c{}); M_{Reso}", kTH2F, {pTAxis, InvMassAxis});
     }
   }
 
@@ -149,6 +165,30 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hCascDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassCompetingCascade").c_str(), "; M_{Competing Cascade}; Entries", kTH1F, {InvMassCompetingAxis});
       mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassCompetingCascade").c_str(), "; p_{T} (GeV/#it{c{}); M_{Competing Cascade}", kTH2F, {pTAxis, InvMassCompetingAxis});
+    } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kResoChild) {
+      mHistogramRegistry->add((folderName + folderSuffix + "/hCharge").c_str(), "; Charge; Entries", kTH1F, {{5, -2.5, 2.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCcrossedOverFindable").c_str(), "; TPC ratio findable over crossed; Entries", kTH1F, {{100, 0.5, 1.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, -0.5, 162.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCsharedOverFound").c_str(), "; TPC ratio shared over found; Entries", kTH1F, {{1000, 0, 1}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, -0.5, 162.5}, {163, -0.5, 162.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfoundVsShared").c_str(), ";TPC found clusters ; TPC shared clusters;", kTH2F, {{163, -0.5, 162.5}, {163, -0.5, 162.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {pTAxis, dcazAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p} (GeV/#it{c}); DCA (cm)", kTH2F, {pTAxis, {300, 0., 1.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "n#sigma_{TPC}^{#pi}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "n#sigma_{TPC}^{K}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "n#sigma_{TOF}^{#pi}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "n#sigma_{TOF}^{K}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "n#sigma_{comb}^{#pi}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "n#sigma_{comb}^{K}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/ITSSignal").c_str(), "<cluster size>x<cos#lambda>", kTH2F, {pTAxis, NsigmaITSAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_pi").c_str(), "n#sigma_{ITS}^{#pi}", kTH2F, {pTAxis, NsigmaITSAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_K").c_str(), "n#sigma_{ITS}^{K}", kTH2F, {pTAxis, NsigmaITSAxis});
     }
   }
 
@@ -256,6 +296,9 @@ class FemtoDreamParticleHisto
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child || mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
         /// Track histograms
         tempFitVarAxisTitle = "DCA_{xy} (cm)";
+      } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kResoChild || mParticleType == o2::aod::femtodreamparticle::ParticleType::kReso) { // mParticleType == o2::aod::femtodreamparticle::ParticleType::kReso || Phi has no TempFitVar!!
+        /// Reso histograms added!!
+        tempFitVarAxisTitle = "DCA_{xy} (cm)";
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0 || mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0) {
         /// V0 histograms
         tempFitVarAxisTitle = "cos#alpha";
@@ -322,6 +365,18 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassCascade"), part.pt(), part.mLambda());
       // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassCascade"), part.mLambda());
       // mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassCascade"), part.pt(), part.mLambda());
+    }
+    if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kReso) {
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassReso"), part.mLambda());              // currently no MC for Phi!!
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassReso"), part.pt(), part.mLambda()); // getter from FDPArticles now!!
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassAntiReso"), part.mAntiLambda());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassAntiReso"), part.pt(), part.mAntiLambda());
+    }
+    if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kResoChild) {
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassReso"), part.mLambda());              // currently no MC for Phi!!
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassReso"), part.pt(), part.mLambda()); // getter from FDPArticles now!!
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassAntiReso"), part.mAntiLambda());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassAntiReso"), part.pt(), part.mAntiLambda());
     }
   }
 
@@ -400,7 +455,7 @@ class FemtoDreamParticleHisto
         float pidTPC = 0.;
         float pidTOF = 0.;
 
-        switch (abs(mPDG)) {
+        switch (std::abs(mPDG)) {
           case kElectron:
             pidTPC = part.tpcNSigmaEl();
             pidTOF = part.tofNSigmaEl();
@@ -460,9 +515,32 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hCascDecayVtxZ"), part.cascDecayVtxZ());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassCompetingCascade"), part.mOmega());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassCompetingCascade"), part.pt(), part.mOmega());
+    } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kResoChild) {
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hCharge"), part.sign());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCfindable"), part.tpcNClsFindable());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCfound"), part.tpcNClsFound());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCcrossedOverFindable"), part.tpcCrossedRowsOverFindableCls());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCcrossedRows"), part.tpcNClsCrossedRows());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCfindableVsCrossed"), part.tpcNClsFindable(), part.tpcNClsCrossedRows());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCshared"), part.tpcNClsShared());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCsharedOverFound"), static_cast<float>(part.tpcNClsShared()) / static_cast<float>(part.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCfoundVsShared"), part.tpcNClsFound(), part.tpcNClsShared());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hITSclusters"), part.itsNCls());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hITSclustersIB"), part.itsNClsInnerBarrel());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hDCAz"), momentum, part.dcaZ());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hDCA"), momentum, std::sqrt(std::pow(part.dcaXY(), 2.) + std::pow(part.dcaZ(), 2.)));
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTPCdEdX"), momentum, part.tpcSignal());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaTPC_pi"), momentum, part.tpcNSigmaPi());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaTPC_K"), momentum, part.tpcNSigmaKa());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaTOF_pi"), momentum, part.tofNSigmaPi());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaTOF_K"), momentum, part.tofNSigmaKa());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaComb_pi"), momentum, std::sqrt(part.tpcNSigmaPi() * part.tpcNSigmaPi() + part.tofNSigmaPi() * part.tofNSigmaPi()));
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaComb_K"), momentum, std::sqrt(part.tpcNSigmaKa() * part.tpcNSigmaKa() + part.tofNSigmaKa() * part.tofNSigmaKa()));
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/ITSSignal"), momentum, part.itsSignal());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaITS_pi"), momentum, part.itsNSigmaPi());
+      mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaITS_K"), momentum, part.itsNSigmaKa());
     }
   }
-
   /// Filling specialized histograms for Monte Carlo truth
   /// internal function called by init only in case of Monte Carlo truth
   /// \tparam T Data type of the particle
@@ -483,7 +561,7 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hEta_DiffTruthReco"), MCpart.eta(), (part.eta() - MCpart.eta()));
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPhi_DiffTruthReco"), MCpart.phi(), (part.phi() - MCpart.phi()));
 
-      if (abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
+      if (std::abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
         mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPt_ReconNoFake"), part.pt());
       }
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
@@ -690,11 +768,13 @@ class FemtoDreamParticleHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                                                                                      ///< For QA output
-  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;                                                                    ///< Type of the particle under analysis
-  static constexpr int mFolderSuffixType = suffixType;                                                                                                        ///< Counter for the folder suffix specified below
-  static constexpr std::string_view mFolderSuffix[9] = {"", "_one", "_two", "_pos", "_neg", "_allSelected", "_allSelected_pos", "_allSelected_neg", "_bach"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
-  int mPDG = 0;                                                                                                                                               ///< PDG code of the selected particle
+  HistogramRegistry* mHistogramRegistry;                                                   ///< For QA output
+  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType; ///< Type of the particle under analysis
+  static constexpr int mFolderSuffixType = suffixType;                                     ///< Counter for the folder suffix specified below
+  static constexpr std::string_view mFolderSuffix[12] = {"", "_one", "_two", "_pos", "_neg",
+                                                         "_allSelected", "_allSelected_pos", "_allSelected_neg", "_bach",
+                                                         "_two_pos", "_two_neg", "_two_bach"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  int mPDG = 0;                                                                                ///< PDG code of the selected particle
 };
 } // namespace o2::analysis::femtoDream
 

@@ -15,15 +15,13 @@
 #define PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
 
 #include "JFFlucAnalysis.h"
-#include "Framework/HistogramRegistry.h"
 
-using namespace o2;
-using namespace o2::framework;
+#include "Framework/HistogramRegistry.h"
 
 class JFFlucAnalysisO2Hist : public JFFlucAnalysis
 {
  public:
-  JFFlucAnalysisO2Hist(HistogramRegistry&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, const TString&);
+  JFFlucAnalysisO2Hist(o2::framework::HistogramRegistry&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, uint16_t, const TString&);
   ~JFFlucAnalysisO2Hist();
 };
 

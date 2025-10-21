@@ -14,21 +14,32 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -53,7 +64,7 @@ const double epsilon = 1E-5;
 
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::NBinsPt;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
+const auto efficiencyDmesonV = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
 // histogram binning definition
 const int massAxisBins = 120;
@@ -85,7 +96,7 @@ struct HfCorrelatorD0D0bar {
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmesonV}, "Efficiency values for D0 meson"};
 
   HfHelper hfHelper;
 
@@ -171,12 +182,12 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if ((candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) {
         continue;
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
@@ -203,7 +214,7 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check decay channel flag for candidate2
+        if ((candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) { // check decay channel flag for candidate2
           continue;
         }
         if (candidate2.isSelD0bar() < selectionFlagD0bar) { // keep only D0bar candidates passing the selection
@@ -281,7 +292,7 @@ struct HfCorrelatorD0D0bar {
     bool flagD0barReflection = false;
     for (const auto& candidate1 : selectedD0CandidatesGroupedMC) {
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if ((candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
@@ -292,11 +303,11 @@ struct HfCorrelatorD0D0bar {
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
-      if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(candidate1.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         // fill per-candidate distributions from D0/D0bar true candidates
         registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
         registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
@@ -307,19 +318,19 @@ struct HfCorrelatorD0D0bar {
         registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
-      if (candidate1.isSelD0() >= selectionFlagD0) {                                       // only reco as D0
-        if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) { // also matched as D0
+      if (candidate1.isSelD0() >= selectionFlagD0) {                                                  // only reco as D0
+        if (candidate1.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // also matched as D0
           registry.fill(HIST("hMassD0MCRecSig"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
-        } else if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        } else if (candidate1.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassD0MCRecRefl"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassD0MCRecBkg"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         }
       }
-      if (candidate1.isSelD0bar() >= selectionFlagD0bar) {                                    // only reco as D0bar
-        if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // also matched as D0bar
+      if (candidate1.isSelD0bar() >= selectionFlagD0bar) {                                             // only reco as D0bar
+        if (candidate1.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // also matched as D0bar
           registry.fill(HIST("hMassD0barMCRecSig"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
-        } else if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+        } else if (candidate1.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassD0barMCRecRefl"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassD0barMCRecBkg"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
@@ -331,17 +342,17 @@ struct HfCorrelatorD0D0bar {
       if (candidate1.isSelD0() < selectionFlagD0) { // discard candidates not selected as D0 in outer loop
         continue;
       }
-      flagD0Signal = candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
-      flagD0Reflection = candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
+      flagD0Signal = candidate1.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;      // flagD0Signal 'true' if candidate1 matched to D0 (particle)
+      flagD0Reflection = candidate1.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK; // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
       for (const auto& candidate2 : selectedD0CandidatesGroupedMC) {
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check decay channel flag for candidate2
+        if ((candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) { // check decay channel flag for candidate2
           continue;
         }
         if (candidate2.isSelD0bar() < selectionFlagD0bar) { // discard candidates not selected as D0bar in inner loop
           continue;
         }
-        flagD0barSignal = candidate2.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK);  // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)
-        flagD0barReflection = candidate2.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK; // flagD0barReflection 'true' if candidate2, selected as D0bar (antiparticle), is matched to D0 (particle)
+        flagD0barSignal = candidate2.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;    // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)
+        flagD0barReflection = candidate2.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK; // flagD0barReflection 'true' if candidate2, selected as D0bar (antiparticle), is matched to D0 (particle)
         if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
@@ -404,7 +415,7 @@ struct HfCorrelatorD0D0bar {
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(particle1.pVector(), MassD0);
+      double const yD = RecoDecay::y(particle1.pVector(), MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -445,7 +456,7 @@ struct HfCorrelatorD0D0bar {
 
         // fill pairs vs etaCut plot
         bool rightDecayChannels = false;
-        if ((std::abs(particle1.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) && (std::abs(particle2.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if ((std::abs(particle1.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) && (std::abs(particle2.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           rightDecayChannels = true;
         }
         do {
@@ -496,13 +507,13 @@ struct HfCorrelatorD0D0bar {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
-      int partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
+      int const partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
       // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
-      double yC = RecoDecay::y(particle1.pVector(), MassCharm);
+      double const yC = RecoDecay::y(particle1.pVector(), MassCharm);
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }

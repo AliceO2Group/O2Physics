@@ -16,6 +16,7 @@
 /// \author Mingyu Zhang <mingyu.zang@cern.ch>
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
@@ -23,15 +24,17 @@
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
-#include <Rtypes.h>
-#include <RtypesCore.h>
-
 #include <TF1.h>
 #include <TH1.h>
 #include <TNamed.h>
 #include <TVirtualPad.h>
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cstdio>
+#include <string>
+#include <vector>
 
 class HFInvMassFitter : public TNamed
 {
@@ -43,30 +46,35 @@ class HFInvMassFitter : public TNamed
     Pow = 3,
     PowExpo = 4,
     Poly3 = 5,
-    NoBkg = 6
+    NoBkg = 6,
+    NTypesOfBkgPdf
   };
+  std::vector<std::string> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
   enum TypeOfSgnPdf {
     SingleGaus = 0,
     DoubleGaus = 1,
     DoubleGausSigmaRatioPar = 2,
-    GausSec = 3
+    GausSec = 3,
+    NTypesOfSgnPdf
   };
   enum TypeOfReflPdf {
     SingleGausRefl = 0,
     DoubleGausRefl = 1,
     Poly3Refl = 2,
-    Poly6Refl = 3
+    Poly6Refl = 3,
+    NTypesOfReflPdf
   };
+  std::vector<std::string> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
   HFInvMassFitter();
   HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
-  ~HFInvMassFitter();
+  ~HFInvMassFitter() override;
   void setHistogramForFit(const TH1* histoToFit)
   {
-    if (mHistoInvMass) {
-      delete mHistoInvMass;
-    }
-    mHistoInvMass = static_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
-    mHistoInvMass->SetDirectory(0);
+
+    delete mHistoInvMass;
+
+    mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
+    mHistoInvMass->SetDirectory(nullptr);
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
@@ -91,7 +99,7 @@ class HFInvMassFitter : public TNamed
     mParamSgn = sigmaLimit;
   }
   void setParticlePdgMass(Double_t mass) { mMassParticle = mass; }
-  Double_t getParticlePdgMass() { return mMassParticle; }
+  [[nodiscard]] Double_t getParticlePdgMass() const { return mMassParticle; }
   void setInitialGaussianMean(Double_t mean)
   {
     mMass = mean;
@@ -180,35 +188,36 @@ class HFInvMassFitter : public TNamed
     setInitialReflOverSgn(reflOverSgn);
     mFixReflOverSgn = kTRUE;
   }
-  void setTemplateReflections(const TH1* histoRefl, Int_t fitTypeRefl = DoubleGaus)
+  void setTemplateReflections(const TH1* histoRefl)
   {
-    if (!histoRefl) {
+    if (histoRefl == nullptr) {
       mEnableReflections = kFALSE;
+      return;
     }
-    mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
+    mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
-  Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
-  Double_t getRawYield() const { return mRawYield; }
-  Double_t getRawYieldError() const { return mRawYieldErr; }
-  Double_t getRawYieldCounted() const { return mRawYieldCounted; }
-  Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
-  Double_t getBkgYield() const { return mBkgYield; }
-  Double_t getBkgYieldError() const { return mBkgYieldErr; }
-  Double_t getSignificance() const { return mSignificance; }
-  Double_t getSignificanceError() const { return mSignificanceErr; }
-  Double_t getMean() const { return mRooMeanSgn->getVal(); }
-  Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
-  Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
-  Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
-  Double_t getReflOverSig() const
+  [[nodiscard]] Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
+  [[nodiscard]] Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
+  [[nodiscard]] Double_t getRawYield() const { return mRawYield; }
+  [[nodiscard]] Double_t getRawYieldError() const { return mRawYieldErr; }
+  [[nodiscard]] Double_t getRawYieldCounted() const { return mRawYieldCounted; }
+  [[nodiscard]] Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
+  [[nodiscard]] Double_t getBkgYield() const { return mBkgYield; }
+  [[nodiscard]] Double_t getBkgYieldError() const { return mBkgYieldErr; }
+  [[nodiscard]] Double_t getSignificance() const { return mSignificance; }
+  [[nodiscard]] Double_t getSignificanceError() const { return mSignificanceErr; }
+  [[nodiscard]] Double_t getMean() const { return mRooMeanSgn->getVal(); }
+  [[nodiscard]] Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
+  [[nodiscard]] Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
+  [[nodiscard]] Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  [[nodiscard]] Double_t getReflOverSig() const
   {
-    if (mReflPdf) {
+    if (mReflPdf != nullptr) {
       return mReflOverSgn;
-    } else {
-      return 0;
     }
+    return 0;
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
   void countSignal(Double_t& signal, Double_t& signalErr) const;
@@ -268,7 +277,8 @@ class HFInvMassFitter : public TNamed
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance
   Double_t mSignificanceErr;         /// err on significance
-  Double_t mChiSquareOverNdf;        /// chi2/ndf
+  Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
+  Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal

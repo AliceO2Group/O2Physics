@@ -17,12 +17,13 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEB0TODPI_H_
 #define PWGHF_CORE_HFMLRESPONSEB0TODPI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -74,9 +75,12 @@ namespace o2::analysis
 enum class InputFeaturesB0ToDPi : uint8_t {
   ptProng0 = 0,
   ptProng1,
+  ptProng2,
   impactParameter0,
   impactParameter1,
+  impactParameter2,
   impactParameterProduct,
+  impactParameterProngSqSum,
   chi2PCA,
   decayLength,
   decayLengthXY,
@@ -90,7 +94,13 @@ enum class InputFeaturesB0ToDPi : uint8_t {
   prong0MlScoreNonprompt,
   tpcNSigmaPi1,
   tofNSigmaPi1,
-  tpcTofNSigmaPi1
+  tpcTofNSigmaPi1,
+  tpcNSigmaPiBachPi,
+  tofNSigmaPiBachPi,
+  tpcTofNSigmaPiBachPi,
+  tpcNSigmaPiSoftPi,
+  tofNSigmaPiSoftPi,
+  tpcTofNSigmaPiSoftPi
 };
 
 template <typename TypeOutputScore, bool reduced>
@@ -108,7 +118,7 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
   /// \return inputFeatures vector
   template <bool withDmesMl, typename T1, typename T2>
   std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong1,
+                                      T2 const& prongBachPi,
                                       const std::vector<float>* mlScoresD = nullptr)
   {
     std::vector<float> inputFeatures;
@@ -129,11 +139,77 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_B0(cpaXY);
         CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
         // TPC PID variable
-        CHECK_AND_FILL_VEC_B0_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_B0_FULL(prongBachPi, tpcNSigmaPi1, tpcNSigmaPi);
         // TOF PID variable
-        CHECK_AND_FILL_VEC_B0_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_B0_FULL(prongBachPi, tofNSigmaPi1, tofNSigmaPi);
         // Combined PID variables
-        CHECK_AND_FILL_VEC_B0_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+        CHECK_AND_FILL_VEC_B0_FUNC(prongBachPi, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+      }
+      if constexpr (withDmesMl) {
+        if constexpr (reduced) {
+          switch (idx) {
+            CHECK_AND_FILL_VEC_B0(prong0MlScoreBkg);
+            CHECK_AND_FILL_VEC_B0(prong0MlScorePrompt);
+            CHECK_AND_FILL_VEC_B0(prong0MlScoreNonprompt);
+          }
+        } else {
+          if (mlScoresD) {
+            switch (idx) {
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreBkg, *mlScoresD, 0);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScorePrompt, *mlScoresD, 1);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreNonprompt, *mlScoresD, 2);
+            }
+          } else {
+            LOG(fatal) << "ML scores of D not provided";
+          }
+        }
+      }
+    }
+
+    return inputFeatures;
+  }
+
+  /// Method to get the input features vector needed for ML inference
+  /// \param candidate is the B0 candidate
+  /// \param prongBachPi is the candidate's bachelor pion prong
+  /// \param prongSoftPi is the candidate's soft pion prong
+  /// \param mlScoresD is the vector of ML scores for the D meson (if available)
+  /// \note this method is used for B0 → D*∓ π± candidates with D meson ML scores
+  /// \return inputFeatures vector
+  template <bool withDmesMl, typename T1, typename T2, typename T3>
+  std::vector<float> getInputFeaturesDStarPi(T1 const& candidate,
+                                             T2 const& prongBachPi,
+                                             T3 const& prongSoftPi,
+                                             const std::vector<float>* mlScoresD = nullptr)
+  {
+    std::vector<float> inputFeatures;
+
+    for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
+      switch (idx) {
+        CHECK_AND_FILL_VEC_B0(ptProng0);
+        CHECK_AND_FILL_VEC_B0(ptProng1);
+        CHECK_AND_FILL_VEC_B0(ptProng2);
+        CHECK_AND_FILL_VEC_B0(impactParameter0);
+        CHECK_AND_FILL_VEC_B0(impactParameter1);
+        CHECK_AND_FILL_VEC_B0(impactParameter2);
+        CHECK_AND_FILL_VEC_B0(impactParameterProngSqSum);
+        CHECK_AND_FILL_VEC_B0(chi2PCA);
+        CHECK_AND_FILL_VEC_B0(decayLength);
+        CHECK_AND_FILL_VEC_B0(decayLengthXY);
+        CHECK_AND_FILL_VEC_B0(decayLengthNormalised);
+        CHECK_AND_FILL_VEC_B0(decayLengthXYNormalised);
+        CHECK_AND_FILL_VEC_B0(cpa);
+        CHECK_AND_FILL_VEC_B0(cpaXY);
+        CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
+        // TPC PID variable
+        CHECK_AND_FILL_VEC_B0_FULL(prongBachPi, tpcNSigmaPiBachPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_B0_FULL(prongSoftPi, tpcNSigmaPiSoftPi, tpcNSigmaPiSoftPi);
+        // TOF PID variable
+        CHECK_AND_FILL_VEC_B0_FULL(prongBachPi, tofNSigmaPiBachPi, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_B0_FULL(prongSoftPi, tofNSigmaPiSoftPi, tofNSigmaPiSoftPi);
+        // Combined PID variables
+        CHECK_AND_FILL_VEC_B0_FUNC(prongBachPi, tpcTofNSigmaPiBachPi, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+        CHECK_AND_FILL_VEC_B0_FUNC(prongSoftPi, tpcTofNSigmaPiSoftPi, o2::pid_tpc_tof_utils::getTpcTofNSigmaSoftPi);
       }
       if constexpr (withDmesMl) {
         if constexpr (reduced) {
@@ -166,9 +242,12 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
       FILL_MAP_B0(ptProng0),
       FILL_MAP_B0(ptProng1),
+      FILL_MAP_B0(ptProng2),
       FILL_MAP_B0(impactParameter0),
       FILL_MAP_B0(impactParameter1),
+      FILL_MAP_B0(impactParameter2),
       FILL_MAP_B0(impactParameterProduct),
+      FILL_MAP_B0(impactParameterProngSqSum),
       FILL_MAP_B0(chi2PCA),
       FILL_MAP_B0(decayLength),
       FILL_MAP_B0(decayLengthXY),
@@ -182,10 +261,16 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_B0(prong0MlScoreNonprompt),
       // TPC PID variable
       FILL_MAP_B0(tpcNSigmaPi1),
+      FILL_MAP_B0(tpcNSigmaPiSoftPi),
+      FILL_MAP_B0(tpcNSigmaPiBachPi),
       // TOF PID variable
       FILL_MAP_B0(tofNSigmaPi1),
+      FILL_MAP_B0(tofNSigmaPiSoftPi),
+      FILL_MAP_B0(tofNSigmaPiBachPi),
       // Combined PID variable
-      FILL_MAP_B0(tpcTofNSigmaPi1)};
+      FILL_MAP_B0(tpcTofNSigmaPi1),
+      FILL_MAP_B0(tpcTofNSigmaPiSoftPi),
+      FILL_MAP_B0(tpcTofNSigmaPiBachPi)};
   }
 };
 

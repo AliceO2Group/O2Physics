@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsMcGen.h
-/// \brief utility functions for HF Mc gen. workflows
+/// \brief utility functions for HF MC gen. workflows
 ///
 /// \author Nima Zardoshti, nima.zardoshti@cern.ch, CERN
 
@@ -18,72 +18,78 @@
 #define PWGHF_UTILS_UTILSMCGEN_H_
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsMcMatching.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 
 #include <TPDGCode.h>
 
-#include <Rtypes.h>
-
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
 namespace hf_mc_gen
 {
 
-template <typename T, typename U, typename V>
-void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, bool matchCorrelatedBackgrounds)
+template <typename TMcParticles, typename TMcParticlesPerColl, typename TCursor>
+void fillMcMatchGen2Prong(TMcParticles const& mcParticles,
+                          TMcParticlesPerColl const& mcParticlesPerMcColl,
+                          TCursor& rowMcMatchGen,
+                          const bool rejectBackground,
+                          const bool matchCorrelatedBackground)
 {
   using namespace o2::constants::physics;
+  using namespace o2::hf_decay::hf_cand_2prong;
+
   constexpr std::size_t NDaughtersResonant{2u};
 
   // Match generated particles.
   for (const auto& particle : mcParticlesPerMcColl) {
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelResonant = 0;
     int8_t origin = 0;
-    int8_t channel = 0;
     int8_t sign = 0;
     std::vector<int> idxBhadMothers{};
     // Reject particles from background events
     if (particle.fromBackgroundEvent() && rejectBackground) {
-      rowMcMatchGen(flag, origin, channel, -1);
+      rowMcMatchGen(flagChannelMain, origin, flagChannelResonant, -1);
       continue;
     }
-    if (matchCorrelatedBackgrounds) {
-      constexpr int MaxDepth = 2;     // Depth for final state matching
-      constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
+    if (matchCorrelatedBackground) {
+      constexpr int DepthMainMax = 2; // Depth for final state matching
+      constexpr int DepthResoMax = 1; // Depth for resonant decay matching
       bool matched = false;
 
-      for (const auto& [chn, finalState] : o2::hf_decay::hf_cand_2prong::daughtersD0Main) {
-        if (finalState.size() == 3) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays)
-          std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
-          o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
-          matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, MaxDepth);
-        } else if (finalState.size() == 2) { // o2-linter: disable=magic-number (Fully Reco 2-prong decays)
-          std::array<int, 2> finalStateParts = std::array{finalState[0], finalState[1]};
-          matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, MaxDepth);
+      // TODO: J/ψ
+      for (const auto& [channelMain, finalState] : daughtersD0Main) {
+        if (finalState.size() == 3) { // o2-linter: disable=magic-number (partially reconstructed 3-prong decays)
+          std::array<int, 3> arrPdgDaughtersMain3Prongs = std::array{finalState[0], finalState[1], finalState[2]};
+          o2::hf_decay::flipPdgSign(particle.pdgCode(), +kPi0, arrPdgDaughtersMain3Prongs);
+          matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, arrPdgDaughtersMain3Prongs, true, &sign, DepthMainMax);
+        } else if (finalState.size() == 2) { // o2-linter: disable=magic-number (fully reconstructed 2-prong decays)
+          std::array<int, 2> arrPdgDaughtersMain2Prongs = std::array{finalState[0], finalState[1]};
+          matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, DepthMainMax);
         } else {
-          LOG(info) << "Final state size not supported: " << finalState.size();
-          continue;
+          LOG(fatal) << "Final state size not supported: " << finalState.size();
+          return;
         }
         if (matched) {
-          flag = sign * (1 << chn);
+          flagChannelMain = sign * channelMain;
 
           // Flag the resonant decay channel
           std::vector<int> arrResoDaughIndex = {};
-          RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, ResoMaxDepth);
-          std::array<int, NDaughtersResonant> arrPDGDaugh = {};
+          RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, DepthResoMax);
+          std::array<int, NDaughtersResonant> arrPdgDaughters = {};
           if (arrResoDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-              arrPDGDaugh[iProng] = daughI.pdgCode();
+              arrPdgDaughters[iProng] = daughI.pdgCode();
             }
-            channel = o2::hf_decay::flagResonantDecay(Pdg::kD0, arrPDGDaugh);
+            flagChannelResonant = o2::hf_decay::getDecayChannelResonant(Pdg::kD0, arrPdgDaughters);
           }
           break;
         }
@@ -91,121 +97,128 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     } else {
       // D0(bar) → π± K∓
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
-        flag = sign * (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
+        flagChannelMain = sign * DecayChannelMain::D0ToPiK;
       }
 
       // J/ψ → e+ e−
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
-          flag = 1 << o2::aod::hf_cand_2prong::DecayType::JpsiToEE;
+          flagChannelMain = DecayChannelMain::JpsiToEE;
         }
       }
 
       // J/ψ → μ+ μ−
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
-          flag = 1 << o2::aod::hf_cand_2prong::DecayType::JpsiToMuMu;
+          flagChannelMain = DecayChannelMain::JpsiToMuMu;
         }
       }
     }
 
     // Check whether the particle is non-prompt (from a b quark).
-    if (flag != 0) {
+    if (flagChannelMain != 0) {
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
     }
     if (origin == RecoDecay::OriginType::NonPrompt) {
-      rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
+      rowMcMatchGen(flagChannelMain, origin, flagChannelResonant, idxBhadMothers[0]);
     } else {
-      rowMcMatchGen(flag, origin, channel, -1);
+      rowMcMatchGen(flagChannelMain, origin, flagChannelResonant, -1);
     }
   }
 }
 
-template <typename T, typename U, typename V>
-void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, std::vector<int> const& corrBkgMothersPdgs = {})
+template <typename TMcParticles, typename TMcParticlesPerColl, typename TCursor>
+void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
+                          TMcParticlesPerColl const& mcParticlesPerMcColl,
+                          TCursor& rowMcMatchGen,
+                          const bool rejectBackground,
+                          std::vector<int> const& pdgMothersCorrelBkg = {})
 {
   using namespace o2::constants::physics;
+  using namespace o2::hf_decay::hf_cand_3prong;
+
   constexpr std::size_t NDaughtersResonant{2u};
 
   // Match generated particles.
   for (const auto& particle : mcParticlesPerMcColl) {
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelResonant = 0;
     int8_t origin = 0;
-    int8_t channel = 0;
     int8_t sign = 0;
     std::vector<int> arrDaughIndex;
     std::vector<int> idxBhadMothers{};
-    std::array<int, NDaughtersResonant> arrPDGDaugh;
-    std::array<int, NDaughtersResonant> arrPDGResonant1 = {kProton, Pdg::kK0Star892};      // Λc± → p± K*
-    std::array<int, NDaughtersResonant> arrPDGResonant2 = {2224, kKPlus};                  // Λc± → Δ(1232)±± K∓
-    std::array<int, NDaughtersResonant> arrPDGResonant3 = {102134, kPiPlus};               // Λc± → Λ(1520) π±
-    std::array<int, NDaughtersResonant> arrPDGResonantDPhiPi = {Pdg::kPhi, kPiPlus};       // Ds± → Phi π± and D± → Phi π±
-    std::array<int, NDaughtersResonant> arrPDGResonantDKstarK = {Pdg::kK0Star892, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
+    std::array<int, NDaughtersResonant> arrPdgDaugResonant{};
+    const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToPKstar0{daughtersLcResonant.at(DecayChannelResonant::LcToPKstar0)};               // Λc± → p± K*
+    const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToDeltaplusplusK{daughtersLcResonant.at(DecayChannelResonant::LcToDeltaplusplusK)}; // Λc± → Δ(1232)±± K∓
+    const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToL1520Pi{daughtersLcResonant.at(DecayChannelResonant::LcToL1520Pi)};               // Λc± → Λ(1520) π±
+    const std::array<int, NDaughtersResonant> arrPdgDaugResonantDToPhiPi{daughtersDsResonant.at(DecayChannelResonant::DsToPhiPi)};                    // Ds± → φ π± and D± → φ π±
+    const std::array<int, NDaughtersResonant> arrPdgDaugResonantDToKstar0K{daughtersDsResonant.at(DecayChannelResonant::DsToKstar0K)};                // Ds± → anti-K*(892)0 K± and D± → anti-K*(892)0 K±
+
     // Reject particles from background events
     if (particle.fromBackgroundEvent() && rejectBackground) {
-      rowMcMatchGen(flag, origin, channel, -1);
+      rowMcMatchGen(flagChannelMain, origin, flagChannelResonant, -1);
       continue;
     }
 
-    if (corrBkgMothersPdgs.size() > 0) {
-      for (const auto& motherPdgCode : corrBkgMothersPdgs) {
-        if (std::abs(particle.pdgCode()) != motherPdgCode) {
+    if (!pdgMothersCorrelBkg.empty()) {
+      for (const auto& pdgMother : pdgMothersCorrelBkg) {
+        if (std::abs(particle.pdgCode()) != pdgMother) {
           continue; // Skip if the particle PDG code does not match the mother PDG code
         }
-        auto finalStates = o2::hf_decay::hf_cand_3prong::getDecayChannelMain(motherPdgCode);
-        constexpr int MaxDepth = 2;     // Depth for final state matching
-        constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
+        const auto finalStates = getDecayChannelsMain(pdgMother);
+        constexpr int DepthMainMax = 2; // Depth for final state matching
+        constexpr int DepthResoMax = 1; // Depth for resonant decay matching
 
-        int maxDepth = MaxDepth;
+        int depthMainMax = DepthMainMax;
         bool matched = false;
-        if (motherPdgCode == Pdg::kDStar) {
-          maxDepth = MaxDepth + 1; // D0 resonant decays are switched on
+        if (pdgMother == Pdg::kDStar) {
+          depthMainMax = DepthMainMax + 1; // D0 resonant decays are switched on
         }
 
         std::vector<int> arrAllDaughtersIndex;
-        for (const auto& [chn, finalState] : finalStates) {
-          if (finalState.size() == 5) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays from 5-prong decays)
-            std::array<int, 5> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
-            o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
-            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
-            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 4) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays from 4-prong decays)
-            std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
-            o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
-            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
-            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 3) { // o2-linter: disable=magic-number (Fully Reco 3-prong decays)
-            std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
-            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
-            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, maxDepth);
+        for (const auto& [channelMain, finalState] : finalStates) {
+          if (finalState.size() == 5) { // o2-linter: disable=magic-number (partially reconstructed 3-prong decays from 5-prong decays)
+            std::array<int, 5> arrPdgDaughtersMain5Prongs = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
+            o2::hf_decay::flipPdgSign(particle.pdgCode(), +kPi0, arrPdgDaughtersMain5Prongs);
+            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, arrPdgDaughtersMain5Prongs, depthMainMax);
+            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, pdgMother, arrPdgDaughtersMain5Prongs, true, &sign, -1);
+          } else if (finalState.size() == 4) { // o2-linter: disable=magic-number (partially reconstructed 3-prong decays from 4-prong decays)
+            std::array<int, 4> arrPdgDaughtersMain4Prongs = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
+            o2::hf_decay::flipPdgSign(particle.pdgCode(), +kPi0, arrPdgDaughtersMain4Prongs);
+            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, arrPdgDaughtersMain4Prongs, depthMainMax);
+            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, pdgMother, arrPdgDaughtersMain4Prongs, true, &sign, -1);
+          } else if (finalState.size() == 3) { // o2-linter: disable=magic-number (fully reconstructed 3-prong decays)
+            std::array<int, 3> arrPdgDaughtersMain3Prongs = std::array{finalState[0], finalState[1], finalState[2]};
+            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, arrPdgDaughtersMain3Prongs, depthMainMax);
+            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, pdgMother, arrPdgDaughtersMain3Prongs, true, &sign, depthMainMax);
           } else {
-            LOG(info) << "Final state size not supported: " << finalState.size();
-            continue;
+            LOG(fatal) << "Final state size not supported: " << finalState.size();
+            return;
           }
           if (matched) {
-            flag = sign * chn;
+            flagChannelMain = sign * channelMain;
             // Flag the resonant decay channel
             std::vector<int> arrResoDaughIndex = {};
-            if (std::abs(motherPdgCode) == Pdg::kDStar) {
+            if (std::abs(pdgMother) == Pdg::kDStar) {
               std::vector<int> arrResoDaughIndexDStar = {};
-              RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, ResoMaxDepth);
-              for (size_t iDaug = 0; iDaug < arrResoDaughIndexDStar.size(); iDaug++) {
-                auto daughDstar = mcParticles.rawIteratorAt(arrResoDaughIndexDStar[iDaug]);
+              RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, DepthResoMax);
+              for (const int iDaug : arrResoDaughIndexDStar) {
+                auto daughDstar = mcParticles.rawIteratorAt(iDaug);
                 if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
-                  RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, ResoMaxDepth);
+                  RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, DepthResoMax);
                   break;
                 }
               }
             } else {
-              RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, ResoMaxDepth);
+              RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, DepthResoMax);
             }
-            std::array<int, NDaughtersResonant> arrPDGDaugh = {};
+            std::array<int, NDaughtersResonant> arrPdgDaughters = {};
             if (arrResoDaughIndex.size() == NDaughtersResonant) {
               for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-                arrPDGDaugh[iProng] = daughI.pdgCode();
+                arrPdgDaughters[iProng] = daughI.pdgCode();
               }
-              channel = o2::hf_decay::flagResonantDecay(motherPdgCode, arrPDGDaugh);
+              flagChannelResonant = o2::hf_decay::getDecayChannelResonant(pdgMother, arrPdgDaughters);
             }
             break; // Exit loop if a match is found
           }
@@ -217,99 +230,101 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     } else {
 
       // D± → π± K∓ π±
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
+          flagChannelMain = sign * DecayChannelMain::DplusToPiKPi;
         }
       }
 
       // Ds± → K± K∓ π± and D± → K± K∓ π±
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         bool isDplus = false;
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
           // TODO: move to different and explicit flags
-          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
+          flagChannelMain = sign * DecayChannelMain::DsToPiKK;
         } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
           // TODO: move to different and explicit flags
-          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK;
+          flagChannelMain = sign * DecayChannelMain::DplusToPiKK;
           isDplus = true;
         }
-        if (flag != 0) {
+        if (flagChannelMain != 0) {
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == NDaughtersResonant) {
-            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+            for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+              arrPdgDaugResonant[iProng] = std::abs(daughI.pdgCode());
             }
-            if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-              channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi;
-            } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-              channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K;
+            if ((arrPdgDaugResonant[0] == arrPdgDaugResonantDToPhiPi[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantDToPhiPi[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantDToPhiPi[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantDToPhiPi[0])) {
+              flagChannelResonant = isDplus ? DecayChannelResonant::DplusToPhiPi : DecayChannelResonant::DsToPhiPi;
+            } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantDToKstar0K[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantDToKstar0K[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantDToKstar0K[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantDToKstar0K[0])) {
+              flagChannelResonant = isDplus ? DecayChannelResonant::DplusToKstar0K : DecayChannelResonant::DsToKstar0K;
             }
           }
         }
       }
 
       // D*± → D0(bar) π±
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2)) {
-          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DstarToPiKPi;
+          flagChannelMain = sign * DecayChannelMain::DstarToPiKPi;
         }
       }
 
       // Λc± → p± K∓ π±
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
+          flagChannelMain = sign * DecayChannelMain::LcToPKPi;
 
           // Flagging the different Λc± → p± K∓ π± decay channels
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == NDaughtersResonant) {
-            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+            for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+              arrPdgDaugResonant[iProng] = std::abs(daughI.pdgCode());
             }
-            if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
-              channel = 1;
-            } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) || (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
-              channel = 2;
-            } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) || (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
-              channel = 3;
+            if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToPKstar0[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToPKstar0[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToPKstar0[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToPKstar0[0])) {
+              flagChannelResonant = DecayChannelResonant::LcToPKstar0;
+            } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToDeltaplusplusK[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToDeltaplusplusK[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToDeltaplusplusK[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToDeltaplusplusK[0])) {
+              flagChannelResonant = DecayChannelResonant::LcToDeltaplusplusK;
+            } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToL1520Pi[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToL1520Pi[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToL1520Pi[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToL1520Pi[0])) {
+              flagChannelResonant = DecayChannelResonant::LcToL1520Pi;
             }
           }
         }
       }
 
       // Ξc± → p± K∓ π±
-      if (flag == 0) {
+      if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi;
+          flagChannelMain = sign * DecayChannelMain::XicToPKPi;
         }
       }
     }
 
     // Check whether the particle is non-prompt (from a b quark).
-    if (flag != 0) {
+    if (flagChannelMain != 0) {
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
     }
     if (origin == RecoDecay::OriginType::NonPrompt) {
-      rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
+      rowMcMatchGen(flagChannelMain, origin, flagChannelResonant, idxBhadMothers[0]);
     } else {
-      rowMcMatchGen(flag, origin, channel, -1);
+      rowMcMatchGen(flagChannelMain, origin, flagChannelResonant, -1);
     }
   }
 }
 
-template <typename T, typename U>
-void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
+template <typename TMcParticles, typename TCursor>
+void fillMcMatchGenBplus(TMcParticles const& mcParticles, TCursor& rowMcMatchGen)
 {
   using namespace o2::constants::physics;
+  using namespace o2::hf_decay::hf_cand_beauty;
 
   // Match generated particles.
   for (const auto& particle : mcParticles) {
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
     int8_t signB = 0;
     int8_t signD0 = 0;
@@ -326,21 +341,23 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
         }
       }
       if (indexGenD0 > -1) {
-        flag = signB * (1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi);
+        flagChannelMain = signB * DecayChannelMain::BplusToD0Pi;
       }
     }
-    rowMcMatchGen(flag, origin);
+    rowMcMatchGen(flagChannelMain, flagChannelReso, origin);
   } // B candidate
 }
 
-template <typename T, typename U>
-void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
+template <typename TMcParticles, typename TCursor>
+void fillMcMatchGenB0(TMcParticles const& mcParticles, TCursor& rowMcMatchGen)
 {
   using namespace o2::constants::physics;
+  using namespace o2::hf_decay::hf_cand_beauty;
 
   // Match generated particles.
   for (const auto& particle : mcParticles) {
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
     int8_t sign = 0;
     // B0 → D- π+
@@ -348,10 +365,10 @@ void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
       // D- → π- K+ π-
       auto candDMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
       if (RecoDecay::isMatchedMCGen(mcParticles, candDMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
-        flag = sign * BIT(o2::aod::hf_cand_b0::DecayType::B0ToDPi);
+        flagChannelMain = sign * DecayChannelMain::B0ToDminusPi;
       }
     }
-    rowMcMatchGen(flag, origin);
+    rowMcMatchGen(flagChannelMain, flagChannelReso, origin);
   } // gen
 }
 

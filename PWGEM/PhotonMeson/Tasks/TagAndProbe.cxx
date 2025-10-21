@@ -14,28 +14,47 @@
 // This code is for data-driven efficiency for photon analyses. tag and probe method
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <cstring>
-#include <iterator>
+#include "EMPhotonEventCut.h"
 
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
+#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/PairCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/AxisAngle.h>
+#include <Math/GenVector/Rotation3D.h>
+#include <Math/Vector4Dfwd.h>
+#include <THashList.h>
+#include <TString.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -126,7 +145,7 @@ struct TagAndProbe {
         THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());
       } // end of cut3 loop pair cut
-    }   // end of cut2 loop
+    } // end of cut2 loop
   }
 
   static constexpr std::string_view pairnames[6] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
@@ -232,8 +251,8 @@ struct TagAndProbe {
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs, typename TEMCMTs>
-  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TEMCMTs const& emcmatchedtracks)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs>
+  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/)
   {
     THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
     THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
@@ -315,13 +334,13 @@ struct TagAndProbe {
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_PassingProbe_Same"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kEMCEMC) {
-                RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), probecut, paircut, emcmatchedtracks);
+                RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), probecut, paircut);
               }
             } // end of probe cut loop
-          }   // end of pair cut loop
-        }     // end of g2 loop
-      }       // end of g1 loop
-    }         // end of collision loop
+          } // end of pair cut loop
+        } // end of g2 loop
+      } // end of g1 loop
+    } // end of collision loop
   }
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
@@ -334,8 +353,8 @@ struct TagAndProbe {
   BinningType_A colBinning_A{{ConfVtxBins, ConfCentBins}, true};
   BinningType_C colBinning_C{{ConfVtxBins, ConfCentBins}, true};
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs, typename TEMCMTs, typename TMixedBinning>
-  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TEMCMTs const& /*emcmatchedtracks*/, TMixedBinning const& colBinning)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs, typename TMixedBinning>
+  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TMixedBinning const& colBinning)
   {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
@@ -406,15 +425,15 @@ struct TagAndProbe {
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_PassingProbe_Mixed"))->Fill(v12.M(), v2.Pt());
 
             } // end of probe cut loop
-          }   // end of pair cut loop
-        }     // end of g2 loop
-      }       // end of g1 loop
-    }         // end of different collision combinations
+          } // end of pair cut loop
+        } // end of g2 loop
+      } // end of g1 loop
+    } // end of different collision combinations
   }
 
   /// \brief Calculate background (using rotation background method only for EMCal!)
   template <typename TPhotons>
-  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut, PairCut const& paircut, SkimEMCMTs const& /*emcmatchedtracks*/)
+  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut, PairCut const& paircut)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
     if (photons_coll.size() < 3) {
@@ -442,7 +461,7 @@ struct TagAndProbe {
         // only combine rotated photons with other photons
         continue;
       }
-      if (!cut.template IsSelected<aod::SkimEMCMTs>(photon)) {
+      if (!cut.template IsSelected<aod::SkimEMCClusters>(photon)) {
         continue;
       }
 
@@ -474,32 +493,32 @@ struct TagAndProbe {
   }
 
   Partition<MyCollisions> grouped_collisions = cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax; // this goes to same event.
-  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > static_cast<uint16_t>(0) && o2::aod::evsel::sel8 == true;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
   void processPCMPCM(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, nullptr);
+    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs);
     if (cfgCentEstimator == 0) {
-      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, nullptr, colBinning_M);
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, colBinning_M);
     } else if (cfgCentEstimator == 1) {
-      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, nullptr, colBinning_A);
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, colBinning_A);
     } else if (cfgCentEstimator == 2) {
-      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, nullptr, colBinning_C);
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision, perCollision, fTagPCMCut, fProbePCMCuts, fPairCuts, legs, colBinning_C);
     }
   }
 
   void processPHOSPHOS(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
-    SameEventPairing<PairType::kPHOSPHOS>(grouped_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fTagPHOSCut, fProbePHOSCuts, fPairCuts, nullptr, nullptr);
-    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fTagPHOSCut, fProbePHOSCuts, fPairCuts, nullptr, nullptr, colBinning_C);
+    SameEventPairing<PairType::kPHOSPHOS>(grouped_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fTagPHOSCut, fProbePHOSCuts, fPairCuts, nullptr);
+    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fTagPHOSCut, fProbePHOSCuts, fPairCuts, nullptr, colBinning_C);
   }
 
-  void processEMCEMC(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
+  void processEMCEMC(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters)
   {
-    SameEventPairing<PairType::kEMCEMC>(grouped_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fTagEMCCut, fProbeEMCCuts, fPairCuts, nullptr, emcmatchedtracks);
-    MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fTagEMCCut, fProbeEMCCuts, fPairCuts, nullptr, emcmatchedtracks, colBinning_C);
+    SameEventPairing<PairType::kEMCEMC>(grouped_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fTagEMCCut, fProbeEMCCuts, fPairCuts, nullptr);
+    MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fTagEMCCut, fProbeEMCCuts, fPairCuts, nullptr, colBinning_C);
   }
 
   void processDummy(MyCollisions const&) {}

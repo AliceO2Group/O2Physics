@@ -19,22 +19,21 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_HNMUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_HNMUTILITIES_H_
 
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <vector>
-#include "TVector3.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/EventSelection.h"
-#include "EMCALBase/Geometry.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/filterTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+
+#include <sys/types.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <vector>
 
 namespace o2::aod::pwgem::photonmeson::hnmutilities
 {
@@ -124,9 +123,9 @@ struct HeavyNeutralMeson {
 };
 
 const int nSMEdges = 9;
-float smPhiEdges[nSMEdges] = {1.75, 2.1, 2.45, 2.8, 3.14, 4., 4.89, 5.24, 5.58};
+inline float smPhiEdges[nSMEdges] = {1.75, 2.1, 2.45, 2.8, 3.14, 4., 4.89, 5.24, 5.58};
 
-int getSMNumber(float eta, float phi)
+inline int getSMNumber(float eta, float phi)
 {
   int smNumber = 0;
   for (int iPhiInterval = 0; iPhiInterval < nSMEdges; iPhiInterval++) {
@@ -158,8 +157,24 @@ void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::
     vPhotons.push_back(Photon::fromPxPyPz(v0.px(), v0.py(), v0.pz()));
 }
 
+/// \brief Store photons from EMC clusters in a vector and possibly add a eta and phi offset for alignment of EMCal clusters
+template <typename C>
+void storeGammasInVector(C clusters, std::vector<Photon>& vPhotons, std::array<float, 20> EMCEtaShift, std::array<float, 20> EMCPhiShift)
+{
+  vPhotons.clear();
+  for (const auto& cluster : clusters) {
+    float eta = cluster.eta();
+    float phi = cluster.phi();
+    int smNumber = getSMNumber(eta, phi);
+    // LOG(info) << "Shifting in sm " << smNumber << ", eta/phi = " << eta << " / " << phi << " to eta/phi = " << eta + EMCEtaShift[getSMNumber(eta, phi)] << " / " << phi + EMCPhiShift[getSMNumber(eta, phi)];
+    eta += EMCEtaShift[smNumber];
+    phi += EMCPhiShift[smNumber];
+    vPhotons.push_back(Photon::fromEtaPhiEnergy(eta, phi, cluster.e()));
+  }
+}
+
 /// \brief Reconstruct light neutral mesons from photons and fill them into the vGGs vector
-void reconstructGGs(std::vector<Photon> vPhotons, std::vector<GammaGammaPair>& vGGs)
+inline void reconstructGGs(std::vector<Photon> vPhotons, std::vector<GammaGammaPair>& vGGs)
 {
   vGGs.clear();
   // loop over all photon combinations and build meson candidates
@@ -179,7 +194,7 @@ void reconstructGGs(std::vector<Photon> vPhotons, std::vector<GammaGammaPair>& v
 }
 
 /// \brief Reconstruct heavy neutral mesons from the given pion, antipion and the GG candidates and add them to the vHNMs vector
-void reconstructHeavyNeutralMesons(ROOT::Math::PtEtaPhiMVector const& vecPiPlPiMi, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs)
+inline void reconstructHeavyNeutralMesons(ROOT::Math::PtEtaPhiMVector const& vecPiPlPiMi, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs)
 {
   for (size_t iGG = 0; iGG < vGGs.size(); iGG++) {
     HeavyNeutralMeson heavyNeutralMeson(&vGGs.at(iGG), vecPiPlPiMi.E(), vecPiPlPiMi.Px(), vecPiPlPiMi.Py(), vecPiPlPiMi.Pz());

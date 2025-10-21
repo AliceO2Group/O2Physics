@@ -17,16 +17,25 @@
 ///
 /// \note based on taskD0.cxx, taskLc.cxx
 
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -53,25 +62,25 @@ struct HfTaskLcToK0sP {
   void init(InitContext& context)
   {
     // axes
-    AxisSpec axisBinsPt = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisPt = {300, 0.0f, 30.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisEta = {500, -2.0f, 2.0f, "#it{#eta}"};
-    AxisSpec axisPhi = {100, 0.f, 6.3f, "#it{#phi}"};
-    AxisSpec axisMassCand = {600, 1.98f, 2.58f, "inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2})"};
-    AxisSpec axisd0 = {500, -0.5f, 0.5f, "DCAxy (cm)"};
-    AxisSpec axisd0V0Daughters = {1000, -5.0f, 5.0f, "DCAxy (cm)"};
-    AxisSpec axisV0CPA = {500, 0.98f, 1.0001f, "v0 cos pointing angle"};
-    AxisSpec axisV0Radius = {1000, 0.f, 40.f, "V0 radius (cm)"};
-    AxisSpec axisV0DCADaughters = {200, 0.f, 2.f, "DCA (cm)"};
-    AxisSpec axisMassK0Short = {500, 0.4f, 0.6f, "#it{m}(K_{S}^{0}) (GeV/#it{c}^{2})"};
-    AxisSpec axisMassLambda = {500, 1.0f, 1.2f, "#it{m}(#Lambda) (GeV/#it{c}^{2})"};
-    AxisSpec axisMassGamma = {500, 0.0f, 0.4f, "#it{m}(#gamma) (GeV/#it{c}^{2})"};
-    AxisSpec axisCPACand = {110, -1.1f, 1.1f, "candiate cos pointing angle"};
-    AxisSpec axisDecLength = {200, 0.f, 2.0f, "decay length (cm)"};
-    AxisSpec axisProperLifetime = {100, 0.f, 0.2f, "#it{c#tau} (cm)"};
-    AxisSpec axisProperLifetimeV0 = {1000, 0.f, 80.f, "#it{c#tau} (cm)"};
-    AxisSpec axisNSigma = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
-    AxisSpec axisPidP = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
+    AxisSpec const axisBinsPt = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisPt = {300, 0.0f, 30.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisEta = {500, -2.0f, 2.0f, "#it{#eta}"};
+    AxisSpec const axisPhi = {100, 0.f, 6.3f, "#it{#phi}"};
+    AxisSpec const axisMassCand = {600, 1.98f, 2.58f, "inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2})"};
+    AxisSpec const axisd0 = {500, -0.5f, 0.5f, "DCAxy (cm)"};
+    AxisSpec const axisd0V0Daughters = {1000, -5.0f, 5.0f, "DCAxy (cm)"};
+    AxisSpec const axisV0CPA = {500, 0.98f, 1.0001f, "v0 cos pointing angle"};
+    AxisSpec const axisV0Radius = {1000, 0.f, 40.f, "V0 radius (cm)"};
+    AxisSpec const axisV0DCADaughters = {200, 0.f, 2.f, "DCA (cm)"};
+    AxisSpec const axisMassK0Short = {500, 0.4f, 0.6f, "#it{m}(K_{S}^{0}) (GeV/#it{c}^{2})"};
+    AxisSpec const axisMassLambda = {500, 1.0f, 1.2f, "#it{m}(#Lambda) (GeV/#it{c}^{2})"};
+    AxisSpec const axisMassGamma = {500, 0.0f, 0.4f, "#it{m}(#gamma) (GeV/#it{c}^{2})"};
+    AxisSpec const axisCPACand = {110, -1.1f, 1.1f, "candiate cos pointing angle"};
+    AxisSpec const axisDecLength = {200, 0.f, 2.0f, "decay length (cm)"};
+    AxisSpec const axisProperLifetime = {100, 0.f, 0.2f, "#it{c#tau} (cm)"};
+    AxisSpec const axisProperLifetimeV0 = {1000, 0.f, 80.f, "#it{c#tau} (cm)"};
+    AxisSpec const axisNSigma = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
+    AxisSpec const axisPidP = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
     // data
     registry.add("hPtCand", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("hEtaCand", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}});
@@ -257,17 +266,9 @@ struct HfTaskLcToK0sP {
                TracksWPid const&)
   {
     for (const auto& candidate : candidates) {
-      /*
-      // no such selection for LcK0sp for now - it is the only cascade
-      if (!(candidate.hfflag() & 1 << D0ToPiK)) {
-        continue;
-      }
-      */
-
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         continue;
       }
-
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }

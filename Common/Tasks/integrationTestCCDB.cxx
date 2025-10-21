@@ -22,25 +22,29 @@
 //
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <cmath>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 struct integrationTestCCDB {
   // this is anyway what this is all about

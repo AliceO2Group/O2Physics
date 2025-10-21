@@ -32,6 +32,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -39,8 +40,6 @@
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>
-
-#include <fairlogger/Logger.h>
 
 #include <array>
 #include <cmath>
@@ -151,7 +150,7 @@ struct HfCandidateCreatorBToJpsiReduced {
   /// \param tracksLfThisCollisionArr LF tracks in this collision
   /// \param invMass2JpsiHadMin minimum B invariant-mass
   /// \param invMass2JpsiHadMax maximum B invariant-mass
-  template <uint8_t decChannel, typename Cands, typename TTracks0, typename TTracks1, typename Coll>
+  template <uint8_t DecChannel, typename Cands, typename TTracks0, typename TTracks1, typename Coll>
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsJpsiThisColl,
                             TTracks0 const& tracksLfDau0ThisCollision,
@@ -216,7 +215,7 @@ struct HfCandidateCreatorBToJpsiReduced {
         }
         auto trackParCovLf0 = getTrackParCov(trackLf0);
         std::array<float, 3> pVecTrackLf0{};
-        if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
+        if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
           // ---------------------------------
           // reconstruct the 3-prong B+ vertex
           hCandidatesB->Fill(SVFitting::BeforeFit);
@@ -279,7 +278,7 @@ struct HfCandidateCreatorBToJpsiReduced {
                              std::sqrt(dcaDauPos.getSigmaY2()), std::sqrt(dcaDauNeg.getSigmaY2()), std::sqrt(dcaKaon.getSigmaY2()));
 
           rowCandidateBpProngs(candJpsi.globalIndex(), trackLf0.globalIndex());
-        } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
+        } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
           for (const auto& trackLf1 : tracksLfDau1ThisCollision) {
             // this track is among daughters
             if (trackLf1.trackId() == candJpsi.prongPosId() || trackLf1.trackId() == candJpsi.prongNegId()) {
@@ -370,8 +369,8 @@ struct HfCandidateCreatorBToJpsiReduced {
     }
     // invMassWindowJpsiHadTolerance is used to apply a slightly tighter cut than in JpsiK pair preselection
     // to avoid accepting JpsiK pairs that were not formed in JpsiK pair creator
-    double invMass2JpsiKMin = (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance) * (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance);
-    double invMass2JpsiKMax = (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance) * (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMin = (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance) * (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMax = (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance) * (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -399,8 +398,8 @@ struct HfCandidateCreatorBToJpsiReduced {
     }
     // invMassWindowJpsiHadTolerance is used to apply a slightly tighter cut than in JpsiK pair preselection
     // to avoid accepting JpsiK pairs that were not formed in JpsiK pair creator
-    double invMass2JpsiKMin = (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance) * (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance);
-    double invMass2JpsiKMax = (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance) * (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMin = (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance) * (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMax = (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance) * (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -427,29 +426,29 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
   /// Fill candidate information at MC reconstruction level
   /// \param rowsJpsiHadMcRec MC reco information on Jpsi hadron pairs
   /// \param candsBIds prong global indices of B candidates
-  template <uint8_t decChannel, typename McRec, typename CCands>
+  template <uint8_t DecChannel, typename McRec, typename CCands>
   void fillMcRec(McRec const& rowsJpsiHadMcRec, CCands const& candsBIds)
   {
     for (const auto& candB : candsBIds) {
       bool filledMcInfo{false};
-      if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
+      if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
           if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.bachKaId() != candB.bachKaId())) {
             continue;
           }
-          rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
           filledMcInfo = true;
           break;
         }
         if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the Jpsi-K creator
           rowBplusMcRec(0, -1, -1, -1, -1.f);
         }
-      } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
+      } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
           if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.prong0PhiId() != candB.prong0PhiId()) || (rowJpsiHadMcRec.prong1PhiId() != candB.prong1PhiId())) {
             continue;
           }
-          rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
           filledMcInfo = true;
           break;
         }
@@ -466,9 +465,9 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
   }
   PROCESS_SWITCH(HfCandidateCreatorBToJpsiReducedExpressions, processMcBPlus, "Process MC", false);
 
-  void processMcBs(HfMcRecRedJPPhis const& rowsJpsiPhiMcRec, HfRedBs2JpsiDaus const& Bs)
+  void processMcBs(HfMcRecRedJPPhis const& rowsJpsiPhiMcRec, HfRedBs2JpsiDaus const& bs)
   {
-    fillMcRec<DecayChannel::BsToJpsiPhi>(rowsJpsiPhiMcRec, Bs);
+    fillMcRec<DecayChannel::BsToJpsiPhi>(rowsJpsiPhiMcRec, bs);
   }
   PROCESS_SWITCH(HfCandidateCreatorBToJpsiReducedExpressions, processMcBs, "Process MC", false);
 };

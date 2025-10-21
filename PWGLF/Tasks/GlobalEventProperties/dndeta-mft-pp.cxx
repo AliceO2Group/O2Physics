@@ -15,14 +15,14 @@
 // \brief This code loops over MFT tracks and collisions and fills histograms
 //        useful to compute dNdeta
 
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <iostream>
-#include <unordered_set>
-#include <vector>
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -30,18 +30,18 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
 #include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "TDatabasePDG.h"
 
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "TFile.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,9 +51,10 @@ using namespace o2::aod::track;
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec ZAxis = {301, -30.1, 30.1};
-AxisSpec PhiAxis = {629, 0, 2 * M_PI, "Rad", "phi axis"};
+AxisSpec PhiAxis = {629, 0, o2::constants::math::TwoPI, "Rad", "phi axis"};
 // AxisSpec EtaAxis = {18, -4.6, -1.};
-AxisSpec DCAxyAxis = {100, -1, 10};
+AxisSpec DCAxyAxis = {5000, -1, 500};
+AxisSpec DCAzAxis = {5000, -251, 250};
 AxisSpec CentAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
@@ -82,17 +83,25 @@ struct PseudorapidityDensityMFT {
                                    "eta range for INEL>0 sample definition"};
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROF cut for event selection"};
   ConfigurableAxis multBinning{"multBinning", {701, -0.5, 700.5}, ""};
-  ConfigurableAxis EtaAxis = {"etaBinning", {18, -4.6, -1.}, ""};
+  ConfigurableAxis EtaAxis = {"etaBinning", {36, -4.6, -1.}, ""};
 
   Configurable<bool> useZDiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{
     "maxZDiff", 1.0f,
-    "max allowed Z difference for reconstruced collisions (cm)"};
+    "max allowed Z difference for reconstructed collisions (cm)"};
 
-  Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
+  Configurable<bool> usePhiCut{"usePhiCut", true, "use azimuthal angle cut"};
+  Configurable<bool> useDCAxyCut{"useDCAxyCut", false, "use DCAxy cut"};
+  Configurable<bool> useDCAzCut{"useDCAzCut", false, "use DCAz cut"};
+
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
+  Configurable<float> cfgPhiCut1{"cfgPhiCut1", 0.0f,
+                                 "low Cut on azimuthal angle of MFT tracks"};
+  Configurable<float> cfgPhiCut2{"cfgPhiCut2", 6.3f,
+                                 "high Cut on azimuthal angle of MFT tracks"};
   Configurable<float> cfgVzCut1{"cfgVzCut1", -30.0f,
                                 "Cut1 on vertex position of MFT tracks"};
   Configurable<float> cfgVzCut2{"cfgVzCut2", 30.0f,
@@ -103,57 +112,76 @@ struct PseudorapidityDensityMFT {
                                "Cut on eta1"};
   Configurable<float> cfgnEta2{"cfgnEta2", -1.0f,
                                "Cut on eta1"};
+  Configurable<float> cfgChi2NDFMax{"cfgChi2NDFMax", 2000.0f, "Max allowed chi2/NDF for MFT tracks"};
+  Configurable<float> maxDCAxy{"maxDCAxy", 2.0f, "Cut on dcaXY"};
+  Configurable<float> maxDCAz{"maxDCAz", 2.0f, "Cut on dcaZ"};
+
   HistogramRegistry registry{
     "registry",
-    {
-      {"TracksEtaZvtx",
-       "; #eta; #it{z}_{vtx} (cm); tracks",
-       {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
-      {"Tracks/EtaZvtx_gt0",
-       "; #eta; #it{z}_{vtx} (cm); tracks",
-       {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
-      {"TracksPhiEta",
-       "; #varphi; #eta; tracks",
-       {HistType::kTH2F, {PhiAxis, EtaAxis}}}, //
-      {"TracksPhiZvtx",
-       "; #varphi; #it{z}_{vtx} (cm); tracks",
-       {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
-      {"TracksPtEta",
-       " ; p_{T} (GeV/c); #eta",
-       {HistType::kTH2F, {PtAxis, EtaAxis}}}, //
-      {"EventSelection",
-       ";status;events",
-       {HistType::kTH1F, {{15, 0.5, 15.5}}}},
-      {"EventCounts",
-       ";status;events",
-       {HistType::kTH1F, {{2, 0.5, 2.5}}}},
-      {"Tracks/Control/TrackCount", ";status;Track counts", {HistType::kTH1F, {{15, 0.5, 15.5}}}}, // added
-    }};
+    {{"TracksEtaZvtx",
+      "; #eta; #it{z}_{vtx} (cm); tracks",
+      {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
+     {"Tracks/EtaZvtx_gt0",
+      "; #eta; #it{z}_{vtx} (cm); tracks",
+      {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
+     {"TracksPhiEta",
+      "; #varphi; #eta; tracks",
+      {HistType::kTH2F, {PhiAxis, EtaAxis}}}, //
+     {"TracksPhiZvtx",
+      "; #varphi; #it{z}_{vtx} (cm); tracks",
+      {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
+     {"TracksPtEta",
+      " ; p_{T} (GeV/c); #eta",
+      {HistType::kTH2F, {PtAxis, EtaAxis}}}, //
+     {"EventSelection",
+      ";status;events",
+      {HistType::kTH1F, {{15, 0.5, 15.5}}}},
+     {"EventCounts",
+      ";status;events",
+      {HistType::kTH1F, {{2, 0.5, 2.5}}}},
+     {"Tracks/Control/TrackCount", ";status;Track counts", {HistType::kTH1F, {{15, 0.5, 15.5}}}}, // added
+     // Purity-related histograms
+     {"Purity/SelectedAfterDCAxy/All",
+      ";bin;counts",
+      {HistType::kTH1F, {{1, 0.5, 1.5}}}},
+     {"Purity/SelectedAfterDCAxy/AllEta",
+      ";#eta;counts",
+      {HistType::kTH1F, {EtaAxis}}},
+     {"Purity/Gen/PrimaryEta",
+      ";#eta;primaries",
+      {HistType::kTH1F, {EtaAxis}}},
+     {"Purity/Gen/All",
+      ";bin;counts",
+      {HistType::kTH1F, {{1, 0.5, 1.5}}}},
+     {"Purity/Gen/AllEta",
+      ";#eta;counts",
+      {HistType::kTH1F, {EtaAxis}}}}};
 
   void init(InitContext&)
   {
     if (static_cast<int>(doprocessMult) +
           static_cast<int>(doprocessMultReassoc) +
+          static_cast<int>(doprocessMultReassoc3d) +
           static_cast<int>(doprocessCountingCentrality) >
         1) {
       LOGP(fatal,
            "Exactly one process function between processMult, "
-           "processMultReassoc and processCountingCentrality should be "
+           "processMultReassoc, processMultReassoc3d and processCountingCentrality should be "
            "enabled!");
     }
     AxisSpec MultAxis = {multBinning, "N_{trk}"};
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
-    x->SetBinLabel(2, "Selected");
-    x->SetBinLabel(3, "Selected Vz Cut");
-    x->SetBinLabel(4, "Sel8+Vz+INEL>0");
-    x->SetBinLabel(5, "Sel INEL,INEL_fwd>0");
-    x->SetBinLabel(6, "Rejected");
-    x->SetBinLabel(7, "Good BCs");
-    x->SetBinLabel(8, "BCs with collisions");
-    x->SetBinLabel(9, "BCs with pile-up/splitting");
-    x->SetBinLabel(10, "midtracks>0");
+    x->SetBinLabel(2, "Vz");
+    x->SetBinLabel(3, "Vz+ITSRof");
+    x->SetBinLabel(4, "Vz+Selected");
+    x->SetBinLabel(5, "Sel8+Vz+INEL>0");
+    x->SetBinLabel(6, "Sel INEL,INEL_fwd>0");
+    x->SetBinLabel(7, "Rejected");
+    x->SetBinLabel(8, "Good BCs");
+    x->SetBinLabel(9, "BCs with collisions");
+    x->SetBinLabel(10, "BCs with pile-up/splitting");
     x->SetBinLabel(11, "percollisionSample>0");
     x->SetBinLabel(12, "midtracks+percollisionSample>0");
     registry.add({"EventsNtrkZvtx",
@@ -242,7 +270,7 @@ struct PseudorapidityDensityMFT {
       x->SetBinLabel(5, "Selected INEL>0");
     }
 
-    if (doprocessMultReassoc) {
+    if (doprocessMultReassoc || doprocessMultReassoc3d) {
       registry.add({"Tracks/Control/DeltaZ",
                     " ; #it{z_{orig}}-#it{z_{reass}}",
                     {HistType::kTH1F, {ZAxis}}});
@@ -286,7 +314,9 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/notReassignedVertexCorr",
                     "; #it{z}_{vtx}^{orig} (cm); #it{z}_{vtx}^{re} (cm)",
                     {HistType::kTH2F, {ZAxis, ZAxis}}});
-
+      registry.add({"Tracks/Control/Chi2NDF",
+                    " ; #chi^{2}/ndf",
+                    {HistType::kTH1F, {{5000, 0.0, 5000.0}}}});
       registry.add({"Tracks/Control/amb/AmbTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
@@ -310,6 +340,9 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/amb/EtaZvtxAmb_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+      registry.add({"Tracks/Control/amb/DCAxy_amb", " ; DCA_{xy} (cm) ambiguous",
+                    //  {HistType::kTH1F,{{100000, 0.5, 100000.0}}}}); //
+                    {HistType::kTH1F, {DCAxyAxis}}}); //
 
       registry.add({"Tracks/Control/nonamb/nonAmbTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -324,6 +357,9 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/nonamb/EtaZvtxNonAmb_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+      registry.add({"Tracks/Control/nonamb/DCAxy_nonamb", " ; DCA_{xy}(cm) non-ambiguous",
+                    //  {HistType::kTH1F,{{100000, 0.5, 100000.0}}}}); //
+                    {HistType::kTH1F, {{DCAxyAxis}}}}); //
 
       registry.add({"Tracks/Control/woOrp/woOrpTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -349,6 +385,26 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/woOrp/woOrpVertexCorr",
                     "; #it{z}_{vtx}^{orig} (cm); #it{z}_{vtx}^{re} (cm)",
                     {HistType::kTH2F, {ZAxis, ZAxis}}}); //
+      registry.add({"Tracks/Control/woOrp/DCAxy_woOrp", " ; DCA_{xy}(cm) w/o orphan",
+                    //  {HistType::kTH1F,{{100000, 0.5, 100000.0}}}}); //
+                    {HistType::kTH1F, {{DCAxyAxis}}}}); //
+
+      if (doprocessMultReassoc3d) {
+        // DCAz histograms analogous to DCAxy, only for 3D reassociation
+        registry.add({"Tracks/Control/DCAZ",
+                      " ; DCA_{Z} (cm)",
+                      {HistType::kTH1F, {DCAzAxis}}});
+        registry.add({"Tracks/Control/amb/DCAz_amb",
+                      " ; DCA_{z} (cm) ambiguous",
+                      {HistType::kTH1F, {DCAzAxis}}});
+        registry.add({"Tracks/Control/nonamb/DCAz_nonamb",
+                      " ; DCA_{z}(cm) non-ambiguous",
+                      {HistType::kTH1F, {DCAzAxis}}});
+        registry.add({"Tracks/Control/woOrp/DCAz_woOrp",
+                      " ; DCA_{z}(cm) w/o orphan",
+                      {HistType::kTH1F, {DCAzAxis}}});
+      }
+
       registry.add({"collisionID", " ; Collision ID",
                     //  {HistType::kTH1F,{{100000, 0.5, 100000.0}}}}); //
                     {HistType::kTH1F, {{100000, -50000.0, 50000.0}}}}); //
@@ -446,13 +502,13 @@ struct PseudorapidityDensityMFT {
   {
 
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       if (!useEvSel ||
           (useEvSel && ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
                          bc.selection_bit(aod::evsel::kIsBBT0C)) != 0))) {
-        registry.fill(HIST("EventSelection"), 7); // added 5->12
+        registry.fill(HIST("EventSelection"), 8); // added 5->12
         cols.clear();
-        for (auto& collision : collisions) {
+        for (const auto& collision : collisions) {
           if (collision.has_foundBC()) {
             if (collision.foundBCId() == bc.globalIndex()) {
               cols.emplace_back(collision);
@@ -463,9 +519,9 @@ struct PseudorapidityDensityMFT {
         }
         LOGP(debug, "BC {} has {} collisions", bc.globalBC(), cols.size());
         if (!cols.empty()) {
-          registry.fill(HIST("EventSelection"), 8); // added 6->13
+          registry.fill(HIST("EventSelection"), 9); // added 6->13
           if (cols.size() > 1) {
-            registry.fill(HIST("EventSelection"), 9); // added 7->14
+            registry.fill(HIST("EventSelection"), 10); // added 7->14
           }
         }
       }
@@ -522,17 +578,17 @@ struct PseudorapidityDensityMFT {
       }
 
       if (tracks.size() > 0) {
-        for (auto& track : tracks) {
+        for (const auto& track : tracks) {
 
           float phi = track.phi();
           o2::math_utils::bringTo02Pi(phi);
 
           if (usePhiCut) {
             if ((phi < cfgPhiCut) ||
-                ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
-                (phi > 2. * M_PI - cfgPhiCut) ||
-                ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
-                 (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
+                ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
+                (phi > o2::constants::math::TwoPI - cfgPhiCut) ||
+                ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
+                 (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
               continue;
           }
 
@@ -556,10 +612,12 @@ struct PseudorapidityDensityMFT {
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMult,
                  "Process reco or data info", true);
-  void processMultReassoc(CollwEv::iterator const& collision,
-                          o2::aod::MFTTracks const&,
-                          soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
-                          FiCentralTracks const& midtracks, aod::Tracks const&)
+  // Common implementation for both BestCollisionsFwd and BestCollisionsFwd3d
+  template <typename RetracksT>
+  void processMultReassocCommon(CollwEv::iterator const& collision,
+                                o2::aod::MFTTracks const&,
+                                RetracksT const& retracks,
+                                FiCentralTracks const& midtracks, aod::Tracks const&)
   {
     registry.fill(HIST("EventSelection"), 1.);
     auto perCollisionSample = sampleCentral->sliceByCached(
@@ -569,16 +627,40 @@ struct PseudorapidityDensityMFT {
     registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
     if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
       registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_all"), Ntrk, z);
-      for (auto& retrack : retracks) {
+      registry.fill(HIST("EventSelection"), 2.);
+      for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
+        float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+        float chi2ndf = track.chi2() / ndf;
+        float phi = track.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (usePhiCut) {
+          if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+            continue;
+        }
+        float dcaxy_cut = retrack.bestDCAXY();
+        if (useDCAxyCut) {
+          if (dcaxy_cut > maxDCAxy)
+            continue;
+        }
+        if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+          float dcaz_cut = retrack.bestDCAZ();
+          if (useDCAzCut) {
+            if (dcaz_cut > maxDCAz)
+              continue;
+          }
+        }
+        if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
         }
       }
-      if (!useEvSel || (useEvSel && collision.sel8())) {
-        registry.fill(HIST("EventSelection"), 2.);
+      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
+      registry.fill(HIST("EventSelection"), 3.);
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
+        registry.fill(HIST("EventSelection"), 4.);
         registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
-        registry.fill(HIST("EventSelection"), 3.);
         std::unordered_set<int> uniqueEvents;
         std::unordered_set<int> uniqueEventsAmb;
         std::unordered_set<int> uniqueCollisions;
@@ -586,8 +668,7 @@ struct PseudorapidityDensityMFT {
         std::unordered_set<int> eventsInelMFT;
         std::unordered_set<int> eventsInel;
         if (midtracks.size() > 0) {
-          registry.fill(HIST("EventSelection"), 4.);
-          registry.fill(HIST("EventSelection"), 10.);
+          registry.fill(HIST("EventSelection"), 5.);
           registry.fill(HIST("EventsNtrkZvtx_gt0"), Ntrk, z);
           registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelgt0"), Ntrk, z);
           eventsInel.insert(collision.globalIndex());
@@ -599,9 +680,30 @@ struct PseudorapidityDensityMFT {
           registry.fill(HIST("EventSelection"), 12.);
         }
         int64_t i = 0.0, j = 0.0, k = 0.0;
-        for (auto& retrack : retracks) {
+        for (const auto& retrack : retracks) {
           auto track = retrack.mfttrack();
-          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
+          float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+          float chi2ndf = track.chi2() / ndf;
+          float phi = track.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          if (usePhiCut) {
+            if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+              continue;
+          }
+          float dcaxy_cut = retrack.bestDCAXY();
+          if (useDCAxyCut) {
+            if (dcaxy_cut > maxDCAxy)
+              continue;
+          }
+          if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+            float dcaz_cut = retrack.bestDCAZ();
+            if (useDCAzCut) {
+              if (dcaz_cut > maxDCAz)
+                continue;
+            }
+          }
+          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
+            registry.fill(HIST("Tracks/Control/Chi2NDF"), chi2ndf);
             registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
             if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
               registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8_inelgt0"), track.eta(), z);
@@ -609,14 +711,37 @@ struct PseudorapidityDensityMFT {
           }
         }
         if (retracks.size() > 0) {
-          registry.fill(HIST("EventSelection"), 5.);
+          registry.fill(HIST("EventSelection"), 6.);
           if (midtracks.size() > 0) {
             registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0"), Ntrk, z);
           }
-          for (auto& retrack : retracks) {
+          for (const auto& retrack : retracks) {
             auto track = retrack.mfttrack();
-
-            if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster) {
+            float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+            float chi2ndf = track.chi2() / ndf;
+            float phi = track.phi();
+            float dcaxy_cut = retrack.bestDCAXY();
+            o2::math_utils::bringTo02Pi(phi);
+            // Declare dcaz_cut only if needed below.
+            if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
+              if (usePhiCut) {
+                if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+                  continue;
+              }
+              if (useDCAxyCut) {
+                if (dcaxy_cut > maxDCAxy)
+                  continue;
+              }
+              if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                float dcaz_cut = retrack.bestDCAZ();
+                if (useDCAzCut) {
+                  if (dcaz_cut > maxDCAz)
+                    continue;
+                }
+              }
+              // Purity denominator: all tracks that pass the DCA selection and other quality cuts
+              registry.fill(HIST("Purity/SelectedAfterDCAxy/All"), 1.);
+              registry.fill(HIST("Purity/SelectedAfterDCAxy/AllEta"), track.eta());
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
@@ -648,10 +773,10 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
 
                 registry.fill(HIST("Tracks/Control/DeltaZ"),
-                              track.collision_as<CollwEv>().posZ() -
+                              track.template collision_as<CollwEv>().posZ() -
                                 collision.posZ());
                 registry.fill(HIST("Tracks/Control/TrackCount"), 1);
               }
@@ -661,13 +786,16 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/notReassignedTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/notReassignedVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/TrackCount"), 2);
               }
 
               registry.fill(HIST("Tracks/Control/TrackAmbDegree"),
                             retrack.ambDegree());
               registry.fill(HIST("Tracks/Control/DCAXY"), retrack.bestDCAXY());
+              if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                registry.fill(HIST("Tracks/Control/DCAZ"), retrack.bestDCAZ());
+              }
               int isAmbiguous = 0;
 
               if (retrack.ambDegree() > 1 && retrack.ambDegree() != 0) {
@@ -681,7 +809,11 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/amb/AmbTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/amb/AmbVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
+                registry.fill(HIST("Tracks/Control/amb/DCAxy_amb"), retrack.bestDCAXY());
+                if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                  registry.fill(HIST("Tracks/Control/amb/DCAz_amb"), retrack.bestDCAZ());
+                }
                 registry.fill(HIST("Tracks/Control/TrackCount"), 3);
                 if (track.collisionId() == retrack.bestCollisionId()) {
                   registry.fill(HIST("Tracks/Control/TrackCount"), 5);
@@ -701,7 +833,11 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/nonamb/nonAmbTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/nonamb/nonAmbVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
+                registry.fill(HIST("Tracks/Control/nonamb/DCAxy_nonamb"), retrack.bestDCAXY());
+                if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                  registry.fill(HIST("Tracks/Control/nonamb/DCAz_nonamb"), retrack.bestDCAZ());
+                }
                 registry.fill(HIST("Tracks/Control/TrackCount"), 4);
                 if (track.collisionId() == retrack.bestCollisionId()) {
                   registry.fill(HIST("Tracks/Control/TrackCount"), 6);
@@ -719,8 +855,12 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/TrackCount"), 9); // without orphan
+                registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
+                if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                  registry.fill(HIST("Tracks/Control/woOrp/DCAz_woOrp"), retrack.bestDCAZ());
+                }
               }
             }
           }
@@ -736,11 +876,30 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("hNumCollisions_Inel"), 1, eventsInel.size());
       }
     } else {
-      registry.fill(HIST("EventSelection"), 6);
+      registry.fill(HIST("EventSelection"), 7);
     }
+  }
+
+  void processMultReassoc(CollwEv::iterator const& collision,
+                          o2::aod::MFTTracks const& mft,
+                          soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
+                          FiCentralTracks const& midtracks, aod::Tracks const& trk)
+  {
+    processMultReassocCommon(collision, mft, retracks, midtracks, trk);
+  }
+
+  void processMultReassoc3d(CollwEv::iterator const& collision,
+                            o2::aod::MFTTracks const& mft,
+                            soa::SmallGroups<aod::BestCollisionsFwd3d> const& retracks,
+                            FiCentralTracks const& midtracks, aod::Tracks const& trk)
+  {
+    processMultReassocCommon(collision, mft, retracks, midtracks, trk);
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReassoc,
                  "Process reco or data info", false);
+
+  PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReassoc3d,
+                 "Process reco or data info (3d)", false);
 
   using ExColsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
 
@@ -759,17 +918,17 @@ struct PseudorapidityDensityMFT {
 
       registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrk, z, c);
 
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
 
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
 
         if (usePhiCut) {
           if ((phi < cfgPhiCut) ||
-              ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
-              (phi > 2. * M_PI - cfgPhiCut) ||
-              ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
-               (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
+              ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
+              (phi > o2::constants::math::TwoPI - cfgPhiCut) ||
+              ((phi > ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
+               (phi < ((o2::constants::math::PIHalf - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
             continue;
         }
 
@@ -807,7 +966,7 @@ struct PseudorapidityDensityMFT {
     auto perCollisionMCSample = mcSample->sliceByCached(
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
-    for (auto& particle : perCollisionMCSample) {
+    for (const auto& particle : perCollisionMCSample) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
@@ -824,7 +983,7 @@ struct PseudorapidityDensityMFT {
     auto perCollisionMCSampleCentral = mcSampleCentral->sliceByCached(
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nChargedCentral = 0;
-    for (auto& particle : perCollisionMCSampleCentral) {
+    for (const auto& particle : perCollisionMCSample) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
@@ -849,9 +1008,12 @@ struct PseudorapidityDensityMFT {
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(),
          collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       registry.fill(HIST("EventEfficiency"), 3.);
-      if (!useEvSel || (useEvSel && collision.sel8())) {
+      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
         atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(
           o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
@@ -888,7 +1050,7 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventsSplitMult"), nCharged);
     }
     if ((mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
-      for (auto& particle : particles) {
+      for (const auto& particle : particles) {
         auto p = pdg->GetParticle(particle.pdgCode());
         auto charge = 0;
         if (p != nullptr) {
@@ -897,7 +1059,20 @@ struct PseudorapidityDensityMFT {
         if (std::abs(charge) < 3.) {
           continue;
         }
-        if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2) {
+        float phi = particle.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (usePhiCut) {
+          if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+            continue;
+        }
+        if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
+          // Purity numerator reference at generator level: physical primaries in the same eta window
+          if (particle.isPhysicalPrimary()) {
+            registry.fill(HIST("Purity/Gen/PrimaryEta"), particle.eta());
+            // Truth-side total counters for primaries in acceptance (for purity calculations)
+            registry.fill(HIST("Purity/Gen/All"), 1.);
+            registry.fill(HIST("Purity/Gen/AllEta"), particle.eta());
+          }
           registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
                         mcCollision.posZ());
           if (perCollisionMCSampleCentral.size() > 0) {
@@ -943,7 +1118,7 @@ struct PseudorapidityDensityMFT {
 
     float c_gen = -1;
     bool atLeastOne = false;
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float c_rec = -1;
       if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
@@ -972,7 +1147,7 @@ struct PseudorapidityDensityMFT {
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
 
-    for (auto& particle : perCollisionMCSample) {
+    for (const auto& particle : perCollisionMCSample) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
@@ -989,7 +1164,7 @@ struct PseudorapidityDensityMFT {
                     mcCollision.posZ(), c_gen);
     }
 
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
@@ -1025,7 +1200,7 @@ struct PseudorapidityDensityMFT {
     MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
     if (!useEvSel || (useEvSel && collision.sel8())) {
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (!track.has_mcParticle()) {
           continue;
         }

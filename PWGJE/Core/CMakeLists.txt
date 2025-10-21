@@ -14,7 +14,8 @@ o2physics_add_library(PWGJECore
                SOURCES  FastJetUtilities.cxx
                         JetFinder.cxx
                         JetBkgSubUtils.cxx
-               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib ONNXRuntime::ONNXRuntime)
+                        emcalCrossTalkEmulation.cxx
+               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib ONNXRuntime::ONNXRuntime O2::EMCALBase O2::EMCALReconstruction)
 
 o2physics_target_root_dictionary(PWGJECore
               HEADERS JetFinder.h
@@ -23,5 +24,7 @@ o2physics_target_root_dictionary(PWGJECore
                       JetTaggingUtilities.h
                       JetBkgSubUtils.h
                       JetDerivedDataUtilities.h
+                      emcalCrossTalkEmulation.h
+                      utilsTrackMatchingEMC.h
               LINKDEF PWGJECoreLinkDef.h)
 endif()

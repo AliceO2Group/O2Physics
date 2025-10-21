@@ -20,16 +20,19 @@
 #ifndef COMMON_CORE_PID_PARAMBASE_H_
 #define COMMON_CORE_PID_PARAMBASE_H_
 
+#include <Framework/Logger.h>
+
+#include <TFile.h>
+#include <TNamed.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <algorithm> // std::copy
 #include <map>       // std::map
 #include <string>    // std::string
 #include <vector>    // std::vector
-
-// ROOT includes
-#include "TNamed.h"
-#include "TFile.h"
-
-#include "Framework/Logger.h"
 
 namespace o2::pid
 {
@@ -49,11 +52,11 @@ class Parameters : public TNamed
 
   /// Parametric constructor
   /// \param size Number of parameters in the container
-  Parameters(const TString name, unsigned int size) : TNamed(name, name), mPar(std::vector<pidvar_t>(size)) {}
+  Parameters(const TString& name, unsigned int size) : TNamed(name, name), mPar(std::vector<pidvar_t>(size)) {}
 
   /// Parametric constructor
   /// \param params Parameters to initialize the container
-  Parameters(const TString name, const std::vector<pidvar_t> params) : TNamed(name, name), mPar{} { SetParameters(params); }
+  Parameters(const TString& name, const std::vector<pidvar_t>& params) : TNamed(name, name), mPar{} { SetParameters(params); }
 
   /// Default destructor
   ~Parameters() override = default;
@@ -69,11 +72,11 @@ class Parameters : public TNamed
 
   /// Setter for the parameter, using a vector
   /// \param params vector with parameters
-  void SetParameters(const std::vector<pidvar_t> params);
+  void SetParameters(const std::vector<pidvar_t>& params);
 
   /// Setter for the parameter, using a parameter object
   /// \param params parameter object with parameters
-  void SetParameters(const Parameters params) { SetParameters(params.mPar); }
+  void SetParameters(const Parameters& params) { SetParameters(params.mPar); }
 
   /// Setter for the parameter, using a parameter pointer
   /// \param params pointer to parameter object with parameters
@@ -85,7 +88,7 @@ class Parameters : public TNamed
   /// Loader from file
   /// \param FileName name of the input file
   /// \param ParamName name of the input object
-  void LoadParamFromFile(const TString FileName, const TString ParamName);
+  void LoadParamFromFile(const TString& FileName, const TString& ParamName);
 
   /// Getter for the parameters
   /// \return returns an array of parameters
@@ -138,7 +141,7 @@ class PidParameters : public TNamed
 
   /// Setter for the parameter, using a parameter object
   /// \param params parameter object with parameters
-  void SetParameters(const PidParameters<nPar> params) { SetParameters(params.mPar); }
+  void SetParameters(const PidParameters<nPar>& params) { SetParameters(params.mPar); }
 
   /// Setter for the parameter, using a parameter pointer
   /// \param params pointer to parameter object with parameters
@@ -164,7 +167,7 @@ class PidParameters : public TNamed
   /// Loader from file
   /// \param FileName name of the input file
   /// \param ParamName name of the input object
-  void LoadParamFromFile(const TString FileName, const TString ParamName)
+  void LoadParamFromFile(const TString& FileName, const TString& ParamName)
   {
     TFile f(FileName, "READ");
     if (!f.Get(ParamName)) {
@@ -215,12 +218,12 @@ class Parametrization : public TNamed
   /// Parametric constructor
   /// \param name Name (and title) of the parametrization
   /// \param size Number of parameters of the parametrization
-  Parametrization(TString name, unsigned int size) : TNamed(name, name), mParameters(name + "Parameters", size) {}
+  Parametrization(const TString& name, unsigned int size) : TNamed(name, name), mParameters(name + "Parameters", size) {}
 
   /// Parametric constructor
   /// \param name Name (and title) of the parametrization
   /// \param params Parameters of the parametrization
-  Parametrization(TString name, const std::vector<pidvar_t> params) : TNamed(name, name), mParameters{name + "Parameters", params} {}
+  Parametrization(const TString& name, const std::vector<pidvar_t>& params) : TNamed(name, name), mParameters{name + "Parameters", params} {}
 
   /// Default destructor
   ~Parametrization() override = default;
@@ -235,7 +238,7 @@ class Parametrization : public TNamed
   /// Loader from file
   /// \param FileName name of the input file
   /// \param ParamName name of the input object
-  void LoadParamFromFile(const TString FileName, const TString ParamName);
+  void LoadParamFromFile(const TString& FileName, const TString& ParamName);
 
   /// Setter for the parameter at position iparam
   /// \param iparam index in the array of the parameters

@@ -16,28 +16,41 @@
 ///         In MC the efficiency for particles is computed according to the PDG code (sign included and not charge).
 ///
 
-// O2 includes
-#include <memory>
-#include <vector>
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/Core/RecoDecay.h"
 
-// ROOT includes
-#include "TPDGCode.h"
-#include "TEfficiency.h"
-#include "THashList.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TAxis.h>
+#include <TEfficiency.h>
+#include <THashList.h>
+#include <TMathBase.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <memory>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

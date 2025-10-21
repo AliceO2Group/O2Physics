@@ -14,22 +14,39 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-
-#include "Common/Core/TrackSelectorPID.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseB0ToDPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <iterator>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -80,7 +97,7 @@ struct HfCandidateSelectorB0ToDPi {
 
   o2::analysis::HfMlResponseB0ToDPi<float, false> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;
@@ -142,7 +159,7 @@ struct HfCandidateSelectorB0ToDPi {
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
   /// \param hfCandsB0 B0 candidates
   /// \param pionTracks pion tracks
-  template <bool withDmesMl, typename Cands, typename CandsDmes>
+  template <bool WithDmesMl, typename Cands, typename CandsDmes>
   void runSelection(Cands const& hfCandsB0,
                     CandsDmes const& /*hfCandsD*/,
                     TracksPion const& /*pionTracks*/)
@@ -171,7 +188,7 @@ struct HfCandidateSelectorB0ToDPi {
       auto hfCandD = hfCandB0.template prong0_as<CandsDmes>();
 
       std::vector<float> mlScoresD;
-      if constexpr (withDmesMl) {
+      if constexpr (WithDmesMl) {
         std::copy(hfCandD.mlProbDplusToPiKPi().begin(), hfCandD.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresD));
 
         if (!hfHelper.selectionDmesMlScoresForB(hfCandD, cutsDmesMl, binsPtDmesMl, mlScoresD)) {
@@ -212,8 +229,8 @@ struct HfCandidateSelectorB0ToDPi {
       }
       if (applyB0Ml) {
         // B0 ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandB0, trackPi, &mlScoresD);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandB0, trackPi, &mlScoresD);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
         hfMlB0ToDPiCandidate(outputMl[1]); // storing ML score for signal class
 
         if (!isSelectedMl) {

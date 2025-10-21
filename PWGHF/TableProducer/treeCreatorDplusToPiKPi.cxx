@@ -16,16 +16,26 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -135,6 +145,7 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   full::Phi,
                   full::Y,
                   full::Centrality,
+                  collision::NumContrib,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec)
@@ -289,20 +300,20 @@ struct HfTreeCreatorDplusToPiKPi {
       runNumber);
   }
 
-  template <typename Coll, bool doMc = false, bool doMl = false, typename T>
+  template <typename Coll, bool DoMc = false, bool DoMl = false, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
     }
 
     std::vector<float> outputMl = {-999., -999.};
-    if constexpr (doMl) {
+    if constexpr (DoMl) {
       for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
       }
@@ -361,6 +372,7 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.phi(),
         hfHelper.yDplus(candidate),
         cent,
+        coll.numContrib(),
         flagMc,
         originMc,
         channelMc);
@@ -466,7 +478,7 @@ struct HfTreeCreatorDplusToPiKPi {
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -495,7 +507,7 @@ struct HfTreeCreatorDplusToPiKPi {
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -506,7 +518,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
 
-  template <bool applyMl = false, typename CandTypeMcRec, typename CandTypeMcGen, typename CollType>
+  template <bool ApplyMl = false, typename CandTypeMcRec, typename CandTypeMcGen, typename CollType>
   void fillMcTables(CollType const& collisions,
                     aod::McCollisions const&,
                     CandTypeMcRec const& candidates,
@@ -527,12 +539,12 @@ struct HfTreeCreatorDplusToPiKPi {
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
       }
-      fillCandidateTable<CollType, true, applyMl>(candidate);
+      fillCandidateTable<CollType, true, ApplyMl>(candidate);
     }
 
     // Filling particle properties

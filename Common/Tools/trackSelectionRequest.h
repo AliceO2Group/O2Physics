@@ -21,18 +21,19 @@
 // Because of this, it is particularly important that the cuts in this object
 // in an analysis!
 
-#ifndef TRACKSELECTIONREQUEST_H
-#define TRACKSELECTIONREQUEST_H
+#ifndef COMMON_TOOLS_TRACKSELECTIONREQUEST_H_
+#define COMMON_TOOLS_TRACKSELECTIONREQUEST_H_
 
-#include <iosfwd>
 #include <Rtypes.h>
-#include <TMath.h>
+
+#include <cmath>
+#include <iosfwd>
 
 class trackSelectionRequest
 {
  public:
   trackSelectionRequest()
-    : trackPhysicsType{0}, minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPC{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, requireITS{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
+    : trackPhysicsType{0}, minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPC{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, maxTPCFractionSharedCls{0.0}, requireITS{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
   {
     // constructor
   }
@@ -88,7 +89,7 @@ class trackSelectionRequest
     if (lTrack.eta() > maxEta)
       return false;
     // DCA to PV
-    if (fabs(lTrack.dcaXY()) < maxDCAz)
+    if (std::fabs(lTrack.dcaXY()) < maxDCAz)
       return false;
     // TracksExtra-based
     if (lTrack.hasTPC() == false && requireTPC)
@@ -163,4 +164,4 @@ class trackSelectionRequest
 
 std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c);
 
-#endif // TRACKSELECTIONREQUEST_H
+#endif // COMMON_TOOLS_TRACKSELECTIONREQUEST_H_

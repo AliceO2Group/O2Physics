@@ -14,22 +14,41 @@
 /// \author Carolina Reetz c.reetz@cern.ch
 /// \brief  QA task to study momentum resolution of Lambda daughter tracks
 
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "DPG/Tasks/AOTTrack/V0Cascades/qaLamMomResolution.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/TrackTuner.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <TH1.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -540,8 +559,8 @@ struct qaLamMomResolution {
             }
           }
         } // end Anti-Lambda
-      }   // end MC
-    }     // end V0 loop
+      } // end MC
+    } // end V0 loop
   }
   PROCESS_SWITCH(qaLamMomResolution, processMC, "Process MC", true);
 };

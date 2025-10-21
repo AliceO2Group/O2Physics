@@ -20,13 +20,20 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 
-#include <algorithm>
-#include <iterator>
-#include <vector>
-#include <memory>
+#include <FT0Base/Geometry.h>
+#include <FV0Base/Geometry.h>
 
-#include "TMath.h"
-#include "TVector3.h"
+#include <TComplex.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TVector3.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iterator>
+#include <memory>
+#include <vector>
 
 double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
 {
@@ -37,8 +44,8 @@ double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
   float offsetX = 0.;
   float offsetY = 0.;
 
-  int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27,
-                       32, 40, 33, 41, 34, 42, 35, 43};
+  const int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27,
+                             32, 40, 33, 41, 34, 42, 35, 43};
   bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
 
   if (isChnoInLeft) {
@@ -131,10 +138,10 @@ void EventPlaneHelper::DoCorrections(float& qx, float& qy,
   qy = (qy - corrections[2] * qx) / (1.0 - corrections[3] * corrections[2]);
 
   // Rescaling of the Qx-Qy into a circle.
-  if (fabs(corrections[4]) > 1e-8) {
+  if (std::fabs(corrections[4]) > 1e-8) {
     qx /= corrections[4];
   }
-  if (fabs(corrections[5]) > 1e-8) {
+  if (std::fabs(corrections[5]) > 1e-8) {
     qy /= corrections[5];
   }
 }
@@ -153,9 +160,9 @@ void EventPlaneHelper::DoTwist(float& qx, float& qy, float lp, float lm)
 
 void EventPlaneHelper::DoRescale(float& qx, float& qy, float ap, float am)
 {
-  if (fabs(ap) > 1e-8)
+  if (std::fabs(ap) > 1e-8)
     qx /= ap;
-  if (fabs(am) > 1e-8)
+  if (std::fabs(am) > 1e-8)
     qy /= am;
 }
 

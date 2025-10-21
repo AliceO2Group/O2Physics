@@ -13,10 +13,12 @@ o2physics_add_library(PWGEMDileptonCore
                SOURCES  EMEventCut.cxx
                         DielectronCut.cxx
                         DimuonCut.cxx
+                        EMTrackCut.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore)
 
 o2physics_target_root_dictionary(PWGEMDileptonCore
               HEADERS   EMEventCut.h
                         DielectronCut.h
                         DimuonCut.h
+                        EMTrackCut.h
               LINKDEF PWGEMDileptonCoreLinkDef.h)

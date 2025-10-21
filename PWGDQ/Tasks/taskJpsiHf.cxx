@@ -97,15 +97,16 @@ struct taskJPsiHf {
     float deltaRap = -999;
     float deltaPhi = -999;
 
-    for (auto& dilepton : dileptons) {
+    for (auto const& dilepton : dileptons) {
       ptDilepton = RecoDecay::pt(dilepton.px(), dilepton.py());
       rapDilepton = RecoDecay::y(std::array{dilepton.px(), dilepton.py(), dilepton.pz()}, constants::physics::MassJPsi);
       phiDilepton = RecoDecay::phi(dilepton.px(), dilepton.py());
 
-      for (auto& dmeson : dmesons) {
+      for (auto const& dmeson : dmesons) {
         ptDmeson = RecoDecay::pt(dmeson.px(), dmeson.py());
         phiDmeson = RecoDecay::phi(dmeson.px(), dmeson.py());
-        deltaPhi = RecoDecay::constrainAngle(phiDilepton - phiDmeson, -o2::constants::math::PIHalf);
+        float absDeltaPhiRaw = std::abs(phiDilepton - phiDmeson);
+        deltaPhi = (absDeltaPhiRaw < o2::constants::math::PI) ? absDeltaPhiRaw : o2::constants::math::TwoPI - absDeltaPhiRaw;
 
         auto ptBinDmesForBdt = findBin(binsPtDmesForBdt, ptDmeson);
         if (ptBinDmesForBdt == -1) {

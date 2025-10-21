@@ -13,16 +13,31 @@
 /// \brief Xic0 and Omegac0 → Xi Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectorPID.h"
-
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::aod;
@@ -181,8 +196,8 @@ struct HfCandidateSelectorToXiPi {
                TracksSelLf const& lfTracks)
   {
 
-    double massLambdaFromPDG = o2::constants::physics::MassLambda0;
-    double massXiFromPDG = o2::constants::physics::MassXiMinus;
+    double const massLambdaFromPDG = o2::constants::physics::MassLambda0;
+    double const massXiFromPDG = o2::constants::physics::MassXiMinus;
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
@@ -201,7 +216,7 @@ struct HfCandidateSelectorToXiPi {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
+      int8_t const signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
@@ -212,10 +227,10 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // eta selection
-      double etaV0PosDau = candidate.etaV0PosDau();
-      double etaV0NegDau = candidate.etaV0NegDau();
-      double etaPiFromCasc = candidate.etaBachFromCasc();
-      double etaPiFromCharmBaryon = candidate.etaBachFromCharmBaryon();
+      double const etaV0PosDau = candidate.etaV0PosDau();
+      double const etaV0NegDau = candidate.etaV0NegDau();
+      double const etaPiFromCasc = candidate.etaBachFromCasc();
+      double const etaPiFromCharmBaryon = candidate.etaBachFromCharmBaryon();
       if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
         resultSelections = false;
         registry.fill(HIST("hSelEtaPosV0Dau"), 0);
@@ -337,8 +352,8 @@ struct HfCandidateSelectorToXiPi {
       }
 
       // pT selections
-      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
-      double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+      double const ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
+      double const ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
       if (std::abs(ptPiFromCasc) < ptPiFromCascMin) {
         resultSelections = false;
         registry.fill(HIST("hSelPtPiFromCasc"), 0);
@@ -470,9 +485,9 @@ struct HfCandidateSelectorToXiPi {
       bool statusInvMassCascade = false;
       bool statusInvMassCharmBaryon = false;
 
-      double invMassLambda = candidate.invMassLambda();
-      double invMassCascade = candidate.invMassCascade();
-      double invMassCharmBaryon = candidate.invMassCharmBaryon();
+      double const invMassLambda = candidate.invMassLambda();
+      double const invMassCascade = candidate.invMassCascade();
+      double const invMassCharmBaryon = candidate.invMassCharmBaryon();
 
       if (std::abs(invMassLambda - massLambdaFromPDG) < v0MassWindow) {
         statusInvMassLambda = true;

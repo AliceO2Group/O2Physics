@@ -68,6 +68,7 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgOutputCorrelationQA, bool, false, "Fill correlation QA histograms")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
@@ -101,6 +102,10 @@ struct FlowRunbyRun {
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
   ConfigurableAxis axisIndependent{"axisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
+  ConfigurableAxis axisNch{"axisNch", {4000, 0, 4000}, "N_{ch}"};
+  ConfigurableAxis axisCentForQA{"axisCentForQA", {100, 0, 100}, "centrality (%)"};
+  ConfigurableAxis axisT0C{"axisT0C", {70, 0, 70000}, "N_{ch} (T0C)"};
+  ConfigurableAxis axisT0A{"axisT0A", {200, 0, 200000}, "N_{ch} (T0A)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -113,7 +118,6 @@ struct FlowRunbyRun {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define output
@@ -129,6 +133,7 @@ struct FlowRunbyRun {
   int lastRunNumer = -1;
   std::vector<int> runNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;          // map of histograms for all runs
+  std::map<int, std::vector<std::shared_ptr<TH2>>> th2sList;          // map of TH2 histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;          // map of TH3 histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> profilesList; // map of profiles for all runs
   enum OutputTH1Names {
@@ -141,6 +146,14 @@ struct FlowRunbyRun {
     hCent,
     hEventCountSpecific,
     kCount_TH1Names
+  };
+  enum OutputTH2Names {
+    // here are TH2 histograms
+    hglobalTracks_centT0C = 0,
+    hglobalTracks_PVTracks,
+    hglobalTracks_multV0A,
+    hcentFV0A_centFT0C,
+    kCount_TH2Names
   };
   enum OutputTH3Names {
     hPhiEtaVtxz = 0,
@@ -170,14 +183,15 @@ struct FlowRunbyRun {
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
 
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
-    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+    auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
 
     // Add output histograms to the registry
     runNumbers = cfgRunNumbers;
@@ -358,6 +372,15 @@ struct FlowRunbyRun {
     histos[hEventCountSpecific]->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
     th1sList.insert(std::make_pair(runNumber, histos));
 
+    if (cfgOutputCorrelationQA) {
+      std::vector<std::shared_ptr<TH2>> th2s(kCount_TH2Names);
+      th2s[hglobalTracks_centT0C] = registry.add<TH2>(Form("%d/globalTracks_centT0C", runNumber), "after cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
+      th2s[hglobalTracks_PVTracks] = registry.add<TH2>(Form("%d/globalTracks_PVTracks", runNumber), "after cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNch, axisNch}});
+      th2s[hglobalTracks_multV0A] = registry.add<TH2>(Form("%d/globalTracks_multV0A", runNumber), "after cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+      th2s[hcentFV0A_centFT0C] = registry.add<TH2>(Form("%d/centFV0A_centFT0C", runNumber), "after cut;Centrality T0C;Centrality V0A", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
+      th2sList.insert(std::make_pair(runNumber, th2s));
+    }
+
     std::vector<std::shared_ptr<TProfile>> profiles(kCount_TProfileNames);
     profiles[c22] = registry.add<TProfile>(Form("%d/c22", runNumber), "", {HistType::kTProfile, {axisIndependent}});
     profiles[c22_gap10] = registry.add<TProfile>(Form("%d/c22_gap10", runNumber), "", {HistType::kTProfile, {axisIndependent}});
@@ -455,7 +478,8 @@ struct FlowRunbyRun {
       th1sList[runNumber][hEventCountSpecific]->Fill(8.5);
 
     // V0A T0A 5 sigma cut
-    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+    float nSigma = 5.; // 5 sigma cut
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nSigma * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
     if (cfgEvSelV0AT0ACut)
       th1sList[runNumber][hEventCountSpecific]->Fill(9.5);
@@ -511,6 +535,12 @@ struct FlowRunbyRun {
     th1sList[runNumber][hVtxZ]->Fill(collision.posZ());
     th1sList[runNumber][hMult]->Fill(tracks.size());
     th1sList[runNumber][hCent]->Fill(collision.centFT0C());
+    if (cfgOutputCorrelationQA) {
+      th2sList[runNumber][hglobalTracks_centT0C]->Fill(collision.centFT0C(), tracks.size());
+      th2sList[runNumber][hglobalTracks_PVTracks]->Fill(collision.multNTracksPV(), tracks.size());
+      th2sList[runNumber][hglobalTracks_multV0A]->Fill(collision.multFV0A(), tracks.size());
+      th2sList[runNumber][hcentFV0A_centFT0C]->Fill(collision.centFT0C(), collision.centFV0A());
+    }
 
     loadCorrections(bc.timestamp(), runNumber);
 

@@ -80,5 +80,59 @@ DECLARE_SOA_TABLE(LambdaPairs, "AOD", "LAMBDAPAIR",
                   lambdapair::PionIndex);
 
 using LambdaPair = LambdaPairs::iterator;
+
+namespace lambdaeventmc
+{
+DECLARE_SOA_COLUMN(Centmc, centmc, float);
+DECLARE_SOA_COLUMN(Poszmc, poszmc, float);
+} // namespace lambdaeventmc
+DECLARE_SOA_TABLE(LambdaEventmcs, "AOD", "LAMBDAEVENTMC",
+                  o2::soa::Index<>,
+                  lambdaeventmc::Centmc,
+                  lambdaeventmc::Poszmc)
+using LambdaEventmc = LambdaEventmcs::iterator;
+
+namespace lambdapairmc
+{
+DECLARE_SOA_INDEX_COLUMN(LambdaEventmc, lambdaeventmc);
+DECLARE_SOA_COLUMN(V0Statusmc, v0Statusmc, int);                       //! Lambda or Anti-Lambda status in montecarlo
+DECLARE_SOA_COLUMN(DoubleStatusmc, doubleStatusmc, bool);              //! Double status in montecarlo
+DECLARE_SOA_COLUMN(V0Cospamc, v0Cospamc, float);                       //! V0 Cospa in montecarlo
+DECLARE_SOA_COLUMN(V0Radiusmc, v0Radiusmc, float);                     //! V0 Radius in montecarlo
+DECLARE_SOA_COLUMN(DcaPositivemc, dcaPositivemc, float);               //! DCA Positive in montecarlo
+DECLARE_SOA_COLUMN(DcaNegativemc, dcaNegativemc, float);               //! DCA Negative in montecarlo
+DECLARE_SOA_COLUMN(DcaBetweenDaughtermc, dcaBetweenDaughtermc, float); //! DCA between daughters in montecarlo
+DECLARE_SOA_COLUMN(LambdaPtmc, lambdaPtmc, float);                     //! Lambda Pt in montecarlo
+DECLARE_SOA_COLUMN(LambdaEtamc, lambdaEtamc, float);                   //! Lambda Eta in montecarlo
+DECLARE_SOA_COLUMN(LambdaPhimc, lambdaPhimc, float);                   //! Lambda Phi in montecarlo
+DECLARE_SOA_COLUMN(LambdaMassmc, lambdaMassmc, float);                 //! Lambda Mass in montecarlo
+DECLARE_SOA_COLUMN(ProtonPtmc, protonPtmc, float);                     //! Proton Pt in montecarlo
+DECLARE_SOA_COLUMN(ProtonEtamc, protonEtamc, float);                   //! Proton Eta in montecarlo
+DECLARE_SOA_COLUMN(ProtonPhimc, protonPhimc, float);                   //! Proton Phi in montecarlo
+DECLARE_SOA_COLUMN(ProtonIndexmc, protonIndexmc, int);                 //! Proton index in montecarlo
+DECLARE_SOA_COLUMN(PionIndexmc, pionIndexmc, int);                     //! Pion index in montecarlo
+} // namespace lambdapairmc
+DECLARE_SOA_TABLE(LambdaPairmcs, "AOD", "LAMBDAPAIRMC",
+                  o2::soa::Index<>,
+                  lambdapairmc::LambdaEventmcId,
+                  lambdapairmc::V0Statusmc,
+                  lambdapairmc::DoubleStatusmc,
+                  lambdapairmc::V0Cospamc,
+                  lambdapairmc::V0Radiusmc,
+                  lambdapairmc::DcaPositivemc,
+                  lambdapairmc::DcaNegativemc,
+                  lambdapairmc::DcaBetweenDaughtermc,
+                  lambdapairmc::LambdaPtmc,
+                  lambdapairmc::LambdaEtamc,
+                  lambdapairmc::LambdaPhimc,
+                  lambdapairmc::LambdaMassmc,
+                  lambdapairmc::ProtonPtmc,
+                  lambdapairmc::ProtonEtamc,
+                  lambdapairmc::ProtonPhimc,
+                  lambdapairmc::ProtonIndexmc,
+                  lambdapairmc::PionIndexmc);
+
+using LambdaPairmc = LambdaPairmcs::iterator;
+
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_LFSPINCORRELATIONTABLES_H_

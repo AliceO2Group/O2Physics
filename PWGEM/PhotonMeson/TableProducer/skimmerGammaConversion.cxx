@@ -23,38 +23,37 @@
 
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
 
-#include <memory>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 // todo: remove reduantant information in GammaConversionsInfoTrue
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // includes for the R recalculation
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "DCAFitter/HelixHelper.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "ReconstructionDataFormats/HelixHelper.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+
+#include "Math/Vector4D.h"
 #include <TMath.h>
 #include <TVector2.h>
-#include "Math/Vector4D.h"
-
-#include "Tools/KFparticle/KFUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -189,8 +188,7 @@ struct skimmerGammaConversion {
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(), theTrack.tpcNClsShared(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
-           theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap(),
-           theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl());
+           theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap());
   }
 
   template <typename TTRACK>

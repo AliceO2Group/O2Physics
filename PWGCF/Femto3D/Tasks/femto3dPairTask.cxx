@@ -55,6 +55,7 @@ struct FemtoCorrelations {
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
   Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
   Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
+  Configurable<bool> _requestIsGoodITSLayersAll{"requestIsGoodITSLayersAll", false, "cut time intervals with dead ITS staves"};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
   Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
@@ -423,6 +424,8 @@ struct FemtoCorrelations {
         continue;
       if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
         continue;
+      if (_requestIsGoodITSLayersAll && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isGoodITSLayersAll())
+        continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
@@ -473,7 +476,8 @@ struct FemtoCorrelations {
         continue;
       if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
-
+      if (_requestIsGoodITSLayersAll && !collision.isGoodITSLayersAll())
+        continue;
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;

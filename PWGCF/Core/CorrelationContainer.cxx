@@ -115,7 +115,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   triggerAxis.insert(triggerAxis.end(), userAxis.begin(), userAxis.end());
   mTriggerHist = HistFactory::createHist<StepTHnF>({"mTriggerHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, triggerAxis, fgkCFSteps}}).release();
 
-  mTrackHistEfficiency = HistFactory::createHist<StepTHnD>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnD, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2]}, fgkCFSteps}}).release();
+  mTrackHistEfficiency = HistFactory::createHist<StepTHnF>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnF, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2]}, fgkCFSteps}}).release();
 
   mEventCount = HistFactory::createHist<TH2F>({"mEventCount", ";step;centrality;count", {HistType::kTH2F, {{fgkCFSteps + 2, -2.5, -0.5 + fgkCFSteps, "step"}, correlationAxis[3]}}}).release();
 }
@@ -681,8 +681,11 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
         Double_t sums[] = {0, 0, 0};
         Double_t errors[] = {0, 0, 0};
 
+        Int_t checkBinYBegin = 1;                     // tracksSame->GetXaxis()->FindBin(-0.79);
+        Int_t checkBinYEnd = tracksSame->GetNbinsY(); // tracksSame->GetXaxis()->FindBin(0.79);
+
         for (Int_t x = 1; x <= tracksSame->GetNbinsX(); x++) {
-          for (Int_t y = 1; y <= tracksSame->GetNbinsY(); y++) {
+          for (Int_t y = checkBinYBegin; y <= checkBinYEnd; y++) {
             sums[0] += tracksSame->GetBinContent(x, y);
             errors[0] += tracksSame->GetBinError(x, y);
             sums[1] += tracksMixed->GetBinContent(x, y);
@@ -693,7 +696,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
         tracksSame->Divide(tracksMixed);
 
         for (Int_t x = 1; x <= tracksSame->GetNbinsX(); x++) {
-          for (Int_t y = 1; y <= tracksSame->GetNbinsY(); y++) {
+          for (Int_t y = checkBinYBegin; y <= checkBinYEnd; y++) {
             sums[2] += tracksSame->GetBinContent(x, y);
             errors[2] += tracksSame->GetBinError(x, y);
           }

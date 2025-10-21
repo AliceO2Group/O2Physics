@@ -10,29 +10,40 @@
 // or submit itself to any jurisdiction.
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, Padova University and INFN
 
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h" // for propagation to primary vertex
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexer.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include <iostream>
+#include <TH1.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <numeric>
 #include <set>
 #include <string>
 #include <vector>
@@ -40,26 +51,18 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-//{
-//   ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Fill MC histograms."}};
-//   workflowOptions.push_back(optionDoMC);
-// }
-
-#include "Framework/runDataProcessing.h"
-
 /// QA task for impact parameter distribution monitoring
 struct QaImpactPar {
 
   /// Input parameters
   Configurable<bool> fDebug{"fDebug", false, "Debug flag enabling outputs"};
   Configurable<bool> fEnablePulls{"fEnablePulls", false, "Enable storage of pulls"};
+  Configurable<bool> fEnableNuclei{"fEnableNuclei", false, "Enable storage of nuclei"};
   ConfigurableAxis binningImpPar{"binningImpPar", {200, -500.f, 500.f}, "Impact parameter binning"};
   ConfigurableAxis binningPulls{"binningPulls", {200, -10.f, 10.f}, "Pulls binning"};
   ConfigurableAxis binningPt{"binningPt", {100, 0.f, 10.f}, "Pt binning"};
   ConfigurableAxis binningEta{"binningEta", {40, -2.f, 2.f}, "Eta binning"};
   ConfigurableAxis binningPhi{"binningPhi", {24, 0.f, o2::constants::math::TwoPI}, "Phi binning"};
-  ConfigurableAxis binningPDG{"binningPDG", {5, -1.5f, 3.5f}, "PDG species binning (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
   ConfigurableAxis binningCharge{"binningCharge", {2, -2.f, 2.f}, "charge binning (-1: negative; +1: positive)"};
   ConfigurableAxis binningIuPosX{"binningIuPosX", {100, -10.f, 10.f}, "Track IU x position"};
   ConfigurableAxis binningIuPosY{"binningIuPosY", {100, -10.f, 10.f}, "Track IU y position"};
@@ -336,7 +339,13 @@ struct QaImpactPar {
     const AxisSpec trackNSigmaTOFPionAxis{20, -10.f, 10.f, "Number of #sigma TOF #pi^{#pm}"};
     const AxisSpec trackNSigmaTOFKaonAxis{20, -10.f, 10.f, "Number of #sigma TOF K^{#pm}"};
     const AxisSpec trackNSigmaTOFProtonAxis{20, -10.f, 10.f, "Number of #sigma TOF proton"};
-    const AxisSpec trackPDGAxis{binningPDG, "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
+    AxisSpec trackPDGAxis{5, -1.5f, 3.5f, "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
+    if (fEnableNuclei) {
+      trackPDGAxis.nBins = 9;
+      trackPDGAxis.binEdges[1] = 7.5;
+      trackPDGAxis.title = "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p, 4: d, 5: t, 6: he3, 7: alpha)";
+    }
+
     const AxisSpec trackChargeAxis{binningCharge, "charge binning (-1: negative; +1: positive)"};
     const AxisSpec axisVertexNumContrib{binsNumPvContrib, "Number of original PV contributors"};
     const AxisSpec trackIsPvContrib{2, -0.5f, 1.5f, "is PV contributor: 1=yes, 0=no"};
@@ -420,6 +429,14 @@ struct QaImpactPar {
           return 2;
         case 2212: // proton
           return 3;
+        case o2::constants::physics::Pdg::kDeuteron: // deuteron
+          return 4;
+        case o2::constants::physics::Pdg::kTriton: // triton
+          return 5;
+        case o2::constants::physics::Pdg::kHelium3: // helium-3
+          return 6;
+        case o2::constants::physics::Pdg::kAlpha: // alpha
+          return 7;
         default: // not identified
           return 0;
       }
@@ -569,7 +586,7 @@ struct QaImpactPar {
             continue;
           }
           auto particle = track.mcParticle();
-          if (keepOnlyPhysPrimary && particle.isPhysicalPrimary()) {
+          if (!particle.isPhysicalPrimary()) {
             continue;
           }
           pdgIndex = PDGtoIndex(std::abs(particle.pdgCode()));

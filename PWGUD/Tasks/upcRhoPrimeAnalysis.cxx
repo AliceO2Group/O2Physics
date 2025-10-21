@@ -12,322 +12,416 @@
 /// \brief  Task for analysis of rho' in UPCs using UD tables (from SG producer).
 /// \author Cesar Ramirez, cesar.ramirez@cern.ch
 
-#include <string> // Para std::string
-#include <vector> // Para std::vector
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Math/Vector4D.h" // similiar to TLorentzVector (which is now legacy apparently)
-#include <random>
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/DataModel/PIDResponse.h"
 
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TH1F.h"
+#include "TH2F.h"
+
+#include "random"
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
-using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
-using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
+// Define UD tables
+using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+using UDCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras_003, aod::UDCollisionsSels, aod::UDZdcsReduced>;
 
 namespace o2::aod
 {
 namespace fourpi
 {
-
-// for event
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-
-// for rho prime
-DECLARE_SOA_COLUMN(M, m, double);
-DECLARE_SOA_COLUMN(Pt, pt, double);
-DECLARE_SOA_COLUMN(Eta, eta, double);
-DECLARE_SOA_COLUMN(Phi, phi, double);
-
-// for vertex
-DECLARE_SOA_COLUMN(PosX, posX, double);
-DECLARE_SOA_COLUMN(PosY, posY, double);
-DECLARE_SOA_COLUMN(PosZ, posZ, double);
-
-// for other
-DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);
-
-// info detec
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
-DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float);
-DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
-DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
-DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
-DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
-DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
-
-// for pion tracks
-DECLARE_SOA_COLUMN(NumContrib, numContrib, int32_t);
-DECLARE_SOA_COLUMN(Sign, sign, std::vector<int>);
-DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<float>);
-DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<float>);
-DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, std::vector<float>);
-DECLARE_SOA_COLUMN(TrackID, trackID, std::vector<int>);
-
-// for others
-DECLARE_SOA_COLUMN(IsReconstructedWithUPC, isReconstructedWithUPC, bool);
-DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
-DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
-DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
-DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
-
+// Declare columns
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);                        // Run number for event identification
+DECLARE_SOA_COLUMN(M, m, double);                                         // Invariant mass of the system
+DECLARE_SOA_COLUMN(Pt, pt, double);                                       // Transverse momentum of the system
+DECLARE_SOA_COLUMN(Eta, eta, double);                                     // Pseudorapidity of the system
+DECLARE_SOA_COLUMN(Phi, phi, double);                                     // Azimuthal angle of the system
+DECLARE_SOA_COLUMN(PosX, posX, double);                                   // Vertex X position
+DECLARE_SOA_COLUMN(PosY, posY, double);                                   // Vertex Y position
+DECLARE_SOA_COLUMN(PosZ, posZ, double);                                   // Vertex Z position
+DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);                        // Total charge of selected tracks
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);        // FT0A amplitude
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);        // FT0C amplitude
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);        // FV0A amplitude
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int32_t);                      // Number of primary vertex contributors
+DECLARE_SOA_COLUMN(Sign, sign, std::vector<int>);                         // Track charges
+DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<float>);                 // Track pT values
+DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<float>);               // Track eta values
+DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<float>);               // Track phi values
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, std::vector<float>);         // TPC nσ for electrons
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, std::vector<float>);         // TPC nσ for pions
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, std::vector<float>);         // TPC nσ for kaons
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, std::vector<float>);         // TPC nσ for protons
+DECLARE_SOA_COLUMN(TrackID, trackID, std::vector<int>);                   // Track identifiers
+DECLARE_SOA_COLUMN(IsReconstructedWithUPC, isReconstructedWithUPC, bool); // UPC mode reconstruction flag
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);                              // ZNA timing
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);                              // ZNC timing
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);              // ZNA energy
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);              // ZNC energy
+DECLARE_SOA_COLUMN(IsChargeZero, isChargeZero, bool);                     // Neutral system flag
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);                // Occupancy in time
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);                   // Hadronic interaction rate
 } // namespace fourpi
 
-DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M, fourpi::Pt, fourpi::Eta, fourpi::Phi,
-                  fourpi::PosX, fourpi::PosY, fourpi::PosZ, fourpi::TotalCharge, fourpi::TotalFT0AmplitudeA, fourpi::TotalFT0AmplitudeC, fourpi::TotalFV0AmplitudeA,
-                  fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC,
-                  fourpi::NumContrib, fourpi::Sign, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi,
-                  fourpi::TPCNSigmaEl, fourpi::TPCNSigmaPi, fourpi::TPCNSigmaKa, fourpi::TPCNSigmaPr, fourpi::TrackID, fourpi::IsReconstructedWithUPC,
-                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC);
+// Define the output
+DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree",
+                  fourpi::RunNumber, fourpi::M, fourpi::Pt, fourpi::Eta, fourpi::Phi,
+                  fourpi::PosX, fourpi::PosY, fourpi::PosZ, fourpi::TotalCharge,
+                  fourpi::TotalFT0AmplitudeA, fourpi::TotalFT0AmplitudeC, fourpi::TotalFV0AmplitudeA,
+                  fourpi::NumContrib,
+                  fourpi::Sign, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi,
+                  fourpi::TPCNSigmaEl, fourpi::TPCNSigmaPi, fourpi::TPCNSigmaKa, fourpi::TPCNSigmaPr,
+                  fourpi::TrackID, fourpi::IsReconstructedWithUPC,
+                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC,
+                  fourpi::IsChargeZero, fourpi::OccupancyInTime, fourpi::HadronicRate);
 } // namespace o2::aod
 
 struct upcRhoPrimeAnalysis {
   Produces<aod::SYSTEMTREE> systemTree;
 
-  double PcEtaCut = 0.9; // physics coordination recommendation
+  // System selection configuration
+  Configurable<double> systemYCut{"systemYCut", 0.5, "Max Rapidity of rho prime"};
+  Configurable<double> systemPtCut{"systemPtCut", 0.1, "Min Pt of rho prime"};
+  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.8, "Min Mass of rho prime"};
+  Configurable<double> systemMassMaxCut{"systemMassMaxCut", 2.2, "Max Mass of rho prime"};
+  Configurable<double> etaCut{"etaCut", 0.9, "Track Pseudorapidity"};
 
+  // Event selection configuration
+  Configurable<float> vZCut{"vZCut", 10.0, "Cut on vertex Z position"};
+  Configurable<int> numPVContrib{"numPVContrib", 4, "Number of PV contributors"};
+  Configurable<float> fv0Cut{"fv0Cut", 50.0, "FV0 amplitude cut"};
+  Configurable<float> ft0aCut{"ft0aCut", 50.0, "FT0A amplitude cut"};
+  Configurable<float> ft0cCut{"ft0cCut", 50.0, "FT0C amplitude cut"};
+  Configurable<float> zdcCut{"zdcCut", 0.0, "ZDC energy cut"};
+  Configurable<bool> sbpCut{"sbpCut", true, "SBP cut"};
+  Configurable<bool> itsROFbCut{"itsROFbCut", true, "ITS ROFb cut"};
+  Configurable<bool> vtxITSTPCcut{"vtxITSTPCcut", true, "Vertex ITS-TPC cut"};
+  Configurable<bool> tfbCut{"tfbCut", true, "TFB cut"};
   Configurable<bool> specifyGapSide{"specifyGapSide", true, "specify gap side for SG/DG produced data"};
   Configurable<int> gapSide{"gapSide", 2, "gap side for SG produced data"};
-  Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
 
-  Configurable<double> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
-  Configurable<double> ZNcommonEnergyCut{"ZNcommonEnergyCut", 0.0, "ZN common energy cut"};
-  Configurable<double> ZNtimeCut{"ZNtimeCut", 2.0, "ZN time cut"};
+  // Track selection configuration
+  Configurable<bool> useOnlyPVtracks{"useOnlyPVtracks", true, "Use only PV tracks"};
+  Configurable<float> tpcChi2NClsCut{"tpcChi2NClsCut", 5.0, "TPC chi2/N clusters cut"};
+  Configurable<float> itsChi2NClsCut{"itsChi2NClsCut", 36.0, "ITS chi2/N clusters cut"};
+  Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 5.0, "TPC nSigma cut"};
+  Configurable<float> dcaXYcut{"dcaXYcut", 0, "dcaXY cut"};
+  Configurable<float> dcaZcut{"dcaZcut", 2, "dcaZ cut"};
+  Configurable<int> minTPCFindableClusters{"minTPCFindableClusters", 70, "Minimum number of findable TPC clusters"};
 
-  Configurable<double> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
-  Configurable<double> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
+  // Define histogram registry
+  HistogramRegistry registry{
+    "registry",
+    {// Event flow histograms
+     {"Events/Flow", "Event flow;Cut;Counts", {HistType::kTH1F, {{9, 0, 9}}}},
+     {"Events/VertexZ", "Vertex Z;z (cm);Counts", {HistType::kTH1F, {{200, -20, 20}}}},
+     {"Events/NumContrib", "Number of contributors;N_{contrib};Counts", {HistType::kTH1F, {{100, 0, 100}}}},
+     {"Events/FV0Amplitude", "FV0 amplitude;Amplitude;Counts", {HistType::kTH1F, {{200, 0, 200}}}},
+     {"Events/FT0AmplitudeA", "FT0A amplitude;Amplitude;Counts", {HistType::kTH1F, {{200, 0, 200}}}},
+     {"Events/FT0AmplitudeC", "FT0C amplitude;Amplitude;Counts", {HistType::kTH1F, {{200, 0, 200}}}},
+     {"Events/ZDCEnergy", "ZDC energy;Energy (TeV);Counts", {HistType::kTH1F, {{200, 0, 2}}}},
 
-  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.5, "min M cut for reco system"};
-  Configurable<double> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
-  Configurable<double> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
-  Configurable<double> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
+     // Track quality histograms
+     {"Tracks/Pt", "Track p_{T};p_{T} (GeV/c);Counts", {HistType::kTH1F, {{200, 0, 2}}}},
+     {"Tracks/Eta", "Track #eta;#eta;Counts", {HistType::kTH1F, {{200, -2, 2}}}},
+     {"Tracks/TPCNSigmaPi", "TPC n#sigma for #pi;n#sigma;Counts", {HistType::kTH1F, {{200, -10, 10}}}},
+     {"Tracks/TPCChi2NCl", "TPC #chi^{2}/N_{cls};#chi^{2}/N_{cls};Counts", {HistType::kTH1F, {{200, 0, 20}}}},
+     {"Tracks/ITSChi2NCl", "ITS #chi^{2}/N_{cls};#chi^{2}/N_{cls};Counts", {HistType::kTH1F, {{200, 0, 50}}}},
+     {"Tracks/RejectionReasons", "Track rejection reasons;Reason;Counts", {HistType::kTH1F, {{12, 0, 12}}}},
+     {"Tracks/DCASpectrum", "Track DCA spectrum;DCA (cm);Counts", {HistType::kTH1F, {{100, 0, 5}}}},
+     {"Tracks/ChargeDistribution", "Track charge distribution;Charge;Counts", {HistType::kTH1F, {{3, -1.5, 1.5}}}},
+     {"Tracks/TPCClusters", "TPC clusters findable;N_{clusters};Counts", {HistType::kTH1F, {{100, 0, 200}}}},
 
-  ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
-  ConfigurableAxis mCutAxis{"mCutAxis", {70, 0.5, 1.2}, "m (GeV/#it{c}^{2})"};
-  ConfigurableAxis ptAxis{"ptAxis", {1000, 0.0, 10.0}, "p_{T} (GeV/#it{c})"};
-  ConfigurableAxis ptCutAxis{"ptCutAxis", {300, 0.0, 0.3}, "p_{T} (GeV/#it{c})"};
-  ConfigurableAxis pt2Axis{"pt2Axis", {300, 0.0, 0.09}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
-  ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
-  ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
-  ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
-  ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
-  ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
-  ConfigurableAxis ptQuantileAxis{"ptQuantileAxis", {0, 0.0181689, 0.0263408, 0.0330488, 0.0390369, 0.045058, 0.0512604, 0.0582598, 0.066986, 0.0788085, 0.1}, "p_{T} (GeV/#it{c})"};
+     // System kinematics histograms
+     {"System/hM", ";m (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{1000, 0.0, 10.0}}}},
+     {"System/hPt", ";p_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{1000, 0.0, 10.0}}}},
+     {"System/hEta", ";#eta;counts", {HistType::kTH1F, {{180, -0.9, 0.9}}}},
+     {"System/hPhi", ";#phi;counts", {HistType::kTH1F, {{180, 0.0, 6.28}}}},
+     {"System/hY", ";y;counts", {HistType::kTH1F, {{180, -0.9, 0.9}}}},
 
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+     // Comparison histograms
+     {"Cuts/MBefore", "Mass before cuts;m (GeV/c^{2});Counts", {HistType::kTH1F, {{1000, 0, 10}}}},
+     {"Cuts/MAfter", "Mass after cuts;m (GeV/c^{2});Counts", {HistType::kTH1F, {{1000, 0, 10}}}},
+     {"Cuts/PtBefore", "p_{T} before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0, 1}}}},
+     {"Cuts/PtAfter", "p_{T} after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0, 10}}}}}};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
-    // selection counter
-    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS + TPC hit", "TOF requirement", "DCA cut", "#eta cut", "2D TPC n#sigma_{#pi} cut"};
+    // Configure event flow histogram labels
+    auto hFlow = registry.get<TH1>(HIST("Events/Flow"));
+    hFlow->GetXaxis()->SetBinLabel(1, "All events");
+    hFlow->GetXaxis()->SetBinLabel(2, "ITS-TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(3, "SBP cut");
+    hFlow->GetXaxis()->SetBinLabel(4, "ITS ROFb cut");
+    hFlow->GetXaxis()->SetBinLabel(5, "TFB cut");
+    hFlow->GetXaxis()->SetBinLabel(6, "Gap Side cut");
+    hFlow->GetXaxis()->SetBinLabel(7, "PV contrib cut");
+    hFlow->GetXaxis()->SetBinLabel(8, "Z vtx cut");
+    hFlow->GetXaxis()->SetBinLabel(9, "4 tracks cut");
 
-    // 4PI SYSTEM
-    // registry.add("4pi/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    // registry.add("4pi/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    // registry.add("4pi/hEta", ";Eta (1);counts", kTH1D, {etaAxis});
-    // registry.add("4pi/hPhi", ";Phi ();counts", kTH1D, {phiAxis});
+    // Configure track rejection reasons histogram labels
+    auto hReject = registry.get<TH1>(HIST("Tracks/RejectionReasons"));
+    hReject->GetXaxis()->SetBinLabel(1, "All Tracks");
+    hReject->GetXaxis()->SetBinLabel(2, "PV Contributor");
+    hReject->GetXaxis()->SetBinLabel(3, "Has ITS+TPC");
+    hReject->GetXaxis()->SetBinLabel(4, "pT > 0.1 GeV/c");
+    hReject->GetXaxis()->SetBinLabel(5, "TPC chi2/cluster");
+    hReject->GetXaxis()->SetBinLabel(6, "ITS chi2/cluster");
+    hReject->GetXaxis()->SetBinLabel(7, "TPC clusters findable");
+    hReject->GetXaxis()->SetBinLabel(8, "TPC nSigmaPi");
+    hReject->GetXaxis()->SetBinLabel(9, "Eta acceptance");
+    hReject->GetXaxis()->SetBinLabel(10, "DCAz cut");
+    hReject->GetXaxis()->SetBinLabel(11, "DCAxy cut");
+    hReject->GetXaxis()->SetBinLabel(12, "Accepted Tracks");
   }
 
-  template <typename C>
-  bool collisionPassesCuts(const C& collision) // collision cuts
+  void process(UDCollisions::iterator const& collision, UDtracks const& tracks)
   {
-    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
-      return false;
+    // Count all processed events
+    registry.fill(HIST("Events/Flow"), 0);
+
+    // Fill basic event diagnostics
+    registry.fill(HIST("Events/VertexZ"), collision.posZ());
+    registry.fill(HIST("Events/NumContrib"), collision.numContrib());
+    registry.fill(HIST("Events/FV0Amplitude"), collision.totalFV0AmplitudeA());
+    registry.fill(HIST("Events/FT0AmplitudeA"), collision.totalFT0AmplitudeA());
+    registry.fill(HIST("Events/FT0AmplitudeC"), collision.totalFT0AmplitudeC());
+    registry.fill(HIST("Events/ZDCEnergy"), collision.energyCommonZNA());
+    registry.fill(HIST("Events/ZDCEnergy"), collision.energyCommonZNC());
+
+    // Apply event selection cuts in sequence
+    if (collision.vtxITSTPC() != vtxITSTPCcut)
+      return;
+    registry.fill(HIST("Events/Flow"), 1);
+
+    if (collision.sbp() != sbpCut)
+      return;
+    registry.fill(HIST("Events/Flow"), 2);
+
+    if (collision.itsROFb() != itsROFbCut)
+      return;
+    registry.fill(HIST("Events/Flow"), 3);
+
+    if (collision.tfb() != tfbCut)
+      return;
+    registry.fill(HIST("Events/Flow"), 4);
+
     if (specifyGapSide && collision.gapSide() != gapSide)
-      return false;
-    return true;
-  }
-
-  template <typename T>
-  bool trackPassesCuts(const T& track) // track cuts (PID done separately)
-  {
-    if (!track.isPVContributor())
-      return false;
-    if (!track.hasITS() || !track.hasTPC())
-      return false;
-    if (requireTof && !track.hasTOF())
-      return false;
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0182 + 0.0350 / std::pow(track.pt(), 1.01))) // Run 2 dynamic DCA cut
-      return false;
-    if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
-      return false;
-    return true;
-  }
-
-  template <typename T>
-  bool tracksPassPiPID(const T& cutTracks) // n-dimensional PID cut
-  {
-    double radius = 0.0;
-    for (const auto& track : cutTracks)
-      radius += std::pow(track.tpcNSigmaPi(), 2);
-    return radius < std::pow(tracksTpcNSigmaPiCut, 2);
-  }
-
-  template <typename T>
-  double tracksTotalCharge(const T& cutTracks) // total charge of selected tracks
-  {
-    double charge = 0.0;
-    for (const auto& track : cutTracks)
-      charge += track.sign();
-    return charge;
-  }
-
-  bool systemPassCuts(const ROOT::Math::PxPyPzMVector& system) // system cuts
-  {
-    if (system.M() < systemMassMinCut || system.M() > systemMassMaxCut)
-      return false;
-    if (system.Pt() > systemPtCut)
-      return false;
-    if (std::abs(system.Rapidity()) > systemYCut)
-      return false;
-    return true;
-  }
-
-  ROOT::Math::PxPyPzMVector reconstructSystem(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // reconstruct system from 4-vectors
-  {
-    ROOT::Math::PxPyPzMVector system;
-    for (const auto& track4Vec : cutTracks4Vecs)
-      system += track4Vec;
-    return system;
-  }
-
-  double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
-  {
-    double dPhi = p1.Phi() - p2.Phi();
-    if (dPhi > o2::constants::math::PI)
-      dPhi -= o2::constants::math::TwoPI;
-    else if (dPhi < -o2::constants::math::PI)
-      dPhi += o2::constants::math::TwoPI;
-    return dPhi; // calculate delta phi in (-pi, pi)
-  }
-
-  double getPhiRandom(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // decay phi anisotropy
-  {                                                                                 // two possible definitions of phi: randomize the tracks
-    std::vector<int> indices = {0, 1};
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
-    std::shuffle(indices.begin(), indices.end(), std::default_random_engine(seed)); // shuffle indices
-    // calculate phi
-    ROOT::Math::PxPyPzMVector pOne = cutTracks4Vecs[indices[0]];
-    ROOT::Math::PxPyPzMVector pTwo = cutTracks4Vecs[indices[1]];
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
-    return deltaPhi(pPlus, pMinus);
-  }
-
-  template <typename T>
-  double getPhiCharge(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs)
-  { // two possible definitions of phi: charge-based assignment
-    ROOT::Math::PxPyPzMVector pOne, pTwo;
-    if (cutTracks[0].sign() > 0) {
-      pOne = cutTracks4Vecs[0];
-      pTwo = cutTracks4Vecs[1];
-    } else {
-      pOne = cutTracks4Vecs[1];
-      pTwo = cutTracks4Vecs[0];
-    }
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
-    return deltaPhi(pPlus, pMinus);
-  }
-
-  void processReco(FullUDSgCollision const& collision, FullUDTracks const& tracks)
-  {
-
-    if (!collisionPassesCuts(collision))
       return;
+    if (collision.totalFV0AmplitudeA() > fv0Cut)
+      return;
+    if (collision.totalFT0AmplitudeA() > ft0aCut)
+      return;
+    if (collision.totalFT0AmplitudeC() > ft0cCut)
+      return;
+    if (collision.energyCommonZNA() > zdcCut || collision.energyCommonZNC() > zdcCut)
+      return;
+    registry.fill(HIST("Events/Flow"), 5);
 
-    // vectors for storing selected tracks and their 4-vectors
-    std::vector<decltype(tracks.begin())> cutTracks;
-    std::vector<ROOT::Math::PxPyPzMVector> cutTracks4Vecs;
+    if (collision.numContrib() != numPVContrib)
+      return;
+    registry.fill(HIST("Events/Flow"), 6);
 
-    // int trackCounter = 0;
+    if (std::abs(collision.posZ()) > vZCut)
+      return;
+    registry.fill(HIST("Events/Flow"), 7);
+
+    std::vector<decltype(tracks.begin())> posPions;
+    std::vector<decltype(tracks.begin())> negPions;
+    posPions.reserve(2);
+    negPions.reserve(2);
+
+    // Loop over all tracks in the event
     for (const auto& track : tracks) {
+      registry.fill(HIST("Tracks/RejectionReasons"), 0); // Count all tracks
 
-      if (!trackPassesCuts(track))
+      // Track selection criteria applied in sequence:
+      if (useOnlyPVtracks && !track.isPVContributor()) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 1);
         continue;
-      // trackCounter++;
-      cutTracks.push_back(track);
-      cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
+      }
+
+      if (!track.hasITS() || !track.hasTPC()) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 2);
+        continue;
+      }
+
+      // Fill track spectra
+      registry.fill(HIST("Tracks/Pt"), track.pt());
+      registry.fill(HIST("Tracks/Eta"), eta(track.px(), track.py(), track.pz()));
+      registry.fill(HIST("Tracks/TPCNSigmaPi"), track.tpcNSigmaPi());
+      registry.fill(HIST("Tracks/TPCChi2NCl"), track.tpcChi2NCl());
+      registry.fill(HIST("Tracks/ITSChi2NCl"), track.itsChi2NCl());
+      registry.fill(HIST("Tracks/DCASpectrum"), std::hypot(track.dcaXY(), track.dcaZ()));
+      registry.fill(HIST("Tracks/ChargeDistribution"), track.sign());
+      registry.fill(HIST("Tracks/TPCClusters"), track.tpcNClsFindable());
+
+      if (track.pt() <= 0.1f) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 3);
+        continue;
+      }
+
+      if (track.tpcChi2NCl() > tpcChi2NClsCut) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 4);
+        continue;
+      }
+      if (track.itsChi2NCl() > itsChi2NClsCut) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 5);
+        continue;
+      }
+
+      if (track.tpcNClsFindable() < minTPCFindableClusters) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 6);
+        continue;
+      }
+
+      if (std::abs(track.tpcNSigmaPi()) > nSigmaTPCcut) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 7);
+        continue;
+      }
+
+      float trackEta = eta(track.px(), track.py(), track.pz());
+      if (std::abs(trackEta) > etaCut) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 8);
+        continue;
+      }
+
+      if (std::abs(track.dcaZ()) > dcaZcut) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 9);
+        continue;
+      }
+
+      float maxDCAxy = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
+      if (dcaXYcut == 0 && (std::fabs(track.dcaXY()) > maxDCAxy)) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 10);
+        continue;
+      } else if (dcaXYcut != 0 && (std::fabs(track.dcaXY()) > dcaXYcut)) {
+        registry.fill(HIST("Tracks/RejectionReasons"), 10);
+        continue;
+      }
+
+      // Track passed all selection criteria
+      registry.fill(HIST("Tracks/RejectionReasons"), 11);
+
+      if (track.sign() > 0 && posPions.size() < 2) {
+        posPions.push_back(track);
+      } else if (track.sign() < 0 && negPions.size() < 2) {
+        negPions.push_back(track);
+      }
+
+      if (posPions.size() == 2 && negPions.size() == 2)
+        break;
     }
 
-    if (!tracksPassPiPID(cutTracks))
+    if (posPions.size() != 2 || negPions.size() != 2) {
       return;
-    // reonstruct system and calculate total charge, save commonly used values into variables
-    ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracks4Vecs);
-    int totalCharge = tracksTotalCharge(cutTracks);
-    int nTracks = cutTracks.size();
-    double mass = system.M();
-    double pT = system.Pt();
-    // double pTsquare = pT * pT;
-    double rapidity = system.Rapidity();
-    double systemPhi = system.Phi() + o2::constants::math::PI;
-
-    if (nTracks == 4 && tracksTotalCharge(cutTracks) == 0) { // 4pi system
-
-      std::vector<float> vTrackPt, vTrackEta, vTrackPhi;
-      std::vector<int> vSign, vTrackID;
-      std::vector<float> vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr;
-
-      for (size_t i = 0; i < cutTracks.size(); i++) {
-
-        double tPt = cutTracks[i].pt();
-        double tEta = eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz());
-        double tPhi = phi(cutTracks[i].px(), cutTracks[i].py());
-
-        vTrackPt.push_back(tPt);
-        vTrackEta.push_back(tEta);
-        vTrackPhi.push_back(tPhi);
-        vSign.push_back(cutTracks[i].sign());
-        vTpcNSigmaEl.push_back(cutTracks[i].tpcNSigmaEl());
-        vTpcNSigmaPi.push_back(cutTracks[i].tpcNSigmaPi());
-        vTpcNSigmaKa.push_back(cutTracks[i].tpcNSigmaKa());
-        vTpcNSigmaPr.push_back(cutTracks[i].tpcNSigmaPr());
-
-        vTrackID.push_back(i);
-      }
-
-      bool isReconstructedWithUPC = false;
-
-      if (collision.flags() == 1) {
-        isReconstructedWithUPC = true;
-      } else {
-        isReconstructedWithUPC = false;
-      }
-
-      systemTree(collision.runNumber(), mass, pT, rapidity, systemPhi, collision.posX(), collision.posY(), collision.posZ(), totalCharge,
-                 collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-                 collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-                 collision.numContrib(), vSign, vTrackPt, vTrackEta, vTrackPhi, vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr, vTrackID, isReconstructedWithUPC,
-                 collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC());
-
-      // registry.fill(HIST("4pi/hM"), mass);
-      // registry.fill(HIST("4pi/hPt"), pT);
-      // registry.fill(HIST("4pi/hEta"), rapiditiy);
-      // registry.fill(HIST("4pi/hPhi"), system);
     }
-    // std::cout<<"Hello World"<<std::endl;
+    registry.fill(HIST("Events/Flow"), 8);
+
+    std::vector<decltype(tracks.begin())> selectedTracks;
+    selectedTracks.insert(selectedTracks.end(), posPions.begin(), posPions.end());
+    selectedTracks.insert(selectedTracks.end(), negPions.begin(), negPions.end());
+
+    // Reconstruct the 4-pion system
+    ROOT::Math::PxPyPzMVector fourPionSystem;
+    std::vector<ROOT::Math::PxPyPzMVector> pionFourVectors;
+
+    for (const auto& track : selectedTracks) {
+      ROOT::Math::PxPyPzMVector pionVec(
+        track.px(), track.py(), track.pz(),
+        o2::constants::physics::MassPionCharged);
+      fourPionSystem += pionVec;
+      pionFourVectors.push_back(pionVec);
+    }
+
+    // Fill pre-cut system histograms
+    registry.fill(HIST("Cuts/MBefore"), fourPionSystem.M());
+    registry.fill(HIST("Cuts/PtBefore"), fourPionSystem.Pt());
+
+    // Apply system-level kinematic cuts
+    if (fourPionSystem.M() < systemMassMinCut || fourPionSystem.M() > systemMassMaxCut)
+      return;
+    if (fourPionSystem.Pt() > systemPtCut)
+      return;
+    if (std::abs(fourPionSystem.Rapidity()) > systemYCut)
+      return;
+
+    // Fill post-cut system histograms
+    registry.fill(HIST("Cuts/MAfter"), fourPionSystem.M());
+    registry.fill(HIST("Cuts/PtAfter"), fourPionSystem.Pt());
+    registry.fill(HIST("System/hM"), fourPionSystem.M());
+    registry.fill(HIST("System/hPt"), fourPionSystem.Pt());
+    registry.fill(HIST("System/hEta"), fourPionSystem.Eta());
+    registry.fill(HIST("System/hPhi"), fourPionSystem.Phi() + o2::constants::math::PI);
+    registry.fill(HIST("System/hY"), fourPionSystem.Rapidity());
+
+    std::vector<float> trackPts, trackEtas, trackPhis;
+    std::vector<int> trackSigns, trackIDs;
+    std::vector<float> tpcNSigmasEl, tpcNSigmasPi, tpcNSigmasKa, tpcNSigmasPr;
+
+    for (size_t i = 0; i < selectedTracks.size(); i++) {
+      const auto& track = selectedTracks[i];
+      trackPts.push_back(track.pt());
+      trackEtas.push_back(eta(track.px(), track.py(), track.pz()));
+      trackPhis.push_back(phi(track.px(), track.py()));
+      trackSigns.push_back(track.sign());
+      tpcNSigmasEl.push_back(track.tpcNSigmaEl());
+      tpcNSigmasPi.push_back(track.tpcNSigmaPi());
+      tpcNSigmasKa.push_back(track.tpcNSigmaKa());
+      tpcNSigmasPr.push_back(track.tpcNSigmaPr());
+      trackIDs.push_back(i);
+    }
+
+    bool isReconstructedWithUPC = (collision.flags() == 1);
+
+    // Fill the output
+    systemTree(
+      collision.runNumber(),
+      fourPionSystem.M(),
+      fourPionSystem.Pt(),
+      fourPionSystem.Rapidity(),
+      fourPionSystem.Phi(),
+      collision.posX(),
+      collision.posY(),
+      collision.posZ(),
+      0, // Total charge = 0
+      collision.totalFT0AmplitudeA(),
+      collision.totalFT0AmplitudeC(),
+      collision.totalFV0AmplitudeA(),
+      collision.numContrib(),
+      trackSigns,
+      trackPts,
+      trackEtas,
+      trackPhis,
+      tpcNSigmasEl,
+      tpcNSigmasPi,
+      tpcNSigmasKa,
+      tpcNSigmasPr,
+      trackIDs,
+      isReconstructedWithUPC,
+      collision.timeZNA(),
+      collision.timeZNC(),
+      collision.energyCommonZNA(),
+      collision.energyCommonZNC(),
+      true, // Always charge zero for our selection
+      collision.occupancyInTime(),
+      collision.hadronicRate());
   }
-  PROCESS_SWITCH(upcRhoPrimeAnalysis, processReco, "analyse reco tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    o2::framework::adaptAnalysisTask<upcRhoPrimeAnalysis>(cfgc)};
+    adaptAnalysisTask<upcRhoPrimeAnalysis>(cfgc)};
 }

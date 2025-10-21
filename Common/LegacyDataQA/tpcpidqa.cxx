@@ -18,11 +18,22 @@
 //
 // Warning: expected resolution is NOT provided.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "TableHelper.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <fmt/format.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

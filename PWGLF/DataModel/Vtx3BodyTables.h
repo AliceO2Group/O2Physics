@@ -59,18 +59,24 @@ DECLARE_SOA_COLUMN(PyTrackDe, pyTrackDe, float); //! track2 py at min
 DECLARE_SOA_COLUMN(PzTrackDe, pzTrackDe, float); //! track2 pz at min
 
 // DCAs to PV
-DECLARE_SOA_COLUMN(DCAXYTrackPrToPV, dcaXYtrackPrToPv, float); //! DCAXY of proton to PV
-DECLARE_SOA_COLUMN(DCAXYTrackPiToPV, dcaXYtrackPiToPv, float); //! DCAXY of pion to PV
-DECLARE_SOA_COLUMN(DCAXYTrackDeToPV, dcaXYtrackDeToPv, float); //! DCAXY of deuteron to PV
-DECLARE_SOA_COLUMN(DCAZTrackPrToPV, dcaZtrackPrToPv, float);   //! DCAZ of proton to PV
-DECLARE_SOA_COLUMN(DCAZTrackPiToPV, dcaZtrackPiToPv, float);   //! DCAZ of pion to PV
-DECLARE_SOA_COLUMN(DCAZTrackDeToPV, dcaZtrackDeToPv, float);   //! DCAZ of deuteron to PV
+DECLARE_SOA_COLUMN(DCAXYTrackPrToPV, dcaXYtrackPrToPv, float);         //! DCAXY of proton to PV (computed with KFParticle)
+DECLARE_SOA_COLUMN(DCAXYTrackPiToPV, dcaXYtrackPiToPv, float);         //! DCAXY of pion to PV (computed with KFParticle)
+DECLARE_SOA_COLUMN(DCAXYTrackDeToPV, dcaXYtrackDeToPv, float);         //! DCAXY of deuteron to PV (computed with KFParticle)
+DECLARE_SOA_COLUMN(DCATrackPrToPV, dcaTrackPrToPv, float);             //! DCA of proton to PV (computed with KFParticle)
+DECLARE_SOA_COLUMN(DCATrackPiToPV, dcaTrackPiToPv, float);             //! DCA of pion to PV (computed with KFParticle)
+DECLARE_SOA_COLUMN(DCATrackDeToPV, dcaTrackDeToPv, float);             //! DCA of deuteron to PV (computed with KFParticle)
+DECLARE_SOA_COLUMN(DCAXYTrackPrToPVProp, dcaXYtrackPrToPvProp, float); //! DCAXY of proton to PV (propagated with O2 Propagator)
+DECLARE_SOA_COLUMN(DCAXYTrackPiToPVProp, dcaXYtrackPiToPvProp, float); //! DCAXY of pion to PV (propagated with O2 Propagator)
+DECLARE_SOA_COLUMN(DCAXYTrackDeToPVProp, dcaXYtrackDeToPvProp, float); //! DCAXY of deuteron to PV (propagated with O2 Propagator)
+DECLARE_SOA_COLUMN(DCATrackPrToPVProp, dcaTrackPrToPvProp, float);     //! DCA of proton to PV (propagated with O2 Propagator)
+DECLARE_SOA_COLUMN(DCATrackPiToPVProp, dcaTrackPiToPvProp, float);     //! DCA of pion to PV (propagated with O2 Propagator)
+DECLARE_SOA_COLUMN(DCATrackDeToPVProp, dcaTrackDeToPvProp, float);     //! DCA of deuteron to PV (propagated with O2 Propagator)
 
 // DCAs to SV
-DECLARE_SOA_COLUMN(DCATrackPrToSV, dcaTrackPrToSv, float);   //! DCA of proton to SV
-DECLARE_SOA_COLUMN(DCATrackPiToSV, dcaTrackPiToSv, float);   //! DCA of pion to SV
-DECLARE_SOA_COLUMN(DCATrackDeToSV, dcaTrackDeToSv, float);   //! DCA of deuteron to SV
-DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! Quadratic sum of DCA between daughters at SV
+DECLARE_SOA_COLUMN(DCATrackPrToSV, dcaTrackPrToSv, float);           //! DCA of proton to SV
+DECLARE_SOA_COLUMN(DCATrackPiToSV, dcaTrackPiToSv, float);           //! DCA of pion to SV
+DECLARE_SOA_COLUMN(DCATrackDeToSV, dcaTrackDeToSv, float);           //! DCA of deuteron to SV
+DECLARE_SOA_COLUMN(DCAVtxToDaughtersAv, dcaVtxToDaughtersAv, float); //! Quadratic sum of DCA between daughters at SV
 
 // CosPA
 DECLARE_SOA_COLUMN(CosPA, cosPA, float); //! Cosine of pointing angle of the 3body candidate
@@ -122,6 +128,7 @@ DECLARE_SOA_COLUMN(GenPtPi, genPtPi, float);            //! generated transverse
 DECLARE_SOA_COLUMN(GenPtDe, genPtDe, float);            //! generated transverse momentum deuteron daughter particle
 DECLARE_SOA_COLUMN(IsTrueH3L, isTrueH3l, bool);         //! flag for true hypertriton candidate
 DECLARE_SOA_COLUMN(IsTrueAntiH3L, isTrueAntiH3l, bool); //! flag for true anti-hypertriton candidate
+DECLARE_SOA_COLUMN(MotherPdgCode, motherPdgCode, int);  //! PDG code of the mother particle
 DECLARE_SOA_COLUMN(PrPdgCode, prPdgCode, int);          //! MC particle proton PDG code
 DECLARE_SOA_COLUMN(PiPdgCode, piPdgCode, int);          //! MC particle pion PDG code
 DECLARE_SOA_COLUMN(DePdgCode, dePdgCode, int);          //! MC particle deuteron PDG code
@@ -208,9 +215,11 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi,
                   vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe,
                   vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
-                  vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
+                  vtx3body::DCATrackPrToPV, vtx3body::DCATrackPiToPV, vtx3body::DCATrackDeToPV,
+                  vtx3body::DCAXYTrackPrToPVProp, vtx3body::DCAXYTrackPiToPVProp, vtx3body::DCAXYTrackDeToPVProp,
+                  vtx3body::DCATrackPrToPVProp, vtx3body::DCATrackPiToPVProp, vtx3body::DCATrackDeToPVProp,
                   vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
-                  vtx3body::DCAVtxDaughters,
+                  vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
                   vtx3body::TOFNSigmaDe,
@@ -257,9 +266,11 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi,
                   vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe,
                   vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
-                  vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
+                  vtx3body::DCATrackPrToPV, vtx3body::DCATrackPiToPV, vtx3body::DCATrackDeToPV,
+                  vtx3body::DCAXYTrackPrToPVProp, vtx3body::DCAXYTrackPiToPVProp, vtx3body::DCAXYTrackDeToPVProp,
+                  vtx3body::DCATrackPrToPVProp, vtx3body::DCATrackPiToPVProp, vtx3body::DCATrackDeToPVProp,
                   vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
-                  vtx3body::DCAVtxDaughters,
+                  vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
                   vtx3body::TOFNSigmaDe,
@@ -276,6 +287,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::GenPtPr, vtx3body::GenPtPi, vtx3body::GenPtDe,
                   vtx3body::IsTrueH3L, vtx3body::IsTrueAntiH3L,
                   vtx3body::IsReco,
+                  vtx3body::MotherPdgCode,
                   vtx3body::PrPdgCode, vtx3body::PiPdgCode, vtx3body::DePdgCode,
                   vtx3body::IsDePrimary,
                   vtx3body::IsSurvEvSel,

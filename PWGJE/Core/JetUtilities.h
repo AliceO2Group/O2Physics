@@ -76,11 +76,6 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
     throw std::invalid_argument("track collection eta and phi sizes don't match. Check the inputs.");
   }
 
-  // for (std::size_t iTrack = 0; iTrack < nTracks; iTrack++) {
-  //   if (trackEta[iTrack] == 0)
-  //     LOG(warning) << "Track eta is 0!";
-  // }
-
   // Build the KD-trees using vectors
   // We build two trees:
   // treeBase, which contains the base collection.

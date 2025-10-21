@@ -15,19 +15,33 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
-#include <vector>
-#include <array>
-
-#include "Common/Core/RecoDecay.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -153,14 +167,14 @@ struct HfTaskCharmHadImpactPar {
 
   // Fill THnSparses for the ML analysis
   /// \param candidate is a particle candidate
-  template <Channel channel, bool doMc, bool withMl, typename CCands>
+  template <Channel Channel, bool DoMc, bool WithMl, typename CCands>
   void fillSparse(const CCands& candidate)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     float invMass{-1.f};
     float yCand{-999.f};
-    if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
-      if constexpr (doMc) {
+    if constexpr (Channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
+      if constexpr (DoMc) {
         if (fillOnlySignal) {
           if (std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
             return;
@@ -169,7 +183,7 @@ struct HfTaskCharmHadImpactPar {
       }
       invMass = hfHelper.invMassDplusToPiKPi(candidate);
       yCand = hfHelper.yDplus(candidate);
-      if constexpr (withMl) {
+      if constexpr (WithMl) {
         for (auto iScore{0u}; iScore < candidate.mlProbDplusToPiKPi().size(); ++iScore) {
           outputMl[iScore] = candidate.mlProbDplusToPiKPi()[iScore];
         }
@@ -177,18 +191,18 @@ struct HfTaskCharmHadImpactPar {
       } else {
         registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
       }
-    } else if constexpr (channel == Channel::DzeroToKPi) {
+    } else if constexpr (Channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
-        if constexpr (doMc) {
+        if constexpr (DoMc) {
           if (fillOnlySignal) {
-            if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+            if (std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
               return;
             }
           }
         }
         invMass = hfHelper.invMassD0ToPiK(candidate);
         yCand = hfHelper.yD0(candidate);
-        if constexpr (withMl) {
+        if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0()[iScore];
           }
@@ -200,7 +214,7 @@ struct HfTaskCharmHadImpactPar {
       if (candidate.isSelD0bar()) {
         invMass = hfHelper.invMassD0barToKPi(candidate);
         yCand = hfHelper.yD0(candidate);
-        if constexpr (withMl) {
+        if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0bar().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0bar()[iScore];
           }
@@ -215,7 +229,7 @@ struct HfTaskCharmHadImpactPar {
   // Fill the TTree with both event and candidate properties
   /// \param candidate is a particle candidate
   /// \param collision is the respective collision
-  template <Channel channel, bool doMc, bool withMl, typename CCands, typename CollType>
+  template <Channel Channel, bool DoMc, bool WithMl, typename CCands, typename CollType>
   void fillTree(const CCands& candidate, const CollType& collision)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
@@ -224,22 +238,22 @@ struct HfTaskCharmHadImpactPar {
     std::array<float, 3> ptProngs = {candidate.ptProng0(), candidate.ptProng1(), -1.};
     std::array<double, 3> phiProngs = {RecoDecay::phi(std::array{candidate.pxProng0(), candidate.pyProng0()}), RecoDecay::phi(std::array{candidate.pxProng1(), candidate.pyProng1()}), 99.};
     std::array<double, 3> etaProngs = {RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()}), RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()}), 99.};
-    if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
+    if constexpr (Channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
       invMass = hfHelper.invMassDplusToPiKPi(candidate);
       yCand = hfHelper.yDplus(candidate);
       ptProngs[2] = candidate.ptProng2();
       phiProngs[2] = RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2());
       etaProngs[2] = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
-      if constexpr (withMl) {
+      if constexpr (WithMl) {
         for (auto iScore{0u}; iScore < candidate.mlProbDplusToPiKPi().size(); ++iScore) {
           outputMl[iScore] = candidate.mlProbDplusToPiKPi()[iScore];
         }
       }
-    } else if constexpr (channel == Channel::DzeroToKPi) {
+    } else if constexpr (Channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
         invMass = hfHelper.invMassD0ToPiK(candidate);
         yCand = hfHelper.yD0(candidate);
-        if constexpr (withMl) {
+        if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0()[iScore];
           }
@@ -248,24 +262,24 @@ struct HfTaskCharmHadImpactPar {
       if (candidate.isSelD0bar()) {
         invMass = hfHelper.invMassD0barToKPi(candidate);
         yCand = hfHelper.yD0(candidate);
-        if constexpr (withMl) {
+        if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0bar().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0bar()[iScore];
           }
         }
       }
     }
-    float centrality = 0.;
-    float occupancy = 0.;
+    float centrality = 0.f;
+    float occupancy = 0.f;
     if (centEstimator != CentralityEstimator::None) {
       centrality = getCentralityColl(collision, centEstimator);
     }
     if (occEstimator != OccupancyEstimator::None) {
-      occupancy = getOccupancyColl(collision, occEstimator);
+      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
     }
 
     int8_t flagMcMatchRec = 0;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
     }
     double impParZ = candidate.impactParameterXY() * (-1) * candidate.pz() / candidate.pt();
@@ -305,14 +319,14 @@ struct HfTaskCharmHadImpactPar {
   }
 
   /// \param candidates are reconstructed candidates
-  template <Channel channel, bool doMc, bool withMl, typename CCands>
+  template <Channel Channel, bool DoMc, bool WithMl, typename CCands>
   void runAnalysis(const CCands& candidates, CollisionsCent const&)
   {
     for (auto const& candidate : candidates) {
       auto collision = candidate.template collision_as<CollisionsCent>();
-      fillSparse<channel, doMc, withMl>(candidate);
+      fillSparse<Channel, DoMc, WithMl>(candidate);
       if (fillLightTreeCandidate) {
-        fillTree<channel, doMc, withMl>(candidate, collision);
+        fillTree<Channel, DoMc, WithMl>(candidate, collision);
       }
     }
   }

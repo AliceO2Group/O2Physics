@@ -112,7 +112,7 @@ o2physics_add_dpl_workflow(mcinelgt0
 
 o2physics_add_dpl_workflow(tracked-cascade-properties
     SOURCES trackedCascadeProperties.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-particle-predictions
@@ -138,4 +138,9 @@ o2physics_add_dpl_workflow(its-tpc-matching-vzeros
 o2physics_add_dpl_workflow(v0assoqa
     SOURCES v0assoqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(systematics-mapping
+    SOURCES systematicsMapping.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

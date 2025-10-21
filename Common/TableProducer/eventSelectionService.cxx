@@ -19,44 +19,48 @@
 //
 //===============================================================
 
-#include "MetadataHelper.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/Tools/EventSelectionModule.h"
+#include "Common/Tools/timestampModule.h"
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Tools/EventSelectionTools.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
-using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
-using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+using BCsWithRun2InfosAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>;
+using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 
 struct eventselectionRun2 {
+  o2::common::timestamp::timestampConfigurables timestampConfigurables;
+  o2::common::timestamp::TimestampModule timestampMod;
+
   o2::common::eventselection::bcselConfigurables bcselOpts;
   o2::common::eventselection::BcSelectionModule bcselmodule;
 
   o2::common::eventselection::evselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
 
+  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
   Produces<aod::BcSels> bcsel;
   Produces<aod::EvSels> evsel;
 
@@ -69,8 +73,8 @@ struct eventselectionRun2 {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // the best: have readable cursors
-  // this: a stopgap solution to avoid spawning yet another device
+  // buffering intermediate results for passing
+  std::vector<uint64_t> timestamps;
   std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
 
   // auxiliary
@@ -85,11 +89,12 @@ struct eventselectionRun2 {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    bcselmodule.init(context, bcselOpts, histos);
+    timestampMod.init(timestampConfigurables, metadataInfo);
+    bcselmodule.init(context, bcselOpts, histos, metadataInfo);
     evselmodule.init(context, evselOpts, histos, metadataInfo);
   }
 
-  void process(BCsWithRun2InfosTimestampsAndMatches const& bcs,
+  void process(BCsWithRun2InfosAndMatches const& bcs,
                aod::Collisions const& collisions,
                aod::Zdcs const&,
                aod::FV0As const&,
@@ -98,12 +103,16 @@ struct eventselectionRun2 {
                aod::FDDs const&,
                FullTracks const&)
   {
-    bcselmodule.processRun2(ccdb, bcs, bcselsbuffer, bcsel);
-    evselmodule.processRun2(ccdb, histos, collisions, tracklets, cache, bcselsbuffer, evsel);
+    timestampMod.process(bcs, ccdb, timestamps, timestampTable);
+    bcselmodule.processRun2(ccdb, bcs, timestamps, bcselsbuffer, bcsel);
+    evselmodule.processRun2(ccdb, histos, collisions, tracklets, cache, timestamps, bcselsbuffer, evsel);
   }
 };
 
 struct eventselectionRun3 {
+  o2::common::timestamp::timestampConfigurables timestampConfigurables;
+  o2::common::timestamp::TimestampModule timestampMod;
+
   o2::common::eventselection::bcselConfigurables bcselOpts;
   o2::common::eventselection::BcSelectionModule bcselmodule;
 
@@ -113,6 +122,7 @@ struct eventselectionRun3 {
   o2::common::eventselection::lumiConfigurables lumiOpts;
   o2::common::eventselection::LumiModule lumimodule;
 
+  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
   Produces<aod::BcSels> bcsel;
   Produces<aod::EvSels> evsel;
 
@@ -127,6 +137,7 @@ struct eventselectionRun3 {
 
   // the best: have readable cursors
   // this: a stopgap solution to avoid spawning yet another device
+  std::vector<uint64_t> timestamps;
   std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
 
   // auxiliary
@@ -141,7 +152,8 @@ struct eventselectionRun3 {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    bcselmodule.init(context, bcselOpts, histos);
+    timestampMod.init(timestampConfigurables, metadataInfo);
+    bcselmodule.init(context, bcselOpts, histos, metadataInfo);
     evselmodule.init(context, evselOpts, histos, metadataInfo);
     lumimodule.init(context, lumiOpts, histos);
   }
@@ -154,9 +166,10 @@ struct eventselectionRun3 {
                aod::FDDs const&,
                FullTracksIU const&)
   {
-    bcselmodule.processRun3(ccdb, histos, bcs, bcselsbuffer, bcsel);
-    evselmodule.processRun3(ccdb, histos, bcs, collisions, pvTracks, ft0s, cache, bcselsbuffer, evsel);
-    lumimodule.process(ccdb, histos, bcs, bcselsbuffer);
+    timestampMod.process(bcs, ccdb, timestamps, timestampTable);
+    bcselmodule.processRun3(ccdb, histos, bcs, timestamps, bcselsbuffer, bcsel);
+    evselmodule.processRun3(ccdb, histos, bcs, collisions, pvTracks, ft0s, cache, timestamps, bcselsbuffer, evsel);
+    lumimodule.process(ccdb, histos, bcs, timestamps, bcselsbuffer);
   }
 };
 
@@ -184,6 +197,11 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     if (isRun3) {
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
     } else {
+      LOGF(info, "******************************************************************");
+      LOGF(info, " Event selection service self-configuring for Run 2.");
+      LOGF(info, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
+      LOGF(info, " If this fails, please use event-selection-service-run2 instead.");
+      LOGF(info, "******************************************************************");
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
     }
   }

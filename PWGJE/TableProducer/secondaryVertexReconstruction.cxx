@@ -210,8 +210,6 @@ struct SecondaryVertexReconstruction {
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
 
-      registry.fill(HIST("hDispersion"), dispersion, numProngs);
-
       // get track impact parameters
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
@@ -288,6 +286,7 @@ struct SecondaryVertexReconstruction {
         double decayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
         double decayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
 
+        registry.fill(HIST("hDispersion"), dispersion, numProngs);
         registry.fill(HIST("hMassNProngs"), massSV, numProngs);
         registry.fill(HIST("hLxySNProngs"), decayLengthXYNormalised, numProngs);
         registry.fill(HIST("hLSNProngs"), decayLengthNormalised, numProngs);

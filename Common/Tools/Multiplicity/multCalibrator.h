@@ -16,33 +16,36 @@
 // - victor.gonzalez@cern.ch
 // - david.dobrigkeit.chinellato@cern.ch
 //
-#ifndef MULTCALIBRATOR_H
-#define MULTCALIBRATOR_H
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
+
+#include <TH1.h>
+#include <TNamed.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <iostream>
-#include <map>
-
-#include "TNamed.h"
-#include "TH1D.h"
 
 class multCalibrator : public TNamed
 {
 
  public:
-  //Constructors/Destructor
+  // Constructors/Destructor
   multCalibrator();
-  multCalibrator(const char* name, const char* title = "Multiplicity Calibration Class");
+  explicit multCalibrator(const char* name, const char* title = "Multiplicity Calibration Class");
   ~multCalibrator();
 
-  //void    Print(Option_t *option="") const;
+  // void    Print(Option_t *option="") const;
 
   //_________________________________________________________________________
-  //Interface: steering functions to be used in calibration macro
+  // Interface: steering functions to be used in calibration macro
 
-  //Set Filenames
+  // Set Filenames
   void SetInputFile(TString lFile) { fInputFileName = lFile.Data(); }
   void SetOutputFile(TString lFile) { fOutputFileName = lFile.Data(); }
-  //Set Boundaries to find
+  // Set Boundaries to find
   void SetBoundaries(Long_t lNB, Double_t* lB)
   {
     if (lNB < 2 || lNB > 1e+6) {
@@ -56,24 +59,24 @@ class multCalibrator : public TNamed
   void SetAnchorPointRaw(Float_t lRaw) { fAnchorPointValue = lRaw; }
   void SetAnchorPointPercentage(Float_t lPer) { fAnchorPointPercentage = lPer; }
 
-  void SetStandardAdaptiveBoundaries();   //standard adaptive (pp-like)
-  void SetStandardOnePercentBoundaries(); //standard 1% (Pb-Pb like)
+  void SetStandardAdaptiveBoundaries();   // standard adaptive (pp-like)
+  void SetStandardOnePercentBoundaries(); // standard 1% (Pb-Pb like)
 
-  //Master Function in this Class: To be called once filenames are set
+  // Master Function in this Class: To be called once filenames are set
   Bool_t Calibrate();
 
-  //Aux function. Keep public, accessible outside as rather useful utility
+  // Aux function. Keep public, accessible outside as rather useful utility
   TH1F* GetCalibrationHistogram(TH1* histoRaw, TString lHistoName = "hCalib");
 
-  //Auxiliary functions
+  // Auxiliary functions
   Double_t GetRawMax(TH1* histo);
   Double_t GetBoundaryForPercentile(TH1* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate);
 
-  //Precision bookkeeping
-  TH1D* GetPrecisionHistogram() { return fPrecisionHistogram; }; //gets precision histogram from current object
-  void ResetPrecisionHistogram();                                //Reset precision histogram, if it exists
+  // Precision bookkeeping
+  TH1D* GetPrecisionHistogram() { return fPrecisionHistogram; } // gets precision histogram from current object
+  void ResetPrecisionHistogram();                               // Reset precision histogram, if it exists
 
-  //Aliases for centrality estimators
+  // Aliases for centrality estimators
   enum fCentEstim {
     kCentRawV0M = 0,
     kCentRawT0M,
@@ -89,7 +92,7 @@ class multCalibrator : public TNamed
   static const TString fCentEstimName[kNCentEstim]; //! name (internal)
 
  private:
-  //Calibration Boundaries to locate
+  // Calibration Boundaries to locate
   Double_t* lDesiredBoundaries;
   Long_t lNDesiredBoundaries;
   Double_t fkPrecisionWarningThreshold;
@@ -105,11 +108,11 @@ class multCalibrator : public TNamed
   // TList object for storing histograms
   TList* fCalibHists;
 
-  TH1D* fPrecisionHistogram; //for bookkeeping of precision report
+  TH1D* fPrecisionHistogram; // for bookkeeping of precision report
 
   ClassDef(multCalibrator, 1);
   //(this classdef is only for bookkeeping, class will not usually
   // be streamed according to current workflow except in very specific
   // tests!)
 };
-#endif
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_

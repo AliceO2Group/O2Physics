@@ -17,13 +17,23 @@
 ///
 /// \author Jinjoo Seo <jin.joo.seo@cern.ch>, Inha University
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -194,12 +204,12 @@ struct HfTreeCreatorXiccToPKPiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
-                           float FunctionInvMass,
-                           float FunctionCt,
-                           float FunctionY) {
-        if (FunctionSelection >= 1) {
+      auto fillTable = [&](int candFlag,
+                           int functionSelection,
+                           float functionInvMass,
+                           float functionCt,
+                           float functionY) {
+        if (functionSelection >= 1) {
           auto xicCand = candidate.prong0();
 
           rowCandidateFull(
@@ -243,16 +253,16 @@ struct HfTreeCreatorXiccToPKPiPi {
             xicCand.prong1_as<TracksWPid>().tofNSigmaKa(),
             xicCand.prong2_as<TracksWPid>().tofNSigmaPr(),
             xicCand.prong2_as<TracksWPid>().tofNSigmaPi(),
-            1 << CandFlag,
-            FunctionInvMass,
+            1 << candFlag,
+            functionInvMass,
             candidate.pt(),
             candidate.p(),
             candidate.cpa(),
             candidate.cpaXY(),
-            FunctionCt,
+            functionCt,
             candidate.eta(),
             candidate.phi(),
-            FunctionY,
+            functionY,
             candidate.flagMcMatchRec(),
             candidate.originMcRec());
         }

@@ -47,6 +47,11 @@ class EventMixingHandler
 
   void SetNdepth(int ndepth) { fNdepth = ndepth; }
 
+  void ReserveNTracksPerCollision(U key_df_collision, int ntrack)
+  {
+    fMap_Tracks_per_collision[key_df_collision].reserve(ntrack);
+  }
+
   void AddTrackToEventPool(U key_df_collision, V obj)
   {
     fMap_Tracks_per_collision[key_df_collision].emplace_back(obj);

@@ -25,11 +25,11 @@ using namespace framework::expressions;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{
-    {"lut-el", VariantType::Int, 1, {"LUT input for the Electron PDG code"}},
-    {"lut-mu", VariantType::Int, 1, {"LUT input for the Muon PDG code"}},
+    {"lut-el", VariantType::Int, 0, {"LUT input for the Electron PDG code"}},
+    {"lut-mu", VariantType::Int, 0, {"LUT input for the Muon PDG code"}},
     {"lut-pi", VariantType::Int, 1, {"LUT input for the Pion PDG code"}},
-    {"lut-ka", VariantType::Int, 1, {"LUT input for the Kaon PDG code"}},
-    {"lut-pr", VariantType::Int, 1, {"LUT input for the Proton PDG code"}},
+    {"lut-ka", VariantType::Int, 0, {"LUT input for the Kaon PDG code"}},
+    {"lut-pr", VariantType::Int, 0, {"LUT input for the Proton PDG code"}},
     {"lut-tr", VariantType::Int, 0, {"LUT input for the Triton PDG code"}},
     {"lut-de", VariantType::Int, 0, {"LUT input for the Deuteron PDG code"}},
     {"lut-he", VariantType::Int, 0, {"LUT input for the Helium3 PDG code"}}};
@@ -153,6 +153,7 @@ struct Alice3LutMaker {
     histos.add("QA/CovMat_sigmaSnp", "sigmaSnp" + commonTitle, kTH3F, {axisPt, axisEta, axissigmaSnp});
     histos.add("QA/CovMat_sigmaTgl", "sigmaTgl" + commonTitle, kTH3F, {axisPt, axisEta, axissigmaTgl});
     histos.add("QA/CovMat_sigma1Pt", "sigma1Pt" + commonTitle, kTH3F, {axisPt, axisEta, axissigma1Pt});
+    histos.add("QA/sigma1Pt", "sigma1Pt" + commonTitle, kTH3F, {axisPt, axisEta, axissigma1Pt});
     histos.add("QA/CovMat_rhoZY", "rhoZY" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoZY});
     histos.add("QA/CovMat_rhoSnpY", "rhoSnpY" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoSnpY});
     histos.add("QA/CovMat_rhoSnpZ", "rhoSnpZ" + commonTitle, kTH3F, {axisPt, axisEta, axisrhoSnpZ});
@@ -262,6 +263,7 @@ struct Alice3LutMaker {
       histos.fill(HIST("QA/CovMat_sigmaSnp"), mcParticle.pt(), mcParticle.eta(), track.sigmaSnp());
       histos.fill(HIST("QA/CovMat_sigmaTgl"), mcParticle.pt(), mcParticle.eta(), track.sigmaTgl());
       histos.fill(HIST("QA/CovMat_sigma1Pt"), mcParticle.pt(), mcParticle.eta(), track.sigma1Pt());
+      histos.fill(HIST("QA/sigma1Pt"), mcParticle.pt(), mcParticle.eta(), std::abs(track.signed1Pt()) - 1. / mcParticle.pt());
       histos.fill(HIST("QA/CovMat_rhoZY"), mcParticle.pt(), mcParticle.eta(), track.rhoZY());
       histos.fill(HIST("QA/CovMat_rhoSnpY"), mcParticle.pt(), mcParticle.eta(), track.rhoSnpY());
       histos.fill(HIST("QA/CovMat_rhoSnpZ"), mcParticle.pt(), mcParticle.eta(), track.rhoSnpZ());

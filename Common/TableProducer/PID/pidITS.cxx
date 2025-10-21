@@ -19,28 +19,30 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <utility>
-#include <vector>
-#include <string>
-
-// O2 includes
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
-
-// O2Physics includes
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "MetadataHelper.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <chrono>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
 static constexpr int nParameters = 12;

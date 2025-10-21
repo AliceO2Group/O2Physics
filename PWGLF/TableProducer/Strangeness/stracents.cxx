@@ -39,7 +39,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 struct straCents {
   Produces<aod::StraCents> strangeCents;

@@ -17,26 +17,35 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 /// \author Luca Aglietta <luca.aglietta@unito.it>, Università and INFN Torino
 
-#include <string>
-#include <memory>
-
-#include "TPDGCode.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/Core/CentralityEstimation.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <type_traits>
 
 using namespace o2;
 using namespace o2::framework;
@@ -216,7 +225,7 @@ struct HfTaskPidStudies {
     ccdb->setLocalObjectValidityChecking();
     hfEvSel.addHistograms(registry);
 
-    std::shared_ptr<TH1> hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{TrackCuts::NCuts, 0, TrackCuts::NCuts}}});
+    std::shared_ptr<TH1> const hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{TrackCuts::NCuts, 0, TrackCuts::NCuts}}});
 
     // Set Labels for hTrackSel
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::All + 1, "All");
@@ -229,16 +238,16 @@ struct HfTaskPidStudies {
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::ItsChi2NCls + 1, "ITS #chi^{2}/NCls");
   }
 
-  template <bool isV0, typename Coll, typename Cand>
+  template <bool IsV0, typename Coll, typename Cand>
   void fillTree(Cand const& candidate, const int flag)
   {
-    float pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
+    float const pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
     if (candidate.pt() < ptMaxForDownSample && pseudoRndm > downSampleBkgFactor) {
       return;
     }
 
     const auto& coll = candidate.template collision_as<Coll>();
-    if constexpr (isV0) {
+    if constexpr (IsV0) {
       const auto& posTrack = candidate.template posTrack_as<PidTracks>();
       const auto& negTrack = candidate.template negTrack_as<PidTracks>();
       pidV0(
@@ -352,13 +361,13 @@ struct HfTaskPidStudies {
     return rejectionMask == 0;
   }
 
-  template <bool isV0, typename T1>
+  template <bool IsV0, typename T1>
   bool isTrackSelected(const T1& candidate)
   {
     const auto& posTrack = candidate.template posTrack_as<PidTracks>();
     const auto& negTrack = candidate.template negTrack_as<PidTracks>();
     registry.fill(HIST("hTrackSel"), TrackCuts::All);
-    if constexpr (isV0) {
+    if constexpr (IsV0) {
       if (!posTrack.hasITS() || !negTrack.hasITS()) {
         return false;
       }
@@ -499,13 +508,13 @@ struct HfTaskPidStudies {
   }
 
   void processV0Mc(CollisionsMc const& /*mcCollisions*/,
-                   V0sMcRec const& V0s,
+                   V0sMcRec const& v0s,
                    aod::V0MCCores const&,
                    aod::McParticles const& /*particlesMc*/,
                    PidTracks const& /*tracks*/,
                    aod::BCsWithTimestamps const&)
   {
-    for (const auto& v0 : V0s) {
+    for (const auto& v0 : v0s) {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>())) {
         continue;
       }
@@ -513,7 +522,7 @@ struct HfTaskPidStudies {
         continue;
       }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
-        int matched = isMatched(v0);
+        int const matched = isMatched(v0);
         if (matched != Particle::NotMatched) {
           fillTree<true, CollisionsMc>(v0, matched);
         }
@@ -522,12 +531,12 @@ struct HfTaskPidStudies {
   }
   PROCESS_SWITCH(HfTaskPidStudies, processV0Mc, "Process MC", true);
 
-  void processV0Data(aod::V0Datas const& V0s,
+  void processV0Data(aod::V0Datas const& v0s,
                      PidTracks const&,
                      aod::BCsWithTimestamps const&,
                      CollSels const&)
   {
-    for (const auto& v0 : V0s) {
+    for (const auto& v0 : v0s) {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>())) {
         continue;
       }
@@ -556,7 +565,7 @@ struct HfTaskPidStudies {
         continue;
       }
       if (isSelectedCascAsOmega<CollisionsMc>(casc)) {
-        int matched = isMatched(casc);
+        int const matched = isMatched(casc);
         if (matched != Particle::NotMatched) {
           fillTree<false, CollisionsMc>(casc, matched);
         }

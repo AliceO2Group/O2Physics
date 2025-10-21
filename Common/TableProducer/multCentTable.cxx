@@ -20,33 +20,30 @@
 //
 //===============================================================
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
+#include "Common/Core/MetadataHelper.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
-#include "Common/Tools/TrackPropagationModule.h"
-#include "Common/Tools/StandardCCDBLoader.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "MetadataHelper.h"
-#include "Common/Tools/MultModule.h"
+#include "Common/Tools/Multiplicity/MultModule.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::framework::expressions;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 struct MultCentTable {
   o2::common::multiplicity::standardConfigurables opts;
@@ -75,7 +72,7 @@ struct MultCentTable {
     ccdb->setFatalWhenNull(false); // please never crash on your own, all exceptions captured (as they always should)
 
     // task-specific
-    module.init(opts, initContext);
+    module.init(metadataInfo, opts, initContext);
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::Run2MatchedSparse> const& collisions,

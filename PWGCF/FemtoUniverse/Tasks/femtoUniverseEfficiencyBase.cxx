@@ -14,15 +14,16 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Alicja Płachta, WUT Warsaw, alicja.plachta@cern.ch
 
-#include <vector>
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -36,6 +37,8 @@ struct FemtoUniverseEfficiencyBase {
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
   Configurable<bool> confIsDebug{"confIsDebug", true, "Enable debug histograms"};
+  Configurable<bool> confIsMCGen{"confIsMCGen", false, "Enable QA histograms for MC Gen"};
+  Configurable<bool> confIsMCReco{"confIsMCReco", false, "Enable QA histograms for MC Reco"};
 
   // Collisions
   Configurable<float> confZVertex{"confZVertex", 10.f, "Event sel: Maximum z-Vertex (cm)"};
@@ -67,6 +70,7 @@ struct FemtoUniverseEfficiencyBase {
 
   /// Kaon configurable
   Configurable<bool> isKaonRun2{"isKaonRun2", false, "Enable kaon selection used in Run2"}; // to check consistency with Run2 results
+  Configurable<bool> isKaonLF{"isKaonLF", false, "Enable kaon selection used in LF group"}; // select kaons according to the selection in LF group
   struct : o2::framework::ConfigurableGroup {
     // Momentum thresholds for Run2 and Run3
     Configurable<float> confMomKaonRun2{"confMomKaonRun2", 0.4, "Momentum threshold for kaon identification using ToF (Run2)"};
@@ -90,6 +94,10 @@ struct FemtoUniverseEfficiencyBase {
     Configurable<float> confKaonNsigmaTOFfrom055to15{"confKaonNsigmaTOFfrom055to15", 3.0, "Reject kaons within pT from 0.55 to 1.5 if ToF n sigma is above this value."};
     Configurable<float> confKaonNsigmaTPCfrom15{"confKaonNsigmaTPCfrom15", 3.0, "Reject kaons with pT above 1.5 if TPC n sigma is above this value."};
     Configurable<float> confKaonNsigmaTOFfrom15{"confKaonNsigmaTOFfrom15", 2.0, "Reject kaons with pT above 1.5 if ToF n sigma is above this value.."};
+    // n sigma cuts as in LF
+    Configurable<float> confMomKaonLF{"confMomKaonLF", 0.5, "Momentum threshold for kaon identification using TOF (LF selection)"};
+    Configurable<float> confNSigmaTPCKaonLF{"confNSigmaTPCKaonLF", 3.0, "TPC Kaon Sigma as in LF"};
+    Configurable<float> confNSigmaCombKaonLF{"confNSigmaCombKaonLF", 3.0, "TPC and TOF Kaon Sigma (combined) as in LF"};
   } ConfKaonSelection;
 
   /// Deuteron configurables
@@ -156,8 +164,8 @@ struct FemtoUniverseEfficiencyBase {
   {
 
     eventHisto.init(&qaRegistry);
-    trackHistoPartOneGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, 0, confPDGCodePartOne, false);
-    trackHistoPartOneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, 0, confPDGCodePartOne, confIsDebug);
+    trackHistoPartOneGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, confIsMCGen, confPDGCodePartOne, false);
+    trackHistoPartOneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartOne, confIsDebug);
     registryMCOrigin.add("part1/hPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
     registryPDG.add("part1/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     registryPDG.add("part1/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
@@ -172,8 +180,8 @@ struct FemtoUniverseEfficiencyBase {
     registryPDG.add("part2/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     registryPDG.add("part2/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     if (!confIsSame) {
-      trackHistoPartTwoGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, 0, confPDGCodePartTwo, false);
-      trackHistoPartTwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, 0, confPDGCodePartTwo, confIsDebug);
+      trackHistoPartTwoGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, confIsMCGen, confPDGCodePartTwo, false);
+      trackHistoPartTwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartTwo, confIsDebug);
       registryMCOrigin.add("part2/hPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
       if (confParticleTypePartTwo == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) {
         trackHistoV0TwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarCPABins, 0, confPDGCodePartTwo, confIsDebug);
@@ -256,6 +264,25 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
+  bool isKaonNSigmaLF(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (mom < ConfKaonSelection.confMomKaonLF) {
+      if (std::abs(nsigmaTPCK) < ConfKaonSelection.confNSigmaTPCKaonLF) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom >= ConfKaonSelection.confMomKaonLF) {
+      if (std::sqrt(nsigmaTPCK * nsigmaTPCK + nsigmaTOFK * nsigmaTOFK) < ConfKaonSelection.confNSigmaCombKaonLF) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   bool isPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < ConfBothTracks.confMomPion) {
@@ -300,7 +327,11 @@ struct FemtoUniverseEfficiencyBase {
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
-        return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+        if (isKaonLF) {
+          return isKaonNSigmaLF(mom, nsigmaTPCK, nsigmaTOFK);
+        } else {
+          return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+        }
         break;
       case 1000010020:  // Deuteron
       case -1000010020: // Antideuteron
@@ -371,17 +402,17 @@ struct FemtoUniverseEfficiencyBase {
       }
       const auto mcParticle = part.fdMCParticle();
 
+      registryPDG.fill(HIST("part1/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
+      trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
+
       if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         continue;
       }
-
-      registryPDG.fill(HIST("part1/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
 
       if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartOne))) {
         continue;
       }
 
-      trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
       registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
       registryMCOrigin.fill(HIST("part1/hPt"), mcParticle.pt());
     }
@@ -397,17 +428,17 @@ struct FemtoUniverseEfficiencyBase {
         }
         const auto mcParticle = part.fdMCParticle();
 
+        registryPDG.fill(HIST("part2/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
+        trackHistoPartTwoRec.fillQA<isMC, isDebug>(part);
+
         if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
           continue;
         }
-
-        registryPDG.fill(HIST("part2/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
 
         if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartTwo))) {
           continue;
         }
 
-        trackHistoPartTwoRec.fillQA<isMC, isDebug>(part);
         registryPDG.fill(HIST("part2/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
         registryMCOrigin.fill(HIST("part2/hPt"), mcParticle.pt());
       }
@@ -610,12 +641,20 @@ struct FemtoUniverseEfficiencyBase {
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegrouppartsTwoMCGen = partsTwoMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoMCGen);
+    if (confIsMCGen) {
+      doMCGen<true>(thegrouppartsOneMCGen, thegrouppartsTwoMCGen);
+    } else {
+      doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoMCGen);
+    }
     // MCRec
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoRec = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     if (confIsDebug) {
-      doMCRecTrackTrack<false, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
+      if (confIsMCGen) {
+        doMCRecTrackTrack<true, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
+      } else {
+        doMCRecTrackTrack<false, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
+      }
     } else {
       doMCRecTrackTrack<false, false>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
     }

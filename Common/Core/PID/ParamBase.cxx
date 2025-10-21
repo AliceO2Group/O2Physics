@@ -17,14 +17,20 @@
 ///        These are the basic storage elements to be kept in the CCDB
 ///
 
-#include "PID/ParamBase.h"
-#include "Framework/Logger.h"
-#include "TFile.h"
+#include <Framework/Logger.h>
+#include <PID/ParamBase.h>
+
+#include <TFile.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <vector>
 
 namespace o2::pid
 {
 
-void Parameters::SetParameters(const std::vector<pidvar_t> params)
+void Parameters::SetParameters(const std::vector<pidvar_t>& params)
 {
   if (mPar.size() != params.size()) {
     LOG(fatal) << "Updating parametrization size! Trying to fit a parametrization of size " << params.size() << " into one of size " << mPar.size();
@@ -40,7 +46,7 @@ void Parameters::Print(Option_t* /*options*/) const
   }
 };
 
-void Parameters::LoadParamFromFile(const TString FileName, const TString ParamName)
+void Parameters::LoadParamFromFile(const TString& FileName, const TString& ParamName)
 {
   TFile f(FileName, "READ");
   if (!f.Get(ParamName)) {
@@ -66,7 +72,7 @@ void Parametrization::Print(Option_t* options) const
   mParameters.Print(options);
 };
 
-void Parametrization::LoadParamFromFile(const TString FileName, const TString ParamName)
+void Parametrization::LoadParamFromFile(const TString& FileName, const TString& ParamName)
 {
   TFile f(FileName, "READ");
   if (!f.Get(ParamName)) {

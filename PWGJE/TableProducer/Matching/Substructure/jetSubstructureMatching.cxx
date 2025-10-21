@@ -61,10 +61,18 @@ struct JetSubstructureMatching {
   PresliceOptional<aod::D0ChargedMCParticleLevelSPs> TagSplittingsPerTagJetD0 = aod::d0chargedmcparticlelevelsplitting::jetId;
   PresliceOptional<aod::DplusChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDplus = aod::dpluschargedmcdetectorlevelsplitting::jetId;
   PresliceOptional<aod::DplusChargedMCParticleLevelSPs> TagSplittingsPerTagJetDplus = aod::dpluschargedmcparticlelevelsplitting::jetId;
+  PresliceOptional<aod::DsChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDs = aod::dschargedmcdetectorlevelsplitting::jetId;
+  PresliceOptional<aod::DsChargedMCParticleLevelSPs> TagSplittingsPerTagJetDs = aod::dschargedmcparticlelevelsplitting::jetId;
+  PresliceOptional<aod::DstarChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDstar = aod::dstarchargedmcdetectorlevelsplitting::jetId;
+  PresliceOptional<aod::DstarChargedMCParticleLevelSPs> TagSplittingsPerTagJetDstar = aod::dstarchargedmcparticlelevelsplitting::jetId;
   PresliceOptional<aod::LcChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetLc = aod::lcchargedmcdetectorlevelsplitting::jetId;
   PresliceOptional<aod::LcChargedMCParticleLevelSPs> TagSplittingsPerTagJetLc = aod::lcchargedmcparticlelevelsplitting::jetId;
+  PresliceOptional<aod::B0ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetB0 = aod::b0chargedmcdetectorlevelsplitting::jetId;
+  PresliceOptional<aod::B0ChargedMCParticleLevelSPs> TagSplittingsPerTagJetB0 = aod::b0chargedmcparticlelevelsplitting::jetId;
   PresliceOptional<aod::BplusChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetBplus = aod::bpluschargedmcdetectorlevelsplitting::jetId;
   PresliceOptional<aod::BplusChargedMCParticleLevelSPs> TagSplittingsPerTagJetBplus = aod::bpluschargedmcparticlelevelsplitting::jetId;
+  PresliceOptional<aod::XicToXiPiPiChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetXicToXiPiPi = aod::xictoxipipichargedmcdetectorlevelsplitting::jetId;
+  PresliceOptional<aod::XicToXiPiPiChargedMCParticleLevelSPs> TagSplittingsPerTagJetXicToXiPiPi = aod::xictoxipipichargedmcparticlelevelsplitting::jetId;
   PresliceOptional<aod::DielectronChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDielectron = aod::dielectronchargedmcdetectorlevelsplitting::jetId;
   PresliceOptional<aod::DielectronChargedMCParticleLevelSPs> TagSplittingsPerTagJetDielectron = aod::dielectronchargedmcparticlelevelsplitting::jetId;
 
@@ -74,19 +82,27 @@ struct JetSubstructureMatching {
   PresliceOptional<aod::D0ChargedMCParticleLevelPRs> TagPairsPerTagJetD0 = aod::d0chargedmcparticlelevelpair::jetId;
   PresliceOptional<aod::DplusChargedMCDetectorLevelPRs> BasePairsPerBaseJetDplus = aod::dpluschargedmcdetectorlevelpair::jetId;
   PresliceOptional<aod::DplusChargedMCParticleLevelPRs> TagPairsPerTagJetDplus = aod::dpluschargedmcparticlelevelpair::jetId;
+  PresliceOptional<aod::DsChargedMCDetectorLevelPRs> BasePairsPerBaseJetDs = aod::dschargedmcdetectorlevelpair::jetId;
+  PresliceOptional<aod::DsChargedMCParticleLevelPRs> TagPairsPerTagJetDs = aod::dschargedmcparticlelevelpair::jetId;
+  PresliceOptional<aod::DstarChargedMCDetectorLevelPRs> BasePairsPerBaseJetDstar = aod::dstarchargedmcdetectorlevelpair::jetId;
+  PresliceOptional<aod::DstarChargedMCParticleLevelPRs> TagPairsPerTagJetDstar = aod::dstarchargedmcparticlelevelpair::jetId;
   PresliceOptional<aod::LcChargedMCDetectorLevelPRs> BasePairsPerBaseJetLc = aod::lcchargedmcdetectorlevelpair::jetId;
   PresliceOptional<aod::LcChargedMCParticleLevelPRs> TagPairsPerTagJetLc = aod::lcchargedmcparticlelevelpair::jetId;
+  PresliceOptional<aod::B0ChargedMCDetectorLevelPRs> BasePairsPerBaseJetB0 = aod::b0chargedmcdetectorlevelpair::jetId;
+  PresliceOptional<aod::B0ChargedMCParticleLevelPRs> TagPairsPerTagJetB0 = aod::b0chargedmcparticlelevelpair::jetId;
   PresliceOptional<aod::BplusChargedMCDetectorLevelPRs> BasePairsPerBaseJetBplus = aod::bpluschargedmcdetectorlevelpair::jetId;
   PresliceOptional<aod::BplusChargedMCParticleLevelPRs> TagPairsPerTagJetBplus = aod::bpluschargedmcparticlelevelpair::jetId;
+  PresliceOptional<aod::XicToXiPiPiChargedMCDetectorLevelPRs> BasePairsPerBaseJetXicToXiPiPi = aod::xictoxipipichargedmcdetectorlevelpair::jetId;
+  PresliceOptional<aod::XicToXiPiPiChargedMCParticleLevelPRs> TagPairsPerTagJetXicToXiPiPi = aod::xictoxipipichargedmcparticlelevelpair::jetId;
   PresliceOptional<aod::DielectronChargedMCDetectorLevelPRs> BasePairsPerBaseJetDielectron = aod::dielectronchargedmcdetectorlevelpair::jetId;
   PresliceOptional<aod::DielectronChargedMCParticleLevelPRs> TagPairsPerTagJetDielectron = aod::dielectronchargedmcparticlelevelpair::jetId;
 
   // workaround till binding nodes can be passed as template arguments
-  template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
-  auto slicedPerJetForMatching(T const& table, U const& jet, V const& perIncluisveJet, M const& perD0Jet, N const& perDplusJet, O const& perLcJet, P const& perBplusJet, Q const& perDielectronJet)
+  template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A, typename B>
+  auto slicedPerJetForMatching(T const& table, U const& jet, V const& perIncluisveJet, M const& perD0Jet, N const& perDplusJet, O const& perDsJet, P const& perDstarJet, Q const& perLcJet, R const& perB0Jet, S const& perBplusJet, A const& perXicToXiPiPiJet, B const& perDielectronJet)
   {
     if constexpr (jethfutilities::isHFTable<CandidateTable>() || jethfutilities::isHFMcTable<CandidateTable>()) {
-      return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perLcJet, perBplusJet);
+      return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perDsJet, perDstarJet, perLcJet, perB0Jet, perBplusJet, perXicToXiPiPiJet);
     } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>() || jetdqutilities::isDielectronMcTable<CandidateTable>()) {
       return jetdqutilities::slicedPerDielectronJet<CandidateTable>(table, jet, perDielectronJet);
     } else {
@@ -149,14 +165,14 @@ struct JetSubstructureMatching {
       }
       if (hasMatchedJet) {
         // auto const& jetTagSplittings = jetsTagSplittings.sliceBy(TagSplittingsPerTagJet, jetTag.globalIndex());
-        auto const& jetTagSplittings = slicedPerJetForMatching<CandidatesTag>(jetsTagSplittings, jetTag, TagSplittingsPerTagJetInclusive, TagSplittingsPerTagJetD0, TagSplittingsPerTagJetDplus, TagSplittingsPerTagJetLc, TagSplittingsPerTagJetBplus, TagSplittingsPerTagJetDielectron);
+        auto const& jetTagSplittings = slicedPerJetForMatching<CandidatesTag>(jetsTagSplittings, jetTag, TagSplittingsPerTagJetInclusive, TagSplittingsPerTagJetD0, TagSplittingsPerTagJetDplus, TagSplittingsPerTagJetDs, TagSplittingsPerTagJetDstar, TagSplittingsPerTagJetLc, TagSplittingsPerTagJetB0, TagSplittingsPerTagJetBplus, TagSplittingsPerTagJetXicToXiPiPi, TagSplittingsPerTagJetDielectron);
         int tagSplittingIndex = 0;
         for (auto const& jetTagSplitting : jetTagSplittings) {
           jetTagSplittingsMap[jetTagSplitting.globalIndex()] = tagSplittingIndex;
           tagSplittingIndex++;
         }
         // auto const& jetTagPairs = jetsTagPairs.sliceBy(TagPairsPerTagJet, jetTag.globalIndex());
-        auto const& jetTagPairs = slicedPerJetForMatching<CandidatesTag>(jetsTagPairs, jetTag, TagPairsPerTagJetInclusive, TagPairsPerTagJetD0, TagPairsPerTagJetDplus, TagPairsPerTagJetLc, TagPairsPerTagJetBplus, TagPairsPerTagJetDielectron);
+        auto const& jetTagPairs = slicedPerJetForMatching<CandidatesTag>(jetsTagPairs, jetTag, TagPairsPerTagJetInclusive, TagPairsPerTagJetD0, TagPairsPerTagJetDplus, TagPairsPerTagJetDs, TagPairsPerTagJetDstar, TagPairsPerTagJetLc, TagPairsPerTagJetB0, TagPairsPerTagJetBplus, TagPairsPerTagJetXicToXiPiPi, TagPairsPerTagJetDielectron);
         int tagPairIndex = 0;
         for (auto const& jetTagPair : jetTagPairs) {
           jetTagPairsMap[jetTagPair.globalIndex()] = tagPairIndex;
@@ -197,7 +213,7 @@ struct JetSubstructureMatching {
             }
           }
           // auto const& jetBaseSplittings = jetsBaseSplittings.sliceBy(BaseSplittingsPerBaseJet, jetBase.globalIndex());
-          auto const& jetBaseSplittings = slicedPerJetForMatching<CandidatesBase>(jetsBaseSplittings, jetBase, BaseSplittingsPerBaseJetInclusive, BaseSplittingsPerBaseJetD0, BaseSplittingsPerBaseJetDplus, BaseSplittingsPerBaseJetLc, BaseSplittingsPerBaseJetBplus, BaseSplittingsPerBaseJetDielectron);
+          auto const& jetBaseSplittings = slicedPerJetForMatching<CandidatesBase>(jetsBaseSplittings, jetBase, BaseSplittingsPerBaseJetInclusive, BaseSplittingsPerBaseJetD0, BaseSplittingsPerBaseJetDplus, BaseSplittingsPerBaseJetDs, BaseSplittingsPerBaseJetDstar, BaseSplittingsPerBaseJetLc, BaseSplittingsPerBaseJetB0, BaseSplittingsPerBaseJetBplus, BaseSplittingsPerBaseJetXicToXiPiPi, BaseSplittingsPerBaseJetDielectron);
           int baseSplittingIndex = 0;
           for (auto const& jetBaseSplitting : jetBaseSplittings) {
             jetBaseSplittingsMap[jetBaseSplitting.globalIndex()] = baseSplittingIndex;
@@ -205,7 +221,7 @@ struct JetSubstructureMatching {
           }
           jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetBaseSplittings, jetTagSplittings, jetsBasetoTagSplittingsMatchingGeo, jetsBasetoTagSplittingsMatchingPt, jetsBasetoTagSplittingsMatchingHF, jetsTagtoBaseSplittingsMatchingGeo, jetsTagtoBaseSplittingsMatchingPt, jetsTagtoBaseSplittingsMatchingHF, candidatesBase, tracksBase, clustersBase, candidatesTag, tracksTag, tracksTag, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
           // auto const& jetBasePairs = jetsBasePairs.sliceBy(BasePairsPerBaseJet, jetBase.globalIndex());
-          auto const& jetBasePairs = slicedPerJetForMatching<CandidatesBase>(jetsBasePairs, jetBase, BasePairsPerBaseJetInclusive, BasePairsPerBaseJetD0, BasePairsPerBaseJetDplus, BasePairsPerBaseJetLc, BasePairsPerBaseJetBplus, BasePairsPerBaseJetDielectron);
+          auto const& jetBasePairs = slicedPerJetForMatching<CandidatesBase>(jetsBasePairs, jetBase, BasePairsPerBaseJetInclusive, BasePairsPerBaseJetD0, BasePairsPerBaseJetDplus, BasePairsPerBaseJetDs, BasePairsPerBaseJetDstar, BasePairsPerBaseJetLc, BasePairsPerBaseJetB0, BasePairsPerBaseJetBplus, BasePairsPerBaseJetXicToXiPiPi, BasePairsPerBaseJetDielectron);
           int basePairIndex = 0;
           for (auto const& jetBasePair : jetBasePairs) {
             jetBasePairsMap[jetBasePair.globalIndex()] = basePairIndex;

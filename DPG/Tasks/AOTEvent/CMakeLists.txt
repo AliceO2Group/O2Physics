@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(rof-occupancy-qa
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(light-ions-evsel-qa
+                           SOURCES lightIonsEvSelQa.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(occupancy-vs-dedx-qa
                            SOURCES dEdxVsOccupancyWithTrackQAinfo.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase

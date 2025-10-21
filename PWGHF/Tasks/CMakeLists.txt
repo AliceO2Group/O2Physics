@@ -49,6 +49,11 @@ o2physics_add_dpl_workflow(task-pid-studies
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-mc-injection
+                    SOURCES taskMcInjection.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # o2physics_add_dpl_workflow(task-sel-optimisation
 #                     SOURCES taskSelOptimisation.cxx
 #                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

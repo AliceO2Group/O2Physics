@@ -54,14 +54,19 @@ o2physics_add_dpl_workflow(task-charm-polarisation
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-charm-reso-reduced
-                    SOURCES taskCharmResoReduced.cxx
+o2physics_add_dpl_workflow(task-charm-reso-to-d-v0-reduced
+                    SOURCES taskCharmResoToDV0Reduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-charm-reso-to-d-trk-reduced
+                    SOURCES taskCharmResoToDTrkReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-d0
                     SOURCES taskD0.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-directed-flow-charm-hadrons
@@ -101,7 +106,7 @@ o2physics_add_dpl_workflow(task-lb-reduced
 
 o2physics_add_dpl_workflow(task-lc
                     SOURCES taskLc.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-lc-to-k0s-p
@@ -136,5 +141,10 @@ o2physics_add_dpl_workflow(task-xic-to-xi-pi-pi
 
 o2physics_add_dpl_workflow(task-xicc
                     SOURCES taskXicc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-xic0-to-xi-pi
+                    SOURCES taskXic0ToXiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

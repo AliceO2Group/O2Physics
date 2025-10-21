@@ -14,35 +14,43 @@
 ///
 /// \author Dmitri Peresunko <Dmitri.Peresunko@cern.ch>
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CaloClusters.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsPHOS/BadChannelsMap.h>
+#include <DataFormatsPHOS/CalibParams.h>
+#include <DataFormatsPHOS/Cell.h>
+#include <DataFormatsPHOS/Cluster.h>
+#include <DataFormatsPHOS/MCLabel.h>
+#include <DataFormatsPHOS/TriggerRecord.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <PHOSBase/Geometry.h>
+#include <PHOSReconstruction/Clusterer.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <SimulationDataFormat/MCTruthContainer.h>
+
+#include <TVector3.h>
+
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
-#include "DetectorsBase/Propagator.h"
-
-#include "CommonUtils/NameConf.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "SimulationDataFormat/MCTruthContainer.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsPHOS/Cell.h"
-#include "DataFormatsPHOS/Cluster.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
-#include "DataFormatsPHOS/MCLabel.h"
-#include "DataFormatsPHOS/BadChannelsMap.h"
-#include "DataFormatsPHOS/CalibParams.h"
-#include "PHOSBase/Geometry.h"
-#include "PHOSReconstruction/Clusterer.h"
 
 using namespace o2::framework;
 using namespace o2;
@@ -105,9 +113,9 @@ struct CaloClusterProducer {
     ~TrackTrigRec() = default;
 
    public:
-    int64_t mTR;           // BC ref
-    int mStart[kCpvCells]; // X (phi) track coordinate in PHOS plane
-    int mEnd[kCpvCells];   // Z (theta) track coordinate in PHOS plane
+    int64_t mTR{-1};             // BC ref
+    int mStart[kCpvCells] = {0}; // X (phi) track coordinate in PHOS plane
+    int mEnd[kCpvCells] = {0};   // Z (theta) track coordinate in PHOS plane
   };
 
   void init(o2::framework::InitContext&)
@@ -141,18 +149,18 @@ struct CaloClusterProducer {
 
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
-    int colId = 0;
+    int colIdOuter = 0;
     for (const auto& cl : colls) {
       auto colbc = colMap.find(cl.bc_as<aod::BCsWithTimestamps>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
       } else { // not unique collision per BC
         auto coll2 = colls.begin() + colbc->second;
         if (cl.numContrib() > coll2.numContrib()) {
-          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
         }
       }
-      colId++;
+      colIdOuter++;
     }
 
     // Fill list of cells and cell TrigRecs per TF as an input for clusterizer
@@ -272,13 +280,13 @@ struct CaloClusterProducer {
 
       // Extract primary vertex
       TVector3 vtx = {0., 0., 0.}; // default, if not collision will be found
-      int colId = -1;
+      int colIdInner = -1;
       auto coliter = colMap.find(cluTR.getBCData().toLong());
       if (coliter != colMap.end()) { // get vertex from collision
         // find collision corresponding to current BC
         auto clvtx = colls.begin() + coliter->second;
         vtx.SetXYZ(clvtx.posX(), clvtx.posY(), clvtx.posZ());
-        colId = coliter->second;
+        colIdInner = coliter->second;
       }
 
       bool cpvExist = false;
@@ -381,7 +389,7 @@ struct CaloClusterProducer {
         clu.getElipsAxis(lambdaShort, lambdaLong);
 
         // Clear Collision assignment
-        if (colId == -1) {
+        if (colIdInner == -1) {
           // Ambiguos Collision assignment
           cluambcursor(
             bcMap[cluTR.getBCData().toLong()],
@@ -395,7 +403,7 @@ struct CaloClusterProducer {
             clu.getDistanceToBadChannel());
 
         } else { // Normal collision
-          auto col = colls.begin() + colId;
+          auto col = colls.begin() + colIdInner;
           clucursor(
             col,
             mom.X(), mom.Y(), mom.Z(), e,
@@ -435,18 +443,18 @@ struct CaloClusterProducer {
 
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
-    int colId = 0;
+    int colIdOuter = 0;
     for (auto const& cl : colls) {
       auto colbc = colMap.find(cl.bc_as<aod::BCsWithTimestamps>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
       } else { // not unique collision per BC
         auto coll2 = colls.begin() + colbc->second;
         if (cl.numContrib() > coll2.numContrib()) {
-          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
         }
       }
-      colId++;
+      colIdOuter++;
     }
 
     // Fill list of cells and cell TrigRecs per TF as an input for clusterizer
@@ -588,13 +596,13 @@ struct CaloClusterProducer {
 
       // Extract primary vertex
       TVector3 vtx = {0., 0., 0.}; // default, if not collision will be found
-      int colId = -1;
+      int colIdInner = -1;
       auto coliter = colMap.find(cluTR.getBCData().toLong());
       if (coliter != colMap.end()) { // get vertex from collision
         // find collision corresponding to current BC
         auto clvtx = colls.begin() + coliter->second;
         vtx.SetXYZ(clvtx.posX(), clvtx.posY(), clvtx.posZ());
-        colId = coliter->second;
+        colIdInner = coliter->second;
       }
 
       bool cpvExist = false;
@@ -705,7 +713,7 @@ struct CaloClusterProducer {
           mcamplitudes.push_back(cellLab.getEdep());
         }
         // Clear Collision assignment
-        if (colId == -1) {
+        if (colIdInner == -1) {
           // Ambiguos Collision assignment
           cluambcursor(
             bcMap[cluTR.getBCData().toLong()],
@@ -722,7 +730,7 @@ struct CaloClusterProducer {
             mcamplitudes);
 
         } else { // Normal collision
-          auto col = colls.begin() + colId;
+          auto col = colls.begin() + colIdInner;
           clucursor(
             col,
             mom.X(), mom.Y(), mom.Z(), e,
@@ -778,18 +786,18 @@ struct CaloClusterProducer {
 
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
-    int colId = 0;
+    int colIdOuter = 0;
     for (const auto& cl : colls) {
       auto colbc = colMap.find(cl.bc_as<aod::BCsWithTimestamps>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
       } else { // not unique collision per BC
         auto coll2 = colls.begin() + colbc->second;
         if (cl.numContrib() > coll2.numContrib()) {
-          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
         }
       }
-      colId++;
+      colIdOuter++;
     }
     // Fill list of cells and cell TrigRecs per TF as an input for clusterizer
     // clusterize
@@ -982,13 +990,13 @@ struct CaloClusterProducer {
 
       // Extract primary vertex
       TVector3 vtx = {0., 0., 0.}; // default, if not collision will be found
-      int colId = -1;
+      int colIdInner = -1;
       auto coliter = colMap.find(cluTR.getBCData().toLong());
       if (coliter != colMap.end()) { // get vertex from collision
         // find collision corresponding to current BC
         auto clvtx = colls.begin() + coliter->second;
         vtx.SetXYZ(clvtx.posX(), clvtx.posY(), clvtx.posZ());
-        colId = coliter->second;
+        colIdInner = coliter->second;
       }
 
       bool cpvExist = false;
@@ -1119,7 +1127,7 @@ struct CaloClusterProducer {
         if (cpvExist) {
           cpvindex = -1; // there were CPV clusters
         }
-        if (colId == -1) {
+        if (colIdInner == -1) {
           // Ambiguos Collision assignment
           cluambcursor(
             bcMap[cluTR.getBCData().toLong()],
@@ -1133,7 +1141,7 @@ struct CaloClusterProducer {
             clu.getDistanceToBadChannel());
 
         } else { // Normal collision
-          auto col = colls.begin() + colId;
+          auto col = colls.begin() + colIdInner;
           clucursor(
             col,
             mom.X(), mom.Y(), mom.Z(), e,
@@ -1187,18 +1195,18 @@ struct CaloClusterProducer {
 
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
-    int colId = 0;
+    int colIdOuter = 0;
     for (const auto& cl : colls) {
       auto colbc = colMap.find(cl.bc_as<aod::BCsWithTimestamps>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+        colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
       } else { // not unique collision per BC
         auto coll2 = colls.begin() + colbc->second;
         if (cl.numContrib() > coll2.numContrib()) {
-          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colId;
+          colMap[cl.bc_as<aod::BCsWithTimestamps>().globalBC()] = colIdOuter;
         }
       }
-      colId++;
+      colIdOuter++;
     }
     // Fill list of cells and cell TrigRecs per TF as an input for clusterizer
     // clusterize
@@ -1413,13 +1421,13 @@ struct CaloClusterProducer {
 
       // Extract primary vertex
       TVector3 vtx = {0., 0., 0.}; // default, if not collision will be found
-      int colId = -1;
+      int colIdInner = -1;
       auto coliter = colMap.find(cluTR.getBCData().toLong());
       if (coliter != colMap.end()) { // get vertex from collision
         // find collision corresponding to current BC
         auto clvtx = colls.begin() + coliter->second;
         vtx.SetXYZ(clvtx.posX(), clvtx.posY(), clvtx.posZ());
-        colId = coliter->second;
+        colIdInner = coliter->second;
       }
 
       bool cpvExist = false;
@@ -1555,7 +1563,7 @@ struct CaloClusterProducer {
           mclabels.push_back(cellLab.getTrackID()); // Track ID in current event?
           mcamplitudes.push_back(cellLab.getEdep());
         }
-        if (colId == -1) {
+        if (colIdInner == -1) {
           // Ambiguos Collision assignment
           cluambcursor(
             bcMap[cluTR.getBCData().toLong()],
@@ -1571,7 +1579,7 @@ struct CaloClusterProducer {
             mclabels,
             mcamplitudes);
         } else { // Normal collision
-          auto col = colls.begin() + colId;
+          auto col = colls.begin() + colIdInner;
           clucursor(
             col,
             mom.X(), mom.Y(), mom.Z(), e,

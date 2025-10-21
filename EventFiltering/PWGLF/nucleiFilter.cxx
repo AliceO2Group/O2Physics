@@ -10,41 +10,47 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include <cmath>
-#include <string>
+#include "../filterTables.h"
 
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
+#include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/Vtx3BodyTables.h"
+#include "PWGLF/Utils/pidTOFGeneric.h"
+
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTOF/ParameterContainers.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/Vtx3BodyTables.h"
-#include "../filterTables.h"
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector4D.h"
 
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsTOF/ParameterContainers.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "PWGLF/DataModel/pidTOFGeneric.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/Core/PID/PIDTOF.h"
+#include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+o2::common::core::MetadataHelper metadataInfo;
 
 namespace
 {
@@ -120,7 +126,9 @@ struct nucleiFilter {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<2> fitter2body;
   o2::vertexing::DCAFitterN<3> fitter3body;
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  // TOF response and input parameters
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  o2::aod::pidtofgeneric::TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
   // configurable for hypertriton 3body decay
   struct : ConfigurableGroup {
     Configurable<double> bFieldInput{"trgH3L3Body.mBz", -999, "bz field, -999 is automatic"};
@@ -153,20 +161,12 @@ struct nucleiFilter {
     Configurable<std::string> grpmagPath{"trgH3L3Body.grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"trgH3L3Body.lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"trgH3L3Body.geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-    // CCDB TOF PID paras
-    Configurable<int64_t> timestamp{"trgH3L3Body.ccdb-timestamp", -1, "timestamp of the object"};
-    Configurable<std::string> paramFileName{"trgH3L3Body.paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
-    Configurable<std::string> parametrizationPath{"trgH3L3Body.parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
-    Configurable<std::string> passName{"trgH3L3Body.passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
-    Configurable<std::string> timeShiftCCDBPath{"trgH3L3Body.timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
-    Configurable<bool> loadResponseFromCCDB{"trgH3L3Body.loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
-    Configurable<bool> fatalOnPassNotAvailable{"trgH3L3Body.fatalOnPassNotAvailable", false, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   } trgH3L3Body;
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", kNtriggers + 1, -0.5, static_cast<double>(kNtriggers) + 0.5)};
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     std::vector<double> ptBinning = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5.};
 
@@ -214,6 +214,11 @@ struct nucleiFilter {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    // Initialization of TOF PID parameters for fH3L3Body
+    mTOFCalibConfig.metadataInfo = metadataInfo;
+    mTOFCalibConfig.inheritFromBaseTask(initContext);
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -264,65 +269,7 @@ struct nucleiFilter {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
 
-    // Initial TOF PID Paras, copied from pidTOF.cxx
-    trgH3L3Body.timestamp.value = bc.timestamp();
-    ccdb->setTimestamp(trgH3L3Body.timestamp.value);
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    // TODO: implement the automatic pass name detection from metadata
-    if (trgH3L3Body.passName.value == "") {
-      trgH3L3Body.passName.value = "unanchored"; // temporary default
-      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << trgH3L3Body.passName.value << "'";
-    }
-    LOG(info) << "Using parameter collection, starting from pass '" << trgH3L3Body.passName.value << "'";
-
-    const std::string fname = trgH3L3Body.paramFileName.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << trgH3L3Body.parametrizationPath.value;
-      if (1) {
-        o2::tof::ParameterCollection paramCollection;
-        paramCollection.loadParamFromFile(fname, trgH3L3Body.parametrizationPath.value);
-        LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, trgH3L3Body.passName.value)) {
-          if (trgH3L3Body.fatalOnPassNotAvailable) {
-            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
-          } else {
-            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
-          }
-        } else {
-          mRespParamsV2.setShiftParameters(paramCollection.getPars(trgH3L3Body.passName.value));
-          mRespParamsV2.printShiftParameters();
-        }
-      } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), trgH3L3Body.parametrizationPath.value);
-      }
-    } else if (trgH3L3Body.loadResponseFromCCDB) { // Loading it from CCDB
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << trgH3L3Body.parametrizationPath.value << " for timestamp " << trgH3L3Body.timestamp.value;
-      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(trgH3L3Body.parametrizationPath.value, trgH3L3Body.timestamp.value);
-      paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, trgH3L3Body.passName.value)) { // Attempt at loading the parameters with the pass defined
-        if (trgH3L3Body.fatalOnPassNotAvailable) {
-          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
-        } else {
-          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
-        }
-      } else { // Pass is available, load non standard parameters
-        mRespParamsV2.setShiftParameters(paramCollection->getPars(trgH3L3Body.passName.value));
-        mRespParamsV2.printShiftParameters();
-      }
-    }
-    mRespParamsV2.print();
-    if (trgH3L3Body.timeShiftCCDBPath.value != "") {
-      if (trgH3L3Body.timeShiftCCDBPath.value.find(".root") != std::string::npos) {
-        mRespParamsV2.setTimeShiftParameters(trgH3L3Body.timeShiftCCDBPath.value, "gmean_Pos", true);
-        mRespParamsV2.setTimeShiftParameters(trgH3L3Body.timeShiftCCDBPath.value, "gmean_Neg", false);
-      } else {
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", trgH3L3Body.timeShiftCCDBPath.value.c_str()), trgH3L3Body.timestamp.value), true);
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", trgH3L3Body.timeShiftCCDBPath.value.c_str()), trgH3L3Body.timestamp.value), false);
-      }
-    }
-
-    bachelorTOFPID.SetParams(mRespParamsV2);
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bc);
   }
 
   enum {
@@ -568,7 +515,7 @@ struct nucleiFilter {
       float tofNSigmaDeuteron = -999;
       if (track2.has_collision() && track2.hasTOF()) {
         auto originalcol = track2.collision_as<ColWithEvTime>();
-        tofNSigmaDeuteron = bachelorTOFPID.GetTOFNSigma(track2, originalcol, collision);
+        tofNSigmaDeuteron = bachelorTOFPID.GetTOFNSigma(mRespParamsV3, track2, originalcol, collision);
       }
       if (track2.p() > trgH3L3Body.minDeuteronPUseTOF && (tofNSigmaDeuteron < trgH3L3Body.tofPIDNSigmaMin || tofNSigmaDeuteron > trgH3L3Body.tofPIDNSigmaMax)) {
         continue;
@@ -671,6 +618,7 @@ struct nucleiFilter {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
+  metadataInfo.initMetadata(cfg);
   return WorkflowSpec{
     adaptAnalysisTask<nucleiFilter>(cfg)};
 }

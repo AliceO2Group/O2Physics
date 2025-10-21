@@ -13,16 +13,22 @@
 /// \brief Task used to extract the observables on single muons needed for the HF-muon analysis.
 /// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <sys/types.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -82,24 +88,24 @@ struct HfTaskSingleMuon {
 
   void init(InitContext&)
   {
-    AxisSpec axisPt{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisEta{250, -5., 0., "#it{#eta}"};
-    AxisSpec axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
-    AxisSpec axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
-    AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
-    AxisSpec axisPDca{100000, 0, 100000, "#it{p} #times DCA (GeV/#it{c} * cm)"};
-    AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
-    AxisSpec axisDCAx{1000, -5., 5., "#it{DCA}_{x or y} (cm)"};
-    AxisSpec axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
-    AxisSpec axisEtaDif{200, -2., 2., "#it{#eta} diff"};
-    AxisSpec axisDeltaPt{60, -30, 30, "#Delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisPt{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisEta{250, -5., 0., "#it{#eta}"};
+    AxisSpec const axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
+    AxisSpec const axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
+    AxisSpec const axisSign{5, -2.5, 2.5, "Charge"};
+    AxisSpec const axisPDca{100000, 0, 100000, "#it{p} #times DCA (GeV/#it{c} * cm)"};
+    AxisSpec const axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
+    AxisSpec const axisDCAx{1000, -5., 5., "#it{DCA}_{x or y} (cm)"};
+    AxisSpec const axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
+    AxisSpec const axisEtaDif{200, -2., 2., "#it{#eta} diff"};
+    AxisSpec const axisDeltaPt{60, -30, 30, "#Delta #it{p}_{T} (GeV/#it{c})"};
 
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisPt, axisEta, axisDCA, axisPDca, axisSign, axisChi2MatchMCHMFT}, 6};
-    HistogramConfigSpec h2PtMc{HistType::kTH2F, {axisPt, axisPtDif}};
-    HistogramConfigSpec h2EtaMc{HistType::kTH2F, {axisEta, axisEtaDif}};
-    HistogramConfigSpec h2DCA{HistType::kTH2F, {axisDCAx, axisDCAx}};
-    HistogramConfigSpec h3DeltaPt{HistType::kTH3F, {axisPt, axisEta, axisDeltaPt}};
-    HistogramConfigSpec hVtxZ{HistType::kTH1F, {axisVtxZ}};
+    HistogramConfigSpec const hTHnMu{HistType::kTHnSparseF, {axisPt, axisEta, axisDCA, axisPDca, axisSign, axisChi2MatchMCHMFT}, 6};
+    HistogramConfigSpec const h2PtMc{HistType::kTH2F, {axisPt, axisPtDif}};
+    HistogramConfigSpec const h2EtaMc{HistType::kTH2F, {axisEta, axisEtaDif}};
+    HistogramConfigSpec const h2DCA{HistType::kTH2F, {axisDCAx, axisDCAx}};
+    HistogramConfigSpec const h3DeltaPt{HistType::kTH3F, {axisPt, axisEta, axisDeltaPt}};
+    HistogramConfigSpec const hVtxZ{HistType::kTH1F, {axisVtxZ}};
 
     registry.add("hMuBeforeCuts", "", hTHnMu);
     registry.add("hMuAfterCuts", "", hTHnMu);
