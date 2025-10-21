@@ -735,10 +735,10 @@ struct NonPromptCascadeTask {
                            aod::BCsWithTimestamps const&)
   {
     mProcessCounter[1]++;
-    fillMultHistos(collisions);
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
+    fillMultHistos(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
 };

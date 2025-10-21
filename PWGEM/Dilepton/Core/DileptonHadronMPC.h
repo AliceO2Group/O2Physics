@@ -1442,7 +1442,7 @@ struct DileptonHadronMPC {
   PROCESS_SWITCH(DileptonHadronMPC, processAnalysis, "run dilepton analysis", true);
 
   using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerCounters const& counters, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerATCounters const& countersAT, aod::EMSWTriggerTOICounters const& countersTOI, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
@@ -1462,10 +1462,12 @@ struct DileptonHadronMPC {
 
     // for nomalization
     int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value);
-    for (const auto& counter : counters) {
+    for (const auto& counter : countersAT) {
       if (counter.isAnalyzed_bit(emswtId)) {
         fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 0);
       }
+    }
+    for (const auto& counter : countersTOI) {
       if (counter.isAnalyzedToI_bit(emswtId)) {
         fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 1);
       }

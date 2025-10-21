@@ -30,7 +30,12 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
 
+#include "fairlogger/Logger.h"
+
+#include <chrono>
+#include <cstdint>
 #include <map>
 #include <random>
 #include <vector>
@@ -52,6 +57,7 @@ class PairTrackTrackBuilder
 {
  public:
   PairTrackTrackBuilder() = default;
+  ~PairTrackTrackBuilder() = default;
 
   template <typename T1,
             typename T2,
@@ -122,42 +128,42 @@ class PairTrackTrackBuilder
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void processSameEvent(T1 const& col, T2& /*trackTable*/, T3& partition1, T4& partition2, T5& cache)
+  void processSameEvent(T1 const& col, T2& trackTable, T3& partition1, T4& partition2, T5& cache)
   {
     if (mSameSpecies) {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
       if (trackSlice1.size() == 0) {
         return;
       }
       mColHistManager.fill(col);
       mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent(trackSlice1, mTrackHistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
+      pairprocesshelpers::processSameEvent(trackSlice1, trackTable, mTrackHistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
     } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
       if (trackSlice1.size() == 0 || trackSlice2.size() == 0) {
         return;
       }
       mColHistManager.fill(col);
       mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent(trackSlice1, trackSlice2, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mCprSe, mPc);
+      pairprocesshelpers::processSameEvent(trackSlice1, trackSlice2, trackTable, mTrackHistManager1, mTrackHistManager2, mPairHistManagerSe, mCprSe, mPc);
     }
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processMixedEvent(T1 const& cols, T2& /*trackTable*/, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
   {
 
     if (mSameSpecies) {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          pairprocesshelpers::processMixedEvent(cols, partition1, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          pairprocesshelpers::processMixedEvent(cols, partition1, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          pairprocesshelpers::processMixedEvent(cols, partition1, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          pairprocesshelpers::processMixedEvent(cols, partition1, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          pairprocesshelpers::processMixedEvent(cols, partition1, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          pairprocesshelpers::processMixedEvent(cols, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -165,13 +171,13 @@ class PairTrackTrackBuilder
     } else {
       switch (mMixingPolicy) {
         case static_cast<int>(pairhistmanager::kVtxMult):
-          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
           break;
         case static_cast<int>(pairhistmanager::kVtxCent):
-          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
-          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -196,6 +202,174 @@ class PairTrackTrackBuilder
 };
 
 template <
+  const char* prefixV01,
+  const char* prefixPosDau1,
+  const char* prefixNegDau1,
+  const char* prefixV02,
+  const char* prefixPosDau2,
+  const char* prefixNegDau2,
+  const char* prefixSe,
+  const char* prefixMe,
+  const char* prefixCprPosSe,
+  const char* prefixCprNegSe,
+  const char* prefixCprPosMe,
+  const char* prefixCprNegMe,
+  modes::V0 v0Type1,
+  modes::V0 v0Type2,
+  modes::Mode mode>
+class PairV0V0Builder
+{
+ public:
+  PairV0V0Builder() = default;
+  ~PairV0V0Builder() = default;
+
+  template <typename T1,
+            typename T2,
+            typename T3,
+            typename T4,
+            typename T5,
+            typename T6,
+            typename T7,
+            typename T8,
+            typename T9,
+            typename T10,
+            typename T11>
+  void init(o2::framework::HistogramRegistry* registry,
+            T1& confV0Selection1,
+            T2& confV0Selection2,
+            T3& confCpr,
+            T4& confMixing,
+            std::map<T5, std::vector<framework::AxisSpec>>& colHistSpec,
+            std::map<T6, std::vector<framework::AxisSpec>>& V0HistSpec1,
+            std::map<T7, std::vector<framework::AxisSpec>>& V0HistSpec2,
+            std::map<T8, std::vector<framework::AxisSpec>>& PosDauHistSpec,
+            std::map<T9, std::vector<framework::AxisSpec>>& NegDauHistSpec,
+            std::map<T10, std::vector<framework::AxisSpec>>& pairHistSpec,
+            std::map<T11, std::vector<framework::AxisSpec>>& cprHistSpec)
+  {
+
+    // check if correlate the same tracks or not
+    mSameSpecies = confMixing.sameSpecies.value;
+
+    mColHistManager.init(registry, colHistSpec);
+    mPairHistManagerSe.init(registry, pairHistSpec);
+    mPairHistManagerMe.init(registry, pairHistSpec);
+
+    if (mSameSpecies) {
+      mV0HistManager1.init(registry, V0HistSpec1, PosDauHistSpec, NegDauHistSpec);
+
+      mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
+      mPairHistManagerSe.setCharge(1, 1);
+      mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confCpr.on.value);
+
+      mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
+      mPairHistManagerMe.setCharge(1, 1);
+      mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confCpr.on.value);
+    } else {
+      mV0HistManager1.init(registry, V0HistSpec1, PosDauHistSpec, NegDauHistSpec);
+      mV0HistManager2.init(registry, V0HistSpec2, PosDauHistSpec, NegDauHistSpec);
+
+      mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection2.pdgCode.value);
+      mPairHistManagerSe.setCharge(1, 1);
+      mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confCpr.on.value);
+
+      mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection2.pdgCode.value);
+      mPairHistManagerMe.setCharge(1, 1);
+      mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confCpr.on.value);
+    }
+
+    // setup mixing
+    mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
+    mMixingDepth = confMixing.depth.value;
+
+    // setup rng if necessary
+    if (confMixing.seed.value >= 0) {
+      uint64_t randomSeed = 0;
+      mMixIdenticalParticles = true;
+      if (confMixing.seed.value == 0) {
+        randomSeed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      } else {
+        randomSeed = static_cast<uint64_t>(confMixing.seed.value);
+      }
+      mRng = std::mt19937(randomSeed);
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void processSameEvent(T1 const& col, T2& trackTable, T3& /*lambdaTable*/, T4& partition1, T5& partition2, T6& cache)
+  {
+    if (mSameSpecies) {
+      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      if (v0Slice1.size() == 0) {
+        return;
+      }
+      mColHistManager.fill(col);
+      mCprSe.setMagField(col.magField());
+      pairprocesshelpers::processSameEvent(v0Slice1, trackTable, mV0HistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
+    } else {
+      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      if (v0Slice1.size() == 0 || v0Slice2.size() == 0) {
+        return;
+      }
+      mColHistManager.fill(col);
+      mCprSe.setMagField(col.magField());
+      pairprocesshelpers::processSameEvent(v0Slice1, v0Slice2, trackTable, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mCprSe, mPc);
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  {
+
+    if (mSameSpecies) {
+      switch (mMixingPolicy) {
+        case static_cast<int>(pairhistmanager::kVtxMult):
+          pairprocesshelpers::processMixedEvent(cols, partition1, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCent):
+          pairprocesshelpers::processMixedEvent(cols, partition1, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxMultCent):
+          pairprocesshelpers::processMixedEvent(cols, partition1, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    } else {
+      switch (mMixingPolicy) {
+        case static_cast<int>(pairhistmanager::kVtxMult):
+          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCent):
+          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxMultCent):
+          pairprocesshelpers::processMixedEvent(cols, partition1, partition2, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    }
+  }
+
+ private:
+  colhistmanager::CollisionHistManager<mode> mColHistManager;
+  v0histmanager::V0HistManager<prefixV01, prefixPosDau1, prefixNegDau1, mode, v0Type1> mV0HistManager1;
+  v0histmanager::V0HistManager<prefixV02, prefixPosDau2, prefixNegDau2, mode, v0Type2> mV0HistManager2;
+  pairhistmanager::PairHistManager<prefixSe, mode> mPairHistManagerSe;
+  pairhistmanager::PairHistManager<prefixMe, mode> mPairHistManagerMe;
+  closepairrejection::ClosePairRejectionV0V0<prefixCprPosSe, prefixCprNegSe> mCprSe;
+  closepairrejection::ClosePairRejectionV0V0<prefixCprPosMe, prefixCprNegMe> mCprMe;
+  paircleaner::V0V0PairCleaner mPc;
+  std::mt19937 mRng;
+  pairhistmanager::MixingPoliciy mMixingPolicy = pairhistmanager::MixingPoliciy::kVtxMult;
+  bool mSameSpecies = false;
+  int mMixingDepth = 5;
+  bool mMixIdenticalParticles = false;
+};
+
+template <
   const char* prefixTrack,
   const char* prefixV0,
   const char* prefixPosDau,
@@ -210,6 +384,7 @@ class PairTrackV0Builder
 {
  public:
   PairTrackV0Builder() = default;
+  ~PairTrackV0Builder() = default;
 
   template <typename T1,
             typename T2,
@@ -258,8 +433,8 @@ class PairTrackV0Builder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*v0table*/, T5& v0Partition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }
@@ -314,6 +489,7 @@ class PairTrackTwoTrackResonanceBuilder
 {
  public:
   PairTrackTwoTrackResonanceBuilder() = default;
+  ~PairTrackTwoTrackResonanceBuilder() = default;
 
   template <typename T1,
             typename T2,
@@ -362,8 +538,8 @@ class PairTrackTwoTrackResonanceBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*resonanceTable*/, T5& resonancePartition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto v0Slice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto v0Slice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }
@@ -417,6 +593,7 @@ class PairTrackKinkBuilder
 {
  public:
   PairTrackKinkBuilder() = default;
+  ~PairTrackKinkBuilder() = default;
 
   template <typename T1,
             typename T2,
@@ -463,8 +640,8 @@ class PairTrackKinkBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*kinktable*/, T5& kinkPartition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || kinkSlice.size() == 0) {
       return;
     }
@@ -520,6 +697,7 @@ class PairTrackCascadeBuilder
 {
  public:
   PairTrackCascadeBuilder() = default;
+  ~PairTrackCascadeBuilder() = default;
 
   template <typename T1,
             typename T2,
@@ -570,8 +748,8 @@ class PairTrackCascadeBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*cascadeTable*/, T5& v0Partition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }

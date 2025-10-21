@@ -57,6 +57,7 @@ DECLARE_SOA_COLUMN(MassTOFPi, massTOFPi, float);
 DECLARE_SOA_COLUMN(PidTrkNu, pidTrkNu, uint32_t);
 DECLARE_SOA_COLUMN(PidTrkPi, pidTrkPi, uint32_t);
 DECLARE_SOA_COLUMN(TrackIDPi, trackIDPi, int);
+DECLARE_SOA_COLUMN(TrackIDNu, trackIDNu, int);
 
 DECLARE_SOA_COLUMN(ItsClusterSizeNu, itsClusterSizeNu, uint32_t);
 DECLARE_SOA_COLUMN(ItsClusterSizePi, itsClusterSizePi, uint32_t);
@@ -76,35 +77,8 @@ DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
 } // namespace pion_nuclei_tables
 
 DECLARE_SOA_TABLE(PionNucleiTable, "AOD", "PINUCLEITABLE",
-                  pion_nuclei_tables::PtNu,
-                  pion_nuclei_tables::EtaNu,
-                  pion_nuclei_tables::PhiNu,
-                  pion_nuclei_tables::PtPi,
-                  pion_nuclei_tables::EtaPi,
-                  pion_nuclei_tables::PhiPi,
-                  pion_nuclei_tables::DcaxyNu,
-                  pion_nuclei_tables::DcazNu,
-                  pion_nuclei_tables::DcaxyPi,
-                  pion_nuclei_tables::DcazPi,
-                  pion_nuclei_tables::SignalTPCNu,
-                  pion_nuclei_tables::InnerParamTPCNu,
-                  pion_nuclei_tables::SignalTPCPi,
-                  pion_nuclei_tables::InnerParamTPCPi,
-                  pion_nuclei_tables::NClsTPCNu,
-                  pion_nuclei_tables::NSigmaTPCNu,
-                  pion_nuclei_tables::NSigmaTPCPi,
-                  pion_nuclei_tables::Chi2TPCNu,
-                  pion_nuclei_tables::Chi2TPCPi,
-                  pion_nuclei_tables::MassTOFNu,
-                  pion_nuclei_tables::MassTOFPi,
-                  pion_nuclei_tables::PidTrkNu,
-                  pion_nuclei_tables::PidTrkPi,
-                  pion_nuclei_tables::ItsClusterSizeNu,
-                  pion_nuclei_tables::ItsClusterSizePi,
-                  pion_nuclei_tables::SharedClustersNu,
-                  pion_nuclei_tables::SharedClustersPi,
-                  pion_nuclei_tables::IsBkgUS,
-                  pion_nuclei_tables::IsBkgEM)
+                  pion_nuclei_tables::TrackIDPi,
+                  pion_nuclei_tables::TrackIDNu)
 DECLARE_SOA_TABLE(PionHyperTable, "AOD", "PIHYPERTABLE",
                   pion_nuclei_tables::PtHyp,
                   pion_nuclei_tables::EtaHyp,

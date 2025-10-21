@@ -25,11 +25,11 @@ namespace o2::aod
 {
 namespace PCC
 {
-DECLARE_SOA_COLUMN(Pccweight, pccweight, float);
-DECLARE_SOA_COLUMN(Pccweightsysup, pccweightsysup, float);
-DECLARE_SOA_COLUMN(Pccweightsysdown, pccweightsysdown, float);
+DECLARE_SOA_COLUMN(PccWeight, pccWeight, float);
+DECLARE_SOA_COLUMN(PccWeightSysUp, pccWeightSysUp, float);
+DECLARE_SOA_COLUMN(PccWeightSysDown, pccWeightSysDown, float);
 } // namespace PCC
-DECLARE_SOA_TABLE(ParticleCompositionCorrection, "AOD", "PARTICLECOMPOSITIONCORRECTION", PCC::Pccweight, PCC::Pccweightsysup, PCC::Pccweightsysdown);
+DECLARE_SOA_TABLE(ParticleCompositionCorrection, "AOD", "PARTICLECOMPOSITIONCORRECTION", PCC::PccWeight, PCC::PccWeightSysUp, PCC::PccWeightSysDown);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_PARTICLECOMPOSITIONCORRECTIONTABLE_H_

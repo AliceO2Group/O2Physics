@@ -19,9 +19,13 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 
+#include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
 
 #include <array>
+#include <cmath>
+#include <cstddef>
 #include <map>
 #include <numeric>
 #include <string>
@@ -65,6 +69,10 @@ constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "CPR_TrackV0Daughter/SE/";
 constexpr char PrefixTrackV0Me[] = "CPR_TrackV0Daughter/ME/";
+constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
+constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
+constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";
+constexpr char PrefixV0V0NegMe[] = "CPR_V0V0_NegDau/ME/";
 constexpr char PrefixTrackTwoTrackResonanceSe[] = "CPR_TrackResonanceDaughter/SE/";
 constexpr char PrefixTrackTwoTrackResonnaceMe[] = "CPR_TrackResonanceDaughter/ME/";
 constexpr char PrefixTrackCascadeSe[] = "CPR_TrackCascadeBachelor/SE/";
@@ -119,16 +127,16 @@ class CloseTrackRejection
 
     mHistogramRegistry = registry;
 
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kAverage, HistTable), GetHistDesc(kAverage, HistTable), GetHistType(kAverage, HistTable), {specs.at(kAverage)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius0, HistTable), GetHistDesc(kRadius0, HistTable), GetHistType(kRadius0, HistTable), {specs.at(kRadius0)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius1, HistTable), GetHistDesc(kRadius1, HistTable), GetHistType(kRadius1, HistTable), {specs.at(kRadius1)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius2, HistTable), GetHistDesc(kRadius2, HistTable), GetHistType(kRadius2, HistTable), {specs.at(kRadius2)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius3, HistTable), GetHistDesc(kRadius3, HistTable), GetHistType(kRadius3, HistTable), {specs.at(kRadius3)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius4, HistTable), GetHistDesc(kRadius4, HistTable), GetHistType(kRadius4, HistTable), {specs.at(kRadius4)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius5, HistTable), GetHistDesc(kRadius5, HistTable), GetHistType(kRadius5, HistTable), {specs.at(kRadius5)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius6, HistTable), GetHistDesc(kRadius6, HistTable), GetHistType(kRadius6, HistTable), {specs.at(kRadius6)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius7, HistTable), GetHistDesc(kRadius7, HistTable), GetHistType(kRadius7, HistTable), {specs.at(kRadius7)});
-    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius8, HistTable), GetHistDesc(kRadius8, HistTable), GetHistType(kRadius8, HistTable), {specs.at(kRadius8)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kAverage, HistTable), getHistDesc(kAverage, HistTable), getHistType(kAverage, HistTable), {specs.at(kAverage)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius0, HistTable), getHistDesc(kRadius0, HistTable), getHistType(kRadius0, HistTable), {specs.at(kRadius0)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius1, HistTable), getHistDesc(kRadius1, HistTable), getHistType(kRadius1, HistTable), {specs.at(kRadius1)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius2, HistTable), getHistDesc(kRadius2, HistTable), getHistType(kRadius2, HistTable), {specs.at(kRadius2)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius3, HistTable), getHistDesc(kRadius3, HistTable), getHistType(kRadius3, HistTable), {specs.at(kRadius3)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius4, HistTable), getHistDesc(kRadius4, HistTable), getHistType(kRadius4, HistTable), {specs.at(kRadius4)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius5, HistTable), getHistDesc(kRadius5, HistTable), getHistType(kRadius5, HistTable), {specs.at(kRadius5)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius6, HistTable), getHistDesc(kRadius6, HistTable), getHistType(kRadius6, HistTable), {specs.at(kRadius6)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius7, HistTable), getHistDesc(kRadius7, HistTable), getHistType(kRadius7, HistTable), {specs.at(kRadius7)});
+    mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius8, HistTable), getHistDesc(kRadius8, HistTable), getHistType(kRadius8, HistTable), {specs.at(kRadius8)});
   }
 
   void setMagField(float magField) { mMagField = magField; }
@@ -157,18 +165,18 @@ class CloseTrackRejection
   void fill()
   {
     // fill average hist
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kAverage, HistTable)), mDeta, mAverageDphistar);
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kAverage, HistTable)), mDeta, mAverageDphistar);
 
     // fill radii hists
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius0, HistTable)), mDeta, mDphistar.at(0));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius1, HistTable)), mDeta, mDphistar.at(1));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius2, HistTable)), mDeta, mDphistar.at(2));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius3, HistTable)), mDeta, mDphistar.at(3));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius4, HistTable)), mDeta, mDphistar.at(4));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius5, HistTable)), mDeta, mDphistar.at(5));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius6, HistTable)), mDeta, mDphistar.at(6));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius7, HistTable)), mDeta, mDphistar.at(7));
-    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius8, HistTable)), mDeta, mDphistar.at(8));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius0, HistTable)), mDeta, mDphistar.at(0));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius1, HistTable)), mDeta, mDphistar.at(1));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius2, HistTable)), mDeta, mDphistar.at(2));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius3, HistTable)), mDeta, mDphistar.at(3));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius4, HistTable)), mDeta, mDphistar.at(4));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius5, HistTable)), mDeta, mDphistar.at(5));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius6, HistTable)), mDeta, mDphistar.at(6));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius7, HistTable)), mDeta, mDphistar.at(7));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kRadius8, HistTable)), mDeta, mDphistar.at(8));
   }
 
   bool isClosePair() const
@@ -202,8 +210,8 @@ class ClosePairRejectionTrackTrack
   }
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
-  template <typename T1, typename T2>
-  void setPair(const T1& track1, const T2& track2)
+  template <typename T1, typename T2, typename T3>
+  void setPair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/)
   {
     mCtr.compute(track1, track2);
   }
@@ -213,6 +221,50 @@ class ClosePairRejectionTrackTrack
 
  private:
   CloseTrackRejection<prefix> mCtr;
+  bool mIsActivated = true;
+};
+
+template <const char* prefixPosDaus, const char* prefixNegDaus>
+class ClosePairRejectionV0V0
+{
+ public:
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, bool isActivated)
+  {
+    mIsActivated = isActivated;
+    if (mIsActivated) {
+      mCtrPos.init(registry, specs, detaMax, dphistarMax, 1, 1);
+      mCtrNeg.init(registry, specs, detaMax, dphistarMax, 1, 1);
+    }
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrPos.setMagField(magField);
+    mCtrNeg.setMagField(magField);
+  }
+  template <typename T1, typename T2, typename T3>
+  void setPair(T1 const& v01, T2 const& v02, T3 const& /*tracks*/)
+  {
+    auto posDau1 = v01.template posDau_as<T3>();
+    auto negDau1 = v01.template posDau_as<T3>();
+
+    auto posDau2 = v02.template posDau_as<T3>();
+    auto negDau2 = v02.template posDau_as<T3>();
+
+    mCtrPos.compute(posDau1, posDau2);
+    mCtrNeg.compute(negDau1, negDau2);
+  }
+  bool isClosePair() const { return mCtrPos.isClosePair() && mCtrNeg.isClosePair(); }
+  void fill()
+  {
+    mCtrPos.fill();
+    mCtrNeg.fill();
+  }
+  bool isActivated() const { return mIsActivated; }
+
+ private:
+  CloseTrackRejection<prefixPosDaus> mCtrPos;
+  CloseTrackRejection<prefixNegDaus> mCtrNeg;
   bool mIsActivated = true;
 };
 

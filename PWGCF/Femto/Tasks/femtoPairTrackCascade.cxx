@@ -27,10 +27,14 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <string>
@@ -67,7 +71,7 @@ struct FemtoPairTrackCascade {
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
+  Preslice<Tracks> perColTracks = aod::femtobase::stored::collisionId;
 
   // setup for daughters/bachelor
   trackhistmanager::ConfCascadePosDauBinning confPosDauBinning;
@@ -78,13 +82,13 @@ struct FemtoPairTrackCascade {
   cascadebuilder::ConfXiSelection xiSelection;
   cascadehistmanager::ConfXiBinning confXiBinning;
   Partition<Xis> xiPartition = MAKE_CASCADE_PARTITION(xiSelection);
-  Preslice<Xis> perColXis = aod::femtobase::stored::fColId;
+  Preslice<Xis> perColXis = aod::femtobase::stored::collisionId;
 
   // setup omegas
   cascadebuilder::ConfOmegaSelection omegaSelection;
   cascadehistmanager::ConfOmegaBinning confOmegaBinning;
   Partition<Omegas> omegaPartition = MAKE_CASCADE_PARTITION(omegaSelection);
-  Preslice<Omegas> perColOmegas = aod::femtobase::stored::fColId;
+  Preslice<Omegas> perColOmegas = aod::femtobase::stored::collisionId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;

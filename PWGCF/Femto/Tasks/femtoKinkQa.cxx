@@ -53,6 +53,7 @@ struct FemtoKinkQa {
 
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
+  colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // using Collisions = o2::soa::Join<FUCols, FUColPos, FUColMults, FUColCents>;
   using Collisions = Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
@@ -71,7 +72,7 @@ struct FemtoKinkQa {
   kinkbuilder::ConfSigmaSelection1 confSigmaSelection;
 
   Partition<Sigmas> sigmaPartition = MAKE_SIGMA_PARTITION(confSigmaSelection);
-  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::fColId;
+  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::collisionId;
 
   kinkhistmanager::ConfSigmaBinning1 confSigmaBinning;
   kinkhistmanager::ConfSigmaQaBinning1 confSigmaQaBinning;
@@ -95,7 +96,7 @@ struct FemtoKinkQa {
 
     sigmaHistManager.init(&hRegistry, sigmaHistSpec, chaDauHistSpec);
 
-    auto collisionHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+    auto collisionHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init(&hRegistry, collisionHistSpec);
   };
 
@@ -103,7 +104,7 @@ struct FemtoKinkQa {
   void processSigma(FilteredCollision const& col, Sigmas const& /*sigmas*/, Tracks const& tracks)
   {
     colHistManager.fill(col);
-    auto sigmaSlice = sigmaPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto sigmaSlice = sigmaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& sigma : sigmaSlice) {
       sigmaHistManager.fill(sigma, tracks);
     }

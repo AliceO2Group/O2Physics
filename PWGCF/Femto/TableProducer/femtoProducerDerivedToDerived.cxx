@@ -13,14 +13,11 @@
 /// \brief Tasks that produces the femto tables from derived data
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include "PWGCF/Femto/Core/cascadeBuilder.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
-#include "PWGCF/Femto/Core/kinkBuilder.h"
-#include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
-#include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
+#include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisHelpers.h"
@@ -70,7 +67,7 @@ struct FemtoProducerDerivedToDerived {
 
   Partition<Tracks> trackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
   Partition<Tracks> trackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
-  Preslice<Tracks> perColTracks = femtobase::stored::fColId;
+  Preslice<Tracks> perColTracks = femtobase::stored::collisionId;
 
   // v0 builder
   v0builder::V0BuilderDerivedToDerived v0Builder;
@@ -79,11 +76,11 @@ struct FemtoProducerDerivedToDerived {
 
   v0builder::ConfLambdaSelection1 lambdaSelection1;
   Partition<Lambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(lambdaSelection1);
-  Preslice<Lambdas> perColLambdas = femtobase::stored::fColId;
+  Preslice<Lambdas> perColLambdas = femtobase::stored::collisionId;
 
   v0builder::ConfK0shortSelection1 k0shortSelection1;
   Partition<K0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection1);
-  Preslice<K0shorts> perColK0shorts = femtobase::stored::fColId;
+  Preslice<K0shorts> perColK0shorts = femtobase::stored::collisionId;
 
   std::unordered_map<int64_t, int64_t>
     indexMapTracks; // for mapping tracks to lambdas, cascades and resonances

@@ -168,15 +168,6 @@ struct HfTaskOmegac0ToOmegapi {
     registry.get<THnSparse>(HIST("hReco"))->Sumw2();
   }
 
-  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
-  /// \param candidate is candidate
-  /// \return centrality/multiplicity percentile of the collision
-  template <typename Coll>
-  float evaluateCentralityColl(const Coll& collision)
-  {
-    return o2::hf_centrality::getCentralityColl<Coll>(collision);
-  }
-
   template <bool ApplyMl, typename CandType>
   void processData(const CandType& candidates)
   {
@@ -214,7 +205,7 @@ struct HfTaskOmegac0ToOmegapi {
           continue;
         }
 
-        float const cent = evaluateCentralityColl(collision);
+        float const cent = o2::hf_centrality::getCentralityColl(collision);
 
         if constexpr (ApplyMl) {
           registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(),
@@ -283,7 +274,7 @@ struct HfTaskOmegac0ToOmegapi {
 
       auto collision = candidate.template collision_as<CollisionsWithMcLabels>();
       uint16_t const numPvContributors = collision.numContrib();
-      float const mcCent = evaluateCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+      float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
 
       if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
@@ -309,7 +300,7 @@ struct HfTaskOmegac0ToOmegapi {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
 
-      float const mcCent = evaluateCentralityColl(mcCollision);
+      float const mcCent = o2::hf_centrality::getCentralityColl(mcCollision);
 
       if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hMcGen"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt, mcCent, maxNumContrib);

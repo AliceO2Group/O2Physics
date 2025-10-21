@@ -50,7 +50,10 @@ struct JetOutlierQATask {
 
   HistogramRegistry registry;
 
-  Preslice<aod::JetTracks> perCol = aod::jtrack::collisionId;
+  using JetParticlesWithOriginal = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
+
+  Preslice<aod::JetTracks> perColTrack = aod::jtrack::collisionId;
+  Preslice<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>> perColParticle = aod::jmccollision::mcCollisionId;
   Preslice<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights>> perColJets = aod::jet::collisionId;
   Preslice<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>> perColJetsMatched = aod::jet::collisionId;
 
@@ -185,19 +188,43 @@ struct JetOutlierQATask {
       registry.add("h_track_phi_accepted", "track phi accepted;#varphi_{track} (rad);entries", {HistType::kTH1F, {{160, -1.0, 7.0}}});
       registry.add("h_track_pt_eta_accepted", "track pt vs eta accepted;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{300, 0, 300}, {100, -5, 5}}});
       registry.add("h_track_pt_phi_accepted", "track pt vs phi accepted;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{300, 0, 300}, {160, -1.0, 7.0}}});
-      // track checks based on collisions/particle association
+      registry.add("h_track_pt_accepted_no_JJ_outlier", "track pT with no JJ outlier", {HistType::kTH1F, {{300, 0, 300}}});
+      registry.add("h_track_pt_eta_accepted_no_JJ_outlier", "track pT vs eta with no JJ outlier;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{300, 0, 300}, {100, -5, 5}}});
+      registry.add("h_track_pt_phi_accepted_no_JJ_outlier", "track pT vs phi with no JJ outlier;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{300, 0, 300}, {160, -1.0, 7.0}}});
+      registry.add("h_track_pt_with_JJ_outlier", "track pT with JJ outlier", {HistType::kTH1F, {{300, 0, 300}}});
+      registry.add("h_track_pt_eta_with_JJ_outlier", "track pT vs eta with JJ outlier;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{300, 0, 300}, {100, -5, 5}}});
+      registry.add("h_track_pt_phi_with_JJ_outlier", "track pT vs phi with JJ outlier;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{300, 0, 300}, {160, -1.0, 7.0}}});
+      registry.add("h_track_pt_with_MB_outlier", "track pT with MB outlier", {HistType::kTH1F, {{300, 0, 300}}});
+      registry.add("h_track_pt_eta_with_MB_outlier", "track pT vs eta with MB outlier;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{300, 0, 300}, {100, -5, 5}}});
+      registry.add("h_track_pt_phi_with_MB_outlier", "track pT vs phi with MB outlier;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{300, 0, 300}, {160, -1.0, 7.0}}});
+
       registry.add("h_track_pt_no_collision", "track pt no collision;p_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0, 300}}});
       registry.add("h_track_pt_collision", "track pt collision;p_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0, 300}}});
       registry.add("h2_track_pt_pt_hat_no_particle", "track pt vs pt hat no particle;p_{T,track} (GeV/#it{c});#hat{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{300, 0, 300}, {600, 0, 600}}});
       registry.add("h2_track_pt_pt_hat_particle", "track pt vs pt hat particle;p_{T,track} (GeV/#it{c});#hat{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{300, 0, 300}, {600, 0, 600}}});
 
-      registry.add("h_track_pt_outlier", "weight track pt", {HistType::kTH1F, {{200, 0., 200.}}});
-      registry.add("h2_pt_hat_track_pt", "track; #hat{#it{p}_{T}} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{600, 0, 600}, {150, 0, 300}}});
-      registry.add("h2_pt_hat_track_pt_outlier", "track; #hat{#it{p}_{T}} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{600, 0, 600}, {150, 0, 300}}});
+      registry.add("h_track_pt_outlier", "weight track pt", {HistType::kTH1F, {{300, 0, 300}}});
+      registry.add("h2_pt_hat_track_pt", "track; #hat{#it{p}_{T}} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{600, 0, 600}, {300, 0, 300}}});
+      registry.add("h2_pt_hat_track_pt_outlier", "track; #hat{#it{p}_{T}} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{600, 0, 600}, {300, 0, 300}}});
       registry.add("h2_neighbour_pt_hat_outlier", "neighbour; distance from collision; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH2F, {{15, -7.5, 7.5}, {600, 0, 600}}});
       registry.add("h2_neighbour_track_pt_outlier", "neighbour; distance from collision; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{15, -7.5, 7.5}, {200, 0, 100}}});
       registry.add("h2_neighbour_pt_hat_all", "neighbour; distance from collision; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH2F, {{15, -7.5, 7.5}, {600, 0, 600}}});
       registry.add("h2_neighbour_track_pt_all", "neighbour; distance from collision; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{15, -7.5, 7.5}, {200, 0, 100}}});
+
+      registry.add("h_track_pt_outlier_same_collision", "weight track pt same collision", {HistType::kTH1F, {{300, 0, 300}}});
+      registry.add("h_track_pt_outlier_different_collision_JJ", "weight track pt different jet-jet collision", {HistType::kTH1F, {{300, 0, 300}}});
+      registry.add("h_track_pt_outlier_different_collision_MB", "weight track pt different MB collision", {HistType::kTH1F, {{300, 0, 300}}});
+
+      registry.add("h2_outlier_event_Ntracks_different_selected_JJ", "number of selected tracks from different jet-jet events", {HistType::kTH2F, {{600, 0, 600}, {200, 0, 200}}});
+      registry.add("h2_outlier_event_Ntracks_different_selected_MB", "number of selected tracks from different MB events", {HistType::kTH2F, {{600, 0, 600}, {200, 0, 200}}});
+      registry.add("h2_outlier_event_Ntracks_same_selected_JJ", "number of selected tracks from same jet-jet events", {HistType::kTH2F, {{600, 0, 600}, {200, 0, 200}}});
+      registry.add("h2_outlier_event_tracks_frac_different_JJ", "fraction of tracks from different jet-jet events", {HistType::kTH2F, {{600, 0, 600}, {100, 0, 1}}});
+      registry.add("h2_outlier_event_tracks_frac_different_MB", "fraction of tracks from different MB events", {HistType::kTH2F, {{600, 0, 600}, {100, 0, 1}}});
+      registry.add("h2_outlier_event_tracks_frac_different_selected_JJ", "fraction of selected tracks from different jet-jet events", {HistType::kTH2F, {{600, 0, 600}, {100, 0, 1}}});
+      registry.add("h2_outlier_event_tracks_frac_different_selected_MB", "fraction of selected tracks from different MB events", {HistType::kTH2F, {{600, 0, 600}, {100, 0, 1}}});
+      registry.add("h2_outlier_collision_ID_difference", "difference in collision ID between outlier collision and analysed collision", {HistType::kTH2F, {{600, 0, 600}, {200, -100, 100}}});
+      registry.add("h_DeltaZ_Outlier", "Delta Z between outlier collision and analysed collision", {HistType::kTH1F, {{1200, -30, 30}}});
+      registry.add("h2_DeltaZ_Outlier_difference", "Delta Z between outlier collision and analysed collision vs difference in collision ID", {HistType::kTH2F, {{1200, -30, 30}, {200, -100, 100}}});
     }
   }
 
@@ -458,8 +485,10 @@ struct JetOutlierQATask {
   PROCESS_SWITCH(JetOutlierQATask, processCollisionsBC, "jet finder QA outliers", false);
 
   void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs>> const& collisions,
+                       soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
                        aod::JetMcCollisions const& collisionsMC,
-                       aod::JetTracksMCD const& tracks)
+                       aod::JetTracksMCD const& tracks,
+                       JetParticlesWithOriginal const&)
   {
     //
     // track-based outlier checks
@@ -501,8 +530,10 @@ struct JetOutlierQATask {
       }
       float weight = collision.weight();
       float pTHat = collision.mcCollision().ptHard();
-      const auto tracksColl = tracks.sliceBy(perCol, collision.globalIndex());
+      bool isOutlierEventDifferentJJCollision = false;
+      bool isOutlierEventDifferentMBCollision = false;
 
+      const auto tracksColl = tracks.sliceBy(perColTrack, collision.globalIndex());
       // fill track histograms for all collisions
       for (auto const& track : tracksColl) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -525,10 +556,9 @@ struct JetOutlierQATask {
         } else {
           registry.fill(HIST("h2_track_pt_pt_hat_particle"), track.pt(), collision.mcCollision().ptHard(), weight);
         }
-
         // check outlier tracks and neighbouring collisions
         registry.fill(HIST("h2_pt_hat_track_pt"), pTHat, track.pt());
-        if (track.pt() > 1.5 * pTHat) { // high weight outlier track
+        if (track.pt() > pTHatMaxMCDOutlier * pTHat) { // high weight outlier track
           registry.fill(HIST("h_track_pt_outlier"), track.pt());
           registry.fill(HIST("h2_pt_hat_track_pt_outlier"), pTHat, track.pt());
           for (auto const& collisionOutlier : collisions) { // find collisions closeby
@@ -539,6 +569,86 @@ struct JetOutlierQATask {
               registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
               registry.fill(HIST("h2_neighbour_track_pt_outlier"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);
             }
+          }
+          // now match tracks to their MC particle, check the MC collision ID of this particle, and
+          // check what fraction of tracks in this event are associated to this MC collision
+          int nMBdifferent = 0;
+          int nMBdifferentSelected = 0;
+          int nJJdifferent = 0;
+          int nJJdifferentSelected = 0;
+          int nJJsame = 0;
+          int nJJsameSelected = 0;
+          int mcCollisionIDcoll = collision.mcCollisionId(); // Get the corresponding MC collision ID from the reco collision
+          // LOG(info) << "--- Loop over tracks in outlier event with pT/pThat = " << track.pt() / pTHat << "---";
+          // LOG(info) << "N tracks in outlier event = " << tracksColl.size() << " pTHat = " << pTHat << " collisionID = " << collision.globalIndex() << " mcCollisionID = " << collision.mcCollisionId();
+          for (auto const& trackOutlier : tracksColl) {
+            if (!trackOutlier.has_mcParticle()) {
+              continue;
+            }
+            bool isTrackSelected = false;
+            if (jetderiveddatautilities::selectTrack(trackOutlier, trackSelection)) {
+              isTrackSelected = true;
+            }
+            auto mcParticle = trackOutlier.mcParticle_as<JetParticlesWithOriginal>();
+            auto collisionMC = collisionsMC.sliceBy(perColParticle, mcParticle.mcCollisionId());
+            if (collisionMC.size() == 0) {
+              LOG(info) << "no collision found for mcCollisionID = " << mcParticle.mcCollisionId();
+              continue;
+            }
+            int mcCollisionIDtrack = mcParticle.mcCollisionId(); // Get the corresponding MC collision ID
+            int subGenID = collisionMC.begin().subGeneratorId();
+            if (mcCollisionIDtrack == mcCollisionIDcoll) {
+              nJJsame++;
+              if (isTrackSelected) {
+                registry.fill(HIST("h_track_pt_outlier_same_collision"), trackOutlier.pt());
+                nJJsameSelected++;
+              }
+            } else {
+              if (subGenID == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) { // MB-gap
+                nMBdifferent++;
+                if (isTrackSelected) {
+                  registry.fill(HIST("h_track_pt_outlier_different_collision_MB"), trackOutlier.pt());
+                  nMBdifferentSelected++;
+                }
+              } else { // jet-jet
+                nJJdifferent++;
+                if (isTrackSelected) {
+                  registry.fill(HIST("h_track_pt_outlier_different_collision_JJ"), trackOutlier.pt());
+                  nJJdifferentSelected++;
+                }
+              }
+            }
+          }
+          // LOG(info) << "nJJsame = " << nJJsame << " nJJdifferent = " << nJJdifferent << " nMBdifferent = " << nMBdifferent;
+          // LOG(info) << "nJJsameSelected = " << nJJsameSelected << " nJJdifferentSelected = " << nJJdifferentSelected << " nMBdifferentSelected = " << nMBdifferentSelected;
+          registry.fill(HIST("h2_outlier_event_Ntracks_different_selected_JJ"), pTHat, nJJdifferentSelected);
+          registry.fill(HIST("h2_outlier_event_Ntracks_different_selected_MB"), pTHat, nMBdifferentSelected);
+          registry.fill(HIST("h2_outlier_event_Ntracks_same_selected_JJ"), pTHat, nJJsameSelected);
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_MB"), pTHat, float(nMBdifferentSelected) / float(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_JJ"), pTHat, float(nJJdifferent) / float(nJJdifferent + nJJsame + nMBdifferent));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_MB"), pTHat, float(nMBdifferent) / float(nJJdifferent + nJJsame + nMBdifferent));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_JJ"), pTHat, float(nJJdifferentSelected) / float(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
+          registry.fill(HIST("h2_outlier_event_tracks_frac_different_selected_MB"), pTHat, float(nMBdifferentSelected) / float(nJJdifferentSelected + nJJsameSelected + nMBdifferentSelected));
+          // now check where outlier comes from
+          auto mcParticleOutlier = track.mcParticle_as<JetParticlesWithOriginal>();
+          auto collisionMCOutlier = collisionsMC.sliceBy(perColParticle, mcParticleOutlier.mcCollisionId());
+          if (collisionMCOutlier.size() != 1) {
+            LOG(info) << "size of collision outlier not expected";
+            return;
+          }
+          int mcCollisionIDOutlier = mcParticleOutlier.mcCollisionId();
+          int subGenIDOutlier = collisionMCOutlier.begin().subGeneratorId();
+          int outlierCollisionIDDifference = mcCollisionIDOutlier - mcCollisionIDcoll;
+          // LOG(info) <<"outlier comes from " << (mcCollisionIDOutlier == mcCollisionIDcoll ? "same" : "different") << " event which is a " << (subGenIDOutlier == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap ? " MB-gap" : " jet-jet") << " collision with mcCollisionID = " << mcCollisionIDOutlier;
+          registry.fill(HIST("h2_outlier_collision_ID_difference"), pTHat, float(outlierCollisionIDDifference));
+          // if outlier comes from different collision, check which type and set flags
+          if (mcCollisionIDOutlier != mcCollisionIDcoll && subGenIDOutlier != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+            isOutlierEventDifferentJJCollision = true;
+            float deltaZ = collisionMCOutlier.begin().posZ() - collision.mcCollision().posZ();
+            registry.fill(HIST("h_DeltaZ_Outlier"), deltaZ);
+            registry.fill(HIST("h2_DeltaZ_Outlier_difference"), deltaZ, float(outlierCollisionIDDifference));
+          } else if (mcCollisionIDOutlier != mcCollisionIDcoll && subGenIDOutlier == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+            isOutlierEventDifferentMBCollision = true;
           }
         }
         // all
@@ -579,6 +689,20 @@ struct JetOutlierQATask {
         registry.fill(HIST("h_track_phi_accepted"), track.phi(), weight);
         registry.fill(HIST("h_track_pt_eta_accepted"), track.pt(), track.eta(), weight);
         registry.fill(HIST("h_track_pt_phi_accepted"), track.pt(), track.phi(), weight);
+        if (!isOutlierEventDifferentJJCollision) {
+          registry.fill(HIST("h_track_pt_accepted_no_JJ_outlier"), track.pt(), weight);
+          registry.fill(HIST("h_track_pt_eta_accepted_no_JJ_outlier"), track.pt(), track.eta(), weight);
+          registry.fill(HIST("h_track_pt_phi_accepted_no_JJ_outlier"), track.pt(), track.phi(), weight);
+        } else {
+          registry.fill(HIST("h_track_pt_with_JJ_outlier"), track.pt(), weight);
+          registry.fill(HIST("h_track_pt_eta_with_JJ_outlier"), track.pt(), track.eta(), weight);
+          registry.fill(HIST("h_track_pt_phi_with_JJ_outlier"), track.pt(), track.phi(), weight);
+        }
+        if (isOutlierEventDifferentMBCollision) {
+          registry.fill(HIST("h_track_pt_with_MB_outlier"), track.pt(), weight);
+          registry.fill(HIST("h_track_pt_eta_with_MB_outlier"), track.pt(), track.eta(), weight);
+          registry.fill(HIST("h_track_pt_phi_with_MB_outlier"), track.pt(), track.phi(), weight);
+        }
       }
     }
   }

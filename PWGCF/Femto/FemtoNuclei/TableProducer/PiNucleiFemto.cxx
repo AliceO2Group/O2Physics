@@ -947,35 +947,8 @@ struct PiNucleiFemto {
   void fillTable(const PiNucandidate& piNucand, const Tcoll& collision)
   {
     mOutputDataTable(
-      piNucand.recoPtNu(),
-      piNucand.recoEtaNu(),
-      piNucand.recoPhiNu(),
-      piNucand.recoPtPi(),
-      piNucand.recoEtaPi(),
-      piNucand.recoPhiPi(),
-      piNucand.dcaxyNu,
-      piNucand.dcazNu,
-      piNucand.dcaxyPi,
-      piNucand.dcazPi,
-      piNucand.tpcSignalNu,
-      piNucand.momNuTPC,
-      piNucand.tpcSignalPi,
-      piNucand.momPiTPC,
-      piNucand.nTPCClustersNu,
-      piNucand.nSigmaNu,
-      piNucand.nSigmaPi,
-      piNucand.chi2TPCNu,
-      piNucand.chi2TPCPi,
-      piNucand.massTOFNu,
-      piNucand.massTOFPi,
-      piNucand.pidTrkNu,
-      piNucand.pidTrkPi,
-      piNucand.itsClSizeNu,
-      piNucand.itsClSizePi,
-      piNucand.sharedClustersNu,
-      piNucand.sharedClustersPi,
-      piNucand.isBkgUS,
-      piNucand.isBkgEM);
+      piNucand.trackIDPi,
+      piNucand.trackIDNu);
     if (settingFillMultiplicity) {
       mOutputMultiplicityTable(
         collision.globalIndex(),

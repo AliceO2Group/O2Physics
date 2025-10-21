@@ -280,10 +280,10 @@ struct JetTaggerHFTask {
       if (jet.pt() >= jetpTMin) {
         if (scoreML[jet.globalIndex()] < dbMin) {
           dbRange = 0.5; // underflow
-        } else if (scoreML[jet.globalIndex()] >= dbMax) {
-          dbRange = 2.5; // overflow
-        } else {
+        } else if (scoreML[jet.globalIndex()] < dbMax) {
           dbRange = 1.5; // in range
+        } else {
+          dbRange = 2.5; // overflow
         }
         registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
         if constexpr (isMC) {

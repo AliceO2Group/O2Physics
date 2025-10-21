@@ -213,7 +213,7 @@ struct skimmerPrimaryMuon {
     return true;
   }
 
-  template <bool withMFTCov, typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack, typename TMFTTracksCov>
+  template <bool isMC, bool withMFTCov, typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack, typename TMFTTracksCov>
   void fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TMFTTracksCov const& mftCovs, const bool isAmbiguous)
   {
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
@@ -284,8 +284,15 @@ struct skimmerPrimaryMuon {
         return;
       }
 
-      const auto& mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
-      const auto& mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
+      auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
+      auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
+
+      if constexpr (isMC) {
+        if (!mfttrack.has_mcParticle()) {
+          return;
+        }
+      }
+
       nClustersMFT = mfttrack.nClusters();
       mftClusterSizesAndTrackFlags = mfttrack.mftClusterSizesAndTrackFlags();
       ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
@@ -311,12 +318,13 @@ struct skimmerPrimaryMuon {
       pDCA = mchtrack.p() * dcaXY_Matched;
 
       if (refitGlobalMuon) {
-        eta = mfttrack.eta();
+        // eta = mfttrack.eta();
         // phi = mfttrack.phi();
         // o2::math_utils::bringTo02Pi(phi);
-        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        eta = propmuonAtDCA.getEta();
         phi = propmuonAtDCA.getPhi();
         o2::math_utils::bringTo02Pi(phi);
+        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
 
         // x = mfttrack.x();
         // y = mfttrack.y();
@@ -509,7 +517,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, false);
+        fillFwdTrackTable<false, false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, false);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -548,7 +556,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<false, false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -591,7 +599,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<true, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, mftCovs, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<false, true, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, mftCovs, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -626,7 +634,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, false);
+        fillFwdTrackTable<false, false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, false);
       } // end of fwdtrack loop
     } // end of collision loop
     map_mfttrackcovs.clear();
@@ -666,7 +674,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<false, false, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, nullptr, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -685,13 +693,13 @@ struct skimmerPrimaryMuon {
 
     std::unordered_map<int64_t, bool> mapAmb; // fwdtrack.globalIndex() -> bool isAmb;
     for (const auto& fwdtrack : fwdtracks) {
-      const auto& fwdtrackIdsPerFwdTrack = fwdtrackIndices.sliceBy(fwdtrackIndicesPerFwdTrack, fwdtrack.globalIndex());
+      auto fwdtrackIdsPerFwdTrack = fwdtrackIndices.sliceBy(fwdtrackIndicesPerFwdTrack, fwdtrack.globalIndex());
       mapAmb[fwdtrack.globalIndex()] = fwdtrackIdsPerFwdTrack.size() > 1;
       // LOGF(info, "fwdtrack.globalIndex() = %d, ntimes = %d, isAmbiguous = %d", fwdtrack.globalIndex(), fwdtrackIdsPerFwdTrack.size(), mapAmb[fwdtrack.globalIndex()]);
     } // end of fwdtrack loop
 
     for (const auto& collision : collisions) {
-      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (!collision.isSelected()) {
         continue;
@@ -700,9 +708,9 @@ struct skimmerPrimaryMuon {
         continue;
       }
 
-      const auto& fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
-        const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
@@ -710,7 +718,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<true, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, mftCovs, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<false, true, MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, mftCovs, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -725,7 +733,7 @@ struct skimmerPrimaryMuon {
     findBestMatchPerMCHMID(fwdtracks);
 
     for (const auto& collision : collisions) {
-      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (!collision.isSelected()) {
         continue;
@@ -734,7 +742,7 @@ struct skimmerPrimaryMuon {
         continue;
       }
 
-      const auto& fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
+      auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& fwdtrack : fwdtracks_per_coll) {
         if (!fwdtrack.has_mcParticle()) {
           continue;
@@ -746,7 +754,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<false, MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, nullptr, false);
+        fillFwdTrackTable<true, false, MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, nullptr, false);
       } // end of fwdtrack loop
     } // end of collision loop
     map_mfttrackcovs.clear();
@@ -761,13 +769,13 @@ struct skimmerPrimaryMuon {
 
     std::unordered_map<int64_t, bool> mapAmb; // fwdtrack.globalIndex() -> bool isAmb;
     for (const auto& fwdtrack : fwdtracks) {
-      const auto& fwdtrackIdsPerFwdTrack = fwdtrackIndices.sliceBy(fwdtrackIndicesPerFwdTrack, fwdtrack.globalIndex());
+      auto fwdtrackIdsPerFwdTrack = fwdtrackIndices.sliceBy(fwdtrackIndicesPerFwdTrack, fwdtrack.globalIndex());
       mapAmb[fwdtrack.globalIndex()] = fwdtrackIdsPerFwdTrack.size() > 1;
       // LOGF(info, "fwdtrack.globalIndex() = %d, ntimes = %d, isAmbiguous = %d", fwdtrack.globalIndex(), fwdtrackIdsPerFwdTrack.size(), mapAmb[fwdtrack.globalIndex()]);
     } // end of fwdtrack loop
 
     for (const auto& collision : collisions) {
-      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (!collision.isSelected()) {
         continue;
@@ -776,9 +784,9 @@ struct skimmerPrimaryMuon {
         continue;
       }
 
-      const auto& fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
-        const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracksMC>();
+        auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracksMC>();
         if (!fwdtrack.has_mcParticle()) {
           continue;
         }
@@ -789,7 +797,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<false, MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, nullptr, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<true, false, MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, nullptr, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -808,13 +816,13 @@ struct skimmerPrimaryMuon {
 
     std::unordered_map<int64_t, bool> mapAmb; // fwdtrack.globalIndex() -> bool isAmb;
     for (const auto& fwdtrack : fwdtracks) {
-      const auto& fwdtrackIdsPerFwdTrack = fwdtrackIndices.sliceBy(fwdtrackIndicesPerFwdTrack, fwdtrack.globalIndex());
+      auto fwdtrackIdsPerFwdTrack = fwdtrackIndices.sliceBy(fwdtrackIndicesPerFwdTrack, fwdtrack.globalIndex());
       mapAmb[fwdtrack.globalIndex()] = fwdtrackIdsPerFwdTrack.size() > 1;
       // LOGF(info, "fwdtrack.globalIndex() = %d, ntimes = %d, isAmbiguous = %d", fwdtrack.globalIndex(), fwdtrackIdsPerFwdTrack.size(), mapAmb[fwdtrack.globalIndex()]);
     } // end of fwdtrack loop
 
     for (const auto& collision : collisions) {
-      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (!collision.isSelected()) {
         continue;
@@ -823,9 +831,9 @@ struct skimmerPrimaryMuon {
         continue;
       }
 
-      const auto& fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
-        const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracksMC>();
+        auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracksMC>();
         if (!fwdtrack.has_mcParticle()) {
           continue;
         }
@@ -836,7 +844,7 @@ struct skimmerPrimaryMuon {
           continue;
         }
 
-        fillFwdTrackTable<true, MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, mftCovs, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<true, true, MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, mftCovs, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
