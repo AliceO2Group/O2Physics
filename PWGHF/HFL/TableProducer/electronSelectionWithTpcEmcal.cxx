@@ -381,7 +381,7 @@ struct HfElectronSelectionWithTpcEmcal {
       return;
     }
 
-    registry.fill(HIST("hNevents"), static_cast<int>(emcalRegion));
+    registry.fill(HIST("hNevents"), emcalRegion.value);
 
     // skip events with no clusters
     if (emcClusters.size() == 0 && skipNoEmcClusters) {
