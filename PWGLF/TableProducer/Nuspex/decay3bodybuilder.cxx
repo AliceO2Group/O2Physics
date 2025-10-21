@@ -195,6 +195,7 @@ struct decay3bodyBuilder {
     Configurable<bool> selectPVPosZ3bodyMixing{"selectPVPosZ3bodyMixing", true, "Select same pvPosZ events in case of 3body mixing"};
     Configurable<float> maxDeltaPVPosZ3bodyMixing{"maxDeltaPVPosZ3bodyMixing", 1., "max difference between PV z position in case of 3body mixing"};
     // SVertexer selections
+    Configurable<bool> doApplySVertexerCuts{"doApplySVertexerCuts", false, "Apply SVertexer selections during event mixing"};
     Configurable<float> minPt2V0{"minPt2V0", 0.5, "Min Pt squared of V0"};
     Configurable<float> maxTgl2V0{"maxTgl2V0", 4, "Max tgl squared of V0"};
     Configurable<float> maxDCAXY2ToMeanVertex3bodyV0{"maxDCAXY2ToMeanVertex3bodyV0", 4, "Max DCA XY squared of V0 to mean vertex"};
@@ -737,7 +738,8 @@ struct decay3bodyBuilder {
                                            decay3bodyBuilderOpts.acceptTPCOnly,
                                            decay3bodyBuilderOpts.askOnlyITSMatch,
                                            decay3bodyBuilderOpts.calculateCovariance,
-                                           false /*isEventMixing*/)) {
+                                           false /*isEventMixing*/,
+                                           false /*applySVertexerCuts*/)) {
         continue;
       }
 
@@ -771,6 +773,13 @@ struct decay3bodyBuilder {
         // MC info
         resetMCInfo(this3BodyMCInfo);
         this3BodyMCInfo.isReco = true;
+
+        // set flag if selected reco collision has matched gen collision
+        if (collision.mcCollisionId() >= 0) { // reco collision is matched to gen collision
+          this3BodyMCInfo.survivedEventSel = isGoodCollision[collision.mcCollisionId()];
+        } else {
+          this3BodyMCInfo.survivedEventSel = false; // false if reco collision not matched to gen collision
+        }
 
         // check if daughters have MC particle
         if (!trackProton.has_mcParticle() || !trackPion.has_mcParticle() || !trackDeuteron.has_mcParticle()) {
@@ -1146,7 +1155,8 @@ struct decay3bodyBuilder {
                                         decay3bodyBuilderOpts.acceptTPCOnly,
                                         decay3bodyBuilderOpts.askOnlyITSMatch,
                                         decay3bodyBuilderOpts.calculateCovariance,
-                                        true /*isEventMixing*/)) {
+                                        true, /*isEventMixing*/
+                                        mixingOpts.doApplySVertexerCuts /*applySVertexerCuts*/)) {
       // fill analysis tables with built candidate
       fillAnalysisTables();
       return;
@@ -1215,7 +1225,6 @@ struct decay3bodyBuilder {
     mcInfo.motherPdgCode = -1;
     mcInfo.daughterPrPdgCode = -1, mcInfo.daughterPiPdgCode = -1, mcInfo.daughterDePdgCode = -1;
     mcInfo.isDeuteronPrimary = false;
-    mcInfo.survivedEventSel = false;
     return;
   }
 

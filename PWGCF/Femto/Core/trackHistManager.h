@@ -142,7 +142,6 @@ using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning
 using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
 using ConfV0PosDauBinning = ConfTrackBinning<PrefixV0PosDauBinning>;
 using ConfV0NegDauBinning = ConfTrackBinning<PrefixV0NegDauBinning>;
-using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;

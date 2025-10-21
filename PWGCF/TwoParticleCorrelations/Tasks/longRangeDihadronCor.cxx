@@ -99,6 +99,7 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgDrawEtaPhiDis, bool, false, "draw eta-phi distribution for detectors in used")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -208,6 +209,7 @@ struct LongRangeDihadronCor {
     }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
+    const AxisSpec axisEtaFull{90, -4., 5., "#eta"};
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -281,6 +283,9 @@ struct LongRangeDihadronCor {
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
       registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
       registry.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, axisFit}});
+      if (cfgDrawEtaPhiDis) {
+        registry.add("EtaPhi", "", {HistType::kTH2F, {axisEtaFull, axisPhi}});
+      }
     }
     if (doprocessSameTpcFt0a) {
       registry.add("deltaEta_deltaPhi_same_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
@@ -561,6 +566,9 @@ struct LongRangeDihadronCor {
         } else if (corType == kFT0A) {
           registry.fill(HIST("Trig_hist_TPC_FT0A"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
         }
+        if (cfgDrawEtaPhiDis && corType == kFT0A) {
+          registry.fill(HIST("EtaPhi"), track1.eta(), track1.phi(), eventWeight * triggerWeight);
+        }
       }
 
       std::size_t channelSize = 0;
@@ -577,6 +585,9 @@ struct LongRangeDihadronCor {
         getChannel(ft0, iCh, chanelid, ampl, corType);
         auto phi = getPhiFT0(chanelid, corType);
         auto eta = getEtaFT0(chanelid, corType);
+        if (cfgDrawEtaPhiDis && system == SameEvent) {
+          registry.fill(HIST("EtaPhi"), eta, phi, ampl * eventWeight);
+        }
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - phi, -PIHalf);
         float deltaEta = track1.eta() - eta;
         // fill the right sparse and histograms
@@ -606,19 +617,19 @@ struct LongRangeDihadronCor {
   }
 
   template <CorrelationContainer::CFStep step, typename TFT0s>
-  void fillCorrelationsFT0AFT0C(TFT0s const& ft0, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
-    std::size_t channelASize = ft0.channelA().size();
-    std::size_t channelCSize = ft0.channelC().size();
+    std::size_t channelASize = ft0Col1.channelA().size();
+    std::size_t channelCSize = ft0Col2.channelC().size();
     // loop over all tracks
     for (std::size_t iChA = 0; iChA < channelASize; iChA++) {
 
       int chanelAid = 0;
       float amplA = 0.;
-      getChannel(ft0, iChA, chanelAid, amplA, kFT0A);
+      getChannel(ft0Col1, iChA, chanelAid, amplA, kFT0A);
       auto phiA = getPhiFT0(chanelAid, kFT0A);
       auto etaA = getEtaFT0(chanelAid, kFT0A);
 
@@ -629,7 +640,7 @@ struct LongRangeDihadronCor {
       for (std::size_t iChC = 0; iChC < channelCSize; iChC++) {
         int chanelCid = 0;
         float amplC = 0.;
-        getChannel(ft0, iChC, chanelCid, amplC, kFT0C);
+        getChannel(ft0Col2, iChC, chanelCid, amplC, kFT0C);
         auto phiC = getPhiFT0(chanelCid, kFT0C);
         auto etaC = getEtaFT0(chanelCid, kFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
@@ -983,7 +994,7 @@ struct LongRangeDihadronCor {
 
     sameFt0aFt0c->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
     const auto& ft0 = collision.foundFT0();
-    fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, collision.posZ(), SameEvent, weightCent);
+    fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, ft0, collision.posZ(), SameEvent, weightCent);
   }
   PROCESS_SWITCH(LongRangeDihadronCor, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", false);
 
@@ -1041,8 +1052,9 @@ struct LongRangeDihadronCor {
       float weightCent = 1.0f;
       if (!cfgCentTableUnavailable)
         getCentralityWeight(weightCent, cent1);
-      const auto& ft0 = collision2.foundFT0();
-      fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, collision1.posZ(), MixedEvent, eventWeight * weightCent);
+      const auto& ft0Col1 = collision1.foundFT0();
+      const auto& ft0Col2 = collision2.foundFT0();
+      fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0Col1, ft0Col2, collision1.posZ(), MixedEvent, eventWeight * weightCent);
     }
   }
   PROCESS_SWITCH(LongRangeDihadronCor, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
