@@ -787,11 +787,11 @@ struct HfCorrelatorDsHadrons {
                                 0);
               entryDsHadronRecoInfo(MassDS, true, isDecayChan);
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
+            } // end loop generated particles
+            if (numberOfCorrKaons == 0) {
+              registry.fill(HIST("hDsWoKaons"), numberOfCorrKaons);
             }
-          } // end loop generated particles
-          if (numberOfCorrKaons == 0) {
-            registry.fill(HIST("hDsWoKaons"), numberOfCorrKaons);
-          }
+          } // if statement for Ds selection
         } // end loop generated Ds
       } // end loop reconstructed collision
     } // end loop generated collision
