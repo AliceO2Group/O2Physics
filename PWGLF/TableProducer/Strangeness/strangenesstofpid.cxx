@@ -103,6 +103,7 @@ struct strangenesstofpid {
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<bool> reassociateTracks{"reassociateTracks", true, "if true, reassociate tracks to the collision the V0 or cascade belongs to. Relevant especially at high IR"};
   Configurable<bool> doBCshift{"doBCshift", true, "if true, perform time shift for collisions in different BCs when reassigning"};
+  Configurable<bool> rejectUndefinedTof{"rejectUndefinedTof", true, "if true, reject tracks with TOF signal 0.000f for safety"};
 
   // auxiliary / debug tables as desired
   Configurable<int> calculateV0TOFPIDs{"calculateV0TOFPIDs", -1, "calculate V0TOFPIDs table (0: no, 1: yes, -1: auto)"};
@@ -791,12 +792,15 @@ struct strangenesstofpid {
                             std::abs(pTof.tpcNSigmaPi) < v0Group.qaTPCNSigma &&
                             std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma;
 
+    bool pValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(pTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+    bool nValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(nTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+
     //_____________________________________________________________________________________________
     // Actual calculation
     float velocityPositivePr, velocityPositivePi, lengthPositive;
     velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
 
-    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5) {
+    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5 && pValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
         velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
@@ -872,7 +876,7 @@ struct strangenesstofpid {
     }
     float velocityNegativePr, velocityNegativePi, lengthNegative;
     velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
-    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5) {
+    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5 && nValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
         velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
@@ -1058,9 +1062,13 @@ struct strangenesstofpid {
                               std::abs(nTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma &&
                               std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma;
 
+    bool pValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(pTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+    bool nValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(nTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+    bool bValidTOF = rejectUndefinedTof.value ? static_cast<bool>(std::fabs(bTof.tofSignal)>o2::aod::v0data::kEpsilon) : true;
+
     //_____________________________________________________________________________________________
     // Actual calculation
-    if (pTof.hasTOF && pTof.hasITS) {
+    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5 && pValidTOF) {
       float velocityPositivePr, velocityPositivePi, lengthPositive;
       velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
       if (calculationMethod.value == 0) {
@@ -1149,7 +1157,7 @@ struct strangenesstofpid {
       }
     } // end positive
 
-    if (nTof.hasTOF && nTof.hasITS) {
+    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5 && nValidTOF) {
       float velocityNegativePr, velocityNegativePi, lengthNegative;
       velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1239,7 +1247,7 @@ struct strangenesstofpid {
       }
     } // end negative
 
-    if (bTof.hasTOF && bTof.hasITS) {
+    if (bTof.hasTOF && bTof.hasITS && bTof.tofEvTime > -1e+5 && bValidTOF) {
       float velocityBachelorKa, velocityBachelorPi, lengthBachelor;
       velocityBachelorKa = velocityBachelorPi = lengthBachelor = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
