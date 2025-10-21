@@ -3486,3 +3486,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<qaMatchEff>(cfgc, TaskName{"qa-match-eff"})};
 }
+
