@@ -222,6 +222,7 @@ struct PiNucleiFemto {
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
+  ConfigurableAxis axisTransMass{"axisTransMass", {1000, 0.2, 3.2}, "Binning for mT"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType binningPolicy{{axisVertex, axisCentrality}, true};
   SliceCache cache;
@@ -282,10 +283,10 @@ struct PiNucleiFemto {
      {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"hkStaVsmTVsCent_LS_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
-     {"hkStaVsmTVsCent_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
-     {"hkStaVsmTVsCent_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
-     {"hkStaVsmTVsCent_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_LS_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
      {"hCollIDVsCentEachPion", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
      {"hCollIDVsCentEachDe", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
      {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}},
