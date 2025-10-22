@@ -576,11 +576,7 @@ struct HfFemtoDreamProducer {
         fillTable(1, candidate.isSelLcToPiKP(), outputMlPiKP.at(0), outputMlPiKP.at(1), outputMlPiKP.at(2));
       }
     }
-
-    if (!isTrackFilled) { // FIXME: isTrackFilled is always false here
-      isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
-      // If track filling was successful, fill the collision table
-    }
+    isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
 
     aod::femtodreamcollision::BitMaskType bitTrack = 0;
     if (isTrackFilled) {
