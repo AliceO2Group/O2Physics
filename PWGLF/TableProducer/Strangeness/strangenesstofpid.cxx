@@ -434,7 +434,7 @@ struct strangenesstofpid {
 
     histos.add("h2dTOFSignalPositive", "h2dTOFSignalPositive", kTH2F, {axes.axisTimeLong, axes.axisBCshift});
     histos.add("h2dTOFSignalNegative", "h2dTOFSignalNegative", kTH2F, {axes.axisTimeLong, axes.axisBCshift});
-    
+
     histos.add("h2dTOFSignalCascadePositive", "h2dTOFSignalCascadePositive", kTH2F, {axes.axisTimeLong, axes.axisBCshift});
     histos.add("h2dTOFSignalCascadeNegative", "h2dTOFSignalCascadeNegative", kTH2F, {axes.axisTimeLong, axes.axisBCshift});
     histos.add("h2dTOFSignalCascadeBachelor", "h2dTOFSignalCascadeBachelor", kTH2F, {axes.axisTimeLong, axes.axisBCshift});
