@@ -472,11 +472,11 @@ class TrackSelectorPidBase
   template <typename T>
   bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
   {
-    static constexpr float NSigmaInvalid{-1000.f};
-    static constexpr float PTofRichTElectronMin{0.4f};
-    static constexpr float PTofRichTElectronMax{0.6f};
-    static constexpr float PRichPionBandMin{1.0f};
-    static constexpr float PRichPionBandMax{2.0f};
+    constexpr float NSigmaInvalid{-1000.f};
+    constexpr float PTofRichTElectronMin{0.4f};
+    constexpr float PTofRichTElectronMax{0.6f};
+    constexpr float PRichPionBandMin{1.0f};
+    constexpr float PRichPionBandMax{2.0f};
 
     bool isSelTof = false;
     bool isSelRich = false;
