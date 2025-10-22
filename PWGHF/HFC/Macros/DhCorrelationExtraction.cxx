@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
 
 DhCorrelationExtraction::DhCorrelationExtraction() : // default constructor
                                                      fFileMass(nullptr),
