@@ -18,6 +18,7 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateSkimmingTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 //
@@ -39,116 +40,6 @@
 
 namespace o2::aod
 {
-// Table aliases
-using BcFullInfos = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-
-using TracksWCov = soa::Join<Tracks, TracksCov>;
-using TracksWDca = soa::Join<Tracks, TracksDCA>;
-using TracksWExtra = soa::Join<Tracks, TracksExtra>;
-using TracksWCovDca = soa::Join<Tracks, TracksCov, TracksDCA>;
-using TracksWCovExtra = soa::Join<Tracks, TracksCov, TracksExtra>;
-using TracksWDcaExtra = soa::Join<Tracks, TracksDCA, TracksExtra>;
-using TracksWCovDcaExtra = soa::Join<Tracks, TracksCov, TracksDCA, TracksExtra>;
-
-using TracksWMc = soa::Join<Tracks, McTrackLabels>;
-
-using TracksPidEl = soa::Join<aod::pidTPCFullEl, aod::pidTOFFullEl>;
-using TracksPidMu = soa::Join<aod::pidTPCFullMu, aod::pidTOFFullMu>;
-using TracksPidPi = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>;
-using TracksPidKa = soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>;
-using TracksPidPr = soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>;
-using TracksPidDe = soa::Join<aod::pidTPCFullDe, aod::pidTOFFullDe>;
-
-using TracksPidTinyEl = soa::Join<aod::pidTPCEl, aod::pidTOFEl>;
-using TracksPidTinyMu = soa::Join<aod::pidTPCMu, aod::pidTOFMu>;
-using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
-using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
-using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
-using TracksPidTinyDe = soa::Join<aod::pidTPCDe, aod::pidTOFDe>;
-
-// namespace pid_tpc_tof_utils
-// {
-// /// Function to combine TPC and TOF NSigma (for ML purposes)
-// /// \param tpcNSigma is the (binned) NSigma separation in TPC (if tiny = true)
-// /// \param tofNSigma is the (binned) NSigma separation in TOF (if tiny = true)
-// /// \return Node containing the combined NSigma of TPC and TOF
-// template <bool tiny = false, typename T1>
-// o2::framework::expressions::Node combineNSigma(const T1& tpcNSigma, const T1& tofNSigma)
-// {
-//   float defaultNSigmaTolerance = .1f;
-//   float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
-
-//   if constexpr (tiny) {
-//     auto tpcBinWidth = 1.f * pidtpc_tiny::binning::bin_width;
-//     auto tofBinWidth = 1.f * pidtof_tiny::binning::bin_width;
-
-//     return o2::framework::expressions::ifnode((tpcNSigma * tpcBinWidth > defaultNSigma) && (tofNSigma * tofBinWidth > defaultNSigma), o2::framework::expressions::nsqrt(.5f * tpcNSigma * tpcNSigma * tpcBinWidth * tpcBinWidth + .5f * tofNSigma * tofNSigma * tofBinWidth * tofBinWidth), // TPC and TOF
-//                                               o2::framework::expressions::ifnode(tpcNSigma * tpcBinWidth > defaultNSigma, o2::framework::expressions::nabs(tpcNSigma * tpcBinWidth),                                                                                                        // only TPC
-//                                                                                  o2::framework::expressions::ifnode(tofNSigma * tofBinWidth > defaultNSigma, o2::framework::expressions::nabs(tofNSigma * tofBinWidth),                                                                     // only TOF
-//                                                                                                                     1.f * tofNSigma * tofBinWidth)));                                                                                                                                       // no TPC nor TOF
-//   }
-
-//   return o2::framework::expressions::ifnode((tpcNSigma > defaultNSigma) && (tofNSigma > defaultNSigma), o2::framework::expressions::nsqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma), // TPC and TOF
-//                                             o2::framework::expressions::ifnode(tpcNSigma > defaultNSigma, o2::framework::expressions::nabs(tpcNSigma),                                                // only TPC
-//                                                                                o2::framework::expressions::ifnode(tofNSigma > defaultNSigma, o2::framework::expressions::nabs(tofNSigma),             // only TOF
-//                                                                                                                   1.f * tofNSigma)));                                                                 // no TPC nor TOF
-// }
-// } // namespace pid_tpc_tof_utils
-
-// namespace pid_tpc_tof_full
-// {
-// // Combined TPC and TOF NSigma
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpcTofNSigmaEl, //! Combined NSigma separation with the TPC & TOF detectors for electron
-//                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaEl, o2::aod::pidtof::tofNSigmaEl));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaMu, tpcTofNSigmaMu, //! Combined NSigma separation with the TPC & TOF detectors for muon
-//                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaMu, o2::aod::pidtof::tofNSigmaMu));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPi, tpcTofNSigmaPi, //! Combined NSigma separation with the TPC & TOF detectors for pion
-//                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPi, o2::aod::pidtof::tofNSigmaPi));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpcTofNSigmaKa, //! Combined NSigma separation with the TPC & TOF detectors for kaon
-//                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaKa, o2::aod::pidtof::tofNSigmaKa));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, //! Combined NSigma separation with the TPC & TOF detectors for proton
-//                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPr, o2::aod::pidtof::tofNSigmaPr));
-// } // namespace pid_tpc_tof_full
-
-// namespace pid_tpc_tof_tiny
-// {
-// // Combined binned TPC and TOF NSigma
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpcTofNSigmaEl, //! Combined binned NSigma separation with the TPC & TOF detectors for electron
-//                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreEl, o2::aod::pidtof_tiny::tofNSigmaStoreEl));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaMu, tpcTofNSigmaMu, //! Combined binned NSigma separation with the TPC & TOF detectors for muon
-//                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreMu, o2::aod::pidtof_tiny::tofNSigmaStoreMu));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPi, tpcTofNSigmaPi, //! Combined binned NSigma separation with the TPC & TOF detectors for pion
-//                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStorePi, o2::aod::pidtof_tiny::tofNSigmaStorePi));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpcTofNSigmaKa, //! Combined binned NSigma separation with the TPC & TOF detectors for kaon
-//                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStoreKa, o2::aod::pidtof_tiny::tofNSigmaStoreKa));
-// DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, //! Combined binned NSigma separation with the TPC & TOF detectors for proton
-//                               float, pid_tpc_tof_utils::combineNSigma<true>(o2::aod::pidtpc_tiny::tpcNSigmaStorePr, o2::aod::pidtof_tiny::tofNSigmaStorePr));
-// } // namespace pid_tpc_tof_tiny
-
-// // Extension of per particle tables
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidElExt, TracksPidEl, "PIDELEXT", //! Table of the TPC & TOF Combined NSigma for electron
-//                                 pid_tpc_tof_full::TpcTofNSigmaEl);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidMuExt, TracksPidMu, "PIDMUEXT", //! Table of the TPC & TOF Combined NSigma for muon
-//                                 pid_tpc_tof_full::TpcTofNSigmaMu);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidPiExt, TracksPidPi, "PIDPIEXT", //! Table of the TPC & TOF Combined NSigma for pion
-//                                 pid_tpc_tof_full::TpcTofNSigmaPi);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidKaExt, TracksPidKa, "PIDKAEXT", //! Table of the TPC & TOF Combined NSigma for kaon
-//                                 pid_tpc_tof_full::TpcTofNSigmaKa);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidPrExt, TracksPidPr, "PIDPREXT", //! Table of the TPC & TOF Combined NSigma for proton
-//                                 pid_tpc_tof_full::TpcTofNSigmaPr);
-
-// // Extension of tiny size tables
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyElExt, TracksPidTinyEl, "PIDTINYELEXT", //! Table of the TPC & TOF combined binned NSigma for electron
-//                                 pid_tpc_tof_tiny::TpcTofNSigmaEl);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyMuExt, TracksPidTinyMu, "PIDTINYMUEXT", //! Table of the TPC & TOF combined binned NSigma for muon
-//                                 pid_tpc_tof_tiny::TpcTofNSigmaMu);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyPiExt, TracksPidTinyPi, "PIDTINYPIEXT", //! Table of the TPC & TOF combined binned NSigma for pion
-//                                 pid_tpc_tof_tiny::TpcTofNSigmaPi);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyKaExt, TracksPidTinyKa, "PIDTINYKAEXT", //! Table of the TPC & TOF combined binned NSigma for kaon
-//                                 pid_tpc_tof_tiny::TpcTofNSigmaKa);
-// DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyPrExt, TracksPidTinyPr, "PIDTINYPREXT", //! Table of the TPC & TOF combined binned NSigma for proton
-//                                 pid_tpc_tof_tiny::TpcTofNSigmaPr);
-
 namespace pid_tpc_tof_static_full
 {
 // Combined TPC and TOF NSigma
@@ -967,17 +858,9 @@ using HfCandBplusToJpsi = soa::Join<HfCandBpJPExt, HfCandBpJPDaus>;
 
 namespace hf_cand_casc_lf
 {
-// mapping of decay types
-enum DecayType2Prong { XiczeroOmegaczeroToXiPi = 0,
-                       OmegaczeroToOmegaPi,
-                       OmegaczeroToOmegaK,
-                       N2ProngDecays }; // always keep N2ProngDecays at the end
 // mapping of construct method
 enum ConstructMethod { DcaFitter = 0,
                        KfParticle };
-// mapping of decay types
-enum DecayType3Prong { XicplusToXiPiPi = 0,
-                       N3ProngDecays }; // always keep N3ProngDecays at the end
 } // namespace hf_cand_casc_lf
 
 namespace hf_cand_x

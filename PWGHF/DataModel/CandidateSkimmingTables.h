@@ -375,6 +375,21 @@ enum DecayType {
 };
 } // namespace hf_cand_dstar
 
+namespace hf_cand_casc_lf
+{
+enum DecayType2Prong {
+  XiczeroOmegaczeroToXiPi = 0,
+  OmegaczeroToOmegaPi,
+  OmegaczeroToOmegaK,
+  N2ProngDecays
+}; // always keep N2ProngDecays at the end
+
+enum DecayType3Prong {
+  XicplusToXiPiPi = 0,
+  N3ProngDecays
+}; // always keep N3ProngDecays at the end
+} // namespace hf_cand_casc_lf
+
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATESKIMMINGTABLES_H_
