@@ -17,6 +17,7 @@
 #ifndef COMMON_CORE_TRACKSELECTORPID_H_
 #define COMMON_CORE_TRACKSELECTORPID_H_
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -43,8 +44,8 @@ class TrackSelectorPidBase
   /// Default constructor
   TrackSelectorPidBase() = default;
 
-  static constexpr float NsigmaPidMin = -999.f;
-  static constexpr float NsigmaPidMax = 999.f;
+  static constexpr float NSigmaMinDefault{-999.f};
+  static constexpr float NSigmaMaxDefault{999.f};
 
   /// Conversion operator
   template <uint64_t pdgNew>
@@ -111,10 +112,10 @@ class TrackSelectorPidBase
   /// \param tpcNSigmaCustom  custom TPC nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TPC PID hypothesis for given TPC nσ range
   template <typename T>
-  bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = -999.f)
+  bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = NSigmaMinDefault)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTpcMin < NsigmaPidMin && mNSigmaTpcMax > NsigmaPidMax) {
+    if (mNSigmaTpcMin < NSigmaMinDefault && mNSigmaTpcMax > NSigmaMaxDefault) {
       return true;
     }
 
@@ -137,11 +138,11 @@ class TrackSelectorPidBase
     }
 
     /// use custom TPC nσ, if a valid value is provided
-    if (tpcNSigmaCustom > NsigmaPidMin) {
+    if (tpcNSigmaCustom > NSigmaMinDefault) {
       nSigma = tpcNSigmaCustom;
     }
 
-    if (mNSigmaTpcMinCondTof < NsigmaPidMin && mNSigmaTpcMaxCondTof > NsigmaPidMax) {
+    if (mNSigmaTpcMinCondTof < NSigmaMinDefault && mNSigmaTpcMaxCondTof > NSigmaMaxDefault) {
       conditionalTof = true;
     } else {
       conditionalTof = mNSigmaTpcMinCondTof <= nSigma && nSigma <= mNSigmaTpcMaxCondTof;
@@ -153,7 +154,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpc(const T& track, float tpcNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTpc(const T& track, float tpcNSigmaCustom = NSigmaMinDefault)
   {
     if (!isValidForTpc(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -207,10 +208,10 @@ class TrackSelectorPidBase
   /// \param tofNSigmaCustom  custom TOF nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TOF PID hypothesis for given TOF nσ range
   template <typename T>
-  bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = -999.f)
+  bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = NSigmaMinDefault)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTofMin < NsigmaPidMin && mNSigmaTofMax > NsigmaPidMax) {
+    if (mNSigmaTofMin < NSigmaMinDefault && mNSigmaTofMax > NSigmaMaxDefault) {
       return true;
     }
 
@@ -233,11 +234,11 @@ class TrackSelectorPidBase
     }
 
     /// use custom TOF nσ, if a valid value is provided
-    if (tofNSigmaCustom > NsigmaPidMin) {
+    if (tofNSigmaCustom > NSigmaMinDefault) {
       nSigma = tofNSigmaCustom;
     }
 
-    if (mNSigmaTofMinCondTpc < NsigmaPidMin && mNSigmaTofMaxCondTpc > NsigmaPidMax) {
+    if (mNSigmaTofMinCondTpc < NSigmaMinDefault && mNSigmaTofMaxCondTpc > NSigmaMaxDefault) {
       conditionalTpc = true;
     } else {
       conditionalTpc = mNSigmaTofMinCondTpc <= nSigma && nSigma <= mNSigmaTofMaxCondTpc;
@@ -249,7 +250,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTof(const T& track, float tofNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTof(const T& track, float tofNSigmaCustom = NSigmaMinDefault)
   {
     if (!isValidForTof(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -308,7 +309,7 @@ class TrackSelectorPidBase
   bool isSelectedByRich(const T& track, bool& conditionalTof)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaRichMin < NsigmaPidMin && mNSigmaRichMax > NsigmaPidMax) {
+    if (mNSigmaRichMin < NSigmaMinDefault && mNSigmaRichMax > NSigmaMaxDefault) {
       return true;
     }
 
@@ -328,7 +329,7 @@ class TrackSelectorPidBase
       errorPdg();
     }
 
-    if (mNSigmaRichMinCondTof < NsigmaPidMin && mNSigmaRichMaxCondTof > NsigmaPidMax) {
+    if (mNSigmaRichMinCondTof < NSigmaMinDefault && mNSigmaRichMaxCondTof > NSigmaMaxDefault) {
       conditionalTof = true;
     } else {
       conditionalTof = mNSigmaRichMinCondTof <= nSigma && nSigma <= mNSigmaRichMaxCondTof;
@@ -412,7 +413,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcOrTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTpcOrTof(const T& track, float tpcNSigmaCustom = NSigmaMinDefault, float tofNSigmaCustom = NSigmaMinDefault)
   {
     int pidTpc = statusTpc(track, tpcNSigmaCustom);
     int pidTof = statusTof(track, tofNSigmaCustom);
@@ -433,7 +434,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcAndTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTpcAndTof(const T& track, float tpcNSigmaCustom = NSigmaMinDefault, float tofNSigmaCustom = NSigmaMinDefault)
   {
     int pidTpc = TrackSelectorPID::NotApplicable;
     if (track.hasTPC()) {
@@ -471,11 +472,11 @@ class TrackSelectorPidBase
   template <typename T>
   bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
   {
-    static constexpr float PidNsigmaInvalid = -1000.f;
-    static constexpr float PidTofRichTransitionPMin = 0.4f;
-    static constexpr float PidTofRichTransitionPMax = 0.6f;
-    static constexpr float PidRichPionBandPMin = 1.0f;
-    static constexpr float PidRichPionBandPMax = 2.0f;
+    static constexpr float NSigmaInvalid{-1000.f};
+    static constexpr float PTofRichTElectronMin{0.4f};
+    static constexpr float PTofRichTElectronMax{0.6f};
+    static constexpr float PRichPionBandMin{1.0f};
+    static constexpr float PRichPionBandMax{2.0f};
 
     bool isSelTof = false;
     bool isSelRich = false;
@@ -483,17 +484,17 @@ class TrackSelectorPidBase
     bool hasTof = isValidForTof(track);
     auto nSigmaTofEl = track.tofNSigmaEl();
     auto nSigmaTofPi = track.tofNSigmaPi();
-    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : PidNsigmaInvalid;
-    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : PidNsigmaInvalid;
+    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : NSigmaInvalid;
+    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : NSigmaInvalid;
     auto p = track.p();
 
     // TOF
-    if (useTof && hasTof && (p < PidTofRichTransitionPMax)) {
-      if (p > PidTofRichTransitionPMin && hasRich) {
+    if (useTof && hasTof && (p < PTofRichTElectronMax)) {
+      if (p > PTofRichTElectronMin && hasRich) {
         if ((std::abs(nSigmaTofEl) < mNSigmaTofMax) && (std::abs(nSigmaRichEl) < mNSigmaRichMax)) {
           isSelTof = true; // is selected as electron by TOF and RICH
         }
-      } else if (p <= PidTofRichTransitionPMin) {
+      } else if (p <= PTofRichTElectronMin) {
         if (std::abs(nSigmaTofEl) < mNSigmaTofMax) {
           isSelTof = true; // is selected as electron by TOF
         }
@@ -512,7 +513,7 @@ class TrackSelectorPidBase
       if (std::abs(nSigmaRichEl) < mNSigmaRichMax) {
         isSelRich = true; // is selected as electron by RICH
       }
-      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > PidRichPionBandPMin) && (p < PidRichPionBandPMax)) {
+      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > PRichPionBandMin) && (p < PRichPionBandMax)) {
         isSelRich = false; // is selected as pion by RICH
       }
     } else {
