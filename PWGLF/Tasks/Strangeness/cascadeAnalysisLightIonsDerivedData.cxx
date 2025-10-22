@@ -214,7 +214,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Multiplicity Histograms
       registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {{101, 0.0f, 101.0f}});
       registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
-      registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
+      if (centralityEstimator == Option::kNGlobal) registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+       else registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
 
       // Histograms for xi (data)
       registryData.add("hMassXipos", "hMassXipos", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
@@ -272,7 +273,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Multiplicity Histograms
       registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {{101, 0.0f, 101.0f}});
       registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
-      registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
+      if (centralityEstimator == Option::kNGlobal) registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+       else registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisMult});
 
       // Histograms for xi (mc)
       registryMC.add("hMassXipos_truerec", "hMassXipos_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
@@ -643,10 +645,10 @@ struct CascadeAnalysisLightIonsDerivedData {
   void fillGeneratedEventProperties(TMCCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
-    for (auto const& mcCollisions : mcCollisions) {
+    for (auto const& mcCollision : mcCollisions) {
       // event selections
       if (applyVtxZ && std::fabs(mcCollisions.posZ()) > zVtx)
-        return;
+        continue;
 
       registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
@@ -1056,7 +1058,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       // event selections
       if (applyVtxZ && std::abs(mcCollision.posZ()) > zVtx)
-        return;
+        continue;
 
       // Store the Zvtx
       registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
