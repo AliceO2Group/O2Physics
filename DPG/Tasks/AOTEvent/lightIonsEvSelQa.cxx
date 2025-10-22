@@ -651,6 +651,10 @@ struct LightIonsEvSelQa {
     histos.add("MCsel8/hMCdataFoundBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("MCsel8/hMCdataFoundBcDiffVsMult_vertTRDmatched", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("MCsel8/hMCdataFoundBcDiffVsMult_vertTOFmatched", "", kTH2F, {axisNcontrib, axisBcDiff});
+
+    histos.add("MCnonTVX/hMCdataVzDiff", "", kTH2F, {axisNcontrib, axisVtxZdiff});
+    histos.add("MCnonTVX/hMCdataBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("MCnonTVX/hMCdataFoundBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
   }
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
@@ -1857,6 +1861,11 @@ struct LightIonsEvSelQa {
             histos.fill(HIST("MCsel8/hMCdataVzDiff_vertTOFmatched"), col.numContrib(), diffVz);
             histos.fill(HIST("MCsel8/hMCdataFoundBcDiffVsMult_vertTOFmatched"), col.numContrib(), foundBcDiff);
           }
+        }
+        if (col.selection_bit(kNoTimeFrameBorder) && col.selection_bit(kNoITSROFrameBorder) && !col.selection_bit(kIsTriggerTVX)) {
+          histos.fill(HIST("MCnonTVX/hMCdataVzDiff"), col.numContrib(), diffVz);
+          histos.fill(HIST("MCnonTVX/hMCdataBcDiffVsMult"), col.numContrib(), bcDiff);
+          histos.fill(HIST("MCnonTVX/hMCdataFoundBcDiffVsMult"), col.numContrib(), foundBcDiff);
         }
       }
     }
