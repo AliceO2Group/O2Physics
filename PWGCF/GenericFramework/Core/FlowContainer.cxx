@@ -11,6 +11,9 @@
 
 #include "FlowContainer.h"
 
+#include <cstdio>
+#include <vector>
+
 ClassImp(FlowContainer);
 
 FlowContainer::FlowContainer() : TNamed("", ""),
@@ -916,8 +919,12 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
     delete tempprof;
   }
   delete rhSubset;
-  retpf->RebinX(nBins);
-  return retpf;
+  if (retpf) {
+    retpf->RebinX(nBins);
+    return retpf;
+  } else {
+    return nullptr;
+  }
 };
 
 //{2} particle correlations
