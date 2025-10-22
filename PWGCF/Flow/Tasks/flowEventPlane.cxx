@@ -309,7 +309,7 @@ struct FlowEventPlane {
           vAvgOutput[cntrx] += hp->GetBinContent(hp->GetXaxis()->FindBin(vCollParam[cntry]));
         } else {
           THnF* hn = reinterpret_cast<THnF*>(obj->Clone());
-          for (int i = 0; i < (int)vHistNames.size(); ++i) {
+          for (int i = 0; i < static_cast<int>(vHistNames.size()); ++i) {
             binarray[i] = hn->GetAxis(i)->FindBin(vCollParam[i]);
           }
           vAvgOutput[cntrx] += hn->GetBinContent(hn->GetBin(binarray));
