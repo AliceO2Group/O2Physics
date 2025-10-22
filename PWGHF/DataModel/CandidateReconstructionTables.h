@@ -440,12 +440,6 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 DECLARE_SOA_COLUMN(KfGeoMassD0, kfGeoMassD0, float);       //! mass of the D0 candidate from the KFParticle geometric fit
 DECLARE_SOA_COLUMN(KfGeoMassD0bar, kfGeoMassD0bar, float); //! mass of the D0bar candidate from the KFParticle geometric fit
 
-// mapping of decay types
-enum DecayType { D0ToPiK = 0,
-                 JpsiToEE,
-                 JpsiToMuMu,
-                 N2ProngDecays }; // always keep N2ProngDecays at the end
-
 } // namespace hf_cand_2prong
 
 // general columns
@@ -664,8 +658,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Im
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter for B+ -> J/Psi K
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
 
-enum DecayType { BplusToD0Pi = 0 };
-
 enum DecayTypeMc : uint8_t { BplusToD0PiToKPiPi = 0,
                              BplusToD0KToKPiK,
                              PartlyRecoDecay,
@@ -762,14 +754,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
-
-// mapping of decay types
-enum DecayType { DplusToPiKPi = 0,
-                 LcToPKPi,
-                 DsToKKPi,
-                 XicToPKPi,
-                 CdToDeKPi,
-                 N3ProngDecays }; // always keep N3ProngDecays at the end
 
 // Ds± → K± K∓ π± or D± → K± K∓ π±
 
@@ -1007,9 +991,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); // resonant decay channel flag, generator level
 
-// mapping of decay types
-enum DecayType { XToJpsiToEEPiPi = 0,
-                 XToJpsiToMuMuPiPi }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_x
 
 // declare dedicated X candidate table
@@ -1076,8 +1057,6 @@ DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
-// mapping of decay types
-enum DecayType { XiccToXicPi = 0 }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_xicc
 
 // declare dedicated Xicc candidate table
@@ -1395,13 +1374,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtPiFromCharmBaryon, ptPiFromCharmBaryon,
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtKaFromCasc, ptKaFromCasc,
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-
-// mapping of decay types
-enum DecayType { XiczeroToXiPi = 0,
-                 OmegaczeroToXiPi,
-                 OmegaczeroToOmegaPi,
-                 OmegaczeroToOmegaK,
-                 OmegaczeroToOmegaPiOneMu };
 
 } // end of namespace hf_cand_xic0_omegac0
 
@@ -1741,10 +1713,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(PProng1, pProng1, //!
 DECLARE_SOA_DYNAMIC_COLUMN(PProng2, pProng2, //!
                            [](float px, float py, float pz) -> float { return RecoDecay::p(px, py, pz); });
 
-// mapping of decay types
-enum DecayType { XicToXiPiPi = 0,      // Ξc± → Ξ∓ π± π±
-                 XicToXiResPiToXiPiPi, // Ξc± → Ξ(1530) π± → Ξ∓ π± π±
-                 NDecayType };
 } // end of namespace hf_cand_xic_to_xi_pi_pi
 
 // declare dedicated Xic to Xi Pi Pi candidate table
@@ -1859,9 +1827,6 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); // resonant decay channel flag, reconstruction level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); // resonant decay channel flag, generator level
 DECLARE_SOA_COLUMN(JpsiToMuMuMass, jpsiToMuMuMass, float);          // Jpsi mass
-// mapping of decay types
-enum DecayType { ChicToJpsiToEEGamma = 0,
-                 ChicToJpsiToMuMuGamma }; // move this to a dedicated cascade namespace in the future?
 } // namespace hf_cand_chic
 
 // declare dedicated chi_c candidate table
@@ -1930,8 +1895,6 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle 
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
-// mapping of decay types
-enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
 
 enum DecayTypeMc : uint8_t { LbToLcPiToPKPiPi = 0,
                              LbToLcKToPKPiK,
@@ -2006,10 +1969,6 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle 
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
-
-// mapping of decay types
-enum DecayType { B0ToDPi = 0,
-                 B0ToDstarPi };
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
@@ -2138,9 +2097,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJps
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductPhi, impactParameterProductPhi, // J/Psi impact parameter for Bs -> J/Psi phi
                            [](float dcaLfTrack0, float dcaLfTrack1) -> float { return dcaLfTrack0 * dcaLfTrack1; });
-
-// mapping of decay types
-enum DecayType { BsToDsPi = 0 };
 
 enum DecayTypeMc : uint8_t { BsToDsPiToPhiPiPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
                              BsToDsPiToK0starKPiToKKPiPi,   // Bs(bar) → Ds∓ π± → (K0* K∓) π± → (K- K+ π∓) π±
@@ -2305,11 +2261,6 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);                   //! part
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);                   //! particle origin, generator level
 DECLARE_SOA_COLUMN(ParticleAntiparticle, particleAntiparticle, int8_t); //! particle or antiparticle
 
-// mapping of decay types
-enum DecayType { Sc0ToPKPiPi = 0,
-                 ScplusplusToPKPiPi,
-                 ScStar0ToPKPiPi,
-                 ScStarPlusPlusToPKPiPi };
 enum Species : int { Sc2455 = 0,
                      Sc2520,
                      NSpecies };
@@ -2564,14 +2515,6 @@ DECLARE_SOA_COLUMN(FlagMcMatchGenD0, flagMcMatchGenD0, int8_t); //! generator le
 
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); //! particle origin, generator level
-
-enum DecayType {
-  DstarToD0Pi = 0,
-  D0ToPiK,
-  DstarToD0PiPi0,
-  D0ToPiKPi0,
-  NDstarDecayType
-};
 
 } // namespace hf_cand_dstar
 

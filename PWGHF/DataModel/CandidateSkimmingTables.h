@@ -259,6 +259,122 @@ DECLARE_SOA_TABLE(HfPvRefitDstar, "AOD", "HFPVREFITDSTAR", //!
                   hf_pv_refit::PvRefitSigmaYZ,
                   hf_pv_refit::PvRefitSigmaZ2,
                   o2::soa::Marker<2>);
+
+namespace hf_cand_2prong
+{
+enum DecayType {
+  D0ToPiK = 0,
+  JpsiToEE,
+  JpsiToMuMu,
+  N2ProngDecays
+}; // always keep N2ProngDecays at the end
+} // namespace hf_cand_2prong
+
+namespace hf_cand_bplus
+{
+enum DecayType {
+  BplusToD0Pi = 0
+};
+} // namespace hf_cand_bplus
+
+namespace hf_cand_3prong
+{
+enum DecayType {
+  DplusToPiKPi = 0,
+  LcToPKPi,
+  DsToKKPi,
+  XicToPKPi,
+  CdToDeKPi,
+  N3ProngDecays
+}; // always keep N3ProngDecays at the end
+} // namespace hf_cand_3prong
+
+namespace hf_cand_x
+{
+enum DecayType {
+  XToJpsiToEEPiPi = 0,
+  XToJpsiToMuMuPiPi
+}; // move this to a dedicated cascade namespace in the future?
+} // namespace hf_cand_x
+
+namespace hf_cand_xicc
+{
+enum DecayType {
+  XiccToXicPi = 0
+}; // move this to a dedicated cascade namespace in the future?
+} // namespace hf_cand_xicc
+
+namespace hf_cand_xic0_omegac0
+{
+enum DecayType {
+  XiczeroToXiPi = 0,
+  OmegaczeroToXiPi,
+  OmegaczeroToOmegaPi,
+  OmegaczeroToOmegaK,
+  OmegaczeroToOmegaPiOneMu
+};
+} // namespace hf_cand_xic0_omegac0
+
+namespace hf_cand_xic_to_xi_pi_pi
+{
+enum DecayType {
+  XicToXiPiPi = 0,      // Ξc± → Ξ∓ π± π±
+  XicToXiResPiToXiPiPi, // Ξc± → Ξ(1530) π± → Ξ∓ π± π±
+  NDecayType
+};
+} // namespace hf_cand_xic_to_xi_pi_pi
+
+namespace hf_cand_chic
+{
+enum DecayType {
+  ChicToJpsiToEEGamma = 0,
+  ChicToJpsiToMuMuGamma
+}; // move this to a dedicated cascade namespace in the future?
+} // namespace hf_cand_chic
+
+namespace hf_cand_lb
+{
+enum DecayType {
+  LbToLcPi
+}; // move this to a dedicated cascade namespace in the future?
+} // namespace hf_cand_lb
+
+namespace hf_cand_b0
+{
+enum DecayType {
+  B0ToDPi = 0,
+  B0ToDstarPi
+};
+} // namespace hf_cand_b0
+
+namespace hf_cand_bs
+{
+enum DecayType {
+  BsToDsPi = 0
+};
+} // namespace hf_cand_bs
+
+namespace hf_cand_sigmac
+{
+enum DecayType {
+  Sc0ToPKPiPi = 0,
+  ScplusplusToPKPiPi,
+  ScStar0ToPKPiPi,
+  ScStarPlusPlusToPKPiPi
+};
+} // namespace hf_cand_sigmac
+
+namespace hf_cand_dstar
+{
+enum DecayType {
+  DstarToD0Pi = 0,
+  D0ToPiK,
+  DstarToD0PiPi0,
+  D0ToPiKPi0,
+  NDstarDecayType
+};
+} // namespace hf_cand_dstar
+
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_CANDIDATESKIMMINGTABLES_H_
