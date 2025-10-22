@@ -59,9 +59,9 @@ struct HfTaskCd {
   HfHelper hfHelper;
   SliceCache cache;
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using CollisionsWEvSel = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionsWithEvSelFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using CollisionsWithEvSelFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
   using CdCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd>>;
 
@@ -112,34 +112,33 @@ struct HfTaskCd {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
-    auto vbins = binsPt;
     /// mass candidate
-    registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
-    registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{400, 2.4, 4.4}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}, {500, 0., 5000.}}});
+    registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{400, 2.4, 4.4}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// DCAxy to prim. vertex prongs
-    registry.add("Data/hd0VsPtProng0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hd0VsPtProng1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hd0VsPtProng2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hd0VsPtProng0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hd0VsPtProng1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hd0VsPtProng2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// decay length candidate
-    registry.add("Data/hDecLengthVsPt", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hDecLengthVsPt", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// decay length xy candidate
-    registry.add("Data/hDecLengthxyVsPt", "3-prong candidates;decay length xy(cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hDecLengthxyVsPt", "3-prong candidates;decay length xy(cm);entries", {HistType::kTH2F, {{400, 0., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// cosine of pointing angle
-    registry.add("Data/hCPAVsPt", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hCPAVsPt", "3-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// cosine of pointing angle xy
-    registry.add("Data/hCPAxyVsPt", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hCPAxyVsPt", "3-prong candidates;cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// Chi 2 PCA to sec. vertex
-    registry.add("Data/hDca2VsPt", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{400, 0., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hDca2VsPt", "3-prong candidates;prong Chi2PCA to sec. vertex (cm);entries", {HistType::kTH2F, {{400, 0., 20.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// eta
-    registry.add("Data/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// phi
-    registry.add("Data/hPhiVsPt", "3-prong candidates;candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hPhiVsPt", "3-prong candidates;candidate #it{#Phi};entries", {HistType::kTH2F, {{100, 0., 6.3}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// selection status
-    registry.add("hSelectionStatus", "3-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hSelectionStatus", "3-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     /// impact parameter error
-    registry.add("Data/hImpParErrProng0", "3-prong candidates;prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hImpParErrProng0", "3-prong candidates;prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
 
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (de K #pi) (GeV/#it{c}^{2})"};
@@ -152,7 +151,7 @@ struct HfTaskCd {
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle"};
       const AxisSpec thnAxisCentrality{thnConfigAxisCentrality, "centrality (FT0C)"};
 
-      auto axesStd = std::vector{thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCentrality};
+      std::vector axesStd{thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCentrality};
       registry.add("hnCdVars", "THn for Reconstructed Cd candidates for data", HistType::kTHnSparseF, axesStd);
     }
   }
@@ -247,7 +246,7 @@ struct HfTaskCd {
     }
   }
 
-  void processDataStd(Collisions const& collisions,
+  void processDataStd(CollisionsWEvSel const& collisions,
                       CdCandidates const& selectedCdCandidates,
                       aod::Tracks const&)
   {
@@ -255,7 +254,7 @@ struct HfTaskCd {
   }
   PROCESS_SWITCH(HfTaskCd, processDataStd, "Process Data with the standard method", true);
 
-  void processDataStdWithFT0C(CollisionsWithFT0C const& collisions,
+  void processDataStdWithFT0C(CollisionsWithEvSelFT0C const& collisions,
                               CdCandidates const& selectedCdCandidates,
                               aod::Tracks const&)
   {
@@ -263,7 +262,7 @@ struct HfTaskCd {
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
-  void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
+  void processDataStdWithFT0M(CollisionsWithEvSelFT0M const& collisions,
                               CdCandidates const& selectedCdCandidates,
                               aod::Tracks const&)
   {
