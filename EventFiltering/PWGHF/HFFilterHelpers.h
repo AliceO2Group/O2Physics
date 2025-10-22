@@ -681,7 +681,7 @@ class HfFilterHelper
   template <typename T>
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
   template <typename T1>
-  int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
+  int setVtxConfiguration(T1& vertexer, bool useAbsDCA);
   template <typename V, typename T, typename C>
   bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand);
   template <typename Casc, typename T, typename C, typename V>
@@ -2605,7 +2605,7 @@ inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
 /// Set vertxing configuration
 /// \param vertexer o2::vertexing::DCAFitterN<N> object
 template <typename T1>
-inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
+inline int HfFilterHelper::setVtxConfiguration(T1& vertexer, bool useAbsDCA)
 {
   // Fitter initialisation
   vertexer.setPropagateToPCA(true);
