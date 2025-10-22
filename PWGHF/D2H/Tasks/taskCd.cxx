@@ -221,7 +221,7 @@ struct HfTaskCd {
       registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
 
       if (fillTHn) {
-        float const cent = o2::hf_centrality::getCentralityColl<CollType>(collision);
+        float const cent = o2::hf_centrality::getCentralityColl(collision);
         double massCd(-1);
         if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
           massCd = hfHelper.invMassCdToDeKPi(candidate);
