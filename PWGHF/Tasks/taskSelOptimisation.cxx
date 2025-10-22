@@ -14,7 +14,9 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
