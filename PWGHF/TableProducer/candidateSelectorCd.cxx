@@ -147,44 +147,44 @@ struct HfCandidateSelectorCd {
   template <aod::hf_cand::VertexerType ReconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
-    auto candpT = candidate.pt();
+    auto ptCand = candidate.pt();
 
-    int const pTBin = findBin(binsPt, candpT);
-    if (pTBin == -1) {
+    int const binPt = findBin(binsPt, ptCand);
+    if (binPt == -1) {
       return false;
     }
 
     // check that the candidate pT is within the analysis range
-    if (candpT < ptCandMin || candpT >= ptCandMax) {
+    if (ptCand < ptCandMin || ptCand >= ptCandMax) {
       return false;
     }
 
     // cosine of pointing angle
-    if (candidate.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
+    if (candidate.cpa() <= cuts->get(binPt, "cos pointing angle")) {
       return false;
     }
 
     // candidate chi2PCA
-    if (candidate.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+    if (candidate.chi2PCA() > cuts->get(binPt, "Chi2PCA")) {
       return false;
     }
 
-    if (candidate.decayLength() <= cuts->get(pTBin, "decay length")) {
+    if (candidate.decayLength() <= cuts->get(binPt, "decay length")) {
       return false;
     }
 
     // candidate decay length XY
-    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+    if (candidate.decayLengthXY() <= cuts->get(binPt, "decLengthXY")) {
       return false;
     }
 
     // candidate normalized decay length XY
-    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+    if (candidate.decayLengthXYNormalised() < cuts->get(binPt, "normDecLXY")) {
       return false;
     }
 
     // candidate impact parameter XY
-    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(binPt, "impParXY")) {
       return false;
     }
 
@@ -205,14 +205,14 @@ struct HfCandidateSelectorCd {
   bool selectionTopolConjugate(const T1& candidate, const T2& trackDeuteron, const T2& trackKaon, const T2& trackPion)
   {
 
-    auto candpT = candidate.pt();
-    int const pTBin = findBin(binsPt, candpT);
-    if (pTBin == -1) {
+    auto ptCand = candidate.pt();
+    int const binPt = findBin(binsPt, ptCand);
+    if (binPt == -1) {
       return false;
     }
 
     // cut on daughter pT
-    if (trackDeuteron.pt() < cuts->get(pTBin, "pT De") || trackKaon.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
+    if (trackDeuteron.pt() < cuts->get(binPt, "pT De") || trackKaon.pt() < cuts->get(binPt, "pT K") || trackPion.pt() < cuts->get(binPt, "pT Pi")) {
       return false;
     }
 
@@ -224,7 +224,7 @@ struct HfCandidateSelectorCd {
     }
 
     // cut on Cd->deKpi, piKde mass values
-    if (std::abs(massCd - massCharmDeuteron) > cuts->get(pTBin, "m")) {
+    if (std::abs(massCd - massCharmDeuteron) > cuts->get(binPt, "m")) {
       return false;
     }
 
