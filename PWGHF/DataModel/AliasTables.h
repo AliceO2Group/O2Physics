@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file CandidateReconstructionTables.h
-/// \brief Definitions of tables produced by candidate reconstruction workflows
+/// \file AliasTables.h
+/// \brief Table aliases
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
@@ -18,11 +18,15 @@
 #ifndef PWGHF_DATAMODEL_ALIASTABLES_H_
 #define PWGHF_DATAMODEL_ALIASTABLES_H_
 
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
-// Table aliases
 using BcFullInfos = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 using TracksWCov = soa::Join<Tracks, TracksCov>;
@@ -48,7 +52,6 @@ using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
 using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
 using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
 using TracksPidTinyDe = soa::Join<aod::pidTPCDe, aod::pidTOFDe>;
-
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_ALIASTABLES_H_
