@@ -1639,7 +1639,7 @@ struct DileptonMC {
                 }
               }
               break;
-            case 443: {
+            case 443:
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fillRecHistograms<9>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt J/psi
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -1670,15 +1670,13 @@ struct DileptonMC {
                 }
               }
               break;
-            }
-            case 100443: {
+            case 100443:
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fillRecHistograms<11>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt psi2S
               } else {
                 fillRecHistograms<10>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // prompt psi2S
               }
               break;
-            }
             default:
               break;
           }
@@ -1702,23 +1700,19 @@ struct DileptonMC {
         auto mp1 = mcparticles.iteratorAt(t1mc.mothersIds()[0]);
         auto mp2 = mcparticles.iteratorAt(t2mc.mothersIds()[0]);
         switch (hfee_type) {
-          case static_cast<int>(EM_HFeeType::kCe_Ce): {                                                                                                                                                                 // ULS
+          case static_cast<int>(EM_HFeeType::kCe_Ce):
             fillRecHistograms<15>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // c2l_c2l
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBe_Be): {                                                                                                                                         // ULS
+          case static_cast<int>(EM_HFeeType::kBe_Be):
             fillRecHistograms<16>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2l_b2l
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBCe_BCe): {                                                                                                                                       // ULS
+          case static_cast<int>(EM_HFeeType::kBCe_BCe):
             fillRecHistograms<17>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2c2l
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): {                                                                                                                                  // ULS
+          case static_cast<int>(EM_HFeeType::kBCe_Be_SameB):
             fillRecHistograms<18>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2l_sameb
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):                                                                                                                                    // LS
+          case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):
             fillRecHistograms<19>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2l_diffb
             break;
           default:
@@ -1869,22 +1863,20 @@ struct DileptonMC {
               fRegistry.fill(HIST("Generated/sm/Phi2ll/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee)); // phi->ee
             }
             break;
-          case 443: {
+          case 443:
             if (IsFromBeauty(mcmother, mcparticles) > 0) {
               fillGenHistograms<9>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // non-prompt J/psi
             } else {
               fillGenHistograms<8>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // prompt J/psi
             }
             break;
-          }
-          case 100443: {
+          case 100443:
             if (IsFromBeauty(mcmother, mcparticles) > 0) {
               fillGenHistograms<11>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // non-prompt psi2S
             } else {
               fillGenHistograms<10>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // prompt psi2S
             }
             break;
-          }
           default:
             break;
         }
@@ -1893,22 +1885,18 @@ struct DileptonMC {
       auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
       auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
       switch (hfee_type) {
-        case static_cast<int>(EM_HFeeType::kCe_Ce): {
+        case static_cast<int>(EM_HFeeType::kCe_Ce):
           fillGenHistograms<15>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // c2l_c2l
           break;
-        }
-        case static_cast<int>(EM_HFeeType::kBe_Be): {
+        case static_cast<int>(EM_HFeeType::kBe_Be):
           fillGenHistograms<16>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2l_b2l
           break;
-        }
-        case static_cast<int>(EM_HFeeType::kBCe_BCe): {
+        case static_cast<int>(EM_HFeeType::kBCe_BCe):
           fillGenHistograms<17>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2c2l_b2c2l
           break;
-        }
-        case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): {                                                                                                                // ULS
+        case static_cast<int>(EM_HFeeType::kBCe_Be_SameB):
           fillGenHistograms<18>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2c2l_b2l_sameb
           break;
-        }
         case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):                                                                                                                  // LS
           fillGenHistograms<19>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2c2l_b2l_diffb
           break;
