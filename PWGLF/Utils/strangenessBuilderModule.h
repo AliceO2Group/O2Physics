@@ -2502,15 +2502,7 @@ class BuilderModule
     } // end loop over cascades
 
     for (std::size_t icascade = 0; icascade < cascadeList.size(); icascade++) {
-      auto const& cascade = cascadeList[sorted_cascade[icascade]];
-      if (traCascIndices[cascade.globalId] >= 0) {
-        products.tracascdataLink(traCascIndices[cascade.globalId]);
-        interlinks.traCascCoreToCascades.push_back(cascade.globalId);
-        interlinks.cascadeToTraCascCores.push_back(traCascIndices[cascade.globalId]);
-      } else {
-        products.tracascdataLink(-1);
-        interlinks.cascadeToTraCascCores.push_back(-1);
-      }
+      products.tracascdataLink(traCascIndices[icascade]);
     }
     LOGF(debug, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
