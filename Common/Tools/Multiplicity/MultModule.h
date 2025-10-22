@@ -772,7 +772,7 @@ class MultModule
     //_______________________________________________________________________
     // vertex-Z equalized signals
     if (internalOpts.mEnabledTables[kFV0MultZeqs]) {
-      if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+      if (mults.multFV0A > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
         mults.multFV0AZeq = hVtxZFV0A->Interpolate(0.0) * mults.multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
       } else {
         mults.multFV0AZeq = 0.0f;
@@ -780,21 +780,27 @@ class MultModule
       cursors.tableFV0Zeqs(mults.multFV0AZeq);
     }
     if (internalOpts.mEnabledTables[kFT0MultZeqs]) {
-      if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+      if (mults.multFT0A > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
         mults.multFT0AZeq = hVtxZFT0A->Interpolate(0.0) * mults.multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
-        mults.multFT0CZeq = hVtxZFT0C->Interpolate(0.0) * mults.multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
       } else {
         mults.multFT0AZeq = 0.0f;
+      }
+      if (mults.multFT0C > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+        mults.multFT0CZeq = hVtxZFT0C->Interpolate(0.0) * mults.multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+      } else {
         mults.multFT0CZeq = 0.0f;
       }
       cursors.tableFT0Zeqs(mults.multFT0AZeq, mults.multFT0CZeq);
     }
     if (internalOpts.mEnabledTables[kFDDMultZeqs]) {
-      if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+      if (mults.multFDDA > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
         mults.multFDDAZeq = hVtxZFDDA->Interpolate(0.0) * mults.multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
-        mults.multFDDCZeq = hVtxZFDDC->Interpolate(0.0) * mults.multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
       } else {
         mults.multFDDAZeq = 0.0f;
+      }
+      if (mults.multFDDC > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
+        mults.multFDDCZeq = hVtxZFDDC->Interpolate(0.0) * mults.multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
+      } else {
         mults.multFDDCZeq = 0.0f;
       }
       cursors.tableFDDZeqs(mults.multFDDAZeq, mults.multFDDCZeq);

@@ -1646,6 +1646,7 @@ DECLARE_SOA_TABLE(HfMcRecRedResos, "AOD", "HFMCRECREDRESO", //! Reconstruction-l
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
                   o2::soa::Marker<1>);
 } // namespace aod
 

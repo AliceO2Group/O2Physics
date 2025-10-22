@@ -36,11 +36,12 @@ using namespace o2::soa;
 struct skimmerOTS {
   Produces<o2::aod::EMSWTriggerInfosTMP> swtinfo_tmp; // Join aod::Collision later.
   Produces<o2::aod::EMSWTriggerBitsTMP> swtbit_tmp;
-  Produces<o2::aod::EMSWTriggerCountersTMP> swtcounter_tmp;
+  Produces<o2::aod::EMSWTriggerATCountersTMP> swtcounterAT_tmp;
+  Produces<o2::aod::EMSWTriggerTOICountersTMP> swtcounterTOI_tmp;
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0Mult", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fLMeeIMR,fLMeeHMR", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
   Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
 
@@ -56,6 +57,7 @@ struct skimmerOTS {
   std::vector<int> mATCounters;
 
   HistogramRegistry registry{"registry"};
+
   void init(o2::framework::InitContext&)
   {
     ccdb->setURL(ccdburl);
@@ -130,14 +132,13 @@ struct skimmerOTS {
 
   void process(aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
-
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>(); // don't use foundBC.
       initCCDB(bc);
 
       uint16_t trigger_bitmap = 0;
-      uint16_t analyzed_bitmap = 0;
-      uint16_t analyzedToI_bitmap = 0;
+      // uint16_t analyzed_bitmap = 0;
+      // uint16_t analyzedToI_bitmap = 0;
       registry.fill(HIST("hCollisionCounter"), 1); // all
 
       if (zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) { // triggered event
@@ -154,15 +155,16 @@ struct skimmerOTS {
             // LOGF(info, "swtname = %s is fired. swt index in original swt table = %d, swt index for EM table = %d", swtname.data(), mTOIidx[idx], o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
             registry.fill(HIST("hCollisionCounter"), idx + 2); // fired trigger
 
-            if (ATcounters[mTOIidx[idx]] > mATCounters[emswtId]) {
-              analyzed_bitmap |= BIT(emswtId);
+            // LOGF(info, "ATcounters[mTOIidx[idx]] = %d, TOIcounters[idx] = %d", ATcounters[mTOIidx[idx]], TOIcounters[idx]);
+
+            while (ATcounters[mTOIidx[idx]] > mATCounters[emswtId]) {
               mATCounters[emswtId]++;
-              // mATCounters[emswtId] = ATcounters[mTOIidx[idx]]; // Dont' use this line. NOT always incremented by 1 in zorro!!
+              swtcounterAT_tmp(BIT(emswtId));
             }
 
-            if (TOIcounters[idx] > mTOICounters[emswtId]) {
-              analyzedToI_bitmap |= BIT(emswtId);
-              mTOICounters[emswtId] = TOIcounters[idx]; // always incremented by 1 in zorro!!
+            while (TOIcounters[idx] > mTOICounters[emswtId]) {
+              mTOICounters[emswtId]++; // always incremented by 1 in zorro!!
+              swtcounterTOI_tmp(BIT(emswtId));
             }
 
             // LOGF(info, "collision.globalIndex() = %d, bc.globalBC() = %llu, mTOICounters[%d] = %d, mATcounters[%d] = %d", collision.globalIndex(), bc.globalBC(), emswtId, mTOICounters[emswtId], emswtId, mATCounters[emswtId]);
@@ -170,12 +172,7 @@ struct skimmerOTS {
         } // end of TOI loop
       }
       swtbit_tmp(trigger_bitmap);
-      if (analyzed_bitmap > 0 || analyzedToI_bitmap > 0) { // storing 0 is useless.
-        swtcounter_tmp(analyzed_bitmap, analyzedToI_bitmap);
-      }
-
     } // end of collision loop
-
   } // end of process
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

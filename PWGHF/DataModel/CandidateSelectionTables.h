@@ -381,7 +381,7 @@ DECLARE_SOA_TABLE(HfSelToXiPiKf, "AOD", "HFSELTOXIPIKF",
                   hf_sel_toxipi::TpcNSigmaPiFromCharmBaryon, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
                   hf_sel_toxipi::TofNSigmaPiFromCharmBaryon, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 
-DECLARE_SOA_TABLE(HfMlToXiPiKf, "AOD", "HFMLSELTOXIPIKF",
+DECLARE_SOA_TABLE(HfMlToXiPi, "AOD", "HFMLSELTOXIPI",
                   hf_sel_toxipi::MlProbToXiPi);
 
 namespace hf_sel_toomegapi

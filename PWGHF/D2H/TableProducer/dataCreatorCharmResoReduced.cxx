@@ -680,7 +680,7 @@ struct HfDataCreatorCharmResoReduced {
         std::array<int, 5> const pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus};
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
@@ -734,19 +734,31 @@ struct HfDataCreatorCharmResoReduced {
         auto pdgCodesDplusDaughters = hf_decay::hf_cand_3prong::daughtersDplusMain.at(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDplusDaughters[0], pdgCodesDplusDaughters[1], pdgCodesDplusDaughters[2], +kPiPlus, -kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDplusK0s) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
           }
         }
+        // Partial matching of Dsj -> D*K0s -> (D+ pi0) (K0s) with missing neutral
+        if (indexRec < 0) {
+          for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
+            indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+            if (indexRec > -1) {
+              flagReso = sign * decayChannelFlag;
+              SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched);
+              break;
+            }
+          }
+        }
+
       } else if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach))) && std::abs(flagV0) == hf_decay::hf_cand_reso::PartialMatchMc::LambdaMatched) {
         // Peaking background of D+Lambda <- Ds* with spurious soft pion
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]};
         auto pdgCodesDplusDaughters = hf_decay::hf_cand_3prong::daughtersDplusMain.at(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDplusDaughters[0], pdgCodesDplusDaughters[1], pdgCodesDplusDaughters[2], +kProton, -kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDplusLambda) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
@@ -787,7 +799,7 @@ struct HfDataCreatorCharmResoReduced {
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDzeroDaughters[0], pdgCodesDzeroDaughters[1], +kProton, -kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToD0Lambda) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
@@ -878,7 +890,7 @@ struct HfDataCreatorCharmResoReduced {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], bachelorTrack};
         auto pdgCodesDaughters = std::array{+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarPi) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
@@ -918,10 +930,21 @@ struct HfDataCreatorCharmResoReduced {
         auto pdgCodesDplusDaughters = hf_decay::hf_cand_3prong::daughtersDplusMain.at(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDplusDaughters[0], pdgCodesDplusDaughters[1], pdgCodesDplusDaughters[2], -kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDplusPi) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
+          }
+        }
+        // Partial matching of Dj -> D*Pi -> (D+ pi0) (pi) with missing neutral
+        if (indexRec < 0) {
+          for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarPi) {
+            indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+            if (indexRec > -1) {
+              flagReso = sign * decayChannelFlag;
+              SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched);
+              break;
+            }
           }
         }
       }
@@ -955,10 +978,21 @@ struct HfDataCreatorCharmResoReduced {
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDzeroDaughters[0], pdgCodesDzeroDaughters[1], +kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToD0Pi) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
+          }
+        }
+        // Partial matching of Dj -> D*Pi -> (D0 pi) (pi) with missing pion
+        if (indexRec < 0) {
+          for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarPi) {
+            indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+            if (indexRec > -1) {
+              flagReso = sign * decayChannelFlag;
+              SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched);
+              break;
+            }
           }
         }
       } else if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::KaonMatched) {
@@ -966,7 +1000,7 @@ struct HfDataCreatorCharmResoReduced {
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDzeroDaughters[0], pdgCodesDzeroDaughters[1], +kKPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToD0Kplus) {
-          indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             break;
