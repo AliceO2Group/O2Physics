@@ -93,7 +93,7 @@ using MyBarrelTracksTunedWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod:
                                              aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                              aod::pidTPCFullKa, aod::pidTPCFullPr, aod::mcTPCTuneOnData,
                                              aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                              aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                             aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
                                              aod::McTrackLabels>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
@@ -1464,9 +1464,9 @@ struct TableMakerMC {
   }
 
   void processPPMcTuned(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                 MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
-                 aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
-                 MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+                        MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                        aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
+                        MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithMults, gkTrackFillMapTunedWithCov, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMap>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
   }
@@ -1479,8 +1479,8 @@ struct TableMakerMC {
   }
 
   void processPPBarrelOnlyMcTuned(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                           MyBarrelTracksTunedWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
-                           MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+                                  MyBarrelTracksTunedWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
+                                  MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithMults, gkTrackFillMapTunedWithCov, 0u, 0u, gkEventMcFillMap>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
   }
@@ -1526,9 +1526,9 @@ struct TableMakerMC {
   }
 
   void processPbPbMcTuned(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                   MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
-                   aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
-                   MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+                          MyBarrelTracksTunedWithCov const& tracksBarrel, MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                          aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
+                          MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapTunedWithCov, gkMuonFillMapWithCov, gkMFTFillMap, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, nullptr);
   }
@@ -1541,8 +1541,8 @@ struct TableMakerMC {
   }
 
   void processPbPbBarrelOnlyMcTuned(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                             MyBarrelTracksTunedWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
-                             MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
+                                    MyBarrelTracksTunedWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
+                                    MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapTunedWithCov, 0u, 0u, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
   }
