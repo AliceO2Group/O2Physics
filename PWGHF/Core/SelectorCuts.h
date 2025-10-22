@@ -68,12 +68,13 @@ static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary",
 namespace hf_presel_pid
 {
 // default values for the PID cuts for protons in the track-index-skim-creator
-constexpr float CutsPid[4][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+constexpr float CutsPid[5][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
 static const std::vector<std::string> labelsCutsPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
-static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs"};
+static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs", "DeuteronInCdToDeKPi"};
 } // namespace hf_presel_pid
 
 namespace hf_cuts_bdt_multiclass
@@ -1515,6 +1516,43 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"max pKpi mass Lc", "max piKp mass Lc"};
 } // namespace hf_cuts_sigmac_to_p_k_pi
+
+namespace hf_cuts_cd_to_de_k_pi
+{
+static constexpr int NBinsPt = 6;
+static constexpr int NCutVars = 10;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0.,
+  2.,
+  4.,
+  6.,
+  8.,
+  12.,
+  24.};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts                m,  ptP, ptK, ptPi, chi2PCA, dL, cosp, dLXY, NdLXY, ImpParXY, mass(Kpi)
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 0  < pT < 2  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 2  < pT < 4  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 4  < pT < 6  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 6  < pT < 8  */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 8  < pT < 12 */
+                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10}}; /* 12 < pT < 24 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"m", "pT De", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "impParXY"};
+} // namespace hf_cuts_cd_to_de_k_pi
 
 } // namespace o2::analysis
 
