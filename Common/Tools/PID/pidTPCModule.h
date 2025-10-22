@@ -534,7 +534,7 @@ class pidTPCModule
 
   //__________________________________________________
   template <typename T, typename NSF, typename NST>
-  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const long multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
+  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const int64_t multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
   {
     if (flagFull != 1 && flagTiny != 1) {
       return;
@@ -611,9 +611,9 @@ class pidTPCModule
     }
 
     // preparatory step: we need the multiplicities for each collision
-    std::vector<int> pidmults;
-    long totalTPCtracks = 0;
-    long totalTPCnotStandalone = 0;
+    std::vector<int64_t> pidmults;
+    int64_t totalTPCtracks = 0;
+    int64_t totalTPCnotStandalone = 0;
     pidmults.resize(cols.size(), 0);
 
     // faster counting
@@ -696,7 +696,7 @@ class pidTPCModule
       // get the TPC signal to be used in the PID
       float tpcSignalToEvaluatePID = trk.tpcSignal();
 
-      int multTPC = 0;
+      int64_t multTPC = 0;
       if (trk.has_collision()) {
         multTPC = pidmults[trk.collisionId()];
       }
