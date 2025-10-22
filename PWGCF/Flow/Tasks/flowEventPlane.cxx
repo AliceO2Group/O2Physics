@@ -19,14 +19,13 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-
-#include "TPDGCode.h"
 
 #include <map>
 #include <string>
@@ -206,11 +205,11 @@ struct FlowEventPlane {
     histos.add("CorrHist/hYZNCVsVz", "Y^{ZNC}_{1} Vs V_{z}", kTProfile, {axisFineVz});
     histos.add("Checks/hPsiSPA", "#Psi_{SP}^{A} distribution", kTH2F, {axisCent, axisPsi});
     histos.add("Checks/hPsiSPC", "#Psi_{SP}^{C} distribution", kTH2F, {axisCent, axisPsi});
-    histos.add("Checks/hXaXc", "X^{ZNC}_{1} Vs X^{ZNA}_{1}", kTH3F, {axisCent, axisXa, axisXc});
-    histos.add("Checks/hYaYc", "Y^{ZNC}_{1} Vs Y^{ZNA}_{1}", kTH3F, {axisCent, axisYa, axisYc});
+    histos.add("Checks/hXaXc", "X^{ZNC}_{1} Vs X^{ZNA}_{1}", kTProfile, {axisCent});
+    histos.add("Checks/hYaYc", "Y^{ZNC}_{1} Vs Y^{ZNA}_{1}", kTProfile, {axisCent});
     histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
     histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
-    histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTH2F, {axisCent, axisXYac});
+    histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
     histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
     histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
     histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
@@ -272,7 +271,7 @@ struct FlowEventPlane {
   bool selectTrack(T const& track)
   {
     if (track.pt() <= cTrackMinPt || track.pt() >= cTrackMaxPt || std::abs(track.eta()) >= cTrackEtaCut) {
-      return false
+      return false;
     }
 
     if (cTrackGlobal && !track.isGlobalTrackWoDCA()) {
@@ -302,7 +301,7 @@ struct FlowEventPlane {
           vAvgOutput[cntrx] += hp->GetBinContent(hp->GetXaxis()->FindBin(vCollParam[cntry]));
         } else {
           THnF* hn = reinterpret_cast<THnF*>(obj->Clone());
-          for (int i = 0; i < vAvgOutput.size(); ++i) {
+          for (int i = 0; i < (int)vHistNames.size(); ++i) {
             binarray[i] = hn->GetAxis(i)->FindBin(vCollParam[i]);
           }
           vAvgOutput[cntrx] += hn->GetBinContent(hn->GetBin(binarray));
@@ -476,8 +475,8 @@ struct FlowEventPlane {
 
     // Fill X and Y histograms
     fillCorrHist(vCollParam, vSP);
-    histos.fill(HIST("Checks/hXaXc"), cent, vSP[kXa], vSP[kXc]);
-    histos.fill(HIST("Checks/hYaYc"), cent, vSP[kYa], vSP[kYc]);
+    histos.fill(HIST("Checks/hXaXc"), cent, (vSP[kXa] * vSP[kXc]));
+    histos.fill(HIST("Checks/hYaYc"), cent, (vSP[kYa] * vSP[kYc]));
     histos.fill(HIST("Checks/hPsiSPA"), cent, std::atan2(vSP[kYa], vSP[kXa]));
     histos.fill(HIST("Checks/hPsiSPC"), cent, std::atan2(vSP[kYc], vSP[kXc]));
 
@@ -517,5 +516,5 @@ struct FlowEventPlane {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowEventPlane>(cfgc)};
+    adaptAnalysisTask<FlowEventPlane>(cfgc)};
 }
