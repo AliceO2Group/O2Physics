@@ -23,6 +23,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -40,6 +41,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <numeric>
 #include <vector>
 
