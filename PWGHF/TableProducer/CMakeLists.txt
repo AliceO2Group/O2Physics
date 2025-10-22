@@ -202,6 +202,11 @@ o2physics_add_dpl_workflow(candidate-selector-xicc-to-p-k-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+ o2physics_add_dpl_workflow(candidate-selector-cd
+                     SOURCES candidateSelectorCd.cxx
+                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                     COMPONENT_NAME Analysis)
+
 # Tree creators
 
 o2physics_add_dpl_workflow(tree-creator-b0-to-d-pi
