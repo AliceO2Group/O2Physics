@@ -213,9 +213,9 @@ class TrackPropagationModule
   void fillTrackTables(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
 
-    /// retrieve the graphs *if not done yet*
+    /// retrieve the TrackTuner calibration graphs *if not done yet*
     /// i.e. if autodetect is required
-    if (autoDetectDcaCalib && !trackTunerObj.areGraphsConfigured) {
+    if (cGroup.useTrackTuner.value && autoDetectDcaCalib && !trackTunerObj.areGraphsConfigured) {
 
       /// get the run number from the ccdb loader, already initialized
       const int runNumber = ccdbLoader.runNumber;
