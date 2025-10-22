@@ -73,6 +73,8 @@ struct FlowEventPlane {
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
+  Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
+  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
 
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.15, "p_{T} minimum"};
@@ -114,17 +116,17 @@ struct FlowEventPlane {
   std::array<float, 4> znaYWeigthEnergy = {1., 1., 1., 1.};
   std::array<float, 4> zncXWeigthEnergy = {1., 1., 1., 1.};
   std::array<float, 4> zncYWeigthEnergy = {1., 1., 1., 1.};
-  std::vector<std::vector<string>> vCoarseCorrHistNames = {
+  std::vector<std::vector<std::string>> vCoarseCorrHistNames = {
     {"hXZNAVsCentVxVyVz"},
     {"hYZNAVsCentVxVyVz"},
     {"hXZNCVsCentVxVyVz"},
     {"hYZNCVsCentVxVyVz"}};
-  std::vector<std::vector<string>> vFineCorrHistNames = {
+  std::vector<std::vector<std::string>> vFineCorrHistNames = {
     {"hXZNAVsCent", "hXZNAVsVx", "hXZNAVsVy", "hXZNAVsVz"},
     {"hYZNAVsCent", "hYZNAVsVx", "hYZNAVsVy", "hYZNAVsVz"},
     {"hXZNCVsCent", "hXZNCVsVx", "hXZNCVsVy", "hXZNCVsVz"},
     {"hYZNCVsCent", "hYZNCVsVx", "hYZNCVsVy", "hYZNCVsVz"}};
-  std::map<CorrectionType, std::vector<std::vector<string>>> corrTypeHistNameMap = {{kFineCorr, vFineCorrHistNames}, {kCoarseCorr, vCoarseCorrHistNames}};
+  std::map<CorrectionType, std::vector<std::vector<std::string>>> corrTypeHistNameMap = {{kFineCorr, vFineCorrHistNames}, {kCoarseCorr, vCoarseCorrHistNames}};
 
   void init(InitContext const&)
   {
@@ -135,7 +137,7 @@ struct FlowEventPlane {
     // Define axes
     const AxisSpec axisZDCEnergy{1000, 0, 5000, "ZD[AC] Signal"};
 
-    const AxisSpec axisCent{10, 0., 100, "FT0C%"};
+    const AxisSpec axisCent{100, 0., 100, "FT0C%"};
     const AxisSpec axisVx{cAxisVxyBins, cAxisVxMin, cAxisVxMax, "V_{X}(cm)"};
     const AxisSpec axisVy{cAxisVxyBins, cAxisVyMin, cAxisVyMax, "V_{Y}(cm)"};
     const AxisSpec axisVz{cAxisVzBins, cMinZVtx, cMaxZVtx, "V_{Z}(cm)"};
@@ -205,6 +207,8 @@ struct FlowEventPlane {
     histos.add("CorrHist/hYZNCVsVz", "Y^{ZNC}_{1} Vs V_{z}", kTProfile, {axisFineVz});
     histos.add("Checks/hPsiSPA", "#Psi_{SP}^{A} distribution", kTH2F, {axisCent, axisPsi});
     histos.add("Checks/hPsiSPC", "#Psi_{SP}^{C} distribution", kTH2F, {axisCent, axisPsi});
+    histos.add("Checks/hCosPsiSPAC", "Cos(#Psi_{SP}^{A} #minus #Psi_{SP}^{C}) distribution", kTProfile, {axisCent});
+    histos.add("Checks/hSinPsiSPAC", "Sin(#Psi_{SP}^{A} #minus #Psi_{SP}^{C}) distribution", kTProfile, {axisCent});
     histos.add("Checks/hXaXc", "X^{ZNC}_{1} Vs X^{ZNA}_{1}", kTProfile, {axisCent});
     histos.add("Checks/hYaYc", "Y^{ZNC}_{1} Vs Y^{ZNA}_{1}", kTProfile, {axisCent});
     histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
@@ -229,6 +233,10 @@ struct FlowEventPlane {
 
     cent = col.centFT0C();
     if (cent <= cMinCent || cent >= cMaxCent) { // Centrality selection
+      return false;
+    }
+
+    if (col.ft0cOccupancyInTimeRange() < cMinOccupancy || col.ft0cOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
       return false;
     }
 
@@ -318,7 +326,7 @@ struct FlowEventPlane {
     std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
     int nitr = vCorrFlags.size();
     CorrectionType corrType = kFineCorr;
-    string ccdbPath;
+    std::string ccdbPath;
 
     for (int i = 0; i < nitr; ++i) {
       // Don't correct if corrFlag != 1
@@ -475,13 +483,17 @@ struct FlowEventPlane {
 
     // Fill X and Y histograms
     fillCorrHist(vCollParam, vSP);
+    float psiA = std::atan2(vSP[kYa], vSP[kXa]);
+    float psiC = std::atan2(vSP[kYa], vSP[kXa]);
     histos.fill(HIST("Checks/hXaXc"), cent, (vSP[kXa] * vSP[kXc]));
     histos.fill(HIST("Checks/hYaYc"), cent, (vSP[kYa] * vSP[kYc]));
-    histos.fill(HIST("Checks/hPsiSPA"), cent, std::atan2(vSP[kYa], vSP[kXa]));
-    histos.fill(HIST("Checks/hPsiSPC"), cent, std::atan2(vSP[kYc], vSP[kXc]));
+    histos.fill(HIST("Checks/hPsiSPA"), cent, psiA);
+    histos.fill(HIST("Checks/hPsiSPC"), cent, psiC);
+    histos.fill(HIST("Checks/hCosPsiSPAC"), cent, std::cos(psiA - psiC));
+    histos.fill(HIST("Checks/hSinPsiSPAC"), cent, std::sin(psiA - psiC));
 
     // Directed flow
-    float qac = vSP[kXa] * vSP[kXc] + vSP[kYa] * vSP[kYc];
+    float qac = (vSP[kXa] * vSP[kXc]) + (vSP[kYa] * vSP[kYc]);
     histos.fill(HIST("DF/hQaQc"), cent, qac);
 
     // Loop over tracks
