@@ -651,12 +651,12 @@ struct CascadeAnalysisLightIonsDerivedData {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
       // event selections
-      if (applyVtxZ && std::fabs(mcCollisions.posZ()) > zVtx)
+      if (applyVtxZ && std::fabs(mcCollision.posZ()) > zVtx)
         continue;
 
-      registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 0 /* all gen. events*/);
+      registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
-      auto groupedCollisions = getGroupedCollisions(collisions, mcCollisions.globalIndex());
+      auto groupedCollisions = getGroupedCollisions(collisions, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
       // If so, we consider it
       bool atLeastOne = false;
@@ -717,12 +717,12 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), centralitydata, groupedCollisions.size());
       registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), centralitydata, nCollisions);
-      registryMC.fill(HIST("hCentralityVsMultMC"), centralitydata, mcCollisions.multMCNParticlesEta05());
+      registryMC.fill(HIST("hCentralityVsMultMC"), centralitydata, mcCollision.multMCNParticlesEta05());
 
-      registryQC.fill(HIST("hVertexZGen"), mcCollisions.posZ());
+      registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
       if (atLeastOne) {
-        registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
+        registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
 
         registryMC.fill(HIST("hGenEventCentrality"), centralitydata);
       }
