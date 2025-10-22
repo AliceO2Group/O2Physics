@@ -1721,10 +1721,10 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
   void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
   {
-    if (events.size() == 0) {
-      LOG(warning) << "No events in this TF, going to the next one ...";
-      return;
-    }
+    // if (events.size() == 0) {
+    //   LOG(warning) << "No events in this TF, going to the next one ...";
+    //   return;
+    // }
     if (fCurrentRun != events.begin().runNumber()) {
       initParamsFromCCDB(events.begin().timestamp(), TTwoProngFitter);
       fCurrentRun = events.begin().runNumber();
