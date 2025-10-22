@@ -670,9 +670,7 @@ class pidTPCModule
 
     //_______________________________________
     // process tracksQA in case present
-    std::vector<int64_t> indexTrack2TrackQA;
-    indexTrack2TrackQA.clear();
-    indexTrack2TrackQA.resize(outTable_size, -1);
+    std::vector<int64_t> indexTrack2TrackQA(outTable_size, -1);
     if constexpr (soa::is_table<TTracksQA>) {
       for (const auto& trackQA : tracksQA) {
         indexTrack2TrackQA[trackQA.trackId()] = trackQA.globalIndex();
