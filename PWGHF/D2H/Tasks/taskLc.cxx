@@ -27,6 +27,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -36,14 +37,17 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
 #include <THnSparse.h>
 #include <TPDGCode.h>
 
@@ -51,6 +55,7 @@
 #include <cmath>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <vector> // std::vector
 
 using namespace o2;
