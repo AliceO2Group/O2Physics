@@ -112,7 +112,7 @@ struct HfTaskCd {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
-    auto vbins = (std::vector<double>)binsPt;
+    auto vbins = binsPt;
     /// mass candidate
     registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
     registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (de K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -152,20 +152,9 @@ struct HfTaskCd {
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle"};
       const AxisSpec thnAxisCentrality{thnConfigAxisCentrality, "centrality (FT0C)"};
 
-      std::vector<AxisSpec> axesStd;
-      axesStd = {thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCentrality};
-
+      auto axesStd = std::vector{thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCentrality};
       registry.add("hnCdVars", "THn for Reconstructed Cd candidates for data", HistType::kTHnSparseF, axesStd);
     }
-  }
-
-  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
-  /// \param candidate is candidate
-  /// \return centrality/multiplicity percentile of the collision
-  template <typename Coll>
-  float evaluateCentralityColl(const Coll& collision)
-  {
-    return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
   /// Fill histograms for real data
@@ -177,19 +166,19 @@ struct HfTaskCd {
     auto numPvContributors = collision.numContrib();
 
     for (const auto& candidate : groupedCdCandidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
         continue;
       }
 
-      auto pt = candidate.pt();
-      auto ptProng0 = candidate.ptProng0();
-      auto ptProng1 = candidate.ptProng1();
-      auto ptProng2 = candidate.ptProng2();
-      auto decayLength = candidate.decayLength();
-      auto decayLengthXY = candidate.decayLengthXY();
-      auto chi2PCA = candidate.chi2PCA();
-      auto cpa = candidate.cpa();
-      auto cpaXY = candidate.cpaXY();
+      const auto pt = candidate.pt();
+      const auto ptProng0 = candidate.ptProng0();
+      const auto ptProng1 = candidate.ptProng1();
+      const auto ptProng2 = candidate.ptProng2();
+      const auto decayLength = candidate.decayLength();
+      const auto decayLengthXY = candidate.decayLengthXY();
+      const auto chi2PCA = candidate.chi2PCA();
+      const auto cpa = candidate.cpa();
+      const auto cpaXY = candidate.cpaXY();
 
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassCdToDeKPi(candidate));
@@ -232,7 +221,7 @@ struct HfTaskCd {
       registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
 
       if (fillTHn) {
-        float const cent = evaluateCentralityColl(collision);
+        float const cent = o2::hf_centrality::getCentralityColl<CollType>(collision);
         double massCd(-1);
         if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
           massCd = hfHelper.invMassCdToDeKPi(candidate);
