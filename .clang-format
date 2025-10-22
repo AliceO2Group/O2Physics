@@ -51,7 +51,7 @@ IncludeCategories:
     Priority: 3
     CaseSensitive: true
   # O2
-  - Regex: ^(<|")(Algorithm|CCDB|Common[A-Z]|DataFormats|DCAFitter|Detectors|EMCAL|Field|Framework|FT0|FV0|GlobalTracking|ITS|MathUtils|MFT|MCH|MID|PHOS|PID|ReconstructionDataFormats|SimulationDataFormat|TOF|TPC|ZDC).*/.*\.h
+  - Regex: ^(<|")(Algorithm|CCDB|Common[A-Z]|DataFormats|DCAFitter|Detectors|EMCAL|Field|Framework|FT0|FV0|GlobalTracking|GPU|ITS|MathUtils|MFT|MCH|MID|PHOS|PID|ReconstructionDataFormats|SimulationDataFormat|TOF|TPC|ZDC).*/.*\.h
     Priority: 4
     CaseSensitive: true
   # ROOT

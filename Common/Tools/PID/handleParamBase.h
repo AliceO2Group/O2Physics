@@ -22,10 +22,15 @@
 #include <CCDB/CcdbApi.h>
 #include <Framework/Logger.h>
 
-#include <TFile.h>
+#include <TString.h>
 
-#include <boost/program_options.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/value_semantic.hpp>
+#include <boost/program_options/variables_map.hpp>
 
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 #include <map>
 #include <string>
 

@@ -26,7 +26,6 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
-#include <DataFormatsITSMFT/NoiseMap.h> // missing include in TimeDeadMap.
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>

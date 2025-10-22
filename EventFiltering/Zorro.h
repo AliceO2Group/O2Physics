@@ -59,6 +59,7 @@ class Zorro
   TH1D* getInspectedTVX() const { return mInspectedTVX; }
   std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
+  std::vector<int> getATcounters() const { return mATcounts; }
   std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
   std::vector<bool> getTriggerOfInterestResults() const;
   int getNTOIs() const { return mTOIs.size(); }
@@ -98,6 +99,7 @@ class Zorro
   std::vector<std::string> mTOIs;
   std::vector<int> mTOIidx;
   std::vector<int> mTOIcounts;
+  std::vector<int> mATcounts;
   o2::ccdb::BasicCCDBManager* mCCDB = nullptr;
 };
 

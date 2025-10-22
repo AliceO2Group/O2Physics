@@ -20,6 +20,7 @@
 
 #include <Rtypes.h>
 
+#include <cmath>
 #include <functional>
 #include <string>
 

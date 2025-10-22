@@ -86,10 +86,10 @@ struct HfPidCreator {
   /// \param tpcNSigma is the (binned) NSigma separation in TPC (if tiny = true)
   /// \param tofNSigma is the (binned) NSigma separation in TOF (if tiny = true)
   /// \return combined NSigma of TPC and TOF
-  template <bool tiny, typename T1>
+  template <bool Tiny, typename T1>
   T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
   {
-    if constexpr (tiny) {
+    if constexpr (Tiny) {
       tpcNSigma *= aod::pidtpc_tiny::binning::bin_width;
       tofNSigma *= aod::pidtof_tiny::binning::bin_width;
     }

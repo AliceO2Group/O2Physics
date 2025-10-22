@@ -127,6 +127,7 @@ enum DecayChannelResonant : HfDecayChannel {
   LcToPKstar0 = 24,        // p anti-K*0(892)
   LcToDeltaplusplusK = 25, // Δ++ K−
   LcToL1520Pi = 26,        // Λ(1520) π+
+  LcToPPhi = 29,           // p φ
   // Ξc+
   XicToPKstar0 = 27, // p anti-K*0(892)
   XicToPPhi = 28,    // p φ

@@ -44,6 +44,7 @@
 #include "Math/PxPyPzM4D.h"
 #include "TList.h"
 #include "TMath.h"
+#include "TList.h"
 #include "TVector3.h"
 #include <TF1.h>
 #include <TObjArray.h>
@@ -1048,6 +1049,27 @@ struct FlowCumulantsUpc {
       for (uint l_ind = 0; l_ind < corrconfigsmc.size(); l_ind++) {
         std::cout << "filling flow container for MC" << std::endl;
         fillFCMC(corrconfigsmc.at(l_ind), independent, lRandomMc);
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz)) {
+        continue;
+      }
+      registry.fill(HIST("hPt"), track.pt());
+      if (withinPtRef) {
+        registry.fill(HIST("hPhi"), phi);
+        registry.fill(HIST("hPhiWeighted"), phi, wacc);
+        registry.fill(HIST("hEta"), eta);
+        registry.fill(HIST("hPtRef"), pt);
+        registry.fill(HIST("hDCAz"), track.dcaZ(), track.pt());
+        registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
+        nTracksCorrected += weff;
+      }
+      if (withinPtRef) {
+        fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
+      }
+      if (withinPtPOI) {
+        fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
+      }
+      if (withinPtPOI && withinPtRef) {
+        fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
       }
     }
   }

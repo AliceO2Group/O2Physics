@@ -54,6 +54,7 @@ using namespace o2::framework;
 
 struct HfCandidateSelectorLcToK0sP {
   Produces<aod::HfSelLcToK0sP> hfSelLcToK0sPCandidate;
+  Produces<aod::HfMlLcToK0sP> hfMlLcToK0sPCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
@@ -95,6 +96,7 @@ struct HfCandidateSelectorLcToK0sP {
   TrackSelectorPr selectorProtonHighP;
 
   o2::analysis::HfMlResponseLcToK0sP<float> hfMlResponse;
+  std::vector<float> outputMl;
 
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -139,8 +141,8 @@ struct HfCandidateSelectorLcToK0sP {
       hfMlResponse.init();
 
       // load histograms for ML score
-      AxisSpec axisScore = {100, 0, 1, "score"};
-      AxisSpec axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec const axisScore = {100, 0, 1, "score"};
+      AxisSpec const axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
       for (int classMl = 0; classMl < nClassesMl; classMl++) {
         hModelScore.push_back(registry.add<TH1>(Form("hMlScoreClass%d", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH1F, {axisScore}));
         hModelScoreVsPtCand.push_back(registry.add<TH2>(Form("hMlScoreClass%dVsPtCand", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH2F, {axisScore, axisBinsPt}));
@@ -155,7 +157,7 @@ struct HfCandidateSelectorLcToK0sP {
   bool selectionTopol(const T& hfCandCascade)
   {
     auto candPt = hfCandCascade.pt();
-    int ptBin = findBin(binsPt, candPt);
+    int const ptBin = findBin(binsPt, candPt);
     if (ptBin == -1) {
       return false;
     }
@@ -219,9 +221,8 @@ struct HfCandidateSelectorLcToK0sP {
   {
     if (track.p() < pPidThreshold) {
       return selectorProtonLowP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
-    } else {
-      return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
     }
+    return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
   }
 
   template <typename T>
@@ -233,20 +234,18 @@ struct HfCandidateSelectorLcToK0sP {
 
     if (track.p() < pPidThreshold) {
       return selectorProtonLowP.statusBayesProb(track) == TrackSelectorPID::Accepted;
-    } else {
-      return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
     }
+    return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
   }
 
   template <typename T, typename U>
-  bool selectionMl(const T& hfCandCascade, const U& bach)
+  bool selectionMl(const T& hfCandCascade, const U& bach, std::vector<float>& outputMl)
   {
 
     auto ptCand = hfCandCascade.pt();
     std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(hfCandCascade, bach);
-    std::vector<float> outputMl = {};
 
-    bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+    bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
 
     for (int classMl = 0; classMl < nClassesMl; classMl++) {
       hModelScore[classMl]->Fill(outputMl[classMl]);
@@ -265,26 +264,37 @@ struct HfCandidateSelectorLcToK0sP {
       const auto& bach = candidate.prong0_as<TracksSel>(); // bachelor track
 
       statusLc = 0;
+      outputMl.clear();
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
       // need to add special cuts (additional cuts on decay length and d0 norm)
       if (!selectionTopol(candidate)) {
         hfSelLcToK0sPCandidate(statusLc);
+        if (applyMl) {
+          hfMlLcToK0sPCandidate(outputMl);
+        }
         continue;
       }
 
       if (!selectionStandardPID(bach)) {
         hfSelLcToK0sPCandidate(statusLc);
+        if (applyMl) {
+          hfMlLcToK0sPCandidate(outputMl);
+        }
         continue;
       }
 
-      if (applyMl && !selectionMl(candidate, bach)) {
-        hfSelLcToK0sPCandidate(statusLc);
-        continue;
+      if (applyMl) {
+        bool const isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        hfMlLcToK0sPCandidate(outputMl);
+
+        if (!isSelectedMlLcToK0sP) {
+          hfSelLcToK0sPCandidate(statusLc);
+          continue;
+        }
       }
 
       statusLc = 1;
-
       hfSelLcToK0sPCandidate(statusLc);
     }
   }
@@ -299,24 +309,35 @@ struct HfCandidateSelectorLcToK0sP {
       const auto& bach = candidate.prong0_as<TracksSelBayes>(); // bachelor track
 
       statusLc = 0;
+      outputMl.clear();
 
       if (!selectionTopol(candidate)) {
         hfSelLcToK0sPCandidate(statusLc);
+        if (applyMl) {
+          hfMlLcToK0sPCandidate(outputMl);
+        }
         continue;
       }
 
       if (!selectionBayesPID(bach)) {
         hfSelLcToK0sPCandidate(statusLc);
+        if (applyMl) {
+          hfMlLcToK0sPCandidate(outputMl);
+        }
         continue;
       }
 
-      if (applyMl && !selectionMl(candidate, bach)) {
-        hfSelLcToK0sPCandidate(statusLc);
-        continue;
+      if (applyMl) {
+        bool const isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        hfMlLcToK0sPCandidate(outputMl);
+
+        if (!isSelectedMlLcToK0sP) {
+          hfSelLcToK0sPCandidate(statusLc);
+          continue;
+        }
       }
 
       statusLc = 1;
-
       hfSelLcToK0sPCandidate(statusLc);
     }
   }
