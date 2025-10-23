@@ -657,7 +657,6 @@ struct HStrangeCorrelationFilter {
     if (!doPPAnalysis && !isCollisionSelectedPbPb(collision))
       return;
 
-
     /// _________________________________________________
     /// Populate table with associated V0s
     for (auto const& v0 : V0s) {
@@ -1071,8 +1070,7 @@ struct HStrangeCorrelationFilter {
         }
       }
 
-
-      float massNSigmaXi = (casc.mXi() -  - hXiMean->Interpolate(casc.pt())) / (hXiWidth->Interpolate(casc.pt()) + 1e-6);
+      float massNSigmaXi = (casc.mXi() - -hXiMean->Interpolate(casc.pt())) / (hXiWidth->Interpolate(casc.pt()) + 1e-6);
       float massNSigmaOmega = (casc.mOmega() - hOmegaMean->Interpolate(casc.pt())) / (hOmegaWidth->Interpolate(casc.pt()) + 1e-6);
 
       if (compatibleXiMinus)
@@ -1241,7 +1239,7 @@ struct HStrangeCorrelationFilter {
         }
       }
 
-      float massNSigmaXi = (casc.mXi() -  - hXiMean->Interpolate(casc.pt())) / (hXiWidth->Interpolate(casc.pt()) + 1e-6);
+      float massNSigmaXi = (casc.mXi() - -hXiMean->Interpolate(casc.pt())) / (hXiWidth->Interpolate(casc.pt()) + 1e-6);
       float massNSigmaOmega = (casc.mOmega() - hOmegaMean->Interpolate(casc.pt())) / (hOmegaWidth->Interpolate(casc.pt()) + 1e-6);
 
       bool cascPhysicalPrimary = false;
