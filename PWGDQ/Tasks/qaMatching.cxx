@@ -1802,7 +1802,8 @@ struct qaMatching {
                    aod::BCsWithTimestamps const& bcs,
                    MyMuonsMC const& muonTracks,
                    MyMFTsMC const& mftTracks,
-                   MyMFTCovariances const& mftCovs)
+                   MyMFTCovariances const& mftCovs,
+                   aod::McParticles const& /*mcParticles*/)
   {
     auto bc = bcs.begin();
     initCCDB(bc);
