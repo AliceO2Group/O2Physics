@@ -465,9 +465,11 @@ TH1D* FlowContainer::GetHistCorrXXVsPt(const char* order, double lminmulti, doub
   TProfile* tpf = GetCorrXXVsPt(order, lminmulti, lmaxmulti);
   TH1D* rethist = ProfToHist(tpf);
   TProfile* refflow = GetRefFlowProfile(order, lminmulti, lmaxmulti);
-  refflow->RebinX(refflow->GetNbinsX());
-  rethist->SetBinContent(0, refflow->GetBinContent(1));
-  rethist->SetBinError(0, refflow->GetBinError(1));
+  if (refflow) {
+    refflow->RebinX(refflow->GetNbinsX());
+    rethist->SetBinContent(0, refflow->GetBinContent(1));
+    rethist->SetBinError(0, refflow->GetBinError(1));
+  }
   delete refflow;
   delete tpf;
   return rethist;
@@ -922,8 +924,9 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
   if (!retpf) {
     LOGF(error, "Reference flow profile is null");
     return nullptr;
+  } else {
+    retpf->RebinX(nBins);
   }
-  retpf->RebinX(nBins);
   return retpf;
 };
 
