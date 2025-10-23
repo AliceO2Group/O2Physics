@@ -919,12 +919,12 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
     delete tempprof;
   }
   delete rhSubset;
-  if (retpf) {
-    retpf->RebinX(nBins);
-    return retpf;
-  } else {
+  if (!retpf) {
+    LOGF(error, "Reference flow profile is null");
     return nullptr;
   }
+  retpf->RebinX(nBins);
+  return retpf;
 };
 
 //{2} particle correlations
