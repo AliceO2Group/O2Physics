@@ -150,7 +150,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::IsSignal,
                   hyperrec::IsRecoMCCollision,
                   hyperrec::IsSurvEvSel,
-                  hyperrec::IsTwoBodyDecay);
+                  hyperrec::IsTwoBodyDecay, aod::mcparticle::StatusCode);
 
 DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   o2::soa::Index<>,

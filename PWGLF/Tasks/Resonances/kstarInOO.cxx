@@ -172,17 +172,19 @@ struct kstarInOO {
 
     if (cfgDataHistos) {
       histos.add("nEvents", "nEvents", kTH1F, {{4, 0.0, 4.0}});
-      histos.add("hUSS", "hUSS", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hLSS", "hLSS", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_Mix", "hUSS_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hLSS_Mix", "hLSS_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_KPi", "hUSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_PiK", "hUSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hLSS_KPi", "hLSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hLSS_PiK", "hLSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_Mix_KPi", "hUSS_Mix_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_Mix_PiK", "hUSS_Mix_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
 
     if (cfgMcHistos) {
-      // histos.add("hPion_PID_Purity", "hPion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      // histos.add("hKaon_PID_Purity", "hKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      // histos.add("hSimplePion_PID_Purity", "hSimplePion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      // histos.add("hSimpleKaon_PID_Purity", "hSimpleKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hPion_PID_Purity", "hPion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hKaon_PID_Purity", "hKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hSimplePion_PID_Purity", "hSimplePion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
+      histos.add("hSimpleKaon_PID_Purity", "hSimpleKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
 
       histos.add("nEvents_MC", "nEvents_MC", kTH1F, {{4, 0.0, 4.0}});
       histos.add("nEvents_MC_True", "nEvents_MC_True", kTH1F, {{4, 0.0, 4.0}});
@@ -191,8 +193,13 @@ struct kstarInOO {
 
       histos.add("hMC_USS_True", "hMC_USS_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hMC_USS_KPi", "hMC_USS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hMC_USS_PiK", "hMC_USS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hMC_LSS_KPi", "hMC_LSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hMC_LSS_PiK", "hMC_LSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+
       histos.add("hMC_USS_KPi_Mix", "hMC_USS_KPi_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hMC_USS_PiK_Mix", "hMC_USS_PiK_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+
       histos.add("hMC_USS_KPi_True", "hMC_USS_KPi_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hMC_USS_PiK_True", "hMC_USS_PiK_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
@@ -279,13 +286,11 @@ struct kstarInOO {
       return false;
     if (cfgTrackGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    // if (cfgTracknFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
-    if (track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
+    if (cfgTracknFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
       return false;
     if (track.tpcNClsCrossedRows() < cfgTracknTPCCrossedRows)
       return false;
-    // if (cfgTracknRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
-    if (track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
+    if (cfgTracknRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > cfgTracknTPCChi2)
       return false;
@@ -382,26 +387,29 @@ struct kstarInOO {
 
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-      auto [KstarPt, Minv] = minvReconstruction(trk1, trk2, QA, false);
+      auto [KstarPt_Kpi, Minv_Kpi] = minvReconstruction(trk1, trk2, QA, false);
+      auto [KstarPt_piK, Minv_piK] = minvReconstruction(trk1, trk2, QA, true);
+
+      if (Minv_Kpi < 0)
+        continue;
 
       double conjugate = trk1.sign() * trk2.sign();
       if (cfgDataHistos) {
-        if (Minv > 0) {
-          if (!IsMix) {
-            if (conjugate < 0) {
-              histos.fill(HIST("hUSS"), centrality, KstarPt, Minv);
-            } else if (conjugate > 0) {
-              histos.fill(HIST("hLSS"), centrality, KstarPt, Minv);
-            }
-          } else {
-            if (conjugate < 0) {
-              histos.fill(HIST("hUSS_Mix"), centrality, KstarPt, Minv);
-            } else if (conjugate > 0) {
-              histos.fill(HIST("hLSS_Mix"), centrality, KstarPt, Minv);
-            }
+        if (!IsMix) {
+          if (conjugate < 0) {
+            histos.fill(HIST("hUSS_KPi"), centrality, KstarPt_Kpi, Minv_Kpi);
+            histos.fill(HIST("hUSS_PiK"), centrality, KstarPt_piK, Minv_piK);
+          } else if (conjugate > 0) {
+            histos.fill(HIST("hLSS_KPi"), centrality, KstarPt_Kpi, Minv_Kpi);
+            histos.fill(HIST("hLSS_PiK"), centrality, KstarPt_piK, Minv_piK);
+          }
+        } else {
+          if (conjugate < 0) {
+            histos.fill(HIST("hUSS_KPi_Mix"), centrality, KstarPt_Kpi, Minv_Kpi);
+            histos.fill(HIST("hUSS_PiK_Mix"), centrality, KstarPt_piK, Minv_piK);
           }
         }
-      } // cfgDataHistos
+      }
     } // for
   } // TrackSlicing
 
@@ -416,17 +424,12 @@ struct kstarInOO {
     std::vector<int> PIDPurityKey_Kaon;
     std::vector<int> PIDPurityKey_Pion;
 
-    double KstarPt_Kpi, Minv_Kpi;
-
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
       if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
         continue;
 
-      // auto [KstarPt_Kpi, Minv_Kpi] = minvReconstruction(trk1, trk2, QA, false);
-      // auto [KstarPt_piK, Minv_piK] = minvReconstruction(trk1, trk2, QA, true);
-
-      std::tie(KstarPt_Kpi, Minv_Kpi) = minvReconstruction(trk1, trk2, QA, false);
-      std::tie(KstarPt_Kpi, Minv_Kpi) = minvReconstruction(trk1, trk2, QA, true);
+      auto [KstarPt_Kpi, Minv_Kpi] = minvReconstruction(trk1, trk2, QA, false);
+      auto [KstarPt_piK, Minv_piK] = minvReconstruction(trk1, trk2, QA, true);
 
       if (Minv_Kpi < 0)
         continue;
@@ -436,12 +439,15 @@ struct kstarInOO {
         if (!IsMix) {
           if (conjugate < 0) {
             histos.fill(HIST("hMC_USS_KPi"), centrality, KstarPt_Kpi, Minv_Kpi);
+            histos.fill(HIST("hMC_USS_PiK"), centrality, KstarPt_piK, Minv_piK);
           } else if (conjugate > 0) {
             histos.fill(HIST("hMC_LSS_KPi"), centrality, KstarPt_Kpi, Minv_Kpi);
+            histos.fill(HIST("hMC_LSS_PiK"), centrality, KstarPt_piK, Minv_piK);
           }
         } else {
           if (conjugate < 0) {
             histos.fill(HIST("hMC_USS_KPi_Mix"), centrality, KstarPt_Kpi, Minv_Kpi);
+            histos.fill(HIST("hMC_USS_PiK_Mix"), centrality, KstarPt_piK, Minv_piK);
           }
         }
       }
@@ -535,20 +541,14 @@ struct kstarInOO {
     if (!trackSelection(trk1, false) || !trackSelection(trk2, false))
       return {-1.0, -1.0};
 
-    if (!flip) {
-      if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA)) {
-        return {-1.0, -1.0};
-      }
-    } else {
-      if (!trackPIDPion(trk1, false) || !trackPIDKaon(trk2, false))
-        return {-1.0, -1.0};
-    }
-
-    if (trk1.index() >= trk2.index())
+    if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA))
       return {-1.0, -1.0};
 
-    //    if (trk1.globalIndex() == trk2.globalIndex())
+    // if (trk1.index() >= trk2.index())
     //   return {-1.0, -1.0};
+    // I checked that index and globalIndex was same function
+    if (trk1.globalIndex() >= trk2.globalIndex())
+      return {-1.0, -1.0};
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     if (!flip) {
@@ -704,7 +704,7 @@ struct kstarInOO {
     }
     TrackSlicingMC(collision, tracks, collision, tracks, false, true);
   } // processSameEvents_MC
-  PROCESS_SWITCH(kstarInOO, processSameEventMC, "process Same Event MC", true);
+  PROCESS_SWITCH(kstarInOO, processSameEventMC, "process Same Event MC", false);
 
   //=======================================================
   //|
@@ -776,6 +776,10 @@ struct kstarInOO {
       if (cfgMcHistos) {
         histos.fill(HIST("hMC_kstar_True"), centrality, particle.pt());
       }
+      if (cfgMcHistos) {
+        histos.fill(HIST("nEvents_MC_True"), 1.5);
+      }
+
     } // loop over particles
   } // processMCTrue
   PROCESS_SWITCH(kstarInOO, processMCTrue, "process MC True", false);

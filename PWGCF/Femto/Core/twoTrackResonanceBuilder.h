@@ -30,7 +30,7 @@
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/Configurable.h"
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h>
 
 #include "fairlogger/Logger.h"
 

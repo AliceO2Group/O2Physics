@@ -47,6 +47,7 @@
 #include "Math/Vector4D.h"
 #include "TString.h"
 
+#include <algorithm>
 #include <array>
 #include <format>
 #include <map>
@@ -127,8 +128,8 @@ struct DileptonMC {
   Configurable<int> cfg_nbin_aco{"cfg_nbin_aco", 1, "number of bins for acoplanarity"};          // 10
   Configurable<int> cfg_nbin_asym_pt{"cfg_nbin_asym_pt", 1, "number of bins for pt asymmetry"};  // 10
   Configurable<int> cfg_nbin_dphi_e_ee{"cfg_nbin_dphi_e_ee", 1, "number of bins for dphi_ee_e"}; // 18
-  ConfigurableAxis ConfPolarizationPhiBins{"ConfPolarizationPhiBins", {1, 0.f, 2 * M_PI}, "phi bins for polarization analysis"};
   ConfigurableAxis ConfPolarizationCosThetaBins{"ConfPolarizationCosThetaBins", {1, -1.f, 1.f}, "cos(theta) bins for polarization analysis"};
+  ConfigurableAxis ConfPolarizationPhiBins{"ConfPolarizationPhiBins", {1, -M_PI, M_PI}, "phi bins for polarization analysis"};
   Configurable<int> cfgPolarizationFrame{"cfgPolarizationFrame", 0, "frame of polarization. 0:CS, 1:HX, else:FATAL"};
   ConfigurableAxis ConfPolarizationQuadMomBins{"ConfPolarizationQuadMomBins", {1, -0.5, 1}, "quadrupole moment bins for polarization analysis"}; // quardrupole moment <(3 x cos^2(theta) -1)/2>
 
@@ -803,22 +804,52 @@ struct DileptonMC {
   }
 
   template <typename TTrack, typename TMCParticles>
-  int FindLF(TTrack const& posmc, TTrack const& negmc, TMCParticles const& mcparticles)
+  int FindSMULS(TTrack const& t1mc, TTrack const& t2mc, TMCParticles const& mcparticles)
   {
     int arr[] = {
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 22, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 111, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 221, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 331, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 113, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 223, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 333, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 443, mcparticles),
-      FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 100443, mcparticles)
-      // FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 553, mcparticles),
-      // FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 100553, mcparticles),
-      // FindCommonMotherFrom2Prongs(posmc, negmc, -pdg_lepton, pdg_lepton, 200553, mcparticles)
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 22, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 111, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 221, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 331, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 113, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 223, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 333, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 443, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 100443, mcparticles)
+      // FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 553, mcparticles),
+      // FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 100553, mcparticles),
+      // FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, pdg_lepton, 200553, mcparticles)
     };
+    int size = sizeof(arr) / sizeof(*arr);
+    int max = *std::max_element(arr, arr + size);
+    return max;
+  }
+
+  template <typename TTrack, typename TMCParticles>
+  int FindSMLSPP(TTrack const& t1mc, TTrack const& t2mc, TMCParticles const& mcparticles)
+  {
+    int arr[] = {
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, -pdg_lepton, 111, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, -pdg_lepton, 221, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, -pdg_lepton, 331, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, -pdg_lepton, 113, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, -pdg_lepton, 223, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, -pdg_lepton, -pdg_lepton, 333, mcparticles)};
+    int size = sizeof(arr) / sizeof(*arr);
+    int max = *std::max_element(arr, arr + size);
+    return max;
+  }
+
+  template <typename TTrack, typename TMCParticles>
+  int FindSMLSMM(TTrack const& t1mc, TTrack const& t2mc, TMCParticles const& mcparticles)
+  {
+    int arr[] = {
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, pdg_lepton, pdg_lepton, 111, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, pdg_lepton, pdg_lepton, 221, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, pdg_lepton, pdg_lepton, 331, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, pdg_lepton, pdg_lepton, 113, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, pdg_lepton, pdg_lepton, 223, mcparticles),
+      FindCommonMotherFrom2Prongs(t1mc, t2mc, pdg_lepton, pdg_lepton, 333, mcparticles)};
     int size = sizeof(arr) / sizeof(*arr);
     int max = *std::max_element(arr, arr + size);
     return max;
@@ -1490,7 +1521,7 @@ struct DileptonMC {
     } else if (cfgPolarizationFrame == 1) {
       o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrP1, arrP2, beamE1, beamE2, beamP1, beamP2, t1.sign(), cos_thetaPol, phiPol);
     }
-    o2::math_utils::bringTo02Pi(phiPol);
+    o2::math_utils::bringToPMPi(phiPol);
     float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
 
     if ((FindCommonMotherFrom2ProngsWithoutPDG(t1mc, t2mc) > 0 || IsHF(t1mc, t2mc, mcparticles) > 0) && is_pair_from_same_mcevent) { // for bkg study
@@ -1533,7 +1564,7 @@ struct DileptonMC {
     if (cfgRequireTrueAssociation && (t1mc.emmceventId() != collision.emmceventId() || t2mc.emmceventId() != collision.emmceventId())) {
       return false;
     }
-    int mother_id = FindLF(t1mc, t2mc, mcparticles);
+    int mother_id = std::max({FindSMULS(t1mc, t2mc, mcparticles), FindSMULS(t2mc, t1mc, mcparticles), FindSMLSPP(t1mc, t2mc, mcparticles), FindSMLSMM(t1mc, t2mc, mcparticles)});
     int hfee_type = IsHF(t1mc, t2mc, mcparticles);
     if (mother_id < 0 && hfee_type < 0) {
       return false;
@@ -1608,7 +1639,7 @@ struct DileptonMC {
                 }
               }
               break;
-            case 443: {
+            case 443:
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fillRecHistograms<9>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt J/psi
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -1639,15 +1670,13 @@ struct DileptonMC {
                 }
               }
               break;
-            }
-            case 100443: {
+            case 100443:
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fillRecHistograms<11>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // non-prompt psi2S
               } else {
                 fillRecHistograms<10>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // prompt psi2S
               }
               break;
-            }
             default:
               break;
           }
@@ -1671,23 +1700,19 @@ struct DileptonMC {
         auto mp1 = mcparticles.iteratorAt(t1mc.mothersIds()[0]);
         auto mp2 = mcparticles.iteratorAt(t2mc.mothersIds()[0]);
         switch (hfee_type) {
-          case static_cast<int>(EM_HFeeType::kCe_Ce): {                                                                                                                                                                 // ULS
+          case static_cast<int>(EM_HFeeType::kCe_Ce):
             fillRecHistograms<15>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // c2l_c2l
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBe_Be): {                                                                                                                                         // ULS
+          case static_cast<int>(EM_HFeeType::kBe_Be):
             fillRecHistograms<16>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2l_b2l
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBCe_BCe): {                                                                                                                                       // ULS
+          case static_cast<int>(EM_HFeeType::kBCe_BCe):
             fillRecHistograms<17>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2c2l
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): {                                                                                                                                  // ULS
+          case static_cast<int>(EM_HFeeType::kBCe_Be_SameB):
             fillRecHistograms<18>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2l_sameb
             break;
-          }
-          case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):                                                                                                                                    // LS
+          case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):
             fillRecHistograms<19>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), pair_dca, weight); // b2c2l_b2l_diffb
             break;
           default:
@@ -1708,7 +1733,7 @@ struct DileptonMC {
       return false;
     }
 
-    int mother_id = FindLF(t1, t2, mcparticles);
+    int mother_id = std::max({FindSMULS(t1, t2, mcparticles), FindSMULS(t2, t1, mcparticles), FindSMLSPP(t1, t2, mcparticles), FindSMLSMM(t1, t2, mcparticles)});
     int hfee_type = IsHF(t1, t2, mcparticles);
     if (mother_id < 0 && hfee_type < 0) {
       return false;
@@ -1797,7 +1822,7 @@ struct DileptonMC {
     } else if (cfgPolarizationFrame == 1) {
       o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrP1, arrP2, beamE1, beamE2, beamP1, beamP2, -t1.pdgCode() / pdg_lepton, cos_thetaPol, phiPol);
     }
-    o2::math_utils::bringTo02Pi(phiPol);
+    o2::math_utils::bringToPMPi(phiPol);
     float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
 
     // bool isInAcc = isInAcceptance<isSmeared>(t1) && isInAcceptance<isSmeared>(t2);
@@ -1838,22 +1863,20 @@ struct DileptonMC {
               fRegistry.fill(HIST("Generated/sm/Phi2ll/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee)); // phi->ee
             }
             break;
-          case 443: {
+          case 443:
             if (IsFromBeauty(mcmother, mcparticles) > 0) {
               fillGenHistograms<9>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // non-prompt J/psi
             } else {
               fillGenHistograms<8>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // prompt J/psi
             }
             break;
-          }
-          case 100443: {
+          case 100443:
             if (IsFromBeauty(mcmother, mcparticles) > 0) {
               fillGenHistograms<11>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // non-prompt psi2S
             } else {
               fillGenHistograms<10>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // prompt psi2S
             }
             break;
-          }
           default:
             break;
         }
@@ -1862,22 +1885,18 @@ struct DileptonMC {
       auto mp1 = mcparticles.iteratorAt(t1.mothersIds()[0]);
       auto mp2 = mcparticles.iteratorAt(t2.mothersIds()[0]);
       switch (hfee_type) {
-        case static_cast<int>(EM_HFeeType::kCe_Ce): {
+        case static_cast<int>(EM_HFeeType::kCe_Ce):
           fillGenHistograms<15>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // c2l_c2l
           break;
-        }
-        case static_cast<int>(EM_HFeeType::kBe_Be): {
+        case static_cast<int>(EM_HFeeType::kBe_Be):
           fillGenHistograms<16>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2l_b2l
           break;
-        }
-        case static_cast<int>(EM_HFeeType::kBCe_BCe): {
+        case static_cast<int>(EM_HFeeType::kBCe_BCe):
           fillGenHistograms<17>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2c2l_b2c2l
           break;
-        }
-        case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): {                                                                                                                // ULS
+        case static_cast<int>(EM_HFeeType::kBCe_Be_SameB):
           fillGenHistograms<18>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2c2l_b2l_sameb
           break;
-        }
         case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):                                                                                                                  // LS
           fillGenHistograms<19>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, cos_thetaPol, phiPol, quadmom, aco, asym, std::fabs(dphi_e_ee), weight); // b2c2l_b2l_diffb
           break;
@@ -2226,7 +2245,7 @@ struct DileptonMC {
     if (!((t1mc.isPhysicalPrimary() || t1mc.producedByGenerator()) && (t2mc.isPhysicalPrimary() || t2mc.producedByGenerator()))) {
       return false;
     }
-    int mother_id = FindLF(t1mc, t2mc, mcparticles);
+    int mother_id = std::max({FindSMULS(t1mc, t2mc, mcparticles), FindSMULS(t2mc, t1mc, mcparticles), FindSMLSPP(t1mc, t2mc, mcparticles), FindSMLSMM(t1mc, t2mc, mcparticles)});
     int hfee_type = IsHF(t1mc, t2mc, mcparticles);
     if (mother_id < 0 && hfee_type < 0) {
       return false;

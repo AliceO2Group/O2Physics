@@ -64,7 +64,8 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsQvec> event_qvec;
   Produces<o2::aod::EMSWTriggerBits> emswtbit;
   Produces<o2::aod::EMSWTriggerInfos> emswtinfo;
-  Produces<o2::aod::EMSWTriggerCounters> emswtcounter;
+  Produces<o2::aod::EMSWTriggerATCounters> emswtATcounter;
+  Produces<o2::aod::EMSWTriggerTOICounters> emswtTOIcounter;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
 
   enum class EMEventType : int {
@@ -211,7 +212,7 @@ struct CreateEMEventDilepton {
 
   //---------- for data with swt ----------
 
-  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerCountersTMP const& emswtcounterstmp)
+  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
 
@@ -225,13 +226,16 @@ struct CreateEMEventDilepton {
         mRunNumber = info.runNumber();
       }
     }
-    for (const auto& counter : emswtcounterstmp) {
-      emswtcounter(counter.isAnalyzed_raw(), counter.isAnalyzedToI_raw());
+    for (const auto& counter : emswtATcounterstmp) {
+      emswtATcounter(counter.isAnalyzed_raw());
+    }
+    for (const auto& counter : emswtTOIcounterstmp) {
+      emswtTOIcounter(counter.isAnalyzedToI_raw());
     }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT, "process event info", false);
 
-  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerCountersTMP const& emswtcounterstmp)
+  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
 
@@ -245,13 +249,16 @@ struct CreateEMEventDilepton {
         mRunNumber = info.runNumber();
       }
     }
-    for (const auto& counter : emswtcounterstmp) {
-      emswtcounter(counter.isAnalyzed_raw(), counter.isAnalyzedToI_raw());
+    for (const auto& counter : emswtATcounterstmp) {
+      emswtATcounter(counter.isAnalyzed_raw());
+    }
+    for (const auto& counter : emswtTOIcounterstmp) {
+      emswtTOIcounter(counter.isAnalyzedToI_raw());
     }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent, "process event info", false);
 
-  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerCountersTMP const& emswtcounterstmp)
+  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
 
@@ -265,8 +272,11 @@ struct CreateEMEventDilepton {
         mRunNumber = info.runNumber();
       }
     }
-    for (const auto& counter : emswtcounterstmp) {
-      emswtcounter(counter.isAnalyzed_raw(), counter.isAnalyzedToI_raw());
+    for (const auto& counter : emswtATcounterstmp) {
+      emswtATcounter(counter.isAnalyzed_raw());
+    }
+    for (const auto& counter : emswtTOIcounterstmp) {
+      emswtTOIcounter(counter.isAnalyzedToI_raw());
     }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent_Qvec, "process event info", false);
