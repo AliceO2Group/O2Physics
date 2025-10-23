@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HFCorrelatorD0D0barBarrelFullPid.cxx
+/// \file correlatorD0D0barBarrelFullPid.cxx
 /// \brief Temporary D0-D0bar correlator task with full barrel PID implementation - data-like, MC-reco and MC-kine analyses. For ULS and LS pairs
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
