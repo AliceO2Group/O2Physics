@@ -189,6 +189,7 @@ struct EmcalCorrectionTask {
   int runNumber{0};
 
   static constexpr float TrackNotOnEMCal = -900.f;
+  static constexpr int kMaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
 
   void init(InitContext const&)
   {
@@ -462,7 +463,6 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
-              std::vector<std::vector<int>> clusterToTrackIndexMap;
               MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
               doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
@@ -599,12 +599,10 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
-              std::vector<std::vector<int>> clusterToTrackIndexMap;
               MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
               doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
-              std::vector<std::vector<int>> clusterToSecondaryIndexMap;
               MatchResult indexMapPairSecondary;
               std::vector<int64_t> secondaryGlobalIndex;
               doSecondaryTrackMatching<CollEventSels::filtered_iterator>(col, v0legs, indexMapPairSecondary, secondaryGlobalIndex, tracks);
@@ -774,7 +772,6 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
-              std::vector<std::vector<int>> clusterToTrackIndexMap;
               MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
               doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
@@ -943,12 +940,10 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
-              std::vector<std::vector<int>> clusterToTrackIndexMap;
               MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
               doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
-              std::vector<std::vector<int>> clusterToSecondaryIndexMap;
               MatchResult indexMapPairSecondary;
               std::vector<int64_t> secondaryGlobalIndex;
               doSecondaryTrackMatching<CollEventSels::filtered_iterator>(col, v0legs, indexMapPairSecondary, secondaryGlobalIndex, tracks);
@@ -1304,7 +1299,7 @@ struct EmcalCorrectionTask {
     trackGlobalIndex.reserve(nTracksInCol);
     fillTrackInfo<decltype(groupedTracks)>(groupedTracks, trackPhi, trackEta, trackGlobalIndex);
 
-    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, 20);
+    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, kMaxMatchesPerCluster);
   }
 
   template <typename Collision>
@@ -1321,8 +1316,10 @@ struct EmcalCorrectionTask {
 
     float trackEtaEmcal = 0.f;
     float trackPhiEmcal = 0.f;
-    // fillTrackInfo<decltype(groupedTracks)>(groupedTracks, trackPhi, trackEta, trackGlobalIndex);
     for (const auto& leg : groupedV0Legs) {
+      if (leg.trackId() < 0 || leg.trackId() > tracks.size()) {
+        continue;
+      }
       auto track = tracks.iteratorAt(leg.trackId());
       trackEtaEmcal = track.trackEtaEmcal();
       trackPhiEmcal = track.trackPhiEmcal();
@@ -1338,7 +1335,7 @@ struct EmcalCorrectionTask {
       trackEta.emplace_back(trackEtaEmcal);
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
-    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, 20);
+    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, kMaxMatchesPerCluster);
   }
 
   template <typename Tracks>
