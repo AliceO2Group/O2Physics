@@ -43,29 +43,29 @@ enum PidMethod {
   NPidMethods
 };
 
-/// Function to combine TPC and TOF NSigma
-/// \param tiny switch between full and tiny (binned) PID tables
-/// \param nSigmaTpc is the (binned) NSigma separation in TPC (if tiny = true)
-/// \param nSigmaTof is the (binned) NSigma separation in TOF (if tiny = true)
-/// \return combined NSigma of TPC and TOF
+/// Function to combine TPC and TOF nSigma
+/// \tparam Tiny switch between full and tiny (binned) PID tables
+/// \param nSigmaTpc is the (binned) nSigma separation in TPC (if Tiny = true)
+/// \param nSigmaTof is the (binned) nSigma separation in TOF (if Tiny = true)
+/// \return combined nSigma of TPC and TOF
 template <bool Tiny, typename TNumber>
 TNumber combineNSigma(TNumber nSigmaTpc, TNumber nSigmaTof)
 {
-  static constexpr float DefaultNSigmaTolerance = .1f;
-  static constexpr float DefaultNSigma = -999.f + DefaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  static constexpr float NSigmaToleranceDefault = .1f;
+  static constexpr float NSigmaDefault = -999.f + NSigmaToleranceDefault; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   if constexpr (Tiny) {
     nSigmaTpc *= aod::pidtpc_tiny::binning::bin_width;
     nSigmaTof *= aod::pidtof_tiny::binning::bin_width;
   }
 
-  if ((nSigmaTpc > DefaultNSigma) && (nSigmaTof > DefaultNSigma)) { // TPC and TOF
+  if ((nSigmaTpc > NSigmaDefault) && (nSigmaTof > NSigmaDefault)) { // TPC and TOF
     return std::sqrt(.5f * (nSigmaTpc * nSigmaTpc + nSigmaTof * nSigmaTof));
   }
-  if (nSigmaTpc > DefaultNSigma) { // only TPC
+  if (nSigmaTpc > NSigmaDefault) { // only TPC
     return std::abs(nSigmaTpc);
   }
-  if (nSigmaTof > DefaultNSigma) { // only TOF
+  if (nSigmaTof > NSigmaDefault) { // only TOF
     return std::abs(nSigmaTof);
   }
   return nSigmaTof; // no TPC nor TOF
