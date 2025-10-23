@@ -9,13 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file TrackSelection.h
 /// \brief helper functions for pair track selection
 /// \author felix.schlepper@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 #define PWGEM_PHOTONMESON_UTILS_TRACKSELECTION_H_
 
-#include "TPDGCode.h"
+#include <TPDGCode.h>
+
+#include <cmath>
 
 namespace o2::pwgem::photonmeson
 {

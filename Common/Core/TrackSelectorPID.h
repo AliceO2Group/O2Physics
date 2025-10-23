@@ -17,6 +17,7 @@
 #ifndef COMMON_CORE_TRACKSELECTORPID_H_
 #define COMMON_CORE_TRACKSELECTORPID_H_
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -42,6 +43,9 @@ class TrackSelectorPidBase
  public:
   /// Default constructor
   TrackSelectorPidBase() = default;
+
+  static constexpr float NSigmaMinDefault{-999.f};
+  static constexpr float NSigmaMaxDefault{999.f};
 
   /// Conversion operator
   template <uint64_t pdgNew>
@@ -108,10 +112,10 @@ class TrackSelectorPidBase
   /// \param tpcNSigmaCustom  custom TPC nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TPC PID hypothesis for given TPC nσ range
   template <typename T>
-  bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = -999.f)
+  bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = NSigmaMinDefault)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTpcMin < -999. && mNSigmaTpcMax > 999.) {
+    if (mNSigmaTpcMin < NSigmaMinDefault && mNSigmaTpcMax > NSigmaMaxDefault) {
       return true;
     }
 
@@ -127,16 +131,18 @@ class TrackSelectorPidBase
       nSigma = track.tpcNSigmaKa();
     } else if constexpr (pdg == kProton) {
       nSigma = track.tpcNSigmaPr();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
+      nSigma = track.tpcNSigmaDe();
     } else {
       errorPdg();
     }
 
     /// use custom TPC nσ, if a valid value is provided
-    if (tpcNSigmaCustom > -999.f) {
+    if (tpcNSigmaCustom > NSigmaMinDefault) {
       nSigma = tpcNSigmaCustom;
     }
 
-    if (mNSigmaTpcMinCondTof < -999. && mNSigmaTpcMaxCondTof > 999.) {
+    if (mNSigmaTpcMinCondTof < NSigmaMinDefault && mNSigmaTpcMaxCondTof > NSigmaMaxDefault) {
       conditionalTof = true;
     } else {
       conditionalTof = mNSigmaTpcMinCondTof <= nSigma && nSigma <= mNSigmaTpcMaxCondTof;
@@ -148,7 +154,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpc(const T& track, float tpcNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTpc(const T& track, float tpcNSigmaCustom = NSigmaMinDefault)
   {
     if (!isValidForTpc(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -202,10 +208,10 @@ class TrackSelectorPidBase
   /// \param tofNSigmaCustom  custom TOF nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TOF PID hypothesis for given TOF nσ range
   template <typename T>
-  bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = -999.f)
+  bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = NSigmaMinDefault)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaTofMin < -999. && mNSigmaTofMax > 999.) {
+    if (mNSigmaTofMin < NSigmaMinDefault && mNSigmaTofMax > NSigmaMaxDefault) {
       return true;
     }
 
@@ -221,16 +227,18 @@ class TrackSelectorPidBase
       nSigma = track.tofNSigmaKa();
     } else if constexpr (pdg == kProton) {
       nSigma = track.tofNSigmaPr();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
+      nSigma = track.tofNSigmaDe();
     } else {
       errorPdg();
     }
 
     /// use custom TOF nσ, if a valid value is provided
-    if (tofNSigmaCustom > -999.f) {
+    if (tofNSigmaCustom > NSigmaMinDefault) {
       nSigma = tofNSigmaCustom;
     }
 
-    if (mNSigmaTofMinCondTpc < -999. && mNSigmaTofMaxCondTpc > 999.) {
+    if (mNSigmaTofMinCondTpc < NSigmaMinDefault && mNSigmaTofMaxCondTpc > NSigmaMaxDefault) {
       conditionalTpc = true;
     } else {
       conditionalTpc = mNSigmaTofMinCondTpc <= nSigma && nSigma <= mNSigmaTofMaxCondTpc;
@@ -242,7 +250,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTof(const T& track, float tofNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTof(const T& track, float tofNSigmaCustom = NSigmaMinDefault)
   {
     if (!isValidForTof(track)) {
       return TrackSelectorPID::NotApplicable;
@@ -301,7 +309,7 @@ class TrackSelectorPidBase
   bool isSelectedByRich(const T& track, bool& conditionalTof)
   {
     // Accept if selection is disabled via large values.
-    if (mNSigmaRichMin < -999. && mNSigmaRichMax > 999.) {
+    if (mNSigmaRichMin < NSigmaMinDefault && mNSigmaRichMax > NSigmaMaxDefault) {
       return true;
     }
 
@@ -321,7 +329,7 @@ class TrackSelectorPidBase
       errorPdg();
     }
 
-    if (mNSigmaRichMinCondTof < -999. && mNSigmaRichMaxCondTof > 999.) {
+    if (mNSigmaRichMinCondTof < NSigmaMinDefault && mNSigmaRichMaxCondTof > NSigmaMaxDefault) {
       conditionalTof = true;
     } else {
       conditionalTof = mNSigmaRichMinCondTof <= nSigma && nSigma <= mNSigmaRichMaxCondTof;
@@ -405,7 +413,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcOrTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTpcOrTof(const T& track, float tpcNSigmaCustom = NSigmaMinDefault, float tofNSigmaCustom = NSigmaMinDefault)
   {
     int pidTpc = statusTpc(track, tpcNSigmaCustom);
     int pidTof = statusTof(track, tofNSigmaCustom);
@@ -426,7 +434,7 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcAndTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
+  TrackSelectorPID::Status statusTpcAndTof(const T& track, float tpcNSigmaCustom = NSigmaMinDefault, float tofNSigmaCustom = NSigmaMinDefault)
   {
     int pidTpc = TrackSelectorPID::NotApplicable;
     if (track.hasTPC()) {
@@ -464,23 +472,29 @@ class TrackSelectorPidBase
   template <typename T>
   bool isElectronAndNotPion(const T& track, bool useTof = true, bool useRich = true)
   {
+    constexpr float NSigmaInvalid{-1000.f};
+    constexpr float PTofRichTElectronMin{0.4f};
+    constexpr float PTofRichTElectronMax{0.6f};
+    constexpr float PRichPionBandMin{1.0f};
+    constexpr float PRichPionBandMax{2.0f};
+
     bool isSelTof = false;
     bool isSelRich = false;
     bool hasRich = track.richId() > -1;
     bool hasTof = isValidForTof(track);
     auto nSigmaTofEl = track.tofNSigmaEl();
     auto nSigmaTofPi = track.tofNSigmaPi();
-    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : -1000.;
-    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : -1000.;
+    auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : NSigmaInvalid;
+    auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : NSigmaInvalid;
     auto p = track.p();
 
     // TOF
-    if (useTof && hasTof && (p < 0.6)) {
-      if (p > 0.4 && hasRich) {
+    if (useTof && hasTof && (p < PTofRichTElectronMax)) {
+      if (p > PTofRichTElectronMin && hasRich) {
         if ((std::abs(nSigmaTofEl) < mNSigmaTofMax) && (std::abs(nSigmaRichEl) < mNSigmaRichMax)) {
           isSelTof = true; // is selected as electron by TOF and RICH
         }
-      } else if (p <= 0.4) {
+      } else if (p <= PTofRichTElectronMin) {
         if (std::abs(nSigmaTofEl) < mNSigmaTofMax) {
           isSelTof = true; // is selected as electron by TOF
         }
@@ -499,7 +513,7 @@ class TrackSelectorPidBase
       if (std::abs(nSigmaRichEl) < mNSigmaRichMax) {
         isSelRich = true; // is selected as electron by RICH
       }
-      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > 1.0) && (p < 2.0)) {
+      if ((std::abs(nSigmaRichPi) < mNSigmaRichMax) && (p > PRichPionBandMin) && (p < PRichPionBandMax)) {
         isSelRich = false; // is selected as pion by RICH
       }
     } else {
@@ -551,6 +565,8 @@ class TrackSelectorPidBase
       return track.bayesID() == o2::track::PID::Kaon;
     } else if constexpr (pdg == kProton) {
       return track.bayesID() == o2::track::PID::Proton;
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
+      return track.bayesID() == o2::track::PID::Deuteron;
     } else {
       errorPdg();
       return false;
@@ -579,6 +595,8 @@ class TrackSelectorPidBase
       prob = track.bayesKa();
     } else if constexpr (pdg == kProton) {
       prob = track.bayesPr();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
+      prob = track.bayesDe();
     } else {
       errorPdg();
     }
@@ -656,10 +674,11 @@ class TrackSelectorPidBase
 };
 
 // Predefined types
-using TrackSelectorEl = TrackSelectorPidBase<kElectron>;  // El
-using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>; // Mu
-using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;    // Pi
-using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;     // Ka
-using TrackSelectorPr = TrackSelectorPidBase<kProton>;    // Pr
+using TrackSelectorEl = TrackSelectorPidBase<kElectron>;                              // El
+using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>;                             // Mu
+using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;                                // Pi
+using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;                                 // Ka
+using TrackSelectorPr = TrackSelectorPidBase<kProton>;                                // Pr
+using TrackSelectorDe = TrackSelectorPidBase<o2::constants::physics::Pdg::kDeuteron>; // De
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_

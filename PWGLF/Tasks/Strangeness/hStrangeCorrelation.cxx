@@ -133,6 +133,7 @@ struct HStrangeCorrelation {
     Configurable<bool> applyEfficiencyPropagation{"applyEfficiencyPropagation", false, "propagate also the efficiency uncertainty"};
     Configurable<bool> applyPurityHadron{"applyPurityHadron", false, "apply the purity correction for associated hadrons"};
     Configurable<bool> applyPurityTrigger{"applyPurityTrigger", false, "apply the purity correction for trigger particle"};
+    Configurable<bool> applyEffAsFunctionOfMult{"applyEffAsFunctionOfMult", false, "apply efficiency as a function of multiplicity as well"};
   } efficiencyFlags;
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
@@ -215,6 +216,7 @@ struct HStrangeCorrelation {
 
   // objects to use for efficiency corrections
   TH2F* hEfficiencyTrigger;
+  TH3F* hEfficiencyTriggerMult;
   TH2F* hEfficiencyPion;
   TH2F* hEfficiencyK0Short;
   TH2F* hEfficiencyLambda;
@@ -224,9 +226,12 @@ struct HStrangeCorrelation {
   TH2F* hEfficiencyOmegaMinus;
   TH2F* hEfficiencyOmegaPlus;
   TH2F* hEfficiencyHadron;
+  TH3F* hEfficiencyHadronMult;
   TH1F* hPurityHadron;
+  TH2F* hPurityHadronMult;
   // objects to propagate the efficiency uncertainty
   TH2F* hEfficiencyUncertaintyTrigger;
+  TH3F* hEfficiencyUncertaintyTriggerMult;
   TH2F* hEfficiencyUncertaintyPion;
   TH2F* hEfficiencyUncertaintyK0Short;
   TH2F* hEfficiencyUncertaintyLambda;
@@ -236,7 +241,9 @@ struct HStrangeCorrelation {
   TH2F* hEfficiencyUncertaintyOmegaMinus;
   TH2F* hEfficiencyUncertaintyOmegaPlus;
   TH2F* hEfficiencyUncertaintyHadron;
+  TH3F* hEfficiencyUncertaintyHadronMult;
   TH1F* hPurityUncertaintyHadron;
+  TH2F* hPurityUncertaintyHadronMult;
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypePbPb = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -307,6 +314,7 @@ struct HStrangeCorrelation {
     }
 
     hEfficiencyTrigger = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyTrigger"));
+    hEfficiencyTriggerMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyTriggerMult"));
     hEfficiencyK0Short = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyK0Short"));
     hEfficiencyLambda = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyLambda"));
     hEfficiencyAntiLambda = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyAntiLambda"));
@@ -315,9 +323,12 @@ struct HStrangeCorrelation {
     hEfficiencyOmegaMinus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaMinus"));
     hEfficiencyOmegaPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
     hEfficiencyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
+    hEfficiencyHadronMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyHadronMult"));
     hEfficiencyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
     hPurityHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityHadron"));
+    hPurityHadronMult = static_cast<TH2F*>(listEfficiencies->FindObject("hPurityHadronMult"));
     hEfficiencyUncertaintyTrigger = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTrigger"));
+    hEfficiencyUncertaintyTriggerMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyTriggerMult"));
     hEfficiencyUncertaintyK0Short = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyK0Short"));
     hEfficiencyUncertaintyLambda = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyLambda"));
     hEfficiencyUncertaintyAntiLambda = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyAntiLambda"));
@@ -327,7 +338,9 @@ struct HStrangeCorrelation {
     hEfficiencyUncertaintyOmegaPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyOmegaPlus"));
     hEfficiencyUncertaintyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPion"));
     hEfficiencyUncertaintyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadron"));
+    hEfficiencyUncertaintyHadronMult = static_cast<TH3F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadronMult"));
     hPurityUncertaintyHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityUncertaintyHadron"));
+    hPurityUncertaintyHadronMult = static_cast<TH2F*>(listEfficiencies->FindObject("hPurityUncertaintyHadronMult"));
     if (efficiencyFlags.applyEfficiencyPropagation && !hEfficiencyUncertaintyTrigger)
       LOG(fatal) << "Problem getting hEfficiencyUncertaintyTrigger!";
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
@@ -806,13 +819,28 @@ struct HStrangeCorrelation {
       float purityTriggErr = 0.0f;
       if (!mixing) {
         if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
-          if (efficiencyFlags.applyPurityTrigger)
-            purityTrigg = hPurityHadron->Interpolate(trigg.pt());
+          if (efficiencyFlags.applyEffAsFunctionOfMult) {
+            efficiencyTrigg = hEfficiencyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+          } else {
+            efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          }
+          if (efficiencyFlags.applyPurityTrigger) {
+            if (efficiencyFlags.applyEffAsFunctionOfMult)
+              purityTrigg = hPurityHadronMult->Interpolate(trigg.pt(), mult);
+            else
+              purityTrigg = hPurityHadron->Interpolate(trigg.pt());
+          }
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
-            if (efficiencyFlags.applyPurityTrigger)
-              purityTriggErr = hPurityUncertaintyHadron->Interpolate(trigg.pt());
+            if (efficiencyFlags.applyEffAsFunctionOfMult)
+              efficiencyTriggError = hEfficiencyUncertaintyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+            else
+              efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
+            if (efficiencyFlags.applyPurityTrigger) {
+              if (efficiencyFlags.applyEffAsFunctionOfMult)
+                purityTriggErr = hPurityUncertaintyHadronMult->Interpolate(trigg.pt(), mult);
+              else
+                purityTriggErr = hPurityUncertaintyHadron->Interpolate(trigg.pt());
+            }
           }
           if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
             efficiencyTrigg = 1;
@@ -984,13 +1012,27 @@ struct HStrangeCorrelation {
       if (!mixing) {
 
         if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiencyTrigger = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
-          if (efficiencyFlags.applyPurityTrigger)
-            purityTrigger = hPurityHadron->Interpolate(trigg.pt());
+          if (efficiencyFlags.applyEffAsFunctionOfMult)
+            efficiencyTrigger = hEfficiencyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+          else
+            efficiencyTrigger = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+          if (efficiencyFlags.applyPurityTrigger) {
+            if (efficiencyFlags.applyEffAsFunctionOfMult)
+              purityTrigger = hPurityHadronMult->Interpolate(trigg.pt(), mult);
+            else
+              purityTrigger = hPurityHadron->Interpolate(trigg.pt());
+          }
           if (efficiencyFlags.applyEfficiencyPropagation) {
-            efficiencyTriggerError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
-            if (efficiencyFlags.applyPurityTrigger)
-              purityTriggerError = hPurityUncertaintyHadron->Interpolate(trigg.pt());
+            if (efficiencyFlags.applyEffAsFunctionOfMult)
+              efficiencyTriggerError = hEfficiencyUncertaintyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+            else
+              efficiencyTriggerError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
+            if (efficiencyFlags.applyPurityTrigger) {
+              if (efficiencyFlags.applyEffAsFunctionOfMult)
+                purityTriggerError = hPurityUncertaintyHadronMult->Interpolate(trigg.pt(), mult);
+              else
+                purityTriggerError = hPurityUncertaintyHadron->Interpolate(trigg.pt());
+            }
           }
           if (efficiencyTrigger == 0) { // check for zero efficiency, do not apply if the case
             efficiencyTrigger = 1;
@@ -1057,13 +1099,27 @@ struct HStrangeCorrelation {
             if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyUncertainty = hEfficiencyUncertaintyPion->Interpolate(ptassoc, assoc.eta());
           } else {
-            efficiency = hEfficiencyHadron->Interpolate(ptassoc, assoc.eta());
-            if (efficiencyFlags.applyPurityHadron)
-              purity = hPurityHadron->Interpolate(ptassoc);
+            if (efficiencyFlags.applyEffAsFunctionOfMult)
+              efficiency = hEfficiencyHadronMult->Interpolate(ptassoc, assoc.eta(), mult);
+            else
+              efficiency = hEfficiencyHadron->Interpolate(ptassoc, assoc.eta());
+            if (efficiencyFlags.applyPurityHadron) {
+              if (efficiencyFlags.applyEffAsFunctionOfMult)
+                purity = hPurityHadronMult->Interpolate(ptassoc, mult);
+              else
+                purity = hPurityHadron->Interpolate(ptassoc);
+            }
             if (efficiencyFlags.applyEfficiencyPropagation) {
-              efficiencyUncertainty = hEfficiencyUncertaintyHadron->Interpolate(ptassoc, assoc.eta());
-              if (efficiencyFlags.applyPurityHadron)
-                purityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
+              if (efficiencyFlags.applyEffAsFunctionOfMult)
+                efficiencyUncertainty = hEfficiencyUncertaintyHadronMult->Interpolate(ptassoc, assoc.eta(), mult);
+              else
+                efficiencyUncertainty = hEfficiencyUncertaintyHadron->Interpolate(ptassoc, assoc.eta());
+              if (efficiencyFlags.applyPurityHadron) {
+                if (efficiencyFlags.applyEffAsFunctionOfMult)
+                  purityUncertainty = hPurityUncertaintyHadronMult->Interpolate(ptassoc, mult);
+                else
+                  purityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
+              }
             }
           }
         }
@@ -1409,9 +1465,9 @@ struct HStrangeCorrelation {
 
     // MC generated plots
     if (doprocessMCGenerated) {
-      histos.add("Generated/hTrigger", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
+      histos.add("Generated/hTrigger", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
       for (int i = 0; i < 9; i++) {
-        histos.add(fmt::format("Generated/h{}", kParticlenames[i]).c_str(), "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
+        histos.add(fmt::format("Generated/h{}", kParticlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
       }
       histos.addClone("Generated/", "GeneratedWithPV/");
 
@@ -1675,28 +1731,28 @@ struct HStrangeCorrelation {
         histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi(), weight);
       }
-      for (auto const& assocTrack : assocHadrons) {
-        auto assoc = assocTrack.track_as<TracksComplete>();
-        if (!isValidAssocHadron(assoc))
-          continue;
-        float efficiency = 1.0f;
-        float purity = 1.0f;
-        if (efficiencyFlags.applyEfficiencyCorrection) {
-          efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
-          if (efficiencyFlags.applyPurityHadron)
-            purity = hPurityHadron->Interpolate(assoc.pt());
-        }
-        if (efficiency == 0) { // check for zero efficiency, do not apply if the case
-          efficiency = 1;
-        }
-        float weight = efficiencyFlags.applyEfficiencyCorrection ? purity / efficiency : 1.0f;
-        histos.fill(HIST("hAssocHadronsAllSelectedEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
-        histos.fill(HIST("hAssocPtResolution"), assoc.pt(), assocTrack.mcOriginalPt());
-        if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())
-          continue;
-        histos.fill(HIST("hAssocPrimaryEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
-        histos.fill(HIST("hAsssocTrackEtaVsPtVsPhi"), assoc.pt(), assoc.eta(), assoc.phi(), weight);
+    }
+    for (auto const& assocTrack : assocHadrons) {
+      auto assoc = assocTrack.track_as<TracksComplete>();
+      if (!isValidAssocHadron(assoc))
+        continue;
+      float efficiency = 1.0f;
+      float purity = 1.0f;
+      if (efficiencyFlags.applyEfficiencyCorrection) {
+        efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
+        if (efficiencyFlags.applyPurityHadron)
+          purity = hPurityHadron->Interpolate(assoc.pt());
       }
+      if (efficiency == 0) { // check for zero efficiency, do not apply if the case
+        efficiency = 1;
+      }
+      float weight = efficiencyFlags.applyEfficiencyCorrection ? purity / efficiency : 1.0f;
+      histos.fill(HIST("hAssocHadronsAllSelectedEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M(), weight);
+      histos.fill(HIST("hAssocPtResolution"), assoc.pt(), assocTrack.mcOriginalPt());
+      if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())
+        continue;
+      histos.fill(HIST("hAssocPrimaryEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
+      histos.fill(HIST("hAsssocTrackEtaVsPtVsPhi"), assoc.pt(), assoc.eta(), assoc.phi(), weight);
     }
 
     // ________________________________________________
@@ -2172,10 +2228,10 @@ struct HStrangeCorrelation {
         constexpr int Index = i.value;
         if (i == 0 || i == 7) {
           if (std::abs(mcParticle.pdgCode()) == kPdgCodes[i])
-            histos.fill(HIST("Generated/h") + HIST(kParticlenames[Index]), mcParticle.pt(), mcParticle.eta());
+            histos.fill(HIST("Generated/h") + HIST(kParticlenames[Index]), mcParticle.pt(), mcParticle.eta(), 1);
         } else {
           if (mcParticle.pdgCode() == kPdgCodes[i])
-            histos.fill(HIST("Generated/h") + HIST(kParticlenames[Index]), mcParticle.pt(), mcParticle.eta());
+            histos.fill(HIST("Generated/h") + HIST(kParticlenames[Index]), mcParticle.pt(), mcParticle.eta(), 1);
         }
       });
     }
@@ -2265,7 +2321,7 @@ struct HStrangeCorrelation {
       double geta = mcParticle.eta();
       double gpt = mcParticle.pt();
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus)
-        histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta);
+        histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
       if (mcParticle.pdgCode() == PDG_t::kLambda0 && !doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
         if (std::abs(geta) > etaSel) {
           continue;
@@ -2311,14 +2367,14 @@ struct HStrangeCorrelation {
         constexpr int Index = i.value;
         if (i == 0 || i == 7) {
           if (std::abs(mcParticle.pdgCode()) == kPdgCodes[i]) {
-            histos.fill(HIST("GeneratedWithPV/h") + HIST(kParticlenames[Index]), gpt, geta);
+            histos.fill(HIST("GeneratedWithPV/h") + HIST(kParticlenames[Index]), gpt, geta, bestCollisionFT0Mpercentile);
             if (std::abs(mcParticle.y()) < ySel)
               histos.fill(HIST("GeneratedWithPV/h") + HIST(kParticlenames[Index]) + HIST("_MidYVsMult"), gpt, bestCollisionFT0Mpercentile);
           }
 
         } else {
           if (mcParticle.pdgCode() == kPdgCodes[i]) {
-            histos.fill(HIST("GeneratedWithPV/h") + HIST(kParticlenames[Index]), gpt, geta);
+            histos.fill(HIST("GeneratedWithPV/h") + HIST(kParticlenames[Index]), gpt, geta, bestCollisionFT0Mpercentile);
             if (std::abs(mcParticle.y()) < ySel)
               histos.fill(HIST("GeneratedWithPV/h") + HIST(kParticlenames[Index]) + HIST("_MidYVsMult"), gpt, bestCollisionFT0Mpercentile);
           }
@@ -2432,7 +2488,9 @@ struct HStrangeCorrelation {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
-          if (doCorrelationHadron) {
+        }
+        if (doCorrelationHadron) {
+          if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
             assocHadronIndices.emplace_back(iteratorNum);
             histos.fill(HIST("ClosureTest/hHadron"), gpt, geta, gphi);
           }

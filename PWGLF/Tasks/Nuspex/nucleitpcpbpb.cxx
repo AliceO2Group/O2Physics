@@ -55,6 +55,7 @@ namespace
 {
 static const int nParticles = 6;
 static const std::vector<std::string> particleNames{"pion", "proton", "deuteron", "triton", "helion", "alpha"};
+static const std::vector<std::string> correctedparticleNames{"helion", "antihelion", "alpha", "antialpha"};
 static const std::vector<int> particlePdgCodes{211, 2212, o2::constants::physics::kDeuteron, o2::constants::physics::kTriton, o2::constants::physics::kHelium3, o2::constants::physics::kAlpha};
 static const std::vector<double> particleMasses{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron, o2::constants::physics::MassTriton, o2::constants::physics::MassHelium3, o2::constants::physics::MassAlpha};
 static const std::vector<int> particleCharge{1, 1, 1, 1, 2, 2};
@@ -87,6 +88,15 @@ constexpr double kTrackPIDSettings2[nParticles][nTrkSettings2]{
   {1, -5, 4, 1, 1, 2},
   {1, -5, 4, 1, 1, 2},
   {1, -5, 4, 1, 1, 2}};
+
+static const int nfittingparticle = 4;
+const int nfittingparameters = 4;
+static const std::vector<std::string> trackcorrectionNames{"correctionneed", "a", "b", "c"};
+constexpr double ktrackcorrection[nfittingparticle][nfittingparameters]{
+  {1, 0.464215, 0.195771, 0.0183111}, // He3
+  {1, 0.464215, 0.195771, 0.0183111}, // anti-He3
+  {1, 0.00765, 0.503791, -1.10517},   // He4
+  {1, 0.00765, 0.503791, -1.10517}};  // anti-He4
 
 struct PrimParticles {
   TString name;
@@ -145,13 +155,14 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgminGetMeanItsClsSizeRequire{"cfgminGetMeanItsClsSizeRequire", true, "Require minGetMeanItsClsSize Cut"};
   Configurable<bool> cfgmaxGetMeanItsClsSizeRequire{"cfgmaxGetMeanItsClsSizeRequire", true, "Require maxGetMeanItsClsSize Cut"};
   Configurable<bool> cfgRequirebetaplot{"cfgRequirebetaplot", true, "Require beta plot"};
-  Configurable<bool> cfgMasscut{"cfgMasscut", true, "Require mass cut on He4 particles"};
   Configurable<bool> cfgdcaxynopt{"cfgdcaxynopt", true, "DCA xy cut without pT dependent"};
   Configurable<bool> cfgdcaznopt{"cfgdcaznopt", false, "DCA xy cut without pT dependent"};
+  Configurable<bool> cfgmass2{"cfgmass2", true, "Fill mass square difference"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings2{"cfgTrackPIDsettings2", {kTrackPIDSettings2[0], nParticles, nTrkSettings2, particleNames, trackPIDsettingsNames2}, "track selection and PID criteria"};
+  Configurable<LabeledArray<double>> cfgktrackcorrection{"cfgktrackcorrection", {ktrackcorrection[0], nfittingparticle, nfittingparameters, correctedparticleNames, trackcorrectionNames}, "fitting paramters"};
   Configurable<bool> cfgFillhspectra{"cfgFillhspectra", true, "fill data sparsh"};
   Configurable<bool> cfgFillmass{"cfgFillmass", false, "Fill mass histograms"};
   Configurable<bool> cfgFillmassnsigma{"cfgFillmassnsigma", true, "Fill mass vs nsigma histograms"};
@@ -162,6 +173,10 @@ struct NucleitpcPbPb {
   Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
   Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut in MC"};
   Configurable<bool> cfgsel8Require{"cfgsel8Require", true, "sel8 cut require"};
+  Configurable<float> cfgminmassrejection{"cfgminmassrejection", 6.5, "Min side of He3 particle rejection"};
+  Configurable<float> cfgmaxmassrejection{"cfgmaxmassrejection", 9.138, "Max side of He3 particle rejection"};
+  Configurable<bool> cfghe3massrejreq{"cfghe3massrejreq", true, "Require mass cut on He4 particles"};
+
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
   // Binning configuration
   ConfigurableAxis axisMagField{"axisMagField", {10, -10., 10.}, "magnetic field"};
@@ -225,6 +240,8 @@ struct NucleitpcPbPb {
       histos.add<THnSparse>("hSpectra", " ", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent, axisDCA, axisDCA});
     }
     histos.add("histeta", "histeta", kTH1F, {axiseta});
+    histos.add("dcaZ", "dcaZ", kTH2F, {ptAxis, axisDCA});
+    histos.add("dcaXY", "dcaXY", kTH2F, {ptAxis, axisDCA});
     histos.add("Tofsignal", "Tofsignal", kTH2F, {axisRigidity, {4000, 0.2, 1.2, "#beta"}});
     histos.add("Tpcsignal", "Tpcsignal", kTH2F, {axisRigidity, axisdEdx});
 
@@ -343,6 +360,33 @@ struct NucleitpcPbPb {
           mTrackParCov.setPID(track.pidForTracking());
           ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
 
+          double a = 0, b = 0, c = 0;
+
+          int param = -1;
+          if (i == he3) {
+            param = (track.sign() > 0) ? 0 : 1;
+          } else if (i == he4) {
+            param = (track.sign() > 0) ? 2 : 3;
+          }
+
+          if (param >= 0) {
+            a = cfgktrackcorrection->get(param, "a");
+            b = cfgktrackcorrection->get(param, "b");
+            c = cfgktrackcorrection->get(param, "c");
+          }
+
+          if (i == he4 && cfgmccorrectionhe4Require) {
+            ptMomn = ptMomn + a + b * std::exp(c * ptMomn);
+          }
+
+          if (i == he3 && cfgmccorrectionhe4Require) {
+            int pidGuess = track.pidForTracking();
+            int antitriton = 6;
+            if (pidGuess == antitriton) {
+              ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
+            }
+          }
+
           int sign = (track.sign() > 0) ? 1 : ((track.sign() < 0) ? -1 : 0);
 
           if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
@@ -391,6 +435,9 @@ struct NucleitpcPbPb {
 
           histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
 
+          histos.fill(HIST("dcaXY"), ptMomn, track.dcaXY());
+          histos.fill(HIST("dcaZ"), ptMomn, track.dcaZ());
+
           if (cfgFillhspectra && cfgTrackPIDsettings2->get(i, "fillsparsh") == 1) {
 
             if (i != he4) {
@@ -411,7 +458,7 @@ struct NucleitpcPbPb {
                 float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
 
                 // Apply mass cut for he4 (mass^2 around 3.73^2 = 13.9)
-                if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138)) {
+                if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection)) {
                   continue; // Skip if mass cut fails
                 }
 
@@ -685,9 +732,6 @@ struct NucleitpcPbPb {
               if (std::abs(pdg) != std::abs(particlePdgCodes.at(i)))
                 continue;
 
-              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
-                continue;
-
               float ptReco;
               setTrackParCov(track, mTrackParCov);
               mTrackParCov.setPID(track.pidForTracking());
@@ -696,17 +740,35 @@ struct NucleitpcPbPb {
 
               int particleAnti = (pdg > 0) ? 0 : 1;
 
-              if (pdg == -particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
-                ptReco = ptReco + 0.00765 + 0.503791 * std::exp(-1.10517 * ptReco);
+              double a = 0, b = 0, c = 0;
+
+              int param = -1;
+              if (i == he3) {
+                param = (-particlePdgCodes.at(4) > 0) ? 0 : 1;
+              } else if (i == he4) {
+                param = (-particlePdgCodes.at(4) > 0) ? 2 : 3;
               }
 
-              if (pdg == -particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
+              if (param >= 0) {
+                a = cfgktrackcorrection->get(param, "a");
+                b = cfgktrackcorrection->get(param, "b");
+                c = cfgktrackcorrection->get(param, "c");
+              }
+
+              if (std::abs(pdg) == particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
+                ptReco = ptReco + a + b * std::exp(c * ptReco);
+              }
+
+              if (std::abs(pdg) == particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
                 int pidGuess = track.pidForTracking();
                 int antitriton = 6;
                 if (pidGuess == antitriton) {
-                  ptReco = ptReco - 0.464215 + 0.195771 * ptReco - 0.0183111 * ptReco * ptReco;
+                  ptReco = ptReco - a + b * ptReco - c * ptReco * ptReco;
                 }
               }
+
+              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
+                continue;
 
               if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
                 continue;
@@ -751,6 +813,11 @@ struct NucleitpcPbPb {
                 histomc.fill(HIST("hSpectramc"), i, particleAnti, collision.centFT0C(),
                              ptReco, ptTOF);
               }
+
+              float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
+              fillhmassnsigma(track, i, tpcNsigma);
+              histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
+              histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
 
               histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
 
@@ -854,12 +921,24 @@ struct NucleitpcPbPb {
     float pdgMass = particleMasses[species];
     float massDiff = 0.0;
     if (species != he4) {
-      massDiff = massTOF - pdgMass;
+      if (cfgmass2) {
+        // Compare squared masses
+        massDiff = massTOF * massTOF - pdgMass * pdgMass;
+      } else {
+        // Compare linear masses
+        massDiff = massTOF - pdgMass;
+      }
     }
     if (species == he4) {
-      if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138))
+      if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection))
         return;
-      massDiff = massTOF - pdgMass;
+      if (cfgmass2) {
+        // Compare squared masses
+        massDiff = massTOF * massTOF - pdgMass * pdgMass;
+      } else {
+        // Compare linear masses
+        massDiff = massTOF - pdgMass;
+      }
     }
 
     float ptMomn;
@@ -893,7 +972,7 @@ struct NucleitpcPbPb {
       masssquare = massTOF * massTOF;
     }
     if (species == he4) {
-      if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138))
+      if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection))
         return;
       masssquare = massTOF * massTOF;
     }
