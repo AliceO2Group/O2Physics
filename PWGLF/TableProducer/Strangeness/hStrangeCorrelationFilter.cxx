@@ -152,7 +152,7 @@ struct HStrangeCorrelationFilter {
   } MorePbPbsystCuts;
 
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> parameterCCDBPath{"parameterCCDBPath", "GLO/Config/GeometryAligned", "Path of the mean and sigma"};
+  Configurable<std::string> parameterCCDBPath{"parameterCCDBPath", "Users/k/kcui/LHC25b4a/parameter", "Path of the mean and sigma"};
 
   // must include windows for background and peak
   Configurable<float> maxMassNSigma{"maxMassNSigma", 12.0f, "max mass region to be considered for further analysis"};
