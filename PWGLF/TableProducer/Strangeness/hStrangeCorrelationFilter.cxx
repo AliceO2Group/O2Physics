@@ -150,18 +150,9 @@ struct HStrangeCorrelationFilter {
     Configurable<float> rejcomp{"rejcomp", 0.008, "Competing Cascade rejection"};
     Configurable<float> rapCut{"rapCut", 0.8, "Rapidity acceptance"};
   } MorePbPbsystCuts;
-  // invariant mass parametrizations
-  Configurable<std::vector<float>> massParsK0Mean{"massParsK0Mean", {0.495, 0.000250, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsK0Width{"massParsK0Width", {0.00354, 0.000609, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
 
-  Configurable<std::vector<float>> massParsLambdaMean{"massParsLambdaMean", {1.114, 0.000314, 0.140, 11.9}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsLambdaWidth{"massParsLambdaWidth", {0.00127, 0.000172, 0.00261, 2.02}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
-
-  Configurable<std::vector<float>> massParsCascadeMean{"massParsCascadeMean", {1.32, 0.000278, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsCascadeWidth{"massParsCascadeWidth", {0.00189, 0.000227, 0.00370, 1.635}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
-
-  Configurable<std::vector<float>> massParsOmegaMean{"massParsOmegaMean", {1.67, 0.000298, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
-  Configurable<std::vector<float>> massParsOmegaWidth{"massParsOmegaWidth", {0.00189, 0.000325, 0.00606, 1.77}, "pars in [0]+[1]*x+[2]*std::exp(-[3]*x)"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
+  Configurable<std::string> parameterCCDBPath{"parameterCCDBPath", "Users/k/kcui/LHC25b4a/parameter", "Path of the mean and sigma"};
 
   // must include windows for background and peak
   Configurable<float> maxMassNSigma{"maxMassNSigma", 12.0f, "max mass region to be considered for further analysis"};
@@ -203,14 +194,14 @@ struct HStrangeCorrelationFilter {
   Produces<aod::AssocHadrons> assocHadrons;
   Produces<aod::AssocPID> assocPID;
 
-  TF1* fK0Mean = new TF1("fK0Mean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fK0Width = new TF1("fK0Width", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fLambdaMean = new TF1("fLambdaMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fLambdaWidth = new TF1("fLambdaWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fXiMean = new TF1("fXiMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fXiWidth = new TF1("fXiWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
+  TH1F* hK0ShortMean;
+  TH1F* hK0ShortWidth;
+  TH1F* hLambdaMean;
+  TH1F* hLambdaWidth;
+  TH1F* hXiMean;
+  TH1F* hXiWidth;
+  TH1F* hOmegaMean;
+  TH1F* hOmegaWidth;
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -221,14 +212,14 @@ struct HStrangeCorrelationFilter {
     zorroSummary.setObject(zorro.getZorroSummary());
     mRunNumber = -1;
 
-    fK0Mean->SetParameters(massParsK0Mean->at(0), massParsK0Mean->at(1), massParsK0Mean->at(2), massParsK0Mean->at(3));
-    fK0Width->SetParameters(massParsK0Width->at(0), massParsK0Width->at(1), massParsK0Width->at(2), massParsK0Width->at(3));
-    fLambdaMean->SetParameters(massParsLambdaMean->at(0), massParsLambdaMean->at(1), massParsLambdaMean->at(2), massParsLambdaMean->at(3));
-    fLambdaWidth->SetParameters(massParsLambdaWidth->at(0), massParsLambdaWidth->at(1), massParsLambdaWidth->at(2), massParsLambdaWidth->at(3));
-    fXiMean->SetParameters(massParsCascadeMean->at(0), massParsCascadeMean->at(1), massParsCascadeMean->at(2), massParsCascadeMean->at(3));
-    fXiWidth->SetParameters(massParsCascadeWidth->at(0), massParsCascadeWidth->at(1), massParsCascadeWidth->at(2), massParsCascadeWidth->at(3));
-    fOmegaMean->SetParameters(massParsOmegaMean->at(0), massParsOmegaMean->at(1), massParsOmegaMean->at(2), massParsOmegaMean->at(3));
-    fOmegaWidth->SetParameters(massParsOmegaWidth->at(0), massParsOmegaWidth->at(1), massParsOmegaWidth->at(2), massParsOmegaWidth->at(3));
+    hK0ShortMean = 0x0;
+    hK0ShortWidth = 0x0;
+    hLambdaMean = 0x0;
+    hLambdaWidth = 0x0;
+    hXiMean = 0x0;
+    hXiWidth = 0x0;
+    hOmegaMean = 0x0;
+    hOmegaWidth = 0x0;
 
     if (doprocessV0s || doprocessV0sMC) {
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisPtQA, axisK0ShortMass, axisMult});
@@ -253,6 +244,35 @@ struct HStrangeCorrelationFilter {
     zorro.populateHistRegistry(histos, bc.runNumber());
 
     mRunNumber = bc.runNumber();
+  }
+
+  void initParametersFromCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumber << " now...";
+    auto timeStamp = bc.timestamp();
+
+    TList* listParameters = ccdb->getForTimeStamp<TList>(parameterCCDBPath, timeStamp);
+
+    if (!listParameters) {
+      LOG(fatal) << "Problem getting TList object with parameters!";
+    }
+    if (doprocessV0s || doprocessV0sMC) {
+      hK0ShortMean = static_cast<TH1F*>(listParameters->FindObject("hK0ShortMean"));
+      hK0ShortWidth = static_cast<TH1F*>(listParameters->FindObject("hK0ShortWidth"));
+      hLambdaMean = static_cast<TH1F*>(listParameters->FindObject("hLambdaMean"));
+      hLambdaWidth = static_cast<TH1F*>(listParameters->FindObject("hLambdaWidth"));
+    }
+    if (doprocessCascades || doprocessCascadesMC) {
+      hXiMean = static_cast<TH1F*>(listParameters->FindObject("hXiMean"));
+      hXiWidth = static_cast<TH1F*>(listParameters->FindObject("hXiWidth"));
+      hOmegaMean = static_cast<TH1F*>(listParameters->FindObject("hOmegaMean"));
+      hOmegaWidth = static_cast<TH1F*>(listParameters->FindObject("hOmegaWidth"));
+    }
+    LOG(info) << "parameters now loaded for " << mRunNumber;
   }
 
   // more event selections in Pb-Pb
@@ -422,6 +442,9 @@ struct HStrangeCorrelationFilter {
   // for real data processing
   void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -431,7 +454,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -456,6 +478,9 @@ struct HStrangeCorrelationFilter {
   // for MC processing
   void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -465,7 +490,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -496,6 +520,9 @@ struct HStrangeCorrelationFilter {
 
   void processAssocPions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -505,7 +532,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -523,6 +549,9 @@ struct HStrangeCorrelationFilter {
 
   void processAssocPionsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracksMC> const& tracks, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -532,7 +561,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -550,6 +578,9 @@ struct HStrangeCorrelationFilter {
 
   void processAssocHadrons(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -559,7 +590,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -576,6 +606,9 @@ struct HStrangeCorrelationFilter {
   }
   void processAssocHadronsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -585,7 +618,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -603,6 +635,9 @@ struct HStrangeCorrelationFilter {
 
   void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& V0s, aod::BCsWithTimestamps const&)
   {
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -613,7 +648,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -716,9 +750,9 @@ struct HStrangeCorrelationFilter {
       }
 
       // simplified handling: calculate NSigma in mass here
-      float massNSigmaK0Short = (v0.mK0Short() - fK0Mean->Eval(v0.pt())) / (fK0Width->Eval(v0.pt()) + 1e-6);
-      float massNSigmaLambda = (v0.mLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
-      float massNSigmaAntiLambda = (v0.mAntiLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
+      float massNSigmaK0Short = (v0.mK0Short() - hK0ShortMean->Interpolate(v0.pt())) / (hK0ShortWidth->Interpolate(v0.pt()) + 1e-6);
+      float massNSigmaLambda = (v0.mLambda() - hLambdaMean->Interpolate(v0.pt())) / (hLambdaWidth->Interpolate(v0.pt()) + 1e-6);
+      float massNSigmaAntiLambda = (v0.mAntiLambda() - hLambdaMean->Interpolate(v0.pt())) / (hLambdaWidth->Interpolate(v0.pt()) + 1e-6);
 
       if (compatibleK0Short)
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), cent);
@@ -744,6 +778,9 @@ struct HStrangeCorrelationFilter {
   void processV0sMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracksMC const&, soa::Filtered<V0DatasWithoutTrackXMC> const& V0s, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -753,7 +790,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -764,6 +800,7 @@ struct HStrangeCorrelationFilter {
       return;
     /// _________________________________________________
     /// Populate table with associated V0s
+
     for (auto const& v0 : V0s) {
       if (v0.v0radius() < v0RadiusMin || v0.v0radius() > v0RadiusMax || v0.eta() > assocEtaMax || v0.eta() < assocEtaMin || v0.v0cosPA() < v0Cospa) {
         continue;
@@ -855,9 +892,9 @@ struct HStrangeCorrelationFilter {
       }
 
       // simplified handling: calculate NSigma in mass here
-      float massNSigmaK0Short = (v0.mK0Short() - fK0Mean->Eval(v0.pt())) / (fK0Width->Eval(v0.pt()) + 1e-6);
-      float massNSigmaLambda = (v0.mLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
-      float massNSigmaAntiLambda = (v0.mAntiLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
+      float massNSigmaK0Short = (v0.mK0Short() - hK0ShortMean->Interpolate(v0.pt())) / (hK0ShortWidth->Interpolate(v0.pt()) + 1e-6);
+      float massNSigmaLambda = (v0.mLambda() - hLambdaMean->Interpolate(v0.pt())) / (hLambdaWidth->Interpolate(v0.pt()) + 1e-6);
+      float massNSigmaAntiLambda = (v0.mAntiLambda() - hLambdaMean->Interpolate(v0.pt())) / (hLambdaWidth->Interpolate(v0.pt()) + 1e-6);
       bool v0PhysicalPrimary = false;
       bool trueK0Short = false;
       bool trueLambda = false;
@@ -893,6 +930,9 @@ struct HStrangeCorrelationFilter {
   void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& /*V0s*/, soa::Filtered<aod::CascDatas> const& Cascades, aod::BCsWithTimestamps const&)
   {
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -902,7 +942,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -1031,8 +1070,8 @@ struct HStrangeCorrelationFilter {
         }
       }
 
-      float massNSigmaXi = (casc.mXi() - fXiMean->Eval(casc.pt())) / (fXiWidth->Eval(casc.pt()) + 1e-6);
-      float massNSigmaOmega = (casc.mOmega() - fOmegaMean->Eval(casc.pt())) / (fOmegaWidth->Eval(casc.pt()) + 1e-6);
+      float massNSigmaXi = (casc.mXi() - -hXiMean->Interpolate(casc.pt())) / (hXiWidth->Interpolate(casc.pt()) + 1e-6);
+      float massNSigmaOmega = (casc.mOmega() - hOmegaMean->Interpolate(casc.pt())) / (hOmegaWidth->Interpolate(casc.pt()) + 1e-6);
 
       if (compatibleXiMinus)
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), cent);
@@ -1059,6 +1098,9 @@ struct HStrangeCorrelationFilter {
   void processCascadesMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackXMC> const& /*V0s*/, soa::Filtered<CascDatasMC> const& Cascades, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+    // Load parameters for sideband subtraction
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -1068,7 +1110,6 @@ struct HStrangeCorrelationFilter {
       return;
     }
     if (zorroMask.value != "") {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
       if (!zorroSelected) {
@@ -1198,8 +1239,9 @@ struct HStrangeCorrelationFilter {
         }
       }
 
-      float massNSigmaXi = (casc.mXi() - fXiMean->Eval(casc.pt())) / (fXiWidth->Eval(casc.pt()) + 1e-6);
-      float massNSigmaOmega = (casc.mOmega() - fOmegaMean->Eval(casc.pt())) / (fOmegaWidth->Eval(casc.pt()) + 1e-6);
+      float massNSigmaXi = (casc.mXi() - -hXiMean->Interpolate(casc.pt())) / (hXiWidth->Interpolate(casc.pt()) + 1e-6);
+      float massNSigmaOmega = (casc.mOmega() - hOmegaMean->Interpolate(casc.pt())) / (hOmegaWidth->Interpolate(casc.pt()) + 1e-6);
+
       bool cascPhysicalPrimary = false;
       bool trueXiMinus = false;
       bool trueXiPlus = false;
