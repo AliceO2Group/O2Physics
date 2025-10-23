@@ -1960,8 +1960,8 @@ struct DileptonMC {
     }
     // accept radiative decay of charmonia (ee + multiple gamma).
 
-    float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, sign1 = 0.f;
-    float pt2 = 0.f, eta2 = 0.f, phi2 = 0.f, sign2 = 0.f;
+    // float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, sign1 = 0.f;
+    // float pt2 = 0.f, eta2 = 0.f, phi2 = 0.f, sign2 = 0.f;
     std::vector<std::array<float, 4>> vDau;
     vDau.reserve(mcParticle.daughtersIds().size());
     for (const auto& daughterId : mcParticle.daughtersIds()) {
