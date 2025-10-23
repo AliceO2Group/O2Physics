@@ -387,7 +387,7 @@ struct lambdaspincorrderived {
     if (useweight && datatype == 1) {
       if (tag1 == 0 && tag2 == 0) {
         epsWeight1 = hweight1->GetBinContent(hweight1->FindBin(dphi1, deta1, pt1));
-        epsWeight2 = hweight2->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
+        epsWeight2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
       } else if (tag1 == 0 && tag2 == 1) {
         epsWeight1 = hweight2->GetBinContent(hweight2->FindBin(dphi1, deta1, pt1));
         epsWeight2 = hweight22->GetBinContent(hweight22->FindBin(dphi2, deta2, pt2));
