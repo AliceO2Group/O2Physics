@@ -30,11 +30,20 @@ namespace o2::aod
 {
 namespace hf_sel_collision
 {
+
+// ================
+// Collision selection table
+// ================
+
 DECLARE_SOA_COLUMN(WhyRejectColl, whyRejectColl, o2::hf_evsel::HfCollisionRejectionMask); //!
 } // namespace hf_sel_collision
 
 DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
                   hf_sel_collision::WhyRejectColl);
+
+// ================
+// Track selection tables
+// ================
 
 namespace hf_sel_track
 {
@@ -76,6 +85,10 @@ DECLARE_SOA_TABLE(HfPvRefitTrack, "AOD", "HFPVREFITTRACK", //!
                   hf_pv_refit_track::PvRefitDcaXY,
                   hf_pv_refit_track::PvRefitDcaZ);
 
+// ================
+// Track index skim tables
+// ================
+
 namespace hf_track_index
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
@@ -88,16 +101,14 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);                                 //! Index to V
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                       //! Index to cascade prong
 DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                      //! Bitmap to store selection results, o2-linter: disable=name/o2-column (written to disk)
 
-DECLARE_SOA_COLUMN(FlagD0ToKPi, flagD0ToKPi, uint8_t);       //!
-DECLARE_SOA_COLUMN(FlagJpsiToEE, flagJpsiToEE, uint8_t);     //!
-DECLARE_SOA_COLUMN(FlagJpsiToMuMu, flagJpsiToMuMu, uint8_t); //!
-
+DECLARE_SOA_COLUMN(FlagD0ToKPi, flagD0ToKPi, uint8_t);           //!
+DECLARE_SOA_COLUMN(FlagJpsiToEE, flagJpsiToEE, uint8_t);         //!
+DECLARE_SOA_COLUMN(FlagJpsiToMuMu, flagJpsiToMuMu, uint8_t);     //!
 DECLARE_SOA_COLUMN(FlagDplusToPiKPi, flagDplusToPiKPi, uint8_t); //!
 DECLARE_SOA_COLUMN(FlagLcToPKPi, flagLcToPKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagDsToKKPi, flagDsToKKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagXicToPKPi, flagXicToPKPi, uint8_t);       //!
-
-DECLARE_SOA_COLUMN(FlagDstarToD0Pi, flagDstarToD0Pi, uint8_t); //!
+DECLARE_SOA_COLUMN(FlagDstarToD0Pi, flagDstarToD0Pi, uint8_t);   //!
 
 DECLARE_SOA_COLUMN(MlProbSkimD0ToKPi, mlProbSkimD0ToKPi, std::vector<float>);           //! ML probabilities (background, prompt, non-prompt) for D0->Kpi
 DECLARE_SOA_COLUMN(MlProbSkimDplusToPiKPi, mlProbSkimDplusToPiKPi, std::vector<float>); //! ML probabilities (background, prompt, non-prompt) for D+->Kpipi
@@ -160,6 +171,7 @@ DECLARE_SOA_TABLE(HfCascLf2Prongs, "AOD", "HFCASCLF2PRONG", //! Table for HF 2 p
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id,
                   hf_track_index::HFflag);
+
 using HfCascLf2Prong = HfCascLf2Prongs::iterator;
 
 DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 prong candidates with a Cascade
@@ -168,6 +180,7 @@ DECLARE_SOA_TABLE(HfCascLf3Prongs, "AOD", "HFCASCLF3PRONG", //! Table for HF 3 p
                   hf_track_index::CascadeId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
+
 using HfCascLf3Prong = HfCascLf3Prongs::iterator;
 
 namespace hf_track_index
@@ -211,6 +224,10 @@ DECLARE_SOA_TABLE(Hf3ProngMlProbs, "AOD", "HF3PRONGMLPROB", //! Table for ML sco
                   hf_track_index::MlProbSkimLcToPKPi,
                   hf_track_index::MlProbSkimDsToKKPi,
                   hf_track_index::MlProbSkimXicToPKPi);
+
+// ================
+// Primary-vertex refit tables
+// ================
 
 namespace hf_pv_refit
 {
@@ -260,6 +277,10 @@ DECLARE_SOA_TABLE(HfPvRefitDstar, "AOD", "HFPVREFITDSTAR", //!
                   hf_pv_refit::PvRefitSigmaZ2,
                   o2::soa::Marker<2>);
 
+// ================
+// Decay types stored in HFflag
+// ================
+
 namespace hf_cand_2prong
 {
 enum DecayType {
@@ -267,15 +288,8 @@ enum DecayType {
   JpsiToEE,
   JpsiToMuMu,
   N2ProngDecays
-}; // always keep N2ProngDecays at the end
-} // namespace hf_cand_2prong
-
-namespace hf_cand_bplus
-{
-enum DecayType {
-  BplusToD0Pi = 0
 };
-} // namespace hf_cand_bplus
+} // namespace hf_cand_2prong
 
 namespace hf_cand_3prong
 {
@@ -286,94 +300,8 @@ enum DecayType {
   XicToPKPi,
   CdToDeKPi,
   N3ProngDecays
-}; // always keep N3ProngDecays at the end
+};
 } // namespace hf_cand_3prong
-
-namespace hf_cand_x
-{
-enum DecayType {
-  XToJpsiToEEPiPi = 0,
-  XToJpsiToMuMuPiPi
-}; // move this to a dedicated cascade namespace in the future?
-} // namespace hf_cand_x
-
-namespace hf_cand_xicc
-{
-enum DecayType {
-  XiccToXicPi = 0
-}; // move this to a dedicated cascade namespace in the future?
-} // namespace hf_cand_xicc
-
-namespace hf_cand_xic0_omegac0
-{
-enum DecayType {
-  XiczeroToXiPi = 0,
-  OmegaczeroToXiPi,
-  OmegaczeroToOmegaPi,
-  OmegaczeroToOmegaK,
-  OmegaczeroToOmegaPiOneMu
-};
-} // namespace hf_cand_xic0_omegac0
-
-namespace hf_cand_xic_to_xi_pi_pi
-{
-enum DecayType {
-  XicToXiPiPi = 0,      // Ξc± → Ξ∓ π± π±
-  XicToXiResPiToXiPiPi, // Ξc± → Ξ(1530) π± → Ξ∓ π± π±
-  NDecayType
-};
-} // namespace hf_cand_xic_to_xi_pi_pi
-
-namespace hf_cand_chic
-{
-enum DecayType {
-  ChicToJpsiToEEGamma = 0,
-  ChicToJpsiToMuMuGamma
-}; // move this to a dedicated cascade namespace in the future?
-} // namespace hf_cand_chic
-
-namespace hf_cand_lb
-{
-enum DecayType {
-  LbToLcPi
-}; // move this to a dedicated cascade namespace in the future?
-} // namespace hf_cand_lb
-
-namespace hf_cand_b0
-{
-enum DecayType {
-  B0ToDPi = 0,
-  B0ToDstarPi
-};
-} // namespace hf_cand_b0
-
-namespace hf_cand_bs
-{
-enum DecayType {
-  BsToDsPi = 0
-};
-} // namespace hf_cand_bs
-
-namespace hf_cand_sigmac
-{
-enum DecayType {
-  Sc0ToPKPiPi = 0,
-  ScplusplusToPKPiPi,
-  ScStar0ToPKPiPi,
-  ScStarPlusPlusToPKPiPi
-};
-} // namespace hf_cand_sigmac
-
-namespace hf_cand_dstar
-{
-enum DecayType {
-  DstarToD0Pi = 0,
-  D0ToPiK,
-  DstarToD0PiPi0,
-  D0ToPiKPi0,
-  NDstarDecayType
-};
-} // namespace hf_cand_dstar
 
 namespace hf_cand_casc_lf
 {
@@ -382,12 +310,12 @@ enum DecayType2Prong {
   OmegaczeroToOmegaPi,
   OmegaczeroToOmegaK,
   N2ProngDecays
-}; // always keep N2ProngDecays at the end
+};
 
 enum DecayType3Prong {
   XicplusToXiPiPi = 0,
   N3ProngDecays
-}; // always keep N3ProngDecays at the end
+};
 } // namespace hf_cand_casc_lf
 
 } // namespace o2::aod
