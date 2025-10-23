@@ -57,6 +57,12 @@ struct ExclusiveRhoTo4Pi {
   int numFourPionTracks = 4;
   int numPiPlus = 2;
   int numPiMinus = 2;
+  // Numbers for background estimation
+  int zero = 0;
+  int one = 1;
+  int three = 3;
+  int four = 4;
+  // PDG Codes and rho mass
   double mRho0 = 0.77526; // GeV/c^2
   int rhoPrime = 30113;
   // Pb-Pb at 5.36 TeV
@@ -237,17 +243,17 @@ struct ExclusiveRhoTo4Pi {
     histosKin.add("pions", ";pT [GeV/c]; #eta;#varphi", kTH3F, {pTAxis, etaAxis, phiAxis});
     histosKin.add("pions-from-4pi", ";pT [GeV/c]; #eta;#varphi;y ", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis});
     // Rho Prime Kinematics
-    histos4piKin.add("two-pion-mass", ";m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{4#pi} [GeV/c^{2}]", kTHnSparseF, {{100, 0, 2}, {100, 0, 2}, {100, 0, 2}, {100, 0, 2}, invMassAxis});
-    histos4piKin.add("2PiPlusPiMinusMass", ";m_{#pi^{+}#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}#pi^{+}}#pi^{-}} [GeV/c^2]", kTHnSparseF, {{200, 0, 2.5}, {200, 0, 2.5}, invMassAxis});
-    histos4piKin.add("2PiMinusPiPlusMass", ";m_{#pi^{-}#pi^{-}#pi^{+}} [GeV/c^2];m_{#pi^{-}#pi^{-}#pi^{+}} [GeV/c^2];m_{#pi^{+}#pi^{-}#pi^{+}}#pi^{-}} [GeV/c^2]", kTHnSparseF, {{200, 0, 2.5}, {200, 0, 2.5}, invMassAxis});
+    histos4piKin.add("two-pion", ";p_{T}^{4#pi} [GeV/c] ;m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{#pi^{+}#pi^{-}} [GeV/c^2];m_{4#pi} [GeV/c^{2}]", kTHnSparseF, {{100, 0, 2}, {100, 0, 2}, {100, 0, 2}, {100, 0, 2}, invMassAxis});
     histos4piKin.add("zero-charge", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}]; Collin-Soper cos(#theta); Collin-Soper #varphi [rad];Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, cosThetaAxis, phiAxis, {113, 0, 113}});
     histos4piKin.add("non-zero-charge", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}];Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
+    histos4piKin.add("3piMinus-1piPlus", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}]; Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
+    histos4piKin.add("3piPlus-1piMinus", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}]; Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
+    histos4piKin.add("4piPlus", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}]; Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
+    histos4piKin.add("4piMinus", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}]; Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
     // MC truth
     histosMCtruth.add("pions-from-4pi", ";pT [GeV/c]; #eta;#varphi;y ", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, {113, 0, 113}});
     histosMCtruth.add("Four-pion", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}];Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
-
-    //___________________________________________________________________________________________________________________________
-
+    //_______________________________________________________________________________________________________________________________________________
     setHistBinLabels();
   } // End of init function
 
@@ -476,9 +482,7 @@ struct ExclusiveRhoTo4Pi {
       PxPyPzMVector p234 = p2 + p3 + p4;
 
       // Two Pion Mass combinations
-      histos4piKin.fill(HIST("two-pion-mass"), p13.M(), p14.M(), p23.M(), p24.M(), p1234.M());
-      histos4piKin.fill(HIST("2PiPlusPiMinusMass"), p123.M(), p124.M(), p1234.M());
-      histos4piKin.fill(HIST("2PiMinusPiPlusMass"), p134.M(), p234.M(), p1234.M());
+      histos4piKin.fill(HIST("two-pion"), p1234.Pt(), p13.M(), p14.M(), p23.M(), p24.M(), p1234.M());
 
       double fourPiPhiPair1 = collinSoperPhi(p13, p1234);
       double fourPiPhiPair2 = collinSoperPhi(p14, p1234);
@@ -513,6 +517,15 @@ struct ExclusiveRhoTo4Pi {
       PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
       PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       // Kinematics for 4 pion system from non 0 charge events
+      if (numPionMinusTracks == three && numPiPlusTracks == one) {
+        histos4piKin.fill(HIST("3piMinus-1piPlus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      } else if (numPionMinusTracks == one && numPiPlusTracks == three) {
+        histos4piKin.fill(HIST("3piPlus-1piMinus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      } else if (numPionMinusTracks == four && numPiPlusTracks == zero) {
+        histos4piKin.fill(HIST("4piMinus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      } else if (numPionMinusTracks == zero && numPiPlusTracks == four) {
+        histos4piKin.fill(HIST("4piPlus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      }
       histos4piKin.fill(HIST("non-zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
     } // End of Analysis for non 0 charge events
   } // End of 4 Pion Analysis Process function for Pass5 Data
@@ -903,6 +916,15 @@ struct ExclusiveRhoTo4Pi {
       PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
       PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       // Kinematics for 4 pion system from non 0 charge events
+      if (numPionMinusTracks == three && numPiPlusTracks == one) {
+        histos4piKin.fill(HIST("3piMinus-1piPlus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      } else if (numPionMinusTracks == one && numPiPlusTracks == three) {
+        histos4piKin.fill(HIST("3piPlus-1piMinus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      } else if (numPionMinusTracks == four && numPiPlusTracks == zero) {
+        histos4piKin.fill(HIST("4piMinus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      } else if (numPionMinusTracks == zero && numPiPlusTracks == four) {
+        histos4piKin.fill(HIST("4piPlus"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+      }
       histos4piKin.fill(HIST("non-zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
     } // End of Analysis for non 0 charge events
   } // End of 4 Pion Analysis Process function for Pass5 MC
@@ -1118,6 +1140,8 @@ struct ExclusiveRhoTo4Pi {
     }
     for (int i = 0; i < numRunNums; ++i) {
       std::string runLabel = std::to_string(runNos[i]);
+      h1->GetXaxis()->SetBinLabel(i + 1, runLabel.c_str());
+      h2->GetXaxis()->SetBinLabel(i + 1, runLabel.c_str());
       h3->GetAxis(7)->SetBinLabel(i + 1, runLabel.c_str());
       h4->GetAxis(5)->SetBinLabel(i + 1, runLabel.c_str());
       h5->GetAxis(5)->SetBinLabel(i + 1, runLabel.c_str());
