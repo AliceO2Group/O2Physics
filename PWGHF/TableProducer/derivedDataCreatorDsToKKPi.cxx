@@ -288,9 +288,9 @@ struct HfDerivedDataCreatorDsToKKPi {
             }
           }
         }
-        double const ct = hfHelper.ctDs(candidate);
-        double const y = hfHelper.yDs(candidate);
-        float const massDsToKKPi = hfHelper.invMassDsToKKPi(candidate);
+        double const ct = HfHelper::ctDs(candidate);
+        double const y = HfHelper::yDs(candidate);
+        float const massDsToKKPi = HfHelper::invMassDsToKKPi(candidate);
         std::vector<float> mlScoresDsToKKPi;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbDsToKKPi().begin(), candidate.mlProbDsToKKPi().end(), std::back_inserter(mlScoresDsToKKPi));

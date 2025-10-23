@@ -173,7 +173,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       }
 
       // topological cuts
-      if (!hfHelper.selectionLbToLcPiTopol(hfCandLb, cuts, binsPt)) {
+      if (!HfHelper::selectionLbToLcPiTopol(hfCandLb, cuts, binsPt)) {
         hfSelLbToLcPiCandidate(statusLbToLcPi);
         if (applyLbMl) {
           hfMlLbToLcPiCandidate(outputMlNotPreselected);
@@ -182,7 +182,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       }
 
       if constexpr (WithLcMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandLb, cutsLcMl, binsPtLcMl)) {
+        if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandLb, cutsLcMl, binsPtLcMl)) {
           hfSelLbToLcPiCandidate(statusLbToLcPi);
           if (applyLbMl) {
             hfMlLbToLcPiCandidate(outputMlNotPreselected);
@@ -205,7 +205,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
-        if (!hfHelper.selectionLbToLcPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionLbToLcPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelLbToLcPiCandidate(statusLbToLcPi);
           if (applyLbMl) {
             hfMlLbToLcPiCandidate(outputMlNotPreselected);

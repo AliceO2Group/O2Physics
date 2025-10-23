@@ -280,9 +280,9 @@ struct HfTreeCreatorBplusToD0Pi {
     auto d0Daughter1 = d0Cand.template prong1_as<TracksWPid>();
     auto invMassD0 = 0.;
     if (prong1.signed1Pt() > 0) {
-      invMassD0 = hfHelper.invMassD0barToKPi(d0Cand);
+      invMassD0 = HfHelper::invMassD0barToKPi(d0Cand);
     } else if (prong1.signed1Pt() < 0) {
-      invMassD0 = hfHelper.invMassD0ToPiK(d0Cand);
+      invMassD0 = HfHelper::invMassD0ToPiK(d0Cand);
     }
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -298,14 +298,14 @@ struct HfTreeCreatorBplusToD0Pi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBplusToD0Pi(),
-        hfHelper.invMassBplusToD0Pi(candidate),
+        HfHelper::invMassBplusToD0Pi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBplus(candidate),
+        HfHelper::yBplus(candidate),
         flagMc,
         originMc);
     } else {
@@ -345,22 +345,22 @@ struct HfTreeCreatorBplusToD0Pi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBplusToD0Pi(),
-        hfHelper.invMassBplusToD0Pi(candidate),
+        HfHelper::invMassBplusToD0Pi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        hfHelper.ctBplus(candidate),
+        HfHelper::ctBplus(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBplus(candidate),
-        hfHelper.eBplus(candidate),
+        HfHelper::yBplus(candidate),
+        HfHelper::eBplus(candidate),
         flagMc,
         invMassD0,
         d0Cand.ptProng0(),
         d0Cand.ptProng1(),
-        hfHelper.yD0(d0Cand),
+        HfHelper::yD0(d0Cand),
         d0Cand.eta(),
         d0Cand.cpa(),
         d0Cand.cpaXY(),

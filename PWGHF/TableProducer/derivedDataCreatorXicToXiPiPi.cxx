@@ -285,8 +285,8 @@ struct HfDerivedDataCreatorXicToXiPiPi {
           }
         }
         float const massXicToXiPiPi = candidate.invMassXicPlus();
-        double const ct = hfHelper.ctXic(candidate);
-        double const y = hfHelper.yXic(candidate);
+        double const ct = HfHelper::ctXic(candidate);
+        double const y = HfHelper::yXic(candidate);
         std::vector<float> mlScoresXicToXiPiPi;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbXicToXiPiPi().begin(), candidate.mlProbXicToXiPiPi().end(), std::back_inserter(mlScoresXicToXiPiPi));

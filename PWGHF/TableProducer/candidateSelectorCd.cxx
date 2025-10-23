@@ -212,9 +212,9 @@ struct HfCandidateSelectorCd {
 
     float massCd{0.f};
     if (trackDeuteron.globalIndex() == candidate.prong0Id()) {
-      massCd = hfHelper.invMassCdToDeKPi(candidate);
+      massCd = HfHelper::invMassCdToDeKPi(candidate);
     } else {
-      massCd = hfHelper.invMassCdToPiKDe(candidate);
+      massCd = HfHelper::invMassCdToPiKDe(candidate);
     }
 
     // cut on Cd->deKpi, piKde mass values

@@ -309,8 +309,8 @@ struct HfDerivedDataCreatorD0ToKPi {
           }
         }
 
-        double const ct = hfHelper.ctD0(candidate);
-        double const y = hfHelper.yD0(candidate);
+        double const ct = HfHelper::ctD0(candidate);
+        double const y = HfHelper::yD0(candidate);
         float massD0, massD0bar;
         float topolChi2PerNdf = -999.;
         if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -318,8 +318,8 @@ struct HfDerivedDataCreatorD0ToKPi {
           massD0bar = candidate.kfGeoMassD0bar();
           topolChi2PerNdf = candidate.kfTopolChi2OverNdf();
         } else {
-          massD0 = hfHelper.invMassD0ToPiK(candidate);
-          massD0bar = hfHelper.invMassD0barToKPi(candidate);
+          massD0 = HfHelper::invMassD0ToPiK(candidate);
+          massD0bar = HfHelper::invMassD0barToKPi(candidate);
         }
         std::vector<float> mlScoresD0, mlScoresD0bar;
         if constexpr (IsMl) {
@@ -327,10 +327,10 @@ struct HfDerivedDataCreatorD0ToKPi {
           std::copy(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end(), std::back_inserter(mlScoresD0bar));
         }
         if (candidate.isSelD0()) {
-          fillTablesCandidate(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0);
+          fillTablesCandidate(candidate, 0, massD0, HfHelper::cosThetaStarD0(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0);
         }
         if (candidate.isSelD0bar()) {
-          fillTablesCandidate(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0bar);
+          fillTablesCandidate(candidate, 1, massD0bar, HfHelper::cosThetaStarD0bar(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0bar);
         }
       }
     }

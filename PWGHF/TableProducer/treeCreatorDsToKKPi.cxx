@@ -335,13 +335,13 @@ struct HfTreeCreatorDsToKKPi {
     float deltaMassPhiKK = 0;
     float absCos3PiKDs = 0;
     if constexpr (MassHypo == 0) {
-      invMassDs = hfHelper.invMassDsToKKPi(candidate);
-      deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
-      absCos3PiKDs = hfHelper.absCos3PiKDsToKKPi(candidate);
+      invMassDs = HfHelper::invMassDsToKKPi(candidate);
+      deltaMassPhiKK = HfHelper::deltaMassPhiDsToKKPi(candidate);
+      absCos3PiKDs = HfHelper::absCos3PiKDsToKKPi(candidate);
     } else if constexpr (MassHypo == 1) {
-      invMassDs = hfHelper.invMassDsToPiKK(candidate);
-      deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
-      absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
+      invMassDs = HfHelper::invMassDsToPiKK(candidate);
+      deltaMassPhiKK = HfHelper::deltaMassPhiDsToPiKK(candidate);
+      absCos3PiKDs = HfHelper::absCos3PiKDsToPiKK(candidate);
     }
 
     int8_t flagMc{0};
@@ -357,11 +357,11 @@ struct HfTreeCreatorDsToKKPi {
       channelMc = candidate.flagMcDecayChanRec();
       isSwapped = candidate.isCandidateSwapped();
       if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
-        eCand = hfHelper.eDplus(candidate);
-        ctCand = hfHelper.ctDplus(candidate);
+        eCand = HfHelper::eDplus(candidate);
+        ctCand = HfHelper::ctDplus(candidate);
       } else {
-        eCand = hfHelper.eDs(candidate);
-        ctCand = hfHelper.ctDs(candidate);
+        eCand = HfHelper::eDs(candidate);
+        ctCand = HfHelper::ctDs(candidate);
       }
     }
 

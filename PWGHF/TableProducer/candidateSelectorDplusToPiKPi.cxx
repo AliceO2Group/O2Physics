@@ -167,10 +167,10 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(HfHelper::invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts)) {
+    if (useTriggerMassCut && !isCandidateInMassRange(HfHelper::invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {

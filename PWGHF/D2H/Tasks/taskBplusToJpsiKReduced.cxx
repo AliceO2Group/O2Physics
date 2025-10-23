@@ -340,7 +340,7 @@ struct HfTaskBplusToJpsiKReduced {
                 aod::HfRedBach0Tracks const&)
   {
     auto ptCandBplus = candidate.pt();
-    auto invMassBplus = hfHelper.invMassBplusToJpsiK(candidate);
+    auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate);
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
     auto ptJpsi = candidate.ptProng0();
@@ -357,7 +357,7 @@ struct HfTaskBplusToJpsiKReduced {
     }
 
     SETBIT(statusBplus, SelectionStep::RecoSkims);
-    if (hfHelper.selectionBplusToJpsiKTopol(candidate, cuts, binsPt)) {
+    if (HfHelper::selectionBplusToJpsiKTopol(candidate, cuts, binsPt)) {
       SETBIT(statusBplus, SelectionStep::RecoTopol);
     } else if (selectionFlagBplus >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -371,7 +371,7 @@ struct HfTaskBplusToJpsiKReduced {
       } else if (kaonPidMethod == PidMethod::TpcAndTof) {
         pidTrackKa = selectorKaon.statusTpcAndTof(candKa);
       }
-      if (hfHelper.selectionBplusToJpsiKPid(pidTrackKa, acceptPIDNotApplicable.value)) {
+      if (HfHelper::selectionBplusToJpsiKPid(pidTrackKa, acceptPIDNotApplicable.value)) {
         // LOGF(info, "B+ candidate selection failed at PID selection");
         SETBIT(statusBplus, SelectionStep::RecoPID);
       } else if (selectionFlagBplus >= BIT(SelectionStep::RecoPID) * 2 - 1) {
@@ -419,7 +419,7 @@ struct HfTaskBplusToJpsiKReduced {
         ptCandBplus,
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBplus(candidate),
+        HfHelper::yBplus(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.chi2PCA(),
@@ -494,7 +494,7 @@ struct HfTaskBplusToJpsiKReduced {
                    aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false>(candidate, candidatesJpsi, kaonTracks);
@@ -507,7 +507,7 @@ struct HfTaskBplusToJpsiKReduced {
                               aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, true>(candidate, candidatesJpsi, kaonTracks);
@@ -522,7 +522,7 @@ struct HfTaskBplusToJpsiKReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false>(candidate, candidatesJpsi, kaonTracks);
@@ -542,7 +542,7 @@ struct HfTaskBplusToJpsiKReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true>(candidate, candidatesJpsi, kaonTracks);

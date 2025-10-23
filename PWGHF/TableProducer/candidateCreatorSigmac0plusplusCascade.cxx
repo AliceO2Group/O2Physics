@@ -227,7 +227,7 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
       auto ptCand = candidateLc.pt();
       auto eta = candidateLc.eta();
       auto phi = candidateLc.phi();
-      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidateLc);
+      auto invMassLcToK0sP = HfHelper::invMassLcToK0sP(candidateLc);
       auto ptProng0 = candidateLc.ptProng0();
       auto ptProng1 = candidateLc.ptProng1();
       auto impactParameter0 = candidateLc.impactParameter0();
@@ -243,13 +243,13 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
       auto mLambda = candidateLc.mLambda();
       auto mAntiLambda = candidateLc.mAntiLambda();
       auto mGamma = candidateLc.mGamma();
-      auto ctV0K0Short = hfHelper.ctV0K0s(candidateLc);
-      auto ctV0Lambda = hfHelper.ctV0Lambda(candidateLc);
+      auto ctV0K0Short = HfHelper::ctV0K0s(candidateLc);
+      auto ctV0Lambda = HfHelper::ctV0Lambda(candidateLc);
       auto cpa = candidateLc.cpa();
       auto cpaXY = candidateLc.cpaXY();
       auto decayLength = candidateLc.decayLength();
       auto decayLengthXY = candidateLc.decayLengthXY();
-      auto ctLc = hfHelper.ctLc(candidateLc);
+      auto ctLc = HfHelper::ctLc(candidateLc);
       if (addQA) {
         registry.fill(HIST("lc/hPtCand"), ptCand);
         registry.fill(HIST("lc/hEtaCand"), eta);

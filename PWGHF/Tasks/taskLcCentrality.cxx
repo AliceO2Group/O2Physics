@@ -98,14 +98,14 @@ struct HfTaskLcCentrality {
       if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-        registry.fill(HIST("hMass"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), centrality);
+        registry.fill(HIST("hMass"), HfHelper::invMassLcToPKPi(candidate), candidate.pt(), centrality);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-        registry.fill(HIST("hMass"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), centrality);
+        registry.fill(HIST("hMass"), HfHelper::invMassLcToPiKP(candidate), candidate.pt(), centrality);
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -115,7 +115,7 @@ struct HfTaskLcCentrality {
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), candidate.pt());
-      registry.fill(HIST("hCt"), hfHelper.ctLc(candidate), candidate.pt());
+      registry.fill(HIST("hCt"), HfHelper::ctLc(candidate), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
       registry.fill(HIST("hSelectionStatus"), candidate.isSelLcToPKPi(), candidate.pt());
@@ -169,7 +169,7 @@ struct HfTaskLcCentralityMc {
       if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandMax) {
         continue;
       }
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {

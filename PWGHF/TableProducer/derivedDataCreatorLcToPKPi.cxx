@@ -288,10 +288,10 @@ struct HfDerivedDataCreatorLcToPKPi {
             }
           }
         }
-        double const ct = hfHelper.ctLc(candidate);
-        double const y = hfHelper.yLc(candidate);
-        float const massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
-        float const massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
+        double const ct = HfHelper::ctLc(candidate);
+        double const y = HfHelper::yLc(candidate);
+        float const massLcToPKPi = HfHelper::invMassLcToPKPi(candidate);
+        float const massLcToPiKP = HfHelper::invMassLcToPiKP(candidate);
         std::vector<float> mlScoresLcToPKPi, mlScoresLcToPiKP;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbLcToPKPi().begin(), candidate.mlProbLcToPKPi().end(), std::back_inserter(mlScoresLcToPKPi));

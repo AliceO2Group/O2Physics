@@ -27,10 +27,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_OMEGAC0(FEATURE)                                         \
-  {                                                                       \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE) \
-  }
+#define FILL_MAP_OMEGAC0(FEATURE) \
+  {                               \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -54,7 +53,7 @@
 // where GETTER is a method of hfHelper
 #define CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(OBJECT, FEATURE, GETTER)  \
   case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE): { \
-    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));              \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));             \
     break;                                                            \
   }
 namespace o2::analysis

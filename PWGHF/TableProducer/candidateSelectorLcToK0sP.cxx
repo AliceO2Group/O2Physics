@@ -166,7 +166,7 @@ struct HfCandidateSelectorLcToK0sP {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfHelper.invMassLcToK0sP(hfCandCascade) - o2::constants::physics::MassLambdaCPlus) > cuts->get(ptBin, "mLc")) {
+    if (std::abs(HfHelper::invMassLcToK0sP(hfCandCascade) - o2::constants::physics::MassLambdaCPlus) > cuts->get(ptBin, "mLc")) {
       return false; // mass of the Lambda c
     }
 

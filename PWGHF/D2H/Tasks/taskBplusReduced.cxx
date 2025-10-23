@@ -408,7 +408,7 @@ struct HfTaskBplusReduced {
                 TracksPion const&)
   {
     auto ptCandBplus = candidate.pt();
-    auto invMassBplus = hfHelper.invMassBplusToD0Pi(candidate);
+    auto invMassBplus = HfHelper::invMassBplusToD0Pi(candidate);
     auto candD0 = candidate.template prong0_as<CandsDmes>();
     auto candPi = candidate.template prong1_as<TracksPion>();
     auto ptD0 = candidate.ptProng0();
@@ -440,7 +440,7 @@ struct HfTaskBplusReduced {
           registry.fill(HIST("hCpaRecSig"), candidate.cpa(), ptCandBplus);
           registry.fill(HIST("hCpaXyRecSig"), candidate.cpaXY(), ptCandBplus);
           registry.fill(HIST("hEtaRecSig"), candidate.eta(), ptCandBplus);
-          registry.fill(HIST("hRapidityRecSig"), hfHelper.yBplus(candidate), ptCandBplus);
+          registry.fill(HIST("hRapidityRecSig"), HfHelper::yBplus(candidate), ptCandBplus);
           registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandBplus);
           registry.fill(HIST("hDecLengthXyRecSig"), candidate.decayLengthXY(), ptCandBplus);
           registry.fill(HIST("hNormDecLengthXyRecSig"), candidate.decayLengthXYNormalised(), ptCandBplus);
@@ -472,7 +472,7 @@ struct HfTaskBplusReduced {
           registry.fill(HIST("hCpaRecBg"), candidate.cpa(), ptCandBplus);
           registry.fill(HIST("hCpaXyRecBg"), candidate.cpaXY(), ptCandBplus);
           registry.fill(HIST("hEtaRecBg"), candidate.eta(), ptCandBplus);
-          registry.fill(HIST("hRapidityRecBg"), hfHelper.yBplus(candidate), ptCandBplus);
+          registry.fill(HIST("hRapidityRecBg"), HfHelper::yBplus(candidate), ptCandBplus);
           registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandBplus);
           registry.fill(HIST("hDecLengthXyRecBg"), candidate.decayLengthXY(), ptCandBplus);
           registry.fill(HIST("hNormDecLengthXyRecBg"), candidate.decayLengthXYNormalised(), ptCandBplus);
@@ -516,7 +516,7 @@ struct HfTaskBplusReduced {
         registry.fill(HIST("hCpa"), candidate.cpa(), ptCandBplus);
         registry.fill(HIST("hCpaXy"), candidate.cpaXY(), ptCandBplus);
         registry.fill(HIST("hEta"), candidate.eta(), ptCandBplus);
-        registry.fill(HIST("hRapidity"), hfHelper.yBplus(candidate), ptCandBplus);
+        registry.fill(HIST("hRapidity"), HfHelper::yBplus(candidate), ptCandBplus);
         registry.fill(HIST("hInvMassD0"), invMassD0, ptCandBplus);
         registry.fill(HIST("hDecLengthD0"), decLenD0, ptD0);
         registry.fill(HIST("hDecLengthXyD0"), decLenXyD0, ptD0);
@@ -599,7 +599,7 @@ struct HfTaskBplusReduced {
           ptCandBplus,
           candidate.eta(),
           candidate.phi(),
-          hfHelper.yBplus(candidate),
+          HfHelper::yBplus(candidate),
           candidate.cpa(),
           candidate.cpaXY(),
           candidate.chi2PCA(),
@@ -712,7 +712,7 @@ struct HfTaskBplusReduced {
                    TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, false>(candidate, candidatesD, pionTracks);
@@ -725,7 +725,7 @@ struct HfTaskBplusReduced {
                              TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, true, false>(candidate, candidatesD, pionTracks);
@@ -738,7 +738,7 @@ struct HfTaskBplusReduced {
                               TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, true>(candidate, candidatesD, pionTracks);
@@ -753,7 +753,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, false>(candidate, candidatesD, pionTracks);
@@ -773,7 +773,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, false>(candidate, candidatesD, pionTracks);
@@ -793,7 +793,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, true, false>(candidate, candidatesD, pionTracks);
@@ -813,7 +813,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, true, false>(candidate, candidatesD, pionTracks);
@@ -833,7 +833,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, true>(candidate, candidatesD, pionTracks);
@@ -853,7 +853,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, true>(candidate, candidatesD, pionTracks);

@@ -1096,7 +1096,7 @@ struct HfDataCreatorCharmResoReduced {
         registry.fill(HIST("hMassVsPtDstarAll"), varUtils.ptD, varUtils.invMassD - varUtils.invMassD0);
       } else if constexpr (DType == DType::Dplus) {
         auto prong0 = tracksIU.rawIteratorAt(candD.prong0Id());
-        varUtils.invMassD = hfHelper.invMassDplusToPiKPi(candD);
+        varUtils.invMassD = HfHelper::invMassDplusToPiKPi(candD);
         secondaryVertexD[0] = candD.xSecondaryVertex();
         secondaryVertexD[1] = candD.ySecondaryVertex();
         secondaryVertexD[2] = candD.zSecondaryVertex();
@@ -1115,8 +1115,8 @@ struct HfDataCreatorCharmResoReduced {
         }
         registry.fill(HIST("hMassVsPtDplusAll"), varUtils.ptD, varUtils.invMassD);
       } else if constexpr (DType == DType::D0) {
-        varUtils.invMassD0 = hfHelper.invMassD0ToPiK(candD);
-        varUtils.invMassD0Bar = hfHelper.invMassD0barToKPi(candD);
+        varUtils.invMassD0 = HfHelper::invMassD0ToPiK(candD);
+        varUtils.invMassD0Bar = HfHelper::invMassD0barToKPi(candD);
         secondaryVertexD[0] = candD.xSecondaryVertex();
         secondaryVertexD[1] = candD.ySecondaryVertex();
         secondaryVertexD[2] = candD.zSecondaryVertex();

@@ -210,7 +210,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.pyProng1(),
         candidate.pzProng1(),
         candidate.errorImpactParameter1(),
-        hfHelper.cosThetaStarBplus(candidate),
+        HfHelper::cosThetaStarBplus(candidate),
         ct);
     }
     if (fillCandidateSel) {
@@ -313,9 +313,9 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         }
         auto prongCharm = candidate.template prong0_as<CandCharmType>();
         auto prongBachelor = candidate.template prong1_as<TracksWPid>();
-        double const ct = hfHelper.ctBplus(candidate);
-        double const y = hfHelper.yBplus(candidate);
-        float const massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
+        double const ct = HfHelper::ctBplus(candidate);
+        double const y = HfHelper::yBplus(candidate);
+        float const massBplusToD0Pi = HfHelper::invMassBplusToD0Pi(candidate);
         float mlScoreBplusToD0Pi{-1.f};
         std::vector<float> mlScoresD0;
         bool const isD0 = prongBachelor.sign() < 0;

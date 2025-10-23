@@ -287,10 +287,10 @@ struct HfTreeCreatorXicToPKPi {
 
     if constexpr (MassHypo == 0) { // Xic->PKPi
       selStatusPiKP *= -1;
-      invMassXic = hfHelper.invMassXicToPKPi(candidate);
+      invMassXic = HfHelper::invMassXicToPKPi(candidate);
     } else if constexpr (MassHypo == 1) { // Xic->PiKP
       selStatusPKPi *= -1;
-      invMassXic = hfHelper.invMassXicToPiKP(candidate);
+      invMassXic = HfHelper::invMassXicToPiKP(candidate);
     }
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -394,11 +394,11 @@ struct HfTreeCreatorXicToPKPi {
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
-        hfHelper.ctXic(candidate),
+        HfHelper::ctXic(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yXic(candidate),
-        hfHelper.eXic(candidate),
+        HfHelper::yXic(candidate),
+        HfHelper::eXic(candidate),
         flagMc,
         originMc,
         candSwapped);

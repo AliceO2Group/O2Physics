@@ -15,18 +15,18 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include <vector>
-#include <algorithm>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "ALICE3/DataModel/RICH.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include "ALICE3/DataModel/RICH.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -147,11 +147,11 @@ struct HfCandidateSelectorD0Alice3Barrel {
 
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(HfHelper::invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
+      if (std::abs(HfHelper::invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
         return false;
       }
     }
@@ -168,11 +168,11 @@ struct HfCandidateSelectorD0Alice3Barrel {
 
     // cut on cos(theta*)
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.cosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
+      if (std::abs(HfHelper::cosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.cosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
+      if (std::abs(HfHelper::cosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
         return false;
       }
     }

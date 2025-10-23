@@ -305,11 +305,11 @@ struct HfCandidateSelectorLc {
       float massLc{0.f}, massKPi{0.f};
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {
-          massLc = hfHelper.invMassLcToPKPi(candidate);
-          massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
+          massLc = HfHelper::invMassLcToPKPi(candidate);
+          massKPi = HfHelper::invMassKPiPairLcToPKPi(candidate);
         } else {
-          massLc = hfHelper.invMassLcToPiKP(candidate);
-          massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
+          massLc = HfHelper::invMassLcToPiKP(candidate);
+          massKPi = HfHelper::invMassKPiPairLcToPiKP(candidate);
         }
       } else if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {

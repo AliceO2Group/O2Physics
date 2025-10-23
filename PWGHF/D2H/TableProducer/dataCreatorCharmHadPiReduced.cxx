@@ -1061,18 +1061,18 @@ struct HfDataCreatorCharmHadPiReduced {
       float invMassC0{-1.f}, invMassC1{-1.f};
       if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
-        invMassC0 = hfHelper.invMassDplusToPiKPi(candC);
+        invMassC0 = HfHelper::invMassDplusToPiKPi(candC);
         registry.fill(HIST("hMassDplus"), invMassC0);
         registry.fill(HIST("hPtDplus"), candC.pt());
         registry.fill(HIST("hCpaDplus"), candC.cpa());
       } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         if (candC.isSelDsToKKPi() >= hfflagConfigurations.selectionFlagDs) {
-          invMassC0 = hfHelper.invMassDsToKKPi(candC);
+          invMassC0 = HfHelper::invMassDsToKKPi(candC);
           registry.fill(HIST("hMassDsToKKPi"), invMassC0);
         }
         if (candC.isSelDsToPiKK() >= hfflagConfigurations.selectionFlagDs) {
-          invMassC1 = hfHelper.invMassDsToPiKK(candC);
+          invMassC1 = HfHelper::invMassDsToPiKK(candC);
           registry.fill(HIST("hMassDsToPiKK"), invMassC1);
         }
         registry.fill(HIST("hPtDs"), candC.pt());
@@ -1080,11 +1080,11 @@ struct HfDataCreatorCharmHadPiReduced {
       } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) {
         indexHfCandCharm = tables.hfCand2Prong.lastIndex() + 1;
         if (candC.isSelD0() >= hfflagConfigurations.selectionFlagD0) {
-          invMassC0 = hfHelper.invMassD0ToPiK(candC);
+          invMassC0 = HfHelper::invMassD0ToPiK(candC);
           registry.fill(HIST("hMassD0"), invMassC0);
         }
         if (candC.isSelD0bar() >= hfflagConfigurations.selectionFlagD0bar) {
-          invMassC1 = hfHelper.invMassD0barToKPi(candC);
+          invMassC1 = HfHelper::invMassD0barToKPi(candC);
           registry.fill(HIST("hMassD0bar"), invMassC1);
         }
         registry.fill(HIST("hPtD0"), candC.pt());
@@ -1092,11 +1092,11 @@ struct HfDataCreatorCharmHadPiReduced {
       } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         if (candC.isSelLcToPKPi() >= hfflagConfigurations.selectionFlagLc) {
-          invMassC0 = hfHelper.invMassLcToPKPi(candC);
+          invMassC0 = HfHelper::invMassLcToPKPi(candC);
           registry.fill(HIST("hMassLcToPKPi"), invMassC0);
         }
         if (candC.isSelLcToPiKP() >= hfflagConfigurations.selectionFlagLc) {
-          invMassC1 = hfHelper.invMassLcToPiKP(candC);
+          invMassC1 = HfHelper::invMassLcToPiKP(candC);
           registry.fill(HIST("hMassLcToPiKP"), invMassC1);
         }
         registry.fill(HIST("hPtLc"), candC.pt());

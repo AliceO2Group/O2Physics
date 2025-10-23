@@ -197,19 +197,19 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   double getCandMass(const TCand& candidate)
   {
     if constexpr (CandType == CandidateType::DsToKKPi) {
-      return hfHelper.invMassDsToKKPi(candidate);
+      return HfHelper::invMassDsToKKPi(candidate);
     }
     if constexpr (CandType == CandidateType::DsToPiKK) {
-      return hfHelper.invMassDsToPiKK(candidate);
+      return HfHelper::invMassDsToPiKK(candidate);
     }
     if constexpr (CandType == CandidateType::DplusToPiKPi) {
-      return hfHelper.invMassDplusToPiKPi(candidate);
+      return HfHelper::invMassDplusToPiKPi(candidate);
     }
     if constexpr (CandType == CandidateType::D0ToPiK) {
-      return hfHelper.invMassD0ToPiK(candidate);
+      return HfHelper::invMassD0ToPiK(candidate);
     }
     if constexpr (CandType == CandidateType::D0ToKPi) {
-      return hfHelper.invMassD0barToKPi(candidate);
+      return HfHelper::invMassD0barToKPi(candidate);
     }
     return -1.;
   }

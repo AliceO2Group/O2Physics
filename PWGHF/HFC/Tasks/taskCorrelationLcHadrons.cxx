@@ -899,7 +899,7 @@ struct HfTaskCorrelationLcHadrons {
       multiplicity = collision.multFT0M();
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
-        if (std::abs(hfHelper.yLc(candidate)) <= yCandMax) {
+        if (std::abs(HfHelper::yLc(candidate)) <= yCandMax) {
           hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
           if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("Efficiency/hPtCandMcRecPrompt"), candidate.pt());

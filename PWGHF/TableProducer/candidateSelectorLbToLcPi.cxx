@@ -90,7 +90,7 @@ struct HfCandidateSelectorLbToLcPi {
     }
 
     // Λb0 mass cut
-    if (std::abs(hfHelper.invMassLbToLcPi(hfCandLb) - o2::constants::physics::MassLambdaB0) > cuts->get(pTBin, "m")) {
+    if (std::abs(HfHelper::invMassLbToLcPi(hfCandLb) - o2::constants::physics::MassLambdaB0) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "Lb topol selection failed at mass diff check");
       return false;
     }
@@ -107,10 +107,10 @@ struct HfCandidateSelectorLbToLcPi {
 
     float lcMass = 0.;
     if (hfCandLc.isSelLcToPKPi()) {
-      lcMass = hfHelper.invMassLcToPKPi(hfCandLc);
+      lcMass = HfHelper::invMassLcToPKPi(hfCandLc);
     }
     if (hfCandLc.isSelLcToPiKP()) {
-      lcMass = hfHelper.invMassLcToPiKP(hfCandLc);
+      lcMass = HfHelper::invMassLcToPiKP(hfCandLc);
     }
     if (std::abs(lcMass - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "DeltaMLc")) {
       return false;

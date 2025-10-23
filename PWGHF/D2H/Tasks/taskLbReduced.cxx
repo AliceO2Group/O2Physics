@@ -393,7 +393,7 @@ struct HfTaskLbReduced {
                 CandsLc const&)
   {
     auto ptCandLb = candidate.pt();
-    auto invMassLb = hfHelper.invMassLbToLcPi(candidate);
+    auto invMassLb = HfHelper::invMassLbToLcPi(candidate);
     auto candLc = candidate.template prong0_as<CandsLc>();
     auto ptLc = candidate.ptProng0();
     auto invMassLc = candLc.invMassHypo0() > 0 ? candLc.invMassHypo0() : candLc.invMassHypo1();
@@ -418,7 +418,7 @@ struct HfTaskLbReduced {
     if (fillHistograms) {
       if constexpr (DoMc) {
         if (isSignal) {
-          registry.fill(HIST("hMassRecSig"), ptCandLb, hfHelper.invMassLbToLcPi(candidate));
+          registry.fill(HIST("hMassRecSig"), ptCandLb, HfHelper::invMassLbToLcPi(candidate));
           registry.fill(HIST("hPtProng0RecSig"), ptCandLb, candidate.ptProng0());
           registry.fill(HIST("hPtProng1RecSig"), ptCandLb, candidate.ptProng1());
           registry.fill(HIST("hImpParProdRecSig"), ptCandLb, candidate.impactParameterProduct());
@@ -430,7 +430,7 @@ struct HfTaskLbReduced {
           registry.fill(HIST("hCospRecSig"), ptCandLb, candidate.cpa());
           registry.fill(HIST("hCospXyRecSig"), ptCandLb, candidate.cpaXY());
           registry.fill(HIST("hEtaRecSig"), ptCandLb, candidate.eta());
-          registry.fill(HIST("hRapidityRecSig"), ptCandLb, hfHelper.yLb(candidate));
+          registry.fill(HIST("hRapidityRecSig"), ptCandLb, HfHelper::yLb(candidate));
           registry.fill(HIST("hinvMassLcRecSig"), ptLc, invMassLc);
           registry.fill(HIST("hDecLengthLcRecSig"), ptLc, decLenLc);
           registry.fill(HIST("hDecLengthXyLcRecSig"), ptLc, decLenXyLc);
@@ -448,7 +448,7 @@ struct HfTaskLbReduced {
             registry.fill(HIST("hMlScoreSigLbRecSig"), ptCandLb, candidate.mlProbLbToLcPi());
           }
         } else if (fillBackground) {
-          registry.fill(HIST("hMassRecBg"), ptCandLb, hfHelper.invMassLbToLcPi(candidate));
+          registry.fill(HIST("hMassRecBg"), ptCandLb, HfHelper::invMassLbToLcPi(candidate));
           registry.fill(HIST("hPtProng0RecBg"), ptCandLb, candidate.ptProng0());
           registry.fill(HIST("hPtProng1RecBg"), ptCandLb, candidate.ptProng1());
           registry.fill(HIST("hImpParProdRecBg"), ptCandLb, candidate.impactParameterProduct());
@@ -460,7 +460,7 @@ struct HfTaskLbReduced {
           registry.fill(HIST("hCospRecBg"), ptCandLb, candidate.cpa());
           registry.fill(HIST("hCospXyRecBg"), ptCandLb, candidate.cpaXY());
           registry.fill(HIST("hEtaRecBg"), ptCandLb, candidate.eta());
-          registry.fill(HIST("hRapidityRecBg"), ptCandLb, hfHelper.yLb(candidate));
+          registry.fill(HIST("hRapidityRecBg"), ptCandLb, HfHelper::yLb(candidate));
           registry.fill(HIST("hinvMassLcRecBg"), ptLc, invMassLc);
           registry.fill(HIST("hDecLengthLcRecBg"), ptLc, decLenLc);
           registry.fill(HIST("hDecLengthXyLcRecBg"), ptLc, decLenXyLc);
@@ -498,7 +498,7 @@ struct HfTaskLbReduced {
         registry.fill(HIST("hCosp"), ptCandLb, candidate.cpa());
         registry.fill(HIST("hCospXy"), ptCandLb, candidate.cpaXY());
         registry.fill(HIST("hEta"), ptCandLb, candidate.eta());
-        registry.fill(HIST("hRapidity"), ptCandLb, hfHelper.yLb(candidate));
+        registry.fill(HIST("hRapidity"), ptCandLb, HfHelper::yLb(candidate));
         registry.fill(HIST("hinvMassLc"), ptLc, invMassLc);
         registry.fill(HIST("hDecLengthLc"), ptLc, decLenLc);
         registry.fill(HIST("hDecLengthXyLc"), ptLc, decLenXyLc);
@@ -566,7 +566,7 @@ struct HfTaskLbReduced {
           ptCandLb,
           candidate.eta(),
           candidate.phi(),
-          hfHelper.yLb(candidate),
+          HfHelper::yLb(candidate),
           candidate.cpa(),
           candidate.cpaXY(),
           candidate.chi2PCA(),
@@ -681,7 +681,7 @@ struct HfTaskLbReduced {
                    TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, false>(candidate, candidatesLc);
@@ -694,7 +694,7 @@ struct HfTaskLbReduced {
                            TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, true, false>(candidate, candidatesLc);
@@ -707,7 +707,7 @@ struct HfTaskLbReduced {
                            TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, true>(candidate, candidatesLc);
@@ -722,7 +722,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, false>(candidate, candidatesLc);
@@ -742,7 +742,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, false>(candidate, candidatesLc);
@@ -762,7 +762,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, true, false>(candidate, candidatesLc);
@@ -782,7 +782,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, true, false>(candidate, candidatesLc);
@@ -802,7 +802,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, true>(candidate, candidatesLc);
@@ -822,7 +822,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, true>(candidate, candidatesLc);

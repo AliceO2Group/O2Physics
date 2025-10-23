@@ -189,7 +189,7 @@ struct HfCandidateSelectorXicToPKPi {
     }
 
     // candidate ct
-    if (hfHelper.ctXic(candidate) > cuts->get(pTBin, "ct")) {
+    if (HfHelper::ctXic(candidate) > cuts->get(pTBin, "ct")) {
       return false;
     }
 
@@ -223,11 +223,11 @@ struct HfCandidateSelectorXicToPKPi {
     }
 
     if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(hfHelper.invMassXicToPKPi(candidate) - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
+      if (std::abs(HfHelper::invMassXicToPKPi(candidate) - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassXicToPiKP(candidate) - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
+      if (std::abs(HfHelper::invMassXicToPiKP(candidate) - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
         return false;
       }
     }

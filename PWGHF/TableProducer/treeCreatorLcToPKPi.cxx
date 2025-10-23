@@ -571,8 +571,8 @@ struct HfTreeCreatorLcToPKPi {
   template <typename CandType>
   std::pair<float, float> evaluateInvariantMassesDCAFitter(CandType const& candidate, int candFlag)
   {
-    const float invMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
-    const float invMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
+    const float invMass = candFlag == 0 ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+    const float invMassKPi = candFlag == 0 ? HfHelper::invMassKPiPairLcToPKPi(candidate) : HfHelper::invMassKPiPairLcToPiKP(candidate);
 
     return std::make_pair(invMass, invMassKPi);
   }
@@ -613,8 +613,8 @@ struct HfTreeCreatorLcToPKPi {
   void fillLiteTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
-    const float functionCt = hfHelper.ctLc(candidate);
-    const float functionY = hfHelper.yLc(candidate);
+    const float functionCt = HfHelper::ctLc(candidate);
+    const float functionY = HfHelper::yLc(candidate);
 
     int8_t functionFlagMcMatchRec{0};
     int8_t functionOriginMcRec{0};
@@ -699,9 +699,9 @@ struct HfTreeCreatorLcToPKPi {
   void fillFullTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
-    const float functionCt = hfHelper.ctLc(candidate);
-    const float functionY = hfHelper.yLc(candidate);
-    const float functionE = hfHelper.eLc(candidate);
+    const float functionCt = HfHelper::ctLc(candidate);
+    const float functionY = HfHelper::yLc(candidate);
+    const float functionE = HfHelper::eLc(candidate);
 
     int8_t functionFlagMcMatchRec{0};
     int8_t functionOriginMcRec{0};

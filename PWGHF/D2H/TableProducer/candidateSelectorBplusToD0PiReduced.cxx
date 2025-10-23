@@ -181,7 +181,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
 
       // topological cuts
-      if (!hfHelper.selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
+      if (!HfHelper::selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         if (applyBplusMl) {
           hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -191,7 +191,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
 
       if constexpr (WithDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
+        if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
             hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -215,7 +215,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
-        if (!hfHelper.selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {

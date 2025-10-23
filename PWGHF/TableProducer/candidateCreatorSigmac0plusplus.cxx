@@ -206,7 +206,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       }
       /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
       /// if not selected, skip it and go to the next one
-      if (yCandLcMax >= 0. && std::abs(hfHelper.yLc(candLc)) > yCandLcMax) {
+      if (yCandLcMax >= 0. && std::abs(HfHelper::yLc(candLc)) > yCandLcMax) {
         continue;
       }
 
@@ -223,10 +223,10 @@ struct HfCandidateCreatorSigmac0plusplus {
         mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
       }
 
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
+      if (candLc.isSelLcToPKPi() >= 1 && std::abs(HfHelper::invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
+      if (candLc.isSelLcToPiKP() >= 1 && std::abs(HfHelper::invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
         statusSpreadMinvPiKPFromPDG = 1;
       }
       if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

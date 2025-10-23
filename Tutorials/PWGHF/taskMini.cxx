@@ -193,11 +193,11 @@ struct HfTaskMiniCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > massWindow) {
+      if (std::abs(HfHelper::invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > massWindow) {
+      if (std::abs(HfHelper::invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > massWindow) {
         return false;
       }
     }
@@ -308,10 +308,10 @@ struct HfTaskMiniD0 {
   {
     for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate));
+        registry.fill(HIST("hMass"), HfHelper::invMassD0ToPiK(candidate));
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate));
+        registry.fill(HIST("hMass"), HfHelper::invMassD0barToKPi(candidate));
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hCpaVsPtCand"), candidate.cpa(), candidate.pt());

@@ -27,10 +27,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_DS(FEATURE)                                       \
-  {                                                                \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE) \
-  }
+#define FILL_MAP_DS(FEATURE) \
+  {                          \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -54,7 +53,7 @@
 // where GETTER is a method of hfHelper
 #define CHECK_AND_FILL_VEC_DS_HFHELPER(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {  \
-    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));        \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));       \
     break;                                                      \
   }
 
@@ -64,9 +63,9 @@
 #define CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
   case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {                   \
     if (caseDsToKKPi) {                                                          \
-      inputFeatures.emplace_back(hfHelper.GETTER1(OBJECT));                      \
+      inputFeatures.emplace_back(HfHelper::GETTER1(OBJECT));                     \
     } else {                                                                     \
-      inputFeatures.emplace_back(hfHelper.GETTER2(OBJECT));                      \
+      inputFeatures.emplace_back(HfHelper::GETTER2(OBJECT));                     \
     }                                                                            \
     break;                                                                       \
   }
