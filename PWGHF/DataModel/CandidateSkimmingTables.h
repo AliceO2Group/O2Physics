@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file CandidateSkimmingTables.h
-/// \brief Definitions of tables produced by candidate skimming workflows
+/// \brief Definitions of tables produced by the candidate skimming
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
