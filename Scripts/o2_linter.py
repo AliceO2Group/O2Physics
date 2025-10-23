@@ -989,7 +989,7 @@ class TestNameConstant(TestSpec):
 
     name = "name/constexpr-constant"
     message = (
-        'Use UpperCamelCase for names of constexpr constants. Names of special constants may be prefixed with "k".'
+        'Use UpperCamelCase for names of constexpr constants.'
     )
     rationale = rationale_names
     references = references_names
@@ -1013,8 +1013,6 @@ class TestNameConstant(TestSpec):
             return True
         constant_name = match.group(4)
         # The actual test comes here.
-        if constant_name.startswith("k") and len(constant_name) > 1:  # exception for special constants
-            constant_name = constant_name[1:]  # test the name without "k"
         return is_upper_camel_case(constant_name)
 
 
