@@ -1617,7 +1617,7 @@ struct qaMatchEff {
         //}
 
         /// MC info for THnSparse filling
-        int sayPrim = -99;
+        sayPrim = -99;
         specind = -9999;
         if (mcpart.isPhysicalPrimary())
           sayPrim = 0;
