@@ -89,31 +89,6 @@ enum DecayType {
 };
 } // namespace hf_cand_lb
 
-// ALICE3
-
-namespace hf_cand_x
-{
-enum DecayType {
-  XToJpsiToEEPiPi = 0,
-  XToJpsiToMuMuPiPi
-};
-} // namespace hf_cand_x
-
-namespace hf_cand_xicc
-{
-enum DecayType {
-  XiccToXicPi = 0
-};
-} // namespace hf_cand_xicc
-
-namespace hf_cand_chic
-{
-enum DecayType {
-  ChicToJpsiToEEGamma = 0,
-  ChicToJpsiToMuMuGamma
-};
-} // namespace hf_cand_chic
-
 } // namespace o2::aod
 
 #endif // PWGHF_CORE_DECAYCHANNELSLEGACY_H_
