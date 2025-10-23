@@ -187,9 +187,10 @@ struct Lambda1520analysisinpp {
 
   // switches
   Configurable<bool> cFillMultQA{"cFillMultQA", false, "Turn on/off additional QA plots"};
+  Configurable<bool> cFillTrackQA{"cFillTrackQA", false, "Turn on/off additional QA plots"};
   Configurable<bool> cFilladditionalQAeventPlots{"cFilladditionalQAeventPlots", false, "Additional QA event plots"};
   Configurable<bool> cFilladditionalMEPlots{"cFilladditionalMEPlots", false, "Additional Mixed event plots"};
-  Configurable<bool> cFilldeltaEtaPhiPlots{"cFilldeltaEtaPhiPlots", false, "Enamble additional cuts on daughters"};
+  Configurable<bool> cFilldeltaEtaPhiPlots{"cFilldeltaEtaPhiPlots", false, "Enable additional cuts on daughters"};
   Configurable<bool> cFill1DQAs{"cFill1DQAs", false, "Invariant mass 1D"};
   Configurable<int> centEstimator{"centEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
 
@@ -201,22 +202,22 @@ struct Lambda1520analysisinpp {
   // Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
   // Filter triggerFilter = (o2::aod::evsel::sel8 == true);
 
-  Filter tofPIDFilter = aod::track::tofExpMom < 0.0f || ((aod::track::tofExpMom > 0.0f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
-  Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                             // TPC
-  Filter trackFilter = (configTracks.trackSelection == AllTracks) ||
-                       ((configTracks.trackSelection == GlobalTracks) && requireGlobalTrackInFilter()) ||
-                       ((configTracks.trackSelection == GlobalTracksWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((configTracks.trackSelection == GlobalTracksWoDCA) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((configTracks.trackSelection == QualityTracks) && requireQualityTracksInFilter()) ||
-                       ((configTracks.trackSelection == InAcceptanceTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  Filter acceptanceFilter = (nabs(aod::track::eta) < configTracks.cfgCutEta && nabs(aod::track::pt) > configTracks.cMinPtcut) &&
+                            (nabs(aod::track::dcaXY) < configTracks.cMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < configTracks.cMaxDCAzToPVcut);
 
-  Filter acceptanceFilter = (nabs(aod::track::eta) < configTracks.cfgCutEta && nabs(aod::track::pt) > configTracks.cMinPtcut);
-  // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < configTracks.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < configTracks.cfgCutDCAz);
+  // Filter tofPIDFilter = aod::track::tofExpMom < 0.0f || ((aod::track::tofExpMom > 0.0f) && ( (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
+  // Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                             // TPC
+  /*  Filter trackFilter = (configTracks.trackSelection == AllTracks) ||
+                        ((configTracks.trackSelection == GlobalTracks) && requireGlobalTrackInFilter()) ||
+                        ((configTracks.trackSelection == GlobalTracksWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||
+                        ((configTracks.trackSelection == GlobalTracksWoDCA) && requireGlobalTrackWoDCAInFilter()) ||
+                        ((configTracks.trackSelection == QualityTracks) && requireQualityTracksInFilter()) ||
+                        ((configTracks.trackSelection == InAcceptanceTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  */
   // Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>;
-
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>>;
 
@@ -290,20 +291,21 @@ struct Lambda1520analysisinpp {
     if (doprocessData) {
       // Track QA before cuts
       //  --- Track
-      histos.add("QA/QAbefore/Track/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;{#sigma_{TOF}^{Kaon}};{#sigma_{TPC}^{Kaon}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPConly_Nsigma_ka", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;{#sigma_{TOF}^{Proton}};{#sigma_{TPC}^{Proton}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPConly_Nsigma_pr", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTH2F, {axisPt, axisDCAz});
-      histos.add("QA/QAbefore/Track/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTH2F, {axisPt, axisDCAxy});
-      histos.add("QA/QAbefore/Track/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
-      histos.add("QA/QAbefore/Track/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
-      histos.add("QA/QAbefore/Track/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
-
+      if (cFillTrackQA) {
+        histos.add("QA/QAbefore/Track/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;{#sigma_{TOF}^{Kaon}};{#sigma_{TPC}^{Kaon}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TPConly_Nsigma_ka", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;{#sigma_{TOF}^{Proton}};{#sigma_{TPC}^{Proton}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/TPConly_Nsigma_pr", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
+        histos.add("QA/QAbefore/Track/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTH2F, {axisPt, axisDCAz});
+        histos.add("QA/QAbefore/Track/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTH2F, {axisPt, axisDCAxy});
+        histos.add("QA/QAbefore/Track/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
+        histos.add("QA/QAbefore/Track/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
+        histos.add("QA/QAbefore/Track/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
+      }
       if (cFillMultQA) {
         // Multiplicity correlation calibrations
         histos.add("MultCalib/centGloPVpr", "Centrality vs Global-Tracks", kTHnSparseF, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}, {500, 0, 5000, "PV tracks"}});
@@ -400,8 +402,8 @@ struct Lambda1520analysisinpp {
       histos.add("QA/MC/h2GenEtaPt_afterRapcut", " #phi-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
       histos.add("QA/MC/h2GenPhiRapidity_afterRapcut", " #phi-y distribution of Generated #Lambda(1520); #phi; y; Counts;", HistType::kTHnSparseF, {axisPhi, axisRap});
 
-      histos.add("Result/MC/Genlambda1520pt", "pT distribution of True MC #Lambda(1520)0", kTHnSparseF, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTHnSparseF, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/MC/Genlambda1520pt", "pT distribution of True MC #Lambda(1520)0", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTH3F, {axisMClabel, axisPt, axisMult});
     }
     if (doprocessMC) {
       histos.add("QA/MC/h2RecoEtaPt_after", " #eta-#it{p}_{T} distribution of Reconstructed #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPt});
@@ -474,16 +476,7 @@ struct Lambda1520analysisinpp {
   bool trackCut(const TrackType track)
   {
     // basic track cuts
-    if (std::abs(track.pt()) < configTracks.cMinPtcut)
-      return false;
-    if (configTracks.cDCAr7SigCut) {
-      if (std::abs(track.dcaXY()) > (0.004f + 0.013f / (track.pt()))) // 7 - Sigma cut
-        return false;
-    } else {
-      if (std::abs(track.dcaXY()) > configTracks.cMaxDCArToPVcut)
-        return false;
-    }
-    if (std::abs(track.dcaZ()) > configTracks.cMaxDCAzToPVcut)
+    if (configTracks.cDCAr7SigCut && std::abs(track.dcaXY()) > (0.004f + 0.013f / (track.pt()))) // 7 - Sigma cut
       return false;
     if (configTracks.cTPCNClsFound && (track.tpcNClsFound() < configTracks.cMinTPCNClsFound))
       return false;
@@ -498,10 +491,6 @@ struct Lambda1520analysisinpp {
     if (configTracks.cfgPVContributor && !track.isPVContributor())
       return false;
     if (configTracks.cfgGlobalTrack && !track.isGlobalTrack())
-      return false;
-    if (configTracks.cfgUseITSRefit && !track.passedITSRefit())
-      return false;
-    if (configTracks.cfgUseTPCRefit && !track.passedTPCRefit())
       return false;
 
     return true;
@@ -734,28 +723,30 @@ struct Lambda1520analysisinpp {
       //// QA plots before the selection
       //  --- Track QA all
       if constexpr (IsData) {
-        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTPC);
-        if (isTrk1hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTOF);
-          histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
-        }
-        if (!isTrk1hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_pr"), trk1ptPr, trk1NSigmaPrTPC);
-        }
-        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTPC);
-        if (isTrk2hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTOF);
-          histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
-        }
-        if (!isTrk2hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_ka"), trk2ptKa, trk2NSigmaKaTPC);
-        }
+        if (cFillTrackQA) {
+          histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTPC);
+          if (isTrk1hasTOF) {
+            histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTOF);
+            histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
+          }
+          if (!isTrk1hasTOF) {
+            histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_pr"), trk1ptPr, trk1NSigmaPrTPC);
+          }
+          histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTPC);
+          if (isTrk2hasTOF) {
+            histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTOF);
+            histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+          }
+          if (!isTrk2hasTOF) {
+            histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_ka"), trk2ptKa, trk2NSigmaKaTPC);
+          }
 
-        histos.fill(HIST("QA/QAbefore/Track/dcaZ"), trk1ptPr, trk1.dcaZ());
-        histos.fill(HIST("QA/QAbefore/Track/dcaXY"), trk1ptPr, trk1.dcaXY());
-        histos.fill(HIST("QA/QAbefore/Track/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
-        histos.fill(HIST("QA/QAbefore/Track/pT"), trk1ptPr);
-        histos.fill(HIST("QA/QAbefore/Track/eta"), trk1etaPr);
+          histos.fill(HIST("QA/QAbefore/Track/dcaZ"), trk1ptPr, trk1.dcaZ());
+          histos.fill(HIST("QA/QAbefore/Track/dcaXY"), trk1ptPr, trk1.dcaXY());
+          histos.fill(HIST("QA/QAbefore/Track/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
+          histos.fill(HIST("QA/QAbefore/Track/pT"), trk1ptPr);
+          histos.fill(HIST("QA/QAbefore/Track/eta"), trk1etaPr);
+        }
         if (cFilldeltaEtaPhiPlots) {
           histos.fill(HIST("QAbefore/deltaEta"), deltaEta);
           histos.fill(HIST("QAbefore/deltaPhi"), deltaPhi);

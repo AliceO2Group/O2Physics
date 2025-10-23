@@ -79,6 +79,8 @@ struct femtoDreamProducerReducedTask {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtAddOfflineCheck{"ConfEvtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
+  Configurable<float> ConfEvtMinSphericity{"ConfEvtMinSphericity", 0.0f, "Evt sel: Min. sphericity of event"};
+  Configurable<float> ConfEvtSphericityPtmin{"ConfEvtSphericityPtmin", 0.0f, "Evt sel: Min. Pt for sphericity calculation"};
 
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
 
@@ -116,7 +118,7 @@ struct femtoDreamProducerReducedTask {
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
-    colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value);
+    colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value, ConfEvtMinSphericity.value, ConfEvtSphericityPtmin.value);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);

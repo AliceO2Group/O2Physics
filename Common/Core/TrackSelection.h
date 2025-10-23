@@ -16,11 +16,13 @@
 #ifndef COMMON_CORE_TRACKSELECTION_H_
 #define COMMON_CORE_TRACKSELECTION_H_
 
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
+#include <Framework/DataTypes.h>
 
 #include <Rtypes.h>
 
+#include <cmath>
+#include <cstdint>
+#include <functional>
 #include <set>
 #include <string>
 #include <utility>

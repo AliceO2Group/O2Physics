@@ -13,20 +13,22 @@
 // cross-PWG effort in tracking studies
 // includes basic tracking, V0s and Cascades
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TMath.h>
+#include <TMathBase.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -34,7 +36,7 @@ using namespace o2::framework::expressions;
 
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 struct flowTest {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};

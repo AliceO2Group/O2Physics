@@ -166,8 +166,3 @@ o2physics_add_dpl_workflow(lambdaspincorrelation
     SOURCES lambdaspincorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(propagationservice
-    SOURCES propagationService.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
-    COMPONENT_NAME Analysis)

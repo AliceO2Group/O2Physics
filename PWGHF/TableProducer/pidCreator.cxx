@@ -44,6 +44,8 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofTinyKa> trackPidTinyKa;
   Produces<aod::PidTpcTofFullPr> trackPidFullPr;
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
+  Produces<aod::PidTpcTofFullDe> trackPidFullDe;
+  Produces<aod::PidTpcTofTinyDe> trackPidTinyDe;
 
   static constexpr float NSigmaToleranceDefault = .1f;
   static constexpr float NSigmaDefault = -999.f + NSigmaToleranceDefault; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -79,6 +81,8 @@ struct HfPidCreator {
     checkTableSwitch(initContext, "PidTpcTofTinyKa", doprocessTinyKa);
     checkTableSwitch(initContext, "PidTpcTofFullPr", doprocessFullPr);
     checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
+    checkTableSwitch(initContext, "PidTpcTofFullDe", doprocessFullDe);
+    checkTableSwitch(initContext, "PidTpcTofTinyDe", doprocessTinyDe);
   }
 
   /// Function to combine TPC and TOF NSigma
@@ -86,10 +90,10 @@ struct HfPidCreator {
   /// \param tpcNSigma is the (binned) NSigma separation in TPC (if tiny = true)
   /// \param tofNSigma is the (binned) NSigma separation in TOF (if tiny = true)
   /// \return combined NSigma of TPC and TOF
-  template <bool tiny, typename T1>
+  template <bool Tiny, typename T1>
   T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
   {
-    if constexpr (tiny) {
+    if constexpr (Tiny) {
       tpcNSigma *= aod::pidtpc_tiny::binning::bin_width;
       tofNSigma *= aod::pidtof_tiny::binning::bin_width;
     }
@@ -132,6 +136,7 @@ struct HfPidCreator {
   PROCESS_PID(Pi)
   PROCESS_PID(Ka)
   PROCESS_PID(Pr)
+  PROCESS_PID(De)
 
 #undef PROCESS_PID
 };

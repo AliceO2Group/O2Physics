@@ -14,9 +14,10 @@
 
 #include "DetLayer.h"
 
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include <fairlogger/Logger.h> // not a system header but megalinter thinks so
+#include <fairlogger/Logger.h>
 
 #include <string>
 #include <vector>
@@ -40,11 +41,19 @@ class FastTracker
   virtual ~FastTracker() {}
 
   // Layer and layer configuration
-  void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+  DetLayer* AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+
+  /// Add a dead region in phi for a specific layer
+  /// \param layerName Name of the layer to modify
+  /// \param phiStart Start angle of the dead region (in radians)
+  /// \param phiEnd End angle of the dead region (in radians)
+  void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
   DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true) const;
+  std::vector<DetLayer> GetLayers() const { return layers; }
   int GetLayerIndex(const std::string& name) const;
   size_t GetNLayers() const { return layers.size(); }
   bool IsLayerInert(const int layer) const { return layers[layer].isInert(); }
+  void ClearLayers() { layers.clear(); }
   void SetRadiationLength(const std::string layerName, float x0) { layers[GetLayerIndex(layerName)].setRadiationLength(x0); }
   void SetRadius(const std::string layerName, float r) { layers[GetLayerIndex(layerName)].setRadius(r); }
   void SetResolutionRPhi(const std::string layerName, float resRPhi) { layers[GetLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
@@ -57,7 +66,19 @@ class FastTracker
 
   void AddSiliconALICE3v4(std::vector<float> pixelResolution);
   void AddSiliconALICE3v2(std::vector<float> pixelResolution);
+  void AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
+  /**
+   * @brief Adds a generic detector configuration from the specified file.
+   *
+   * This function loads and integrates a detector configuration into the tracker
+   * using the provided filename. The file should contain the necessary parameters
+   * and settings for the detector to be added.
+   *
+   * @param filename Path to the configuration file describing the detector.
+   * @param ccdbManager Pointer to a BasicCCDBManager instance for database access (if needed).
+   */
+  void AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
 
   void Print();
 
