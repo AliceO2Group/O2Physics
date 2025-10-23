@@ -14,26 +14,27 @@
 ///
 /// \author Josue Martinez Garcia, josuem@cern.ch
 
-#include <utility>
-#include <map>
-#include <string>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/BunchFilling.h"
 #include "DataFormatsFDD/Digit.h"
 #include "DataFormatsFT0/Digit.h"
 #include "DataFormatsFV0/Digit.h"
-#include "Framework/ASoA.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -110,6 +111,7 @@ struct LumiStabilityTask {
 
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
+    histos.add("FDD/bcVertexTriggerCTP", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
     histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
     histos.add("FDD/bcVertexTriggerPP", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
     histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTrigger});
@@ -164,9 +166,12 @@ struct LumiStabilityTask {
     histos.add("FDD/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
     histos.add("FDD/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
     histos.add("FDD/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
+    histos.add("FDD/hTimeForRateCTP", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
     histos.add("FDD/hTimeForRateLeadingBC", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
+    histos.add("FDD/hTimeForRateLeadingBCCTP", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FT0/hCounts", "0 FT0Count - 1 FT0VertexCount - 2 FT0PPVertexCount - 3 FT0PPBothSidesCount; Number; counts", kTH1F, {axisCounts});
+    histos.add("FT0/bcVertexTriggerCTP", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
     histos.add("FT0/bcVertexTriggerPP", "vertex trigger per BC (FT0) with Past Protection;BC in FT0; counts", kTH1F, {axisTrigger});
     histos.add("FT0/bcVertexTriggerBothSidesPP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTrigger});
@@ -195,9 +200,12 @@ struct LumiStabilityTask {
     histos.add("FT0/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
     histos.add("FT0/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
     histos.add("FT0/hTimeForRate", "Counts by time in FT0;t (in seconds) in FT0; counts", kTH1F, {axisTimeRate});
+    histos.add("FT0/hTimeForRateCTP", "Counts by time in FT0;t (in seconds) in FT0; counts", kTH1F, {axisTimeRate});
     histos.add("FT0/hTimeForRateLeadingBC", "Counts by time in FT0;t (in seconds) in FT0; counts", kTH1F, {axisTimeRate});
+    histos.add("FT0/hTimeForRateLeadingBCCTP", "Counts by time in FT0;t (in seconds) in FT0; counts", kTH1F, {axisTimeRate});
 
     histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0 - 3 CountPPCentralFV0 - 4 CountPPOutInFV0; Number; counts", kTH1F, {axisV0Counts});
+    histos.add("FV0/bcChargeTriggerCTP", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
     histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
     histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
     histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
@@ -214,6 +222,8 @@ struct LumiStabilityTask {
     histos.add("FV0/timeAbcA", "time bcA ; A (ns)", kTH1F, {{300, -15, 15}});
     histos.add("FV0/timeAbcC", "time bcC ; A (ns)", kTH1F, {{300, -15, 15}});
     histos.add("FV0/timeAbcE", "time bcE ; A (ns)", kTH1F, {{300, -15, 15}});
+    histos.add("FV0/hTimeForRateCTP", "Counts by time in FV0;t (in seconds) in FV0; counts", kTH1F, {axisTimeRate});
+    histos.add("FV0/hTimeForRateLeadingBCCTP", "Counts by time in FV0;t (in seconds) in FV0; counts", kTH1F, {axisTimeRate});
   }
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
@@ -331,6 +341,54 @@ struct LumiStabilityTask {
       // histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
+
+    for (auto& bc : bcs) {
+      if (bc.timestamp() == 0) {
+        continue;
+      }
+      std::bitset<64> ctpInputMask(bc.inputMask());
+      bool trgFDD = ctpInputMask[15];
+      bool trgFT0 = ctpInputMask[2];
+      bool trgFV0 = ctpInputMask[9];
+
+      int64_t globalBC = bc.globalBC();
+      int localBC = globalBC % nBCsPerOrbit;
+
+      if (bcPatternB[localBC]) {
+        if (trgFDD) {
+          histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC);
+          histos.fill(HIST("FDD/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+        }
+        if (trgFT0) {
+          histos.fill(HIST("FT0/bcVertexTriggerCTP"), localBC);
+          histos.fill(HIST("FT0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+        }
+        if (trgFV0) {
+          histos.fill(HIST("FV0/bcChargeTriggerCTP"), localBC);
+          histos.fill(HIST("FV0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+        }
+        bool isLeadBC = true;
+        for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+          int kbit = jbit;
+          if (kbit < 0)
+            kbit += nbin;
+          if (bcPatternB[kbit]) {
+            isLeadBC = false;
+            break;
+          }
+        }
+        if (isLeadBC)
+          if (trgFDD) {
+            histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+          }
+        if (trgFT0) {
+          histos.fill(HIST("FT0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
+        if (trgFV0) {
+          histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
+      }
+    } // loop over bcs
 
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
