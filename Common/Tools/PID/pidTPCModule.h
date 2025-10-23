@@ -467,10 +467,10 @@ class pidTPCModule
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
     static constexpr int NParticleTypes = 9;
-    constexpr int expectedInputDimensionsNNV2 = 7;
-    constexpr int expectedInputDimensionsNNV3 = 8;
-    constexpr auto networkVersionV2 = "2";
-    constexpr auto networkVersionV3 = "3";
+    constexpr int ExpectedInputDimensionsNNV2 = 7;
+    constexpr int ExpectedInputDimensionsNNV3 = 8;
+    constexpr auto NetworkVersionV2 = "2";
+    constexpr auto NetworkVersionV3 = "3";
     for (int i = 0; i < NParticleTypes; i++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
@@ -487,10 +487,10 @@ class pidTPCModule
         track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
         track_properties[counter_track_props + 4] = trk.has_collision() ? mults[trk.collisionId()] / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-        if (input_dimensions == expectedInputDimensionsNNV2 && networkVersion == networkVersionV2) {
+        if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
-        if (input_dimensions == expectedInputDimensionsNNV3 && networkVersion == networkVersionV3) {
+        if (input_dimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision()) {
             if (collsys == CollisionSystemType::kCollSyspp) {
@@ -567,24 +567,24 @@ class pidTPCModule
 
     float nSigma = -999.f;
     float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
-    constexpr int numOutputNodesSymmetricSigma = 2;
-    constexpr int numOutputNodesAsymmetricSigma = 3;
+    constexpr int NumOutputNodesSymmetricSigma = 2;
+    constexpr int NumOutputNodesAsymmetricSigma = 3;
     if (pidTPCopts.useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > pidTPCopts.networkBetaGammaCutoff) {
 
       // Here comes the application of the network. The output--dimensions of the network determine the application: 1: mean, 2: sigma, 3: sigma asymmetric
       // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
       if (network.getNumOutputNodes() == 1) { // Expected mean correction; no sigma correction
         nSigma = (tpcSignal - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma;
-      } else if (network.getNumOutputNodes() == numOutputNodesSymmetricSigma) { // Symmetric sigma correction
-        expSigma = (network_prediction[numOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[numOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-        nSigma = (tpcSignal / expSignal - network_prediction[numOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[numOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[numOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]);
-      } else if (network.getNumOutputNodes() == numOutputNodesAsymmetricSigma) { // Asymmetric sigma corection
-        if (tpcSignal / expSignal >= network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) {
-          expSigma = (network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-          nSigma = (tpcSignal / expSignal - network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]);
+      } else if (network.getNumOutputNodes() == NumOutputNodesSymmetricSigma) { // Symmetric sigma correction
+        expSigma = (network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+        nSigma = (tpcSignal / expSignal - network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]);
+      } else if (network.getNumOutputNodes() == NumOutputNodesAsymmetricSigma) { // Asymmetric sigma corection
+        if (tpcSignal / expSignal >= network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) {
+          expSigma = (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+          nSigma = (tpcSignal / expSignal - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]);
         } else {
-          expSigma = (network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)] - network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal;
-          nSigma = (tpcSignal / expSignal - network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)] - network_prediction[numOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 2]);
+          expSigma = (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal;
+          nSigma = (tpcSignal / expSignal - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 2]);
         }
       } else {
         LOGF(fatal, "Network output-dimensions incompatible!");
