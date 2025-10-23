@@ -27,10 +27,14 @@
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MFTTracking/Constants.h"
 
+#include <algorithm>
 #include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
