@@ -84,7 +84,7 @@ struct TaskEmcExtensiveMcQa {
   o2::emcal::Geometry* mGeometry = nullptr;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  ctpRateFetcher rateFetcher;
+  o2::ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
   HfEventSelectionMc hfEvSelMc;
 
@@ -105,6 +105,8 @@ struct TaskEmcExtensiveMcQa {
   ConfigurableAxis clusterNContributor{"clusterNContributor", {20, 0.5, 20.5}, "binning for the number of contributor of a cluster"};
   ConfigurableAxis clusterEnergyRatio{"clusterEnergyRatio", {100, 0., 10.}, "binning for ratio of the deposited energy of the leading particle to its generated momentum cluster"};
   ConfigurableAxis collisionCent{"collisionCent", {10, 0., 100.}, "binning for the event centrality"};
+  ConfigurableAxis clusterEtaReso{"clusterEtaReso", {100, -0.1, 0.1}, "binning for cluster position resolution in eta"};
+  ConfigurableAxis clusterPhiReso{"clusterPhiReso", {100, -0.1, 0.1}, "binning for cluster position resolution in phi"};
 
   std::vector<float> mCellTime;
 
@@ -127,6 +129,10 @@ struct TaskEmcExtensiveMcQa {
     const AxisSpec axisLeadingEnergy{clusterEnergy, "#it{E}_{lead} (GeV)"};
     const AxisSpec axisLeadingGenMomentum{clusterEnergy, "#it{p}_{lead, gen} (GeV/#it{c})"};
     const AxisSpec axisLeadingRatio{clusterEnergy, "#it{E}_{lead}/#it{p}_{lead, gen} (#it{c})"};
+    const AxisSpec axisEtaReso{clusterEtaReso, "#Delta#eta"};
+    const AxisSpec axisPhiReso{clusterPhiReso, "#Delta#varphi (rad)"};
+
+    const AxisSpec axisSM{{20, -0.5, 19.5}, "SM"};
 
     // create histograms
 
@@ -138,6 +144,8 @@ struct TaskEmcExtensiveMcQa {
     mHistManager.add("hSparseClusterContributors", "THnSparse with cluster contributors and energies", HistType::kTHnSparseF, {axisEnergy, axisParticle, axisNContributor, axisLeadingEnergy, axisLeadingGenMomentum, axisLeadingRatio, axisCent});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", HistType::kTH2F, {{140, -0.7, 0.7}, {360, 0, o2::constants::math::TwoPI}});
 
+    mHistManager.add("hSparsePosReso", "THnSparse for cluster position resolution", HistType::kTHnSparseF, {axisEnergy, axisEtaReso, axisPhiReso, axisNCell, axisSM, axisParticle, axisNContributor, axisCent});
+
     hfEvSel.addHistograms(mHistManager);
 
     ccdb->setURL(ccdbUrl);
@@ -148,7 +156,7 @@ struct TaskEmcExtensiveMcQa {
   template <typename Coll>
   bool isCollSelected(const Coll& coll, float& cent)
   {
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, mHistManager);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, o2::aod::BCsWithTimestamps>(coll, cent, ccdb, mHistManager);
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(coll, rejectionMask, cent);
     return rejectionMask == 0;
@@ -213,8 +221,12 @@ struct TaskEmcExtensiveMcQa {
         float momentum = mainMcParticle.p();
         float leadingEnergy = cluster.energy() * cluster.amplitudeA()[0];
         float leadingFraction = leadingEnergy / momentum;
+        float dEta = cluster.eta() - mainMcParticle.eta();
+        float dPhi = cluster.phi() - mainMcParticle.phi();
+        int iSM = mGeometry->SuperModuleNumberFromEtaPhi(cluster.eta(), cluster.phi());
         mHistManager.fill(HIST("hSparseClusterQA"), cluster.energy(), cluster.m02(), cluster.m20(), cluster.nCells(), radius, findPoIType(mainMcParticle), cluster.mcParticle().size(), cent);
         mHistManager.fill(HIST("hSparseClusterContributors"), cluster.energy(), findPoIType(mainMcParticle), cluster.mcParticle().size(), leadingEnergy, momentum, leadingFraction, cent);
+        mHistManager.fill(HIST("hSparsePosReso"), cluster.energy(), dEta, dPhi, cluster.nCells(), iSM, findPoIType(mainMcParticle), cluster.mcParticle().size(), cent);
       }
     }
   }

@@ -20,10 +20,16 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 
+#include <FT0Base/Geometry.h>
+#include <FV0Base/Geometry.h>
+
+#include <TComplex.h>
+#include <TH2.h>
 #include <TMath.h>
 #include <TVector3.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <iterator>
 #include <memory>

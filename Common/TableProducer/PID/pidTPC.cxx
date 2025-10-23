@@ -18,35 +18,41 @@
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, and only for the requested table size ("Full" or "Tiny"). The others are sent empty.
 ///
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-// ROOT includes
-#include <TFile.h>
-#include <TRandom.h>
-#include <TSystem.h>
-
-// O2 includes
-#include "MetadataHelper.h"
-#include "TableHelper.h"
 #include "pidTPCBase.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Variant.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TFile.h>
+#include <TRandom.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <ratio>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -403,6 +409,7 @@ struct tpcPid {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
         if (input_dimensions == 8 && networkVersion == "3") {
+          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision()) {
             auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
             float hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), irSource) * 1.e-3;

@@ -221,8 +221,11 @@ struct UccZdc {
     bool calibrationsLoaded = false;
   } cfgNch;
 
+  int currentRunNumber;
+
   void init(InitContext const&)
   {
+    currentRunNumber = -1;
     const char* tiT0A{"T0A (#times 1/100, 3.5 < #eta < 4.9)"};
     const char* tiT0C{"T0C (#times 1/100, -3.3 < #eta < -2.1)"};
     const char* tiT0M{"T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9)"};
@@ -423,6 +426,7 @@ struct UccZdc {
     LOG(info) << "\tminPt=" << minPt.value;
     LOG(info) << "\tmaxPt=" << maxPt.value;
     LOG(info) << "\tmaxPtSpectra=" << maxPtSpectra.value;
+    LOG(info) << "\tcurrentRunNumber= " << currentRunNumber;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -602,7 +606,14 @@ struct UccZdc {
 
     bool skipEvent{false};
     if (useMidRapNchSel) {
-      loadNchCalibrations(foundBC.timestamp());
+
+      const int nextRunNumber{foundBC.runNumber()};
+      if (currentRunNumber != nextRunNumber) {
+        loadNchCalibrations(foundBC.timestamp());
+        currentRunNumber = nextRunNumber;
+        LOG(info) << "\tcurrentRunNumber= " << currentRunNumber << " timeStamp = " << foundBC.timestamp();
+      }
+
       if (!(cfgNch.hMeanNch && cfgNch.hSigmaNch))
         return;
 
@@ -787,7 +798,14 @@ struct UccZdc {
 
     bool skipEvent{false};
     if (useMidRapNchSel) {
-      loadNchCalibrations(foundBC.timestamp());
+
+      const int nextRunNumber{foundBC.runNumber()};
+      if (currentRunNumber != nextRunNumber) {
+        loadNchCalibrations(foundBC.timestamp());
+        currentRunNumber = nextRunNumber;
+        LOG(info) << "\tcurrentRunNumber= " << currentRunNumber << " timeStamp = " << foundBC.timestamp();
+      }
+
       if (!(cfgNch.hMeanNch && cfgNch.hSigmaNch))
         return;
 

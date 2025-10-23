@@ -20,9 +20,13 @@
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
+#include <GPUROOTCartesianFwd.h>
+
+#include <array>
 #include <utility> // std::move
 
 /// Extracts track parameters from a track.

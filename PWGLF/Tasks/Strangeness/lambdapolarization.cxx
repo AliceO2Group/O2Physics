@@ -231,6 +231,8 @@ struct lambdapolarization {
       if (cfgRapidityDep) {
         histos.add(Form("psi%d/h_lambda_cos2_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, RapAxis}});
         histos.add(Form("psi%d/h_alambda_cos2_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, RapAxis}});
+        histos.add(Form("psi%d/h_lambda_cos_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, RapAxis}});
+        histos.add(Form("psi%d/h_alambda_cos_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, RapAxis}});
       }
 
       histos.add(Form("psi%d/h_lambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
@@ -754,6 +756,7 @@ struct lambdapolarization {
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi2/h_lambda_cos2_rap"), v0.mLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
+            histos.fill(HIST("psi2/h_lambda_cos_rap"), v0.mLambda(), v0.pt(), angle * weight, centrality, v0.yLambda());
           }
 
           if (cfgAccAzimuth) {
@@ -803,6 +806,7 @@ struct lambdapolarization {
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi2/h_alambda_cos2_rap"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
+            histos.fill(HIST("psi2/h_alambda_cos_rap"), v0.mAntiLambda(), v0.pt(), angle * weight, centrality, v0.yLambda());
           }
 
           if (cfgAccAzimuth) {
@@ -853,6 +857,7 @@ struct lambdapolarization {
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi3/h_lambda_cos2_rap"), v0.mLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
+            histos.fill(HIST("psi3/h_lambda_cos_rap"), v0.mLambda(), v0.pt(), angle * weight, centrality, v0.yLambda());
           }
 
           if (cfgAccAzimuth) {
@@ -868,6 +873,7 @@ struct lambdapolarization {
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi3/h_alambda_cos2_rap"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
+            histos.fill(HIST("psi3/h_alambda_cos_rap"), v0.mAntiLambda(), v0.pt(), angle * weight, centrality, v0.yLambda());
           }
 
           if (cfgAccAzimuth) {
@@ -884,6 +890,7 @@ struct lambdapolarization {
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi4/h_lambda_cos2_rap"), v0.mLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
+            histos.fill(HIST("psi4/h_lambda_cos_rap"), v0.mLambda(), v0.pt(), angle * weight, centrality, v0.yLambda());
           }
 
           if (cfgAccAzimuth) {
@@ -899,6 +906,7 @@ struct lambdapolarization {
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi4/h_alambda_cos2_rap"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
+            histos.fill(HIST("psi4/h_alambda_cos_rap"), v0.mAntiLambda(), v0.pt(), angle * weight, centrality, v0.yLambda());
           }
 
           if (cfgAccAzimuth) {

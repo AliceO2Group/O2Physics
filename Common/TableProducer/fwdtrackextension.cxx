@@ -13,19 +13,19 @@
 // Task performing forward track DCA computation
 //
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "CommonUtils/NameConf.h"
 
-#include "Math/SMatrix.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

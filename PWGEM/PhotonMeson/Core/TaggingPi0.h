@@ -64,8 +64,11 @@ using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMEventsWeight>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
+
+using MyCollisionsWithJJMC = soa::Join<MyCollisions, aod::EMEventsWeight>;
+using MyCollisionWithJJMC = MyCollisionsWithJJMC::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
@@ -465,7 +468,12 @@ struct TaggingPi0 {
       initCCDB(collision);
       int ndiphoton = 0;
 
-      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.f) < 1e-10) {
+      float weight = 1.f;
+      if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisionsWithJJMC>) {
+        weight = collision.weight();
+      }
+
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(weight - 1.f) < 1e-10) {
         continue;
       }
 
@@ -474,13 +482,13 @@ struct TaggingPi0 {
         continue;
       }
 
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, collision.weight());
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision, weight);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, collision.weight());
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, collision.weight()); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, collision.weight());  // accepted
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision, weight);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0, weight); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0, weight);  // accepted
 
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;
       if (zbin < 0) {
@@ -537,8 +545,8 @@ struct TaggingPi0 {
           auto pos1 = g1.template posTrack_as<TSubInfos1>();
           auto ele1 = g1.template negTrack_as<TSubInfos1>();
           ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.);
-          fRegistry.fill(HIST("Photon/hPt"), v_gamma.Pt(), collision.weight());
-          fRegistry.fill(HIST("Photon/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), collision.weight());
+          fRegistry.fill(HIST("Photon/hPt"), v_gamma.Pt(), weight);
+          fRegistry.fill(HIST("Photon/hEtaPhi"), v_gamma.Phi() > 0 ? v_gamma.Phi() : v_gamma.Phi() + 2 * M_PI, v_gamma.Eta(), weight);
 
           for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
 
@@ -561,7 +569,7 @@ struct TaggingPi0 {
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            fRegistry.fill(HIST("Pair/same/hMvsPt"), veeg.M(), v_gamma.Pt(), collision.weight());
+            fRegistry.fill(HIST("Pair/same/hMvsPt"), veeg.M(), v_gamma.Pt(), weight);
 
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.trackId(), ele2.trackId());
@@ -588,7 +596,7 @@ struct TaggingPi0 {
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-          fRegistry.fill(HIST("Pair/same/hMvsPt"), v12.M(), v1.Pt(), collision.weight());
+          fRegistry.fill(HIST("Pair/same/hMvsPt"), v12.M(), v1.Pt(), weight);
 
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
           std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
@@ -643,7 +651,7 @@ struct TaggingPi0 {
               v2.SetM(g2.mass());
             }
             ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-            fRegistry.fill(HIST("Pair/mix/hMvsPt"), v12.M(), v1.Pt(), collision.weight());
+            fRegistry.fill(HIST("Pair/mix/hMvsPt"), v12.M(), v1.Pt(), weight);
           }
         }
       } // end of loop over mixed event pool
@@ -687,9 +695,36 @@ struct TaggingPi0 {
     // }
     ndf++;
   }
-  PROCESS_SWITCH(TaggingPi0, processAnalysis, "process pair analysis", false);
+  PROCESS_SWITCH(TaggingPi0, processAnalysis, "process pair analysis", true);
+
+  using FilteredMyCollisionsWithJJMC = soa::Filtered<MyCollisionsWithJJMC>;
+  void processAnalysisJJMC(FilteredMyCollisionsWithJJMC const& collisions, Types const&... args)
+  {
+    // LOGF(info, "ndf = %d", ndf);
+    if constexpr (pairtype == PairType::kPCMDalitzEE) {
+      auto v0photons = std::get<0>(std::tie(args...));
+      auto v0legs = std::get<1>(std::tie(args...));
+      auto emprimaryelectrons = std::get<2>(std::tie(args...));
+      // LOGF(info, "electrons.size() = %d, positrons.size() = %d", electrons.size(), positrons.size());
+      runPairing(collisions, v0photons, emprimaryelectrons, v0legs, emprimaryelectrons, perCollision_pcm, perCollision_electron, fV0PhotonCut, fDileptonCut);
+    }
+    // else if constexpr (pairtype == PairType::kPCMEMC) {
+    //   auto v0photons = std::get<0>(std::tie(args...));
+    //   auto v0legs = std::get<1>(std::tie(args...));
+    //   auto emcclusters = std::get<2>(std::tie(args...));
+    //   auto emcmatchedtracks = std::get<3>(std::tie(args...));
+    //   runPairing(collisions, v0photons, emcclusters, v0legs, nullptr, perCollision_pcm, perCollision_emc, fV0PhotonCut, fEMCCut, emcmatchedtracks, nullptr);
+    // } else if constexpr (pairtype == PairType::kPCMPHOS) {
+    //   auto v0photons = std::get<0>(std::tie(args...));
+    //   auto v0legs = std::get<1>(std::tie(args...));
+    //   auto phosclusters = std::get<2>(std::tie(args...));
+    //   runPairing(collisions, v0photons, phosclusters, v0legs, nullptr, perCollision_pcm, perCollision_phos, fV0PhotonCut, fPHOSCut, nullptr, nullptr);
+    // }
+    ndf++;
+  }
+  PROCESS_SWITCH(TaggingPi0, processAnalysisJJMC, "process pair analysis", false);
 
   void processDummy(MyCollisions const&) {}
-  PROCESS_SWITCH(TaggingPi0, processDummy, "Dummy function", true);
+  PROCESS_SWITCH(TaggingPi0, processDummy, "Dummy function", false);
 };
 #endif // PWGEM_PHOTONMESON_CORE_TAGGINGPI0_H_

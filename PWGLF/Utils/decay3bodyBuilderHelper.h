@@ -60,9 +60,11 @@ struct decay3bodyCandidate {
   std::array<float, 3> posProton = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> posPion = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> posDeuteron = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> trackDCAxyToPV = {0.0f, 0.0f, 0.0f};  // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 3> trackDCAzToPV = {0.0f, 0.0f, 0.0f};   // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 4> tpcNsigma = {0.0f, 0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+  std::array<float, 3> trackDCAxyToPV = {0.0f, 0.0f, 0.0f};     // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAToPV = {0.0f, 0.0f, 0.0f};       // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAxyToPVprop = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAToPVprop = {0.0f, 0.0f, 0.0f};   // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 4> tpcNsigma = {0.0f, 0.0f, 0.0f, 0.0f};    // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
   double tofNsigmaDeuteron = 0.0f;
   std::array<float, 3> averageITSClSize = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 3> tpcNCl = {0.0f, 0.0f, 0.0f};           // 0 - proton, 1 - pion, 2 - deuteron
@@ -134,6 +136,9 @@ class decay3bodyBuilderHelper
     float minDCAProtonToPV;
     float minDCAPionToPV;
     float minDCADeuteronToPV;
+    float minDCAProtonToPVprop;
+    float minDCAPionToPVprop;
+    float minDCADeuteronToPVprop;
     float minPtProton;
     float minPtPion;
     float minPtDeuteron;
@@ -189,7 +194,8 @@ class decay3bodyBuilderHelper
                                 bool acceptTPCOnly = false,
                                 bool askOnlyITSMatch = true,
                                 bool calculateCovariance = true,
-                                bool isEventMixing = false)
+                                bool isEventMixing = false,
+                                bool doApplySVertexerCuts = false)
   {
     int collisionIndex = collision.globalIndex();
     float pvX = collision.posX();
@@ -281,44 +287,80 @@ class decay3bodyBuilderHelper
     } // end of selections
 
     //_______________________________________________________________________
-    // daughter track DCA to PV associated with decay3body
-    o2::dataformats::VertexBase mPV;
-    o2::dataformats::DCA mDcaInfoCov;
+    // daughter track DCA to PV associated with decay3body --> computed with KFParticle
+    float pvXY[2] = {pvX, pvY};
+    float pv[3] = {pvX, pvY, pvZ};
     auto trackParCovProtonCopy = trackParCovProton;
     auto trackParCovPionCopy = trackParCovPion;
     auto trackParCovDeuteronCopy = trackParCovDeuteron;
+    KFParticle kfproton = createKFParticleFromTrackParCov(trackParCovProtonCopy, trackProton.sign(), constants::physics::MassProton);
+    KFParticle kfpion = createKFParticleFromTrackParCov(trackParCovPionCopy, trackPion.sign(), constants::physics::MassPionCharged);
+    KFParticle kfdeuteron = createKFParticleFromTrackParCov(trackParCovDeuteronCopy, trackDeuteron.sign(), constants::physics::MassDeuteron);
+
+    // proton DCA to PV
+    decay3body.trackDCAxyToPV[0] = kfproton.GetDistanceFromVertexXY(pvXY);
+    decay3body.trackDCAToPV[0] = kfproton.GetDistanceFromVertex(pv);
+    // pion DCA to PV
+    decay3body.trackDCAxyToPV[1] = kfpion.GetDistanceFromVertexXY(pvXY);
+    decay3body.trackDCAToPV[1] = kfpion.GetDistanceFromVertex(pv);
+    // deuteron DCA to PV
+    decay3body.trackDCAxyToPV[2] = kfdeuteron.GetDistanceFromVertexXY(pvXY);
+    decay3body.trackDCAToPV[2] = kfdeuteron.GetDistanceFromVertex(pv);
+    // selection
+    if (useSelections) {
+      if (decay3body.trackDCAToPV[0] < decay3bodyselections.minDCAProtonToPV) {
+        decay3body = {};
+        return false;
+      }
+      if (decay3body.trackDCAToPV[1] < decay3bodyselections.minDCAPionToPV) {
+        decay3body = {};
+        return false;
+      }
+      if (decay3body.trackDCAToPV[2] < decay3bodyselections.minDCADeuteronToPV) {
+        decay3body = {};
+        return false;
+      }
+    }
+
+    //_______________________________________________________________________
+    // daughter track DCA to PV associated with decay3body --> with O2 Propagator
+    o2::dataformats::VertexBase mPV;
+    o2::dataformats::DCA mDcaInfoCov;
+    auto trackParCovProtonCopyProp = trackParCovProton;
+    auto trackParCovPionCopyProp = trackParCovPion;
+    auto trackParCovDeuteronCopyProp = trackParCovDeuteron;
     mPV.setPos({pvX, pvY, pvZ});
     mPV.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
     // proton track
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovProtonCopy, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
-    decay3body.trackDCAxyToPV[0] = mDcaInfoCov.getY();
-    decay3body.trackDCAzToPV[0] = mDcaInfoCov.getZ();
-    auto trackProtonDCAToPV = std::sqrt(decay3body.trackDCAxyToPV[0] * decay3body.trackDCAxyToPV[0] + decay3body.trackDCAzToPV[0] * decay3body.trackDCAzToPV[0]);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovProtonCopyProp, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
+    decay3body.trackDCAxyToPVprop[0] = mDcaInfoCov.getY();
+    auto trackProtonDCAzToPVprop = mDcaInfoCov.getZ();
+    decay3body.trackDCAToPVprop[0] = std::sqrt(decay3body.trackDCAxyToPVprop[0] * decay3body.trackDCAxyToPVprop[0] + trackProtonDCAzToPVprop * trackProtonDCAzToPVprop);
     if (useSelections) {
-      if (trackProtonDCAToPV < decay3bodyselections.minDCAProtonToPV) {
+      if (decay3body.trackDCAToPVprop[0] < decay3bodyselections.minDCAProtonToPVprop) {
         decay3body = {};
         return false;
       }
     }
     // pion track
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPionCopy, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
-    decay3body.trackDCAxyToPV[1] = mDcaInfoCov.getY();
-    decay3body.trackDCAzToPV[1] = mDcaInfoCov.getZ();
-    auto trackPionDCAToPV = std::sqrt(decay3body.trackDCAxyToPV[1] * decay3body.trackDCAxyToPV[1] + decay3body.trackDCAzToPV[1] * decay3body.trackDCAzToPV[1]);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPionCopyProp, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
+    decay3body.trackDCAxyToPVprop[1] = mDcaInfoCov.getY();
+    auto trackPionDCAzToPVprop = mDcaInfoCov.getZ();
+    decay3body.trackDCAToPVprop[1] = std::sqrt(decay3body.trackDCAxyToPVprop[1] * decay3body.trackDCAxyToPVprop[1] + trackPionDCAzToPVprop * trackPionDCAzToPVprop);
     if (useSelections) {
-      if (trackPionDCAToPV < decay3bodyselections.minDCAPionToPV) {
+      if (decay3body.trackDCAToPVprop[1] < decay3bodyselections.minDCAPionToPVprop) {
         decay3body = {};
         return false;
       }
     }
     // deuteron track
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovDeuteronCopy, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
-    decay3body.trackDCAxyToPV[2] = mDcaInfoCov.getY();
-    decay3body.trackDCAzToPV[2] = mDcaInfoCov.getZ();
-    auto trackDeuteronDCAToPV = std::sqrt(decay3body.trackDCAxyToPV[2] * decay3body.trackDCAxyToPV[2] + decay3body.trackDCAzToPV[2] * decay3body.trackDCAzToPV[2]);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovDeuteronCopyProp, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
+    decay3body.trackDCAxyToPVprop[2] = mDcaInfoCov.getY();
+    auto trackDeuteronDCAzToPVprop = mDcaInfoCov.getZ();
+    decay3body.trackDCAToPVprop[2] = std::sqrt(decay3body.trackDCAxyToPVprop[2] * decay3body.trackDCAxyToPVprop[2] + trackDeuteronDCAzToPVprop * trackDeuteronDCAzToPVprop);
     if (useSelections) {
-      if (trackDeuteronDCAToPV < decay3bodyselections.minDCADeuteronToPV) {
+      if (decay3body.trackDCAToPVprop[2] < decay3bodyselections.minDCADeuteronToPVprop) {
         decay3body = {};
         return false;
       }
@@ -438,7 +480,7 @@ class decay3bodyBuilderHelper
 
     //_______________________________________________________________________
     // SVertexer selections in case of event mixing
-    if (isEventMixing) {
+    if (isEventMixing && doApplySVertexerCuts) {
       applySVertexerCuts(collision, trackProton, trackPion, trackDeuteron, /*applyV0Cut = */ true);
     }
 

@@ -16,18 +16,14 @@
 #ifndef PWGUD_CORE_UPCPAIRCUTS_H_
 #define PWGUD_CORE_UPCPAIRCUTS_H_
 
-#include <cmath>
-
-#include "Framework/Logger.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
-using namespace o2;
-using namespace o2::framework;
-using namespace constants::math;
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
+
+#include <cmath>
 
 class UPCPairCuts
 {
@@ -39,14 +35,14 @@ class UPCPairCuts
                   Rho,
                   ParticlesLastEntry };
 
-  void setHistogramRegistry(HistogramRegistry* registry) { histogramRegistry = registry; }
+  void setHistogramRegistry(o2::framework::HistogramRegistry* registry) { histogramRegistry = registry; }
 
   void setPairCut(Particle particle, float cut)
   {
     LOGF(info, "Enabled pair cut for %d with value %f", static_cast<int>(particle), cut);
     mCuts[particle] = cut;
     if (histogramRegistry != nullptr && histogramRegistry->contains(HIST("ControlConvResonances")) == false) {
-      histogramRegistry->add("ControlConvResonances", "", {HistType::kTH2F, {{6, -0.5, 5.5, "id"}, {500, -0.5, 0.5, "delta mass"}}});
+      histogramRegistry->add("ControlConvResonances", "", {o2::framework::HistType::kTH2F, {{6, -0.5, 5.5, "id"}, {500, -0.5, 0.5, "delta mass"}}});
     }
   }
 
@@ -57,7 +53,7 @@ class UPCPairCuts
     mTwoTrackRadius = radius;
 
     if (histogramRegistry != nullptr && histogramRegistry->contains(HIST("TwoTrackDistancePt_0")) == false) {
-      histogramRegistry->add("TwoTrackDistancePt_0", "", {HistType::kTH3F, {{100, -0.15, 0.15, "#Delta#eta"}, {100, -0.05, 0.05, "#Delta#varphi^{*}_{min}"}, {20, 0, 10, "#Delta p_{T}"}}});
+      histogramRegistry->add("TwoTrackDistancePt_0", "", {o2::framework::HistType::kTH3F, {{100, -0.15, 0.15, "#Delta#eta"}, {100, -0.05, 0.05, "#Delta#varphi^{*}_{min}"}, {20, 0, 10, "#Delta p_{T}"}}});
       histogramRegistry->addClone("TwoTrackDistancePt_0", "TwoTrackDistancePt_1");
     }
   }
@@ -74,7 +70,7 @@ class UPCPairCuts
   float mTwoTrackRadius = 0.8f; // radius at which the two track cuts are applied
   int magField = 5;             // magField: B field in kG
 
-  HistogramRegistry* histogramRegistry = nullptr; // if set, control histograms are stored here
+  o2::framework::HistogramRegistry* histogramRegistry = nullptr; // if set, control histograms are stored here
 
   template <typename T>
   bool conversionCut(T const& track1, T const& track2, Particle conv, double cut);
@@ -290,20 +286,20 @@ double UPCPairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const&
 
   // fold onto 0...pi
   float deltaPhi = std::fabs(phi1 - phi2);
-  while (deltaPhi > TwoPI) {
-    deltaPhi -= TwoPI;
+  while (deltaPhi > o2::constants::math::TwoPI) {
+    deltaPhi -= o2::constants::math::TwoPI;
   }
-  if (deltaPhi > PI) {
-    deltaPhi = TwoPI - deltaPhi;
+  if (deltaPhi > o2::constants::math::PI) {
+    deltaPhi = o2::constants::math::TwoPI - deltaPhi;
   }
 
   float cosDeltaPhi = 0;
-  if (deltaPhi < PI / 3.0f) {
+  if (deltaPhi < o2::constants::math::PI / 3.0f) {
     cosDeltaPhi = 1.0 - deltaPhi * deltaPhi / 2 + deltaPhi * deltaPhi * deltaPhi * deltaPhi / 24;
-  } else if (deltaPhi < 2.0f * PI / 3.0f) {
-    cosDeltaPhi = -(deltaPhi - PI / 2) + 1.0 / 6 * std::pow((deltaPhi - PI / 2), 3);
+  } else if (deltaPhi < 2.0f * o2::constants::math::PI / 3.0f) {
+    cosDeltaPhi = -(deltaPhi - o2::constants::math::PI / 2) + 1.0 / 6 * std::pow((deltaPhi - o2::constants::math::PI / 2), 3);
   } else {
-    cosDeltaPhi = -1.0f + 1.0f / 2.0f * (deltaPhi - PI) * (deltaPhi - PI) - 1.0f / 24.0f * std::pow(deltaPhi - PI, 4.0f);
+    cosDeltaPhi = -1.0f + 1.0f / 2.0f * (deltaPhi - o2::constants::math::PI) * (deltaPhi - o2::constants::math::PI) - 1.0f / 24.0f * std::pow(deltaPhi - o2::constants::math::PI, 4.0f);
   }
 
   double mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2.0f * (std::sqrt(e1squ * e2squ) - (pt1 * pt2 * (cosDeltaPhi + 1.0f / tantheta1 / tantheta2)));
@@ -330,14 +326,14 @@ float UPCPairCuts::getDPhiStar(T const& track1, T const& track2, float radius, i
 
   float dphistar = phi1 - phi2 - charge1 * std::asin(0.015 * magField * radius / pt1) + charge2 * std::asin(0.015 * magField * radius / pt2);
 
-  if (dphistar > PI) {
-    dphistar = TwoPI - dphistar;
+  if (dphistar > o2::constants::math::PI) {
+    dphistar = o2::constants::math::TwoPI - dphistar;
   }
-  if (dphistar < -PI) {
-    dphistar = -TwoPI - dphistar;
+  if (dphistar < -o2::constants::math::PI) {
+    dphistar = -o2::constants::math::TwoPI - dphistar;
   }
-  if (dphistar > PI) { // might look funny but is needed
-    dphistar = TwoPI - dphistar;
+  if (dphistar > o2::constants::math::PI) { // might look funny but is needed
+    dphistar = o2::constants::math::TwoPI - dphistar;
   }
 
   return dphistar;
