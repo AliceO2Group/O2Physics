@@ -994,14 +994,14 @@ struct HfFilter { // Main struct for HF triggers
                   if (isGoodXicStar) {
                     if (isRightSignXicStar) {
                       hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
-                    } else if (!isRightSignXicStar && keepAlsoWrongDmesLambdaPairs) {
+                    } else if (keepAlsoWrongDmesLambdaPairs) {
                       hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
                     }
                   }
                   if (isGoodXicStarBar) {
                     if (isRightSignXicStarBar) {
                       hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
-                    } else if (!isRightSignXicStarBar && keepAlsoWrongDmesLambdaPairs) {
+                    } else if (keepAlsoWrongDmesLambdaPairs) {
                       hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
                     }
                   }
@@ -1093,14 +1093,14 @@ struct HfFilter { // Main struct for HF triggers
                             if (isGoodThetac) {
                               if (isRightSignThetaC) {
                                 hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffThetacCand);
-                              } else if (!isRightSignThetaC && keepAlsoWrongDmesProtonPairs) {
+                              } else if (keepAlsoWrongDmesProtonPairs) {
                                 hMassVsPtC[kNCharmParticles + 22]->Fill(ptCand, massDiffThetacBarCand);
                               }
                             }
                             if (isGoodThetacBar) {
                               if (isRightSignThetaCBar) {
                                 hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffThetacCand);
-                              } else if (!isRightSignThetaCBar && keepAlsoWrongDmesProtonPairs) {
+                              } else if (keepAlsoWrongDmesProtonPairs) {
                                 hMassVsPtC[kNCharmParticles + 22]->Fill(ptCand, massDiffThetacBarCand);
                               }
                             }
@@ -1144,14 +1144,14 @@ struct HfFilter { // Main struct for HF triggers
                     if (isGoodLcStar) {
                       if (isRightSignLcStar) {
                         hMassVsPtC[kNCharmParticles + 19]->Fill(ptCand, massDiffLcStarCand);
-                      } else if (!isRightSignLcStar && keepAlsoWrongDmesProtonPairs) {
+                      } else if (keepAlsoWrongDmesProtonPairs) {
                         hMassVsPtC[kNCharmParticles + 20]->Fill(ptCand, massDiffLcStarBarCand);
                       }
                     }
                     if (isGoodLcStarBar) {
                       if (isRightSignLcStarBar) {
                         hMassVsPtC[kNCharmParticles + 19]->Fill(ptCand, massDiffLcStarCand);
-                      } else if (!isRightSignLcStarBar && keepAlsoWrongDmesProtonPairs) {
+                      } else if (keepAlsoWrongDmesProtonPairs) {
                         hMassVsPtC[kNCharmParticles + 20]->Fill(ptCand, massDiffLcStarBarCand);
                       }
                     }
@@ -1640,7 +1640,7 @@ struct HfFilter { // Main struct for HF triggers
                     if (activateQA) {
                       if (isRightSign) {
                         hMassVsPtC[kNCharmParticles + 5]->Fill(ptCand, massDiffXicStar);
-                      } else if (!isRightSign && keepAlsoWrongDmesLambdaPairs) {
+                      } else if (keepAlsoWrongDmesLambdaPairs) {
                         hMassVsPtC[kNCharmParticles + 6]->Fill(ptCand, massDiffXicStar);
                       }
                     }
