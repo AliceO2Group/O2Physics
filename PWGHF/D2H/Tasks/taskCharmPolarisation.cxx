@@ -213,7 +213,6 @@ struct HfTaskCharmPolarisation {
   /// Application of rapidity cut for reconstructed candidates
   Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   EventPlaneHelper epHelper;
 

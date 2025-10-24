@@ -251,7 +251,6 @@ struct HfTaskFlow {
 
   TF1* fPtDepDCAxy = nullptr;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;

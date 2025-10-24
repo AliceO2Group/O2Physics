@@ -150,7 +150,6 @@ struct HfTaskMiniCandidateSelectorD0 {
   Configurable<float> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<float> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
@@ -285,8 +284,6 @@ struct HfTaskMiniCandidateSelectorD0 {
 struct HfTaskMiniD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection flag for D0 bar"};
-
-  HfHelper hfHelper;
 
   Partition<soa::Join<aod::HfTCand2Prong, aod::HfTSelD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 

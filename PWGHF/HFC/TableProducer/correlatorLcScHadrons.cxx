@@ -106,7 +106,6 @@ struct HfCorrelatorLcScHadronsSelection {
     Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   } cfgV0;
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -371,7 +370,6 @@ struct HfCorrelatorLcScHadrons {
     Configurable<float> cfgHypMassWindow{"cfgHypMassWindow", 0.5, "single lambda mass selection"};
   } cfgV0;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   int8_t chargeCand = 3;

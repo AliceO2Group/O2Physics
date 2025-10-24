@@ -160,7 +160,6 @@ struct HfTaskCorrelationLcHadrons {
   std::shared_ptr<TH1> mEfficiencyFD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
-  HfHelper hfHelper;
   Service<ccdb::BasicCCDBManager> ccdb;
 
   enum CandidateStep { kCandidateStepMcGenAll = 0,

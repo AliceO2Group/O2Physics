@@ -86,8 +86,6 @@ struct HfTreeCreatorSigmacCorrBkg {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
 
-  HfHelper hfHelper;
-
   using RecoLcMc = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>;
   using RecoScMc = soa::Join<aod::HfCandSc, aod::HfCandScMcRec>;
   using ParticlesLcSigmac = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen, aod::HfCandScMcGen>;

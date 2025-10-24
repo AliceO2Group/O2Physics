@@ -144,8 +144,6 @@ struct HfTreeCreatorXToJpsiPiPi {
   Produces<o2::aod::HfCandXFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXFullPs> rowCandidateFullParticles;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)

@@ -196,7 +196,6 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
-  HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 

@@ -124,7 +124,6 @@ struct HfTaskDs {
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 

@@ -32,8 +32,6 @@ using namespace o2::framework::expressions;
 struct HfTaskD0Alice3Forward {
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_forward::isSelHfFlag >= 1);
 
-  HfHelper hfHelper;
-
   HistogramRegistry registry{
     "registry",
     {{"hMassGen", "2-prong candidates (generated); #it{p}_{T}; #it{y}", {HistType::kTH2F, {{150, 0., 30.}, {8, 0, 4.0}}}},

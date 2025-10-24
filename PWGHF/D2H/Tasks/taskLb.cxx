@@ -71,7 +71,6 @@ struct HfTaskLb {
   Configurable<float> largeLifetimeBG{"largeLifetimeBG", 0.01, "fraction of strange contribution within 2mm"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
   Service<o2::framework::O2DatabasePDG> pdg;
 
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;

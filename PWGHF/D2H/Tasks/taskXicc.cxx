@@ -55,8 +55,6 @@ struct HfTaskXicc {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
-
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xicc::isSelXiccToPKPiPi >= selectionFlagXicc);
 
   HistogramRegistry registry{
@@ -119,8 +117,6 @@ struct HfTaskXiccMc {
   Configurable<int> selectionFlagXicc{"selectionFlagXicc", 1, "Selection Flag for Xicc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
-
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xicc::isSelXiccToPKPiPi >= selectionFlagXicc);
 

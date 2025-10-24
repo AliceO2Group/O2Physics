@@ -92,7 +92,6 @@ struct HfCorrelatorDsHadronsSelCollision {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -211,7 +210,6 @@ struct HfCorrelatorDsHadrons {
   int hfcReducedCollisionIndex = 0;
   static constexpr std::size_t NDaughtersDs{3u};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>; // collisionFilter applied

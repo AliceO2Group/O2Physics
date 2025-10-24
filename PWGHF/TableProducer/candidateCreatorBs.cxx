@@ -97,7 +97,6 @@ struct HfCandidateCreatorBs {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;

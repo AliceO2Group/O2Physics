@@ -70,8 +70,6 @@ struct HfCandidateSelectorD0Alice3Forward {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_d0_to_pi_k::Cuts[0], hf_cuts_d0_to_pi_k::NBinsPt, hf_cuts_d0_to_pi_k::NCutVars, hf_cuts_d0_to_pi_k::labelsPt, hf_cuts_d0_to_pi_k::labelsCutVar}, "D0 candidate selection per pT bin"};
 
-  HfHelper hfHelper;
-
   using TracksSel = soa::Join<aod::TracksWDca, aod::FRICHTracksIndex>;
 
   /// Conjugate-independent topological cuts

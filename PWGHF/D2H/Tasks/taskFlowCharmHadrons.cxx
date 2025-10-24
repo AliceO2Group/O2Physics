@@ -118,7 +118,6 @@ struct HfTaskFlowCharmHadrons {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
 
-  HfHelper hfHelper;
   EventPlaneHelper epHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;

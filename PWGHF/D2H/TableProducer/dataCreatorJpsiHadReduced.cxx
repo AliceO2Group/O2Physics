@@ -184,8 +184,6 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
-
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorEl selectorElectron;

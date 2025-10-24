@@ -53,7 +53,7 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_D0_FULL(OBJECT, FEATURE, GETTER)
-// where GETTER is a method of hfHelper
+// where GETTER is a method of HfHelper
 #define CHECK_AND_FILL_VEC_D0_HFHELPER(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {   \
     inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));       \
@@ -61,7 +61,7 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_D0_HFHELPER(OBJECT, FEATURE, GETTER)
-// where GETTER1 and GETTER2 are methods of hfHelper, and the variable
+// where GETTER1 and GETTER2 are methods of HfHelper, and the variable
 // is filled depending on whether it is a D0 or a D0bar
 #define CHECK_AND_FILL_VEC_D0_HFHELPER_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
   case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {                    \
@@ -74,7 +74,7 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_D0_HFHELPER(OBJECT, FEATURE, GETTER)
-// where GETTER1 and GETTER2 are methods of hfHelper, and the variable
+// where GETTER1 and GETTER2 are methods of HfHelper, and the variable
 // is filled depending on whether it is a D0 or a D0bar
 #define CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {                           \
@@ -173,8 +173,6 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
   HfMlResponseD0ToKPi() = default;
   /// Default destructor
   virtual ~HfMlResponseD0ToKPi() = default;
-
-  HfHelper hfHelper;
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the D0 candidate

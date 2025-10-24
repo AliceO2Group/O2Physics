@@ -78,7 +78,6 @@ struct HfCandidateCreatorXicc {
 
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter to rebuild the Xic vertex
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter to build the Xicc vertex
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 

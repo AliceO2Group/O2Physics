@@ -277,8 +277,6 @@ struct HfTreeCreatorDsToKKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
-
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;

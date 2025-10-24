@@ -62,7 +62,6 @@ struct HfTaskSigmacToCascade {
   using RecoLc = soa::Filtered<soa::Join<aod::HfCandCascExt, aod::HfSelLcToK0sP>>;
 
   HistogramRegistry registry{"registry"};
-  HfHelper hfHelper;
 
   void init(InitContext&)
   {

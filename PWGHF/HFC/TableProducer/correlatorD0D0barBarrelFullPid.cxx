@@ -99,8 +99,6 @@ struct HfCorrelatorD0D0barBarrelFullPid {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmesonV}, "Efficiency values for D0 meson"};
 
-  HfHelper hfHelper;
-
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel>> selectedD0candidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TofPlusRichPid >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTofPlusRichPid >= selectionFlagD0bar);
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> selectedD0candidatesMC = (aod::hf_sel_candidate_d0_alice3_barrel::isSelD0TofPlusRichPid >= selectionFlagD0 || aod::hf_sel_candidate_d0_alice3_barrel::isSelD0barTofPlusRichPid >= selectionFlagD0bar);
 

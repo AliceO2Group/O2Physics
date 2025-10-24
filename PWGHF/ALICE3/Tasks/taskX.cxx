@@ -48,8 +48,6 @@ struct HfTaskX {
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
-
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
   HistogramRegistry registry{
@@ -110,8 +108,6 @@ struct HfTaskXMc {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
-
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 

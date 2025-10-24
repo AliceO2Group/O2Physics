@@ -117,8 +117,6 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
 
-  HfHelper hfHelper;
-
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenD0ToPiKPi,
                        kCandidateStepMcCandInAcceptance,

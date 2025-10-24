@@ -77,7 +77,6 @@ struct HfCandidateCreatorLb {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter (to rebuild Lc vertex)
-  HfHelper hfHelper;
 
   double massPi{0.};
   double massLc{0.};

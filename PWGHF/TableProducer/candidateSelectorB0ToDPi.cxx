@@ -100,7 +100,6 @@ struct HfCandidateSelectorB0ToDPi {
   std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   using TracksPion = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;

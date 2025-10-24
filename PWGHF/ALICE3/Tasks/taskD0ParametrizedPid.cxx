@@ -33,8 +33,6 @@ struct HfTaskD0ParametrizedPid {
   // Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
   // Configurable<double> centralitySelectionMax{"centralitySelectionMax", 30000.0, "Higher boundary of centrality selection"};
 
-  HfHelper hfHelper;
-
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_parametrized_pid::isSelD0NoPid >= 1 || aod::hf_sel_candidate_d0_parametrized_pid::isSelD0barNoPid >= 1);

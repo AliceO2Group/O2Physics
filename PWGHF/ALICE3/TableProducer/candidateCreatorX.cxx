@@ -67,7 +67,6 @@ struct HfCandidateCreatorX {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter (to rebuild Jpsi vertex)
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
-  HfHelper hfHelper;
 
   double massPi{0.};
   double massJpsi{0.};

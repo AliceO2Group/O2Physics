@@ -89,7 +89,6 @@ struct HfTaskD0 {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
-  HfHelper hfHelper;
   ctpRateFetcher mRateFetcher;
 
   SliceCache cache;

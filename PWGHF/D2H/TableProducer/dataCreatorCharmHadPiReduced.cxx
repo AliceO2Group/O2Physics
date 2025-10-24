@@ -201,7 +201,6 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<bool> selectionFlagDstar{"selectionFlagDstar", true, "Selection Flag for D* decay to D0 Pi"};
   } hfflagConfigurations;
 
-  HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::hf_evsel::HfEventSelectionMc hfEvSelMc;
 

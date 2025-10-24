@@ -190,8 +190,6 @@ struct HfTaskB0Reduced {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
-
   using TracksBachPions = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsDplus = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
   using CandsDstar = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedSoftPiPid>;

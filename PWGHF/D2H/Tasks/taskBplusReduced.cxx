@@ -196,8 +196,6 @@ struct HfTaskBplusReduced {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
-
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
 

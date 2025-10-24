@@ -82,7 +82,6 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -203,7 +202,6 @@ struct HfCorrelatorDplusHadrons {
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<float>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for D+ meson"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   // Event Mixing for the Data Mode

@@ -137,7 +137,6 @@ struct HfTaskCorrelationDsHadrons {
 
   static constexpr float Epsilon{1.e-8};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   Service<ccdb::BasicCCDBManager> ccdb;

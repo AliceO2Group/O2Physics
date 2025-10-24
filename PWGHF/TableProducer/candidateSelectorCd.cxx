@@ -76,8 +76,6 @@ struct HfCandidateSelectorCd {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
-  HfHelper hfHelper;
-
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorDe selectorDeuteron;

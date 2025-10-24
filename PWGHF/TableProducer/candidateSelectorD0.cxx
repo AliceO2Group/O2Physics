@@ -105,7 +105,6 @@ struct HfCandidateSelectorD0 {
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
-  HfHelper hfHelper;
   HfTrigger2ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;

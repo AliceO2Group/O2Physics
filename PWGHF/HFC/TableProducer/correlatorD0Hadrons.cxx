@@ -95,7 +95,6 @@ struct HfCorrelatorD0HadronsSelection {
   Configurable<float> yCandMax{"yCandMax", 4.0, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -232,7 +231,6 @@ struct HfCorrelatorD0Hadrons {
   double massK{0.};
   double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;

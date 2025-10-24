@@ -64,7 +64,6 @@ struct HfTaskSigmac {
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
   Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of sof-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
 
-  HfHelper hfHelper;
   bool isMc{};
   static constexpr std::size_t NDaughters{2u};
 

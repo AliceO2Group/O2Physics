@@ -70,7 +70,6 @@ struct HfTaskBplus {
 
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
   Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>> selectedBPlusCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
   Partition<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfCandBplusMcRec>> selectedBPlusCandidatesMC = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;

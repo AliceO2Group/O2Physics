@@ -107,7 +107,6 @@ struct HfCorrelatorDMesonPairs {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
 

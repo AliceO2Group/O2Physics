@@ -92,7 +92,6 @@ struct HfCorrelatorLcHadronsSelection {
   Configurable<float> centMax{"centMax", 100., "Maximum Centrality"};
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
@@ -240,7 +239,6 @@ struct HfCorrelatorLcHadrons {
   Configurable<float> eventFractionToAnalyze{"eventFractionToAnalyze", -1, "Fraction of events to analyze (use only for ME offline on very large samples)"};
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   int leadingIndex = 0;

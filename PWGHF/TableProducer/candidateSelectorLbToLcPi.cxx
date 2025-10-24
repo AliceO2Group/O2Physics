@@ -63,8 +63,6 @@ struct HfCandidateSelectorLbToLcPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::Cuts[0], hf_cuts_lb_to_lc_pi::NBinsPt, hf_cuts_lb_to_lc_pi::NCutVars, hf_cuts_lb_to_lc_pi::labelsPt, hf_cuts_lb_to_lc_pi::labelsCutVar}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
-  HfHelper hfHelper;
-
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::pidTPCFullPi>;
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)

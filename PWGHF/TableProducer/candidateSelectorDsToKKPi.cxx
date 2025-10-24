@@ -94,7 +94,6 @@ struct HfCandidateSelectorDsToKKPi {
   // Mass cut for trigger analysis
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrized pT differential mass cut for triggered data"};
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseDsToKKPi<float> hfMlResponse;
   std::vector<float> outputMlDsToKKPi;
   std::vector<float> outputMlDsToPiKK;

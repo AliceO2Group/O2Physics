@@ -411,8 +411,6 @@ struct HfTreeCreatorLcToPKPi {
   constexpr static int UndefValueInt = -999;
   constexpr static float NanoToPico = 1000.f;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
 

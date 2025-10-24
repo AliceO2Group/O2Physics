@@ -96,7 +96,6 @@ struct HfCorrelatorDplusDminus {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmesonV}, "Efficiency values for Dplus meson"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;

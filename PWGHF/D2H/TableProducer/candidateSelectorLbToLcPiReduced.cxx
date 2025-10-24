@@ -98,7 +98,6 @@ struct HfCandidateSelectorLbToLcPiReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
-  HfHelper hfHelper;
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 

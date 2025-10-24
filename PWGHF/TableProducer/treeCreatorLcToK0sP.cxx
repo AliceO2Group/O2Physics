@@ -242,8 +242,6 @@ struct HfTreeCreatorLcToK0sP {
 
   constexpr static float UndefValueFloat = -999.f;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;

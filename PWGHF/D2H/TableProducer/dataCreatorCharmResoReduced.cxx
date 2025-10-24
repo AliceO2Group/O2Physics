@@ -193,7 +193,6 @@ struct HfDataCreatorCharmResoReduced {
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject already at this stage the pairs that share a daughter track"};
   Configurable<bool> rejectCollisionsWithBadEvSel{"rejectCollisionsWithBadEvSel", true, "flag to reject collisions with bad event selection"};
 
-  HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::hf_evsel::HfEventSelectionMc hfEvSelMc;
 

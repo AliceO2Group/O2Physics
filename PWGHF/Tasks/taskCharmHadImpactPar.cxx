@@ -125,8 +125,6 @@ struct HfTaskCharmHadImpactPar {
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to store only matched candidates"};
 
-  HfHelper hfHelper;
-
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;

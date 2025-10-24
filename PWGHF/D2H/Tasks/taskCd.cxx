@@ -56,7 +56,6 @@ struct HfTaskCd {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_cd_to_de_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::EvSels>;

@@ -30,7 +30,6 @@ using namespace o2::framework::expressions;
 
 /// Fills MC histograms.
 struct HfTaskLcParametrizedPid {
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_parametrized_pid::isSelLcToPKPiNoPid == 1 || aod::hf_sel_candidate_lc_parametrized_pid::isSelLcToPiKPNoPid == 1);
 

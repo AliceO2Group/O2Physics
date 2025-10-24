@@ -64,7 +64,6 @@ struct HfTaskB0 {
 
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
   using TracksWithSel = soa::Join<aod::Tracks, aod::TrackSelection>;
 

@@ -67,7 +67,6 @@ struct HfCandidateCreatorChic {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter (to rebuild Jpsi vertex)
-  HfHelper hfHelper;
 
   double massJpsi{0.};
   double massJpsiGamma{0.};
@@ -216,8 +215,6 @@ struct HfCandidateCreatorChicExpressions {
 struct HfCandidateCreatorChicMc {
   Produces<aod::HfCandChicMcRec> rowMcMatchRec;
   Produces<aod::HfCandChicMcGen> rowMcMatchGen;
-
-  HfHelper hfHelper;
 
   OutputObj<TH1F> hMassJpsiToMuMuMatched{TH1F("hMassChicToJpsiToMuMuMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
   OutputObj<TH1F> hMassEMatched{TH1F("hMassEMatched", "2-prong candidates;inv. mass (J/#psi (#rightarrow #mu+ #mu-)) (GeV/#it{c}^{2});entries", 500, 0., 5.)};

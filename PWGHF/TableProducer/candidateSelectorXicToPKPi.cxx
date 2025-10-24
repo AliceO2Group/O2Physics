@@ -96,7 +96,6 @@ struct HfCandidateSelectorXicToPKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
-  HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
 

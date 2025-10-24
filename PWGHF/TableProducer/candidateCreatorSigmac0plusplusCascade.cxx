@@ -75,8 +75,6 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<bool> addQA{"addQA", true, "Switch for the qa PLOTS"};
 
-  HfHelper hfHelper;
-
   using TracksWithPID = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   /// Filter the candidate Λc+ used for the Σc0,++ creation

@@ -261,7 +261,6 @@ struct HfTaskBsToJpsiPhiReduced {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   TrackSelectorKa selectorKaon;
   o2::analysis::HfMlResponseBsToJpsiPhiReduced<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;

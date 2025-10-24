@@ -72,8 +72,6 @@ struct HfCandidateSelectorLcParametrizedPid {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::Cuts[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
-  HfHelper hfHelper;
-
   using TracksSel = soa::Join<aod::TracksWExtra, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::RICHTracksIndex, aod::McTrackLabels>;
 
   /// Conjugate-independent topological cuts

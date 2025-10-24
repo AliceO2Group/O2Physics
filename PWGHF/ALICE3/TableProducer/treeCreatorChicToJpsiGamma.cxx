@@ -122,8 +122,6 @@ struct HfTreeCreatorChicToJpsiGamma {
   Produces<o2::aod::HfCandChicFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandChicFullPs> rowCandidateFullParticles;
 
-  HfHelper hfHelper;
-
   void init(InitContext const&)
   {
   }
