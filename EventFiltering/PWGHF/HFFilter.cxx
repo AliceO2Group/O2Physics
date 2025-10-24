@@ -200,12 +200,13 @@ struct HfFilter { // Main struct for HF triggers
   // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
-  o2::vertexing::DCAFitterN<2> df2;           // fitter for Charm Hadron vertex (2-prong vertex fitter)
-  o2::vertexing::DCAFitterN<3> df3;           // fitter for Charm/Beauty Hadron vertex (3-prong vertex fitter)
-  o2::vertexing::DCAFitterN<4> df4;           // fitter for Beauty Hadron vertex (4-prong vertex fitter)
-  o2::vertexing::DCAFitterN<2> dfB;           // fitter for Beauty Hadron vertex (2-prong vertex fitter)
-  o2::vertexing::DCAFitterN<3> dfBtoDstar;    // fitter for Beauty Hadron to D* vertex (3-prong vertex fitter)
-  o2::vertexing::DCAFitterN<2> dfStrangeness; // fitter for V0s and cascades (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> df2;            // fitter for Charm Hadron vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<3> df3;            // fitter for Charm/Beauty Hadron vertex (3-prong vertex fitter)
+  o2::vertexing::DCAFitterN<4> df4;            // fitter for Beauty Hadron vertex (4-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> dfB;            // fitter for Beauty Hadron vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<3> dfBtoDstar;     // fitter for Beauty Hadron to D* vertex (3-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> dfStrangeness;  // fitter for V0s and cascades (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<3> dfStrangeness3; // fitter for Xic+ -> XiPiPi
 
   std::shared_ptr<TH1> hProcessedEvents;
 
@@ -273,6 +274,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
     helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
+    helper.setVtxConfiguration(dfStrangeness3, true); // (DCAFitterN, useAbsDCA)
     dfStrangeness.setMatCorrType(matCorr);
     helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
     helper.setVtxConfiguration(df3, false);
@@ -1823,7 +1825,7 @@ struct HfFilter { // Main struct for HF triggers
               bool isSelXiBach{false};
               if (requireStrangenessTracking->get(0u, 0u) > 0) {
                 if (hasStrangeTrack) {
-                  isSelXiBach = helper.isSelectedXiBach(trackParCascTrack, trackParBachelor, isSelBachelor, collision, df2, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16]);
+                  isSelXiBach = helper.isSelectedXiBach(trackParCascTrack, trackParBachelor, isSelBachelor, collision, dfStrangeness, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16]);
                 }
               } else {
                 isSelXiBach = helper.isSelectedXiBach(trackParCasc, trackParBachelor, isSelBachelor, collision, dfStrangeness, activateQA, hMassVsPtC[kNCharmParticles + 15], hMassVsPtC[kNCharmParticles + 16]);
@@ -1866,7 +1868,7 @@ struct HfFilter { // Main struct for HF triggers
                   bool isSelXiBachBach{false};
                   if (requireStrangenessTracking->get(0u, 1u) > 0) {
                     if (hasStrangeTrack) {
-                      isSelXiBachBach = helper.isSelectedXiBachBach<3>(trackParCascTrack, {trackParBachelor, trackParBachelorSecond}, collision, df3, activateQA, hMassVsPtC[kNCharmParticles + 17]);
+                      isSelXiBachBach = helper.isSelectedXiBachBach<3>(trackParCascTrack, {trackParBachelor, trackParBachelorSecond}, collision, dfStrangeness3, activateQA, hMassVsPtC[kNCharmParticles + 17]);
                     }
                   } else { // vertex with only the two bachelors
                     isSelXiBachBach = helper.isSelectedXiBachBach<2>(trackParCasc, {trackParBachelor, trackParBachelorSecond}, collision, df2, activateQA, hMassVsPtC[kNCharmParticles + 17]);
