@@ -259,7 +259,7 @@ class PairV0V0Builder
       mV0HistManager1.init(registry, V0HistSpec1, PosDauHistSpec, NegDauHistSpec);
 
       mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
-      mPairHistManagerSe.setCharge(1, 1); 
+      mPairHistManagerSe.setCharge(1, 1);
       mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confCpr.on.value);
 
       mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
