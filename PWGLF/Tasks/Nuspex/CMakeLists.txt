@@ -120,7 +120,7 @@ o2physics_add_dpl_workflow(nuclei-ebye
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(anti-nuclei-hist
-    SOURCES antiNucleiTask.cxx
+    SOURCES AntiNucleiTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

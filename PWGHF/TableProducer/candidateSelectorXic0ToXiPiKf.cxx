@@ -61,7 +61,7 @@ enum PidInfoStored {
 /// Struct for applying Xic0 -> Xi pi selection cuts
 struct HfCandidateSelectorXic0ToXiPiKf {
   Produces<aod::HfSelToXiPiKf> hfSelToXiPi;
-  Produces<aod::HfMlToXiPiKf> hfMlToXiPi;
+  Produces<aod::HfMlToXiPi> hfMlToXiPi;
 
   // kinematic selections
   Configurable<double> etaTrackCharmBachMax{"etaTrackCharmBachMax", 0.8, "Max absolute value of eta for charm baryon bachelor"};

@@ -56,6 +56,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+namespace
+{
+static const int8_t genPromptD0 = 1;
+static const int8_t genNonPromptD0 = 2;
+} // namespace
+
 /// Returns deltaPhi value within the range [-pi/2, 3/2*pi]
 ///
 double getDeltaPhi(double phiD, double phiDbar)
@@ -437,12 +443,20 @@ struct FemtoUniversePairTaskTrackD0 {
     }
     // MC Reco
     mcRecoRegistry.add("hMcRecD0", "MC Reco all D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcRecoRegistry.add("hMcRecD0Pt", "MC Reco all D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcRecoRegistry.add("hMcRecD0Prompt", "MC Reco prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcRecoRegistry.add("hMcRecD0PromptPt", "MC Reco prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcRecoRegistry.add("hMcRecD0NonPrompt", "MC Reco non-prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcRecoRegistry.add("hMcRecD0NonPromptPt", "MC Reco non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcRecoRegistry.add("hMcRecD0Phi", "MC Reco all D0s;#varphi (rad); counts", {HistType::kTH1F, {{80, 0., o2::constants::math::TwoPI}}});
+    mcRecoRegistry.add("hMcRecD0PromptPhi", "MC Reco prompt D0s;#varphi (rad); counts", {HistType::kTH1F, {{80, 0., o2::constants::math::TwoPI}}});
+    mcRecoRegistry.add("hMcRecD0NonPromptPhi", "MC Reco non-prompt D0s;#varphi (rad); counts", {HistType::kTH1F, {{80, 0., o2::constants::math::TwoPI}}});
     mcRecoRegistry.add("hMcRecD0bar", "MC Reco all D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcRecoRegistry.add("hMcRecD0barPt", "MC Reco all D0bars;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcRecoRegistry.add("hMcRecD0barPrompt", "MC Reco prompt D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcRecoRegistry.add("hMcRecD0barPromptPt", "MC Reco prompt D0bars;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcRecoRegistry.add("hMcRecD0barNonPrompt", "MC Reco non-prompt D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcRecoRegistry.add("hMcRecD0barNonPromptPt", "MC Reco non-prompt D0bars;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcRecoRegistry.add("hMcRecD0barPhi", "MC Reco all D0bars;#varphi (rad); counts", {HistType::kTH1F, {{80, 0., o2::constants::math::TwoPI}}});
     // Inv. mass histograms
     mcRecoRegistry.add("hMassVsPtD0Sig", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -471,11 +485,17 @@ struct FemtoUniversePairTaskTrackD0 {
 
     // MC truth
     mcTruthRegistry.add("hMcGenD0", "MC Truth all D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcTruthRegistry.add("hMcGenD0Pt", "MC Truth all D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0Prompt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcTruthRegistry.add("hMcGenD0PromptPt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0NonPrompt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcTruthRegistry.add("hMcGenD0NonPromptPt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0bar", "MC Truth all D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcTruthRegistry.add("hMcGenD0barPt", "MC Truth all D0bars;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0barPrompt", "MC Truth prompt D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcTruthRegistry.add("hMcGenD0barPromptPt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenD0barNonPrompt", "MC Truth non-prompt D0bars;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
+    mcTruthRegistry.add("hMcGenD0barNonPromptPt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {vbins}});
     mcTruthRegistry.add("hMcGenAllPositivePt", "MC Truth all positive;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{360, 0, 36}}});
     mcTruthRegistry.add("hMcGenAllNegativePt", "MC Truth all negative;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{360, 0, 36}}});
     mcTruthRegistry.add("hMcGenKpPtVsEta", "MC Truth K+;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -1318,19 +1338,27 @@ struct FemtoUniversePairTaskTrackD0 {
       } else if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco)) {
         if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0) {
           mcRecoRegistry.fill(HIST("hMcRecD0"), part.pt(), part.eta());
+          mcRecoRegistry.fill(HIST("hMcRecD0Pt"), part.pt());
           mcRecoRegistry.fill(HIST("hMcRecD0Phi"), part.phi());
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0Prompt"), part.pt(), part.eta());
+            mcRecoRegistry.fill(HIST("hMcRecD0PromptPt"), part.pt());
+            mcRecoRegistry.fill(HIST("hMcRecD0PromptPhi"), part.phi());
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0NonPrompt"), part.pt(), part.eta());
+            mcRecoRegistry.fill(HIST("hMcRecD0PromptPt"), part.pt());
+            mcRecoRegistry.fill(HIST("hMcRecD0PromptPhi"), part.phi());
           }
         } else if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0bar) {
           mcRecoRegistry.fill(HIST("hMcRecD0bar"), part.pt(), part.eta());
+          mcRecoRegistry.fill(HIST("hMcRecD0barPt"), part.pt());
           mcRecoRegistry.fill(HIST("hMcRecD0barPhi"), part.phi());
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barPrompt"), part.pt(), part.eta());
+            mcRecoRegistry.fill(HIST("hMcRecD0barPromptPt"), part.pt());
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barNonPrompt"), part.pt(), part.eta());
+            mcRecoRegistry.fill(HIST("hMcRecD0barNonPromptPt"), part.pt());
           }
         }
       }
@@ -1413,10 +1441,13 @@ struct FemtoUniversePairTaskTrackD0 {
       if (pdgCode == o2::constants::physics::Pdg::kD0) {
         if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           mcTruthRegistry.fill(HIST("hMcGenD0"), part.pt(), part.eta());
-          if (part.mAntiLambda() == 1) {
+          mcTruthRegistry.fill(HIST("hMcGenD0Pt"), part.pt());
+          if (static_cast<int8_t>(part.mAntiLambda()) == genPromptD0) {
             mcTruthRegistry.fill(HIST("hMcGenD0Prompt"), part.pt(), part.eta());
-          } else if (part.mAntiLambda() == 2) {
+            mcTruthRegistry.fill(HIST("hMcGenD0PromptPt"), part.pt());
+          } else if (static_cast<int8_t>(part.mAntiLambda()) == genNonPromptD0) {
             mcTruthRegistry.fill(HIST("hMcGenD0NonPrompt"), part.pt(), part.eta());
+            mcTruthRegistry.fill(HIST("hMcGenD0NonPromptPt"), part.pt());
           }
         }
       }
@@ -1439,10 +1470,13 @@ struct FemtoUniversePairTaskTrackD0 {
       if (pdgCode == o2::constants::physics::Pdg::kD0Bar) {
         if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           mcTruthRegistry.fill(HIST("hMcGenD0bar"), part.pt(), part.eta());
-          if (part.mAntiLambda() == 1) {
+          mcTruthRegistry.fill(HIST("hMcGenD0barPt"), part.pt());
+          if (static_cast<int8_t>(part.mAntiLambda()) == genPromptD0) {
             mcTruthRegistry.fill(HIST("hMcGenD0barPrompt"), part.pt(), part.eta());
-          } else if (part.mAntiLambda() == 2) {
+            mcTruthRegistry.fill(HIST("hMcGenD0barPromptPt"), part.pt());
+          } else if (static_cast<int8_t>(part.mAntiLambda()) == genNonPromptD0) {
             mcTruthRegistry.fill(HIST("hMcGenD0barNonPrompt"), part.pt(), part.eta());
+            mcTruthRegistry.fill(HIST("hMcGenD0barNonPromptPt"), part.pt());
           }
         }
       }
