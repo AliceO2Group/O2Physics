@@ -448,7 +448,7 @@ struct TaskPi0FlowEMC {
     }
 
     if (cfgDoM02.value) {
-      registry.add("hSparseFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisM02, thnAxisPt, thnAxisCent, thnAxisScalarProd});
+      registry.add("hSparseFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisM02, thnAxisPt, thnAxisCent});
     }
 
     ccdb->setURL(ccdbUrl);
