@@ -1937,7 +1937,6 @@ struct JetChargedV2 {
           return;
         }
         if (useMedianRho) {
-          // fillMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, collision.rho(), mcrho, ep2);
           fillGeoMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, ep2, collision.rho(), mcrho);
         }
         if (useLocalRho) {
