@@ -355,6 +355,7 @@ struct StrangenessInJets {
     u.SetXYZ(ux, uy, uz);
     return;
   }
+  */
 
   // Delta phi calculation
   double getDeltaPhi(double a1, double a2)
@@ -371,7 +372,6 @@ struct StrangenessInJets {
 
     return deltaPhi;
   }
-  */
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
   bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
