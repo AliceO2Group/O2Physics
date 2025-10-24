@@ -792,7 +792,6 @@ struct JetChargedV2 {
     registry.fill(HIST("h2_track_eta_track_phi"), track.eta(), track.phi(), weight);
   }
 
-  // mark
   template <typename TBase, typename TTag>
   void fillGeoMatchedHistograms(TBase const& jetMCD, double ep2, float rho, float mcrho = 0.0, float weight = 1.0)
   {
