@@ -158,6 +158,10 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confEvNoSameBunchPileup{"confEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
     Configurable<bool> confIsUsePileUp{"confIsUsePileUp", true, "Required for choosing whether to run the pile-up cuts"};
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
+    Configurable<bool> confIsGoodITSLayersAll{"confIsGoodITSLayersAll", true, "Require IsGoodITSLayersAll selection on Events."};
+    Configurable<bool> confNoCollInRofStandard{"confNoCollInRofStandard", true, "Require NoCollInRofStandard selection on Events."};
+    Configurable<bool> confNoHighMultCollInPrevRof{"confNoHighMultCollInPrevRof", true, "Require NoHighMultCollInPrevRof selection on Events."};
+    Configurable<bool> confNoCollInTimeRangeStandard{"confNoCollInTimeRangeStandard", true, "Require NoCollInTimeRangeStandard selection on Events."};
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
     Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
     Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
@@ -1117,12 +1121,13 @@ struct FemtoUniverseProducerTask {
     if (!colCuts.isSelectedRun3(col) || (occupancy < ConfGeneral.confTPCOccupancyMin || occupancy > ConfGeneral.confTPCOccupancyMax)) {
       return false;
     } else {
-      if (col.selection_bit(aod::evsel::kNoSameBunchPileup) &&
-          col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
-          col.selection_bit(aod::evsel::kIsGoodITSLayersAll) &&
-          col.selection_bit(aod::evsel::kNoCollInRofStandard) &&
-          col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof) &&
-          col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) {
+      if ((!ConfGeneral.confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) &&
+          (!ConfGeneral.confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
+          (!ConfGeneral.confIsGoodITSLayersAll || col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) &&
+          (!ConfGeneral.confNoCollInRofStandard || col.selection_bit(aod::evsel::kNoCollInRofStandard)) &&
+          (!ConfGeneral.confNoHighMultCollInPrevRof || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) &&
+          (!ConfGeneral.confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC)) &&
+          (!ConfGeneral.confNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
       } else {
