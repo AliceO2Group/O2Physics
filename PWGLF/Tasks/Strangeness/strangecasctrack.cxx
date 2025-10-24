@@ -199,71 +199,71 @@ struct StrangeCascTrack {
     return true;
   }
   // checks TOF PID of dau tracks
-  template <typename TCascade>
-  bool passesTOF(TCascade cascade, TString particle)
-  {
-    return true;
-    // const auto& bachDaughterTrackCasc = cascade.bachTrackExtra_as<DauTracks>();
-    // const auto& posDaughterTrackCasc = cascade.posTrackExtra_as<DauTracks>();
-    // const auto& negDaughterTrackCasc = cascade.negTrackExtra_as<DauTracks>();
-    // bool xiPassTOFSelection = true;
-    // bool omegaPassTOFSelection = true;
-    // if (cascade.sign() < 0) {
-    //   if (posDaughterTrackCasc.hasTOF()) {
-    //     if (std::abs(cascade.tofNSigmaXiLaPr()) > selCuts.NSigmaTOFProton) {
-    //       xiPassTOFSelection &= false;
-    //     }
-    //     if (std::abs(cascade.tofNSigmaOmLaPr()) > selCuts.NSigmaTOFProton) {
-    //       omegaPassTOFSelection &= false;
-    //     }
-    //   }
-    //   if (negDaughterTrackCasc.hasTOF()) {
-    //     if (std::abs(cascade.tofNSigmaXiLaPi()) > selCuts.NSigmaTOFPion) {
-    //       xiPassTOFSelection &= false;
-    //     }
-    //     if (std::abs(cascade.tofNSigmaOmLaPi()) > selCuts.NSigmaTOFPion) {
-    //       omegaPassTOFSelection &= false;
-    //     }
-    //   }
-    // } else {
-    //   if (posDaughterTrackCasc.hasTOF()) {
-    //     if (std::abs(cascade.tofNSigmaXiLaPi()) > selCuts.NSigmaTOFPion) {
-    //       xiPassTOFSelection &= false;
-    //     }
-    //     if (std::abs(cascade.tofNSigmaOmLaPi()) > selCuts.NSigmaTOFPion) {
-    //       omegaPassTOFSelection &= false;
-    //     }
-    //   }
-    //   if (negDaughterTrackCasc.hasTOF()) {
-    //     if (std::abs(cascade.tofNSigmaXiLaPr()) > selCuts.NSigmaTOFProton) {
-    //       xiPassTOFSelection &= false;
-    //     }
-    //     if (std::abs(cascade.tofNSigmaOmLaPr()) > selCuts.NSigmaTOFProton) {
-    //       omegaPassTOFSelection &= false;
-    //     }
-    //   }
-    // }
-
-    // if (bachDaughterTrackCasc.hasTOF()) {
-    //   if (std::abs(cascade.tofNSigmaXiPi()) > selCuts.NSigmaTOFPion) {
-    //     xiPassTOFSelection &= false;
-    //   }
-    //   if (std::abs(cascade.tofNSigmaOmKa()) > selCuts.NSigmaTOFKaon) {
-    //     omegaPassTOFSelection &= false;
-    //   }
-    // }
-
-    // if (bachDaughterTrackCasc.hasTOF()) {
-    //   if (std::abs(cascade.tofNSigmaXiPi()) > selCuts.NSigmaTOFPion) {
-    //     xiPassTOFSelection &= false;
-    //   }
-    //   if (std::abs(cascade.tofNSigmaOmKa()) > selCuts.NSigmaTOFKaon) {
-    //     omegaPassTOFSelection &= false;
-    //   }
-    // }
-
-    // if (particle == "xi") {return xiPassTOFSelection;} else {return omegaPassTOFSelection;}
-  }
+  // template <typename TCascade>
+  // bool passesTOF(TCascade cascade, TString particle)
+  // {
+  //   return true;
+  //   // const auto& bachDaughterTrackCasc = cascade.bachTrackExtra_as<DauTracks>();
+  //   // const auto& posDaughterTrackCasc = cascade.posTrackExtra_as<DauTracks>();
+  //   // const auto& negDaughterTrackCasc = cascade.negTrackExtra_as<DauTracks>();
+  //   // bool xiPassTOFSelection = true;
+  //   // bool omegaPassTOFSelection = true;
+  //   // if (cascade.sign() < 0) {
+  //   //   if (posDaughterTrackCasc.hasTOF()) {
+  //   //     if (std::abs(cascade.tofNSigmaXiLaPr()) > selCuts.NSigmaTOFProton) {
+  //   //       xiPassTOFSelection &= false;
+  //   //     }
+  //   //     if (std::abs(cascade.tofNSigmaOmLaPr()) > selCuts.NSigmaTOFProton) {
+  //   //       omegaPassTOFSelection &= false;
+  //   //     }
+  //   //   }
+  //   //   if (negDaughterTrackCasc.hasTOF()) {
+  //   //     if (std::abs(cascade.tofNSigmaXiLaPi()) > selCuts.NSigmaTOFPion) {
+  //   //       xiPassTOFSelection &= false;
+  //   //     }
+  //   //     if (std::abs(cascade.tofNSigmaOmLaPi()) > selCuts.NSigmaTOFPion) {
+  //   //       omegaPassTOFSelection &= false;
+  //   //     }
+  //   //   }
+  //   // } else {
+  //   //   if (posDaughterTrackCasc.hasTOF()) {
+  //   //     if (std::abs(cascade.tofNSigmaXiLaPi()) > selCuts.NSigmaTOFPion) {
+  //   //       xiPassTOFSelection &= false;
+  //   //     }
+  //   //     if (std::abs(cascade.tofNSigmaOmLaPi()) > selCuts.NSigmaTOFPion) {
+  //   //       omegaPassTOFSelection &= false;
+  //   //     }
+  //   //   }
+  //   //   if (negDaughterTrackCasc.hasTOF()) {
+  //   //     if (std::abs(cascade.tofNSigmaXiLaPr()) > selCuts.NSigmaTOFProton) {
+  //   //       xiPassTOFSelection &= false;
+  //   //     }
+  //   //     if (std::abs(cascade.tofNSigmaOmLaPr()) > selCuts.NSigmaTOFProton) {
+  //   //       omegaPassTOFSelection &= false;
+  //   //     }
+  //   //   }
+  //   // }
+  //
+  //   // if (bachDaughterTrackCasc.hasTOF()) {
+  //   //   if (std::abs(cascade.tofNSigmaXiPi()) > selCuts.NSigmaTOFPion) {
+  //   //     xiPassTOFSelection &= false;
+  //   //   }
+  //   //   if (std::abs(cascade.tofNSigmaOmKa()) > selCuts.NSigmaTOFKaon) {
+  //   //     omegaPassTOFSelection &= false;
+  //   //   }
+  //   // }
+  //
+  //   // if (bachDaughterTrackCasc.hasTOF()) {
+  //   //   if (std::abs(cascade.tofNSigmaXiPi()) > selCuts.NSigmaTOFPion) {
+  //   //     xiPassTOFSelection &= false;
+  //   //   }
+  //   //   if (std::abs(cascade.tofNSigmaOmKa()) > selCuts.NSigmaTOFKaon) {
+  //   //     omegaPassTOFSelection &= false;
+  //   //   }
+  //   // }
+  //
+  //   // if (particle == "xi") {return xiPassTOFSelection;} else {return omegaPassTOFSelection;}
+  // }
   // checks whether gen cascade corresponds to PDG code
   template <typename TCascade>
   bool isValidPDG(TCascade cascade, TString particle)
@@ -403,18 +403,18 @@ struct StrangeCascTrack {
       // apply tof pid
       bool passedAllSelsXi = passedAllSels;
       bool passedAllSelsOmega = passedAllSels;
-      if (doApplyTOFPID) {
-        if (passesTOF(cascade, "xi")) {
-          histos.fill(HIST(kTypeNames[type]) + HIST("/MassXiTOFPID"), massXi);
-        } else {
-          passedAllSelsXi = false;
-        }
-        if (passesTOF(cascade, "omega")) {
-          histos.fill(HIST(kTypeNames[type]) + HIST("/MassOmegaTOFPID"), massOmega);
-        } else {
-          passedAllSelsOmega = false;
-        }
-      }
+      // if (doApplyTOFPID) {
+      //   if (passesTOF(cascade, "xi")) {
+      //     histos.fill(HIST(kTypeNames[type]) + HIST("/MassXiTOFPID"), massXi);
+      //   } else {
+      //     passedAllSelsXi = false;
+      //   }
+      //   if (passesTOF(cascade, "omega")) {
+      //     histos.fill(HIST(kTypeNames[type]) + HIST("/MassOmegaTOFPID"), massOmega);
+      //   } else {
+      //     passedAllSelsOmega = false;
+      //   }
+      // }
       // apply competing mass rej
       if (doCompetingMassRej) {
         if (std::abs(massXi - pdgDB->Mass(3312)) > selCuts.compMassRej) {
