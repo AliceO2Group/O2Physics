@@ -216,13 +216,17 @@ class CascadeHistManager
   template <typename T1, typename T2>
   void fill(T1 const& cascadeCandidate, T2 const& tracks)
   {
+    // this used to work, still under investigation
+    // auto bachelor = cascadeCandidate.template bachelor_as<T2>();
+    // auto posDaughter = cascadeCandidate.template posDau_as<T2>();
+    // auto negDaughter = cascadeCandidate.template negDau_as<T2>();
 
-    auto bachelor = cascadeCandidate.template bachelor_as<T2>();
-    mBachelorManager.fill(bachelor, tracks);
-    auto posDaughter = cascadeCandidate.template posDau_as<T2>();
+    auto posDaughter = tracks.rawIteratorAt(cascadeCandidate.posDauId() - tracks.offset());
     mPosDauManager.fill(posDaughter, tracks);
-    auto negDaughter = cascadeCandidate.template negDau_as<T2>();
+    auto negDaughter = tracks.rawIteratorAt(cascadeCandidate.negDauId() - tracks.offset());
     mNegDauManager.fill(negDaughter, tracks);
+    auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
+    mBachelorManager.fill(bachelor, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(AnalysisDir) + HIST(getHistName(kPt, HistTable)), cascadeCandidate.pt());

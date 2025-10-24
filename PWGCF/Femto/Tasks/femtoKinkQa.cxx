@@ -38,9 +38,7 @@
 #include <string>
 #include <vector>
 
-using namespace o2;
 using namespace o2::aod;
-using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femto;
@@ -55,24 +53,23 @@ struct FemtoKinkQa {
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
-  // using Collisions = o2::soa::Join<FUCols, FUColPos, FUColMults, FUColCents>;
-  using Collisions = Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
-  using Collision = Collisions::iterator;
+  using FemtoCollisions = o2::soa::Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
+  using FemtoCollision = FemtoCollisions::iterator;
 
-  using FilteredCollisions = o2::soa::Filtered<Collisions>;
-  using FilteredCollision = FilteredCollisions::iterator;
+  using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
+  using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
   // Define kink/sigma tables (joining tables for comprehensive information)
-  using Sigmas = o2::soa::Join<FSigmas, FSigmaMasks, FSigmaExtras>;
-  using Tracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
+  using FemtoSigmas = o2::soa::Join<FSigmas, FSigmaMasks, FSigmaExtras>;
+  using FemtoTracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
 
   SliceCache cache;
 
   // setup for sigmas
   kinkbuilder::ConfSigmaSelection1 confSigmaSelection;
 
-  Partition<Sigmas> sigmaPartition = MAKE_SIGMA_PARTITION(confSigmaSelection);
-  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::collisionId;
+  Partition<FemtoSigmas> sigmaPartition = MAKE_SIGMA_PARTITION(confSigmaSelection);
+  Preslice<FemtoSigmas> perColSigmas = femtobase::stored::fColId;
 
   kinkhistmanager::ConfSigmaBinning1 confSigmaBinning;
   kinkhistmanager::ConfSigmaQaBinning1 confSigmaQaBinning;
@@ -101,10 +98,10 @@ struct FemtoKinkQa {
   };
 
   // Process function for sigma particles from femto tables
-  void processSigma(FilteredCollision const& col, Sigmas const& /*sigmas*/, Tracks const& tracks)
+  void processSigma(FilteredFemtoCollision const& col, FemtoSigmas const& /*sigmas*/, FemtoTracks const& tracks)
   {
     colHistManager.fill(col);
-    auto sigmaSlice = sigmaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto sigmaSlice = sigmaPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& sigma : sigmaSlice) {
       sigmaHistManager.fill(sigma, tracks);
     }

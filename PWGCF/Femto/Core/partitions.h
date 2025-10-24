@@ -22,7 +22,7 @@
     (femtocollisions::mult >= selection.multMin && femtocollisions::mult <= selection.multMax) &&                                                           \
     (femtocollisions::cent >= selection.centMin && femtocollisions::cent <= selection.centMax) &&                                                           \
     (femtocollisions::magField >= static_cast<int8_t>(selection.magFieldMin) && femtocollisions::magField <= static_cast<int8_t>(selection.magFieldMax)) && \
-    ncheckbit(femtocollisions::collisionMask, selection.collisionMask)
+    ncheckbit(femtocollisions::mask, selection.collisionMask)
 
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                                                         \
@@ -34,8 +34,8 @@
     (femtobase::stored::phi > selection.phiMin) &&                                                                                                                              \
     (femtobase::stored::phi < selection.phiMax) &&                                                                                                                              \
     ifnode(nabs(selection.chargeAbs.node() * femtobase::stored::signedPt) * (nexp(femtobase::stored::eta) + nexp(-1.f * femtobase::stored::eta)) / (2.f) <= selection.pidThres, \
-           ncheckbit(femtotracks::trackMask, selection.maskLowMomentum),                                                                                                        \
-           ncheckbit(femtotracks::trackMask, selection.maskHighMomentum))
+           ncheckbit(femtotracks::mask, selection.maskLowMomentum),                                                                                                             \
+           ncheckbit(femtotracks::mask, selection.maskHighMomentum))
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
 #define MAKE_RESONANCE_0_PARTITON(selection)                                            \

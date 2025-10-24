@@ -171,10 +171,10 @@ class PairHistManager
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
-    // the pt stored is actually pt/z, so in case of particles with z > 1, we have to rescale the pt (this is so far only for He3 the case)
+    // the pt stored is actually as pt/z for tracks, so in case of particles with z > 1, we have to rescale the pt (this is so far only for He3 the case)
     // similarly, for neutral particles, no reason to rescale so we just set absolute charge to 1
-    mAbsCharge1 = chargeAbsParticle1;
-    mAbsCharge2 = chargeAbsParticle2;
+    mAbsCharge1 = std::abs(chargeAbsParticle1);
+    mAbsCharge2 = std::abs(chargeAbsParticle2);
   }
 
   template <typename T1, typename T2>
