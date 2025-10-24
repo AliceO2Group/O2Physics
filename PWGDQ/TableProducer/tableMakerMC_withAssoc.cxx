@@ -464,7 +464,7 @@ struct TableMakerMC {
     // Loop over MC collisions
     for (auto& mcCollision : mcCollisions) {
       // Get MC collision information into the VarManager
-      VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
+      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
       // Fill histograms
       fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
       // Create the skimmed table entry for this collision
@@ -551,7 +551,7 @@ struct TableMakerMC {
         if (fConfigHistOutput.fConfigQA) {
           VarManager::FillTrackMC(mcTracks, mctrack);
           auto mcCollision = mctrack.template mcCollision_as<MyEventsMcWithMults>();
-          VarManager::FillEvent<gkEventMcFillMapWithCent>(mcCollision);
+          VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
           int j = 0;
           for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
             if (mcflags & (static_cast<uint16_t>(1) << j)) {
@@ -623,7 +623,7 @@ struct TableMakerMC {
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
       if (collision.has_mcCollision()) {
         auto mcCollision = collision.template mcCollision_as<MyEventsMcWithMults>();
-        VarManager::FillEvent<TEventMcFillMap>(mcCollision);
+        VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
