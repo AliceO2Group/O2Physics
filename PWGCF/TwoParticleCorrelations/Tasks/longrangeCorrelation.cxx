@@ -1063,9 +1063,9 @@ struct LongrangeCorrelation {
       } else {
         numcontributors = RecCol.numContrib();
       }
-      if (isUseCentEst)
+      if (isUseCentEst) {
         multiplicity = selColCent(RecCol);
-      else {
+      } else {
         auto recTracksPart = RecTracks.sliceBy(perColMC, RecCol.globalIndex());
         multiplicity = countNTracks(recTracksPart);
       }
