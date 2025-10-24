@@ -49,6 +49,11 @@ o2physics_add_dpl_workflow(task-bs
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-cd
+                    SOURCES taskCd.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-charm-polarisation
                     SOURCES taskCharmPolarisation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
