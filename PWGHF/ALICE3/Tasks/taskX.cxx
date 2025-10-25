@@ -16,16 +16,16 @@
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -47,8 +47,6 @@ struct HfTaskX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
-
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
@@ -81,11 +79,11 @@ struct HfTaskX {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(hfHelper.yX(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(HfHelper::yX(candidate)) > yCandMax) {
         continue;
       }
 
-      registry.fill(HIST("hMass"), hfHelper.invMassXToJpsiPiPi(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), HfHelper::invMassXToJpsiPiPi(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -102,16 +100,14 @@ struct HfTaskX {
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
     } // candidate loop
-  }   // process
-};    // struct
+  } // process
+}; // struct
 
 struct HfTaskXMc {
   Configurable<int> selectionFlagX{"selectionFlagX", 1, "Selection Flag for X"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<bool> modeXToJpsiToMuMuPiPi{"modeXToJpsiToMuMuPiPi", false, "Perform Jpsi to mu+mu- analysis"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
-
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_x::isSelXToJpsiToEEPiPi >= selectionFlagX || aod::hf_sel_candidate_x::isSelXToJpsiToMuMuPiPi >= selectionFlagX);
 
@@ -169,7 +165,7 @@ struct HfTaskXMc {
       if (!(candidate.hfflag() & 1 << decayMode)) {
         continue;
       }
-      if (yCandMax >= 0. && std::abs(hfHelper.yX(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(HfHelper::yX(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
@@ -181,7 +177,7 @@ struct HfTaskXMc {
         registry.fill(HIST("hEtaRecSig"), candidate.eta(), candidate.pt());
 
         registry.fill(HIST("hDeclengthRecSig"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hMassRecSig"), hfHelper.invMassXToJpsiPiPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassRecSig"), HfHelper::invMassXToJpsiPiPi(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0Prong2RecSig"), candidate.impactParameter2(), candidate.pt());
@@ -189,15 +185,15 @@ struct HfTaskXMc {
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1(), candidate.pt());
         registry.fill(HIST("hPtProng2RecSig"), candidate.ptProng2(), candidate.pt());
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtSig"), hfHelper.ctX(candidate), candidate.pt());
-        registry.fill(HIST("hYSig"), hfHelper.yX(candidate), candidate.pt());
+        registry.fill(HIST("hCtSig"), HfHelper::ctX(candidate), candidate.pt());
+        registry.fill(HIST("hYSig"), HfHelper::yX(candidate), candidate.pt());
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("hEtaRecBg"), candidate.eta(), candidate.pt());
 
         registry.fill(HIST("hDeclengthRecBg"), candidate.decayLength(), candidate.pt());
-        registry.fill(HIST("hMassRecBg"), hfHelper.invMassXToJpsiPiPi(candidate), candidate.pt());
+        registry.fill(HIST("hMassRecBg"), HfHelper::invMassXToJpsiPiPi(candidate), candidate.pt());
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0Prong2RecBg"), candidate.impactParameter2(), candidate.pt());
@@ -205,8 +201,8 @@ struct HfTaskXMc {
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1(), candidate.pt());
         registry.fill(HIST("hPtProng2RecBg"), candidate.ptProng2(), candidate.pt());
         registry.fill(HIST("hChi2PCABg"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtBg"), hfHelper.ctX(candidate), candidate.pt());
-        registry.fill(HIST("hYBg"), hfHelper.yX(candidate), candidate.pt());
+        registry.fill(HIST("hCtBg"), HfHelper::ctX(candidate), candidate.pt());
+        registry.fill(HIST("hYBg"), HfHelper::yX(candidate), candidate.pt());
       }
     } // rec
     // MC gen.
@@ -230,8 +226,8 @@ struct HfTaskXMc {
         registry.fill(HIST("hPtGenProng2"), ptProngs[2], particle.pt());
       }
     } // gen
-  }   // process
-};    // struct
+  } // process
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

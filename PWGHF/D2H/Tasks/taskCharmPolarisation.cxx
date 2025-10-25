@@ -213,7 +213,6 @@ struct HfTaskCharmPolarisation {
   /// Application of rapidity cut for reconstructed candidates
   Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   EventPlaneHelper epHelper;
 
@@ -1680,8 +1679,8 @@ struct HfTaskCharmPolarisation {
             invMassCharmHadForSparse = invMassCharmHad;
           } else {
             /// original candidate (kaon track not rotated)
-            invMassCharmHad = hfHelper.invMassLcToPKPi(candidate);
-            invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
+            invMassCharmHad = HfHelper::invMassLcToPKPi(candidate);
+            invMassCharmHadForSparse = HfHelper::invMassLcToPKPi(candidate);
           }
           if constexpr (WithMl) {
             if (candidate.mlProbLcToPKPi().size() == NScores) {
@@ -1694,14 +1693,14 @@ struct HfTaskCharmPolarisation {
             }
           }
           // invariant mass of the KPi pair
-          invMassKPiLc = hfHelper.invMassKPiPairLcToPKPi(candidate);
-          invMassPKLc = hfHelper.invMassPKPairLcToPKPi(candidate);
-          invMassPPiLc = hfHelper.invMassPPiPairLcToPKPi(candidate);
+          invMassKPiLc = HfHelper::invMassKPiPairLcToPKPi(candidate);
+          invMassPKLc = HfHelper::invMassPKPairLcToPKPi(candidate);
+          invMassPPiLc = HfHelper::invMassPPiPairLcToPKPi(candidate);
 
           // D+ and Ds+ invariant mass values, to put a veto on background sources
-          invMassPiKPi = hfHelper.invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
-          invMassKKPi = hfHelper.invMassDsToKKPi(candidate);      // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
-          invMassPiKK = hfHelper.invMassDsToPiKK(candidate);      // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
+          invMassPiKPi = HfHelper::invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
+          invMassKKPi = HfHelper::invMassDsToKKPi(candidate);      // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
+          invMassPiKK = HfHelper::invMassDsToPiKK(candidate);      // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
 
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
           // reconstructed as piKp
@@ -1714,8 +1713,8 @@ struct HfTaskCharmPolarisation {
             invMassCharmHadForSparse = invMassCharmHad;
           } else {
             /// original candidate (kaon track not rotated)
-            invMassCharmHad = hfHelper.invMassLcToPiKP(candidate);
-            invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
+            invMassCharmHad = HfHelper::invMassLcToPiKP(candidate);
+            invMassCharmHadForSparse = HfHelper::invMassLcToPiKP(candidate);
           }
           if constexpr (WithMl) {
             if (candidate.mlProbLcToPiKP().size() == NScores) {
@@ -1728,14 +1727,14 @@ struct HfTaskCharmPolarisation {
             }
           }
           // invariant mass of the KPi pair
-          invMassKPiLc = hfHelper.invMassKPiPairLcToPiKP(candidate);
-          invMassPKLc = hfHelper.invMassPKPairLcToPiKP(candidate);
-          invMassPPiLc = hfHelper.invMassPPiPairLcToPiKP(candidate);
+          invMassKPiLc = HfHelper::invMassKPiPairLcToPiKP(candidate);
+          invMassPKLc = HfHelper::invMassPKPairLcToPiKP(candidate);
+          invMassPPiLc = HfHelper::invMassPPiPairLcToPiKP(candidate);
 
           // D+ and Ds+ invariant mass values, to put a veto on background sources
-          invMassPiKPi = hfHelper.invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
-          invMassKKPi = hfHelper.invMassDsToKKPi(candidate);      // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
-          invMassPiKK = hfHelper.invMassDsToPiKK(candidate);      // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
+          invMassPiKPi = HfHelper::invMassDplusToPiKPi(candidate); // bkg. from D+ -> K+pi-pi-
+          invMassKKPi = HfHelper::invMassDsToKKPi(candidate);      // bkg. from D+, Ds+ -> K+K-pi+ (1st mass hypothesis)
+          invMassPiKK = HfHelper::invMassDsToPiKK(candidate);      // bkg. from D+, Ds+ -> pi+K-K+ (2nd mass hypothesis)
 
         } else {
           // NB: no need to check cases in which candidate.isSelLcToPKPi() and candidate.isSelLcToPiKP() are both false, because they are rejected already by the Filter

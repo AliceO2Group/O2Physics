@@ -52,10 +52,10 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_LC_FULL(OBJECT, FEATURE, GETTER)
-// where GETTER is a method of hfHelper
+// where GETTER is a method of HfHelper
 #define CHECK_AND_FILL_VEC_LC_HFHELPER(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesLcToK0sP::FEATURE): {  \
-    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));        \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));       \
     break;                                                      \
   }
 
@@ -103,8 +103,6 @@ class HfMlResponseLcToK0sP : public HfMlResponse<TypeOutputScore>
   HfMlResponseLcToK0sP() = default;
   /// Default destructor
   virtual ~HfMlResponseLcToK0sP() = default;
-
-  HfHelper hfHelper;
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the Lc candidate

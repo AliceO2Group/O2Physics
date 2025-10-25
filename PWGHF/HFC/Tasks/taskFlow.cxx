@@ -251,7 +251,6 @@ struct HfTaskFlow {
 
   TF1* fPtDepDCAxy = nullptr;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -897,7 +896,7 @@ struct HfTaskFlow {
       if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
         return false;
       }
-      if (configCandidates.yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > configCandidates.yCandRecoMax) {
+      if (configCandidates.yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > configCandidates.yCandRecoMax) {
         return false;
       }
       return true;
@@ -909,7 +908,7 @@ struct HfTaskFlow {
       if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
         return false;
       }
-      if (configCandidates.yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > configCandidates.yCandRecoMax) {
+      if (configCandidates.yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > configCandidates.yCandRecoMax) {
         return false;
       }
       return true;
@@ -1014,9 +1013,9 @@ struct HfTaskFlow {
         }
         fillingHFcontainer = true;
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // If D0
-          invmass = hfHelper.invMassD0ToPiK(track1);
+          invmass = HfHelper::invMassD0ToPiK(track1);
         } else { // If Lc
-          invmass = hfHelper.invMassLcToPKPi(track1);
+          invmass = HfHelper::invMassLcToPKPi(track1);
         }
       }
 
@@ -1214,9 +1213,9 @@ struct HfTaskFlow {
         }
         fillingHFcontainer = true;
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // If D0
-          invmass = hfHelper.invMassD0ToPiK(track1);
+          invmass = HfHelper::invMassD0ToPiK(track1);
         } else { // If Lc
-          invmass = hfHelper.invMassLcToPKPi(track1);
+          invmass = HfHelper::invMassLcToPKPi(track1);
         }
       }
 
@@ -1377,9 +1376,9 @@ struct HfTaskFlow {
         }
         fillingHFcontainer = true;
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // If D0
-          invmass = hfHelper.invMassD0ToPiK(track1);
+          invmass = HfHelper::invMassD0ToPiK(track1);
         } else { // If Lc
-          invmass = hfHelper.invMassLcToPKPi(track1);
+          invmass = HfHelper::invMassLcToPKPi(track1);
         }
       }
 

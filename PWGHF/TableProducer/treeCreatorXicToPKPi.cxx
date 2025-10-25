@@ -234,8 +234,6 @@ struct HfTreeCreatorXicToPKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of   background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
-
   using CandXicData = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi>>;
   using CandXicMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>>;
   using CandXicMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
@@ -287,10 +285,10 @@ struct HfTreeCreatorXicToPKPi {
 
     if constexpr (MassHypo == 0) { // Xic->PKPi
       selStatusPiKP *= -1;
-      invMassXic = hfHelper.invMassXicToPKPi(candidate);
+      invMassXic = HfHelper::invMassXicToPKPi(candidate);
     } else if constexpr (MassHypo == 1) { // Xic->PiKP
       selStatusPKPi *= -1;
-      invMassXic = hfHelper.invMassXicToPiKP(candidate);
+      invMassXic = HfHelper::invMassXicToPiKP(candidate);
     }
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -394,11 +392,11 @@ struct HfTreeCreatorXicToPKPi {
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
-        hfHelper.ctXic(candidate),
+        HfHelper::ctXic(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yXic(candidate),
-        hfHelper.eXic(candidate),
+        HfHelper::yXic(candidate),
+        HfHelper::eXic(candidate),
         flagMc,
         originMc,
         candSwapped);

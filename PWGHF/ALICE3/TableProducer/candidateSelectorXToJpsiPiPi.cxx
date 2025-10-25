@@ -16,16 +16,16 @@
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -50,8 +50,6 @@ struct HfCandidateSelectorXToJpsiPiPi {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_x_to_jpsi_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_x_to_jpsi_pi_pi::Cuts[0], hf_cuts_x_to_jpsi_pi_pi::NBinsPt, hf_cuts_x_to_jpsi_pi_pi::NCutVars, hf_cuts_x_to_jpsi_pi_pi::labelsPt, hf_cuts_x_to_jpsi_pi_pi::labelsCutVar}, "Jpsi candidate selection per pT bin"};
-
-  HfHelper hfHelper;
 
   using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
@@ -86,7 +84,7 @@ struct HfCandidateSelectorXToJpsiPiPi {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfHelper.invMassXToJpsiPiPi(hfCandX) - o2::constants::physics::MassX3872) > cuts->get(pTBin, "m")) {
+    if (std::abs(HfHelper::invMassXToJpsiPiPi(hfCandX) - o2::constants::physics::MassX3872) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "X topol selection failed at mass diff check");
       return false; // check that mass difference is within bounds
     }

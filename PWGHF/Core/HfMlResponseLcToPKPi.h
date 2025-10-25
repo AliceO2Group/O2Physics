@@ -53,10 +53,10 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_LCTOPKPI_FULL(OBJECT, FEATURE, GETTER)
-// where GETTER is a method of hfHelper
+// where GETTER is a method of HfHelper
 #define CHECK_AND_FILL_VEC_LCTOPKPI_HFHELPER(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesLcToPKPi::FEATURE): {        \
-    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));              \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));             \
     break;                                                            \
   }
 

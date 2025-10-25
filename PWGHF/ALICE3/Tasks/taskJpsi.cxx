@@ -16,15 +16,15 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -49,8 +49,6 @@ struct HfTaskJpsi {
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
-
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_jpsi::isSelJpsiToEETopol >= selectionFlagJpsi || aod::hf_sel_candidate_jpsi::isSelJpsiToMuMuTopol >= selectionFlagJpsi);
 
@@ -111,14 +109,14 @@ struct HfTaskJpsi {
           }
         }
       }
-      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(HfHelper::yJpsi(candidate)) > yCandMax) {
         continue;
       }
 
       if (modeJpsiToMuMu) {
-        registry.fill(HIST("hMass"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), HfHelper::invMassJpsiToMuMu(candidate), candidate.pt());
       } else {
-        registry.fill(HIST("hMass"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
+        registry.fill(HIST("hMass"), HfHelper::invMassJpsiToEE(candidate), candidate.pt());
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -148,8 +146,6 @@ struct HfTaskJpsiMc {
   Configurable<bool> selectedTofRich{"selectedTofRich", false, "select TOF and RICH for Jpsi"};
   Configurable<bool> selectedMid{"selectedMid", false, "select MID for Jpsi to mu+mu-"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
-
-  HfHelper hfHelper;
 
   using McParticlesHf = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
@@ -234,7 +230,7 @@ struct HfTaskJpsiMc {
         }
       }
 
-      if (yCandMax >= 0. && std::abs(hfHelper.yJpsi(candidate)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(HfHelper::yJpsi(candidate)) > yCandMax) {
         continue;
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
@@ -246,9 +242,9 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hCPARecSig"), candidate.cpa());
         registry.fill(HIST("hEtaRecSig"), candidate.eta());
         if (modeJpsiToMuMu) {
-          registry.fill(HIST("hMassSig"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
+          registry.fill(HIST("hMassSig"), HfHelper::invMassJpsiToMuMu(candidate), candidate.pt());
         } else {
-          registry.fill(HIST("hMassSig"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
+          registry.fill(HIST("hMassSig"), HfHelper::invMassJpsiToEE(candidate), candidate.pt());
         }
         registry.fill(HIST("hDecLengthSig"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthXYSig"), candidate.decayLengthXY(), candidate.pt());
@@ -256,8 +252,8 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hd0Prong1Sig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0d0Sig"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtSig"), hfHelper.ctJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYSig"), hfHelper.yJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hCtSig"), HfHelper::ctJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYSig"), HfHelper::yJpsi(candidate), candidate.pt());
         registry.fill(HIST("hYGenSig"), RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassJPsi), particleMother.pt());
 
       } else {
@@ -265,9 +261,9 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hCPARecBg"), candidate.cpa());
         registry.fill(HIST("hEtaRecBg"), candidate.eta());
         if (modeJpsiToMuMu) {
-          registry.fill(HIST("hMassBg"), hfHelper.invMassJpsiToMuMu(candidate), candidate.pt());
+          registry.fill(HIST("hMassBg"), HfHelper::invMassJpsiToMuMu(candidate), candidate.pt());
         } else {
-          registry.fill(HIST("hMassBg"), hfHelper.invMassJpsiToEE(candidate), candidate.pt());
+          registry.fill(HIST("hMassBg"), HfHelper::invMassJpsiToEE(candidate), candidate.pt());
         }
         registry.fill(HIST("hDecLengthBg"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("hDecLengthxyBg"), candidate.decayLengthXY(), candidate.pt());
@@ -275,8 +271,8 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hd0Prong1Bg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("hd0d0Bg"), candidate.impactParameterProduct(), candidate.pt());
         registry.fill(HIST("hChi2PCABg"), candidate.chi2PCA(), candidate.pt());
-        registry.fill(HIST("hCtBg"), hfHelper.ctJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYBg"), hfHelper.yJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hCtBg"), HfHelper::ctJpsi(candidate), candidate.pt());
+        registry.fill(HIST("hYBg"), HfHelper::yJpsi(candidate), candidate.pt());
       }
     }
     // MC gen.

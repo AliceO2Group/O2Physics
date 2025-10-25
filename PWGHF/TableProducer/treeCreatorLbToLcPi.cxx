@@ -196,7 +196,6 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
-  HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
@@ -266,10 +265,10 @@ struct HfTreeCreatorLbToLcPi {
           candLc.nSigTofPr0(),
           candLc.nSigTofKa1(),
           candLc.nSigTofPi2(),
-          hfHelper.invMassLcToPKPi(candLc),
-          hfHelper.ctLc(candLc),
-          hfHelper.yLc(candLc),
-          hfHelper.eLc(candLc),
+          HfHelper::invMassLcToPKPi(candLc),
+          HfHelper::ctLc(candLc),
+          HfHelper::yLc(candLc),
+          HfHelper::eLc(candLc),
           candLc.eta(),
           candLc.xSecondaryVertex(),
           candLc.ySecondaryVertex(),
@@ -303,7 +302,7 @@ struct HfTreeCreatorLbToLcPi {
           tempConst,
           tempConst);
       };
-      fillTable(candidate.isSelLbToLcPi(), hfHelper.invMassLbToLcPi(candidate), hfHelper.ctLb(candidate), hfHelper.yLb(candidate));
+      fillTable(candidate.isSelLbToLcPi(), HfHelper::invMassLbToLcPi(candidate), HfHelper::ctLb(candidate), HfHelper::yLb(candidate));
     }
   }
 };

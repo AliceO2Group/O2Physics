@@ -95,7 +95,6 @@ struct HfCandidateSelectorBsToDsPi {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
-  HfHelper hfHelper;
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
 
@@ -174,7 +173,7 @@ struct HfCandidateSelectorBsToDsPi {
       }
 
       // topological cuts
-      if (!hfHelper.selectionBsToDsPiTopol(hfCandBs, cuts, binsPt)) {
+      if (!HfHelper::selectionBsToDsPiTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
         if (applyMl) {
           hfMlBsToDsPiCandidate(outputMl);
@@ -198,7 +197,7 @@ struct HfCandidateSelectorBsToDsPi {
       if (usePid) {
         auto trackPi = hfCandBs.prong1_as<TracksPidWithSel>();
         int const pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-        if (!hfHelper.selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyMl) {
             hfMlBsToDsPiCandidate(outputMl);

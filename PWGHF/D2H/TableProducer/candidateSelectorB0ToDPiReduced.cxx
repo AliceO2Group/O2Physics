@@ -101,7 +101,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
-  HfHelper hfHelper;
 
   using TracksBachPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using TracksSoftPions = soa::Join<aod::HfRedSoftPiBases, aod::HfRedSoftPiCov, aod::HfRedSoftPiPid>;
@@ -230,7 +229,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
 
       // topological cuts
-      if (!hfHelper.selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
+      if (!HfHelper::selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         if (applyB0Ml) {
           hfMlB0ToDPiCandidate(outputMlNotPreselected);
@@ -240,7 +239,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
 
       if constexpr (WithDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
+        if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
             hfMlB0ToDPiCandidate(outputMlNotPreselected);
@@ -263,7 +262,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackBachPi = selectorPion.statusTpcAndTof(trackBachPi);
         }
-        if (!hfHelper.selectionB0ToDPiPid(pidTrackBachPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionB0ToDPiPid(pidTrackBachPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
