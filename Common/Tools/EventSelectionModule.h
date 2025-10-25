@@ -763,7 +763,7 @@ class EventSelectionModule
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
       bcsPattern = grplhcif->getBunchFilling().getFilledBCs();
       if (runLightIons >= 0) {
-        for (unsigned long i = 0; i < bcsPattern.size(); i++)
+        for (uint32_t i = 0; i < bcsPattern.size(); i++)
           LOGP(debug, "bcsPattern: i={} bc={}", i, bcsPattern.at(i));
       }
 
@@ -775,7 +775,7 @@ class EventSelectionModule
 
       // special treatment of light ion runs
       if (lastRun >= 564356 && lastRun <= 564472) {
-        for (unsigned long i = 0; i < sizeof(runListLightIons) / sizeof(*runListLightIons); i++) {
+        for (uint32_t i = 0; i < sizeof(runListLightIons) / sizeof(*runListLightIons); i++) {
           if (runListLightIons[i] == lastRun) {
             runLightIons = lastRun;
             // extract parameterization for diff of vZ by FT0 vs by tracks
@@ -1012,7 +1012,7 @@ class EventSelectionModule
       if (runLightIons >= 0) {
         foundGlobalBC = globalBC;
         // find closest nominal bc in pattern
-        for (unsigned long i = 0; i < bcsPattern.size(); i++) {
+        for (uint32_t i = 0; i < bcsPattern.size(); i++) {
           int32_t localBC = globalBC % nBCsPerOrbit;
           int32_t bcFromPattern = bcsPattern.at(i);
           int64_t bcDiff = bcFromPattern - localBC;
@@ -1049,7 +1049,7 @@ class EventSelectionModule
           if (bestGlobalBC > 0) {
             foundGlobalBC = bestGlobalBC;
             // find closest nominal bc in pattern
-            for (unsigned long j = 0; j < bcsPattern.size(); j++) {
+            for (uint32_t j = 0; j < bcsPattern.size(); j++) {
               int32_t bcFromPatternBest = bcsPattern.at(j);
               int64_t bcDiff = bcFromPatternBest - (bestGlobalBC % nBCsPerOrbit);
               if (std::abs(bcDiff) <= 20) {
@@ -1108,9 +1108,9 @@ class EventSelectionModule
     }
     // alternative matching: looking for collisions with the same nominal BC
     if (runLightIons >= 0) {
-      for (unsigned long iCol = 0; iCol < vBCinPatternPerColl.size(); iCol++) {
+      for (uint32_t iCol = 0; iCol < vBCinPatternPerColl.size(); iCol++) {
         int64_t foundNominalBC = vBCinPatternPerColl[iCol];
-        for (unsigned long jCol = 0; jCol < vBCinPatternPerColl.size(); jCol++) {
+        for (uint32_t jCol = 0; jCol < vBCinPatternPerColl.size(); jCol++) {
           int64_t foundNominalBC2 = vBCinPatternPerColl[jCol];
           if (foundNominalBC2 == foundNominalBC) {
             vCollisionsPileupPerColl[iCol]++;
