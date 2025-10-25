@@ -162,9 +162,12 @@ class TwoTrackResonanceHistManager
   template <typename T1, typename T2>
   void fill(T1 const& resonance, T2 const& tracks)
   {
-    auto posDaughter = resonance.template posDau_as<T2>();
+    // this used to work, still under investigation
+    // auto posDaughter = resonance.template posDau_as<T2>();
+    // auto negDaughter = resonance.template negDau_as<T2>();
+    auto posDaughter = tracks.rawIteratorAt(resonance.posDauId() - tracks.offset());
     mPosDauManager.fill(posDaughter, tracks);
-    auto negDaughter = resonance.template negDau_as<T2>();
+    auto negDaughter = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
     mNegDauManager.fill(negDaughter, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {

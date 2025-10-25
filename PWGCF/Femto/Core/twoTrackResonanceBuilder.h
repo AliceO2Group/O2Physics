@@ -464,8 +464,8 @@ template <modes::TwoTrackResonance resoType>
 class TwoTrackResonanceBuilder
 {
  public:
-  TwoTrackResonanceBuilder() {}
-  virtual ~TwoTrackResonanceBuilder() = default;
+  TwoTrackResonanceBuilder() = default;
+  ~TwoTrackResonanceBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
   void init(T1& config, T2& filter, T3& daughterFilter, T4& table, T5 initContext)

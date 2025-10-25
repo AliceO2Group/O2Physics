@@ -71,7 +71,7 @@ struct FemtoPairTrackCascade {
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::collisionId;
+  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
 
   // setup for daughters/bachelor
   trackhistmanager::ConfCascadePosDauBinning confPosDauBinning;
@@ -82,13 +82,13 @@ struct FemtoPairTrackCascade {
   cascadebuilder::ConfXiSelection xiSelection;
   cascadehistmanager::ConfXiBinning confXiBinning;
   Partition<Xis> xiPartition = MAKE_CASCADE_PARTITION(xiSelection);
-  Preslice<Xis> perColXis = aod::femtobase::stored::collisionId;
+  Preslice<Xis> perColXis = aod::femtobase::stored::fColId;
 
   // setup omegas
   cascadebuilder::ConfOmegaSelection omegaSelection;
   cascadehistmanager::ConfOmegaBinning confOmegaBinning;
   Partition<Omegas> omegaPartition = MAKE_CASCADE_PARTITION(omegaSelection);
-  Preslice<Omegas> perColOmegas = aod::femtobase::stored::collisionId;
+  Preslice<Omegas> perColOmegas = aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
