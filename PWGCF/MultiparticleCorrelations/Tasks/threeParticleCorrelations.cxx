@@ -41,11 +41,12 @@ struct ThreeParticleCorrelations {
 
   // Analysis parameters
   float centMin = 0.0, centMax = 90.0;
-  float zvtxMax = 10.0;
   float v0PtMin = 0.6, v0PtMax = 12.0;
   float v0EtaMax = 0.72;
   float trackPtMin = 0.2, trackPtMax = 3.0;
   float trackEtaMax = 0.8;
+
+  Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
 
   // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
@@ -78,13 +79,13 @@ struct ThreeParticleCorrelations {
   HistogramRegistry rQARegistry{"QARegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Collision & Event filters
-  Filter collCent = aod::cent::centFT0C > centMin&& aod::cent::centFT0C < centMax;
+  Filter collCent = aod::cent::centFT0C > centMin && aod::cent::centFT0C < centMax;
   Filter collZvtx = nabs(aod::collision::posZ) < zvtxMax;
   Filter mcCollZvtx = nabs(aod::mccollision::posZ) < zvtxMax;
   Filter evSelect = aod::evsel::sel8 == true;
 
   // Track filters
-  Filter trackPt = aod::track::pt > trackPtMin&& aod::track::pt < trackPtMax;
+  Filter trackPt = aod::track::pt > trackPtMin && aod::track::pt < trackPtMax;
   Filter trackEta = nabs(aod::track::eta) < trackEtaMax;
   Filter globalTracks = requireGlobalTrackInFilter();
 
@@ -112,8 +113,8 @@ struct ThreeParticleCorrelations {
                                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
   // Partitions
-  Partition<MyFilteredMCParticles> mcTracks = aod::mcparticle::pt > trackPtMin&& aod::mcparticle::pt < trackPtMax;
-  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0PtMin&& aod::mcparticle::pt < v0PtMax&& nabs(aod::mcparticle::eta) < v0EtaMax;
+  Partition<MyFilteredMCParticles> mcTracks = aod::mcparticle::pt > trackPtMin && aod::mcparticle::pt < trackPtMax;
+  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0PtMin && aod::mcparticle::pt < v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax;
   Partition<MyFilteredMCParticles> mcTriggers = ((aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) &&
                                                  aod::mcparticle::pt > v0PtMin && aod::mcparticle::pt < v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax);
   Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > pionPtMin && aod::mcparticle::pt < pionPtMax) ||
@@ -126,7 +127,7 @@ struct ThreeParticleCorrelations {
   PresliceUnsorted<aod::McCollisionLabels> perMCCol = aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis confCentBins{"confCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "ME Centrality binning"};
-  ConfigurableAxis confZvtxBins{"confZvtxBins", {VARIABLE_WIDTH, -10.0f, -8.0f, -6.0f, -4.0f, -2.0, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f}, "ME Zvtx binning"};
+  ConfigurableAxis confZvtxBins{"confZvtxBins", {VARIABLE_WIDTH, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f}, "ME Zvtx binning"};
   using BinningType = ColumnBinningPolicy<aod::cent::CentFT0C, aod::collision::PosZ>;
   using BinningTypeMC = ColumnBinningPolicy<aod::mccollisionprop::BestCollisionCentFT0C, aod::mccollision::PosZ>;
 
