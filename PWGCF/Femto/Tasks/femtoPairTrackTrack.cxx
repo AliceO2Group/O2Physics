@@ -16,17 +16,23 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <string>

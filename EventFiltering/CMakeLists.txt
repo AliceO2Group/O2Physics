@@ -39,17 +39,17 @@ o2physics_add_header_only_library(HFFilterHelpers
 
 o2physics_add_dpl_workflow(hf-filter
     SOURCES PWGHF/HFFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::HFFilterHelpers O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-charm-hadron-signals
     SOURCES PWGHF/HFFilterCharmHadronSignals.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::HFFilterHelpers
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
     SOURCES PWGHF/HFFilterPrepareMLSamples.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::HFFilterHelpers O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-filter

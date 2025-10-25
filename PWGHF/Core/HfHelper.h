@@ -410,6 +410,20 @@ class HfHelper
     return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
   }
 
+  // Cd± → De± K∓ π±
+
+  template <typename T>
+  auto invMassCdToDeKPi(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  auto invMassCdToPiKDe(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassDeuteron});
+  }
+
   // Ξc± → p± K∓ π±
 
   template <typename T>

@@ -21,7 +21,7 @@
 class JFFlucAnalysisO2Hist : public JFFlucAnalysis
 {
  public:
-  JFFlucAnalysisO2Hist(o2::framework::HistogramRegistry&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, uint16_t, const TString&);
+  JFFlucAnalysisO2Hist(o2::framework::HistogramRegistry&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, o2::framework::AxisSpec&, uint16_t, const TString&);
   ~JFFlucAnalysisO2Hist();
 };
 

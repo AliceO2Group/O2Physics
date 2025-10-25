@@ -44,6 +44,8 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofTinyKa> trackPidTinyKa;
   Produces<aod::PidTpcTofFullPr> trackPidFullPr;
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
+  Produces<aod::PidTpcTofFullDe> trackPidFullDe;
+  Produces<aod::PidTpcTofTinyDe> trackPidTinyDe;
 
   static constexpr float NSigmaToleranceDefault = .1f;
   static constexpr float NSigmaDefault = -999.f + NSigmaToleranceDefault; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -79,6 +81,8 @@ struct HfPidCreator {
     checkTableSwitch(initContext, "PidTpcTofTinyKa", doprocessTinyKa);
     checkTableSwitch(initContext, "PidTpcTofFullPr", doprocessFullPr);
     checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
+    checkTableSwitch(initContext, "PidTpcTofFullDe", doprocessFullDe);
+    checkTableSwitch(initContext, "PidTpcTofTinyDe", doprocessTinyDe);
   }
 
   /// Function to combine TPC and TOF NSigma
@@ -132,6 +136,7 @@ struct HfPidCreator {
   PROCESS_PID(Pi)
   PROCESS_PID(Ka)
   PROCESS_PID(Pr)
+  PROCESS_PID(De)
 
 #undef PROCESS_PID
 };
