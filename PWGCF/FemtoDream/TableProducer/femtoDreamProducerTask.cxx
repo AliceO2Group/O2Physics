@@ -77,10 +77,10 @@ using FemtoFullTracks =
 
 namespace softwareTriggers
 {
-static const int nTriggers = 6;
-static const std::vector<std::string> triggerNames{"fPPP", "fPPL", "fPLL", "fLLL", "fPD", "fLD"};
+static const int nTriggers = 11;
+static const std::vector<std::string> triggerNames{"fPPP", "fPPL", "fPLL", "fLLL", "fPD", "fLD", "fDoubleXi", "fDoubleOmega", "fOmegaHighMult", "fTrackedXi", "fTrackedOmega"};
 static const float triggerSwitches[1][nTriggers]{
-  {0, 0, 0, 0, 0, 0}};
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 } // namespace softwareTriggers
 
 template <typename T>
