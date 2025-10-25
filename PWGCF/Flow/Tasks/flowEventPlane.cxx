@@ -112,10 +112,12 @@ struct FlowEventPlane {
   // Global objects
   float cent = 0., mult = 0.;
   float posX = 0., posY = 0., posZ = 0.;
+
   std::array<float, 4> znaXWeigthEnergy = {1., 1., 1., 1.};
   std::array<float, 4> znaYWeigthEnergy = {1., 1., 1., 1.};
   std::array<float, 4> zncXWeigthEnergy = {1., 1., 1., 1.};
   std::array<float, 4> zncYWeigthEnergy = {1., 1., 1., 1.};
+
   std::vector<std::vector<std::string>> vCoarseCorrHistNames = {
     {"hXZNAVsCentVxVyVz"},
     {"hYZNAVsCentVxVyVz"},
@@ -126,7 +128,17 @@ struct FlowEventPlane {
     {"hYZNAVsCent", "hYZNAVsVx", "hYZNAVsVy", "hYZNAVsVz"},
     {"hXZNCVsCent", "hXZNCVsVx", "hXZNCVsVy", "hXZNCVsVz"},
     {"hYZNCVsCent", "hYZNCVsVx", "hYZNCVsVy", "hYZNCVsVz"}};
+
+  // Map for Correction Type and Histogram Names
   std::map<CorrectionType, std::vector<std::vector<std::string>>> corrTypeHistNameMap = {{kFineCorr, vFineCorrHistNames}, {kCoarseCorr, vCoarseCorrHistNames}};
+
+  // Structure to hold CCDB objects
+  struct CcdbObjects {
+    TList* ccdbList;
+    TObject* obj;
+    TProfile* hp;
+    THnSparseF* hn;
+  } ccdbObjects;
 
   void init(InitContext const&)
   {
@@ -181,14 +193,14 @@ struct FlowEventPlane {
     histos.add("QA/hZNCSignalSector2", "ZNC Signal Sector 2", kTH1F, {axisZDCEnergy});
     histos.add("QA/hZNCSignalSector3", "ZNC Signal Sector 3", kTH1F, {axisZDCEnergy});
     histos.add("QA/hZNCSignalSector4", "ZNC Signal Sector 4", kTH1F, {axisZDCEnergy});
-    histos.add("CorrHist/hWtXZNA", "X^{ZNA}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hWtYZNA", "Y^{ZNA}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hWtXZNC", "X^{ZNC}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hWtYZNC", "Y^{ZNC}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hUWtXZNA", "X^{ZNA}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hUWtYZNA", "Y^{ZNA}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hUWtXZNC", "X^{ZNC}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
-    histos.add("CorrHist/hUWtYZNC", "Y^{ZNC}_{1}", kTHnF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hWtXZNA", "X^{ZNA}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hWtYZNA", "Y^{ZNA}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hWtXZNC", "X^{ZNC}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hWtYZNC", "Y^{ZNC}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hUWtXZNA", "X^{ZNA}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hUWtYZNA", "Y^{ZNA}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hUWtXZNC", "X^{ZNC}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
+    histos.add("CorrHist/hUWtYZNC", "Y^{ZNC}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
     histos.add("CorrHist/hXZNAVsCent", "X^{ZNA}_{1} Vs Cent", kTProfile, {axisFineCent});
     histos.add("CorrHist/hXZNAVsVx", "X^{ZNA}_{1} Vs V_{x}", kTProfile, {axisFineVx});
     histos.add("CorrHist/hXZNAVsVy", "X^{ZNA}_{1} Vs V_{y}", kTProfile, {axisFineVy});
@@ -214,6 +226,8 @@ struct FlowEventPlane {
     histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
     histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
     histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
+    histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
+    histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
     histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
     histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
     histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
@@ -303,16 +317,18 @@ struct FlowEventPlane {
     for (auto const& x : vHistNames) {
       int cntry = 0;
       for (auto const& y : x) {
-        TObject* obj = reinterpret_cast<TObject*>(ccdbObject->FindObject(y.c_str()));
+        ccdbObjects.obj = reinterpret_cast<TObject*>(ccdbObject->FindObject(y.c_str()));
         if (corrType == kFineCorr) {
-          TProfile* hp = reinterpret_cast<TProfile*>(obj->Clone());
-          vAvgOutput[cntrx] += hp->GetBinContent(hp->GetXaxis()->FindBin(vCollParam[cntry]));
+          ccdbObjects.hp = reinterpret_cast<TProfile*>(ccdbObjects.obj->Clone());
+          vAvgOutput[cntrx] += ccdbObjects.hp->GetBinContent(ccdbObjects.hp->GetXaxis()->FindBin(vCollParam[cntry]));
+          delete ccdbObjects.hp;
         } else {
-          THnF* hn = reinterpret_cast<THnF*>(obj->Clone());
+          ccdbObjects.hn = reinterpret_cast<THnSparseF*>(ccdbObjects.obj->Clone());
           for (int i = 0; i < static_cast<int>(vHistNames.size()); ++i) {
-            binarray[i] = hn->GetAxis(i)->FindBin(vCollParam[i]);
+            binarray[i] = ccdbObjects.hn->GetAxis(i)->FindBin(vCollParam[i]);
           }
-          vAvgOutput[cntrx] += hn->GetBinContent(hn->GetBin(binarray));
+          vAvgOutput[cntrx] += ccdbObjects.hn->GetBinContent(ccdbObjects.hn->GetBin(binarray));
+          delete ccdbObjects.hn;
         }
         ++cntry;
       }
@@ -345,16 +361,16 @@ struct FlowEventPlane {
       ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(runNumber);
 
       // Get object from CCDB
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+      ccdbObjects.ccdbList = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
 
       // Check CCDB Object
-      if (!ccdbObj) {
+      if (!ccdbObjects.ccdbList) {
         LOGF(warning, "CCDB OBJECT NOT FOUND");
         return;
       }
 
       // Get averages
-      std::vector<float> vAvg = getAvgCorrFactors(ccdbObj, corrType, inputParam);
+      std::vector<float> vAvg = getAvgCorrFactors(ccdbObjects.ccdbList, corrType, inputParam);
 
       // Apply correction
       outputParam[kXa] -= vAvg[kXa];
@@ -514,6 +530,8 @@ struct FlowEventPlane {
       v1c = ux * vSP[kXc] + uy * vSP[kYc];
 
       // Fill histogram
+      histos.fill(HIST("DF/hAQu"), cent, v1a, track.eta());
+      histos.fill(HIST("DF/hCQu"), cent, v1c, track.eta());
       if (track.sign() > 0) {
         histos.fill(HIST("DF/hAQuPos"), cent, v1a, track.eta());
         histos.fill(HIST("DF/hCQuPos"), cent, v1c, track.eta());
