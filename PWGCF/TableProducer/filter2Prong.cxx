@@ -58,29 +58,68 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(([p] < 0.5 || [hasTOF] <= 0.0) && abs([sTPC]) < 3.0) || ([p] >= 0.5 && abs([sTPC]) < 2.5 && abs([sTOF]) < 3.0)", "pT dependent daughter track sigma pass condition. Parameters: [p] momentum, [sTPC] sigma TPC, [sTOF] sigma TOF, [hasTOF] has TOF.")
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(storeLooseTight, bool, false, "Store also loose and tight V0 candidates for systematics")
-    O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, std::vector<int>, {60, 70, 80}, "Minimum number of TPC crossed rows for daughter tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(etaTrackMax, std::vector<float>, {0.8, 0.8, 0.8}, "Maximum eta for daughter tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(ptTrackMin, std::vector<float>, {0.1, 0.1, 0.1}, "Minimum pT for daughter tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPr, std::vector<float>, {0.06, 0.07, 0.0.08}, "Maximum DCAxy for daughter tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, std::vector<float>, {0.15, 0.2, 0.25}, "Min V0 pion DCA for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, std::vector<float>, {0.05, 0.10, 0.15}, "Min V0 pion DCA for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(daughPIDCuts, std::vector<float>, {3.0, 4.0, 5.0}, "PID nsigma for V0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massK0Min, std::vector<float>, {0.4, 0.4, 0.4}, "Minimum mass for K0 (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massK0Max, std::vector<float>, {0.6, 0.6, 0.6}, "Maximum mass for K0 (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massLambdaMin, std::vector<float>, {1.07, 1.07, 1.07}, "Minimum mass for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massLambdaMax, std::vector<float>, {1.17, 1.17, 1.17}, "Maximum mass for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMaxLambda, std::vector<float>, {20, 30, 40}, "Maximum decay radius (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMinLambda, std::vector<float>, {1.0, 1.2, 1.4}, "Minimum decay radius (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, std::vector<float>, {1.2, 1.2, 1.2}, "Maximum decay radius (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMinK0s, std::vector<float>, {1.0, 1.2, 1.5}, "Minimum decay radius (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(cosPaMinLambda, std::vector<float>, {0.990, 0.993, 0.995}, "Minimum cosine of pointing angle for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(cosPaMinK0s, std::vector<float>, {0.990, 0.993, 0.995}, "Minimum cosine of pointing angle for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, std::vector<float>, {0.7, 0.8, 0.9}, "Maximum DCA among the V0 daughters (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, std::vector<float>, {0.7, 0.8, 0.9}, "Maximum DCA among the V0 daughters (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, std::vector<float>, {0.2, 0.2, 0.2}, "Minimum Armenteros' qt for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, std::vector<float>, {40, 30, 25}, "Maximum lambda lifetime (in cm) (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, std::vector<float>, {15, 20, 25}, "Maximum K0s lifetime (in cm) (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(storeLooseTight, bool, false, "Store also loose and tight V0 candidates for systematics");
+    O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC");
+    O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity");
+    O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.15, "Minimum transverse momentum");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPr, std::vector<float>,
+                           (std::vector<float>{0.06f, 0.07f, 0.08f}),
+                           "Maximum DCAxy for daughter tracks (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, std::vector<float>,
+                           (std::vector<float>{0.1f, 0.2f, 0.3f}),
+                           "Min V0 pion DCA for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, std::vector<float>,
+                           (std::vector<float>{0.05f, 0.1f, 0.2f}),
+                           "Min V0 pion DCA for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(daughPIDCuts, std::vector<float>,
+                           (std::vector<float>{3.0f, 4.0f, 5.0f}),
+                           "PID nsigma for V0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(massK0Min, std::vector<float>,
+                           (std::vector<float>{0.4f, 0.4f, 0.4f}),
+                           "Minimum mass for K0 (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(massK0Max, std::vector<float>,
+                           (std::vector<float>{0.6f, 0.6f, 0.6f}),
+                           "Maximum mass for K0 (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(massLambdaMin, std::vector<float>,
+                           (std::vector<float>{1.07f, 1.07f, 1.07f}),
+                           "Minimum mass for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(massLambdaMax, std::vector<float>,
+                           (std::vector<float>{1.17f, 1.17f, 1.17f}),
+                           "Maximum mass for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(radiusMaxLambda, std::vector<float>,
+                           (std::vector<float>{20.f, 30.f, 40.f}),
+                           "Maximum decay radius (cm) for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(radiusMinLambda, std::vector<float>,
+                           (std::vector<float>{1.0f, 1.2f, 1.4f}),
+                           "Minimum decay radius (cm) for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, std::vector<float>,
+                           (std::vector<float>{1.0f, 1.2f, 1.4f}),
+                           "Maximum decay radius (cm) for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(radiusMinK0s, std::vector<float>,
+                           (std::vector<float>{0.0f, 0.0f, 0.1f}),
+                           "Minimum decay radius (cm) for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(cosPaMinLambda, std::vector<float>,
+                           (std::vector<float>{0.990f, 0.993f, 0.995f}),
+                           "Minimum cosine of pointing angle for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(cosPaMinK0s, std::vector<float>,
+                           (std::vector<float>{0.990f, 0.993f, 0.995f}),
+                           "Minimum cosine of pointing angle for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, std::vector<float>,
+                           (std::vector<float>{0.7f, 0.8f, 0.9f}),
+                           "Maximum DCA among the V0 daughters (cm) for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, std::vector<float>,
+                           (std::vector<float>{0.7f, 0.8f, 0.9f}),
+                           "Maximum DCA among the V0 daughters (cm) for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, std::vector<float>,
+                           (std::vector<float>{0.2f, 0.2f, 0.2f}),
+                           "Minimum Armenteros' qt for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, std::vector<float>,
+                           (std::vector<float>{40.f, 30.f, 25.f}),
+                           "Maximum lambda lifetime (in cm) (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, std::vector<float>,
+                           (std::vector<float>{40.f, 30.f, 25.f}),
+                           "Maximum K0s lifetime (in cm) (Loose, Default, Tight)");
+
   } grpV0;
 
   struct : ConfigurableGroup {
@@ -323,28 +362,28 @@ struct Filter2Prong {
 
     float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0;
 
-    if (v0.mK0Short() < massK0min[indexCut] || v0.mK0Short() > massK0max[indexCut]) {
+    if (v0.mK0Short() < grpV0.massK0Min.value[indexCut] || v0.mK0Short() > grpV0.massK0Max.value[indexCut]) {
       return false;
     }
-    if ((v0.qtarm() / std::abs(v0.alpha())) < qtArmenterosMinForK0s[indexCut]) {
+    if ((v0.qtarm() / std::abs(v0.alpha())) < grpV0.qtArmenterosMinForK0s.value[indexCut]) {
       return false;
     }
-    if (v0.v0radius() > radiusMaxK0s[indexCut] || v0.v0radius() < radiusMinK0s[indexCut]) {
+    if (v0.v0radius() > grpV0.radiusMaxK0s.value[indexCut] || v0.v0radius() < grpV0.radiusMinK0s.value[indexCut]) {
       return false;
     }
-    if (v0.v0cosPA() < cosPaMinK0s[indexCut]) {
+    if (v0.v0cosPA() < grpV0.cosPaMinK0s.value[indexCut]) {
       return false;
     }
-    if (v0.dcaV0daughters() > dcaV0DaughtersMaxK0s[indexCut]) {
+    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxK0s.value[indexCut]) {
       return false;
     }
-    if (std::abs(CtauK0s) > maxK0sLifeTime[indexCut]) {
+    if (std::abs(CtauK0s) > grpV0.maxK0sLifeTime.value[indexCut]) {
       return false;
     }
-    if (((std::abs(posTrack.tpcNSigmaPi()) > dughPIDCuts[indexCut]) || (std::abs(negTrack.tpcNSigmaPi()) > dughPIDCuts[indexCut]))) {
+    if (((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]))) {
       return false;
     }
-    if ((TMath::Abs(v0.dcapostopv()) < minV0DCAPiK0s[indexCut]) || (TMath::Abs(v0.dcanegtopv()) < minV0DCAPiK0s[indexCut])) {
+    if ((TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiK0s.value[indexCut]) || (TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiK0s.value[indexCut])) {
       return false;
     }
     return true;
@@ -360,32 +399,32 @@ struct Filter2Prong {
 
     float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda;
 
-    if ((v0.mLambda() < massLambdaMin[indexCut] || v0.mLambda() > massLambdaMax[indexCut]) &&
-        (v0.mAntiLambda() < massLambdaMin[indexCut] || v0.mAntiLambda() > massLambdaMax[indexCut])) {
+    if ((v0.mLambda() < grpV0.massLambdaMin.value[indexCut] || v0.mLambda() > grpV0.massLambdaMax.value[indexCut]) &&
+        (v0.mAntiLambda() < grpV0.massLambdaMin.value[indexCut] || v0.mAntiLambda() > grpV0.massLambdaMax.value[indexCut])) {
       return false;
     }
-    if (v0.v0radius() > radiusMaxLambda[indexCut] || v0.v0radius() < radiusMinLambda[indexCut]) {
+    if (v0.v0radius() > grpV0.radiusMaxLambda.value[indexCut] || v0.v0radius() < grpV0.radiusMinLambda.value[indexCut]) {
       return false;
     }
-    if (v0.v0cosPA() < cosPaMinLambda[indexCut]) {
+    if (v0.v0cosPA() < grpV0.cosPaMinLambda.value[indexCut]) {
       return false;
     }
-    if (v0.dcaV0daughters() > dcaV0DaughtersMaxLambda[indexCut]) {
+    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxLambda.value[indexCut]) {
       return false;
     }
-    if (pid == LambdaPid::kLambda && (TMath::Abs(v0.dcapostopv()) < minV0DCAPr[indexCut] || TMath::Abs(v0.dcanegtopv()) < minV0DCAPiLambda[indexCut])) {
+    if (pid == LambdaPid::kLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPr.value[indexCut] || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiLambda.value[indexCut])) {
       return false;
     }
-    if (pid == LambdaPid::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < minV0DCAPiLambda[indexCut] || TMath::Abs(v0.dcanegtopv()) < minV0DCAPr[indexCut])) {
+    if (pid == LambdaPid::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda.value[indexCut] || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr.value[indexCut])) {
       return false;
     }
-    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > daughPIDCuts[indexCut]) || (std::abs(negTrack.tpcNSigmaPi()) > daughPIDCuts[indexCut]))) {
+    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts.value[indexCut]) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]))) {
       return false;
     }
-    if (pid == LambdaPid::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > daughPIDCuts[indexCut]) || (std::abs(negTrack.tpcNSigmaPr()) > daughPIDCuts[indexCut]))) {
+    if (pid == LambdaPid::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts.value[indexCut]))) {
       return false;
     }
-    if (std::abs(CtauLambda) > maxLambdaLifeTime[indexCut]) {
+    if (std::abs(CtauLambda) > grpV0.maxLambdaLifeTime.value[indexCut]) {
       return false;
     }
     return true;
@@ -400,16 +439,16 @@ struct Filter2Prong {
     if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
       return false;
     }
-    if (posTrack.tpcNClsCrossedRows() < grpV0.tpcNClsCrossedRowsTrackMin[indexCut] || negTrack.tpcNClsCrossedRows() < grpV0.tpcNClsCrossedRowsTrackMin[indexCut]) {
+    if (posTrack.tpcNClsCrossedRows() < grpV0.tpcNClsCrossedRowsTrackMin || negTrack.tpcNClsCrossedRows() < grpV0.tpcNClsCrossedRowsTrackMin) {
       return false;
     }
     if (posTrack.tpcCrossedRowsOverFindableCls() < 0.8 || negTrack.tpcCrossedRowsOverFindableCls() < 0.8) {
       return false;
     }
-    if (std::abs(v0.positiveeta()) > grpV0.etaTrackMax[indexCut] || std::abs(v0.negativeeta()) > grpV0.etaTrackMax[indexCut]) {
+    if (std::abs(v0.positiveeta()) > grpV0.etaTrackMax || std::abs(v0.negativeeta()) > grpV0.etaTrackMax) {
       return false;
     }
-    if (v0.positivept() < grpV0.ptTrackMin[indexCut] || v0.negativept() < grpV0.ptTrackMin[indexCut]) {
+    if (v0.positivept() < grpV0.ptTrackMin || v0.negativept() < grpV0.ptTrackMin) {
       return false;
     }
     return true;
@@ -574,7 +613,7 @@ struct Filter2Prong {
                            posTrack.globalIndex(), negTrack.globalIndex(),
                            v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
       }
-      if (storeLooseTight) // store also loose and tight K0s
+      if (grpV0.storeLooseTight) // store also loose and tight K0s
       {
         if (isSelectedV0AsK0s(collision, v0, true, false)) { // candidate is loose K0s
           output2ProngTracks(cfcollisions.begin().globalIndex(),
@@ -603,7 +642,7 @@ struct Filter2Prong {
         output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
                            v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdatoPiP);
       }
-      if (storeLooseTight) { // store also loose and tight Lambdas
+      if (grpV0.storeLooseTight) { // store also loose and tight Lambdas
         bool LambdaLooseTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, true, false);
         bool aLambdaLooseTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0, true, false);
         bool LambdaTightTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, false, true);
@@ -720,15 +759,15 @@ struct Filter2Prong {
       double massV0 = 0.0;
 
       // K0s
-      if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
+      if (isSelectedV0AsK0s(collision, v0, false, false)) { // candidate is K0s
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            posTrack.globalIndex(), negTrack.globalIndex(),
                            v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
       }
 
       // Lambda and Anti-Lambda
-      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0);
-      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0);
+      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, false, false);
+      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0, false, false);
 
       // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
       if (LambdaTag) { // candidate is Lambda
