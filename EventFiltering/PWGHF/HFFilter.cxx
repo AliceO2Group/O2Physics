@@ -636,7 +636,6 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 } else {
                   df2.process(trackParPos, trackParNeg);
-                  df2.propagateTracksToVertex();
                   std::array<float, 3> pVecPosVtx{}, pVecNegVtx{};
                   df2.getTrack(0).getPxPyPzGlo(pVecPosVtx);
                   df2.getTrack(1).getPxPyPzGlo(pVecNegVtx);
@@ -647,7 +646,6 @@ struct HfFilter { // Main struct for HF triggers
                     if (activateQA) {
                       registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex, kBplus);
                     }
-                    dfB.propagateTracksToVertex();
                     const auto& secondaryVertexBtoD0h = dfB.getPCACandidate();
                     std::array<float, 3> pVecThirdVtx{};
                     dfB.getTrack(0).getPxPyPzGlo(pVec2ProngVtx);
@@ -733,7 +731,6 @@ struct HfFilter { // Main struct for HF triggers
                         }
                       } else {
                         df2.process(trackParPos, trackParNeg);
-                        df2.propagateTracksToVertex();
                         std::array<float, 3> pVecPosVtx{}, pVecNegVtx{};
                         df2.getTrack(0).getPxPyPzGlo(pVecPosVtx);
                         df2.getTrack(1).getPxPyPzGlo(pVecNegVtx);
@@ -744,7 +741,6 @@ struct HfFilter { // Main struct for HF triggers
                           if (activateQA) {
                             registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex, kB0toDStar);
                           }
-                          dfBtoDstar.propagateTracksToVertex();
                           const auto& secondaryVertexBzero = dfBtoDstar.getPCACandidate();
                           std::array<float, 3> pVecThirdVtx{}, pVecFourthVtx{};
                           dfBtoDstar.getTrack(0).getPxPyPzGlo(pVec2ProngVtx);
@@ -799,7 +795,6 @@ struct HfFilter { // Main struct for HF triggers
             // 3-prong vertices
             if (!keepEvent[kBtoJPsiKa] || !keepEvent[kBtoJPsiPi]) {
               if (df3.process(trackParPos, trackParNeg, trackParThird) != 0) {
-                df3.propagateTracksToVertex();
                 const auto& secondaryVertexBto3tracks = df3.getPCACandidate();
                 df3.getTrack(0).getPxPyPzGlo(pVecPosVtx);
                 df3.getTrack(1).getPxPyPzGlo(pVecNegVtx);
@@ -834,7 +829,6 @@ struct HfFilter { // Main struct for HF triggers
                   continue;
                 }
                 if (df4.process(trackParPos, trackParNeg, trackParThird, trackParFourth) != 0) {
-                  df4.propagateTracksToVertex();
                   const auto& secondaryVertexBto4tracks = df4.getPCACandidate();
                   df4.getTrack(0).getPxPyPzGlo(pVecPosVtx);
                   df4.getTrack(1).getPxPyPzGlo(pVecNegVtx);
@@ -1363,7 +1357,6 @@ struct HfFilter { // Main struct for HF triggers
                     }
                   } else {
                     df3.process(trackParFirst, trackParSecond, trackParThird);
-                    df3.propagateTracksToVertex();
                     std::array<float, 3> pVecFirstVtx{}, pVecSecondVtx{}, pVecThirdVtx{};
                     df3.getTrack(0).getPxPyPzGlo(pVecFirstVtx);
                     df3.getTrack(1).getPxPyPzGlo(pVecSecondVtx);
@@ -1375,7 +1368,6 @@ struct HfFilter { // Main struct for HF triggers
                       if (activateQA) {
                         registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex, iHypo + 3);
                       }
-                      dfB.propagateTracksToVertex();
                       const auto& secondaryVertexB = dfB.getPCACandidate();
                       std::array<float, 3> pVecFourtVtx{};
                       dfB.getTrack(0).getPxPyPzGlo(pVec3ProngVtx);
