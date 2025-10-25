@@ -69,7 +69,7 @@ struct AntiNucleiTask {
     ConfigurableAxis phiAxis{"phiAxis", {70, 0.f, 7.f}, "#phi"};
     ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Primary Vertex z (cm)"};
     ConfigurableAxis nSigmaAxis{"nSigmaAxis", {50, -5.f, 5.f}, "N_{#sigma}"};
-    ConfigurableAxis ptAxis{"ptAxis", {100, -5.0f, 5.0f}, "p_{T} (GeV/c)"};
+    ConfigurableAxis ptAxis{"ptAxis", {200, -10.0f, 10.0f}, "p_{T} (GeV/c)"};
     ConfigurableAxis centAxis{"centAxis", {100, 0, 100.0f}, "Centrality"};
     ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
     ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
