@@ -2068,12 +2068,12 @@ struct nucleiInJets {
       // require mc getProcess to get Decay and Material secondaries
       int particleOriginType = 0;
       auto isMcPrimary = false;
-      auto isMcTransport = false; // auto isMcSecondaryFromMaterial = false; auto isMcSecondaryFromWeakDecay = false;
+      // auto isMcTransport = false; // auto isMcSecondaryFromMaterial = false; auto isMcSecondaryFromWeakDecay = false;
       if (mcTrack.isPhysicalPrimary()) {
         isMcPrimary = true;
         particleOriginType = 1;
       } else if (mcTrack.getGenStatusCode() == -1) {
-        isMcTransport = true;
+        // isMcTransport = true;
         particleOriginType = 2;
       }
 
@@ -2094,7 +2094,7 @@ struct nucleiInJets {
       auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
       auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
 
-      if (rapidity > cfgtrkMaxRap)
+      if (std::abs(rapidity) > cfgtrkMaxRap)
         continue;
       // Proton
       if (std::abs(mcTrack.pdgCode()) == 2212) { // Proton
