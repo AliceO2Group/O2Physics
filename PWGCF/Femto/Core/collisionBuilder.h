@@ -514,7 +514,7 @@ class CollisionBuilderDerivedToDerived
                                         col.mult(),
                                         col.cent(),
                                         col.magField());
-    newCollisionTable.producedCollisionMask(col.collisionMask());
+    newCollisionTable.producedCollisionMask(col.mask());
   }
 };
 

@@ -243,13 +243,17 @@ class ClosePairRejectionV0V0
     mCtrNeg.setMagField(magField);
   }
   template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& v01, T2 const& v02, T3 const& /*tracks*/)
+  void setPair(T1 const& v01, T2 const& v02, T3 const& tracks)
   {
-    auto posDau1 = v01.template posDau_as<T3>();
-    auto negDau1 = v01.template posDau_as<T3>();
+    // auto posDau1 = v01.template posDau_as<T3>();
+    // auto negDau1 = v01.template posDau_as<T3>();
+    auto posDau1 = tracks.rawIteratorAt(v01.posDauId() - tracks.offset());
+    auto negDau1 = tracks.rawIteratorAt(v01.negDauId() - tracks.offset());
 
-    auto posDau2 = v02.template posDau_as<T3>();
-    auto negDau2 = v02.template posDau_as<T3>();
+    // auto posDau2 = v02.template posDau_as<T3>();
+    // auto negDau2 = v02.template posDau_as<T3>();
+    auto posDau2 = tracks.rawIteratorAt(v02.posDauId() - tracks.offset());
+    auto negDau2 = tracks.rawIteratorAt(v02.negDauId() - tracks.offset());
 
     mCtrPos.compute(posDau1, posDau2);
     mCtrNeg.compute(negDau1, negDau2);
@@ -287,13 +291,15 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
     mCtr.setMagField(magField);
   }
   template <typename T1, typename T2, typename T3>
-  void setPair(const T1& track, const T2& v0, const T3 /*trackTable*/)
+  void setPair(const T1& track, const T2& v0, const T3 trackTable)
   {
     if (track.signedPt() > 0) {
-      auto daughter = v0.template posDau_as<T3>();
+      // auto daughter = v0.template posDau_as<T3>();
+      auto daughter = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
       mCtr.compute(track, daughter);
     } else {
-      auto daughter = v0.template negDau_as<T3>();
+      // auto daughter = v0.template negDau_as<T3>();
+      auto daughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
       mCtr.compute(track, daughter);
     }
   }
@@ -328,9 +334,10 @@ class ClosePairRejectionTrackCascade
     mCtr.setMagField(magField);
   }
   template <typename T1, typename T2, typename T3>
-  void setPair(const T1& track, const T2& cascade, const T3 /*trackTable*/)
+  void setPair(const T1& track, const T2& cascade, const T3 trackTable)
   {
-    auto bachelor = cascade.template posDau_as<T3>();
+    // auto bachelor = cascade.template posDau_as<T3>();
+    auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
     mCtr.compute(track, bachelor);
   }
 
@@ -365,9 +372,10 @@ class ClosePairRejectionTrackKink
   }
 
   template <typename T1, typename T2, typename T3>
-  void setPair(const T1& track, const T2& kink, const T3 /*trackTable*/)
+  void setPair(const T1& track, const T2& kink, const T3 trackTable)
   {
-    auto daughter = kink.template chaDau_as<T3>();
+    // auto daughter = kink.template chaDau_as<T3>();
+    auto daughter = trackTable.rawIteratorAt(kink.chaDauId() - trackTable.offset());
     mCtr.compute(track, daughter);
   }
 

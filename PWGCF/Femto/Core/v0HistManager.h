@@ -259,9 +259,12 @@ class V0HistManager
   template <typename T1, typename T2>
   void fill(T1 const& v0candidate, T2 const& tracks)
   {
-    auto posDaughter = v0candidate.template posDau_as<T2>();
+    // this used to work, still under investigation
+    // auto posDaughter = v0candidate.template posDau_as<T2>();
+    // auto negDaughter = v0candidate.template negDau_as<T2>();
+    auto posDaughter = tracks.rawIteratorAt(v0candidate.posDauId() - tracks.offset());
     mPosDauManager.fill(posDaughter, tracks);
-    auto negDaughter = v0candidate.template negDau_as<T2>();
+    auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
     mNegDauManager.fill(negDaughter, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {

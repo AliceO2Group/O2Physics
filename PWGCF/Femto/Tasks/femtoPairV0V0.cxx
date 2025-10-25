@@ -75,13 +75,13 @@ struct FemtoPairV0V0 {
   v0builder::ConfLambdaSelection1 lambdaSelection;
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
   Partition<Lambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(lambdaSelection);
-  Preslice<Lambdas> perColLambdas = aod::femtobase::stored::collisionId;
+  Preslice<Lambdas> perColLambdas = aod::femtobase::stored::fColId;
 
   // setup k0shorts
   v0builder::ConfK0shortSelection1 k0shortSelection;
   v0histmanager::ConfK0shortBinning1 confK0shortBinning;
   Partition<K0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection);
-  Preslice<K0shorts> perColk0shorts = aod::femtobase::stored::collisionId;
+  Preslice<K0shorts> perColk0shorts = aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
