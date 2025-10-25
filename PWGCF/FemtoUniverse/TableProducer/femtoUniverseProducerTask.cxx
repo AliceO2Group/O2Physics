@@ -479,14 +479,39 @@ struct FemtoUniverseProducerTask {
   }
 
   template <class T>
-  using hasStrangeTOF = decltype(std::declval<T&>().tofNSigmaXiLaPi());
+  using hasStrangeTOFinV0 = decltype(std::declval<T&>().tofNSigmaLaPr());
+
+  /// bitmask to save strangeness TOF for V0 analysis
+  template <typename V0Type>
+  aod::femtouniverseparticle::CutContainerType PIDStrangeTOFBitmaskV0(const V0Type& v0)
+  {
+    aod::femtouniverseparticle::CutContainerType mask = 0u;
+    if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, V0Type>::value) {
+      if (v0.tofNSigmaLaPr() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (1u);
+      if (v0.tofNSigmaLaPi() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (2u);
+      if (v0.tofNSigmaALaPr() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (4u);
+      if (v0.tofNSigmaALaPi() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (8u);
+      if (v0.tofNSigmaK0PiPlus() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (16u);
+      if (v0.tofNSigmaK0PiMinus() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (32u);
+    }
+    return mask;
+  }
+
+  template <class T>
+  using hasStrangeTOFinCasc = decltype(std::declval<T&>().tofNSigmaXiLaPi());
 
   /// bitmask to save strangeness TOF for cascade analysis
   template <typename CascType>
-  aod::femtouniverseparticle::CutContainerType PIDStrangeTOFBitmask(const CascType& casc)
+  aod::femtouniverseparticle::CutContainerType PIDStrangeTOFBitmaskCasc(const CascType& casc)
   {
     aod::femtouniverseparticle::CutContainerType mask = 0u;
-    if constexpr (std::experimental::is_detected<hasStrangeTOF, CascType>::value) {
+    if constexpr (std::experimental::is_detected<hasStrangeTOFinCasc, CascType>::value) {
       if (casc.tofNSigmaXiLaPi() < ConfPIDBitmask.confNsigmaTOFParticleChild)
         mask |= (1u);
       if (casc.tofNSigmaXiLaPr() < ConfPIDBitmask.confNsigmaTOFParticleChild)
@@ -718,18 +743,34 @@ struct FemtoUniverseProducerTask {
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
-      outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
-                       particle.tpcNClsFindable(),
-                       (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
-                       particle.itsNCls(), particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
-                       particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
-                       particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
-                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
-                       particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
-                       particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
-                       -999., -999., -999., -999., -999., -999.);
+      if constexpr (std::experimental::is_detected<hasStrangeTOFinV0, ParticleType>::value) {
+        outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+                         particle.tpcNClsFindable(),
+                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
+                         particle.itsNCls(), particle.itsNClsInnerBarrel(),
+                         particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
+                         particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
+                         particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
+                         particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
+                         particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
+                         particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
+                         particle.tofNSigmaLaPr(), particle.tofNSigmaLaPi(), particle.tofNSigmaALaPr(),
+                         particle.tofNSigmaALaPi(), particle.tofNSigmaK0PiPlus(), particle.tofNSigmaK0PiMinus());
+      } else {
+        outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+                         particle.tpcNClsFindable(),
+                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
+                         particle.itsNCls(), particle.itsNClsInnerBarrel(),
+                         particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
+                         particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
+                         particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
+                         particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
+                         particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
+                         particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
+                         -999., -999., -999., -999., -999., -999.);
+      }
     } else if constexpr (isPhiOrD0) {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
@@ -738,7 +779,7 @@ struct FemtoUniverseProducerTask {
                        -999., -999., -999.,
                        -999.); // QA for phi or D0/D0bar children
     } else if constexpr (isCasc) {
-      if constexpr (std::experimental::is_detected<hasStrangeTOF, ParticleType>::value) {
+      if constexpr (std::experimental::is_detected<hasStrangeTOFinCasc, ParticleType>::value) {
         outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
                          -999., -999., -999., -999., -999., -999., -999., particle.tofNSigmaXiLaPi(),
                          particle.tofNSigmaXiLaPr(), particle.tofNSigmaXiPi(), particle.tofNSigmaOmLaPi(),
@@ -1277,7 +1318,7 @@ struct FemtoUniverseProducerTask {
                   v0.phi(),
                   aod::femtouniverseparticle::ParticleType::kV0,
                   cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kV0),
-                  0,
+                  PIDStrangeTOFBitmaskV0(v0),
                   v0.v0cosPA(),
                   indexChildID,
                   v0.mLambda(),
@@ -1489,7 +1530,7 @@ struct FemtoUniverseProducerTask {
                   casc.phi(),
                   aod::femtouniverseparticle::ParticleType::kCascade,
                   0,
-                  PIDStrangeTOFBitmask(casc),
+                  PIDStrangeTOFBitmaskCasc(casc),
                   0,
                   indexCascChildID,
                   casc.mXi(),
@@ -2311,7 +2352,7 @@ struct FemtoUniverseProducerTask {
   void processTrackV0Cascade(aod::FemtoFullCollision const& col,
                              aod::BCsWithTimestamps const&,
                              soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                             o2::aod::V0Datas const& fullV0s,
+                             soa::Join<o2::aod::V0Datas, o2::aod::V0TOFNSigmas> const& fullV0s,
                              soa::Join<o2::aod::CascDatas, o2::aod::CascTOFNSigmas> const& fullCascades)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
