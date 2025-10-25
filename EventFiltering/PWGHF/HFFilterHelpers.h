@@ -2377,7 +2377,6 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
     }
 
     const auto& vtx = dcaFitter.getPCACandidate();
-    dcaFitter.propagateTracksToVertex();
     const auto& trackCascProp = dcaFitter.getTrack(0);
     const auto& trackBachProp = dcaFitter.getTrack(1);
     std::array<float, 3> momCasc{}, momBach{};
@@ -2456,7 +2455,6 @@ inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::arr
     const auto& vtx = dcaFitter.getPCACandidate();
 
     std::array<float, 3> momCasc{pVecCascade}, momBachFirst{}, momBachSecond{};
-    dcaFitter.propagateTracksToVertex();
     const auto& trackBachFirstProp = dcaFitter.getTrack(0);
     const auto& trackBachSecondProp = dcaFitter.getTrack(1);
     trackBachFirstProp.getPxPyPzGlo(momBachFirst);
@@ -2681,7 +2679,6 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   }
 
   // compute candidate momentum from tracks propagated to decay vertex
-  dcaFitter.propagateTracksToVertex();
   auto& trackPosProp = dcaFitter.getTrack(0);
   auto& trackNegProp = dcaFitter.getTrack(1);
   std::array<float, 3> momPos{}, momNeg{};
@@ -2813,7 +2810,6 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   }
 
   // compute candidate momentum from tracks propagated to decay vertex
-  dcaFitter.propagateTracksToVertex();
   auto& trackV0Prop = dcaFitter.getTrack(0);
   auto& trackBachProp = dcaFitter.getTrack(1);
   std::array<float, 3> momV0{}, momBach{};
