@@ -85,10 +85,6 @@ using GenCollisionsMc = aod::McCollisions;
 using AntiNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 using AntiNucleiTracksMc = soa::Join<AntiNucleiTracks, aod::McTrackLabels>;
 
-// Define preslices to group MC tracks and MC particles by their associated MC collision
-Preslice<AntiNucleiTracksMc> mcTracksPerMcCollision = o2::aod::track::collisionId;
-Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
-
 struct AntinucleiInJets {
 
   // Histogram registries for data, MC, quality control, multiplicity and correlations
@@ -1435,6 +1431,10 @@ struct AntinucleiInJets {
     registryQC.fill(HIST("nJetsSelectedHighPt"), njetsHighPt);
   }
   PROCESS_SWITCH(AntinucleiInJets, processQC, "Process QC", false);
+
+  // Define preslices to group MC tracks and MC particles by their associated MC collision
+  Preslice<AntiNucleiTracksMc> mcTracksPerMcCollision = o2::aod::track::collisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Antinuclei reconstruction efficiency
   void processAntinucleiEfficiency(GenCollisionsMc const& genCollisions, RecCollisionsMc const& recCollisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
