@@ -1986,9 +1986,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
-    if constexpr ((fillMap & CollisionCent) > 0) {
-      // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
-      values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
+    // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
+    values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
     }
   }
 

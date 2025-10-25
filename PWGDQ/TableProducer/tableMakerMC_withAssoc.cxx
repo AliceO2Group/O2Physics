@@ -454,8 +454,7 @@ struct TableMakerMC {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
 
-  template <uint32_t TEventMcFillMap, typename TEventsMC>
-  void skimMCCollisions(TEventsMC const& mcCollisions)
+  void skimMCCollisions(MyEventsMcWithMults const& mcCollisions)
   {
     // skim MC collisions
     // NOTE: So far, all MC collisions are skimmed. In case there will be filtering based on MC collisions,
@@ -465,7 +464,7 @@ struct TableMakerMC {
     // Loop over MC collisions
     for (auto& mcCollision : mcCollisions) {
       // Get MC collision information into the VarManager
-      VarManager::FillEvent<TEventMcFillMap>(mcCollision);
+      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
       // Fill histograms
       fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
       // Create the skimmed table entry for this collision
@@ -474,8 +473,7 @@ struct TableMakerMC {
     }
   }
 
-  template <uint32_t TEventMcFillMap, typename TEventsMC>
-  void skimMCParticles(aod::McParticles const& mcTracks, TEventsMC const&)
+  void skimMCParticles(aod::McParticles const& mcTracks, MyEventsMcWithMults const&)
   {
     // Select MC particles which fulfill at least one of the user specified MC signals
     // In this function we just fill a map with the labels of selected particles, not creating the tables themselves.
@@ -553,7 +551,7 @@ struct TableMakerMC {
         if (fConfigHistOutput.fConfigQA) {
           VarManager::FillTrackMC(mcTracks, mctrack);
           auto mcCollision = mctrack.template mcCollision_as<MyEventsMcWithMults>();
-          VarManager::FillEvent<TEventMcFillMap>(mcCollision);
+          VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
           int j = 0;
           for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
             if (mcflags & (static_cast<uint16_t>(1) << j)) {
@@ -625,7 +623,7 @@ struct TableMakerMC {
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
       if (collision.has_mcCollision()) {
         auto mcCollision = collision.template mcCollision_as<MyEventsMcWithMults>();
-        VarManager::FillEvent<TEventMcFillMap>(mcCollision);
+        VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(mcCollision);
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -1214,11 +1212,11 @@ struct TableMakerMC {
 
     // skim MC Collisions
     eventMC.reserve(mcCollisions.size());
-    skimMCCollisions<TEventMcFillMap>(mcCollisions);
+    skimMCCollisions(mcCollisions);
 
     // select MC particles to be written using the specified MC signals
     // NOTE: tables are not written at this point, only label maps are being created
-    skimMCParticles<TEventMcFillMap>(mcParticles, mcCollisions);
+    skimMCParticles(mcParticles, mcCollisions);
 
     // skim collisions
     event.reserve(collisions.size());
