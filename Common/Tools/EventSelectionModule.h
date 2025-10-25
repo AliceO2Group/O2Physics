@@ -1378,7 +1378,6 @@ class EventSelectionModule
       if (vCanHaveAssocCollsWithinLastDriftTime[colIndex] && colIndexFirstRejectedByTFborderCut >= 0) {
         int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
         int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
-        int bcInTF = (foundGlobalBC - bcSOR) % nBCsPerTF;
         std::map<int64_t, int32_t>::iterator it = mapGlobalBcWithTVX.find(vFoundGlobalBC[colIndexFirstRejectedByTFborderCut]);
         while (it != mapGlobalBcWithTVX.end()) {
           int64_t thisFoundGlobalBC = it->first;
