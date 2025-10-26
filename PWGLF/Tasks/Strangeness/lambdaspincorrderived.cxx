@@ -96,7 +96,8 @@ struct lambdaspincorrderived {
   Configurable<int> rngSeed{"rngSeed", 12345, "Seed for random mixing (reproducible)"};
   std::mt19937 rng{12345};
   // Lambda selection ////////////
-  Configurable<unsigned> harmonic{"harmonic", 1, "Harmonic delta phi"};
+  Configurable<unsigned> harmonic{"harmonic", 1, "Harmonic phi"};
+  Configurable<unsigned> harmonicDphi{"harmonicDphi", 2, "Harmonic delta phi"};
   Configurable<bool> useweight{"useweight", 0, "Use weight"};
   Configurable<bool> usebothweight{"usebothweight", 1, "Use both weight"};
   // Configurable<bool> useNUA{"useNUA", 0, "Use NUA weight"};
@@ -376,7 +377,7 @@ struct lambdaspincorrderived {
     double deta2 = particle2.Eta();
 
     double deta_pair = std::abs(deta1 - deta2);
-    double dphi_pair = std::abs(dphi1 - dphi2);
+    double dphi_pair = RecoDecay::constrainAngle(particle1.Phi() - particle2.Phi(), 0.0F, harmonicDphi);
 
     double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
     double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
