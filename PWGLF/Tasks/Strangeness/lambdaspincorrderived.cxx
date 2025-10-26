@@ -536,7 +536,7 @@ struct lambdaspincorrderived {
         }
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
-        histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F, harmonic)));
+        histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), 0.0F, harmonicDphi));
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
         }
@@ -608,7 +608,7 @@ struct lambdaspincorrderived {
           lambda = ROOT::Math::PtEtaPhiMVector(t3.lambdaPt(), t3.lambdaEta(), t3.lambdaPhi(), t3.lambdaMass());
           proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
-          histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F, harmonic)));
+          histos.fill(HIST("deltaPhiMix"), RecoDecay::constrainAngle(t3.lambdaPhi() - t2.lambdaPhi(), 0.0F, harmonicDphi));
           if (t3.v0Status() == 0 && t2.v0Status() == 0) {
             fillHistograms(0, 0, lambda, lambda2, proton, proton2, 1, 1.0);
           }
@@ -1030,9 +1030,7 @@ struct lambdaspincorrderived {
           auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
 
-          const float dPhi = std::fabs(
-            RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) -
-            RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
+          const float dPhi = std::fabs(RecoDecay::constrainAngle(lambda.Phi() - lambda2.Phi(), 0.0F, harmonicDphi));
           histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
           fillHistograms(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, wBase);
         }
