@@ -276,6 +276,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
     helper.setVtxConfiguration(dfStrangeness3, true); // (DCAFitterN, useAbsDCA)
     dfStrangeness.setMatCorrType(matCorr);
+    dfStrangeness3.setMatCorrType(matCorr);
     helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
     helper.setVtxConfiguration(df3, false);
     helper.setVtxConfiguration(df4, false);
