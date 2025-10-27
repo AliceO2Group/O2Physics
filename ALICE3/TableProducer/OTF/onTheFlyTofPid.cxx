@@ -42,7 +42,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -51,6 +50,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 
 #include <TEfficiency.h>
 #include <THashList.h>
@@ -583,8 +583,25 @@ struct OnTheFlyTofPid {
       static std::array<float, kParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, kParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, kParticles> nSigmaInnerTOF, nSigmaOuterTOF;
-      static constexpr int kParticlePdgs[kParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, o2::constants::physics::kDeuteron, o2::constants::physics::kTriton, o2::constants::physics::kHelium3, o2::constants::physics::kAlpha};
-      float masses[kParticles];
+      static constexpr int kParticlePdgs[kParticles] = {kElectron,
+                                                        kMuonMinus,
+                                                        kPiPlus,
+                                                        kKPlus,
+                                                        kProton,
+                                                        o2::constants::physics::kDeuteron,
+                                                        o2::constants::physics::kTriton,
+                                                        o2::constants::physics::kHelium3,
+                                                        o2::constants::physics::kAlpha};
+      static constexpr float kParticleMasses[kParticles] = {o2::constants::physics::MassElectron,
+                                                            o2::constants::physics::MassMuon,
+                                                            o2::constants::physics::MassPionCharged,
+                                                            o2::constants::physics::MassKaonCharged,
+                                                            o2::constants::physics::MassProton,
+                                                            o2::constants::physics::MassDeuteron,
+                                                            o2::constants::physics::MassTriton,
+                                                            o2::constants::physics::MassHelium3,
+                                                            o2::constants::physics::MassAlpha};
+      static constexpr float kParticleCharges[kParticles] = {1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 2.f, 2.f};
       float momentumHypotheses[kParticles]; // Store momentum hypothesis for each particle
 
       auto truePdgInfo = pdg->GetParticle(mcParticle.pdgCode());
@@ -616,6 +633,7 @@ struct OnTheFlyTofPid {
         }
       }
 
+      // For every mass hypothesis compute the expected time, the delta with respect to it and the nsigma
       for (int ii = 0; ii < kParticles; ii++) {
         expectedTimeInnerTOF[ii] = -100;
         expectedTimeOuterTOF[ii] = -100;
@@ -624,10 +642,8 @@ struct OnTheFlyTofPid {
         nSigmaInnerTOF[ii] = -100;
         nSigmaOuterTOF[ii] = -100;
 
-        auto pdgInfoThis = pdg->GetParticle(kParticlePdgs[ii]);
-        masses[ii] = pdgInfoThis->Mass();
-        momentumHypotheses[ii] = rigidity * (std::abs(pdgInfoThis->Charge()) / 3.0f); // Total momentum for this hypothesis
-        const float v = computeParticleVelocity(momentumHypotheses[ii], masses[ii]);
+        momentumHypotheses[ii] = rigidity * kParticleCharges[ii]; // Total momentum for this hypothesis
+        const float v = computeParticleVelocity(momentumHypotheses[ii], kParticleMasses[ii]);
 
         expectedTimeInnerTOF[ii] = trackLengthInnerTOF / v;
         expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;
@@ -639,25 +655,27 @@ struct OnTheFlyTofPid {
         float innerTotalTimeReso = simConfig.innerTOFTimeReso;
         float outerTotalTimeReso = simConfig.outerTOFTimeReso;
         if (simConfig.flagIncludeTrackTimeRes) {
-          double ptResolution = std::pow(momentumHypotheses[ii] / std::cosh(pseudorapidity), 2) * std::sqrt(trkWithTime.mMomentum.second);
+          const float transverseMomentum = momentumHypotheses[ii] / std::cosh(pseudorapidity);
+          double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(trkWithTime.mMomentum.second);
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
-            ptResolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentumHypotheses[ii] / std::cosh(pseudorapidity));
-            etaResolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentumHypotheses[ii] / std::cosh(pseudorapidity));
+            if (mSmearer.hasTable(kParticlePdgs[ii])) { // Only if the LUT for this particle was loaded
+              ptResolution = mSmearer.getAbsPtRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
+              etaResolution = mSmearer.getAbsEtaRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
+            }
           }
-          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentumHypotheses[ii] / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.magneticField);
-          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentumHypotheses[ii] / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.magneticField);
+          const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.innerTOFRadius, simConfig.magneticField);
+          const float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.outerTOFRadius, simConfig.magneticField);
           innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
           if (plotsConfig.doQAplots) {
-            if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(kParticlePdgs[ii])->PdgCode()) {
+            if (std::fabs(mcParticle.pdgCode()) == kParticlePdgs[ii]) {
               if (trackLengthRecoInnerTOF > 0) {
                 h2dInnerTimeResTrack[ii]->Fill(momentumHypotheses[ii], innerTrackTimeReso);
                 h2dInnerTimeResTotal[ii]->Fill(momentumHypotheses[ii], innerTotalTimeReso);
               }
               if (trackLengthRecoOuterTOF > 0) {
-                const float transverseMomentum = momentumHypotheses[ii] / std::cosh(pseudorapidity);
                 h2dOuterTimeResTrack[ii]->Fill(momentumHypotheses[ii], outerTrackTimeReso);
                 h2dOuterTimeResTotal[ii]->Fill(momentumHypotheses[ii], outerTotalTimeReso);
                 static constexpr int kIdPion = 2;

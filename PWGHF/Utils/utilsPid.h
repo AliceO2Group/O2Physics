@@ -31,6 +31,7 @@ enum HfProngSpecies : uint8_t {
   Pion = 0,
   Kaon,
   Proton,
+  Deuteron,
   NHfProngSpecies
 };
 
@@ -108,8 +109,16 @@ void fillProngPid(TTrack const& track, TCursor& rowPid)
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaPr();
     }
+  } else if constexpr (SpecPid == HfProngSpecies::Deuteron) {
+    // deuteron PID
+    if (track.hasTPC()) {
+      nSigTpc = track.tpcNSigmaDe();
+    }
+    if (track.hasTOF()) {
+      nSigTof = track.tofNSigmaDe();
+    }
   } else {
-    LOG(fatal) << "Unsupported PID. Supported species in HF framework: HfProngSpecies::Pion, HfProngSpecies::Kaon, HfProngSpecies::Proton";
+    LOG(fatal) << "Unsupported PID. Supported species in HF framework: HfProngSpecies::Pion, HfProngSpecies::Kaon, HfProngSpecies::Proton, HfProngSpecies::Deuteron";
   }
 
   // fill candidate prong PID rows

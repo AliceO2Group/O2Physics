@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorOmegaKa0Xic0ToOmegaKa.cxx
-/// \brief OmegaKa0 Xic0 → Omega Ka selection task
+/// \file candidateSelectorOmegac0Xic0ToOmegaKa.cxx
+/// \brief Omegac0 Xic0 → Omega Ka selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
@@ -57,15 +57,15 @@ enum PidInfoStored {
 };
 
 /// Struct for applying OmegaKa -> Omega Ka selection cuts
-struct HfCandidateSelectorToOmegaKa {
+struct HfCandidateSelectorOmegac0Xic0ToOmegaKa {
   Produces<aod::HfSelToOmegaKaKf> hfSelToOmegaKaKf;
   // Produces<aod::HfMlSelOmegaKaToOmegaKa> hfMlSelToOmegaKa;
 
   // LF analysis selections
-  Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min cascade radius"};
+  Configurable<double> radiusCascMin{"radiusCascMin", 0.1, "Min cascade radius"};
   Configurable<double> radiusV0Min{"radiusV0Min", 1.1, "Min V0 radius"};
-  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
-  Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
+  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.95, "Min valueCosPA V0"};
+  Configurable<double> cosPACascMin{"cosPACascMin", 0.95, "Min value CosPA cascade"};
   Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
   Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
   Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
@@ -92,8 +92,8 @@ struct HfCandidateSelectorToOmegaKa {
   Configurable<double> impactParameterXYCascMin{"impactParameterXYCascMin", 0., "Min dcaxy cascade track to PV"};
   Configurable<double> impactParameterXYCascMax{"impactParameterXYCascMax", 10., "Max dcaxy cascade track to PV"};
 
-  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
+  Configurable<double> ptCandMax{"ptCandMax", 12., "Upper bound of candidate pT"};
 
   Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 2.0, "Max DCA charm baryon daughters"};
 
@@ -142,11 +142,6 @@ struct HfCandidateSelectorToOmegaKa {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
-  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality bins"};
-  ConfigurableAxis thnConfigAxisPtKaon{"thnConfigAxisPtKaon", {100, 0, 10}, "PtPion from Omegac0 bins"};
-
   struct : ConfigurableGroup {
     //// KF selection
     std::string prefix = "kfSel";
@@ -179,6 +174,11 @@ struct HfCandidateSelectorToOmegaKa {
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
   using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality bins"};
+  ConfigurableAxis thnConfigAxisPtKaon{"thnConfigAxisPtKaon", {100, 0, 10}, "PtPion from Omegac0 bins"};
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
@@ -248,7 +248,6 @@ struct HfCandidateSelectorToOmegaKa {
     registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
-    registry.add("hSelPtOmegaKa", "hSelPtOmegaKa;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelV0_Casc_OmegaKaldl", "hSelV0_Casc_OmegaKaldl;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelctauOmegaKa", "hSelctauOmegaKa;status;entries", {HistType::kTH1D, {axisSel}});
@@ -265,6 +264,10 @@ struct HfCandidateSelectorToOmegaKa {
   bool selectionTopol(const T1& hfCandOmegaKa)
   {
     auto candpT = hfCandOmegaKa.kfPtOmegaKa();
+    // check that the candidate pT is within the analysis range
+    if (candpT < ptCandMin || candpT > ptCandMax) {
+      return false;
+    }
     auto kaPtFromOmegaKa = hfCandOmegaKa.kfPtKaFromOmegaKa();
     int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
@@ -272,14 +275,7 @@ struct HfCandidateSelectorToOmegaKa {
     }
 
     // check that the candidate pT is within the analysis range
-    if (candpT <= ptCandMin || candpT >= ptCandMax) {
-      registry.fill(HIST("hSelPtOmegaKa"), 0);
-      return false;
-    }
-    registry.fill(HIST("hSelPtOmegaKa"), 1);
-
-    // check that the candidate pT is within the analysis range
-    if (kaPtFromOmegaKa < cuts->get(pTBin, "pT ka from OmegaKa")) {
+    if (kaPtFromOmegaKa < cuts->get(pTBin, "pT Ka from Omegac")) {
       registry.fill(HIST("hSelPtKaFromCharm"), 0);
       return false;
     }
@@ -329,10 +325,13 @@ struct HfCandidateSelectorToOmegaKa {
       } else if (signDecay < 0) {
         registry.fill(HIST("hSelSignDec"), 0); // particle decay
       }
-
       // pt-dependent selection
       if (!selectionTopol(candidate)) {
         resultSelections = false;
+        hfSelToOmegaKaKf(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
+                         trackKaFromCharm.tpcNSigmaKa(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
+                         trackKaFromCharm.tofNSigmaKa(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+        continue;
       }
 
       // eta selection
@@ -714,5 +713,5 @@ struct HfCandidateSelectorToOmegaKa {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorToOmegaKa>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorOmegac0Xic0ToOmegaKa>(cfgc)};
 }

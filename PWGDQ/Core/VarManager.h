@@ -17,9 +17,6 @@
 #ifndef PWGDQ_CORE_VARMANAGER_H_
 #define PWGDQ_CORE_VARMANAGER_H_
 
-#include <Framework/AnalysisDataModel.h>
-#include <Math/Vector4Dfwd.h>
-#include <cstdint>
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
@@ -31,40 +28,43 @@
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/DataTypes.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/SMatrix.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/VectorUtil.h"
-#include "TGeoGlobalMagField.h"
-#include "TH3F.h"
-#include "THn.h"
-#include "TRandom.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/SMatrix.h>
+#include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <Math/Vector4Dfwd.h>
+#include <Math/VectorUtil.h>
+#include <TGeoGlobalMagField.h>
+#include <TH3F.h>
+#include <THn.h>
 #include <TObject.h>
+#include <TRandom.h>
 #include <TString.h>
 
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
 
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <utility>
@@ -282,6 +282,7 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
+    kMCEventCentrFT0C,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -813,6 +814,7 @@ class VarManager : public TObject
     kPairPt,
     kPairPtDau,
     kPairEta,
+    kPairRap,
     kPairPhi,
     kPairPhiv,
     kDeltaEta,
@@ -1655,9 +1657,11 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionCent) > 0 || (fillMap & ReducedEventExtended) > 0) {
-    values[kCentFT0C] = event.centFT0C();
-    values[kCentFT0A] = event.centFT0A();
-    values[kCentFT0M] = event.centFT0M();
+    if constexpr ((fillMap & CollisionMC) == 0) {
+      values[kCentFT0C] = event.centFT0C();
+      values[kCentFT0A] = event.centFT0A();
+      values[kCentFT0M] = event.centFT0M();
+    }
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
@@ -1982,6 +1986,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+    if constexpr ((fillMap & CollisionCent) > 0) {
+      // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
+      values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
+    }
   }
 
   if constexpr ((fillMap & ReducedEventMC) > 0) {
@@ -3740,7 +3748,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
     if constexpr (eventHasVtxCov) {
 
-      std::array<float, 6> covMatrixPCA;
+      std::array<float, 6> covMatrixPCA{};
       // get track impact parameters
       // This modifies track momenta!
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
@@ -4329,6 +4337,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values[VarManager::kMassDau] = mtrack;
     values[VarManager::kDeltaMass] = v123.M() - v12.M();
     values[VarManager::kPairPt] = v123.Pt();
+    values[VarManager::kPairRap] = -v123.Rapidity();
     values[VarManager::kPairEta] = v123.Eta();
     if (fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau]) {
       values[VarManager::kPairMassDau] = v12.M();

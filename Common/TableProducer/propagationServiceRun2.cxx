@@ -91,6 +91,7 @@ struct propagationServiceRun2 {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setURL(ccdburl.value);
+    ccdb->setFatalWhenNull(false);
 
     // task-specific
     strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);

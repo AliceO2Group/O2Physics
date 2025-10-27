@@ -13,19 +13,23 @@
 /// \brief Task for producing particle correlations
 /// \author Joey Staa <joey.staa@fysik.lu.se>
 
-#include <algorithm>
+#include "RecoDecay.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "CCDB/BasicCCDBManager.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "RecoDecay.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TPDGCode.h"
+
+#include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,11 +41,12 @@ struct ThreeParticleCorrelations {
 
   // Analysis parameters
   float centMin = 0.0, centMax = 90.0;
-  float zvtxMax = 10.0;
   float v0PtMin = 0.6, v0PtMax = 12.0;
   float v0EtaMax = 0.72;
   float trackPtMin = 0.2, trackPtMax = 3.0;
   float trackEtaMax = 0.8;
+
+  Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
 
   // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
@@ -122,7 +127,7 @@ struct ThreeParticleCorrelations {
   PresliceUnsorted<aod::McCollisionLabels> perMCCol = aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis confCentBins{"confCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "ME Centrality binning"};
-  ConfigurableAxis confZvtxBins{"confZvtxBins", {VARIABLE_WIDTH, -10.0f, -8.0f, -6.0f, -4.0f, -2.0, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f}, "ME Zvtx binning"};
+  ConfigurableAxis confZvtxBins{"confZvtxBins", {VARIABLE_WIDTH, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f}, "ME Zvtx binning"};
   using BinningType = ColumnBinningPolicy<aod::cent::CentFT0C, aod::collision::PosZ>;
   using BinningTypeMC = ColumnBinningPolicy<aod::mccollisionprop::BestCollisionCentFT0C, aod::mccollision::PosZ>;
 
@@ -161,8 +166,12 @@ struct ThreeParticleCorrelations {
   void init(InitContext const&)
   {
 
+    // Bins of variable width
+    std::vector<double> fineCentBins = {0.0, 2.0, 4.0, 7.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 60.0, 70.0, 80.0, 90.0};
+
     // Histograms axes
     const AxisSpec centralityAxis{confCentBins};
+    const AxisSpec fineCentralityAxis{fineCentBins};
     const AxisSpec zvtxAxis{confZvtxBins};
     const AxisSpec dPhiAxis{36, (-1. / 2) * constants::math::PI, (3. / 2) * constants::math::PI};
     const AxisSpec dEtaAxis{32, -1.52, 1.52};
@@ -187,18 +196,18 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
     rQARegistry.add("hTrackNSharedClusters", "hTrackNSharedClusters", {HistType::kTH1D, {{200, 0, 200}}});
 
-    rQARegistry.add("hPtPion_Uncorrected", "hPtPion_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtKaon_Uncorrected", "hPtKaon_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtProton_Uncorrected", "hPtProton_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtV0_Uncorrected", "hPtV0_Uncorrected", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtPion_Corrected", "hPtPion_Corrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtKaon_Corrected", "hPtKaon_Corrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtProton_Corrected", "hPtProton_Corrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtV0_Corrected", "hPtV0_Corrected", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtPion_MC", "hPtPion_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtKaon_MC", "hPtKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtProton_MC", "hPtProton_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtV0_MC", "hPtV0_MC", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_Uncorrected", "hPtPion_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_Uncorrected", "hPtKaon_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_Uncorrected", "hPtProton_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0_Uncorrected", "hPtV0_Uncorrected", {HistType::kTH3D, {{v0PtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_Corrected", "hPtPion_Corrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_Corrected", "hPtKaon_Corrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_Corrected", "hPtProton_Corrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0_Corrected", "hPtV0_Corrected", {HistType::kTH3D, {{v0PtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_MC", "hPtPion_MC", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_MC", "hPtKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_MC", "hPtProton_MC", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0_MC", "hPtV0_MC", {HistType::kTH3D, {{v0PtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
 
     rQARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{120, -3.0, 3.0}, {180, 20, 200}}});
     rQARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{120, -3.0, 3.0}, {180, 20, 200}}});
