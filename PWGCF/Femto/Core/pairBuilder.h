@@ -131,7 +131,7 @@ class PairTrackTrackBuilder
   void processSameEvent(T1 const& col, T2& trackTable, T3& partition1, T4& partition2, T5& cache)
   {
     if (mSameSpecies) {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() == 0) {
         return;
       }
@@ -139,8 +139,8 @@ class PairTrackTrackBuilder
       mCprSe.setMagField(col.magField());
       pairprocesshelpers::processSameEvent(trackSlice1, trackTable, mTrackHistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
     } else {
-      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (trackSlice1.size() == 0 || trackSlice2.size() == 0) {
         return;
       }
@@ -299,7 +299,7 @@ class PairV0V0Builder
   void processSameEvent(T1 const& col, T2& trackTable, T3& /*lambdaTable*/, T4& partition1, T5& partition2, T6& cache)
   {
     if (mSameSpecies) {
-      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (v0Slice1.size() == 0) {
         return;
       }
@@ -307,8 +307,8 @@ class PairV0V0Builder
       mCprSe.setMagField(col.magField());
       pairprocesshelpers::processSameEvent(v0Slice1, trackTable, mV0HistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
     } else {
-      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       if (v0Slice1.size() == 0 || v0Slice2.size() == 0) {
         return;
       }
@@ -433,8 +433,8 @@ class PairTrackV0Builder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*v0table*/, T5& v0Partition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }
@@ -538,8 +538,8 @@ class PairTrackTwoTrackResonanceBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*resonanceTable*/, T5& resonancePartition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto v0Slice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = resonancePartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }
@@ -624,12 +624,12 @@ class PairTrackKinkBuilder
 
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
-    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, confKinkSelection.sign.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
-    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, confKinkSelection.sign.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
@@ -640,8 +640,8 @@ class PairTrackKinkBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*kinktable*/, T5& kinkPartition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || kinkSlice.size() == 0) {
       return;
     }
@@ -732,12 +732,12 @@ class PairTrackCascadeBuilder
 
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
-    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
-    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
@@ -748,8 +748,8 @@ class PairTrackCascadeBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*cascadeTable*/, T5& v0Partition, T6& cache)
   {
-    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto v0Slice = v0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (trackSlice.size() == 0 || v0Slice.size() == 0) {
       return;
     }

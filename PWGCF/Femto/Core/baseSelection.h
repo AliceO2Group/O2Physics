@@ -259,25 +259,7 @@ class BaseSelection
   template <typename R>
   void setBitmask(int observableIndex, R bitmask)
   {
-    // if there are no selections configured, bail out
-    if (mSelectionContainers.at(observableIndex).isEmpty()) {
-      return;
-    }
-    // if any previous observable did not pass minimal selections, there is no point in setting bitmask for other observables
-    // minimal selection for each observable is computed after adding it
-    if (mPassesMinimalSelections == false) {
-      return;
-    }
-    // set bitmask for given observable
     mSelectionContainers.at(observableIndex).setBitmask(bitmask);
-    // check if minimal selction for this observable holds
-    if (mSelectionContainers.at(observableIndex).passesAsMinimalCut() == false) {
-      mPassesMinimalSelections = false;
-    }
-    // check if any optional selection holds
-    if (mSelectionContainers.at(observableIndex).passesAsOptionalCut() == true) {
-      mPassesOptionalSelections = true;
-    }
   }
 
   /// \brief Print detailed information about all configured selections.

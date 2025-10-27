@@ -274,7 +274,9 @@ class KinkHistManager
   template <typename T1, typename T2>
   void fill(T1 const& kinkcandidate, T2 const& tracks)
   {
-    auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
+    // this used to work, still under investigation
+    // auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
+    auto chaDaughter = tracks.rawIteratorAt(kinkcandidate.chaDauId() - tracks.offset());
     mChaDauManager.fill(chaDaughter, tracks);
     fill(kinkcandidate);
   }

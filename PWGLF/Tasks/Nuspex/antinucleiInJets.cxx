@@ -1432,54 +1432,25 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processQC, "Process QC", false);
 
+  // Define preslices to group MC tracks and MC particles by their associated MC collision
+  Preslice<AntiNucleiTracksMc> mcTracksPerMcCollision = o2::aod::track::collisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
+
   // Antinuclei reconstruction efficiency
-  void processAntinucleiEfficiency(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
+  void processAntinucleiEfficiency(GenCollisionsMc const& genCollisions, RecCollisionsMc const& recCollisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
   {
-    // Loop over all simulated collision events
-    for (const auto& collision : collisions) {
+    // Loop over generated collisions
+    for (const auto& collision : genCollisions) {
 
-      // Count all generated events before applying any event selection criteria
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 0.5);
-
-      // Apply event selection: require sel8 and vertex position within the allowed z range
-      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+      // Apply event selection: require vertex position to be within the allowed z range
+      if (std::fabs(collision.posZ()) > zVtx)
         continue;
 
-      // Count events that pass the selection criteria
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 1.5);
-
-      // Reject events near the ITS Read-Out Frame border
-      if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 2.5);
-
-      // Reject events at the Time Frame border
-      if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 3.5);
-
-      // Require at least one ITS-TPC matched track
-      if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 4.5);
-
-      // Reject events with same-bunch pileup
-      if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 5.5);
-
-      // Require consistent FT0 vs PV z-vertex
-      if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 6.5);
-
-      // Require TOF match for at least one vertex track
-      if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 7.5);
+      // Get particles in this MC collision
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
 
       // Loop over all generated Monte Carlo particles for the selected event
-      for (const auto& particle : mcParticles) {
+      for (const auto& particle : mcParticlesThisMcColl) {
 
         // Select primary particles
         if (!particle.isPhysicalPrimary())
@@ -1527,9 +1498,56 @@ struct AntinucleiInJets {
             break;
         }
       }
+    }
+
+    // Loop over all reconstructed collisions
+    for (const auto& collision : recCollisions) {
+
+      // Count all generated events before applying any event selection criteria
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 0.5);
+
+      // Apply event selection: require sel8 and vertex position within the allowed z range
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Count events that pass the selection criteria
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 1.5);
+
+      // Reject events near the ITS Read-Out Frame border
+      if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 2.5);
+
+      // Reject events at the Time Frame border
+      if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 3.5);
+
+      // Require at least one ITS-TPC matched track
+      if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 4.5);
+
+      // Reject events with same-bunch pileup
+      if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 5.5);
+
+      // Require consistent FT0 vs PV z-vertex
+      if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 6.5);
+
+      // Require TOF match for at least one vertex track
+      if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_nuclei_efficiency"), 7.5);
+
+      // Get tracks in this MC collision
+      const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
 
       // Loop over all reconstructed MC tracks
-      for (auto const& track : mcTracks) {
+      for (auto const& track : mcTracksThisMcColl) {
 
         // Apply standard track selection criteria
         if (!passedTrackSelection(track))
@@ -1762,8 +1780,11 @@ struct AntinucleiInJets {
       // Event counter: after event selection
       registryMC.fill(HIST("genEvents"), 1.5);
 
+      // Get particles in this MC collision
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
+
       // Loop over MC particles
-      for (const auto& particle : mcParticles) {
+      for (const auto& particle : mcParticlesThisMcColl) {
 
         // Select physical primary particles or HF decay products
         if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
@@ -1974,9 +1995,12 @@ struct AntinucleiInJets {
         continue;
       registryMC.fill(HIST("recEvents"), 7.5);
 
+      // Get tracks in this MC collision
+      const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
+
       // Loop over reconstructed tracks
       int id(-1);
-      for (auto const& track : mcTracks) {
+      for (auto const& track : mcTracksThisMcColl) {
         id++;
 
         // Get corresponding MC particle
@@ -2048,7 +2072,7 @@ struct AntinucleiInJets {
         for (const auto& particle : jetConstituents) {
 
           // Get corresponding track and apply track selection criteria
-          auto const& track = mcTracks.iteratorAt(particle.user_index());
+          auto const& track = mcTracksThisMcColl.iteratorAt(particle.user_index());
           if (!passedTrackSelection(track))
             continue;
 
@@ -2129,7 +2153,7 @@ struct AntinucleiInJets {
         for (auto const& index : antiprotonTrackIndex) {
 
           // retrieve track associated to index
-          auto const& track = mcTracks.iteratorAt(index);
+          auto const& track = mcTracksThisMcColl.iteratorAt(index);
 
           // Get corresponding MC particle
           if (!track.has_mcParticle())
@@ -2436,8 +2460,11 @@ struct AntinucleiInJets {
       if (std::fabs(collision.posZ()) > zVtx)
         continue;
 
+      // Get particles in this MC collision
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
+
       // Loop over all generated Monte Carlo particles for the selected event
-      for (const auto& particle : mcParticles) {
+      for (const auto& particle : mcParticlesThisMcColl) {
 
         // Select primary particles
         if (!particle.isPhysicalPrimary())
@@ -2493,8 +2520,11 @@ struct AntinucleiInJets {
       if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
         continue;
 
+      // Get tracks in this MC collision
+      const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
+
       // Loop over reconstructed tracks
-      for (auto const& track : mcTracks) {
+      for (auto const& track : mcTracksThisMcColl) {
 
         // Select only antimatter
         if (track.sign() > 0)

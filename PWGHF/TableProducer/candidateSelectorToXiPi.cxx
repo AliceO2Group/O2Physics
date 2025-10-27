@@ -12,7 +12,10 @@
 /// \file candidateSelectorToXiPi.cxx
 /// \brief Xic0 and Omegac0 → Xi Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+/// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
+#include "PWGHF/Core/HfMlResponseXic0ToXiPi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -20,11 +23,13 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -38,6 +43,8 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -54,6 +61,7 @@ enum PidInfoStored {
 /// Struct for applying Omegac0/Xic0 selection cuts
 struct HfCandidateSelectorToXiPi {
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
+  Produces<aod::HfMlToXiPi> hfMlToXiPi;
 
   // LF analysis selections
   Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
@@ -129,6 +137,25 @@ struct HfCandidateSelectorToXiPi {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic0ToXipiKf"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_Xic0ToXipiKf.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+
+  o2::analysis::HfMlResponseXic0ToXiPi<float> hfMlResponse;
+  std::vector<float> outputMlXic0ToXiPi = {};
+  o2::ccdb::CcdbApi ccdbApi;
+
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
@@ -189,6 +216,18 @@ struct HfCandidateSelectorToXiPi {
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelDcaXYToPvPiFromCasc", "hSelDcaXYToPvPiFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
   void process(aod::HfCandToXiPi const& candidates,
@@ -204,6 +243,7 @@ struct HfCandidateSelectorToXiPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
+      auto ptCand = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
       auto trackV0PosDauId = candidate.posTrackId();                   // positive V0 daughter
       auto trackV0NegDauId = candidate.negTrackId();                   // negative V0 daughter
       auto trackPiFromCascId = candidate.bachelorId();                 // pion <- cascade
@@ -517,6 +557,17 @@ struct HfCandidateSelectorToXiPi {
         }
       } else {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
+      }
+
+      // ML selections
+      if (applyMl) {
+        bool isSelectedMlXic0 = false;
+        std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+        isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCand, outputMlXic0ToXiPi);
+        if (!isSelectedMlXic0) {
+          continue;
+        }
+        hfMlToXiPi(outputMlXic0ToXiPi);
       }
 
       hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,

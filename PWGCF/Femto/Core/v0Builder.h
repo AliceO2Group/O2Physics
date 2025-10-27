@@ -500,7 +500,7 @@ class V0BuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewLambdas(T1& col, T2& /*lambdaTable*/, T3& partitionLambda, T4& cache)
   {
-    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (lambdaSlice.size() >= mLimitLambda) {
       return false;
     }
@@ -510,7 +510,7 @@ class V0BuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewK0shorts(T1& col, T2& /*k0shortTable*/, T3& partitionK0short, T4& cache)
   {
-    auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (k0shortSlice.size() >= mLimitK0short) {
       return false;
     }
@@ -520,7 +520,7 @@ class V0BuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
   void processLambdas(T1& col, T2& /*lambdaTable*/, T3& /*oldTrackTable*/, T4& partitionLambda, T5& trackBuilder, T6& indexMap, T7& cache, T8& newLambdaTable, T9& newTrackTable, T10& newCollisionTable)
   {
-    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& lambda : lambdaSlice) {
 
@@ -544,7 +544,7 @@ class V0BuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
   void processK0shorts(T1& col, T2& /*k0shortTable*/, T3& /*oldTrackTable*/, T4& partitionK0short, T5& trackBuilder, T6& indexMap, T7& cache, T8& newK0shortTable, T9& newTrackTable, T10& newCollisionTable)
   {
-    auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& k0short : k0shortSlice) {
 

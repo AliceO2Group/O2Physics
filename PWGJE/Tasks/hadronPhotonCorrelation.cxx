@@ -120,12 +120,12 @@ struct HadronPhotonCorrelation {
 
   // Particle ids for storing neutral hadrons
   std::map<std::string, int> pidCodes = {
-    {"pi0", 1},   // pi0
-    {"eta", 2},   // eta
-    {"eta'", 3},  // eta'
-    {"phi", 4},   // phi
-    {"omega", 5}, // omega
-    //{"Sigma0", 6}, // Sigma
+    {"pi0", 1},    // pi0
+    {"eta", 2},    // eta
+    {"eta'", 3},   // eta'
+    {"phi", 4},    // phi
+    {"omega", 5},  // omega
+    {"Sigma0", 6}, // Sigma
     {"Sigma0_bar", 6}};
 
   std::map<int, int> pidToPdg = {
@@ -1016,6 +1016,9 @@ struct HadronPhotonCorrelation {
 
           for (const auto& track_trig : tracks_true) {
             if (!initTrigParticle(track_trig)) {
+              continue;
+            }
+            if (track_trig == track_assoc) {
               continue;
             }
             float dphi = RecoDecay::constrainAngle(daughter->Phi() - track_trig.phi(), -PIHalf);
