@@ -176,7 +176,7 @@ struct HfCorrelatorHfeHadrons {
 
   // Electron-hadron Correlation
   template <typename TracksType, typename ElectronType, typename CollisionType, typename BcType>
-  void fillCorrelation(CollisionType const& collision, ElectronType const& electron, TracksType const& tracks, BcType const&)
+  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
@@ -213,7 +213,7 @@ struct HfCorrelatorHfeHadrons {
     double phiElectron = -999;
     double etaElectron = -999;
 
-    for (const auto& eTrack : electron) {
+    for (const auto& eTrack : electrons) {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
       etaElectron = eTrack.etaTrack();
@@ -389,9 +389,9 @@ struct HfCorrelatorHfeHadrons {
   void processData(TableCollision const& collision,
                    aod::HfCorrSelEl const& electrons,
                    TableTracks const& tracks,
-                   aod::BCsWithTimestamps const& bc)
+                   aod::BCsWithTimestamps const& bcs)
   {
-    fillCorrelation(collision, electrons, tracks, bc);
+    fillCorrelation(collision, electrons, tracks, bcs);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
@@ -401,14 +401,14 @@ struct HfCorrelatorHfeHadrons {
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfCorrSelEl const& mcElectrons,
                     McTableTracks const& mcTracks,
-                    aod::BCsWithTimestamps const& bc)
+                    aod::BCsWithTimestamps const& bcs)
   {
-    fillCorrelation(mcCollision, mcElectrons, mcTracks, bc);
+    fillCorrelation(mcCollision, mcElectrons, mcTracks, bcs);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
 
-  void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electron)
+  void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electrons)
   {
 
     BinningTypeMcGen const corrBinningMcGen{{zBins, multBinsMcGen}, true};
@@ -433,7 +433,7 @@ struct HfCorrelatorHfeHadrons {
     double phiElectron = 0;
     double etaElectron = 0;
 
-    for (const auto& electronMc : electron) {
+    for (const auto& electronMc : electrons) {
       double ptHadron = 0;
       double phiHadron = 0;
       double etaHadron = 0;
