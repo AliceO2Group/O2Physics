@@ -109,8 +109,8 @@ struct ConfCprTrrackCascade : o2::framework::ConfigurableGroup {
 };
 
 // tpc radii for computing phistar
-constexpr int kNradii = 9;
-constexpr std::array<float, kNradii> kTpcRadius = {85., 105., 125., 145., 165., 185., 205., 225., 245.}; // in cm
+constexpr int Nradii = 9;
+constexpr std::array<float, Nradii> TpcRadii = {85., 105., 125., 145., 165., 185., 205., 225., 245.}; // in cm
 
 // directory names
 constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
@@ -222,9 +222,9 @@ class CloseTrackRejection
     mDphistar.fill(0.f);
 
     mDeta = track1.eta() - track2.eta();
-    for (size_t i = 0; i < kTpcRadius.size(); i++) {
-      auto phistar1 = utils::dphistar(mMagField, kTpcRadius[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
-      auto phistar2 = utils::dphistar(mMagField, kTpcRadius[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
+    for (size_t i = 0; i < TpcRadii.size(); i++) {
+      auto phistar1 = utils::dphistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
+      auto phistar2 = utils::dphistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
       if (phistar1 && phistar2) {
         // if the calculation for one phistar fails, keep the default value, which is 0
         // this makes it more likelier for the pair to be rejected sind the averave will be biased towards lower values
@@ -273,7 +273,7 @@ class CloseTrackRejection
 
   float mAverageDphistar = 0.f;
   float mDeta = 0.f;
-  std::array<float, kNradii> mDphistar = {0.f};
+  std::array<float, Nradii> mDphistar = {0.f};
 
   bool mPlotOnly = true;
 };
