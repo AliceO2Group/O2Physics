@@ -83,7 +83,7 @@ struct HfTaskDstarPolarisationInJet {
   float invMassMax{1000.f};
   float bkgRotationAngleStep{0.f};
   uint8_t nMassHypos{0u};
-  struct HfHistoInput{
+  struct HfHistoInput {
     float invMassCharmHad;
     float ptCharmHad;
     float rapCharmHad;
@@ -300,8 +300,8 @@ struct HfTaskDstarPolarisationInJet {
   {
 
     if (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
-      if (!doMc) {                                                  // data
-        if (withMl) {                                               // with ML
+      if (!doMc) {                                                            // data
+        if (withMl) {                                                         // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
               registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
@@ -330,8 +330,8 @@ struct HfTaskDstarPolarisationInJet {
             }
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if (withMl) {                          // with ML
+      } else {                                                          // MC --> no distinction among channels, since rotational bkg not supported
+        if (withMl) {                                                   // with ML
           if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
@@ -361,7 +361,7 @@ struct HfTaskDstarPolarisationInJet {
               }
             }
           }
-        } else {                                         // without ML
+        } else {                                                        // without ML
           if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
@@ -395,8 +395,8 @@ struct HfTaskDstarPolarisationInJet {
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
-      if (!doMc) {                                                           // data
-        if (withMl) {                                                        // with ML
+      if (!doMc) {                                                                     // data
+        if (withMl) {                                                                  // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
               registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
@@ -425,8 +425,8 @@ struct HfTaskDstarPolarisationInJet {
             }
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if (withMl) {                          // with ML
+      } else {                                                          // MC --> no distinction among channels, since rotational bkg not supported
+        if (withMl) {                                                   // with ML
           if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
@@ -456,7 +456,7 @@ struct HfTaskDstarPolarisationInJet {
               }
             }
           }
-        } else {                                         // without ML
+        } else {                                                        // without ML
           if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
@@ -490,8 +490,8 @@ struct HfTaskDstarPolarisationInJet {
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
-      if (!doMc) {                                                        // data
-        if (withMl) {                                                     // with ML
+      if (!doMc) {                                                                  // data
+        if (withMl) {                                                               // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
               registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
@@ -520,8 +520,8 @@ struct HfTaskDstarPolarisationInJet {
             }
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if (withMl) {                          // with ML
+      } else {                                                          // MC --> no distinction among channels, since rotational bkg not supported
+        if (withMl) {                                                   // with ML
           if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
@@ -551,7 +551,7 @@ struct HfTaskDstarPolarisationInJet {
               }
             }
           }
-        } else {                                         // without ML
+        } else {                                                        // without ML
           if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
@@ -810,66 +810,63 @@ struct HfTaskDstarPolarisationInJet {
         // helicity
         cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
         HfHistoInput helicityInput{
-                                      .invMassCharmHad = invMassCharmHadForSparse,
-                                      .ptCharmHad = ptCharmHad,
-                                      .rapCharmHad = rapidity,
-                                      .invMassD0 = invMassD0,
-                                      .cosThetaStar = cosThetaStarHelicity, 
-                                      .outputMl = outputMl,
-                                      .isRotatedCandidate = isRotatedCandidate,
-                                      .origin = origin,
-                                      .ptBhadMother = ptBhadMother,
-                                      .absEtaMin = absEtaTrackMin,
-                                      .numItsClsMin = numItsClsMin,
-                                      .numTpcClsMin = numTpcClsMin,
-                                      .nMuons = nMuons,
-                                      .zParallel = zParallel,
-                                      .jetPt = jetPt
-                                    };
+          .invMassCharmHad = invMassCharmHadForSparse,
+          .ptCharmHad = ptCharmHad,
+          .rapCharmHad = rapidity,
+          .invMassD0 = invMassD0,
+          .cosThetaStar = cosThetaStarHelicity,
+          .outputMl = outputMl,
+          .isRotatedCandidate = isRotatedCandidate,
+          .origin = origin,
+          .ptBhadMother = ptBhadMother,
+          .absEtaMin = absEtaTrackMin,
+          .numItsClsMin = numItsClsMin,
+          .numTpcClsMin = numTpcClsMin,
+          .nMuons = nMuons,
+          .zParallel = zParallel,
+          .jetPt = jetPt};
         fillRecoHistos(charm_polarisation::CosThetaStarType::Helicity, withMl, doMc, partRecoDstar, helicityInput);
       }
       if (activateTHnSparseCosThStarProduction) {
         // production
         cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
         HfHistoInput productionInput{
-                                  .invMassCharmHad = invMassCharmHadForSparse,
-                                  .ptCharmHad = ptCharmHad,
-                                  .rapCharmHad = rapidity,
-                                  .invMassD0 = invMassD0,
-                                  .cosThetaStar = cosThetaStarProduction, 
-                                  .outputMl = outputMl,
-                                  .isRotatedCandidate = isRotatedCandidate,
-                                  .origin = origin,
-                                  .ptBhadMother = ptBhadMother,
-                                  .absEtaMin = absEtaTrackMin,
-                                  .numItsClsMin = numItsClsMin,
-                                  .numTpcClsMin = numTpcClsMin,
-                                  .nMuons = nMuons,
-                                  .zParallel = zParallel,
-                                  .jetPt = jetPt
-                                  };
+          .invMassCharmHad = invMassCharmHadForSparse,
+          .ptCharmHad = ptCharmHad,
+          .rapCharmHad = rapidity,
+          .invMassD0 = invMassD0,
+          .cosThetaStar = cosThetaStarProduction,
+          .outputMl = outputMl,
+          .isRotatedCandidate = isRotatedCandidate,
+          .origin = origin,
+          .ptBhadMother = ptBhadMother,
+          .absEtaMin = absEtaTrackMin,
+          .numItsClsMin = numItsClsMin,
+          .numTpcClsMin = numTpcClsMin,
+          .nMuons = nMuons,
+          .zParallel = zParallel,
+          .jetPt = jetPt};
         fillRecoHistos(charm_polarisation::CosThetaStarType::Production, withMl, doMc, partRecoDstar, productionInput);
       }
       if (activateTHnSparseCosThStarJetAxis) {
         // jet axis
         cosThetaStarJet = jetaxisVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(jetaxisVec.Mag2());
         HfHistoInput jetAxisInput{
-                                .invMassCharmHad = invMassCharmHadForSparse,
-                                .ptCharmHad = ptCharmHad,
-                                .rapCharmHad = rapidity,
-                                .invMassD0 = invMassD0,
-                                .cosThetaStar = cosThetaStarJet, 
-                                .outputMl = outputMl,
-                                .isRotatedCandidate = isRotatedCandidate,
-                                .origin = origin,
-                                .ptBhadMother = ptBhadMother,
-                                .absEtaMin = absEtaTrackMin,
-                                .numItsClsMin = numItsClsMin,
-                                .numTpcClsMin = numTpcClsMin,
-                                .nMuons = nMuons,
-                                .zParallel = zParallel,
-                                .jetPt = jetPt
-                                };
+          .invMassCharmHad = invMassCharmHadForSparse,
+          .ptCharmHad = ptCharmHad,
+          .rapCharmHad = rapidity,
+          .invMassD0 = invMassD0,
+          .cosThetaStar = cosThetaStarJet,
+          .outputMl = outputMl,
+          .isRotatedCandidate = isRotatedCandidate,
+          .origin = origin,
+          .ptBhadMother = ptBhadMother,
+          .absEtaMin = absEtaTrackMin,
+          .numItsClsMin = numItsClsMin,
+          .numTpcClsMin = numTpcClsMin,
+          .nMuons = nMuons,
+          .zParallel = zParallel,
+          .jetPt = jetPt};
         fillRecoHistos(charm_polarisation::CosThetaStarType::JetAxis, withMl, doMc, partRecoDstar, jetAxisInput);
       }
     } /// end loop over mass hypotheses
