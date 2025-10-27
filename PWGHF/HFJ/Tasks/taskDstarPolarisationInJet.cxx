@@ -83,6 +83,23 @@ struct HfTaskDstarPolarisationInJet {
   float invMassMax{1000.f};
   float bkgRotationAngleStep{0.f};
   uint8_t nMassHypos{0u};
+  struct HistoInput{
+    float invMassCharmHad;
+    float ptCharmHad;
+    float rapCharmHad;
+    float invMassD0;
+    float cosThetaStar;
+    const std::array<float, 3>& outputMl;
+    int isRotatedCandidate;
+    int8_t origin;
+    float ptBhadMother;
+    float absEtaMin;
+    int numItsClsMin;
+    int numTpcClsMin;
+    int8_t nMuons;
+    float zParallel;
+    float jetPt;
+  };
 
   // Tables for MC jet matching
   using DstarJets = soa::Join<aod::DstarChargedJets, aod::DstarChargedJetConstituents>;
@@ -279,290 +296,289 @@ struct HfTaskDstarPolarisationInJet {
   /// \param numTpcClsMin is the minimum number of TPC clusters of the daughter tracks
   /// \param nMuons is the number of muons from daughter decays
   /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar meson (MC only)
-  template <bool withMl, bool doMc>
-  void fillRecoHistos(charm_polarisation::CosThetaStarType cosThetaStarType, float invMassCharmHad, float ptCharmHad, float rapCharmHad, float invMassD0, float cosThetaStar, const std::array<float, 3>& outputMl, int isRotatedCandidate, int8_t origin, float ptBhadMother, float absEtaMin, int numItsClsMin, int numTpcClsMin, int8_t nMuons, bool isPartRecoDstar, float zParallel, float jetPt)
+  void fillRecoHistos(charm_polarisation::CosThetaStarType cosThetaStarType, bool withMl, bool doMc, bool isPartRecoDstar, HistoInput& recoHistoInput)
   {
 
     if (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
-      if constexpr (!doMc) {                                                  // data
-        if constexpr (withMl) {                                               // with ML
+      if (!doMc) {                                                  // data
+        if (withMl) {                                               // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           }
         } else { // without ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.isRotatedCandidate, recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, zParallel, jetPt);
+              registry.fill(HIST("hHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           }
         }
       } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+        if (withMl) {                          // with ML
+          if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           } else { // non-prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           }
         } else {                                         // without ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+          if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
 
           } else { // non-prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptHelicity"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           }
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
-      if constexpr (!doMc) {                                                           // data
-        if constexpr (withMl) {                                                        // with ML
+      if (!doMc) {                                                           // data
+        if (withMl) {                                                        // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           }
         } else { // without ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.isRotatedCandidate, recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, zParallel, jetPt);
+              registry.fill(HIST("hProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           }
         }
       } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+        if (withMl) {                          // with ML
+          if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           } else { // non-prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           }
         } else {                                         // without ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+          if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
 
           } else { // non-prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptProduction"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           }
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
-      if constexpr (!doMc) {                                                        // data
-        if constexpr (withMl) {                                                     // with ML
+      if (!doMc) {                                                        // data
+        if (withMl) {                                                     // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.isRotatedCandidate, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           }
         } else { // without ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.isRotatedCandidate, recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.isRotatedCandidate, recoHistoInput.zParallel, recoHistoInput.jetPt);
             } else {
-              registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, zParallel, jetPt);
+              registry.fill(HIST("hJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.zParallel, recoHistoInput.jetPt);
             }
           }
         }
       } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+        if (withMl) {                          // with ML
+          if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           } else { // non-prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.outputMl[0], /*recoHistoInput.outputMl[1],*/ recoHistoInput.outputMl[2], recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           }
         } else {                                         // without ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+          if (recoHistoInput.origin == RecoDecay::OriginType::Prompt) { // prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
 
           } else { // non-prompt
             if (activateTrackingSys) {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.absEtaMin, recoHistoInput.numItsClsMin, recoHistoInput.numTpcClsMin, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             } else {
               if (!isPartRecoDstar) {
-                registry.fill(HIST("hRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               } else {
-                registry.fill(HIST("hPartRecoNonPromptJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
+                registry.fill(HIST("hPartRecoNonPromptJetAxis"), recoHistoInput.invMassCharmHad, recoHistoInput.ptCharmHad, recoHistoInput.rapCharmHad, recoHistoInput.invMassD0, recoHistoInput.cosThetaStar, recoHistoInput.ptBhadMother, recoHistoInput.nMuons, recoHistoInput.zParallel, recoHistoInput.jetPt);
               }
             }
           }
@@ -730,9 +746,10 @@ struct HfTaskDstarPolarisationInJet {
           pxDau = candidate.pxProng1();
           pyDau = candidate.pyProng1();
           pzDau = candidate.pzProng1();
-          threeVecCand = RecoDecay::pVec(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()},
-                                         std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()},
-                                         std::array{candidate.pxProng1Charm(), candidate.pyProng1Charm(), candidate.pzProng1Charm()});
+          // threeVecCand = RecoDecay::pVec(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()},
+          //                                std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()},
+          //                                std::array{candidate.pxProng1Charm(), candidate.pyProng1Charm(), candidate.pzProng1Charm()});
+          threeVecCand = {candidate.px(), candidate.py(), candidate.pz()};
           pxCharmHad = threeVecCand[0];
           pyCharmHad = threeVecCand[1];
           pzCharmHad = threeVecCand[2];
@@ -792,17 +809,68 @@ struct HfTaskDstarPolarisationInJet {
       if (activateTHnSparseCosThStarHelicity) {
         // helicity
         cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
-        fillRecoHistos<withMl, doMc>(charm_polarisation::CosThetaStarType::Helicity, invMassCharmHadForSparse, ptCharmHad, rapidity, invMassD0, cosThetaStarHelicity, outputMl, isRotatedCandidate, origin, ptBhadMother, absEtaTrackMin, numItsClsMin, numTpcClsMin, nMuons, partRecoDstar, zParallel, jetPt);
+        HistoInput HelicityInput{
+                                      .invMassCharmHad = invMassCharmHadForSparse,
+                                      .ptCharmHad = ptCharmHad,
+                                      .rapCharmHad = rapidity,
+                                      .invMassD0 = invMassD0,
+                                      .cosThetaStar = cosThetaStarHelicity, 
+                                      .outputMl = outputMl,
+                                      .isRotatedCandidate = isRotatedCandidate,
+                                      .origin = origin,
+                                      .ptBhadMother = ptBhadMother,
+                                      .absEtaMin = absEtaTrackMin,
+                                      .numItsClsMin = numItsClsMin,
+                                      .numTpcClsMin = numTpcClsMin,
+                                      .nMuons = nMuons,
+                                      .zParallel = zParallel,
+                                      .jetPt = jetPt
+                                    };
+        fillRecoHistos(charm_polarisation::CosThetaStarType::Helicity, withMl, doMc, partRecoDstar, HelicityInput);
       }
       if (activateTHnSparseCosThStarProduction) {
         // production
         cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
-        fillRecoHistos<withMl, doMc>(charm_polarisation::CosThetaStarType::Production, invMassCharmHadForSparse, ptCharmHad, rapidity, invMassD0, cosThetaStarProduction, outputMl, isRotatedCandidate, origin, ptBhadMother, absEtaTrackMin, numItsClsMin, numTpcClsMin, nMuons, partRecoDstar, zParallel, jetPt);
+        HistoInput ProductionInput{
+                                  .invMassCharmHad = invMassCharmHadForSparse,
+                                  .ptCharmHad = ptCharmHad,
+                                  .rapCharmHad = rapidity,
+                                  .invMassD0 = invMassD0,
+                                  .cosThetaStar = cosThetaStarProduction, 
+                                  .outputMl = outputMl,
+                                  .isRotatedCandidate = isRotatedCandidate,
+                                  .origin = origin,
+                                  .ptBhadMother = ptBhadMother,
+                                  .absEtaMin = absEtaTrackMin,
+                                  .numItsClsMin = numItsClsMin,
+                                  .numTpcClsMin = numTpcClsMin,
+                                  .nMuons = nMuons,
+                                  .zParallel = zParallel,
+                                  .jetPt = jetPt
+                                  };
+        fillRecoHistos(charm_polarisation::CosThetaStarType::Production, withMl, doMc, partRecoDstar, ProductionInput);
       }
       if (activateTHnSparseCosThStarJetAxis) {
         // jet axis
         cosThetaStarJet = jetaxisVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(jetaxisVec.Mag2());
-        fillRecoHistos<withMl, doMc>(charm_polarisation::CosThetaStarType::JetAxis, invMassCharmHadForSparse, ptCharmHad, rapidity, invMassD0, cosThetaStarJet, outputMl, isRotatedCandidate, origin, ptBhadMother, absEtaTrackMin, numItsClsMin, numTpcClsMin, nMuons, partRecoDstar, zParallel, jetPt);
+        HistoInput JetAxisInput{
+                                .invMassCharmHad = invMassCharmHadForSparse,
+                                .ptCharmHad = ptCharmHad,
+                                .rapCharmHad = rapidity,
+                                .invMassD0 = invMassD0,
+                                .cosThetaStar = cosThetaStarJet, 
+                                .outputMl = outputMl,
+                                .isRotatedCandidate = isRotatedCandidate,
+                                .origin = origin,
+                                .ptBhadMother = ptBhadMother,
+                                .absEtaMin = absEtaTrackMin,
+                                .numItsClsMin = numItsClsMin,
+                                .numTpcClsMin = numTpcClsMin,
+                                .nMuons = nMuons,
+                                .zParallel = zParallel,
+                                .jetPt = jetPt
+                                };
+        fillRecoHistos(charm_polarisation::CosThetaStarType::JetAxis, withMl, doMc, partRecoDstar, JetAxisInput);
       }
     } /// end loop over mass hypotheses
 
