@@ -83,7 +83,7 @@ struct HfTaskDstarPolarisationInJet {
   float invMassMax{1000.f};
   float bkgRotationAngleStep{0.f};
   uint8_t nMassHypos{0u};
-  struct HistoInput{
+  struct HfHistoInput{
     float invMassCharmHad;
     float ptCharmHad;
     float rapCharmHad;
@@ -296,7 +296,7 @@ struct HfTaskDstarPolarisationInJet {
   /// \param numTpcClsMin is the minimum number of TPC clusters of the daughter tracks
   /// \param nMuons is the number of muons from daughter decays
   /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar meson (MC only)
-  void fillRecoHistos(charm_polarisation::CosThetaStarType cosThetaStarType, bool withMl, bool doMc, bool isPartRecoDstar, HistoInput& recoHistoInput)
+  void fillRecoHistos(charm_polarisation::CosThetaStarType cosThetaStarType, bool withMl, bool doMc, bool isPartRecoDstar, HfHistoInput& recoHistoInput)
   {
 
     if (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
@@ -809,7 +809,7 @@ struct HfTaskDstarPolarisationInJet {
       if (activateTHnSparseCosThStarHelicity) {
         // helicity
         cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
-        HistoInput HelicityInput{
+        HfHistoInput helicityInput{
                                       .invMassCharmHad = invMassCharmHadForSparse,
                                       .ptCharmHad = ptCharmHad,
                                       .rapCharmHad = rapidity,
@@ -826,12 +826,12 @@ struct HfTaskDstarPolarisationInJet {
                                       .zParallel = zParallel,
                                       .jetPt = jetPt
                                     };
-        fillRecoHistos(charm_polarisation::CosThetaStarType::Helicity, withMl, doMc, partRecoDstar, HelicityInput);
+        fillRecoHistos(charm_polarisation::CosThetaStarType::Helicity, withMl, doMc, partRecoDstar, helicityInput);
       }
       if (activateTHnSparseCosThStarProduction) {
         // production
         cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
-        HistoInput ProductionInput{
+        HfHistoInput productionInput{
                                   .invMassCharmHad = invMassCharmHadForSparse,
                                   .ptCharmHad = ptCharmHad,
                                   .rapCharmHad = rapidity,
@@ -848,12 +848,12 @@ struct HfTaskDstarPolarisationInJet {
                                   .zParallel = zParallel,
                                   .jetPt = jetPt
                                   };
-        fillRecoHistos(charm_polarisation::CosThetaStarType::Production, withMl, doMc, partRecoDstar, ProductionInput);
+        fillRecoHistos(charm_polarisation::CosThetaStarType::Production, withMl, doMc, partRecoDstar, productionInput);
       }
       if (activateTHnSparseCosThStarJetAxis) {
         // jet axis
         cosThetaStarJet = jetaxisVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(jetaxisVec.Mag2());
-        HistoInput JetAxisInput{
+        HfHistoInput jetAxisInput{
                                 .invMassCharmHad = invMassCharmHadForSparse,
                                 .ptCharmHad = ptCharmHad,
                                 .rapCharmHad = rapidity,
@@ -870,7 +870,7 @@ struct HfTaskDstarPolarisationInJet {
                                 .zParallel = zParallel,
                                 .jetPt = jetPt
                                 };
-        fillRecoHistos(charm_polarisation::CosThetaStarType::JetAxis, withMl, doMc, partRecoDstar, JetAxisInput);
+        fillRecoHistos(charm_polarisation::CosThetaStarType::JetAxis, withMl, doMc, partRecoDstar, jetAxisInput);
       }
     } /// end loop over mass hypotheses
 
