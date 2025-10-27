@@ -486,10 +486,7 @@ struct TaskPi0FlowEMC {
   /// \param cent is the centrality of the collision
   /// \param sp is the scalar product
   template <const int histType>
-  void fillThn(float& mass,
-               float& pt,
-               float& cent,
-               float& sp)
+  void fillThn(const float mass, const float pt, const float cent, const float sp)
   {
     static constexpr std::string_view FlowHistTypes[3] = {"hSparsePi0Flow", "hSparseBkgRotFlow", "hSparseBkgMixFlow"};
     static constexpr std::string_view HistTypes[3] = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
@@ -523,7 +520,8 @@ struct TaskPi0FlowEMC {
 
   /// Get all used Q vector
   /// \param collision is the collision with the Q vector information
-  std::vector<float> getAllQvec(CollsWithQvecs::iterator const& collision)
+  template <typename TCollision>
+  std::vector<float> getAllQvec(TCollision const& collision)
   {
     // Retrieve the Q vectors using the helper function for each detector
     auto [xQVecMain, yQVecMain] = getQvec(collision, qvecDetector);
@@ -535,7 +533,8 @@ struct TaskPi0FlowEMC {
 
   /// Get the Q vector
   /// \param collision is the collision with the Q vector information
-  std::pair<float, float> getQvec(CollsWithQvecs::iterator const& collision, int detector)
+  template <typename TCollision>
+  std::pair<float, float> getQvec(TCollision const& collision, int detector)
   {
     float xQVec = -999.f;
     float yQVec = -999.f;
@@ -706,8 +705,8 @@ struct TaskPi0FlowEMC {
   }
 
   /// \brief Calculate background using rotation background method
-  template <typename TPhotons>
-  void rotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
+  template <typename TPhotons, typename TCollision>
+  void rotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, TCollision const& collision)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
     if (photons_coll.size() < NMinPhotonRotBkg) {
@@ -894,8 +893,8 @@ struct TaskPi0FlowEMC {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param meson are the selected candidates
-  template <const int histType>
-  void runFlowAnalysis(CollsWithQvecs::iterator const& collision, ROOT::Math::PtEtaPhiMVector const& meson)
+  template <const int histType, typename TCollision>
+  void runFlowAnalysis(TCollision const& collision, ROOT::Math::PtEtaPhiMVector const& meson)
   {
     auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
     float cent = getCentrality(collision);
