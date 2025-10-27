@@ -75,7 +75,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
 
   // select the emcal or dcal acceptance
-  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms"};
+  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms (see EMCalRegion enum)"};
 
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
