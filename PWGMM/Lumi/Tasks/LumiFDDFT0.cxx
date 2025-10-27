@@ -352,6 +352,9 @@ struct LumiFDDFT0 {
     for (const auto& bc : bcs) {
       if (!bc.timestamp())
         continue;
+      if (bc.inputMask() == 0) // No trigger inputs active
+        continue;
+
       if (useRelTimeStamp) {
         Long64_t relTS = bc.timestamp() - fttimestamp;
         rowEventInfoCTP(relTS, bc.globalBC(), bc.inputMask());
