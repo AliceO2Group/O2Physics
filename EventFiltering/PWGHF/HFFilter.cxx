@@ -23,7 +23,7 @@
 #include "EventFiltering/filterTables.h"
 //
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateSkimmingTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 //
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
