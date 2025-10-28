@@ -91,7 +91,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to Nch efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
-  O2_DEFINE_CONFIGURABLE(cfgDCAzPt, bool, true, "switch for DCAz pt dependent")
+  O2_DEFINE_CONFIGURABLE(cfgDCAzPt, bool, false, "switch for DCAz pt dependent")
   O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "Track selection for ITS matches")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
@@ -104,12 +104,12 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
-  O2_DEFINE_CONFIGURABLE(cfgV0AT0A5Sigma, bool, false, "V0A T0A 5 sigma cut")
+  O2_DEFINE_CONFIGURABLE(cfgV0AT0ANSigma, bool, false, "V0A T0A n sigma cut")
+  O2_DEFINE_CONFIGURABLE(cfgNSigma, float, 5.0f, "N sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgGlobalTracks, bool, false, "Global tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalonly, bool, false, "Global only tracks")
   O2_DEFINE_CONFIGURABLE(cfgITSonly, bool, false, "ITS only tracks")
-  O2_DEFINE_CONFIGURABLE(cfgFineBinning, bool, false, "Manually change to fine binning")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -190,6 +190,7 @@ struct FlowGfwTask {
     kc34Nch05,
     kc22etagapft0c,
     kc32etagapft0c,
+    kc34ft0c,
 
     // Count the total number of enum
     kCount_ExtraProfile
@@ -407,6 +408,7 @@ struct FlowGfwTask {
 
       registry.add("c22etagapft0c", ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
       registry.add("c32etagapft0c", ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+      registry.add("c34etagapft0c", ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
     } // End doprocessData
 
     const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
@@ -490,6 +492,7 @@ struct FlowGfwTask {
 
       bootstrapArray[i][kc22etagapft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagapftoc", i), ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
       bootstrapArray[i][kc32etagapft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagapftoc", i), ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+      bootstrapArray[i][kc34ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34etagapftoc", i), ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -753,10 +756,9 @@ struct FlowGfwTask {
       registry.fill(HIST("hEventCount"), kAFTERMULTCUTS);
     }
 
-    // V0A T0A 5 sigma cut
-    float five = 5;
-    if (cfgV0AT0A5Sigma) {
-      if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > five * fT0AV0ASigma->Eval(collision.multFT0A()))
+    // V0A T0A N sigma cut
+    if (cfgV0AT0ANSigma) {
+      if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > cfgNSigma * fT0AV0ASigma->Eval(collision.multFT0A()))
         return false;
     }
 
@@ -1061,9 +1063,6 @@ struct FlowGfwTask {
         }
       }
 
-      if (cfgFineBinning)
-        fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
-
     } // End of track loop
 
     // Only one type of track will be plotted
@@ -1102,9 +1101,10 @@ struct FlowGfwTask {
       fillProfile(corrconfigs.at(7), HIST("c34Nch05"), nch);
     }
 
-    // C22 and C32 vs FT0C amplitude
+    // C22, C32 and C34 vs FT0C amplitude
     fillProfile(corrconfigs.at(4), HIST("c22etagapft0c"), ft0cAmp);
     fillProfile(corrconfigs.at(6), HIST("c32etagapft0c"), ft0cAmp);
+    fillProfile(corrconfigs.at(7), HIST("c34etagapft0c"), ft0cAmp);
 
     // Filling Bootstrap Samples
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
@@ -1144,6 +1144,7 @@ struct FlowGfwTask {
     // Filling Bootstrap Samples for FT0C Amplitudes
     fillProfile(corrconfigs.at(4), bootstrapArray[sampleIndex][kc22etagapft0c], ft0cAmp);
     fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32etagapft0c], ft0cAmp);
+    fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34ft0c], ft0cAmp);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
