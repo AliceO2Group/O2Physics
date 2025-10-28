@@ -454,6 +454,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     pairCleaner.init(&qaRegistry);
     if (twotracksconfigs.ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.ConfCPRdeltaPhiCutMin.value, twotracksconfigs.ConfCPRdeltaPhiCutMax.value, twotracksconfigs.ConfCPRdeltaEtaCutMin.value, twotracksconfigs.ConfCPRdeltaEtaCutMax.value, twotracksconfigs.ConfCPRChosenRadii.value, twotracksconfigs.ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init_kT(&resultRegistry, ConfKtKstarBins);
     }
 
     vPIDPartOne = trackonefilter.ConfPIDPartOne.value;
@@ -549,7 +550,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
 
+        float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
         if (twotracksconfigs.ConfIsCPR.value) {
+          pairCloseRejection.kTdetadphi(p1, p2, femto_universe_container::EventType::same, kT);
           if (confCPRIsAtITS.value) {
             if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
               continue;
@@ -566,7 +569,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
 
-        float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
         double rand;
         rand = randgen->Rndm();
 
@@ -919,7 +921,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         continue;
       }
 
+      float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
       if (twotracksconfigs.ConfIsCPR.value) {
+        pairCloseRejection.kTdetadphi(p1, p2, femto_universe_container::EventType::mixed, kT);
         if (confCPRIsAtITS.value) {
           if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed)) {
             continue;
@@ -931,7 +935,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
       }
 
-      float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
       double rand;
       rand = randgen->Rndm();
 
