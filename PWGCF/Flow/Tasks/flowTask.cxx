@@ -45,12 +45,12 @@
 #include <TRandom3.h>
 
 #include <cmath>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <vector>
-#include <map>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
