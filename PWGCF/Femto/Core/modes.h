@@ -66,8 +66,9 @@ enum class System : uint32_t {
 };
 
 enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
-  kPAtPv, // momentum at primary vertex
   kPt,    // transverse momentum
+  kPAtPv, // momentum at primary vertex
+  kPTpc,  // momentum at inner wall of tpc
 };
 
 enum class Track : o2::aod::femtodatatypes::TrackType {

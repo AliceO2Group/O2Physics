@@ -259,8 +259,8 @@ const std::unordered_map<TrackSels, std::string> trackSelsToString = {
 class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::TrackMaskType, kTrackSelsMax>
 {
  public:
-  TrackSelection() {}
-  virtual ~TrackSelection() = default;
+  TrackSelection() = default;
+  ~TrackSelection() = default;
 
   template <typename T1, typename T2>
   void configure(T1& config, T2& filter)
@@ -451,7 +451,7 @@ class TrackBuilder
 {
  public:
   TrackBuilder() = default;
-  virtual ~TrackBuilder() = default;
+  ~TrackBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)

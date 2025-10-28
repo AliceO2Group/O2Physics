@@ -47,7 +47,7 @@ class BaseSelection
 {
  public:
   /// \brief Default constructor.
-  BaseSelection() {}
+  BaseSelection() = default;
 
   /// \brief Destructor
   virtual ~BaseSelection() = default;
