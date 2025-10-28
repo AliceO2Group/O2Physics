@@ -83,7 +83,7 @@ struct HfTaskMcGenPtRapShapes {
   void process(aod::McParticles const& mcParticles)
   {
     for (auto const& mcParticle : mcParticles) {
-      if (rejectBackground and mcParticle.fromBackgroundEvent()) {
+      if (rejectBackground && mcParticle.fromBackgroundEvent()) {
         continue;
       }
       int const absPdgCode = std::abs(mcParticle.pdgCode());
