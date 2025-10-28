@@ -56,6 +56,7 @@ struct HfTaskMcGenPtRapShapes {
   ConfigurableAxis axisPtBeauty{"axisPtBeauty", {3000, 0.f, 300.f}, "Binning for the pT axis of beauty hadrons"};
   ConfigurableAxis axisRapCharm{"axisRapCharm", {100, -1.f, 1.f}, "Binning for the y axis of charm hadrons"};
   ConfigurableAxis axisRapBeauty{"axisRapBeauty", {100, -1.f, 1.f}, "Binning for the y axis of beauty hadrons"};
+  Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
 
   std::array<std::shared_ptr<TH2>, nCharmHadrons> histRapVsPtCharmPrompt{};
   std::array<std::shared_ptr<TH2>, nCharmHadrons> histRapVsPtCharmNonPrompt{};
@@ -81,6 +82,9 @@ struct HfTaskMcGenPtRapShapes {
   void process(aod::McParticles const& mcParticles)
   {
     for (auto const& mcParticle : mcParticles) {
+      if (rejectBackground and mcParticle.fromBackgroundEvent()) {
+        continue;
+      }
       int const absPdgCode = std::abs(mcParticle.pdgCode());
       float const pt = mcParticle.pt();
       float const rap = mcParticle.y();
