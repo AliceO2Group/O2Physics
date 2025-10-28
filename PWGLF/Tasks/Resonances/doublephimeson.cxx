@@ -888,7 +888,7 @@ struct doublephimeson {
       pair.SetPtEtaPhiM(pairV[i].Pt(), pairV[i].Eta(), pairV[i].Phi(), pairV[i].M());
       const double dM = deltaMPhi(p1.M(), p2.M());
       const double M = pair.M();
-      const double pT = pair.Pt();
+      // const double pT = pair.Pt();
       const double dR = deltaR(p1.Phi(), p1.Eta(), p2.Phi(), p2.Eta());
       histos.fill(HIST("SEMassUnlike"), M, std::abs(p1.Pt() - p2.Pt()) / pair.Pt(), pair.Pt(), dR, dM, pairV.size());
     }
