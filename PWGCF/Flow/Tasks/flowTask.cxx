@@ -201,7 +201,7 @@ struct FlowTask {
   TRandom3* fRndm = new TRandom3(0);
   int lastRunNumber = -1;
   std::vector<int> runNumbers;
-  std::map<int, std::shared_ptr<TH3>> th3sPerRun;          // map of TH3 histograms for all runs
+  std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
   enum CentEstimators {
     kCentFT0C = 0,
     kCentFT0CVariant1,
