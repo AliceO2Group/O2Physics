@@ -45,20 +45,17 @@ void processSameEvent(T1 const& SliceParticle,
                       T7& rng,
                       bool randomize)
 {
-  // Fill single particle histograms
   for (auto const& part : SliceParticle) {
     ParticleHistManager.fill(part, TrackTable);
   }
   std::uniform_real_distribution<float> dist(0.f, 1.f);
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
-    // Close pair rejection
     if (CprManager.isActivated()) {
       CprManager.setPair(p1, p2, TrackTable);
       if (CprManager.isClosePair()) {
         continue;
       }
     }
-    CprManager.fill();
     // Randomize pair order if enabled
     float threshold = 0.5f;
     bool swapPair = randomize ? (dist(rng) > threshold) : false;
@@ -67,7 +64,10 @@ void processSameEvent(T1 const& SliceParticle,
     } else {
       PairHistManager.setPair(p1, p2, Collision);
     }
-    PairHistManager.fill();
+    if (PairHistManager.checkPairCuts()) {
+      CprManager.fill();
+      PairHistManager.fill();
+    }
   }
 }
 
@@ -110,9 +110,11 @@ void processSameEvent(T1 const& SliceParticle1,
         continue;
       }
     }
-    CprManager.fill();
     PairHistManager.setPair(p1, p2, Collision);
-    PairHistManager.fill();
+    if (PairHistManager.checkPairCuts()) {
+      CprManager.fill();
+      PairHistManager.fill();
+    }
   }
 }
 
@@ -158,9 +160,11 @@ void processMixedEvent(T1& Collisions,
           continue;
         }
       }
-      CprManager.fill();
-      PairHistManager.setPair(p1, p2, collision1);
-      PairHistManager.fill();
+      PairHistManager.setPair(p1, p2, collision1, collision2);
+      if (PairHistManager.checkPairCuts()) {
+        CprManager.fill();
+        PairHistManager.fill();
+      }
     }
   }
 }
@@ -209,9 +213,11 @@ void processMixedEvent(T1& Collisions,
           continue;
         }
       }
-      CprManager.fill();
-      PairHistManager.setPair(p1, p2, collision1);
-      PairHistManager.fill();
+      PairHistManager.setPair(p1, p2, collision1, collision2);
+      if (PairHistManager.checkPairCuts()) {
+        CprManager.fill();
+        PairHistManager.fill();
+      }
     }
   }
 }

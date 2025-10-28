@@ -84,6 +84,7 @@ struct FemtoPairTrackKink {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   pairbuilder::PairTrackKinkBuilder<
     trackhistmanager::PrefixTrack1,
@@ -124,14 +125,14 @@ struct FemtoPairTrackKink {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
     auto chaDauSpec = trackhistmanager::makeTrackHistSpecMap(confChaDauBinning);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confSigmaBinning);
+    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
     // setup for sigma
     // if (doprocessSigmaSameEvent || doprocessSigmaMixedEvent) {
     if (doprocessSigmaSameEvent) {
       auto sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
-      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairHistSpec, cprHistSpec);
+      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairHistSpec, cprHistSpec);
     }
   };
 
