@@ -28,6 +28,7 @@
 
 #include "TPDGCode.h"
 
+#include <string>
 #include <algorithm>
 #include <vector>
 
