@@ -326,7 +326,7 @@ struct Filter2Prong {
   }
 
   template <typename T>
-  bool selectionsys(const T& candidate, bool isLoose, bool isTight)
+  bool selectionSys(const T& candidate, bool isLoose, bool isTight)
   {
     const int indexCut = isLoose ? 0 : (isTight ? 2 : 1);
 
@@ -747,19 +747,19 @@ struct Filter2Prong {
                              cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID2);
         }
         if (selectionPID3(p1) && selectionPID3(p2)) {
-          if (selectionsys(p1, false, false) && selectionsys(p2, false, false)) // default
+          if (selectionSys(p1, false, false) && selectionSys(p2, false, false)) // default
           {
             output2ProngTracks(cfcollisions.begin().globalIndex(),
                                cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3);
           }
           if (grpPhi.storeLooseTightforphi) // store also loose and tight K0s
           {
-            if (selectionsys(p1, true, false) && selectionsys(p2, true, false)) // loose
+            if (selectionSys(p1, true, false) && selectionSys(p2, true, false)) // loose
             {
               output2ProngTracks(cfcollisions.begin().globalIndex(),
                                  cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3Loose);
             }
-            if (selectionsys(p1, false, true) && selectionsys(p2, false, true)) // tight
+            if (selectionSys(p1, false, true) && selectionSys(p2, false, true)) // tight
             {
               output2ProngTracks(cfcollisions.begin().globalIndex(),
                                  cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3Tight);
