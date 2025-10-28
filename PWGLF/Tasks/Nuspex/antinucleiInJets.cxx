@@ -204,7 +204,7 @@ struct AntinucleiInJets {
     }
 
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
-    if (doprocessAntinucleiEfficiency) {
+    if (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec) {
       ccdb->setURL(urlToCcdb.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
