@@ -171,8 +171,8 @@ template <modes::Cascade cascadeType>
 class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::CascadeMaskType, kCascadeSelsMax>
 {
  public:
-  CascadeSelection() {}
-  virtual ~CascadeSelection() = default;
+  CascadeSelection() = default;
+  ~CascadeSelection() = default;
 
   template <typename T1, typename T2>
   void configure(T1 const& config, T2 const& filter)
@@ -331,8 +331,8 @@ template <modes::Cascade cascadeType>
 class CascadeBuilder
 {
  public:
-  CascadeBuilder() {}
-  virtual ~CascadeBuilder() = default;
+  CascadeBuilder() = default;
+  ~CascadeBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)

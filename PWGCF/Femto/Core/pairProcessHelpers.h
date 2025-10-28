@@ -34,13 +34,15 @@ template <typename T1,
           typename T3,
           typename T4,
           typename T5,
-          typename T6>
+          typename T6,
+          typename T7>
 void processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
-                      T3& ParticleHistManager,
-                      T4& PairHistManager,
-                      T5& CprManager,
-                      T6& rng,
+                      T3 const& Collision,
+                      T4& ParticleHistManager,
+                      T5& PairHistManager,
+                      T6& CprManager,
+                      T7& rng,
                       bool randomize)
 {
   // Fill single particle histograms
@@ -61,9 +63,9 @@ void processSameEvent(T1 const& SliceParticle,
     float threshold = 0.5f;
     bool swapPair = randomize ? (dist(rng) > threshold) : false;
     if (swapPair) {
-      PairHistManager.setPair(p2, p1);
+      PairHistManager.setPair(p2, p1, Collision);
     } else {
-      PairHistManager.setPair(p1, p2);
+      PairHistManager.setPair(p1, p2, Collision);
     }
     PairHistManager.fill();
   }
@@ -77,15 +79,17 @@ template <typename T1,
           typename T5,
           typename T6,
           typename T7,
-          typename T8>
+          typename T8,
+          typename T9>
 void processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& TrackTable,
-                      T4& ParticleHistManager1,
-                      T5& ParticleHistManager2,
-                      T6& PairHistManager,
-                      T7& CprManager,
-                      T8& PcManager)
+                      T4 const& Collision,
+                      T5& ParticleHistManager1,
+                      T6& ParticleHistManager2,
+                      T7& PairHistManager,
+                      T8& CprManager,
+                      T9& PcManager)
 {
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
@@ -107,7 +111,7 @@ void processSameEvent(T1 const& SliceParticle1,
       }
     }
     CprManager.fill();
-    PairHistManager.setPair(p1, p2);
+    PairHistManager.setPair(p1, p2, Collision);
     PairHistManager.fill();
   }
 }
@@ -155,7 +159,7 @@ void processMixedEvent(T1& Collisions,
         }
       }
       CprManager.fill();
-      PairHistManager.setPair(p1, p2);
+      PairHistManager.setPair(p1, p2, collision1);
       PairHistManager.fill();
     }
   }
@@ -206,7 +210,7 @@ void processMixedEvent(T1& Collisions,
         }
       }
       CprManager.fill();
-      PairHistManager.setPair(p1, p2);
+      PairHistManager.setPair(p1, p2, collision1);
       PairHistManager.fill();
     }
   }

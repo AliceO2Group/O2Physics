@@ -229,8 +229,8 @@ template <modes::TwoTrackResonance resoType>
 class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodatatypes::TwoTrackResonanceMaskType, kResonanceSelsMax>
 {
  public:
-  TwoTrackResonanceSelection() {}
-  virtual ~TwoTrackResonanceSelection() = default;
+  TwoTrackResonanceSelection() = default;
+  ~TwoTrackResonanceSelection() = default;
 
   template <typename T1, typename T2, typename T3>
   void configure(T1& config, T2& filter, T3& daughterFilter)

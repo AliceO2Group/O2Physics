@@ -114,7 +114,7 @@ struct FemtoPairTrackTrack {
     auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning1, confTrackBinning2);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
-    pairTrackTrackBuilder.init(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+    pairTrackTrackBuilder.init(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
   };
 
   void processSameEvent(FilteredCollision const& col, Tracks const& tracks)

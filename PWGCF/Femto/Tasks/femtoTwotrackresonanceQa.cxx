@@ -118,7 +118,7 @@ struct FemtoTwotrackresonanceQa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, colHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec, confCollisionQaBinning);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
@@ -129,16 +129,16 @@ struct FemtoTwotrackresonanceQa {
 
     if (doprocessPhis) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confPhiBinning);
-      phiHistManager.init(&hRegistry, phiHistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      phiHistManager.init(&hRegistry, phiHistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
     if (doprocessRho0s) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confRho0Binning);
-      rho0HistManager.init(&hRegistry, rho0HistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      rho0HistManager.init(&hRegistry, rho0HistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
 
     if (doprocessKstar0s) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confKstar0Binning);
-      kstar0HistManager.init(&hRegistry, kstar0HistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      kstar0HistManager.init(&hRegistry, kstar0HistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
   };
 

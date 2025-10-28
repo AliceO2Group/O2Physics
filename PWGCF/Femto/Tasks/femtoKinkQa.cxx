@@ -91,10 +91,10 @@ struct FemtoKinkQa {
     auto sigmaHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
     auto chaDauHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
 
-    sigmaHistManager.init(&hRegistry, sigmaHistSpec, chaDauHistSpec);
+    sigmaHistManager.init(&hRegistry, sigmaHistSpec, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
 
     auto collisionHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, collisionHistSpec);
+    colHistManager.init(&hRegistry, collisionHistSpec, confCollisionQaBinning);
   };
 
   // Process function for sigma particles from femto tables

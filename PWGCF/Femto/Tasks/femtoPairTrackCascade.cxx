@@ -101,8 +101,12 @@ struct FemtoPairTrackCascade {
     trackhistmanager::PrefixCascadeNegDaughter,
     pairhistmanager::PrefixTrackCascadeSe,
     pairhistmanager::PrefixTrackCascadeMe,
-    closepairrejection::PrefixTrackCascadeSe,
-    closepairrejection::PrefixTrackCascadeMe,
+    closepairrejection::PrefixTrackCascadeBachelorSe,
+    closepairrejection::PrefixTrackV0SameChargeSe,
+    closepairrejection::PrefixTrackV0OppositeChargeSe,
+    closepairrejection::PrefixTrackCascadeBachelorMe,
+    closepairrejection::PrefixTrackV0SameChargeMe,
+    closepairrejection::PrefixTrackV0OppositeChargeMe,
     modes::Mode::kAnalysis,
     modes::Cascade::kXi>
     pairTrackXiBuilder;
@@ -115,8 +119,12 @@ struct FemtoPairTrackCascade {
     trackhistmanager::PrefixCascadeNegDaughter,
     pairhistmanager::PrefixTrackCascadeSe,
     pairhistmanager::PrefixTrackCascadeMe,
-    closepairrejection::PrefixTrackCascadeSe,
-    closepairrejection::PrefixTrackCascadeMe,
+    closepairrejection::PrefixTrackCascadeBachelorSe,
+    closepairrejection::PrefixTrackV0SameChargeSe,
+    closepairrejection::PrefixTrackV0OppositeChargeSe,
+    closepairrejection::PrefixTrackCascadeBachelorMe,
+    closepairrejection::PrefixTrackV0SameChargeMe,
+    closepairrejection::PrefixTrackV0OppositeChargeMe,
     modes::Mode::kAnalysis,
     modes::Cascade::kOmega>
     pairTrackOmegaBuilder;
@@ -133,7 +141,7 @@ struct FemtoPairTrackCascade {
   HistogramRegistry hRegistry{"FemtoTrackCascade", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
-  closepairrejection::ConfCpr confCpr;
+  closepairrejection::ConfCprTrrackCascade confCpr;
 
   void init(InitContext&)
   {
@@ -157,14 +165,14 @@ struct FemtoPairTrackCascade {
     if (doprocessXiSameEvent || doprocessXiMixedEvent) {
       auto xiHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confXiBinning);
       auto pairTrackXiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confXiBinning);
-      pairTrackXiBuilder.init(&hRegistry, trackSelection, xiSelection, confCpr, confMixing, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackXiHistSpec, cprHistSpec);
+      pairTrackXiBuilder.init(&hRegistry, trackSelection, xiSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackXiHistSpec, cprHistSpec);
     }
 
     // setup for omegas
     if (doprocessOmegaSameEvent || doprocessOmegaMixedEvent) {
       auto omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
       auto pairTrackOmegaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confOmegaBinning);
-      pairTrackOmegaBuilder.init(&hRegistry, trackSelection, omegaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackOmegaHistSpec, cprHistSpec);
+      pairTrackOmegaBuilder.init(&hRegistry, trackSelection, omegaSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackOmegaHistSpec, cprHistSpec);
     }
 
     if (((doprocessXiSameEvent || doprocessXiMixedEvent) + (doprocessOmegaSameEvent || doprocessOmegaMixedEvent)) > 1) {
