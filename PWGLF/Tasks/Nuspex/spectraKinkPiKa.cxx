@@ -369,8 +369,8 @@ struct SpectraKinkPiKa {
   Configurable<float> maxqt{"maxqt", 0.3, "max qt for kaon"};
 
   Configurable<int> centestimator{"centestimator", 0, "Select multiplicity estimator: 0 - FT0C, 1 - FT0A, 2 - FT0M, 3 - FV0A, 4 - PVTracks"};
-  Configurable<int> pid{"pidMother", 321, ""};
-  Configurable<int> dpid{"pidDaughter", 13, ""};
+  Configurable<int> pid{"pid", 321, ""};
+  Configurable<int> dpid{"dpid", 13, ""};
   Configurable<bool> dpidCut{"dpidCut", 0, ""};
   Configurable<bool> dptCut{"dptCut", 0, ""};
   Configurable<bool> qa{"qa", 0, ""};
