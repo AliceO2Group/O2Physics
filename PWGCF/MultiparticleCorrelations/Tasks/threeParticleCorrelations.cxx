@@ -28,8 +28,8 @@
 
 #include "TPDGCode.h"
 
-#include <string>
 #include <algorithm>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -443,7 +443,7 @@ struct ThreeParticleCorrelations {
               deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
               deltaEta = trigger.eta() - associate.eta();
 
-              if (candMass >= MassLambda0 - invMassNSigma*dGaussSigma && candMass <= MassLambda0 + invMassNSigma*dGaussSigma) {
+              if (candMass >= MassLambda0 - invMassNSigma * dGaussSigma && candMass <= MassLambda0 + invMassNSigma * dGaussSigma) {
                 if (assocPID[0] == pionID) { // Pions
                   rSECorrRegistry.fill(HIST("hSameLambdaPion_SGNL"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, collision.centFT0C()) / (trackEff(hEffPions, associate, collision.centFT0C()) * v0Efficiency));
                 } else if (assocPID[0] == kaonID) { // Kaons
@@ -452,28 +452,28 @@ struct ThreeParticleCorrelations {
                   rSECorrRegistry.fill(HIST("hSameLambdaProton_SGNL"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, collision.centFT0C()) / (trackEff(hEffProtons, associate, collision.centFT0C()) * v0Efficiency));
                 }
 
-              } else if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+              } else if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                 if (assocPID[0] == pionID) { // Pions
                   rSECorrRegistry.fill(HIST("hSameLambdaPion_SB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, collision.centFT0C()) / (trackEff(hEffPions, associate, collision.centFT0C()) * v0Efficiency));
-                  if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass < MassLambda0 - invMassNSigma*dGaussSigma) {
+                  if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass < MassLambda0 - invMassNSigma * dGaussSigma) {
                     rSECorrRegistry.fill(HIST("hSameLambdaPion_leftSB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, collision.centFT0C()) / (trackEff(hEffPions, associate, collision.centFT0C()) * v0Efficiency));
-                  } else if (candMass > MassLambda0 + invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+                  } else if (candMass > MassLambda0 + invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                     rSECorrRegistry.fill(HIST("hSameLambdaPion_rightSB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, collision.centFT0C()) / (trackEff(hEffPions, associate, collision.centFT0C()) * v0Efficiency));
                   }
 
                 } else if (assocPID[0] == kaonID) { // Kaons
                   rSECorrRegistry.fill(HIST("hSameLambdaKaon_SB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionKaons, associate, collision.centFT0C()) / (trackEff(hEffKaons, associate, collision.centFT0C()) * v0Efficiency));
-                  if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass < MassLambda0 - invMassNSigma*dGaussSigma) {
+                  if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass < MassLambda0 - invMassNSigma * dGaussSigma) {
                     rSECorrRegistry.fill(HIST("hSameLambdaKaon_leftSB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionKaons, associate, collision.centFT0C()) / (trackEff(hEffKaons, associate, collision.centFT0C()) * v0Efficiency));
-                  } else if (candMass > MassLambda0 + invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+                  } else if (candMass > MassLambda0 + invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                     rSECorrRegistry.fill(HIST("hSameLambdaKaon_rightSB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionKaons, associate, collision.centFT0C()) / (trackEff(hEffKaons, associate, collision.centFT0C()) * v0Efficiency));
                   }
 
                 } else if (assocPID[0] == protonID) { // Protons
                   rSECorrRegistry.fill(HIST("hSameLambdaProton_SB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, collision.centFT0C()) / (trackEff(hEffProtons, associate, collision.centFT0C()) * v0Efficiency));
-                  if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass < MassLambda0 - invMassNSigma*dGaussSigma) {
+                  if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass < MassLambda0 - invMassNSigma * dGaussSigma) {
                     rSECorrRegistry.fill(HIST("hSameLambdaProton_leftSB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, collision.centFT0C()) / (trackEff(hEffProtons, associate, collision.centFT0C()) * v0Efficiency));
-                  } else if (candMass > MassLambda0 + invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+                  } else if (candMass > MassLambda0 + invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                     rSECorrRegistry.fill(HIST("hSameLambdaProton_rightSB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, collision.centFT0C()) / (trackEff(hEffProtons, associate, collision.centFT0C()) * v0Efficiency));
                   }
                 }
@@ -520,7 +520,7 @@ struct ThreeParticleCorrelations {
             deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
             deltaEta = trigger.eta() - associate.eta();
 
-            if (candMass >= MassLambda0 - invMassNSigma*dGaussSigma && candMass <= MassLambda0 + invMassNSigma*dGaussSigma) {
+            if (candMass >= MassLambda0 - invMassNSigma * dGaussSigma && candMass <= MassLambda0 + invMassNSigma * dGaussSigma) {
               if (assocPID[0] == pionID) { // Pions
                 rMECorrRegistry.fill(HIST("hMixLambdaPion_SGNL"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, coll_1.centFT0C()) / (trackEff(hEffPions, associate, coll_1.centFT0C()) * v0Efficiency));
               } else if (assocPID[0] == kaonID) { // Kaons
@@ -529,28 +529,28 @@ struct ThreeParticleCorrelations {
                 rMECorrRegistry.fill(HIST("hMixLambdaProton_SGNL"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, coll_1.centFT0C()) / (trackEff(hEffProtons, associate, coll_1.centFT0C()) * v0Efficiency));
               }
 
-            } else if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+            } else if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
               if (assocPID[0] == pionID) { // Pions
                 rMECorrRegistry.fill(HIST("hMixLambdaPion_SB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, coll_1.centFT0C()) / (trackEff(hEffPions, associate, coll_1.centFT0C()) * v0Efficiency));
-                if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass < MassLambda0 - invMassNSigma*dGaussSigma) {
+                if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass < MassLambda0 - invMassNSigma * dGaussSigma) {
                   rMECorrRegistry.fill(HIST("hMixLambdaPion_leftSB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, coll_1.centFT0C()) / (trackEff(hEffPions, associate, coll_1.centFT0C()) * v0Efficiency));
-                } else if (candMass > MassLambda0 + invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+                } else if (candMass > MassLambda0 + invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                   rMECorrRegistry.fill(HIST("hMixLambdaPion_rightSB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionPions, associate, coll_1.centFT0C()) / (trackEff(hEffPions, associate, coll_1.centFT0C()) * v0Efficiency));
                 }
 
               } else if (assocPID[0] == kaonID) { // Kaons
                 rMECorrRegistry.fill(HIST("hMixLambdaKaon_SB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionKaons, associate, coll_1.centFT0C()) / (trackEff(hEffKaons, associate, coll_1.centFT0C()) * v0Efficiency));
-                if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass < MassLambda0 - invMassNSigma*dGaussSigma) {
+                if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass < MassLambda0 - invMassNSigma * dGaussSigma) {
                   rMECorrRegistry.fill(HIST("hMixLambdaKaon_leftSB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionKaons, associate, coll_1.centFT0C()) / (trackEff(hEffKaons, associate, coll_1.centFT0C()) * v0Efficiency));
-                } else if (candMass > MassLambda0 + invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+                } else if (candMass > MassLambda0 + invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                   rMECorrRegistry.fill(HIST("hMixLambdaKaon_rightSB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionKaons, associate, coll_1.centFT0C()) / (trackEff(hEffKaons, associate, coll_1.centFT0C()) * v0Efficiency));
                 }
 
               } else if (assocPID[0] == protonID) { // Protons
                 rMECorrRegistry.fill(HIST("hMixLambdaProton_SB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, coll_1.centFT0C()) / (trackEff(hEffProtons, associate, coll_1.centFT0C()) * v0Efficiency));
-                if (candMass >= MassLambda0 - 2*invMassNSigma*dGaussSigma && candMass < MassLambda0 - invMassNSigma*dGaussSigma) {
+                if (candMass >= MassLambda0 - 2 * invMassNSigma * dGaussSigma && candMass < MassLambda0 - invMassNSigma * dGaussSigma) {
                   rMECorrRegistry.fill(HIST("hMixLambdaProton_leftSB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, coll_1.centFT0C()) / (trackEff(hEffProtons, associate, coll_1.centFT0C()) * v0Efficiency));
-                } else if (candMass > MassLambda0 + invMassNSigma*dGaussSigma && candMass <= MassLambda0 + 2*invMassNSigma*dGaussSigma) {
+                } else if (candMass > MassLambda0 + invMassNSigma * dGaussSigma && candMass <= MassLambda0 + 2 * invMassNSigma * dGaussSigma) {
                   rMECorrRegistry.fill(HIST("hMixLambdaProton_rightSB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), ratioCorrection(hCorrectionProtons, associate, coll_1.centFT0C()) / (trackEff(hEffProtons, associate, coll_1.centFT0C()) * v0Efficiency));
                 }
               }
@@ -1175,7 +1175,7 @@ struct ThreeParticleCorrelations {
       }
 
       double invMass = RecoDecay::m(std::array{dMomArray, aMomArray}, massArray);
-      if (invMass >= MassLambda0 - invMassNSigma*dGaussSigma && invMass <= MassLambda0 + invMassNSigma*dGaussSigma) {
+      if (invMass >= MassLambda0 - invMassNSigma * dGaussSigma && invMass <= MassLambda0 + invMassNSigma * dGaussSigma) {
         return false;
       }
     }
