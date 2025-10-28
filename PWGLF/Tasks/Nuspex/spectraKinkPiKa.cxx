@@ -68,13 +68,13 @@ using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod:
 namespace
 {
 constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f, 24.5597f, 34.388f, 39.3329f};
-constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr double BetheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"Daughter"};
 
 } // namespace
 
-struct kinkCandidate {
+struct KinkCandidate {
   int mothTrackID;
   int daugTrackID;
   int collisionID;
@@ -90,7 +90,7 @@ struct kinkCandidate {
   float dcaXYmoth = -999;
   float kinkAngle = -999;
 };
-struct kinkBuilder {
+struct KinkBuilder {
   // kink analysis
   Produces<aod::KinkCands> outputDataTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -116,7 +116,7 @@ struct kinkBuilder {
   svPoolCreator svCreator;
 
   // bethe bloch parameters
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for charged daughter"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {BetheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for charged daughter"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<float> customVertexerTimeMargin{"customVertexerTimeMargin", 800, "Time margin for custom vertexer (ns)"};
   Configurable<bool> skipAmbiTracks{"skipAmbiTracks", false, "Skip ambiguous tracks"};
@@ -128,7 +128,7 @@ struct kinkBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
 
   // std vector of candidates
-  std::vector<kinkCandidate> kinkCandidates;
+  std::vector<KinkCandidate> kinkCandidates;
   int mRunNumber;
   float mBz;
   std::array<float, 6> mBBparamsDaug;
@@ -139,10 +139,8 @@ struct kinkBuilder {
   {
     // dummy values, 1 for mother, 0 for daughter
     svCreator.setPDGs(1, 0);
-
     mRunNumber = 0;
     mBz = 0;
-
     ccdb->setURL(ccdbPath);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -158,7 +156,8 @@ struct kinkBuilder {
     if (skipAmbiTracks) {
       svCreator.setSkipAmbiTracks();
     }
-    for (int i = 0; i < 5; i++) {
+    const int blpar = 5;
+    for (int i = 0; i < blpar; i++) {
       mBBparamsDaug[i] = cfgBetheBlochParams->get("Daughter", Form("p%i", i));
     }
     mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
@@ -167,12 +166,14 @@ struct kinkBuilder {
   template <typename T>
   bool selectMothTrack(const T& candidate)
   {
+    const int itscls = 6;
+    const int itsclsinb = 3;
     // ITS-standalone (no TPC, no TOF)
     if (!kaontopologhy) {
       if (candidate.has_collision() && candidate.hasITS() && !candidate.hasTPC() && !candidate.hasTOF() &&
-          candidate.itsNCls() < 6 &&
-          candidate.itsNClsInnerBarrel() == 3 &&
-          candidate.itsChi2NCl() < 36 &&
+          candidate.itsNCls() < itscls &&
+          candidate.itsNClsInnerBarrel() == itsclsinb &&
+          candidate.itsChi2NCl() < itsChi2cut &&
           candidate.pt() > minPtMoth) {
         return true;
       }
@@ -188,7 +189,6 @@ struct kinkBuilder {
       }
       return false;
     }
-
     return false; // fallback
   }
 
@@ -198,11 +198,9 @@ struct kinkBuilder {
     if (!kaontopologhy && (!candidate.hasTPC() || !candidate.hasITS())) {
       return false;
     }
-
     if (kaontopologhy && (!candidate.hasTPC() || candidate.hasITS())) {
       return false;
     }
-
     if (askTOFforDaug && !candidate.hasTOF()) {
       return false;
     }
@@ -214,9 +212,7 @@ struct kinkBuilder {
   {
     svCreator.clearPools();
     svCreator.fillBC2Coll(collisions, bcs);
-
     for (const auto& track : tracks) {
-
       bool isDaug = selectDaugTrack(track);
       bool isMoth = selectMothTrack(track);
 
@@ -224,7 +220,6 @@ struct kinkBuilder {
         continue;
       if (isDaug && std::abs(track.eta()) > etaMaxDaug)
         continue;
-
       if (isMoth && std::abs(track.eta()) > etaMaxMoth)
         continue;
 
@@ -234,7 +229,7 @@ struct kinkBuilder {
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
 
     for (const auto& svCand : kinkPool) {
-      kinkCandidate kinkCand;
+      KinkCandidate kinkCand;
 
       auto trackMoth = tracks.rawIteratorAt(svCand.tr0Idx);
       auto trackDaug = tracks.rawIteratorAt(svCand.tr1Idx);
@@ -263,14 +258,12 @@ struct kinkBuilder {
       if ((std::abs(trackParCovMoth.getPhi() - trackParCovDaug.getPhi()) * radToDeg) > maxPhiDiff) {
         continue;
       }
-
       // propagate to PV
       std::array<float, 2> dcaInfoDaug;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
       if (std::abs(dcaInfoDaug[0]) < minDCADaugToPV) {
         continue;
       }
-
       int nCand = 0;
       try {
         nCand = fitter.process(trackParCovMoth, trackParCovDaug);
@@ -281,21 +274,19 @@ struct kinkBuilder {
       if (nCand == 0) {
         continue;
       }
-
       if (!fitter.propagateTracksToVertex()) {
         continue;
       }
-
       auto propMothTrack = fitter.getTrack(0);
       auto propDaugTrack = fitter.getTrack(1);
       kinkCand.decVtx = fitter.getPCACandidatePos();
-
-      for (int i = 0; i < 3; i++) {
+      const int vtxp = 3;
+      for (int i = 0; i < vtxp; i++) {
         kinkCand.decVtx[i] -= kinkCand.primVtx[i];
       }
       propMothTrack.getPxPyPzGlo(kinkCand.momMoth);
       propDaugTrack.getPxPyPzGlo(kinkCand.momDaug);
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < vtxp; i++) {
         kinkCand.momMoth[i] *= charge;
         kinkCand.momDaug[i] *= charge;
       }
@@ -352,10 +343,10 @@ struct kinkBuilder {
                       kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
     }
   }
-  PROCESS_SWITCH(kinkBuilder, process, "Produce kink tables", false);
+  PROCESS_SWITCH(KinkBuilder, process, "Produce kink tables", false);
 };
 
-struct spectraKinkPiKa {
+struct SpectraKinkPiKa {
   Service<o2::framework::O2DatabasePDG> pdg;
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -363,8 +354,8 @@ struct spectraKinkPiKa {
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> cutNSigmaKa{"cutNSigmaKa", 4, "NSigmaTPCKaon"};
-  Configurable<float> cutNSigmaMu{"cutNSigmaMu", 4, "cutNSigmaMu"};
+  Configurable<float> cutNsigmaKa{"cutNsigmaKa", 4, "NSigmaTPCKaon"};
+  Configurable<float> cutNsigmaMu{"cutNsigmaMu", 4, "cutNSigmaMu"};
   Configurable<float> etaCut{"etaCut", 0.8, "etaCut"};
   Configurable<float> rapCut{"rapCut", 0.8, "rapCut"};
   Configurable<float> kinkanglecut{"kinkanglecut", 2.0, "kinkanglecut"};
@@ -388,8 +379,8 @@ struct spectraKinkPiKa {
   Configurable<bool> onlykaon{"onlykaon", 0, "kaon"};
   Configurable<bool> additionalhist{"additionalhist", 1, "additional histogram"};
   Configurable<bool> pvtrack{"pvtrack", 1, "pvtrack"};
-  Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", 1, "ITS refit"};
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", 1, "TPC refit"};
+  Configurable<bool> cfgUseItsRefit{"cfgUseItsRefit", 1, "ITS refit"};
+  Configurable<bool> cfgUseTpcRefit{"cfgUseTpcRefit", 1, "TPC refit"};
 
   ConfigurableAxis ptAxis{"ptAxis", {150, 0, 15}, ""};
   ConfigurableAxis qtAxis{"qtAxis", {2000, 0.0, 2.0}, ""};
@@ -493,30 +484,26 @@ struct spectraKinkPiKa {
     }
   }
 
-  double computeMotherMass(ROOT::Math::PxPyPzMVector p_moth, ROOT::Math::PxPyPzMVector p_daug)
+  double computeMotherMass(ROOT::Math::PxPyPzMVector pmoth, ROOT::Math::PxPyPzMVector pdaug)
   {
     // Infer neutrino momentum from conservation
-    ROOT::Math::XYZVector p_nu_vec = p_moth.Vect() - p_daug.Vect();
-
+    ROOT::Math::XYZVector pnuvec = pmoth.Vect() - pdaug.Vect();
     // Neutrino energy (massless): E_nu = |p_nu|
-    double E_nu = p_nu_vec.R();
-
+    double enu = pnuvec.R();
     // Total energy of the system
-    double E_total = p_daug.E() + E_nu;
-
+    double etotal = pdaug.E() + enu;
     // Total momentum = p_nu + p_daug
-    ROOT::Math::XYZVector p_total_vec = p_nu_vec + p_daug.Vect();
-    double p_total_sq = p_total_vec.Mag2();
-
+    ROOT::Math::XYZVector ptotalvec = pnuvec + pdaug.Vect();
+    double ptotalsq = ptotalvec.Mag2();
     // Invariant mass from E² - |p|²
-    double m2 = E_total * E_total - p_total_sq;
+    double m2 = etotal * etotal - ptotalsq;
     return (m2 > 0) ? std::sqrt(m2) : -1.0;
   }
-  double computeQt(ROOT::Math::PxPyPzMVector p_moth, ROOT::Math::PxPyPzMVector p_daug)
+  double computeQt(ROOT::Math::PxPyPzMVector pmoth, ROOT::Math::PxPyPzMVector pdaug)
   {
-    TVector3 pdlab(p_daug.Px(), p_daug.Py(), p_daug.Pz());
+    TVector3 pdlab(pdaug.Px(), pdaug.Py(), pdaug.Pz());
     // Compute transverse component
-    TVector3 motherDir(p_moth.Px(), p_moth.Py(), p_moth.Pz());
+    TVector3 motherDir(pmoth.Px(), pmoth.Py(), pmoth.Pz());
     double ptd = pdlab.Perp(motherDir); // or p_d_lab.Mag() * sin(theta)
     return ptd;
   }
@@ -575,9 +562,9 @@ struct spectraKinkPiKa {
         continue;
 
       rpiKkink.fill(HIST("h1_tracks_data"), 4.0);
-      if (cfgUseITSRefit && !(o2::aod::track::ITSrefit))
+      if (cfgUseItsRefit && !(o2::aod::track::ITSrefit))
         continue;
-      if (cfgUseTPCRefit && !(o2::aod::track::TPCrefit))
+      if (cfgUseTpcRefit && !(o2::aod::track::TPCrefit))
         continue;
       rpiKkink.fill(HIST("h1_tracks_data"), 5.0);
       bool kaon = false;
@@ -605,14 +592,14 @@ struct spectraKinkPiKa {
       if (mothTrack.tpcNClsFound() > maxtpcncle || mothTrack.tpcNClsFound() < mintpcncle)
         continue;
       rpiKkink.fill(HIST("h1_tracks_data"), 8.0);
-      if (std::abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
+      if (std::abs(mothTrack.tpcNSigmaKa()) < cutNsigmaKa) {
         kaon = true;
       }
       if (!kaon) {
         continue;
       }
       rpiKkink.fill(HIST("h1_tracks_data"), 9.0);
-      if (cutNSigmaMu != -1 && std::abs(dauTrack.tpcNSigmaMu()) > cutNSigmaMu) {
+      if (cutNsigmaMu != -1 && std::abs(dauTrack.tpcNSigmaMu()) > cutNsigmaMu) {
         continue;
       }
       double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
@@ -685,7 +672,7 @@ struct spectraKinkPiKa {
       }
     }
   }
-  PROCESS_SWITCH(spectraKinkPiKa, processData, "Data processing", true);
+  PROCESS_SWITCH(SpectraKinkPiKa, processData, "Data processing", true);
 
   void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, TracksFull const&)
   {
@@ -745,10 +732,10 @@ struct spectraKinkPiKa {
             rpiKkink.fill(HIST("h2_kaon_pt_vs_rap_rec_full"), v0.Pt(), v0.Rapidity());
           }
         }
-        if (cfgUseITSRefit && !(o2::aod::track::ITSrefit))
+        if (cfgUseItsRefit && !(o2::aod::track::ITSrefit))
           continue;
         rpiKkink.fill(HIST("h1_tracks"), 4.0);
-        if (cfgUseTPCRefit && !(o2::aod::track::TPCrefit))
+        if (cfgUseTpcRefit && !(o2::aod::track::TPCrefit))
           continue;
         rpiKkink.fill(HIST("h1_tracks"), 5.0);
 
@@ -770,7 +757,7 @@ struct spectraKinkPiKa {
           continue;
         rpiKkink.fill(HIST("h1_tracks"), 7.0);
         bool kaon = false;
-        if (std::abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
+        if (std::abs(mothTrack.tpcNSigmaKa()) < cutNsigmaKa) {
           kaon = true;
         }
         if (dptCut && v1.Pt() > v0.Pt())
@@ -840,7 +827,8 @@ struct spectraKinkPiKa {
             if (!mcTrackDau.has_mothers())
               continue;
             rpiKkink.fill(HIST("h1_tracks"), 14.0);
-            if (mcTrackDau.getProcess() != 4)
+            const int process = 4;
+            if (mcTrackDau.getProcess() != process)
               continue;
 
             rpiKkink.fill(HIST("h1_tracks"), 15.0);
@@ -914,18 +902,17 @@ struct spectraKinkPiKa {
       int piond = 0;
       int eld = 0;
       double ptd = 0;
+      const int process = 4;
       for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
-        if (daughter.getProcess() != 4)
+        if (daughter.getProcess() != process)
           continue;
         v1.SetCoordinates(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassMuon);
         ptd = computeQt(v0, v1);
-        if (std::abs(daughter.pdgCode()) == 11) {
+        if (std::abs(daughter.pdgCode()) == kElectron) {
           eld++;
-        } else if (std::abs(daughter.pdgCode()) == 13) {
+        } else if (std::abs(daughter.pdgCode()) == kMuonPlus) {
           muond++;
-        }
-
-        else if (std::abs(daughter.pdgCode()) == 211) {
+        } else if (std::abs(daughter.pdgCode()) == kPiPlus) {
           piond++;
         }
       }
@@ -959,12 +946,12 @@ struct spectraKinkPiKa {
       }
     }
   }
-  PROCESS_SWITCH(spectraKinkPiKa, processMC, "MC processing", false);
+  PROCESS_SWITCH(SpectraKinkPiKa, processMC, "MC processing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto builderTask = adaptAnalysisTask<kinkBuilder>(cfgc);
-  auto spectraTask = adaptAnalysisTask<spectraKinkPiKa>(cfgc);
+  auto builderTask = adaptAnalysisTask<KinkBuilder>(cfgc);
+  auto spectraTask = adaptAnalysisTask<SpectraKinkPiKa>(cfgc);
   return {builderTask, spectraTask}; // Just return both tasks
 }
