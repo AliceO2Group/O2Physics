@@ -1721,10 +1721,10 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
   void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
   {
-    // if (events.size() == 0) {
-    //   LOG(warning) << "No events in this TF, going to the next one ...";
-    //   return;
-    // }
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
     if (fCurrentRun != events.begin().runNumber()) {
       initParamsFromCCDB(events.begin().timestamp(), TTwoProngFitter);
       fCurrentRun = events.begin().runNumber();
@@ -3452,9 +3452,15 @@ struct AnalysisDileptonTrack {
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of track cuts to be correlated with the dileptons"};
   Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigDileptonpTCut{"cfgDileptonpTCut", 0.0, "pT cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonLowpTCut{"cfgDileptonLowpTCut", 0.0, "Low pT cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonHighpTCut{"cfgDileptonHighpTCut", 1E5, "High pT cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonRapCutAbs{"cfgDileptonRapCutAbs", 1.0, "Rap cut for dileptons used in the triplet vertexing"};
   Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  Configurable<bool> fConfigUseMCGenpTcut{"cfgUseMCGenpTcut", false, "Use pT cut for dileptons used in the triplet vertexing(generated)"};
+  Configurable<bool> fConfigUseMCRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing(generated and reconstructed)"};
+  Configurable<bool> fConfigCaculateEC{"cfgCaculateEC", false, "the switch for caculate the energy correlators"};
+  Configurable<bool> fConfigCaculateRE{"cfgCaculateRE", true, "the switch for caculate the RE"};
 
   Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
@@ -3497,7 +3503,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonLowpTCut&& aod::reducedpair::pt<fConfigDileptonHighpTCut && aod::reducedpair::mass> fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
@@ -3505,6 +3511,8 @@ struct AnalysisDileptonTrack {
 
   // use two values array to avoid mixing up the quantities
   float* fValuesDilepton;
+  float* fValuesSignal;
+  float* fValuesEC;
   float* fValuesHadron;
   HistogramManager* fHistMan;
 
@@ -3540,6 +3548,9 @@ struct AnalysisDileptonTrack {
 
     fValuesDilepton = new float[VarManager::kNVars];
     fValuesHadron = new float[VarManager::kNVars];
+    fValuesSignal = new float[VarManager::kNVars];
+    fValuesEC = new float[VarManager::kNVars];
+
     fTrackCutBitMap = 0;
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -3799,9 +3810,11 @@ struct AnalysisDileptonTrack {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
-      for (auto& sig : fRecMCSignals) {
-        DefineHistograms(fHistMan, Form("MCTruthGenSelBR_%s", sig->GetName()), "");
-        DefineHistograms(fHistMan, Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), "");
+      if (fConfigCaculateRE) {
+        for (auto& sig : fRecMCSignals) {
+          DefineHistograms(fHistMan, Form("MCTruthGenSelBR_%s", sig->GetName()), "");
+          DefineHistograms(fHistMan, Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), "");
+        }
       }
     }
 
@@ -3865,6 +3878,11 @@ struct AnalysisDileptonTrack {
       if (dilepton.sign() != 0) {
         continue;
       }
+
+      // dilepton rap cut
+      float rap = dilepton.rap();
+      if (fConfigUseMCRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+        continue;
 
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
 
@@ -4185,6 +4203,8 @@ struct AnalysisDileptonTrack {
   void processMCGenWithEventSelection(soa::Filtered<MyEventsVtxCovSelected> const& events,
                                       ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesSignal);
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesEC);
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -4196,17 +4216,39 @@ struct AnalysisDileptonTrack {
       auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       for (auto& track : groupedMCTracks) {
-
-        VarManager::FillTrackMC(mcTracks, track);
-
-        auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
+        // apply kinematic cuts for signal
+        if (fConfigUseMCGenpTcut && (track_raw.pt() < fConfigDileptonLowpTCut || track_raw.pt() > fConfigDileptonHighpTCut))
+          continue;
+        if (fConfigUseMCRapcut && abs(track_raw.y()) > fConfigDileptonRapCutAbs)
+          continue;
+        VarManager::FillTrackMC(mcTracks, track_raw, fValuesSignal);
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
-            fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), fValuesSignal);
+          }
+        }
+        // for the energy correlators
+        if (!fConfigCaculateEC)
+          continue;
+        for (auto& mctrack1 : groupedMCTracks) {
+          if (TMath::Abs(mctrack1.pdgCode()) == 443 || TMath::Abs(mctrack1.pdgCode()) == 11 || TMath::Abs(mctrack1.pdgCode()) == 22)
+            continue;
+          if (mctrack1.pt() < fConfigMCGenHadronPtMin.value || std::abs(mctrack1.eta()) > fConfigMCGenHadronEtaAbs.value)
+            continue;
+          if (mctrack1.getGenStatusCode() <= 0)
+            continue;
+          for (auto& sig : fGenMCSignals) {
+            VarManager::FillEnergyCorrelators(track_raw, mctrack1, fValuesEC);
+            if (sig->CheckSignal(true, track_raw)) {
+              fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), fValuesEC);
+            }
           }
         }
       }
 
+      if (!fConfigCaculateRE)
+        continue;
       // make a list of all MC tracks in the MC collision corresponding to the current reconstructed event
       std::vector<size_t> mcTrackIndices;
       for (auto& t : groupedMCTracks) {
@@ -4334,6 +4376,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
 
     if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "energy_correlator_gen");
     }
 
     if (classStr.Contains("DileptonsSelected")) {
