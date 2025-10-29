@@ -93,6 +93,12 @@ struct V0ptHadPiKaProt {
     kTOF,
     kITS
   };
+  enum CentralityEstimator {
+    kFT0C = 0,
+    kFT0A,
+    kFT0M,
+    kFV0A
+  };
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
@@ -116,7 +122,7 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgCutEtaLeft{"cfgCutEtaLeft", 0.8f, "Left end of eta gap"};
   Configurable<float> cfgCutEtaRight{"cfgCutEtaRight", 0.8f, "Right end of eta gap"};
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
-  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 1-->FT0C, 2-->FT0A, 3-->FT0M, 4-->FV0A"};
+  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Which centrality estimator? 0-->FT0C, 1-->FT0A, 2-->FT0M, 3-->FV0A"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
@@ -461,13 +467,13 @@ struct V0ptHadPiKaProt {
 
     // Centrality
     double cent = 0.0;
-    if (cfgCentralityChoice == 1)
+    if (cfgCentralityChoice == kFT0C)
       cent = coll.centFT0C();
-    else if (cfgCentralityChoice == 2)
+    else if (cfgCentralityChoice == kFT0A)
       cent = coll.centFT0A();
-    else if (cfgCentralityChoice == 3)
+    else if (cfgCentralityChoice == kFT0M)
       cent = coll.centFT0M();
-    else if (cfgCentralityChoice == 4)
+    else if (cfgCentralityChoice == kFV0A)
       cent = coll.centFV0A();
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
@@ -552,11 +558,11 @@ struct V0ptHadPiKaProt {
 
       if (cfgUseRun3V2PID) {
         int pidVal = getNsigmaPID(track);
-        if (pidVal == 1)
+        if (pidVal == PIONS + 1)
           isPion = true;
-        if (pidVal == 2)
+        if (pidVal == KAONS + 1)
           isKaon = true;
-        if (pidVal == 3)
+        if (pidVal == PROTONS + 1)
           isProton = true;
       } else {
         isPion = selectionPion(track);
