@@ -1133,7 +1133,6 @@ struct SginclusivePhiKstarSD {
       auto [eventSelected2, gapSide2] = selectionEvent(collision2, false);
       if (!eventSelected1 || !eventSelected2)
         continue;
-      ;
 
       if (gapSide1 != gapSide2)
         continue;
