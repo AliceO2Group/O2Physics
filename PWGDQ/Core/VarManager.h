@@ -283,6 +283,9 @@ class VarManager : public TObject
     kMCEventWeight,
     kMCEventImpParam,
     kMCEventCentrFT0C,
+    kMultMCNParticlesEta10,
+    kMultMCNParticlesEta08,
+    kMultMCNParticlesEta05,
     kQ1ZNAX,
     kQ1ZNAY,
     kQ1ZNCX,
@@ -1989,6 +1992,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if constexpr ((fillMap & CollisionCent) > 0) {
       // WARNING: temporary solution, ongoing work to provide proper MC gen. centrality
       values[kMCEventCentrFT0C] = event.bestCollisionCentFT0C();
+      values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
+      values[kMultMCNParticlesEta08] = event.multMCNParticlesEta08();
+      values[kMultMCNParticlesEta10] = event.multMCNParticlesEta10();
     }
   }
 
