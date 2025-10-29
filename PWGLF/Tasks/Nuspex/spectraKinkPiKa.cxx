@@ -333,7 +333,7 @@ struct KinkBuilder {
     kinkCandidates.clear();
     fillCandidateData(collisions, tracks, ambiTracks, bcs);
     // sort kinkCandidates by collisionID to allow joining with collision table
-    std::sort(kinkCandidates.begin(), kinkCandidates.end(), [](const kinkCandidate& a, const kinkCandidate& b) { return a.collisionID < b.collisionID; });
+    std::sort(kinkCandidates.begin(), kinkCandidates.end(), [](const KinkCandidate& a, const KinkCandidate& b) { return a.collisionID < b.collisionID; });
 
     for (const auto& kinkCand : kinkCandidates) {
       outputDataTable(kinkCand.collisionID, kinkCand.mothTrackID, kinkCand.daugTrackID,
