@@ -655,6 +655,12 @@ struct LightIonsEvSelQa {
     histos.add("MCnonTVX/hMCdataVzDiff", "", kTH2F, {axisNcontrib, axisVtxZdiff});
     histos.add("MCnonTVX/hMCdataBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("MCnonTVX/hMCdataFoundBcDiffVsMult", "", kTH2F, {axisNcontrib, axisBcDiff});
+
+    //
+    histos.add("MC_not_TF_ROF_borders/hNcontribColFromData", "", kTH1F, {axisNcontrib});
+    histos.add("MC_not_TF_ROF_borders/hNcontribAccFromData", "", kTH1F, {axisNcontrib});
+    histos.add("MC_not_TF_ROF_borders/hNcontribColFromData_foundBcDiff0", "", kTH1F, {axisNcontrib});
+    histos.add("MC_not_TF_ROF_borders/hNcontribAccFromData_foundBcDiff0", "", kTH1F, {axisNcontrib});
   }
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
@@ -946,9 +952,11 @@ struct LightIonsEvSelQa {
           nGlobalTracksPV++;
       } // end of track loop
 
-      histos.fill(HIST("hNcontribColFromData"), nPVtracks);
-      if (col.selection_bit(kIsTriggerTVX))
-        histos.fill(HIST("hNcontribAccFromData"), nPVtracks);
+      if (col.selection_bit(kNoTimeFrameBorder) && col.selection_bit(kNoITSROFrameBorder)) {
+        histos.fill(HIST("hNcontribColFromData"), nPVtracks);
+        if (col.selection_bit(kIsTriggerTVX))
+          histos.fill(HIST("hNcontribAccFromData"), nPVtracks);
+      }
 
       bool hasFT0 = foundBC.has_ft0();
       bool hasFV0A = foundBC.has_fv0a();
@@ -1866,6 +1874,18 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("MCnonTVX/hMCdataVzDiff"), col.numContrib(), diffVz);
           histos.fill(HIST("MCnonTVX/hMCdataBcDiffVsMult"), col.numContrib(), bcDiff);
           histos.fill(HIST("MCnonTVX/hMCdataFoundBcDiffVsMult"), col.numContrib(), foundBcDiff);
+        }
+
+        if (col.selection_bit(kNoTimeFrameBorder) && col.selection_bit(kNoITSROFrameBorder)) {
+          histos.fill(HIST("MC_not_TF_ROF_borders/hNcontribColFromData"), col.numContrib());
+          if (col.selection_bit(kIsTriggerTVX))
+            histos.fill(HIST("MC_not_TF_ROF_borders/hNcontribAccFromData"), col.numContrib());
+
+          if (foundBcDiff == 0) {
+            histos.fill(HIST("MC_not_TF_ROF_borders/hNcontribColFromData_foundBcDiff0"), col.numContrib());
+            if (col.selection_bit(kIsTriggerTVX))
+              histos.fill(HIST("MC_not_TF_ROF_borders/hNcontribAccFromData_foundBcDiff0"), col.numContrib());
+          }
         }
       }
     }
