@@ -19,6 +19,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -43,9 +44,11 @@ namespace o2::aod
 namespace lambdacollision
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
-}
+DECLARE_SOA_COLUMN(Mult, mult, float);
+} // namespace lambdacollision
 DECLARE_SOA_TABLE(LambdaCollisions, "AOD", "LAMBDACOLS", o2::soa::Index<>,
                   lambdacollision::Cent,
+                  lambdacollision::Mult,
                   aod::collision::PosX,
                   aod::collision::PosY,
                   aod::collision::PosZ);
@@ -56,6 +59,7 @@ namespace lambdamcgencollision
 }
 DECLARE_SOA_TABLE(LambdaMcGenCollisions, "AOD", "LMCGENCOLS", o2::soa::Index<>,
                   lambdacollision::Cent,
+                  lambdacollision::Mult,
                   o2::aod::mccollision::PosX,
                   o2::aod::mccollision::PosY,
                   o2::aod::mccollision::PosZ);
@@ -172,6 +176,11 @@ enum TrackLabels {
   kGenLambdaToPrPi
 };
 
+enum CentEstType {
+  kCentFT0M = 0,
+  kCentFV0A
+};
+
 enum RunType {
   kRun3 = 0,
   kRun2
@@ -229,6 +238,7 @@ struct LambdaTableProducer {
   Produces<aod::LambdaMcGenTracks> lambdaMCGenTrackTable;
 
   // Collisions
+  Configurable<int> cCentEstimator{"cCentEstimator", 0, "Centrality Estimator : 0-FT0M, 1-FV0A"};
   Configurable<float> cMinZVtx{"cMinZVtx", -10.0, "Min VtxZ cut"};
   Configurable<float> cMaxZVtx{"cMaxZVtx", 10.0, "Max VtxZ cut"};
   Configurable<float> cMinMult{"cMinMult", 0., "Minumum Multiplicity"};
@@ -318,9 +328,8 @@ struct LambdaTableProducer {
                                                             {"hPrimFracVsPtEtaCentLambda", "hPrimFracVsPtEtaCentAntiLambda"}};
 
   // Initialize Global Variables
-  float cent = 0.;
+  float cent = 0., mult = 0.;
   float pt = 0., eta = 0., rap = 0., phi = 0.;
-  bool bSecondaryLambdaFlag = false;
 
   void init(InitContext const&)
   {
@@ -412,9 +421,7 @@ struct LambdaTableProducer {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
-      histos.add("Tracks/h2f_lambda_from_sigma", "PIDs", kTH2F, {axisPID, axisV0Pt});
-      histos.add("Tracks/h2f_lambda_from_cascade", "PIDs", kTH2F, {axisPID, axisV0Pt});
-      histos.add("Tracks/h2f_lambda_from_omega", "PIDs", kTH2F, {axisPID, axisV0Pt});
+      histos.add("Tracks/h2f_lambda_mothers_pdg", "PIDs", kTH2F, {axisPID, axisV0Pt});
 
       // McGen Histos
       histos.add("McGen/h1f_collision_recgen", "# of Reco Collision Associated to One Mc Generator Collision", kTH1F, {axisMult});
@@ -481,7 +488,12 @@ struct LambdaTableProducer {
     }
 
     if constexpr (run == kRun3) { // Run3 Min-Bias Trigger
-      cent = col.centFT0M();
+      // select centrality estimator
+      if (cCentEstimator == kCentFT0M) {
+        cent = col.centFT0M();
+      } else if (cCentEstimator == kCentFV0A) {
+        cent = col.centFV0A();
+      }
       if (cSel8Trig && !col.sel8()) {
         return false;
       }
@@ -495,7 +507,7 @@ struct LambdaTableProducer {
       }
     }
 
-    if (cent <= cMinMult || cent >= cMaxMult) { // select centrality
+    if (cent <= cMinMult || cent >= cMaxMult) { // select centrality percentile class
       return false;
     }
 
@@ -526,6 +538,9 @@ struct LambdaTableProducer {
     if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
+
+    // Set Multiplicity
+    mult = col.multNTracksPV();
 
     return true;
   }
@@ -772,7 +787,6 @@ struct LambdaTableProducer {
     // check for secondary lambda
     if (!mcpart.isPhysicalPrimary()) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kSecondaryLambda);
-      bSecondaryLambdaFlag = true;
       return kSecondary;
     }
 
@@ -814,18 +828,6 @@ struct LambdaTableProducer {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kAntiLambdaNotAntiPrPiPlus);
           return false;
         }
-      }
-    }
-
-    // get information about secondary lambdas
-    if (bSecondaryLambdaFlag) {
-      auto lambdaMothers = mcpart.template mothers_as<aod::McParticles>();
-      if (std::abs(lambdaMothers[0].pdgCode()) == kSigmaMinus || std::abs(lambdaMothers[0].pdgCode()) == kSigma0 || std::abs(lambdaMothers[0].pdgCode()) == kSigmaPlus) {
-        histos.fill(HIST("Tracks/h2f_lambda_from_sigma"), mcpart.pdgCode(), mcpart.pt());
-      } else if (std::abs(lambdaMothers[0].pdgCode()) == kXiMinus || std::abs(lambdaMothers[0].pdgCode()) == kXi0) {
-        histos.fill(HIST("Tracks/h2f_lambda_from_cascade"), mcpart.pdgCode(), mcpart.pt());
-      } else if (std::abs(lambdaMothers[0].pdgCode()) == kOmegaMinus) {
-        histos.fill(HIST("Tracks/h2f_lambda_from_omega"), mcpart.pdgCode(), mcpart.pt());
       }
     }
 
@@ -891,6 +893,14 @@ struct LambdaTableProducer {
     }
 
     return primFrac * effCorrFact;
+  }
+
+  template <typename V, typename T>
+  void fillLambdaMothers(V const& v0, T const&)
+  {
+    auto mcpart = v0.template mcParticle_as<aod::McParticles>();
+    auto lambdaMothers = mcpart.template mothers_as<aod::McParticles>();
+    histos.fill(HIST("Tracks/h2f_lambda_mothers_pdg"), lambdaMothers[0].pdgCode(), v0.pt());
   }
 
   template <ParticleType part, typename C, typename V, typename T>
@@ -973,7 +983,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
 
     // Fill Collision Table
-    lambdaCollisionTable(cent, collision.posX(), collision.posY(), collision.posZ());
+    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ());
 
     // initialize v0track objects
     ParticleType v0Type = kLambda;
@@ -1005,9 +1015,11 @@ struct LambdaTableProducer {
       // we have v0 as lambda
       histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
 
-      // Remove lambda with ambiguous daughters
-      if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
-        continue;
+      // Remove lambda with ambiguous daughters (Only for run3)
+      if constexpr (run == kRun3) {
+        if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
+          continue;
+        }
       }
 
       // Get Lambda mass and kinematic variables
@@ -1021,11 +1033,19 @@ struct LambdaTableProducer {
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h2f_tracks_pid_before_sel"), v0.mcParticle().pdgCode(), v0.pt());
 
-        if (cSelMCPSV0) { // Get Primary/Secondary Lambda
+        // Get Primary/Secondary Lambda
+        if (cSelMCPSV0) {
           v0PrmScdType = isPrimaryV0(v0);
         }
-        if (cSelectTrueLambda && !selTrueMcRecLambda(v0, tracks)) { // check for true Lambda/Anti-Lambda
+
+        // check for true Lambda/Anti-Lambda
+        if (cSelectTrueLambda && !selTrueMcRecLambda(v0, tracks)) {
           continue;
+        }
+
+        // get mothers information
+        if (v0PrmScdType == kSecondary) {
+          fillLambdaMothers(v0, tracks);
         }
 
         histos.fill(HIST("Tracks/h1f_tracks_info"), kPassTrueLambdaSel);
@@ -1073,7 +1093,7 @@ struct LambdaTableProducer {
   void fillLambdaMcGenTables(C const& mcCollision, M const& mcParticles)
   {
     // Fill McGen Collision Table
-    lambdaMCGenCollisionTable(cent, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+    lambdaMCGenCollisionTable(cent, mult, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
 
     // initialize track objects
     ParticleType v0Type = kLambda;
@@ -1203,11 +1223,13 @@ struct LambdaTableProducer {
   SliceCache cache;
   Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCollision = aod::v0data::collisionId;
 
-  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::PVMults>;
+  using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::PVMults>;
   using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::TrackCompColls>;
-  using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
+  using TracksRun2 = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr>;
   using TracksMC = soa::Join<Tracks, aod::McTrackLabels>;
+  using TracksMCRun2 = soa::Join<TracksRun2, aod::McTrackLabels>;
+  using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
   void processDataRun3(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
   {
@@ -1216,7 +1238,7 @@ struct LambdaTableProducer {
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun3, "Process for Run3 DATA", true);
 
-  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
+  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, TracksRun2 const& tracks)
   {
     fillLambdaRecoTables<kRun2, kData>(collision, V0s, tracks);
   }
@@ -1236,7 +1258,7 @@ struct LambdaTableProducer {
   PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun3, "Process for Run3 McReco DATA", false);
 
   void processMCRecoRun2(soa::Join<CollisionsRun2, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
-                         McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
+                         McV0Tracks const& V0s, TracksMCRun2 const& tracks, aod::McParticles const&)
   {
     // check collision
     if (!selCollision<kRun2>(collision)) {
@@ -1259,7 +1281,7 @@ struct LambdaTableProducer {
 
   void processMCRun2(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
-                     McV0Tracks const& V0s, TracksMC const& tracks,
+                     McV0Tracks const& V0s, TracksMCRun2 const& tracks,
                      aod::McParticles const& mcParticles)
   {
     analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
@@ -1483,6 +1505,7 @@ struct LambdaR2Correlation {
     const AxisSpec axisCheck(1, 0, 1, "");
     const AxisSpec axisPosZ(220, -11, 11, "V_{z} (cm)");
     const AxisSpec axisCent(cMultBins, "FT0M (%)");
+    const AxisSpec axisChMult(200, 0, 200, "N_{ch}");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisMass(100, 1.06, 1.16, "M_{#Lambda} (GeV/#it{c}^{2})");
     const AxisSpec axisPt(cNPtBins, cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
@@ -1496,8 +1519,9 @@ struct LambdaR2Correlation {
     // Event
     histos.add("Event/Reco/h1f_collision_posz", "V_{Z} Distribution", kTH1F, {axisPosZ});
     histos.add("Event/Reco/h1f_ft0m_mult_percentile", "FT0M (%)", kTH1F, {axisCent});
-    histos.add("Event/Reco/h1i_lambda_mult", "#Lambda - Multiplicity", kTH1I, {axisMult});
-    histos.add("Event/Reco/h1i_antilambda_mult", "#bar{#Lambda} - Multiplicity", kTH1I, {axisMult});
+    histos.add("Event/Reco/h2f_Mult_vs_Centrality", "N_{ch} vs FT0M(%)", kTH2F, {axisCent, axisChMult});
+    histos.add("Event/Reco/h2f_lambda_mult", "#Lambda - Multiplicity", kTH2F, {axisCent, axisMult});
+    histos.add("Event/Reco/h2f_antilambda_mult", "#bar{#Lambda} - Multiplicity", kTH2F, {axisCent, axisMult});
 
     // Efficiency Histograms
     // Single Particle Efficiencies
@@ -1510,6 +1534,8 @@ struct LambdaR2Correlation {
 
     // Single and Two Particle Densities
     // 1D Histograms
+    histos.add("Reco/Primary/h3f_n1_centmasspt_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisCent, axisMass, axisPt});
+    histos.add("Reco/Primary/h3f_n1_centmasspt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisMass, axisPt});
     histos.add("Reco/Primary/h2f_n1_pt_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisCent, axisPt});
     histos.add("Reco/Primary/h2f_n1_pt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2F, {axisCent, axisPt});
     histos.add("Reco/Primary/h2f_n1_eta_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisCent, axisEta});
@@ -1622,6 +1648,7 @@ struct LambdaR2Correlation {
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST(SubDirPrmScd[pst]) + HIST("Efficiency/h3f_n1_centptrap_") + HIST(SubDirHist[part]), cent, track.pt(), track.rap());
 
       // QA Plots
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST(SubDirPrmScd[pst]) + HIST("h3f_n1_centmasspt_") + HIST(SubDirHist[part]), cent, track.mass(), track.pt());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST(SubDirPrmScd[pst]) + HIST("h2f_n1_pt_") + HIST(SubDirHist[part]), cent, track.pt(), track.corrFact());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST(SubDirPrmScd[pst]) + HIST("h2f_n1_eta_") + HIST(SubDirHist[part]), cent, track.eta(), track.corrFact());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST(SubDirPrmScd[pst]) + HIST("h2f_n1_phi_") + HIST(SubDirHist[part]), cent, track.phi(), track.corrFact());
@@ -1637,9 +1664,9 @@ struct LambdaR2Correlation {
     // fill multiplicity histograms
     if (ntrk != 0) {
       if (part == kLambda) {
-        histos.fill(HIST("Event/") + HIST(SubDirRecGen[rec_gen]) + HIST("h1i_lambda_mult"), ntrk);
+        histos.fill(HIST("Event/") + HIST(SubDirRecGen[rec_gen]) + HIST("h2f_lambda_mult"), cent, ntrk);
       } else {
-        histos.fill(HIST("Event/") + HIST(SubDirRecGen[rec_gen]) + HIST("h1i_antilambda_mult"), ntrk);
+        histos.fill(HIST("Event/") + HIST(SubDirRecGen[rec_gen]) + HIST("h2f_antilambda_mult"), cent, ntrk);
       }
     }
   }
@@ -1671,6 +1698,7 @@ struct LambdaR2Correlation {
   {
     histos.fill(HIST("Event/Reco/h1f_collision_posz"), collision.posZ());
     histos.fill(HIST("Event/Reco/h1f_ft0m_mult_percentile"), collision.cent());
+    histos.fill(HIST("Event/Reco/h2f_Mult_vs_Centrality"), collision.cent(), collision.mult());
 
     cent = collision.cent();
 
@@ -1723,6 +1751,7 @@ struct LambdaR2Correlation {
   {
     histos.fill(HIST("Event/McGen/h1f_collision_posz"), mcgencol.posZ());
     histos.fill(HIST("Event/McGen/h1f_ft0m_mult_percentile"), mcgencol.cent());
+    histos.fill(HIST("Event/McGen/h2f_Mult_vs_Centrality"), mcgencol.cent(), mcgencol.mult());
 
     cent = mcgencol.cent();
 

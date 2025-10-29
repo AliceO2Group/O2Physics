@@ -400,7 +400,7 @@ struct f1protonreducedtable {
 
   std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
   {
-    map<string, string> metadata;
+    std::map<std::string, std::string> metadata;
     auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());
     // auto h = ccdb->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()); // check if possible to use this without getting fatal
     if (!h) {
@@ -751,10 +751,17 @@ struct f1protonreducedtable {
                   continue;
 
                 // check if the pair is unlike or wrongsign
-                auto pairsign = 1;
+                auto pairsign = 100;
                 if (PionCharge.at(i1) * KaonCharge.at(i2) > 0) {
                   qaRegistry.fill(HIST("hInvMassf1Like"), F1Vector.M(), F1Vector.Pt());
                   pairsign = -1;
+                } else if (PionCharge.at(i1) * KaonCharge.at(i2) < 0) {
+                  if (KaonCharge.at(i2) > 0) {
+                    pairsign = 1;
+                  }
+                  if (KaonCharge.at(i2) < 0) {
+                    pairsign = 2;
+                  }
                 }
                 ROOT::Math::PtEtaPhiMVector temp(F1Vector.Pt(), F1Vector.Eta(), F1Vector.Phi(), F1Vector.M());
                 f1resonance.push_back(temp);
@@ -772,7 +779,7 @@ struct f1protonreducedtable {
                 PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
                 KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
                 KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
-                if (pairsign == 1) {
+                if (pairsign > 0) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
                   numberF1 = numberF1 + 1;
                   for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {

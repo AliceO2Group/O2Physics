@@ -133,12 +133,15 @@ class MomentumSmearer
     }
   }
 
-  void fillVecReso(TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  void fillVecReso(TH2F* fReso, std::vector<TH1F*>& fVecReso, const char* suffix)
   {
-    TAxis* axisPt = fReso->GetXaxis();
+    TAxis* axisPt = fReso->GetXaxis(); // be careful! This works only for variable bin width.
     int nBinsPt = axisPt->GetNbins();
-    for (int i = 1; i <= nBinsPt; i++) {
-      fVecReso.push_back(reinterpret_cast<TH1F*>(fReso->ProjectionY("", i, i)));
+    fVecReso.resize(nBinsPt);
+    for (int i = 0; i < nBinsPt; i++) {
+      auto h1 = reinterpret_cast<TH1F*>(fReso->ProjectionY(Form("h1reso%s_pt%d", suffix, i), i + 1, i + 1));
+      h1->Scale(1.f, "width"); // convert ntrack to probability density
+      fVecReso[i] = h1;
     }
   }
 
@@ -257,10 +260,10 @@ class MomentumSmearer
         if (!fResoPhi_Neg) {
           LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
         }
-        fillVecReso(fResoPt, fVecResoPt);
-        fillVecReso(fResoEta, fVecResoEta);
-        fillVecReso(fResoPhi_Pos, fVecResoPhi_Pos);
-        fillVecReso(fResoPhi_Neg, fVecResoPhi_Neg);
+        fillVecReso(fResoPt, fVecResoPt, "_reldpt");
+        fillVecReso(fResoEta, fVecResoEta, "_deta");
+        fillVecReso(fResoPhi_Pos, fVecResoPhi_Pos, "_dphi_pos");
+        fillVecReso(fResoPhi_Neg, fVecResoPhi_Neg, "_dphi_neg");
       }
     }
 
@@ -361,7 +364,7 @@ class MomentumSmearer
       if (!fDCA) {
         LOGP(fatal, "Could not open {} from file {}", fDCAHistName.Data(), fDCAFileName.Data());
       }
-      fillVecReso(fDCA, fVecDCA);
+      fillVecReso(fDCA, fVecDCA, "_dca");
     }
 
     if (!fFromCcdb) {

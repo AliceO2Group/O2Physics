@@ -66,7 +66,6 @@ class V0PhotonCut : public TNamed
     kITSNCls,
     kITSChi2NDF,
     kITSClusterSize,
-    kIsWithinBeamPipe,
     kRequireITSTPC,
     kRequireITSonly,
     kRequireTPConly,
@@ -140,9 +139,6 @@ class V0PhotonCut : public TNamed
         return false;
       }
       if (!IsSelectedTrack(track, V0PhotonCuts::kDCAz)) {
-        return false;
-      }
-      if (mIsWithinBP && !IsSelectedTrack(track, V0PhotonCuts::kIsWithinBeamPipe)) {
         return false;
       }
       if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly or ITS-TPC
@@ -271,11 +267,6 @@ class V0PhotonCut : public TNamed
         if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
           return false;
         }
-        if (mRejectITSib) {
-          if (v0.v0radius() < 4.f || v0.pca() < -0.05 * v0.v0radius() + 0.3) {
-            return false;
-          }
-        }
         return true;
       }
 
@@ -390,28 +381,6 @@ class V0PhotonCut : public TNamed
         return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
       }
 
-      case V0PhotonCuts::kIsWithinBeamPipe: {
-        if (!isTPConlyTrack(track)) { // TPC-TRD, TPC-TOF, TPC-TRD-TOF are constrained.
-          return true;
-        }
-
-        // if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
-        //   return false;
-        // }
-        if (track.x() < 0.1 && std::fabs(track.y()) > 15.f) {
-          return false;
-        }
-        if (track.x() > 82.9 && std::fabs(track.y()) > std::fabs(track.x() * std::tan(10.f * TMath::DegToRad())) + 5.f) {
-          return false;
-        }
-        if (track.x() > 82.9 && std::fabs(track.y()) < 15.0 && abs(abs(track.z()) - 44.5) < 2.5) {
-          return false;
-        }
-        return true;
-        // const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
-        // return !(track.x() > 82.9 && abs(track.y()) < 15.f && abs(abs(track.z()) - track.x() / slope) < 3.f && 15.f < abs(track.dcaXY()));
-        //// return !(track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - 47.f) < 3.f && 15.f < abs(track.dcaXY()));
-      }
       case V0PhotonCuts::kRequireITSTPC:
         return isITSTPCTrack(track);
 
@@ -517,7 +486,6 @@ class V0PhotonCut : public TNamed
   float mMaxDcaXY{1e10f};                       // max dca in xy plane
   float mMaxDcaZ{1e10f};                        // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
-  bool mIsWithinBP{false};
   bool mRequireITSTPC{false};
   bool mRequireITSonly{false};
   bool mRequireTPConly{false};

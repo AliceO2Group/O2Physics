@@ -16,34 +16,36 @@
 // - victor.gonzalez@cern.ch
 // - david.dobrigkeit.chinellato@cern.ch
 //
-#ifndef MULTMCCALIBRATOR_H
-#define MULTMCCALIBRATOR_H
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_
 
-#include <iostream>
-#include "TNamed.h"
-#include "TF1.h"
-#include "TH1D.h"
-#include "TProfile.h"
-#include <map>
+#include <TF1.h>
+#include <TH1.h>
+#include <TNamed.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class multMCCalibrator : public TNamed
 {
 
  public:
-  //Constructors/Destructor
+  // Constructors/Destructor
   multMCCalibrator();
-  multMCCalibrator(const char* name, const char* title = "MC Multiplicity Calibration Class");
+  explicit multMCCalibrator(const char* name, const char* title = "MC Multiplicity Calibration Class");
   ~multMCCalibrator();
 
   //_________________________________________________________________________
-  //Interface: steering functions to be used in calibration macro
+  // Interface: steering functions to be used in calibration macro
 
-  //Set Filenames
+  // Set Filenames
   void SetDataInputFile(TString lFile) { fDataInputFileName = lFile.Data(); }
   void SetSimInputFile(TString lFile) { fSimInputFileName = lFile.Data(); }
   void SetOutputFile(TString lFile) { fOutputFileName = lFile.Data(); }
 
-  //Master Function in this Class: To be called once filenames are set
+  // Master Function in this Class: To be called once filenames are set
   Bool_t Calibrate();
 
   TF1* GetFit(TProfile* fProf, Bool_t lQuadratic = kTRUE);
@@ -63,4 +65,4 @@ class multMCCalibrator : public TNamed
   // be streamed according to current workflow except in very specific
   // tests!)
 };
-#endif
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_

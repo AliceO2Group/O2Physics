@@ -66,6 +66,10 @@ struct femtoDreamDebugTrack {
   Configurable<int> ConfTempFitVarMomentum{"ConfTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
+  Configurable<bool> ConfdoCentCut{"ConfdoCentCut", false, "Enable centrality cut"};
+  Configurable<float> ConfCentMax{"ConfCentMax", 100., "Upper limit of centrality cut"};
+  Configurable<float> ConfCentMin{"ConfCentMin", 0., "Lower limit of centrality cut"};
+
   using FemtoMCCollisions = Join<aod::FDCollisions, aod::FDMCCollLabels>;
   using FemtoMCCollision = FemtoMCCollisions::iterator;
 
@@ -110,6 +114,11 @@ struct femtoDreamDebugTrack {
   void FillDebugHistos(CollisionType& col, PartitionType& groupPartsOne)
   {
     eventHisto.fillQA<isMC>(col);
+
+    if (ConfdoCentCut.value && (col.multV0M() > ConfCentMax || col.multV0M() < ConfCentMin)) {
+      return;
+    }
+
     for (auto& part : groupPartsOne) {
       trackHisto.fillQA<isMC, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), col.multNtr(), col.multV0M(), ConfOptCorrelatedPlots);
     }

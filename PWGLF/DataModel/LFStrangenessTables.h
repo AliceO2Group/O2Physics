@@ -26,6 +26,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
+#include <ReconstructionDataFormats/DecayNBodyIndex.h>
 
 #include <array>
 #include <cmath>
@@ -62,6 +63,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNA, energyCommonZNA, //! get the total s
                            [](float value) -> float { return value; });
 DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total sum of the ZN A amplitudes
                            [](float value) -> float { return value; });
+
+// event time
+DECLARE_SOA_COLUMN(EventTime, eventTime, float); //! event time (FT0, TOF) for TOF PID (stored once per event)
 } // namespace stracollision
 
 //______________________________________________________
@@ -307,6 +311,8 @@ DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-in
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
                             bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
+DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
+                  stracollision::EventTime);
 
 using StraRawCents = StraRawCents_004;
 using StraCents = StraCents_001;
@@ -709,11 +715,38 @@ DECLARE_SOA_DYNAMIC_COLUMN(PFracNeg, pfracneg,
 
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //! mass under lambda hypothesis
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}); });
+                           [](int v0type, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             if ((v0type & (0x1 << o2::dataformats::V0Index::kPhotonOnly)) != 0) {
+                               return 0.0f; // provide mass only if NOT a photon with TPC-only tracks (special handling)
+                             }
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiLambda, mAntiLambda, //! mass under antilambda hypothesis
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton}); });
+                           [](int v0type, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             if ((v0type & (0x1 << o2::dataformats::V0Index::kPhotonOnly)) != 0) {
+                               return 0.0f; // provide mass only if NOT a photon with TPC-only tracks (special handling)
+                             }
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(MK0Short, mK0Short, //! mass under K0short hypothesis
-                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged}); });
+                           [](int v0type, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             if ((v0type & (0x1 << o2::dataformats::V0Index::kPhotonOnly)) != 0) {
+                               return 0.0f; // provide mass only if NOT a photon with TPC-only tracks (special handling)
+                             }
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(MLambda_unchecked, mLambda_unchecked, //! mass under lambda hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(MAntiLambda_unchecked, mAntiLambda_unchecked, //! mass under antilambda hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(MK0Short_unchecked, mK0Short_unchecked, //! mass under K0short hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(MGamma, mGamma, //! mass under gamma hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron}); });
 // Account for rigidity in case of hypertriton
@@ -772,12 +805,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositiveEta, positiveeta, //! positive daughter eta
 DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
                            [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
 
-DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0
-                           [](uint8_t V0Type) -> bool { return V0Type == 1; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0 - note: photons excluded via '=='
+                           [](uint8_t V0Type) -> bool { return V0Type == o2::dataformats::V0Index::kStandaloneV0; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonTPConly, isPhotonTPConly, //! is tpc-only photon V0
-                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 1); });
+                           [](uint8_t V0Type) -> bool { return V0Type & (1 << o2::dataformats::V0Index::kPhotonOnly); });
 DECLARE_SOA_DYNAMIC_COLUMN(IsCollinear, isCollinear, //! is collinear V0
-                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 2); });
+                           [](uint8_t V0Type) -> bool { return V0Type & (1 << o2::dataformats::V0Index::kCollinear); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(RapidityMC, rapidityMC, //! rapidity (0:K0, 1:L, 2:Lbar)
                            [](float PxMC, float PyMC, float PzMC, int value) -> float {
@@ -794,6 +827,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositivePtMC, positiveptMC, //! positive daughter pT
                            [](float pxposMC, float pyposMC) -> float { return RecoDecay::sqrtSumOfSquares(pxposMC, pyposMC); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtMC, ptMC, //! V0 pT
                            [](float pxMC, float pyMC) -> float { return RecoDecay::sqrtSumOfSquares(pxMC, pyMC); });
+
+// declare legacy mass getters in v0data legacy name space
+// caution: these do not have intrinsic protection against photon candidates
+namespace legacy
+{
+DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //! mass under lambda hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(MAntiLambda, mAntiLambda, //! mass under antilambda hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(MK0Short, mK0Short, //! mass under K0short hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+                           });
+} // namespace legacy
 } // namespace v0data
 
 DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
@@ -835,9 +886,12 @@ DECLARE_SOA_TABLE_STAGED(V0CoresBase, "V0CORE", //! core information about decay
                          v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
                          // Invariant masses
-                         v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                         v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                         v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MLambda<v0data::V0Type, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiLambda<v0data::V0Type, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MK0Short<v0data::V0Type, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MLambda_unchecked<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiLambda_unchecked<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MK0Short_unchecked<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                          v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                          v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                          v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -916,9 +970,9 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
                        // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::MLambda<v0data::V0Type, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::MAntiLambda<v0data::V0Type, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::MK0Short<v0data::V0Type, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -1368,6 +1422,68 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! Cascade phi in the range [0, 2pi)
                            [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! Cascade pseudorapidity
                            [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+
+// Armenteros-Podolanski variables
+DECLARE_SOA_DYNAMIC_COLUMN(Alpha, alpha, //! Armenteros Alpha
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, float pxbach, float pybach, float pzbach, int sign) {
+                             const float pxv0 = pxpos + pxneg;
+                             const float pyv0 = pypos + pyneg;
+                             const float pzv0 = pzpos + pzneg;
+
+                             // No need to divide by momentum of the cascade (as in the v0data namespace) since the ratio of lQl is evaluated
+                             const float lQlBach = RecoDecay::dotProd(std::array{pxbach, pybach, pzbach}, std::array{pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach});
+                             const float lQlV0 = RecoDecay::dotProd(std::array{pxv0, pyv0, pzv0}, std::array{pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach});
+                             float alpha = (lQlBach - lQlV0) / (lQlV0 + lQlBach); // alphacascade
+                             if (sign < 0) {
+                               alpha = -alpha;
+                             }
+                             return alpha;
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(QtArm, qtarm, //! Armenteros Qt
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, float pxbach, float pybach, float pzbach) {
+                             const float pxv0 = pxpos + pxneg;
+                             const float pyv0 = pypos + pyneg;
+                             const float pzv0 = pzpos + pzneg;
+
+                             const float momTot2 = RecoDecay::p2(pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach);
+                             const float dp = RecoDecay::dotProd(std::array{pxbach, pybach, pzbach}, std::array{pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach});
+                             return std::sqrt(RecoDecay::p2(pxbach, pybach, pzbach) - dp * dp / momTot2); // qtarm
+                           });
+
+// Psi pair angle: angle between the plane defined by the v0 and bachelor momenta and the xy plane
+DECLARE_SOA_DYNAMIC_COLUMN(PsiPair, psipair, //! psi pair angle
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, float pxbach, float pybach, float pzbach, int sign) {
+                             auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+                             const float pxv0 = pxpos + pxneg;
+                             const float pyv0 = pypos + pyneg;
+                             const float pzv0 = pzpos + pzneg;
+
+                             const float ptot2 = RecoDecay::p2(pxbach, pybach, pzbach) * RecoDecay::p2(pxv0, pyv0, pzv0);
+                             const float argcos = RecoDecay::dotProd(std::array{pxbach, pybach, pzbach}, std::array{pxv0, pyv0, pzv0}) / std::sqrt(ptot2);
+                             const float thetaV0 = std::atan2(RecoDecay::sqrtSumOfSquares(pxv0, pyv0), pzv0);
+                             const float thetaBach = std::atan2(RecoDecay::sqrtSumOfSquares(pxbach, pybach), pzbach);
+                             float argsin = (thetaV0 - thetaBach) / std::acos(clipToPM1(argcos));
+                             if (sign < 0) {
+                               argsin = -argsin;
+                             }
+                             return std::asin(clipToPM1(argsin));
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(V0Alpha, v0Alpha, //! Armenteros Alpha
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
+                             // No need to divide by momentum of the v0 (as in the v0data namespace) since the ratio of lQl is evaluated
+                             const float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg + pxpos, pyneg + pypos, pzneg + pzpos});
+                             const float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxneg + pxpos, pyneg + pypos, pzneg + pzpos});
+                             return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(V0QtArm, v0Qtarm, //! Armenteros Qt
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
+                             const float momTot2 = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+                             const float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
+                             return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot2); // qtarm
+                           });
 } // namespace cascdata
 
 //______________________________________________________
@@ -1444,7 +1560,14 @@ DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about
                   cascdata::PositiveEta<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos>,
                   cascdata::PositivePhi<cascdata::PxPos, cascdata::PyPos>,
                   cascdata::BachelorEta<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
-                  cascdata::BachelorPhi<cascdata::PxBach, cascdata::PyBach>);
+                  cascdata::BachelorPhi<cascdata::PxBach, cascdata::PyBach>,
+
+                  // Armenteros-Podolanski and psi-pair
+                  cascdata::Alpha<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdata::Sign>,
+                  cascdata::QtArm<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
+                  cascdata::PsiPair<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdata::Sign>,
+                  cascdata::V0Alpha<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+                  cascdata::V0QtArm<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>);
 
 DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,

@@ -26,12 +26,11 @@
 #include "Common/Core/RecoDecay.h"
 
 #include "Framework/HistogramRegistry.h"
+#include <Framework/Logger.h>
 
 #include "Math/Vector4D.h"
 #include "TDatabasePDG.h"
 #include "TMath.h"
-
-#include <fairlogger/Logger.h>
 
 #include <string>
 #include <vector>
@@ -57,7 +56,7 @@ enum EventType { same, ///< Pair from same event
 /// \brief Container for all histogramming related to the correlation function. The two
 /// particles of the pair are passed here, and the correlation function and QA histograms
 /// are filled according to the specified observable
-/// \tparam eventType Type of the event (same/mixed)
+/// \tparam eventType Type of the event (same or mixed)
 /// \tparam obs Observable to be computed (k*/Q_inv/...)
 template <femto_universe_container::EventType eventType, femto_universe_container::Observable obs>
 class FemtoUniverseContainer

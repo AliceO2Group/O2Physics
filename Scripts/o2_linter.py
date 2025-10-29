@@ -248,7 +248,7 @@ class TestSpec:
         if self.name in line:
             self.n_disabled += 1
             # Look for a comment with a reason for disabling.
-            if re.search(r" \([\w\s]{3,}\)", line):
+            if re.search(r" \(.{3,}\)", line):
                 return True
         return False
 
@@ -988,9 +988,7 @@ class TestNameConstant(TestSpec):
     """Test constexpr constant names."""
 
     name = "name/constexpr-constant"
-    message = (
-        'Use UpperCamelCase for names of constexpr constants. Names of special constants may be prefixed with "k".'
-    )
+    message = "Use UpperCamelCase for names of constexpr constants."
     rationale = rationale_names
     references = references_names
     suffixes = [".h", ".cxx", ".C"]
@@ -998,11 +996,11 @@ class TestNameConstant(TestSpec):
     def __init__(self) -> None:
         super().__init__()
         keyword = r"(.+ )"  # e.g. "static "
-        type_val = r"([\w:<>+\-*\/, ]+ )" # value type e.g. "std::array<Type, n + 1> "
+        type_val = r"([\w:<>+\-*\/, ]+ )"  # value type e.g. "std::array<Type, n + 1> "
         prefix = r"(\w+::)"  # prefix with namespace or class, e.g. "MyClass::"
         name_val = r"(\w+)"  # name of the constant
-        array = r"(\[.*\])" # array declaration: "[...]"
-        assignment = r"( =|\(\d|{)" # value assignment, e.g. " = 2", " = expression", "(2)", "{2}", "{{...}}"
+        array = r"(\[.*\])"  # array declaration: "[...]"
+        assignment = r"( =|\(\d|{)"  # value assignment, e.g. " = 2", " = expression", "(2)", "{2}", "{{...}}"
         self.pattern = re.compile(rf"{keyword}?constexpr {type_val}?{prefix}*{name_val}{array}?{assignment}")
 
     def test_line(self, line: str) -> bool:
@@ -1013,8 +1011,6 @@ class TestNameConstant(TestSpec):
             return True
         constant_name = match.group(4)
         # The actual test comes here.
-        if constant_name.startswith("k") and len(constant_name) > 1:  # exception for special constants
-            constant_name = constant_name[1:]  # test the name without "k"
         return is_upper_camel_case(constant_name)
 
 
@@ -1785,7 +1781,9 @@ def main():
             print("Skipping writing in GITHUB_OUTPUT.")
 
     # Print tips.
-    print("\nTip: You can run the O2 linter locally from the O2Physics directory with: python3 Scripts/o2_linter.py <files>")
+    print(
+        "\nTip: You can run the O2 linter locally from the O2Physics directory with: python3 Scripts/o2_linter.py <files>"
+    )
 
     if not passed:
         sys.exit(1)

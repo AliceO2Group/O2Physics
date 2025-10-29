@@ -16,10 +16,12 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_
 
-#include <vector>
-#include <string>
-#include "CommonConstants/PhysicsConstants.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+
+#include <string>
+#include <vector>
 
 namespace o2::analysis::femtoDream
 {
@@ -52,6 +54,9 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
+    case o2::constants::physics::Pdg::kDPlus:
+      mass = o2::constants::physics::MassDPlus;
+      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
@@ -64,8 +69,18 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kHelium3:
       mass = o2::constants::physics::MassHelium3;
       break;
+    // case o2::constants::physics::Pdg::kOmegaMinus:
+    case kOmegaMinus:
+      mass = o2::constants::physics::MassOmegaMinus;
+      break;
+    case o2::constants::physics::Pdg::kK0Star892:
+      mass = o2::constants::physics::MassK0Star892;
+      break;
+    case 310: /// K0Short is not implemented in o2::physics::constants::Pdg
+      mass = o2::constants::physics::MassK0Short;
+      break;
     default:
-      LOG(fatal) << "PDG code is not suppored";
+      LOG(fatal) << "PDG code is not supported";
   }
   return mass;
 }
@@ -74,7 +89,7 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
 {
   int partOrigin = 0;
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-    switch (abs(motherPDG)) {
+    switch (std::abs(motherPDG)) {
       case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
@@ -86,7 +101,7 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0) {
-    switch (abs(motherPDG)) {
+    switch (std::abs(motherPDG)) {
       case kSigma0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigma0;
         break;

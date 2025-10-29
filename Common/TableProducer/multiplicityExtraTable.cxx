@@ -8,20 +8,30 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <CCDB/BasicCCDBManager.h> // megalinter thinks this is a C header...
-#include <bitset>
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "TableHelper.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/BunchFilling.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <bitset>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
+
+#include <stdlib.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -35,6 +45,9 @@ struct MultiplicityExtraTable {
 
   Produces<aod::Mults2BC> mult2bc;
   Produces<aod::BC2Mults> bc2mult;
+
+  // auxiliary for MC
+  Produces<aod::MultHepMCHIs> multHepMCHIs;
 
   // Allow for downscaling of BC table for less space use in derived data
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
@@ -277,9 +290,22 @@ struct MultiplicityExtraTable {
     }
   }
 
+  void processHepMCHeavyIons(aod::HepMCHeavyIons const& hepmchis)
+  {
+    for (auto const& hepmchi : hepmchis) {
+      multHepMCHIs(hepmchi.mcCollisionId(),
+                   hepmchi.ncollHard(),
+                   hepmchi.npartProj(),
+                   hepmchi.npartTarg(),
+                   hepmchi.ncoll(),
+                   hepmchi.impactParameter());
+    }
+  }
+
   // Process switches
   PROCESS_SWITCH(MultiplicityExtraTable, processBCs, "Produce BC tables", true);
   PROCESS_SWITCH(MultiplicityExtraTable, processCollisionNeighbors, "Produce neighbor timing tables", true);
+  PROCESS_SWITCH(MultiplicityExtraTable, processHepMCHeavyIons, "Produce MultHepMCHIs tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

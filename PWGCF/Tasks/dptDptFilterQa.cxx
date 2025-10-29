@@ -13,15 +13,16 @@
 /// \brief basic checks for the behavior of the filter task
 /// \author victor.gonzalez.sebastian@gmail.com
 
-#include <cmath>
-#include <string>
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
+
+#include <cmath>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

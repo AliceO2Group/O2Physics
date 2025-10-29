@@ -15,25 +15,36 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
-#include <utility>
-#include <vector>
-#include <string>
+#include "pidTOFBase.h"
 
-// O2 includes
-#include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Track.h"
-
-// O2Physics includes
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "TableHelper.h"
-#include "pidTOFBase.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <TOFBase/EventTimeMaker.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -111,7 +122,7 @@ struct tofSignal {
     if (enableTableFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& t : tracks) {
+    for (const auto& t : tracks) {
       const auto s = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), s);
@@ -139,7 +150,7 @@ struct tofSignal {
     if (enableTableFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& t : tracks) {
+    for (const auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
       if (!enableTableFlags) {
         continue;
@@ -388,7 +399,7 @@ struct tofEventTime {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
         }
         uint8_t flags = 0;
-        if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
+        if (erret < errDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
         } else {
           et = 0.f;
@@ -407,7 +418,7 @@ struct tofEventTime {
   ///
   /// Process function to prepare the event for each track on Run 3 data with the FT0
   using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
-  void processFT0(TrksEvTime& tracks,
+  void processFT0(TrksEvTime const& tracks,
                   aod::FT0s const&,
                   EvTimeCollisionsFT0 const&)
   {
@@ -463,7 +474,7 @@ struct tofEventTime {
         if constexpr (removeTOFEvTimeBias) {
           evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
         }
-        if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+        if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
           flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
           weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -491,7 +502,7 @@ struct tofEventTime {
         } else {
           tableFlags(flags);
         }
-        tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+        tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
         if (enableTableTOFOnly) {
           tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
         }
@@ -502,7 +513,7 @@ struct tofEventTime {
 
   ///
   /// Process function to prepare the event for each track on Run 3 data with only the FT0
-  void processOnlyFT0(TrksEvTime& tracks,
+  void processOnlyFT0(TrksEvTime const& tracks,
                       aod::FT0s const&,
                       EvTimeCollisionsFT0 const&)
   {

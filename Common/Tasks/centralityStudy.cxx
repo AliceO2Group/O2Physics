@@ -13,24 +13,33 @@
 // Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
 // derived data.
 
+#include "EventSelectionParams.h"
+
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPECSObject.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TProfile.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TList.h>
+#include <TProfile.h>
 
+#include <cstdint>
+#include <format>
 #include <map>
+#include <memory>
 #include <string>
 
 using namespace o2;
@@ -132,6 +141,7 @@ struct centralityStudy {
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultGlobalTracks{"axisMultGlobalTracks", {500, 0, 5000}, "Number of global tracks"};
   ConfigurableAxis axisMultMFTTracks{"axisMultMFTTracks", {500, 0, 5000}, "Number of MFT tracks"};
+  ConfigurableAxis axisMultMCCounts{"axisMultMCCounts", {1000, 0, 5000}, "N_{ch}"};
 
   ConfigurableAxis axisTrackOccupancy{"axisTrackOccupancy", {50, 0, 5000}, "Track occupancy"};
   ConfigurableAxis axisFT0COccupancy{"axisFT0COccupancy", {50, 0, 80000}, "FT0C occupancy"};
@@ -149,6 +159,7 @@ struct centralityStudy {
 
   // For centrality studies if requested
   ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
+  ConfigurableAxis axisImpactParameter{"axisImpactParameter", {200, 0.0f, 20.0f}, "b (fm)"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
 
@@ -210,9 +221,9 @@ struct centralityStudy {
       histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
       histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
       histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
-      histos.add("hVertexZ_BCvsCO", "hVertexZ_BCvsCO", kTH2D, {axisPVz, axisPVz});
-      histos.add("hZNAvsFT0C_BCs", "hZNAvsFT0C_BCs", kTH2D, {axisMultFT0C, axisZN});
-      histos.add("hZNCvsFT0C_BCs", "hZNCvsFT0C_BCs", kTH2D, {axisMultFT0C, axisZN});
+      histos.add("hVertexZ_BCvsCO", "hVertexZ_BCvsCO", kTH2F, {axisPVz, axisPVz});
+      histos.add("hZNAvsFT0C_BCs", "hZNAvsFT0C_BCs", kTH2F, {axisMultFT0C, axisZN});
+      histos.add("hZNCvsFT0C_BCs", "hZNCvsFT0C_BCs", kTH2F, {axisMultFT0C, axisZN});
     }
 
     if (do2DPlots) {
@@ -237,6 +248,23 @@ struct centralityStudy {
       histos.add("hNGlobalTracksVsZNA", "hNGlobalTracksVsZNA", kTH2F, {axisZN, axisMultGlobalTracks});
       histos.add("hNGlobalTracksVsZNC", "hNGlobalTracksVsZNC", kTH2F, {axisZN, axisMultGlobalTracks});
       histos.add("hNGlobalTracksVsNMFTTracks", "hNGlobalTracksVsNMFTTracks", kTH2F, {axisMultMFTTracks, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsNTPV", "hNGlobalTracksVsNTPV", kTH2F, {axisMultPVContributors, axisMultGlobalTracks});
+    }
+
+    if (doprocessCollisionsWithResolutionStudy) {
+      // histograms with detector signals
+      histos.add("hImpactParameterVsFT0A", "hImpactParameterVsFT0A", kTH2F, {axisMultFT0A, axisImpactParameter});
+      histos.add("hImpactParameterVsFT0C", "hImpactParameterVsFT0C", kTH2F, {axisMultFT0C, axisImpactParameter});
+      histos.add("hImpactParameterVsFT0M", "hImpactParameterVsFT0M", kTH2F, {axisMultFT0M, axisImpactParameter});
+      histos.add("hImpactParameterVsFV0A", "hImpactParameterVsFV0A", kTH2F, {axisMultFV0A, axisImpactParameter});
+      histos.add("hImpactParameterVsNMFTTracks", "hImpactParameterVsNMFTTracks", kTH2F, {axisMultMFTTracks, axisImpactParameter});
+      histos.add("hImpactParameterVsNTPV", "hImpactParameterVsNTPV", kTH2F, {axisMultPVContributors, axisImpactParameter});
+
+      // histograms with actual MC counts in each region
+      histos.add("hImpactParameterVsMCFT0A", "hImpactParameterVsMCFT0A", kTH2F, {axisMultMCCounts, axisImpactParameter});
+      histos.add("hImpactParameterVsMCFT0C", "hImpactParameterVsMCFT0C", kTH2F, {axisMultMCCounts, axisImpactParameter});
+      histos.add("hImpactParameterVsMCFT0M", "hImpactParameterVsMCFT0M", kTH2F, {axisMultMCCounts, axisImpactParameter});
+      histos.add("hImpactParameterVsMCFV0A", "hImpactParameterVsMCFV0A", kTH2F, {axisMultMCCounts, axisImpactParameter});
     }
 
     if (doOccupancyStudyVsRawValues2d) {
@@ -391,15 +419,24 @@ struct centralityStudy {
       histPointers.insert({histPath + "hDeltaTimeVsCentrality", histos.add((histPath + "hDeltaTimeVsCentrality").c_str(), "hDeltaTimeVsCentrality", {kTH2F, {{axisCentrality, axisDeltaTime}}})});
     }
 
+    if (doNGlobalTracksVsRawSignals) {
+      histPointers.insert({histPath + "hNGlobalTracksVsFT0A", histos.add((histPath + "hNGlobalTracksVsFT0A").c_str(), "hNGlobalTracksVsFT0A", {kTH2F, {{axisMultFT0A, axisMultGlobalTracks}}})});
+      histPointers.insert({histPath + "hNGlobalTracksVsFT0C", histos.add((histPath + "hNGlobalTracksVsFT0C").c_str(), "hNGlobalTracksVsFT0C", {kTH2F, {{axisMultFT0C, axisMultGlobalTracks}}})});
+      histPointers.insert({histPath + "hNGlobalTracksVsFT0M", histos.add((histPath + "hNGlobalTracksVsFT0M").c_str(), "hNGlobalTracksVsFT0M", {kTH2F, {{axisMultFT0M, axisMultGlobalTracks}}})});
+      histPointers.insert({histPath + "hNGlobalTracksVsFV0A", histos.add((histPath + "hNGlobalTracksVsFV0A").c_str(), "hNGlobalTracksVsFV0A", {kTH2F, {{axisMultFV0A, axisMultGlobalTracks}}})});
+      histPointers.insert({histPath + "hNGlobalTracksVsNMFTTracks", histos.add((histPath + "hNGlobalTracksVsNMFTTracks").c_str(), "hNGlobalTracksVsNMFTTracks", {kTH2F, {{axisMultMFTTracks, axisMultGlobalTracks}}})});
+      histPointers.insert({histPath + "hNGlobalTracksVsNTPV", histos.add((histPath + "hNGlobalTracksVsNTPV").c_str(), "hNGlobalTracksVsNTPV", {kTH2F, {{axisMultPVContributors, axisMultGlobalTracks}}})});
+    }
+
     if (doTimeStudies) {
-      histPointers.insert({histPath + "hFT0AVsTime", histos.add((histPath + "hFT0AVsTime").c_str(), "hFT0AVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultFT0A}}})});
-      histPointers.insert({histPath + "hFT0CVsTime", histos.add((histPath + "hFT0CVsTime").c_str(), "hFT0CVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultFT0C}}})});
-      histPointers.insert({histPath + "hFT0MVsTime", histos.add((histPath + "hFT0MVsTime").c_str(), "hFT0MVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultFT0M}}})});
-      histPointers.insert({histPath + "hFV0AVsTime", histos.add((histPath + "hFV0AVsTime").c_str(), "hFV0AVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultFV0A}}})});
-      histPointers.insert({histPath + "hFV0AOuterVsTime", histos.add((histPath + "hFV0AOuterVsTime").c_str(), "hFV0AOuterVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultFV0A}}})});
-      histPointers.insert({histPath + "hMFTTracksVsTime", histos.add((histPath + "hMFTTracksVsTime").c_str(), "hMFTTracksVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultMFTTracks}}})});
-      histPointers.insert({histPath + "hNGlobalVsTime", histos.add((histPath + "hNGlobalVsTime").c_str(), "hNGlobalVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultGlobalTracks}}})});
-      histPointers.insert({histPath + "hNTPVContributorsVsTime", histos.add((histPath + "hNTPVContributorsVsTime").c_str(), "hNTPVContributorsVsTime", {kTH2D, {{axisDeltaTimestamp, axisMultPVContributors}}})});
+      histPointers.insert({histPath + "hFT0AVsTime", histos.add((histPath + "hFT0AVsTime").c_str(), "hFT0AVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultFT0A}}})});
+      histPointers.insert({histPath + "hFT0CVsTime", histos.add((histPath + "hFT0CVsTime").c_str(), "hFT0CVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultFT0C}}})});
+      histPointers.insert({histPath + "hFT0MVsTime", histos.add((histPath + "hFT0MVsTime").c_str(), "hFT0MVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultFT0M}}})});
+      histPointers.insert({histPath + "hFV0AVsTime", histos.add((histPath + "hFV0AVsTime").c_str(), "hFV0AVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultFV0A}}})});
+      histPointers.insert({histPath + "hFV0AOuterVsTime", histos.add((histPath + "hFV0AOuterVsTime").c_str(), "hFV0AOuterVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultFV0A}}})});
+      histPointers.insert({histPath + "hMFTTracksVsTime", histos.add((histPath + "hMFTTracksVsTime").c_str(), "hMFTTracksVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultMFTTracks}}})});
+      histPointers.insert({histPath + "hNGlobalVsTime", histos.add((histPath + "hNGlobalVsTime").c_str(), "hNGlobalVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultGlobalTracks}}})});
+      histPointers.insert({histPath + "hNTPVContributorsVsTime", histos.add((histPath + "hNTPVContributorsVsTime").c_str(), "hNTPVContributorsVsTime", {kTH2F, {{axisDeltaTimestamp, axisMultPVContributors}}})});
       histPointers.insert({histPath + "hPVzProfileCoVsTime", histos.add((histPath + "hPVzProfileCoVsTime").c_str(), "hPVzProfileCoVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
       histPointers.insert({histPath + "hPVzProfileBcVsTime", histos.add((histPath + "hPVzProfileBcVsTime").c_str(), "hPVzProfileBcVsTime", {kTProfile, {{axisDeltaTimestamp}}})});
       if (irDoRateVsTime) {
@@ -650,15 +687,38 @@ struct centralityStudy {
     }
 
     if (doNGlobalTracksVsRawSignals) {
-      histos.fill(HIST("hNGlobalTracksVsFT0A"), collision.multFT0A(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsFT0C"), collision.multFT0C(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsFT0M"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsFV0A"), collision.multFV0A(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsFDDA"), collision.multFDDA(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsFDDC"), collision.multFDDC(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsZNA"), collision.multZNA(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsZNC"), collision.multZNC(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsNMFTTracks"), collision.mftNtracks(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsFT0A"), multFT0A, multNTracksGlobal);
+      histos.fill(HIST("hNGlobalTracksVsFT0C"), multFT0C, multNTracksGlobal);
+      histos.fill(HIST("hNGlobalTracksVsFT0M"), (multFT0A + multFT0C), multNTracksGlobal);
+      histos.fill(HIST("hNGlobalTracksVsFV0A"), multFV0A, multNTracksGlobal);
+      histos.fill(HIST("hNGlobalTracksVsNMFTTracks"), mftNtracks, multNTracksGlobal);
+      histos.fill(HIST("hNGlobalTracksVsNTPV"), multNTracksPV, multNTracksGlobal);
+
+      // per run
+      getHist(TH2, histPath + "hNGlobalTracksVsFT0A")->Fill(multFT0A, multNTracksGlobal);
+      getHist(TH2, histPath + "hNGlobalTracksVsFT0C")->Fill(multFT0C, multNTracksGlobal);
+      getHist(TH2, histPath + "hNGlobalTracksVsFT0M")->Fill(multFT0A + multFT0C, multNTracksGlobal);
+      getHist(TH2, histPath + "hNGlobalTracksVsFV0A")->Fill(multFV0A, multNTracksGlobal);
+      getHist(TH2, histPath + "hNGlobalTracksVsNMFTTracks")->Fill(mftNtracks, multNTracksGlobal);
+      getHist(TH2, histPath + "hNGlobalTracksVsNTPV")->Fill(multNTracksPV, multNTracksGlobal);
+    }
+
+    if constexpr (requires { collision.multMCExtraId(); }) {
+      // requires monte carlo information
+      if (collision.multMCExtraId() > -1) {
+        auto mcCollision = collision.template multMCExtra_as<soa::Join<aod::MultMCExtras, aod::MultHepMCHIs>>();
+        histos.fill(HIST("hImpactParameterVsFT0A"), multFT0A, mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsFT0C"), multFT0C, mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsFT0M"), (multFT0A + multFT0C), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsFV0A"), multFV0A, mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsNMFTTracks"), mftNtracks, mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsNTPV"), multNTracksPV, mcCollision.impactParameter());
+
+        histos.fill(HIST("hImpactParameterVsMCFT0A"), mcCollision.multMCFT0A(), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsMCFT0C"), mcCollision.multMCFT0C(), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsMCFT0M"), (mcCollision.multMCFT0A() + mcCollision.multMCFT0C()), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsMCFV0A"), mcCollision.multMCFV0A(), mcCollision.impactParameter());
+      }
     }
 
     // if the table has centrality information
@@ -694,29 +754,31 @@ struct centralityStudy {
       }
     }
 
-    if (doTimeStudies && collision.has_multBC()) {
-      initRun(collision);
-      auto multbc = collision.template multBC_as<aod::MultBCs>();
-      uint64_t bcTimestamp = multbc.timestamp();
-      float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+    if constexpr (requires { collision.has_multBC(); }) {
+      if (doTimeStudies && collision.has_multBC()) {
+        initRun(collision);
+        auto multbc = collision.template multBC_as<aod::MultBCs>();
+        uint64_t bcTimestamp = multbc.timestamp();
+        float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
 
-      getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
-      getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
-      getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
-      getHist(TH2, histPath + "hFV0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0A());
-      getHist(TH2, histPath + "hFV0AOuterVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0AOuter());
-      getHist(TH2, histPath + "hMFTTracksVsTime")->Fill(hoursAfterStartOfRun, collision.mftNtracks());
-      getHist(TH2, histPath + "hNGlobalVsTime")->Fill(hoursAfterStartOfRun, collision.multNTracksGlobal());
-      getHist(TH2, histPath + "hNTPVContributorsVsTime")->Fill(hoursAfterStartOfRun, collision.multPVTotalContributors());
-      getHist(TProfile, histPath + "hPVzProfileCoVsTime")->Fill(hoursAfterStartOfRun, collision.multPVz());
-      getHist(TProfile, histPath + "hPVzProfileBcVsTime")->Fill(hoursAfterStartOfRun, multbc.multFT0PosZ());
-      if (doTimeStudyFV0AOuterVsFT0A3d) {
-        histos.fill(HIST("h3dFV0AVsTime"), hoursAfterStartOfRun, collision.multFV0A(), collision.multFV0AOuter());
-      }
+        getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
+        getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
+        getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
+        getHist(TH2, histPath + "hFV0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0A());
+        getHist(TH2, histPath + "hFV0AOuterVsTime")->Fill(hoursAfterStartOfRun, collision.multFV0AOuter());
+        getHist(TH2, histPath + "hMFTTracksVsTime")->Fill(hoursAfterStartOfRun, collision.mftNtracks());
+        getHist(TH2, histPath + "hNGlobalVsTime")->Fill(hoursAfterStartOfRun, collision.multNTracksGlobal());
+        getHist(TH2, histPath + "hNTPVContributorsVsTime")->Fill(hoursAfterStartOfRun, collision.multPVTotalContributors());
+        getHist(TProfile, histPath + "hPVzProfileCoVsTime")->Fill(hoursAfterStartOfRun, collision.multPVz());
+        getHist(TProfile, histPath + "hPVzProfileBcVsTime")->Fill(hoursAfterStartOfRun, multbc.multFT0PosZ());
+        if (doTimeStudyFV0AOuterVsFT0A3d) {
+          histos.fill(HIST("h3dFV0AVsTime"), hoursAfterStartOfRun, collision.multFV0A(), collision.multFV0AOuter());
+        }
 
-      if (irDoRateVsTime) {
-        float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
-        getHist(TProfile, histPath + "hIRProfileVsTime")->Fill(hoursAfterStartOfRun, interactionRate);
+        if (irDoRateVsTime) {
+          float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
+          getHist(TProfile, histPath + "hIRProfileVsTime")->Fill(hoursAfterStartOfRun, interactionRate);
+        }
       }
     }
   }
@@ -726,12 +788,17 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
+  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FV0AOuterMults>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
+  {
+    genericProcessCollision(collision);
+  }
+
   void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC, aod::FV0AOuterMults>::iterator const& collision, aod::MultBCs const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::Mults2BC, aod::FV0AOuterMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::FV0AOuterMults>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }
@@ -799,6 +866,7 @@ struct centralityStudy {
   }
 
   PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", false);
+  PROCESS_SWITCH(centralityStudy, processCollisionsWithResolutionStudy, "per-collision analysis, with reso study", false);
   PROCESS_SWITCH(centralityStudy, processCollisionsWithCentrality, "per-collision analysis", true);
   PROCESS_SWITCH(centralityStudy, processCollisionsWithCentralityWithNeighbours, "per-collision analysis", false);
   PROCESS_SWITCH(centralityStudy, processBCs, "per-BC analysis", true);

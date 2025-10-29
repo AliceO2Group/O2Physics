@@ -27,7 +27,7 @@
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
 
-enum class RefTrackBit : uint16_t { // This is not for leptons, but charged particles for ref. flow.
+enum class RefTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
   kNclsITS5 = 1,
   kNclsITS6 = 2,
   kNcrTPC70 = 4,
@@ -38,6 +38,10 @@ enum class RefTrackBit : uint16_t { // This is not for leptons, but charged part
   kChi2TPC4 = 128,
   kChi2TPC3 = 256,
   kFracSharedTPC07 = 512,
+  kDCAxy05cm = 1024, // default is 1 cm
+  kDCAxy03cm = 2048,
+  kDCAz05cm = 4096, // default is 1cm
+  kDCAz03cm = 8192,
 };
 
 //_______________________________________________________________________

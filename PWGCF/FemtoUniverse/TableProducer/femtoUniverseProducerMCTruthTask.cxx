@@ -19,6 +19,7 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
@@ -105,6 +106,9 @@ struct FemtoUniverseProducerMCTruthTask {
     Configurable<float> confEtaFilterCut{"confEtaFilterCut", 0.8, "Eta cut for the filtering tracks"};
   } ConfFilteringTracks;
 
+  // D0/D0bar cuts
+  Configurable<float> yD0CandGenMax{"yD0CandGenMax", 0.5, "Rapidity cut for the D0/D0bar mesons"};
+
   FemtoUniverseCollisionSelection colCuts;
   FemtoUniverseTrackSelection trackCuts;
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
@@ -161,8 +165,6 @@ struct FemtoUniverseProducerMCTruthTask {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
 
-      if (particle.eta() < -ConfFilteringTracks.confEtaFilterCut || particle.eta() > ConfFilteringTracks.confEtaFilterCut)
-        continue;
       if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut)
         continue;
 
@@ -171,10 +173,10 @@ struct FemtoUniverseProducerMCTruthTask {
       if (confAnalysisWithPID) {
         bool pass = false;
         std::vector<int> tmpPDGCodes = confPDGCodes; // necessary due to some features of the Configurable
-        for (const int& pdg : tmpPDGCodes) {
+        for (auto const& pdg : tmpPDGCodes) {
           if (pdgCode == Pdg::kPhi) { // phi meson
             pass = true;
-          } else if (pdgCode == Pdg::kD0) { // D0 meson
+          } else if (std::abs(pdgCode) == Pdg::kD0) { // D0(bar) meson
             pass = true;
           } else if (pdgCode == Pdg::kDPlus) { // D+ meson
             pass = true;
@@ -185,6 +187,31 @@ struct FemtoUniverseProducerMCTruthTask {
         }
         if (!pass)
           continue;
+      }
+
+      // check if D0/D0bar mesons pass the rapidity cut
+      // if pass then saving the orgin of D0/D0bar
+      // check if tracks (besides D0/D0bar) pass pseudorapidity cut
+      int8_t origin = -99;
+      if (std::abs(particle.pdgCode()) == Pdg::kD0) {
+        if (std::abs(particle.y()) > yD0CandGenMax) {
+          continue;
+        } else {
+          origin = RecoDecay::getCharmHadronOrigin(tracks, particle);
+        }
+      } else {
+        if (std::abs(particle.eta()) > ConfFilteringTracks.confEtaFilterCut) {
+          continue;
+        } else {
+          origin = -99;
+        }
+      }
+
+      /// check if we end-up with the correct final state using MC info
+      int8_t sign = 0;
+      if (std::abs(pdgCode) == Pdg::kD0 && !RecoDecay::isMatchedMCGen(tracks, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        /// check if we have D0(bar) → π± K∓
+        continue;
       }
 
       // we cannot use isSelectedMinimal since it takes Ncls
@@ -208,8 +235,8 @@ struct FemtoUniverseProducerMCTruthTask {
                   pdgCode,
                   pdgCode,
                   childIDs,
-                  0,
-                  0);
+                  origin,
+                  -999.);
     }
   }
 

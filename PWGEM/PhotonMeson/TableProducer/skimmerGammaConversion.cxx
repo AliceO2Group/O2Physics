@@ -44,7 +44,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/HelixHelper.h"
+#include "ReconstructionDataFormats/HelixHelper.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -188,8 +188,7 @@ struct skimmerGammaConversion {
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(), theTrack.tpcNClsShared(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
-           theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap(), 0,
-           theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl());
+           theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap());
   }
 
   template <typename TTRACK>

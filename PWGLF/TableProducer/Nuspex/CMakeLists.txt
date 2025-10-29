@@ -96,10 +96,20 @@ o2physics_add_dpl_workflow(nuclei-flow-trees
 
 o2physics_add_dpl_workflow(hyperkink-reco-task
     SOURCES hyperkinkRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(he3-lambda-analysis
     SOURCES he3LambdaAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-antineutron-cex
+    SOURCES nucleiAntineutronCex.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(particle-composition-correction
+    SOURCES particleCompositionCorrection.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)

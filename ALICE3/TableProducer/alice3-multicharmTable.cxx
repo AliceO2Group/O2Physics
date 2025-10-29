@@ -124,6 +124,7 @@ struct alice3multicharmTable {
   Configurable<float> xiccMaxEta{"xiccMaxEta", 1.5, "Max eta"};
   Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak (GeV/c)"};
   Configurable<float> massWindowXiC{"massWindowXiC", 0.015, "Mass window around XiC peak (GeV/c)"};
+  Configurable<float> massWindowXiCC{"massWindowXiCC", 0.4, "Mass window around XiCC peak (GeV/c). Make sure that bkg region is included in this window"};
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
@@ -161,7 +162,8 @@ struct alice3multicharmTable {
   Partition<alice3tracks> tracksPiFromXiC =
     ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiC) == trackSelectionPiFromXiC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCPt&& nabs(aod::track::dcaXY) > piFromXiC_dcaXYconstant + piFromXiC_dcaXYpTdep* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piFromXiC_dcaZconstant + piFromXiC_dcaZpTdep* nabs(aod::track::signed1Pt);
 
-  Partition<alice3tracks> tracksPiFromXiCC = ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt&& nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt);
+  Partition<alice3tracks> tracksPiFromXiCC =
+    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt&& nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piFromXiCC_dcaZconstant + piFromXiCC_dcaZpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
   struct {
@@ -251,6 +253,11 @@ struct alice3multicharmTable {
     }
 
     thisXiCCcandidate.mass = RecoDecay::m(array{array{thisXiCCcandidate.prong0mom[0], thisXiCCcandidate.prong0mom[1], thisXiCCcandidate.prong0mom[2]}, array{thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong1mom[2]}}, array{mass0, mass1});
+
+    if (std::fabs(thisXiCCcandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > massWindowXiCC) {
+      return false;
+    }
+
     thisXiCCcandidate.pt = std::hypot(thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1]);
     thisXiCCcandidate.eta = RecoDecay::eta(array{thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]});
     return true;
@@ -439,6 +446,13 @@ struct alice3multicharmTable {
     histos.add("hPi1cPt", "hPi1cPt", kTH1D, {axisPt});
     histos.add("hPi2cPt", "hPi2cPt", kTH1D, {axisPt});
     histos.add("hPiccPt", "hPiccPt", kTH1D, {axisPt});
+
+    histos.add("hPi1cDCAxy", "hPi1cDCAxy", kTH1D, {axisDCA});
+    histos.add("hPi1cDCAz", "hPi1cDCAz", kTH1D, {axisDCA});
+    histos.add("hPi2cDCAxy", "hPi2cDCAxy", kTH1D, {axisDCA});
+    histos.add("hPi2cDCAz", "hPi2cDCAz", kTH1D, {axisDCA});
+    histos.add("hPiccDCAxy", "hPiccDCAxy", kTH1D, {axisDCA});
+    histos.add("hPiccDCAz", "hPiccDCAz", kTH1D, {axisDCA});
 
     histos.add("hMinXiDecayRadius", "hMinXiDecayRadius", kTH1D, {axisRadius2DXi});
     histos.add("hMinXiCDecayRadius", "hMinXiCDecayRadius", kTH1D, {axisRadius});
@@ -717,7 +731,7 @@ struct alice3multicharmTable {
             histos.fill(HIST("hDCAxyXiCC"), std::fabs(xiccdcaXY * 1e+4));
             histos.fill(HIST("hDCAzXiCC"), std::fabs(xiccdcaZ * 1e+4));
 
-            if (std::fabs(thisXiCcandidate.eta) > xiccMaxEta)
+            if (std::fabs(thisXiCCcandidate.eta) > xiccMaxEta)
               continue; // not in central barrel
 
             histos.fill(HIST("hCharmBuilding"), 3.0f);
@@ -774,6 +788,13 @@ struct alice3multicharmTable {
                 piFromLa.pt(), piFromLa.eta(),
                 piFromLa.dcaXY(), piFromLa.dcaZ(),
                 pi1c.eta(), pi2c.eta(), picc.eta());
+
+              histos.fill(HIST("hPi1cDCAxy"), std::abs(pi1c.dcaXY() * 1e+4));
+              histos.fill(HIST("hPi1cDCAz"), std::abs(pi1c.dcaZ() * 1e+4));
+              histos.fill(HIST("hPi2cDCAxy"), std::abs(pi2c.dcaXY() * 1e+4));
+              histos.fill(HIST("hPi2cDCAz"), std::abs(pi2c.dcaZ() * 1e+4));
+              histos.fill(HIST("hPiccDCAxy"), std::abs(picc.dcaXY() * 1e+4));
+              histos.fill(HIST("hPiccDCAz"), std::abs(picc.dcaZ() * 1e+4));
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);

@@ -130,6 +130,8 @@ struct lambdaTwoPartPolarization {
   ConfigurableAxis cosSigAxis{"cosSigAxis", {110, -1.05, 1.05}, "Signal cosine axis"};
   ConfigurableAxis cosAccAxis{"cosAccAxis", {110, -7.05, 7.05}, "Accepatance cosine axis"};
 
+  ConfigurableAxis vertexAxis{"vertexAxis", {5, -10, 10}, "vertex axis for mixing"};
+
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
@@ -182,6 +184,8 @@ struct lambdaTwoPartPolarization {
 
   ROOT::Math::PxPyPzMVector ProtonVec1, PionVec1, LambdaVec1, ProtonBoostedVec1, PionBoostedVec1;
   ROOT::Math::PxPyPzMVector ProtonVec2, PionVec2, LambdaVec2, ProtonBoostedVec2, PionBoostedVec2;
+  int V01Tag;
+  int V02Tag;
   double costhetastar1;
   double costhetastar2;
 
@@ -292,10 +296,12 @@ struct lambdaTwoPartPolarization {
       if (LambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPr);
         PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPi);
+        V01Tag = 0;
       }
       if (aLambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPr);
         PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPi);
+        V01Tag = 1;
       }
       LambdaVec1 = ProtonVec1 + PionVec1;
       LambdaVec1.SetM(massLambda);
@@ -337,10 +343,12 @@ struct lambdaTwoPartPolarization {
         if (LambdaTag) {
           ProtonVec2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPr);
           PionVec2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPi);
+          V02Tag = 0;
         }
         if (aLambdaTag) {
           ProtonVec2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPr);
           PionVec2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPi);
+          V02Tag = 1;
         }
         LambdaVec2 = ProtonVec2 + PionVec2;
         LambdaVec2.SetM(massLambda);
@@ -355,6 +363,10 @@ struct lambdaTwoPartPolarization {
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
         weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v02.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v02.pt()), AccMap->GetYaxis()->FindBin(v02.yLambda())) : 1.;
+
+        if (V01Tag != V02Tag) {
+          weight *= -1.0;
+        }
 
         dphi = TVector2::Phi_0_2pi(v01.phi() - v02.phi());
         if (dphi > constants::math::PI * 1.5) {
@@ -392,7 +404,68 @@ struct lambdaTwoPartPolarization {
 
     FillHistograms(collision, collision, V0s, V0s);
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process Event for same data", true);
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process event for same data", true);
+
+  SliceCache cache;
+  Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
+
+  using BinningTypeT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningTypeT0C colBinningT0C{{vertexAxis, centAxis}, true};
+
+  void processDataMixedT0C(EventCandidates const& collisions,
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  {
+    for (auto& [c1, c2] : selfCombinations(colBinningT0C, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (c1.index() == c2.index())
+        continue;
+
+      centrality = c1.centFT0C();
+      if (cfgAccCor) {
+        auto bc = c1.bc_as<aod::BCsWithTimestamps>();
+        AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
+      }
+      if (!eventSelected(c1))
+        continue;
+      if (!eventSelected(c2))
+        continue;
+
+      auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
+
+      FillHistograms(c1, c2, tracks1, tracks2);
+    }
+  }
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process event for mixed data in PbPb", false);
+
+  using BinningTypeT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningTypeT0M colBinningT0M{{vertexAxis, centAxis}, true};
+
+  void processDataMixedT0M(EventCandidates const& collisions,
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  {
+    for (auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (c1.index() == c2.index())
+        continue;
+
+      centrality = c1.centFT0M();
+      if (cfgAccCor) {
+        auto bc = c1.bc_as<aod::BCsWithTimestamps>();
+        AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
+      }
+      if (!eventSelected(c1))
+        continue;
+      if (!eventSelected(c2))
+        continue;
+
+      auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
+
+      FillHistograms(c1, c2, tracks1, tracks2);
+    }
+  }
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0M, "Process event for mixed data in pp", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

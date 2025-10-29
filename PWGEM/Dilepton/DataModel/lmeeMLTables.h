@@ -49,6 +49,7 @@ DECLARE_SOA_COLUMN(PIDLabel, pidlabel, uint8_t);                     //!
 DECLARE_SOA_COLUMN(TrackType, tracktype, uint8_t);                   //!
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //!
+DECLARE_SOA_COLUMN(TPCNClsPID, tpcNClsPID, uint8_t);                 //!
 DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);          //!
 DECLARE_SOA_COLUMN(Sign, sign, short);                               //!
 DECLARE_SOA_COLUMN(P, p, float);                                     //!
@@ -89,18 +90,27 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 DECLARE_SOA_TABLE(EMTracksForMLPID, "AOD", "EMTRACKMLPID", //!
                   o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
                   emmltrack::P, track::Tgl, emmltrack::Sign,
-                  track::TPCNClsFindable, emmltrack::TPCNClsFound, emmltrack::TPCNClsCrossedRows,
+                  track::TPCNClsFindable, emmltrack::TPCNClsFound, emmltrack::TPCNClsCrossedRows, emmltrack::TPCNClsPID,
                   track::TPCChi2NCl, track::TPCInnerParam,
-                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
-                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
+                  track::TPCSignal,
+                  pidtofbeta::Beta,
                   track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, emmltrack::PIDLabel,
 
                   // dynamic column
                   emmltrack::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emmltrack::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
+DECLARE_SOA_TABLE(EMPIDsEl, "AOD", "EMPIDEL", pidtpc::TPCNSigmaEl, pidtof::TOFNSigmaEl); // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsPi, "AOD", "EMPIDPI", pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi); // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsKa, "AOD", "EMPIDKA", pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa); // Joinable with EMTracksForMLPID
+DECLARE_SOA_TABLE(EMPIDsPr, "AOD", "EMPIDPR", pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr); // Joinable with EMTracksForMLPID
+
 // iterators
 using EMTrackForMLPID = EMTracksForMLPID::iterator;
+using EMPIDEl = EMPIDsEl::iterator;
+using EMPIDPi = EMPIDsPi::iterator;
+using EMPIDKa = EMPIDsKa::iterator;
+using EMPIDPr = EMPIDsPr::iterator;
 
 } // namespace o2::aod
 

@@ -44,14 +44,16 @@ using namespace o2::constants::physics;
 namespace
 {
 const int nCharmHadrons = 10;
-static constexpr std::array<int, nCharmHadrons> pdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
+constexpr std::array<int, nCharmHadrons> PdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
 
 const int nBeautyHadrons = 4;
-static constexpr std::array<int, nBeautyHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
+constexpr std::array<int, nBeautyHadrons> PdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
 } // namespace
 
 struct HfTaskMcGenPtRapShapes {
 
+  Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
+  Configurable<float> absRapidityMax{"absRapidityMax", 0.5, "Absolute maximum rapidity"};
   ConfigurableAxis axisPtCharm{"axisPtCharm", {1000, 0.f, 100.f}, "Binning for the pT axis of charm hadrons"};
   ConfigurableAxis axisPtBeauty{"axisPtBeauty", {3000, 0.f, 300.f}, "Binning for the pT axis of beauty hadrons"};
   ConfigurableAxis axisRapCharm{"axisRapCharm", {100, -1.f, 1.f}, "Binning for the y axis of charm hadrons"};
@@ -62,45 +64,48 @@ struct HfTaskMcGenPtRapShapes {
   std::array<std::shared_ptr<TH2>, nCharmHadrons> histPtCharmVsPtBeautyNonPrompt{};
   std::array<std::shared_ptr<TH2>, nBeautyHadrons> histRapVsPtBeauty{};
 
-  HistogramRegistry registry{};
+  HistogramRegistry registry;
 
   void init(InitContext&)
   {
 
     for (auto iCharmHad{0}; iCharmHad < nCharmHadrons; ++iCharmHad) {
-      histRapVsPtCharmPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hRapVsPtPrompt%d", pdgCodesCharm[iCharmHad]), Form("Prompt %d;#it{p}_{T} (GeV/#it{c});#it{y}", pdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtCharm, axisRapCharm}});
-      histRapVsPtCharmNonPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hRapVsPtNonPrompt%d", pdgCodesCharm[iCharmHad]), Form("Non-prompt %d;#it{p}_{T} (GeV/#it{c});#it{y}", pdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtCharm, axisRapCharm}});
-      histPtCharmVsPtBeautyNonPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hPtCharmVsPtBeautyNonPrompt%d", pdgCodesCharm[iCharmHad]), Form("Non-prompt %d;#it{p}_{T}(b-had) (GeV/#it{c});#it{p}_{T}(c-had) (GeV/#it{c})", pdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtBeauty, axisPtCharm}});
+      histRapVsPtCharmPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hRapVsPtPrompt%d", PdgCodesCharm[iCharmHad]), Form("Prompt %d;#it{p}_{T} (GeV/#it{c});#it{y}", PdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtCharm, axisRapCharm}});
+      histRapVsPtCharmNonPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hRapVsPtNonPrompt%d", PdgCodesCharm[iCharmHad]), Form("Non-prompt %d;#it{p}_{T} (GeV/#it{c});#it{y}", PdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtCharm, axisRapCharm}});
+      histPtCharmVsPtBeautyNonPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hPtCharmVsPtBeautyNonPrompt%d", PdgCodesCharm[iCharmHad]), Form("Non-prompt %d;#it{p}_{T}(b-had) (GeV/#it{c});#it{p}_{T}(c-had) (GeV/#it{c})", PdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtBeauty, axisPtCharm}});
     }
 
     for (auto iBeautyHad{0}; iBeautyHad < nBeautyHadrons; ++iBeautyHad) {
-      histRapVsPtBeauty[iBeautyHad] = registry.add<TH2>(Form("BeautyHadrons/hRapVsPt%d", pdgCodesBeauty[iBeautyHad]), Form("%d;#it{p}_{T} (GeV/#it{c});#it{y}", pdgCodesBeauty[iBeautyHad]), {HistType::kTH2F, {axisPtBeauty, axisRapBeauty}});
+      histRapVsPtBeauty[iBeautyHad] = registry.add<TH2>(Form("BeautyHadrons/hRapVsPt%d", PdgCodesBeauty[iBeautyHad]), Form("%d;#it{p}_{T} (GeV/#it{c});#it{y}", PdgCodesBeauty[iBeautyHad]), {HistType::kTH2F, {axisPtBeauty, axisRapBeauty}});
     }
   }
 
   void process(aod::McParticles const& mcParticles)
   {
     for (auto const& mcParticle : mcParticles) {
-      int absPdgCode = std::abs(mcParticle.pdgCode());
-      float pt = mcParticle.pt();
-      float rap = mcParticle.y();
-      auto itCharm = std::find(pdgCodesCharm.begin(), pdgCodesCharm.end(), absPdgCode);
-      auto itBeauty = std::find(pdgCodesBeauty.begin(), pdgCodesBeauty.end(), absPdgCode);
-      if (itCharm != pdgCodesCharm.end()) {
-        auto idxCharm = std::distance(pdgCodesCharm.begin(), itCharm);
+      if (rejectBackground && mcParticle.fromBackgroundEvent()) {
+        continue;
+      }
+      int const absPdgCode = std::abs(mcParticle.pdgCode());
+      float const pt = mcParticle.pt();
+      float const rap = mcParticle.y();
+      const auto* itCharm = std::find(PdgCodesCharm.begin(), PdgCodesCharm.end(), absPdgCode);
+      const auto* itBeauty = std::find(PdgCodesBeauty.begin(), PdgCodesBeauty.end(), absPdgCode);
+      if (itCharm != PdgCodesCharm.end()) {
+        auto idxCharm = std::distance(PdgCodesCharm.begin(), itCharm);
         std::vector<int> idxBhadMothers{};
         auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false, &idxBhadMothers);
         if (origin == RecoDecay::OriginType::Prompt) {
           histRapVsPtCharmPrompt[idxCharm]->Fill(pt, rap);
         } else if (origin == RecoDecay::OriginType::NonPrompt) {
           histRapVsPtCharmNonPrompt[idxCharm]->Fill(pt, rap);
-          if (std::abs(rap) < 0.5) {
+          if (std::abs(rap) < absRapidityMax) {
             auto bMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
             histPtCharmVsPtBeautyNonPrompt[idxCharm]->Fill(bMother.pt(), pt);
           }
         }
-      } else if (itBeauty != pdgCodesBeauty.end()) {
-        auto idxBeauty = std::distance(pdgCodesBeauty.begin(), itBeauty);
+      } else if (itBeauty != PdgCodesBeauty.end()) {
+        auto idxBeauty = std::distance(PdgCodesBeauty.begin(), itBeauty);
         histRapVsPtBeauty[idxBeauty]->Fill(pt, rap);
       }
     }

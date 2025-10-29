@@ -16,18 +16,21 @@
 // - victor.gonzalez@cern.ch
 // - david.dobrigkeit.chinellato@cern.ch
 //
-#include "TList.h"
-#include "TDirectory.h"
-#include "TFile.h"
-#include "TF1.h"
-#include "TH1F.h"
-#include "TH1D.h"
-#include "TProfile.h"
-#include "TStopwatch.h"
-#include "TArrayL64.h"
-#include "TArrayF.h"
-#include "multCalibrator.h"
 #include "multMCCalibrator.h"
+
+#include "multCalibrator.h"
+
+#include <TDirectory.h>
+#include <TF1.h>
+#include <TFile.h>
+#include <TList.h>
+#include <TNamed.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <iostream> // FIXME
 
 using namespace std;
 
@@ -79,22 +82,22 @@ Bool_t multMCCalibrator::Calibrate()
   cout << " * Output File............: " << fOutputFileName.Data() << endl;
   cout << endl;
 
-  //Opening data and simulation file...
+  // Opening data and simulation file...
   TFile* fileData = new TFile(fDataInputFileName.Data(), "READ");
   TFile* fileSim = new TFile(fSimInputFileName.Data(), "READ");
 
-  //Step 1: verify if input file contains desired histograms
+  // Step 1: verify if input file contains desired histograms
   TProfile* hProfData[multCalibrator::kNCentEstim];
   TProfile* hProfSim[multCalibrator::kNCentEstim];
   cout << " * acquiring input profiles..." << endl;
   for (Int_t iv = 0; iv < multCalibrator::kNCentEstim; iv++) {
-    hProfData[iv] = (TProfile*)fileData->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data()));
+    hProfData[iv] = reinterpret_cast<TProfile*>(fileData->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data())));
     if (!hProfData[iv]) {
       cout << Form("Data file does not contain histogram h%s, which is necessary for calibration!", multCalibrator::fCentEstimName[iv].Data()) << endl;
       return kFALSE;
     }
     hProfData[iv]->SetName(Form("hProfData_%s", multCalibrator::fCentEstimName[iv].Data()));
-    hProfSim[iv] = (TProfile*)fileSim->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data()));
+    hProfSim[iv] = reinterpret_cast<TProfile*>(fileSim->Get(Form("multiplicity-qa/multiplicityQa/hProf%s", multCalibrator::fCentEstimName[iv].Data())));
     if (!hProfSim[iv]) {
       cout << Form("Sim file does not contain histogram h%s, which is necessary for calibration!", multCalibrator::fCentEstimName[iv].Data()) << endl;
       return kFALSE;
@@ -135,14 +138,14 @@ Bool_t multMCCalibrator::Calibrate()
 //________________________________________________________________
 TF1* multMCCalibrator::GetFit(TProfile* fProf, Bool_t lQuadratic)
 {
-  TString fFormula = "[0]*x"; //old/deprecated (avoid if possible, please)
+  TString fFormula = "[0]*x"; // old/deprecated (avoid if possible, please)
   if (lQuadratic)
     fFormula = "[0]+[1]*TMath::Power(x,[2])";
 
   // Function to return fit function to profile for posterior inversion
   TF1* fit = new TF1(Form("%s_fit", fProf->GetName()), fFormula.Data(), fProf->GetBinLowEdge(1), fProf->GetBinLowEdge(fProf->GetNbinsX()));
 
-  //Guesstimate inclination from data points in profile
+  // Guesstimate inclination from data points in profile
   Double_t lMeanInclination = 0;
   Long_t lInclinationCount = 0;
   for (Int_t ii = 2; ii < fProf->GetNbinsX(); ii++) {
@@ -158,7 +161,7 @@ TF1* multMCCalibrator::GetFit(TProfile* fProf, Bool_t lQuadratic)
   if (lInclinationCount >= 5)
     lMeanInclination /= lInclinationCount;
 
-  //Give it a little nudge, cause life's hard
+  // Give it a little nudge, cause life's hard
   fit->SetParameter(0, 0.0);
   fit->SetParameter(1, lMeanInclination);
   fit->SetParameter(2, 1.0);

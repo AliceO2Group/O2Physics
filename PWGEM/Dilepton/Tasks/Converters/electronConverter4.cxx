@@ -33,21 +33,6 @@ struct electronConverter4 {
   void process002to004(MyElectrons002 const& tracks)
   {
     for (const auto& track : tracks) {
-      float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
-      float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
-      float beta = track.hasTOF() ? track.beta() : -29.f;
-      float tofNSigmaEl = track.hasTOF() ? track.tofNSigmaEl() : -299.f;
-      float tofNSigmaPi = track.hasTOF() ? track.tofNSigmaPi() : -299.f;
-      float tofNSigmaKa = track.hasTOF() ? track.tofNSigmaKa() : -299.f;
-      float tofNSigmaPr = track.hasTOF() ? track.tofNSigmaPr() : -299.f;
-      float tofChi2 = track.hasTOF() ? track.tofChi2() : -299.f;
-
-      float tpcSignal = track.hasTPC() ? track.tpcSignal() : -299.f;
-      float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
-      float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
-      float tpcNSigmaKa = track.hasTPC() ? track.tpcNSigmaKa() : -299.f;
-      float tpcNSigmaPr = track.hasTPC() ? track.tpcNSigmaPr() : -299.f;
-
       track_004(track.collisionId(),
                 track.trackId(),
                 track.sign(),
@@ -63,28 +48,27 @@ struct electronConverter4 {
                 track.tpcNClsFindableMinusFound(),
                 track.tpcNClsFindableMinusCrossedRows(),
                 track.tpcNClsShared(),
-
-                static_cast<int16_t>(tpcChi2NCl * 1e+2),
+                track.tpcChi2NCl(),
                 track.tpcInnerParam(),
-                static_cast<uint16_t>(tpcSignal * 1e+2),
-                static_cast<int16_t>(tpcNSigmaEl * 1e+2),
-                static_cast<int16_t>(tpcNSigmaPi * 1e+2),
-                static_cast<int16_t>(tpcNSigmaKa * 1e+2),
-                static_cast<int16_t>(tpcNSigmaPr * 1e+2),
-                static_cast<int16_t>(beta * 1e+3),
-                static_cast<int16_t>(tofNSigmaEl * 1e+2),
-                static_cast<int16_t>(tofNSigmaPi * 1e+2),
-                static_cast<int16_t>(tofNSigmaKa * 1e+2),
-                static_cast<int16_t>(tofNSigmaPr * 1e+2),
+                track.tpcSignal(),
+                track.tpcNSigmaEl(),
+                track.tpcNSigmaPi(),
+                track.tpcNSigmaKa(),
+                track.tpcNSigmaPr(),
+                track.beta(),
+                track.tofNSigmaEl(),
+                // track.tofNSigmaPi(),
+                // track.tofNSigmaKa(),
+                // track.tofNSigmaPr(),
                 track.itsClusterSizes(),
-                static_cast<int16_t>(itsChi2NCl * 1e+2),
-                static_cast<int16_t>(tofChi2 * 1e+2),
+                track.itsChi2NCl(),
+                track.tofChi2(),
                 track.detectorMap(),
-                track.tgl(),
+                // track.tgl(),
                 track.isAssociatedToMPC(),
                 false,
                 0.f,
-                static_cast<uint16_t>(0));
+                0.f);
     } // end of track loop
   }
   PROCESS_SWITCH(electronConverter4, process002to004, "convert from 002 into 004", false);
@@ -93,22 +77,6 @@ struct electronConverter4 {
   void process003to004(MyElectrons003 const& tracks)
   {
     for (const auto& track : tracks) {
-      float itsChi2NCl = track.itsChi2NCl() > 0.f ? track.itsChi2NCl() : -299.f;
-      float tpcChi2NCl = track.tpcChi2NCl() > 0.f ? track.tpcChi2NCl() : -299.f;
-      float beta = track.hasTOF() ? track.beta() : -29.f;
-      float tofNSigmaEl = track.hasTOF() ? track.tofNSigmaEl() : -299.f;
-      float tofNSigmaPi = track.hasTOF() ? track.tofNSigmaPi() : -299.f;
-      float tofNSigmaKa = track.hasTOF() ? track.tofNSigmaKa() : -299.f;
-      float tofNSigmaPr = track.hasTOF() ? track.tofNSigmaPr() : -299.f;
-      float tofChi2 = track.hasTOF() ? track.tofChi2() : -299.f;
-
-      float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
-      float mcTunedTPCSignal = track.hasTPC() ? track.mcTunedTPCSignal() : 0.f;
-      float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
-      float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
-      float tpcNSigmaKa = track.hasTPC() ? track.tpcNSigmaKa() : -299.f;
-      float tpcNSigmaPr = track.hasTPC() ? track.tpcNSigmaPr() : -299.f;
-
       track_004(track.collisionId(),
                 track.trackId(),
                 track.sign(),
@@ -124,28 +92,27 @@ struct electronConverter4 {
                 track.tpcNClsFindableMinusFound(),
                 track.tpcNClsFindableMinusCrossedRows(),
                 track.tpcNClsShared(),
-
-                static_cast<int16_t>(tpcChi2NCl * 1e+2),
+                track.tpcChi2NCl(),
                 track.tpcInnerParam(),
-                static_cast<uint16_t>(tpcSignal * 1e+2),
-                static_cast<int16_t>(tpcNSigmaEl * 1e+2),
-                static_cast<int16_t>(tpcNSigmaPi * 1e+2),
-                static_cast<int16_t>(tpcNSigmaKa * 1e+2),
-                static_cast<int16_t>(tpcNSigmaPr * 1e+2),
-                static_cast<int16_t>(beta * 1e+3),
-                static_cast<int16_t>(tofNSigmaEl * 1e+2),
-                static_cast<int16_t>(tofNSigmaPi * 1e+2),
-                static_cast<int16_t>(tofNSigmaKa * 1e+2),
-                static_cast<int16_t>(tofNSigmaPr * 1e+2),
+                track.tpcSignal(),
+                track.tpcNSigmaEl(),
+                track.tpcNSigmaPi(),
+                track.tpcNSigmaKa(),
+                track.tpcNSigmaPr(),
+                track.beta(),
+                track.tofNSigmaEl(),
+                // track.tofNSigmaPi(),
+                // track.tofNSigmaKa(),
+                // track.tofNSigmaPr(),
                 track.itsClusterSizes(),
-                static_cast<int16_t>(itsChi2NCl * 1e+2),
-                static_cast<int16_t>(tofChi2 * 1e+2),
+                track.itsChi2NCl(),
+                track.tofChi2(),
                 track.detectorMap(),
-                track.tgl(),
+                // track.tgl(),
                 track.isAssociatedToMPC(),
                 false,
                 0.f,
-                static_cast<uint16_t>(mcTunedTPCSignal));
+                track.mcTunedTPCSignal());
     } // end of track loop
   }
   PROCESS_SWITCH(electronConverter4, process003to004, "convert from 003 into 004", false);

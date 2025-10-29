@@ -38,6 +38,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include "TDatabasePDG.h"
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
@@ -59,6 +60,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 struct nucleiInJets {
 
   enum Particle {
@@ -88,19 +90,19 @@ struct nucleiInJets {
       case -2212: // antip
         return -Particle::kProton;
 
-      case 1000010020: // Deuteron
+      case Pdg::kDeuteron: // Deuteron
         return Particle::kDeuteron;
-      case -1000010020: // AntiDeuteron
+      case -Pdg::kDeuteron: // AntiDeuteron
         return -Particle::kDeuteron;
 
-      case 1000010030: // Triton
+      case Pdg::kTriton: // Triton
         return Particle::kTriton;
-      case -1000010030: // AntiTriton
+      case -Pdg::kTriton: // AntiTriton
         return -Particle::kTriton;
 
-      case 1000020030: // Helium
+      case Pdg::kHelium3: // Helium
         return Particle::kHelium;
-      case -1000020030: // AntiHelium
+      case -Pdg::kHelium3: // AntiHelium
         return -Particle::kHelium;
       default:
         return 0; // Default case for unknown or unmapped PDG codes
@@ -113,6 +115,8 @@ struct nucleiInJets {
   Configurable<bool> isWithLeadingJet{"isWithLeadingJet", true, "Events with leading jet"};
   Configurable<bool> useLfTpcPid{"useLfTpcPid", true, "Events with custom TPC parameters"};
   Configurable<int> centralityType{"centralityType", 0, "0: FT0M, 1: FT0C, 2: FV0A"};
+  Configurable<std::vector<int>> cfgOccupancyRange{"cfgOccupancyRange", {0, 1000}, "Occupancy selection"};
+  Configurable<bool> useOccupancy{"useOccupancy", true, "Events with custom occupancy selection"};
 
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "set track min pT"};
   Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.8, "set track max Eta"};
@@ -169,15 +173,9 @@ struct nucleiInJets {
 
   Configurable<bool> applySkim{"applySkim", false, "Apply skimming"};
   Configurable<std::string> cfgSkim{"cfgSkim", "fHighFt0Mult", "Configurable for skimming"};
-
-  static constexpr float gMassProton = 0.93827208f;
-  static constexpr float gMassDeuteron = 1.87561f;
-  static constexpr float gMassTriton = 2.80892f;
-  static constexpr float gMassHelium = 2.80839f;
-  static constexpr int PDGProton = 2212;
-  static constexpr int PDGDeuteron = 1000010020;
-  static constexpr int PDGTriton = 1000010030;
-  static constexpr int PDGHelium = 1000020030;
+  Configurable<bool> sel8Coll{"sel8Coll", true, "sel8Coll for collisions"};
+  Configurable<bool> selNoSameBunchPileup{"selNoSameBunchPileup", false, "selNoSameBunchPileup for collisions"};
+  Configurable<bool> selIsGoodZvtxFT0vsPV{"selIsGoodZvtxFT0vsPV", false, "selIsGoodZvtxFT0vsPV for collisions"};
 
   // using EventTable = soa::Join<aod::JetCollisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
   using EventTable = aod::JetCollisions;
@@ -225,6 +223,7 @@ struct nucleiInJets {
     const AxisSpec dcaxyAxis{binsDCA, "DCAxy (cm)"};
     const AxisSpec dcazAxis{binsDCA, "DCAz (cm)"};
     const AxisSpec dedxAxis{binsdEdx, "d#it{E}/d#it{x} A.U."};
+    const AxisSpec vzAxis{300, -15.f, 15.f, "Vz (cm)"};
 
     const AxisSpec betaAxis{binsBeta, "TOF #beta"};
     const AxisSpec ptZHeAxis{binsPtZHe, "#it{p}_{T}"};
@@ -241,12 +240,15 @@ struct nucleiInJets {
     jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Sel8+|Vz|<10");
     jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "nJets>0");
 
-    jetHist.add("hNEventsInc", "hNEventsInc", {HistType::kTH1D, {{4, 0.f, 4.f}}});
+    jetHist.add("hNEventsInc", "hNEventsInc", {HistType::kTH1D, {{6, 0.f, 6.f}}});
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(1, "All");
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(2, "Sel8");
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
+    jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(4, "noSameBunchPileup");
+    jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(5, "isGoodZvtxFT0vsPV");
+    jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(6, "OccupancySel");
 
-    jetHist.add("hNEventsIncVsCent", "hNEventsIncVsCent", {HistType::kTH2D, {{4, 0.f, 4.f}, {CentAxis}}});
+    jetHist.add("hNEventsIncVsCent", "hNEventsIncVsCent", {HistType::kTH2D, {{vzAxis}, {CentAxis}}});
 
     // TPC nSigma vs pT (inclusive)
     jetHist.add<TH3>("tracksInc/proton/h3PtVsProtonNSigmaTPCVsPt", "pT(p) vs NSigmaTPC (p) vs centrality; #it{p}_{T} (GeV/#it{c}); NSigmaTPC; centrality", HistType::kTH3F, {PtAxis, {200, -10, 10}, CentAxis});
@@ -262,9 +264,9 @@ struct nucleiInJets {
     jetHist.add("jet/nJetsPerEvent", "nJetsPerEvent", kTH1F, {{15, .0, 15.}});
     jetHist.add("mcpJet/nJetsPerEvent", "nJetsPerEvent", kTH1F, {{15, .0, 15.}});
     jetHist.add("mcdJet/nJetsPerEvent", "nJetsPerEvent", kTH1F, {{15, .0, 15.}});
-    jetHist.add("jet/vertexZ", "vertexZ (Jet flag)", kTH1F, {{100, -15.0, 15.0}});
-    jetHist.add("vertexZ", "vertexZ (all)", kTH1F, {{100, -15.0, 15.0}});
-    jetHist.add("jetOut/vertexZ", "vertexZ (without z-flag)", kTH1F, {{100, -15.0, 15.0}});
+    jetHist.add("jet/vertexZ", "vertexZ (Jet flag)", kTH1F, {{vzAxis}});
+    jetHist.add("vertexZ", "vertexZ (all)", kTH1F, {{vzAxis}});
+    jetHist.add("jetOut/vertexZ", "vertexZ (without z-flag)", kTH1F, {{vzAxis}});
     ////////////////////////////
     //           MC
     ////////////////////////////
@@ -275,8 +277,8 @@ struct nucleiInJets {
     h->GetXaxis()->SetBinLabel(3, "vz < 10");
     h->GetXaxis()->SetBinLabel(4, "ingt0");
 
-    jetHist.add("mcpJet/vertexZ", "vertexZ (All)", kTH1F, {{100, -15.0, 15.0}});
-    jetHist.add("mcdJet/vertexZ", "vertexZ (All)", kTH1F, {{100, -15.0, 15.0}});
+    jetHist.add("mcpJet/vertexZ", "vertexZ (All)", kTH1F, {{vzAxis}});
+    jetHist.add("mcdJet/vertexZ", "vertexZ (All)", kTH1F, {{vzAxis}});
     jetHist.add("mcdJet/eventStat", "vertexZ (All)", kTH1F, {{5, .0, 5.0}});
     auto h1 = jetHist.get<TH1>(HIST("mcdJet/eventStat"));
     h1->GetXaxis()->SetBinLabel(1, "All");
@@ -284,8 +286,8 @@ struct nucleiInJets {
     h1->GetXaxis()->SetBinLabel(3, "vz< 10");
     h1->GetXaxis()->SetBinLabel(4, "ingt0");
 
-    jetHist.add("recmatched/vertexZ", "vertexZ (All)", kTH1F, {{100, -15.0, 15.0}});
-    jetHist.add("genmatched/vertexZ", "vertexZ (All)", kTH1F, {{100, -15.0, 15.0}});
+    jetHist.add("recmatched/vertexZ", "vertexZ (All)", kTH1F, {{vzAxis}});
+    jetHist.add("genmatched/vertexZ", "vertexZ (All)", kTH1F, {{vzAxis}});
 
     //////////////////////////////////////////////
     //              inside jet
@@ -496,12 +498,22 @@ struct nucleiInJets {
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(1, "All");
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(2, "Sel8");
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
+      jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(4, "noSameBunchPileup");
+      jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(5, "isGoodZvtxFT0vsPV");
+      jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(6, "OccupancySel");
 
-      jetHist.add<TH2>("recInc/vertexZ", "vertexZ (inclusive)", HistType::kTH2F, {{100, -15.0, 15.0}, {CentAxis}});
+      jetHist.add<TH2>("recInc/vertexZ", "vertexZ (inclusive)", HistType::kTH2F, {{vzAxis}, {CentAxis}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPC", "Pt vs ParticleType vs Centrality (TPC)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOF", "Pt vs ParticleType vs Centrality (TPC+TOF)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOFVeto", "Pt vs ParticleType vs Centrality (TPC+TOF Veto)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("genInc/pt/PtParticleType", "Pt vs ParticleType vs Centrality (gen)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+
+      jetHist.add<TH3>("recInc/eff/tpcTrack3D", "Pt vs ParticleType vs Centrality (tpc)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("recInc/eff/tpcTofTrack3D", "Pt vs ParticleType vs Centrality (tpc-tof)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3D", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}});            // pt, parttype, cent, dcaxy, partOrigin
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
+
       // inside jet
       jetHist.add<TH3>("tracks/mc/proton/h3PtVsProtonNSigmaTPCVsPtJet_jet", "pT(p) vs NSigmaTPC (p) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
       jetHist.add<TH3>("tracks/mc/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet_jet", "pT(#bar{p}) vs NSigmaTPC (#bar{p}) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
@@ -645,8 +657,8 @@ struct nucleiInJets {
   {
     std::array<float, 2> PerpendicularConeAxisPhi = {-999.0f, -999.0f};
     // build 2 perp cones in phi around the leading jet (right and left of the jet)
-    PerpendicularConeAxisPhi[0] = RecoDecay::constrainAngle<float, float>(jetPhi + (M_PI / 2.)); // This will contrain the angel between 0-2Pi
-    PerpendicularConeAxisPhi[1] = RecoDecay::constrainAngle<float, float>(jetPhi - (M_PI / 2.)); // This will contrain the angel between 0-2Pi
+    PerpendicularConeAxisPhi[0] = RecoDecay::constrainAngle<float, float>(jetPhi + (o2::constants::math::PIHalf)); // This will contrain the angel between 0-2Pi
+    PerpendicularConeAxisPhi[1] = RecoDecay::constrainAngle<float, float>(jetPhi - (o2::constants::math::PIHalf)); // This will contrain the angel between 0-2Pi
     return PerpendicularConeAxisPhi;
   }
 
@@ -663,7 +675,7 @@ struct nucleiInJets {
   }
 
   template <typename TrackType>
-  bool isTrackSelected(const TrackType track)
+  bool isTrackSelectedWithoutDcaxy(const TrackType track)
   {
     // standard track selection
     if (track.pt() < cfgtrkMinPt)
@@ -678,10 +690,6 @@ struct nucleiInJets {
     }
     if (std::fabs(track.eta()) > cfgtrkMaxEta)
       return false;
-    if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut && !useDcaxyPtDepCut)
-      return false;
-    if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
-      return false;
     if (std::fabs(track.dcaZ()) > cfgMaxDCAzToPVcut)
       return false;
     if (track.tpcNClsFindable() < cfgnFindableTPCClusters)
@@ -695,6 +703,29 @@ struct nucleiInJets {
     if (cfgConnectedToPV && !track.isPVContributor())
       return false;
     return true;
+  }
+
+  template <typename TrackType>
+  bool isTrackSelected(const TrackType track)
+  {
+    if (!isTrackSelectedWithoutDcaxy(track))
+      return false;
+    if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut && !useDcaxyPtDepCut)
+      return false;
+    if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
+      return false;
+
+    return true;
+  }
+
+  template <typename coll>
+  bool isOccupancyAccepted(const coll& collision)
+  {
+    auto occupancy{collision.trackOccupancyInTimeRange()};
+    if (occupancy < cfgOccupancyRange->at(0) || occupancy > cfgOccupancyRange->at(1))
+      return false;
+    else
+      return true;
   }
 
   int nEvents = 0;
@@ -713,7 +744,7 @@ struct nucleiInJets {
     if (isWithLeadingJet) {
       double delPhi = TVector2::Phi_mpi_pi(leadingJetPtEtaPhi[2] - trk.phi());
       double delEta = leadingJetPtEtaPhi[1] - trk.eta();
-      double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+      double R = RecoDecay::sumOfSquares(delEta, delPhi);
       if (R < cfgjetR)
         jetFlag = true;
       jetPt = leadingJetPtEtaPhi[0];
@@ -721,15 +752,15 @@ struct nucleiInJets {
       std::array<float, 2> perpConePhiJet = getPerpendicuarPhi(leadingJetPtEtaPhi[2]);
       double delPhiPerpCone1 = TVector2::Phi_mpi_pi(perpConePhiJet[0] - trk.phi());
       double delPhiPerpCone2 = TVector2::Phi_mpi_pi(perpConePhiJet[1] - trk.phi());
-      double RPerpCone1 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone1 * delPhiPerpCone1));
-      double RPerpCone2 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone2 * delPhiPerpCone2));
+      double RPerpCone1 = RecoDecay::sumOfSquares(delEta, delPhiPerpCone1);
+      double RPerpCone2 = RecoDecay::sumOfSquares(delEta, delPhiPerpCone2);
       if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
         jetFlagPerpCone = true;
     } else {
       for (auto const& jet : jets) {
         double delPhi = TVector2::Phi_mpi_pi(jet.phi() - trk.phi());
         double delEta = jet.eta() - trk.eta();
-        double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+        double R = RecoDecay::sumOfSquares(delEta, delPhi);
         if (R < cfgjetR)
           jetFlag = true;
         jetPt = jet.pt();
@@ -739,7 +770,7 @@ struct nucleiInJets {
     // tof
     float massTOF = -999;
     if (trk.hasTOF()) {
-      massTOF = trk.p() * TMath::Sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
+      massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
     }
 
     if (addTOFplots && trk.hasTOF()) {
@@ -821,13 +852,13 @@ struct nucleiInJets {
         if (addTOFplots && trk.hasTOF()) {
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracks/proton/h2TOFmassProtonVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt_jet"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+            jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt_jet"), massTOF * massTOF - MassProton * MassProton, trk.pt());
             jetHist.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt_jet"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+            jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
             jetHist.fill(HIST("tracks/triton/h2TOFmassTritonVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt_jet"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+            jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
             jetHist.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_jet"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+            jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
             jetHist.fill(HIST("tracks/proton/h2TofNsigmaProtonVsPt_jet"), trk.tofNSigmaPr(), trk.pt());
             jetHist.fill(HIST("tracks/deuteron/h2TofNsigmaDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
             jetHist.fill(HIST("tracks/helium/h2TofNsigmaHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());
@@ -837,24 +868,24 @@ struct nucleiInJets {
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
               jetHist.fill(HIST("tracks/proton/h2TOFmassProtonVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt_jet"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+              jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt_jet"), massTOF * massTOF - MassProton * MassProton, trk.pt());
               jetHist.fill(HIST("tracks/proton/h2TofNsigmaProtonVsPt_jet"), trk.tofNSigmaPr(), trk.pt());
               jetHist.fill(HIST("tracks/proton/h3TpcNsigmaTofNsigmaProtonVsPt_jet"), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt_jet"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+              jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
               jetHist.fill(HIST("tracks/deuteron/h2TofNsigmaDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
               jetHist.fill(HIST("tracks/deuteron/h3TpcNsigmaTofNsigmaDeuteronVsPt_jet"), trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/triton/h2TOFmassTritonVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt_jet"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+              jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
               jetHist.fill(HIST("tracks/triton/h2TofNsigmaTritonVsPt_jet"), trk.tofNSigmaTr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_jet"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+              jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
               jetHist.fill(HIST("tracks/helium/h2TofNsigmaHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());
             }
           }
@@ -937,43 +968,41 @@ struct nucleiInJets {
         if (addTOFplots && trk.hasTOF()) {
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracks/antiProton/h2TOFmassantiProtonVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt_jet"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+            jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt_jet"), massTOF * massTOF - MassProton * MassProton, trk.pt());
             jetHist.fill(HIST("tracks/antiProton/h2TofNsigmaantiProtonVsPt_jet"), trk.tofNSigmaPr(), trk.pt());
             jetHist.fill(HIST("tracks/antiProton/h3TpcNsigmaTofNsigmaantiProtonVsPt_jet"), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.pt());
-
             jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt_jet"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+            jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
             jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
             jetHist.fill(HIST("tracks/antiDeuteron/h3TpcNsigmaTofNsigmaantiDeuteronVsPt_jet"), trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.pt());
 
             jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt_jet"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+            jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
             jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt_jet"), trk.tofNSigmaTr(), trk.pt());
-
             jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt_jet"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt_jet"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+            jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
             jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
               jetHist.fill(HIST("tracks/antiProton/h2TOFmassantiProtonVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt_jet"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+              jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt_jet"), massTOF * massTOF - MassProton * MassProton, trk.pt());
               jetHist.fill(HIST("tracks/antiProton/h2TofNsigmaantiProtonVsPt_jet"), trk.tofNSigmaPr(), trk.pt());
               jetHist.fill(HIST("tracks/antiProton/h3TpcNsigmaTofNsigmaantiProtonVsPt_jet"), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt_jet"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+              jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
               jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
               jetHist.fill(HIST("tracks/antiDeuteron/h3TpcNsigmaTofNsigmaantiDeuteronVsPt_jet"), trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt_jet"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+              jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
               jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt_jet"), trk.tofNSigmaTr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt_jet"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+              jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
               jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());
             }
           }
@@ -1075,45 +1104,45 @@ struct nucleiInJets {
         if (addTOFplots && trk.hasTOF()) {
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracks/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+            jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt());
             jetHist.fill(HIST("tracks/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
 
             jetHist.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+            jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
             jetHist.fill(HIST("tracks/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
 
             jetHist.fill(HIST("tracks/triton/h2TOFmassTritonVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+            jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
             jetHist.fill(HIST("tracks/helium/h2TofNsigmaHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
 
             jetHist.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+            jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
             jetHist.fill(HIST("tracks/triton/h2TofNsigmaTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
               jetHist.fill(HIST("tracks/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+              jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt());
               jetHist.fill(HIST("tracks/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+              jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
               jetHist.fill(HIST("tracks/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/triton/h2TOFmassTritonVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+              jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
               jetHist.fill(HIST("tracks/triton/h2TofNsigmaTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/triton/h2TofNsigmaTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+              jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
               jetHist.fill(HIST("tracks/helium/h2TofNsigmaHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/helium/h2TofNsigmaHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
@@ -1193,45 +1222,45 @@ struct nucleiInJets {
         if (addTOFplots && trk.hasTOF()) {
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracks/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+            jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt());
             jetHist.fill(HIST("tracks/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
 
             jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+            jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
             jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
 
             jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+            jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
             jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
 
             jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+            jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
             jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
               jetHist.fill(HIST("tracks/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
+              jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt());
               jetHist.fill(HIST("tracks/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
+              jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
               jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
+              jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
               jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
+              jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
               jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/antiHelium/h2TofNsigmaantiHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
@@ -1289,7 +1318,7 @@ struct nucleiInJets {
     if (isWithJetEvents && nJets == 0)
       return;
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto trk = track.track_as<TrackCandidates>();
       fillTrackInfo<false>(trk, chargedjets, leadingJetWithPtEtaPhi);
     }
@@ -1350,13 +1379,28 @@ struct nucleiInJets {
   {
     jetHist.fill(HIST("hNEventsInc"), 0.5);
 
-    if (!jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
-      return;
+    bool isSel8 = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8"));
+    bool isSelNoSameBunchPileup = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selNoSameBunchPileup"));
+    bool isSelIsGoodZvtxFT0vsPV = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selIsGoodZvtxFT0vsPV"));
 
+    if (sel8Coll && !isSel8)
+      return;
     jetHist.fill(HIST("hNEventsInc"), 1.5);
+
     if (std::abs(coll.posZ()) > 10) // bad vertex
       return;
     jetHist.fill(HIST("hNEventsInc"), 2.5);
+    if (selNoSameBunchPileup && !isSelNoSameBunchPileup)
+      return;
+    jetHist.fill(HIST("hNEventsInc"), 3.5);
+    if (selIsGoodZvtxFT0vsPV && !isSelIsGoodZvtxFT0vsPV)
+      return;
+    jetHist.fill(HIST("hNEventsInc"), 4.5);
+
+    if (useOccupancy && !isOccupancyAccepted(coll))
+      return;
+    jetHist.fill(HIST("hNEventsInc"), 5.5);
+
     float centrality = -999;
     switch (centralityType) {
       case 0: // FT0M
@@ -1407,24 +1451,24 @@ struct nucleiInJets {
         }
         float massTOF = -999;
         if (addTOFplots && trk.hasTOF()) {
-          massTOF = trk.p() * TMath::Sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
+          massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracksInc/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt(), centrality);
-            jetHist.fill(HIST("tracksInc/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
             jetHist.fill(HIST("tracksInc/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
 
             jetHist.fill(HIST("tracksInc/deuteron/h2TOFmassDeuteronVsPt"), massTOF, trk.pt(), centrality);
-            jetHist.fill(HIST("tracksInc/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
             jetHist.fill(HIST("tracksInc/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
               jetHist.fill(HIST("tracksInc/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt(), centrality);
-              jetHist.fill(HIST("tracksInc/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracksInc/deuteron/h2TOFmassDeuteronVsPt"), massTOF, trk.pt(), centrality);
-              jetHist.fill(HIST("tracksInc/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             }
           }
@@ -1466,28 +1510,28 @@ struct nucleiInJets {
         }
         float massTOF = -999;
         if (addTOFplots && trk.hasTOF()) {
-          massTOF = trk.p() * TMath::Sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
+          massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt(), centrality);
-            jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
             jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
 
             jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
-            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
             jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
               jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt(), centrality);
-              jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             } else {
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), centrality);
               jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             }
           }
@@ -1520,7 +1564,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("mcpJet/eventStat"), 3.5);
 
     int nJets = 0;
-    for (auto& mcpjet : mcpjets) {
+    for (const auto& mcpjet : mcpjets) {
       jetHist.fill(HIST("mcpJet/hJetPt"), mcpjet.pt());
       jetHist.fill(HIST("mcpJet/hJetEta"), mcpjet.eta());
       jetHist.fill(HIST("mcpJet/hJetPhi"), mcpjet.phi());
@@ -1538,10 +1582,10 @@ struct nucleiInJets {
 
       bool jetFlag = false;
       // float jetPt = -999.;
-      for (auto& mcpjet : mcpjets) {
+      for (const auto& mcpjet : mcpjets) {
         double delPhi = TVector2::Phi_mpi_pi(mcpjet.phi() - mcParticle.phi());
         double delEta = mcpjet.eta() - mcParticle.eta();
-        double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+        double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
         if (R < cfgjetR)
           jetFlag = true;
         // jetPt = mcpjet.pt();
@@ -1594,7 +1638,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("mcdJet/nJetsPerEvent"), nJets);
     if (isWithJetEvents && nJets == 0)
       return;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto fullTrack = track.track_as<TrackCandidatesMC>();
       if (!isTrackSelected(fullTrack))
         continue;
@@ -1611,21 +1655,21 @@ struct nucleiInJets {
       if (isWithLeadingJet) {
         double delPhi = TVector2::Phi_mpi_pi(leadingJetWithPtEtaPhi[2] - track.phi());
         double delEta = leadingJetWithPtEtaPhi[1] - track.eta();
-        double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+        double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
         if (R < cfgjetR)
           jetFlag = true;
         std::array<float, 2> perpConePhiJet = getPerpendicuarPhi(leadingJetWithPtEtaPhi[2]);
         double delPhiPerpCone1 = TVector2::Phi_mpi_pi(perpConePhiJet[0] - track.phi());
         double delPhiPerpCone2 = TVector2::Phi_mpi_pi(perpConePhiJet[1] - track.phi());
-        double RPerpCone1 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone1 * delPhiPerpCone1));
-        double RPerpCone2 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone2 * delPhiPerpCone2));
+        double RPerpCone1 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone1);
+        double RPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
         if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
           jetFlagPerpCone = true;
       } else {
-        for (auto& mcdjet : mcdjets) {
+        for (const auto& mcdjet : mcdjets) {
           double delPhi = TVector2::Phi_mpi_pi(mcdjet.phi() - track.phi());
           double delEta = mcdjet.eta() - track.eta();
-          double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+          double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
           if (R < cfgjetR)
             jetFlag = true;
           //  jetPt = mcdjet.pt();
@@ -1675,10 +1719,10 @@ struct nucleiInJets {
     if (mcdjets.size() == 0)
       return;
     std::vector<double> leadingJetWithPtEtaPhi(3);
-    for (auto& mcdjet : mcdjets) {
+    for (const auto& mcdjet : mcdjets) {
       if (!mcdjet.has_matchedJetGeo())
         continue;
-      for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPartTable>()) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPartTable>()) {
         if (!mcpjet.has_matchedJetGeo())
           continue;
 
@@ -1752,21 +1796,21 @@ struct nucleiInJets {
       if (isWithLeadingJet) {
         double delPhi = TVector2::Phi_mpi_pi(leadingJetWithPtEtaPhi[2] - track.phi());
         double delEta = leadingJetWithPtEtaPhi[1] - track.eta();
-        double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+        double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
         if (R < cfgjetR)
           jetFlag = true;
         std::array<float, 2> perpConePhiJet = getPerpendicuarPhi(leadingJetWithPtEtaPhi[2]);
         double delPhiPerpCone1 = TVector2::Phi_mpi_pi(perpConePhiJet[0] - track.phi());
         double delPhiPerpCone2 = TVector2::Phi_mpi_pi(perpConePhiJet[1] - track.phi());
-        double RPerpCone1 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone1 * delPhiPerpCone1));
-        double RPerpCone2 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone2 * delPhiPerpCone2));
+        double RPerpCone1 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone1);
+        double RPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
         if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
           jetFlagPerpCone = true;
       } else {
         for (std::size_t iDJet = 0; iDJet < mcdJetPt.size(); iDJet++) {
           double delPhi = TVector2::Phi_mpi_pi(mcdJetPhi[iDJet] - track.phi());
           double delEta = mcdJetEta[iDJet] - track.eta();
-          double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+          double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
 
           if (R < cfgjetR) {
             jetFlag = true;
@@ -1829,14 +1873,14 @@ struct nucleiInJets {
       if (isWithLeadingJet) {
         double delPhi = TVector2::Phi_mpi_pi(leadingJetWithPtEtaPhi[2] - mcParticle.phi());
         double delEta = leadingJetWithPtEtaPhi[1] - mcParticle.eta();
-        double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+        double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
         if (R < cfgjetR)
           jetFlagMC = true;
         std::array<float, 2> perpConePhiJet = getPerpendicuarPhi(leadingJetWithPtEtaPhi[2]);
         double delPhiPerpCone1 = TVector2::Phi_mpi_pi(perpConePhiJet[0] - mcParticle.phi());
         double delPhiPerpCone2 = TVector2::Phi_mpi_pi(perpConePhiJet[1] - mcParticle.phi());
-        double RPerpCone1 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone1 * delPhiPerpCone1));
-        double RPerpCone2 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone2 * delPhiPerpCone2));
+        double RPerpCone1 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone1);
+        double RPerpCone2 = RecoDecay::sqrtSumOfSquares(delEta, delPhiPerpCone2);
         if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
           jetFlagPerpConeMC = true;
       } else {
@@ -1844,7 +1888,7 @@ struct nucleiInJets {
         for (std::size_t iDJet = 0; iDJet < mcdJetPt.size(); iDJet++) {
           double delPhi = TVector2::Phi_mpi_pi(mcdJetPhi[iDJet] - mcParticle.phi());
           double delEta = mcdJetEta[iDJet] - mcParticle.eta();
-          double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+          double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
           if (R < cfgjetR) {
             jetFlagMC = true;
             break;
@@ -1913,7 +1957,7 @@ struct nucleiInJets {
       jetHist.fill(HIST("genmatched/leadingJet/hGenJetPt"), leadingMCPJet.pt());
       if (leadingMCPJet.has_matchedJetGeo()) {
         jetHist.fill(HIST("genmatched/leadingJet/hGenJetPtMatched"), leadingMCPJet.pt());
-        for (auto& mcdjet : leadingMCPJet.template matchedJetGeo_as<JetMCDetTable>()) {
+        for (const auto& mcdjet : leadingMCPJet.template matchedJetGeo_as<JetMCDetTable>()) {
           // Assuming matchedJetGeo_as returns valid MCD jets; no redundant has check needed
           // Store jet properties
           mcdJetPt.push_back(mcdjet.pt());
@@ -1952,7 +1996,7 @@ struct nucleiInJets {
       for (std::size_t iDJet = 0; iDJet < mcpJetPt.size(); iDJet++) {
         double delPhi = TVector2::Phi_mpi_pi(mcpJetPhi[iDJet] - mcParticle.phi());
         double delEta = mcpJetEta[iDJet] - mcParticle.eta();
-        double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
+        double R = RecoDecay::sqrtSumOfSquares(delEta, delPhi);
 
         if (R < cfgjetR) {
           jetFlag = true;
@@ -1968,12 +2012,31 @@ struct nucleiInJets {
   void processRecInc(EventTableMC::iterator const& coll, TrackCandidatesIncMC const& tracks, aod::JetParticles const& particleTracks, aod::JMcCollisions const&)
   {
     jetHist.fill(HIST("recInc/eventStat"), 0.5);
-    if (!jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
+
+    bool isSel8 = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8"));
+    bool isSelNoSameBunchPileup = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selNoSameBunchPileup"));
+    bool isSelIsGoodZvtxFT0vsPV = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selIsGoodZvtxFT0vsPV"));
+
+    if (sel8Coll && !isSel8)
       return;
     jetHist.fill(HIST("recInc/eventStat"), 1.5);
+
     if (std::abs(coll.posZ()) > 10) // bad vertex
       return;
     jetHist.fill(HIST("recInc/eventStat"), 2.5);
+    if (selNoSameBunchPileup && !isSelNoSameBunchPileup)
+      return;
+    jetHist.fill(HIST("recInc/eventStat"), 3.5);
+    if (selIsGoodZvtxFT0vsPV && !isSelIsGoodZvtxFT0vsPV)
+      return;
+    jetHist.fill(HIST("recInc/eventStat"), 4.5);
+
+    if (useOccupancy && !isOccupancyAccepted(coll))
+      return;
+    jetHist.fill(HIST("recInc/eventStat"), 5.5);
+
+    // if (!jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
+    // return;
 
     float centrality = -999;
     switch (centralityType) {
@@ -1990,28 +2053,118 @@ struct nucleiInJets {
         centrality = -999;
     }
     jetHist.fill(HIST("recInc/vertexZ"), coll.posZ(), centrality);
+
     for (const auto& track : tracks) {
-      if (!isTrackSelected(track)) {
+      if (!isTrackSelectedWithoutDcaxy(track)) {
         continue;
       }
       if (!track.has_mcParticle())
         continue;
       if (std::fabs(track.eta()) > cfgtrkMaxEta)
         continue;
+
       auto mcTrack = track.mcParticle_as<o2::aod::JMcParticles>();
-      if (!mcTrack.isPhysicalPrimary())
+
+      // require mc getProcess to get Decay and Material secondaries
+      int particleOriginType = 0;
+      auto isMcPrimary = false;
+      // auto isMcTransport = false; // auto isMcSecondaryFromMaterial = false; auto isMcSecondaryFromWeakDecay = false;
+      if (mcTrack.isPhysicalPrimary()) {
+        isMcPrimary = true;
+        particleOriginType = 1;
+      } else if (mcTrack.getGenStatusCode() == -1) {
+        // isMcTransport = true;
+        particleOriginType = 2;
+      }
+
+      // Fill DCAxy histograms
+      jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
+      if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr)
+        jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
+
+      if (!isMcPrimary)
         continue;
-      bool isTOFAndTPCPreSel(track.hasTOF() &&
-                             (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPrTOF || std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDeTOF));
 
-      if (mapPDGToValue(mcTrack.pdgCode()) != 0) {
-        jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+      // DCAxy selection for rest of the analysis
+      if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut && !useDcaxyPtDepCut)
+        continue;
+      if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
+        continue;
 
-        if (isTOFAndTPCPreSel) {
+      auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
+      auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
+
+      if (std::abs(rapidity) > cfgtrkMaxRap)
+        continue;
+      // Proton
+      if (std::abs(mcTrack.pdgCode()) == 2212) { // Proton
+        jetHist.fill(HIST("recInc/eff/tpcTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        if (track.hasTOF())
+          jetHist.fill(HIST("recInc/eff/tpcTofTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr) {
+          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        }
+      }
+      // Deuteron
+      if (std::abs(mcTrack.pdgCode()) == Pdg::kDeuteron) { // Deuteron
+        jetHist.fill(HIST("recInc/eff/tpcTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        if (track.hasTOF())
+          jetHist.fill(HIST("recInc/eff/tpcTofTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        if (std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe) {
+          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        }
+      }
+      // Helium
+      if (std::abs(mcTrack.pdgCode()) == Pdg::kHelium3) { // Helium-3
+        jetHist.fill(HIST("recInc/eff/tpcTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        if (track.hasTOF())
+          jetHist.fill(HIST("recInc/eff/tpcTofTrack3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        if (std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPC"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        }
+      }
+
+      // TPCTOF and TPCTOFVeto histograms
+      // Proton
+      if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr && track.hasTOF()) {
+        if (std::abs(mcTrack.pdgCode()) == 2212) {
           jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
-          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
-        } else {
-          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+          if (std::abs(track.tofNSigmaPr()) < cfgnTPCPIDPrTOF)
+            jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        }
+      } else {
+        if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr) {
+          if (std::abs(mcTrack.pdgCode()) == 2212) {
+            jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+          }
+        }
+      }
+      // Deuteron
+      if (std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe && track.hasTOF()) {
+        if (std::abs(mcTrack.pdgCode()) == Pdg::kDeuteron) {
+          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+          if (std::abs(track.tofNSigmaDe()) < cfgnTPCPIDDeTOF)
+            jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        }
+      } else {
+        if (std::abs(track.tpcNSigmaDe()) < cfgnTPCPIDDe) {
+          if (std::abs(mcTrack.pdgCode()) == Pdg::kDeuteron) {
+            jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+          }
+        }
+      }
+      // Helium
+      if (std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe && track.hasTOF()) {
+        if (std::abs(mcTrack.pdgCode()) == Pdg::kHelium3) {
+          jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOF"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+          if (std::abs(track.tofNSigmaHe()) < cfgnTPCPIDHeTOF)
+            jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+        }
+      } else {
+        if (std::abs(track.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+          if (std::abs(mcTrack.pdgCode()) == Pdg::kHelium3) {
+            jetHist.fill(HIST("recInc/pt/PtParticleTypeTPCTOFVeto"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality);
+          }
         }
       }
     } // track
@@ -2025,6 +2178,7 @@ struct nucleiInJets {
         continue;
       if (std::fabs(mcParticle.y()) > cfgtrkMaxRap)
         continue;
+
       if (mapPDGToValue(mcParticle.pdgCode()) != 0) {
         jetHist.fill(HIST("genInc/pt/PtParticleType"), mcParticle.pt(), mapPDGToValue(mcParticle.pdgCode()), centrality);
       }

@@ -46,6 +46,7 @@
 #include <TDatabasePDG.h>
 #include <TDirectory.h>
 #include <TFile.h>
+#include <TGenPhaseSpace.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <THn.h>
@@ -230,6 +231,12 @@ struct phipbpb {
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
 
     if (!fillv1) {
+
+      histos.add("hKaonpIsotropic", "hKaonpIsotropic", HistType::kTHnSparseD, {{8, 0.0, 80.0}, {100, 0.0, 10.0}, {8, -0.8, 0.8}, {36, 0.0, TMath::Pi()}});
+      histos.add("hKaonpData", "hKaonpData", HistType::kTHnSparseD, {{8, 0.0, 80.0}, {100, 0.0, 10.0}, {8, -0.8, 0.8}, {36, 0.0, TMath::Pi()}});
+      histos.add("hKaonmIsotropic", "hKaonmIsotropic", HistType::kTHnSparseD, {{8, 0.0, 80.0}, {100, 0.0, 10.0}, {8, -0.8, 0.8}, {36, 0.0, TMath::Pi()}});
+      histos.add("hKaonmData", "hKaonmData", HistType::kTHnSparseD, {{8, 0.0, 80.0}, {100, 0.0, 10.0}, {8, -0.8, 0.8}, {36, 0.0, TMath::Pi()}});
+
       histos.add("hTPCglobalmomcorr", "Momentum correlation", kTH3F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}, {8, 0.0f, 80.0f}});
       histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
       histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -501,6 +508,24 @@ struct phipbpb {
     return false;
   }
 
+  void fillHisoWithTGenPS(const ROOT::Math::PxPyPzMVector& Pphi_lab, double psi2, double ptMin, double etaMax, double centrality)
+  {
+    TLorentzVector parent;
+    double masses[2] = {0.493, 0.493};
+    parent.SetPxPyPzE(Pphi_lab.Px(), Pphi_lab.Py(), Pphi_lab.Pz(), Pphi_lab.E());
+    TGenPhaseSpace gen;
+    gen.SetDecay(parent, 2, masses);
+    gen.Generate();
+
+    TLorentzVector* K1 = gen.GetDecay(0);
+    TLorentzVector* K2 = gen.GetDecay(1);
+
+    if (K1->Pt() > ptMin && std::abs(K1->Eta()) < etaMax)
+      histos.fill(HIST("hKaonpIsotropic"), centrality, K1->Pt(), K1->Eta(), GetPhiInRange(K1->Phi() - psi2));
+    if (K2->Pt() > ptMin && std::abs(K2->Eta()) < etaMax)
+      histos.fill(HIST("hKaonmIsotropic"), centrality, K2->Pt(), K2->Eta(), GetPhiInRange(K2->Phi() - psi2));
+  }
+
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
@@ -728,6 +753,11 @@ struct phipbpb {
               histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
               histos.fill(HIST("hSparseV2SameEventCos2DeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2acc, centrality);
             }
+
+            histos.fill(HIST("hKaonpData"), centrality, KaonPlus.Pt(), KaonPlus.Eta(), GetPhiInRange(KaonPlus.Phi() - psiFT0C));
+            histos.fill(HIST("hKaonmData"), centrality, KaonMinus.Pt(), KaonMinus.Eta(), GetPhiInRange(KaonMinus.Phi() - psiFT0C));
+            fillHisoWithTGenPS(PhiMesonMother, psiFT0C, cfgCutPT, cfgCutEta, centrality);
+
             histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
             histos.fill(HIST("hSparseV2SameEventCosDeltaPhiCube"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2 * v2, centrality);
             histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);

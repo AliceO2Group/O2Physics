@@ -60,7 +60,8 @@ using namespace o2::aod::rctsel;
 struct cksspinalignment {
 
   Produces<aod::KShortpionEvents> kshortpionEvent;
-  Produces<aod::KShortpionPairs> kshortpionPair;
+  Produces<aod::KShortTracks> kshortTrack;
+  Produces<aod::PionTracks> pionTrack;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -279,14 +280,14 @@ struct cksspinalignment {
     std::vector<float> v0Lifetime = {};
     // std::vector<float> armenteros = {};
     std::vector<float> pionBachelorIndex = {};
-    std::vector<float> pionBachelorSign = {};
+    // std::vector<float> pionBachelorSign = {};
     std::vector<float> pionBachelorTPC = {};
     std::vector<float> pionBachelorTOF = {};
     std::vector<float> pionBachelorTOFHit = {};
 
     int numbV0 = 0;
     auto centrality = collision.centFT0C();
-    // auto vz = collision.posZ();
+    auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
@@ -318,6 +319,8 @@ struct cksspinalignment {
 
           auto track1ID = track1.globalIndex();
           auto track1sign = track1.sign();
+          if (track1sign == 0)
+            continue;
           auto track1nsigTPC = track1.tpcNSigmaPi();
           auto track1nsigTOF = -999.9;
           auto track1TOFHit = -1;
@@ -327,52 +330,57 @@ struct cksspinalignment {
             histos.fill(HIST("hTrkSelInfo"), 4.5);
           }
           pionbach = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassPionCharged);
-          for (const auto& v0 : V0s) {
-            histos.fill(HIST("hV0Info"), 0.5);
-            auto [kshortTag, isValid] = getK0sTags(v0, collision);
-            if (kshortTag && isValid) {
-              histos.fill(HIST("hV0Info"), 1.5);
-              auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
-              auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
-              positiveIndex.push_back(postrack1.globalIndex());
-              negativeIndex.push_back(negtrack1.globalIndex());
-              v0Cospa.push_back(v0.v0cosPA());
-              v0Radius.push_back(v0.v0radius());
-              dcaPositive.push_back(std::abs(v0.dcapostopv()));
-              dcaNegative.push_back(std::abs(v0.dcanegtopv()));
-              dcaBetweenDaughter.push_back(std::abs(v0.dcaV0daughters()));
-              v0Lifetime.push_back(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * (o2::constants::physics::MassK0));
-              // armenteros.push_back((v0.qtarm() / std::abs(v0.alpha())));
+          pionBachelor.push_back(pionbach);
+          pionBachelorIndex.push_back(track1ID);
+          // pionBachelorSign.push_back(track1sign);
+          pionBachelorTPC.push_back(track1nsigTPC);
+          pionBachelorTOF.push_back(track1nsigTOF);
+          pionBachelorTOFHit.push_back(track1TOFHit);
+        }
+        for (const auto& v0 : V0s) {
+          histos.fill(HIST("hV0Info"), 0.5);
+          auto [kshortTag, isValid] = getK0sTags(v0, collision);
+          if (kshortTag && isValid) {
+            histos.fill(HIST("hV0Info"), 1.5);
+            auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
+            auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
+            positiveIndex.push_back(postrack1.globalIndex());
+            negativeIndex.push_back(negtrack1.globalIndex());
+            v0Cospa.push_back(v0.v0cosPA());
+            v0Radius.push_back(v0.v0radius());
+            dcaPositive.push_back(std::abs(v0.dcapostopv()));
+            dcaNegative.push_back(std::abs(v0.dcanegtopv()));
+            dcaBetweenDaughter.push_back(std::abs(v0.dcaV0daughters()));
+            v0Lifetime.push_back(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * (o2::constants::physics::MassK0));
+            // armenteros.push_back((v0.qtarm() / std::abs(v0.alpha())));
 
-              pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
-              antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
-              kshort = pion + antiPion;
-              // chargedkstar = kshort + pionbach;
-              kshortMother.push_back(kshort);
-              // chargedkstarMother.push_back(chargedkstar);
-              pionBachelor.push_back(pionbach);
-              pionBachelorIndex.push_back(track1ID);
-              pionBachelorSign.push_back(track1sign);
-              pionBachelorTPC.push_back(track1nsigTPC);
-              pionBachelorTOF.push_back(track1nsigTOF);
-              pionBachelorTOFHit.push_back(track1TOFHit);
-              histos.fill(HIST("hKShortMass"), kshort.M());
-            }
-            numbV0 = numbV0 + 1;
+            pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
+            antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
+            kshort = pion + antiPion;
+            // chargedkstar = kshort + pionbach;
+            kshortMother.push_back(kshort);
+            // chargedkstarMother.push_back(chargedkstar);
+            histos.fill(HIST("hKShortMass"), kshort.M());
           }
+          numbV0 = numbV0 + 1;
         }
         if (numbV0 > 1 && v0Cospa.size() > 1) {
           histos.fill(HIST("hEvtSelInfo"), 3.5);
-          kshortpionEvent(centrality, collision.index(), psiFT0C, psiFT0A, psiTPC);
+          kshortpionEvent(centrality, vz, collision.index(), psiFT0C, psiFT0A, psiTPC);
           auto indexEvent = kshortpionEvent.lastIndex();
           //// Fill track table for Charged KStar//////////////////
           for (auto icks = kshortMother.begin(); icks != kshortMother.end(); ++icks) {
             auto iter = std::distance(kshortMother.begin(), icks);
             kshortDummy = kshortMother.at(iter);
             // chargedkstarDummy = chargedkstarMother.at(iter);
-            pionDummy = pionBachelor.at(iter);
 
-            kshortpionPair(indexEvent, v0Cospa.at(iter), v0Radius.at(iter), dcaPositive.at(iter), dcaNegative.at(iter), dcaBetweenDaughter.at(iter), v0Lifetime.at(iter), kshortDummy.Px(), kshortDummy.Py(), kshortDummy.Pz(), kshortDummy.M(), pionDummy.Px(), pionDummy.Py(), pionDummy.Pz(), pionBachelorSign.at(iter), pionBachelorTPC.at(iter), pionBachelorTOFHit.at(iter), pionBachelorTOF.at(iter), pionBachelorIndex.at(iter), positiveIndex.at(iter), negativeIndex.at(iter));
+            kshortTrack(indexEvent, v0Cospa.at(iter), v0Radius.at(iter), dcaPositive.at(iter), dcaNegative.at(iter), dcaBetweenDaughter.at(iter), v0Lifetime.at(iter), kshortDummy.Px(), kshortDummy.Py(), kshortDummy.Pz(), kshortDummy.M(), positiveIndex.at(iter), negativeIndex.at(iter));
+          }
+          for (auto ipi = pionBachelor.begin(); ipi != pionBachelor.end(); ++ipi) {
+            auto iterpi = std::distance(pionBachelor.begin(), ipi);
+            pionDummy = pionBachelor.at(iterpi);
+
+            pionTrack(indexEvent, pionDummy.Px(), pionDummy.Py(), pionDummy.Pz(), pionBachelorTPC.at(iterpi), pionBachelorTOFHit.at(iterpi), pionBachelorTOF.at(iterpi), pionBachelorIndex.at(iterpi));
           }
         }
       }

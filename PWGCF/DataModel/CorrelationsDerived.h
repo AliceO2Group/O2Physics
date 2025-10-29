@@ -86,6 +86,22 @@ using CFTrackWithLabel = CFTracksWithLabel::iterator;
 //------transient CF-filter to CF-2prong-filter
 DECLARE_SOA_TABLE(CFCollRefs, "AOD", "CFCOLLREF", o2::soa::Index<>, track::CollisionId); //! Transient cf collision index table
 
+//------multiplicity set
+namespace cfmultset
+{
+DECLARE_SOA_COLUMN(Multiplicities, multiplicities, std::vector<float>); //! List of auxiliary multiplicities
+enum MultiplicityEstimators : uint8_t {
+  CentFT0C = 0x1,
+  MultFV0A = 0x2,
+  MultNTracksPV = 0x4,
+  MultNTracksGlobal = 0x8
+};
+
+} // namespace cfmultset
+DECLARE_SOA_TABLE(CFMultSets, "AOD", "CFMULTSET", cfmultset::Multiplicities); //! Auxilary multiplicity set table
+
+using CFMultSet = CFMultSets::iterator;
+
 // Reco
 
 using CFCollRef = CFCollRefs::iterator;
@@ -124,10 +140,18 @@ enum ParticleDecay {
   JPsiToEE,
   JPsiToMuMu,
   Generic2Prong,
-  PhiToKK,
+  PhiToKKPID1,
+  PhiToKKPID2,
+  PhiToKKPID3,
   K0stoPiPi,
   LambdatoPPi,
-  AntiLambdatoPiP
+  AntiLambdatoPiP,
+  K0stoPiPiLoose,
+  K0stoPiPiTight,
+  LambdaToPPiLoose,
+  LambdaToPPiTight,
+  AntiLambdaToPiPLoose,
+  AntiLambdaToPiPTight
 };
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table

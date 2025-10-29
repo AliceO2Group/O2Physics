@@ -31,19 +31,22 @@
 
 template <typename BC>
 struct SelectionResult {
-  int value; // The original integer return value
-  BC* bc;    // Pointer to the BC object
+  int value;    // The original integer return value
+  const BC* bc; // Pointer to the BC object
 };
 
 namespace o2::aod::sgselector
 {
 enum TrueGap : int {
-  NoGap = -1,
-  SingleGapA = 0,
-  SingleGapC = 1,
-  DoubleGap = 2
+  NoGap = -1,        // no gap due to change of threshold(s) in any of FV0, FT0A, ZNA, FT0C, ZNC
+  SingleGapA = 0,    // initially single gap at A side event
+  SingleGapC = 1,    // initially single gap at C side event
+  DoubleGap = 2,     // initially double gap event
+  NoUpc = 3,         // initially no UPC event with default thresholds (FT0A=150, FT0C=50)
+  TrkOutOfRange = 4, // to many tracks (>100 default)
+  BadDoubleGap = 5   // unknows status of double gap check with changed thresholds
 };
-}
+} // namespace o2::aod::sgselector
 
 class SGSelector
 {
@@ -51,21 +54,21 @@ class SGSelector
   SGSelector() : myRCTChecker{"CBT"}, myRCTCheckerHadron{"CBT_hadronPID"}, myRCTCheckerZDC{"CBT", true}, myRCTCheckerHadronZDC{"CBT_hadronPID", true} {}
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
-  int Print(SGCutParHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
+  int Print(SGCutParHolder const& /*diffCuts*/, CC const& collision, BCs const& /*bcRange*/, TCs const& /*tracks*/, FWs const& /*fwdtracks*/)
   {
     LOGF(info, "Size of array %i", collision.size());
     return 1;
   }
 
   template <typename CC, typename BCs, typename BC>
-  SelectionResult<BC> IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, BC& oldbc)
+  SelectionResult<BC> IsSelected(SGCutParHolder const& diffCuts, CC const& collision, BCs const& bcRange, BC const& oldbc)
   {
     //        LOGF(info, "Collision %f", collision.collisionTime());
     //        LOGF(info, "Number of close BCs: %i", bcRange.size());
     SelectionResult<BC> result;
     result.bc = &oldbc;
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      result.value = 4;
+      result.value = o2::aod::sgselector::TrkOutOfRange; // 4
       return result;
     }
     auto newbc = oldbc;
@@ -91,9 +94,9 @@ class SGSelector
           newbc = bc;
         gC = false;
       }
-    }
+    } // end of loop over bc range
     if (!gA && !gC) {
-      result.value = 3;
+      result.value = o2::aod::sgselector::NoUpc; // gap = 3
       return result;
     }
     if (gA && gC) { // loop once again for so-called DG events to get the most active FT0 BC
@@ -120,7 +123,8 @@ class SGSelector
     result.bc = &newbc;
     // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
     result.bc = &newbc;
-    result.value = gA && gC ? 2 : (gA ? 0 : 1);
+    // result.value = gA && gC ? 2 : (gA ? 0 : 1);
+    result.value = gA && gC ? o2::aod::sgselector::DoubleGap : (gA ? o2::aod::sgselector::SingleGapA : o2::aod::sgselector::SingleGapC);
     return result;
   }
   template <typename TFwdTrack>
@@ -134,17 +138,17 @@ class SGSelector
   }
 
   template <typename CC>
-  int trueGap(CC& collision, float fv0, float ft0a, float ft0c, float zdc_cut)
+  int trueGap(CC const& collision, const float fv0, const float ft0a, const float ft0c, const float zdc_cut)
   {
-    float fit_cut[3] = {fv0, ft0a, ft0c};
+    const float fit_cut[3] = {fv0, ft0a, ft0c};
     int gap = collision.gapSide();
     int true_gap = gap;
-    float FV0A, FT0A, FT0C, ZNA, ZNC;
-    FV0A = collision.totalFV0AmplitudeA();
-    FT0A = collision.totalFT0AmplitudeA();
-    FT0C = collision.totalFT0AmplitudeC();
-    ZNA = collision.energyCommonZNA();
-    ZNC = collision.energyCommonZNC();
+    // float FV0A, FT0A, FT0C, ZNA, ZNC;
+    const float FV0A = collision.totalFV0AmplitudeA();
+    const float FT0A = collision.totalFT0AmplitudeA();
+    const float FT0C = collision.totalFT0AmplitudeC();
+    const float ZNA = collision.energyCommonZNA();
+    const float ZNC = collision.energyCommonZNC();
     if (gap == o2::aod::sgselector::SingleGapA) { // gap == 0
       if (FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut)
         true_gap = o2::aod::sgselector::NoGap;           // -1
@@ -152,23 +156,25 @@ class SGSelector
       if (FT0C > fit_cut[2] || ZNC > zdc_cut)
         true_gap = o2::aod::sgselector::NoGap;          // -1
     } else if (gap == o2::aod::sgselector::DoubleGap) { // gap == 2
-      if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
+      if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut)) {
         true_gap = o2::aod::sgselector::NoGap; // -1
-      else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut))
+      } else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut)) {
         true_gap = o2::aod::sgselector::SingleGapC; // 1
-      else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
+      } else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut)) {
         true_gap = o2::aod::sgselector::SingleGapA; // 0
-      else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut)
+      } else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut) {
         true_gap = o2::aod::sgselector::DoubleGap; // 2
-      else
+      } else {
         LOGF(info, "Something wrong with DG");
+        true_gap = o2::aod::sgselector::BadDoubleGap; // 5
+      }
     }
     return true_gap;
   }
 
   // check CBT flags
   template <typename CC>
-  bool isCBTOk(CC& collision)
+  bool isCBTOk(CC const& collision)
   {
     if (myRCTChecker(collision))
       return true;
@@ -177,7 +183,7 @@ class SGSelector
 
   // check CBT+hadronPID flags
   template <typename CC>
-  bool isCBTHadronOk(CC& collision)
+  bool isCBTHadronOk(CC const& collision)
   {
     if (myRCTCheckerHadron(collision))
       return true;
@@ -186,7 +192,7 @@ class SGSelector
 
   // check CBT+ZDC flags
   template <typename CC>
-  bool isCBTZdcOk(CC& collision)
+  bool isCBTZdcOk(CC const& collision)
   {
     if (myRCTCheckerZDC(collision))
       return true;
@@ -195,7 +201,7 @@ class SGSelector
 
   // check CBT+hadronPID+ZDC flags
   template <typename CC>
-  bool isCBTHadronZdcOk(CC& collision)
+  bool isCBTHadronZdcOk(CC const& collision)
   {
     if (myRCTCheckerHadronZDC(collision))
       return true;

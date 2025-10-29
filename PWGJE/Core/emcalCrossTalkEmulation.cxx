@@ -527,7 +527,7 @@ void EMCCrossTalk::addInducedEnergiesToNewCells()
         }
 
         // Avoid cells out of SM
-        if (ietai < 0 || ietai >= emcal::EMCAL_COLS || iphii < 0 || iphii >= emcal::EMCAL_ROWS) {
+        if (ietai < 0 || ietai >= NColumns[iSM] || iphii < 0 || iphii >= NRows[iSM]) {
           continue;
         }
 

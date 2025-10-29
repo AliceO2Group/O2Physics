@@ -26,13 +26,24 @@
  **********************************************/
 
 #include "multGlauberNBDFitter.h"
-#include "TList.h"
-#include "TFile.h"
-#include "TF1.h"
-#include "TStopwatch.h"
-#include "TVirtualFitter.h"
-#include "TProfile.h"
-#include "TFitResult.h"
+
+#include <TF1.h>
+#include <TFile.h>
+#include <TFitResult.h>
+#include <TFitResultPtr.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TNamed.h>
+#include <TProfile.h>
+#include <TStopwatch.h>
+#include <TVirtualFitter.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <iostream> // FIXME
 
 using namespace std;
 
@@ -42,6 +53,7 @@ multGlauberNBDFitter::multGlauberNBDFitter() : TNamed(),
                                                fNBD(0x0),
                                                fhNanc(0x0),
                                                fhNpNc(0x0),
+                                               fhV0M(0x0),
                                                ffChanged(kTRUE),
                                                fCurrentf(-1),
                                                fAncestorMode(2),
@@ -63,14 +75,14 @@ multGlauberNBDFitter::multGlauberNBDFitter() : TNamed(),
   fNcoll = new Double_t[fMaxNpNcPairs];
   fContent = new Long_t[fMaxNpNcPairs];
 
-  //Ancestor histo
+  // Ancestor histo
   fhNanc = new TH1D("fhNanc", "", 1000, -0.5, 999.5);
 
-  //NBD
+  // NBD
   fNBD = new TF1("fNBD", "ROOT::Math::negative_binomial_pdf(x,[0],[1])", 0, 45000);
   fNBD->SetNpx(45000);
 
-  //master function
+  // master function
   fGlauberNBD = new TF1("fGlauberNBD", this, &multGlauberNBDFitter::ProbDistrib,
                         0, 50000, 4, "multGlauberNBDFitter", "ProbDistrib");
   fGlauberNBD->SetParameter(0, fMu);
@@ -89,6 +101,7 @@ multGlauberNBDFitter::multGlauberNBDFitter(const char* name, const char* title) 
                                                                                   fNBD(0x0),
                                                                                   fhNanc(0x0),
                                                                                   fhNpNc(0x0),
+                                                                                  fhV0M(0x0),
                                                                                   ffChanged(kTRUE),
                                                                                   fCurrentf(-1),
                                                                                   fAncestorMode(2),
@@ -105,19 +118,19 @@ multGlauberNBDFitter::multGlauberNBDFitter(const char* name, const char* title) 
                                                                                   fFitOptions("R0"),
                                                                                   fFitNpx(5000)
 {
-  //Named constructor
+  // Named constructor
   fNpart = new Double_t[fMaxNpNcPairs];
   fNcoll = new Double_t[fMaxNpNcPairs];
   fContent = new Long_t[fMaxNpNcPairs];
 
-  //Ancestor histo
-  //fhNanc = new TH1D("fhNanc", "", fAncestorMode==2?10000:1000, -0.5, 999.5);
+  // Ancestor histo
+  // fhNanc = new TH1D("fhNanc", "", fAncestorMode==2?10000:1000, -0.5, 999.5);
 
-  //NBD
+  // NBD
   fNBD = new TF1("fNBD", "ROOT::Math::negative_binomial_pdf(x,[0],[1])", 0, 45000);
   fNBD->SetNpx(45000);
 
-  //master function
+  // master function
   fGlauberNBD = new TF1("fGlauberNBD", this, &multGlauberNBDFitter::ProbDistrib,
                         0, 50000, 5, "multGlauberNBDFitter", "ProbDistrib");
   fGlauberNBD->SetParameter(0, fMu);
@@ -157,18 +170,18 @@ multGlauberNBDFitter::~multGlauberNBDFitter()
 
 //______________________________________________________
 Double_t multGlauberNBDFitter::ProbDistrib(Double_t* x, Double_t* par)
-//Master fitter function
+// Master fitter function
 {
   Double_t lMultValue = x[0];
   Double_t lProbability = 0.0;
   ffChanged = kTRUE;
   const Double_t lAlmost0 = 1.e-13;
-  //Comment this line in order to make the code evaluate Nancestor all the time
+  // Comment this line in order to make the code evaluate Nancestor all the time
   if (TMath::Abs(fCurrentf - par[2]) < lAlmost0)
     ffChanged = kFALSE;
 
   //______________________________________________________
-  //Recalculate the ancestor distribution in case f changed
+  // Recalculate the ancestor distribution in case f changed
   if (ffChanged) {
     fCurrentf = par[2];
     fhNanc->Reset();
@@ -192,12 +205,12 @@ Double_t multGlauberNBDFitter::ProbDistrib(Double_t* x, Double_t* par)
     fhNanc->Scale(1. / fhNanc->Integral());
   }
   //______________________________________________________
-  //Actually evaluate function
+  // Actually evaluate function
   Int_t lStartBin = fhNanc->FindBin(0.0) + 1;
   for (Long_t iNanc = lStartBin; iNanc < fhNanc->GetNbinsX() + 1; iNanc++) {
     Double_t lNancestors = fhNanc->GetBinCenter(iNanc);
     Double_t lNancestorCount = fhNanc->GetBinContent(iNanc);
-    //if(lNancestorCount<1e-12&&lNancestors>10) break;
+    // if(lNancestorCount<1e-12&&lNancestors>10) break;
 
     // allow for variable mu in case requested
     Double_t lThisMu = (((Double_t)lNancestors)) * (par[0] + par[4] * lNancestors);
@@ -219,7 +232,7 @@ Bool_t multGlauberNBDFitter::SetNpartNcollCorrelation(TH2* hNpNc)
 {
   Bool_t lReturnValue = kTRUE;
   if (hNpNc) {
-    fhNpNc = (TH2*)hNpNc;
+    fhNpNc = reinterpret_cast<TH2*>(hNpNc);
   } else {
     lReturnValue = kFALSE;
   }
@@ -231,7 +244,7 @@ Bool_t multGlauberNBDFitter::SetInputV0M(TH1* hV0M)
 {
   Bool_t lReturnValue = kTRUE;
   if (hV0M) {
-    fhV0M = (TH1*)hV0M;
+    fhV0M = reinterpret_cast<TH1*>(hV0M);
   } else {
     lReturnValue = kFALSE;
   }
@@ -279,7 +292,7 @@ void multGlauberNBDFitter::InitAncestor()
 Bool_t multGlauberNBDFitter::DoFit()
 {
   InitAncestor();
-  //Try very hard, please
+  // Try very hard, please
   TVirtualFitter::SetMaxIterations(5000000);
   if (!InitializeNpNc()) {
     cout << "---> Initialization of Npart x Ncoll correlation info failed!" << endl;
@@ -317,12 +330,12 @@ Bool_t multGlauberNBDFitter::DoFit()
 //________________________________________________________________
 Bool_t multGlauberNBDFitter::InitializeNpNc()
 {
-  //This function initializes fhNpNc
-  //Warning: X == Npart, Y == Ncoll
+  // This function initializes fhNpNc
+  // Warning: X == Npart, Y == Ncoll
   Bool_t lReturnValue = kFALSE;
   if (fhNpNc) {
     fNNpNcPairs = 0;
-    //Sweep all allowed values of Npart, Ncoll; find counters
+    // Sweep all allowed values of Npart, Ncoll; find counters
     for (int xbin = 1; xbin < 500; xbin++) {
       for (int ybin = 1; ybin < 3000; ybin++) {
         if (fhNpNc->GetBinContent(fhNpNc->FindBin(xbin, ybin)) != 0) {
@@ -345,12 +358,12 @@ Bool_t multGlauberNBDFitter::InitializeNpNc()
 //________________________________________________________________
 Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k)
 {
-  //Adaptation of the negative binomial distribution
-  //for non-integer arguments: analytical continuation
+  // Adaptation of the negative binomial distribution
+  // for non-integer arguments: analytical continuation
   //
-  //This function would actually also be fine with integers;
-  //in fact it is equivalent to that if 'n' is typecast as
-  //an integer prior to use
+  // This function would actually also be fine with integers;
+  // in fact it is equivalent to that if 'n' is typecast as
+  // an integer prior to use
 
   Double_t F;
   Double_t f;
@@ -390,10 +403,10 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
   cout << "Glauber NBD norm ..........: " << fnorm << endl;
   cout << "Glauber NBD dmu/dNanc .....: " << fdMu << endl;
 
-  //2-fold nested loop:
-  // + looping over all Nancestor combinations
-  // + looping over all possible final multiplicities
-  // ^---> final product already multiplicity-binned
+  // 2-fold nested loop:
+  //  + looping over all Nancestor combinations
+  //  + looping over all possible final multiplicities
+  //  ^---> final product already multiplicity-binned
 
   //______________________________________________________
   if (lLoRange < -1 && lHiRange < -1) {

@@ -56,7 +56,10 @@ struct NeutronProtonCorrZdc {
   Configurable<double> cfgZNmin{"cfgZNmin", -10, "Minimum value for ZN signal"};
   Configurable<double> cfgZNmax{"cfgZNmax", 350, "Maximum value for ZN signal"};
   Configurable<double> cfgZPmin{"cfgZPmin", -10, "Minimum value for ZP signal"};
-  Configurable<double> cfgZPmax{"cfgZPmax", 200, "Maximum value for ZP signal"};
+  Configurable<double> cfgZPmax{"cfgZPmax", 150, "Maximum value for ZP signal"};
+  Configurable<double> cfgAmplMin{"cfgAmplMin", -50, "Minimum value for sector amplitude"};
+  Configurable<double> cfgAmplMax{"cfgAmplMax", 300, "Maximum value for sector amplitude"};
+  Configurable<int> cfgNBinsAmpl{"cfgNBinsAmpl", 100, "Number of bins for sector amplitude histograms"};
   Configurable<double> cfgDiffZmin{"cfgDiffZmin", -30, "Minimum value for the diffZ signal"};
   Configurable<double> cfgDiffZmax{"cfgDiffZmax", 50, "Maximum value for the diffZ signal"};
   Configurable<int> cfgNBinsAlpha{"cfgNBinsAlpha", 100, "Number of bins for ZDC asymmetry"};
@@ -87,6 +90,9 @@ struct NeutronProtonCorrZdc {
     const AxisSpec axisZPCSignal{cfgNBinsZP, cfgZPmin, cfgZPmax, "ZPC (a.u.)"};
     const AxisSpec axisZNSignal{2 * cfgNBinsZN, cfgZNmin, 1.5 * cfgZNmax, "ZN (a.u.)"};
     const AxisSpec axisZPSignal{2 * cfgNBinsZP, cfgZPmin, 1.5 * cfgZPmax, "ZP (a.u.)"};
+    const AxisSpec axisZNAmplitude{cfgNBinsAmpl, cfgAmplMin, cfgAmplMax, "Ampl (a.u.)"};
+    const AxisSpec axisZPAmplitude{cfgNBinsAmpl, cfgAmplMin * 0.3, cfgAmplMax * 0.3, "Ampl (a.u.)"};
+    const AxisSpec axisTotalAmplitude{cfgNBinsAmpl, 4.0 * cfgAmplMin, 4.0 * cfgAmplMax, "Ampl (a.u.)"};
     const AxisSpec axisAlphaZ{cfgNBinsAlpha, cfgAlphaZmin, cfgAlphaZmax, "#alpha_{spec}"};
     const AxisSpec axisZDiffSignal{cfgNBinsZN, cfgDiffZmin, cfgDiffZmax, "#Delta E"};
     const AxisSpec axisMultiplicityF0A{cfgNBinsMultiplicity, 0, 200000, "F0A"};
@@ -99,6 +105,10 @@ struct NeutronProtonCorrZdc {
     HistogramConfigSpec defaultTimingHistogram({HistType::kTH2F, {cfgAxisCent, axisZDCTiming}});
     HistogramConfigSpec defaultZNSectorHist({HistType::kTH2F, {cfgAxisCent, axisZNSectorSignal}});
     HistogramConfigSpec defaultZPSectorHist({HistType::kTH2F, {cfgAxisCent, axisZPSectorSignal}});
+    HistogramConfigSpec defaultZNAmplSectorHist({HistType::kTH2F, {cfgAxisCent, axisZNAmplitude}});
+    HistogramConfigSpec defaultZPAmplSectorHist({HistType::kTH2F, {cfgAxisCent, axisZPAmplitude}});
+    HistogramConfigSpec defaultEnergyZNAmplSectorHist({HistType::kTH2F, {axisZNSignal, axisZNAmplitude}});
+    HistogramConfigSpec defaultEnergyZPAmplSectorHist({HistType::kTH2F, {axisZPSignal, axisZPAmplitude}});
     HistogramConfigSpec defaultZDCDiffHist({HistType::kTH2F, {cfgAxisCent, axisZDiffSignal}});
 
     // create histograms
@@ -132,6 +142,13 @@ struct NeutronProtonCorrZdc {
     histos.add("ASide/CentvsdiffZNSignal", "CentvsdiffZNSignal", defaultZDCDiffHist);
     histos.add("ASide/CentvsdiffZPSignal", "CentvsdiffZPSignal", defaultZDCDiffHist);
 
+    histos.add("ASide/CentvsZNAmplitude", "CentvsZNAmplitude", defaultZNAmplSectorHist);
+    histos.add("ASide/CentvsZPAmplitude", "CentvsZPAmplitude", defaultZPAmplSectorHist);
+    histos.add("ASide/ZNSignalvsZNAmplitudeSum", "ZNSignalvsZNAmplitudeSum", defaultEnergyZNAmplSectorHist);
+    histos.add("ASide/ZNSignalvsZNAmplitudeCommon", "ZNSignalvsZNAmplitudeCommon", defaultEnergyZNAmplSectorHist);
+    histos.add("ASide/ZPSignalvsZPAmplitudeSum", "ZPSignalvsZPAmplitudeSum", defaultEnergyZPAmplSectorHist);
+    histos.add("ASide/ZPSignalvsZPAmplitudeCommon", "ZPSignalvsZPAmplitudeCommon", defaultEnergyZPAmplSectorHist);
+
     // Cloning the folder
     histos.addClone("ASide/", "CSide/");
 
@@ -143,6 +160,8 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsAlphaZP", "CentvsAlphaZP", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsAlphaZNcommon", "CentvsAlphaZNcommon", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsAlphaZPcommon", "CentvsAlphaZPcommon", kTH2F, {cfgAxisCent, axisAlphaZ});
+    histos.add("CentvsAlphaZNAmplitude", "CentvsAlphaZNAmplitude", kTH2F, {cfgAxisCent, axisAlphaZ});
+    histos.add("CentvsAlphaZPAmplitude", "CentvsAlphaZPAmplitude", kTH2F, {cfgAxisCent, axisAlphaZ});
     histos.add("CentvsDiffZNSignal", "CentvsDiffZNSignal", defaultZDCDiffHist);
     histos.add("CentvsDiffZPSignal", "CentvsDiffZPSignal", defaultZDCDiffHist);
     histos.add("CentvsZNAvsZNC", "CentvsZNAvsZNC", kTH3F, {cfgAxisCent, axisZNASignal, axisZNCSignal});
@@ -238,6 +257,8 @@ struct NeutronProtonCorrZdc {
     std::array<std::array<float, 4>, 2> zpEnergyResponse = {zdc.energySectorZPA(), zdc.energySectorZPC()};
     std::array<float, 2> znEnergyResponseCommon = {zdc.energyCommonZNA(), zdc.energyCommonZNC()};
     std::array<float, 2> zpEnergyResponseCommon = {zdc.energyCommonZPA(), zdc.energyCommonZPC()};
+    std::array<float, 2> znAmplitudeResponse = {zdc.amplitudeZNA(), zdc.amplitudeZNC()};
+    std::array<float, 2> zpAmplitudeResponse = {zdc.amplitudeZPA(), zdc.amplitudeZPC()};
 
     float sumZN = znEnergyResponse[side][0] + znEnergyResponse[side][1] + znEnergyResponse[side][2] + znEnergyResponse[side][3];
     float sumZP = zpEnergyResponse[side][0] + zpEnergyResponse[side][1] + zpEnergyResponse[side][2] + zpEnergyResponse[side][3];
@@ -248,6 +269,13 @@ struct NeutronProtonCorrZdc {
     histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSignalSum"), centr, sumZP);
     histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSignalCommon"), centr, zpEnergyResponseCommon[side]);
     histos.fill(HIST(SubDir[side]) + HIST("CentvsdiffZPSignal"), centr, sumZP - zpEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNAmplitude"), centr, znAmplitudeResponse[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPAmplitude"), centr, zpAmplitudeResponse[side]);
+
+    histos.fill(HIST(SubDir[side]) + HIST("ZNSignalvsZNAmplitudeSum"), sumZN, znAmplitudeResponse[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("ZNSignalvsZNAmplitudeCommon"), znEnergyResponseCommon[side], znAmplitudeResponse[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("ZPSignalvsZPAmplitudeSum"), sumZP, zpAmplitudeResponse[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("ZPSignalvsZPAmplitudeCommon"), zpEnergyResponseCommon[side], zpAmplitudeResponse[side]);
   }
 
   template <int side, int sector, typename Z>
@@ -332,6 +360,9 @@ struct NeutronProtonCorrZdc {
       float alphaZN = (sumZNA - sumZNC) / (sumZNA + sumZNC);
       float alphaZP = (sumZPA - sumZPC) / (sumZPA + sumZPC);
 
+      float alphaZNAmplitude = (zdcread.amplitudeZNA() - zdcread.amplitudeZNC()) / (zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
+      float alphaZPAmplitude = (zdcread.amplitudeZPA() - zdcread.amplitudeZPC()) / (zdcread.amplitudeZPA() + zdcread.amplitudeZPC());
+
       histos.fill(HIST("CentvsDiffZNSignal"), cent, (sumZNA + sumZNC) - (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
       histos.fill(HIST("CentvsDiffZPSignal"), cent, (sumZPA + sumZPC) - (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
       histos.fill(HIST("CentvsZNSignalSum"), cent, sumZNA + sumZNC);
@@ -342,6 +373,8 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
       histos.fill(HIST("CentvsAlphaZNcommon"), cent, (zdcread.energyCommonZNA() - zdcread.energyCommonZNC()) / (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
       histos.fill(HIST("CentvsAlphaZPcommon"), cent, (zdcread.energyCommonZPA() - zdcread.energyCommonZPC()) / (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsAlphaZNAmplitude"), cent, alphaZNAmplitude);
+      histos.fill(HIST("CentvsAlphaZPAmplitude"), cent, alphaZPAmplitude);
 
       histos.fill(HIST("CentvsZNAvsZNC"), cent, sumZNA, sumZNC);
       histos.fill(HIST("CentvsZNAvsZPA"), cent, sumZNA, sumZPA);

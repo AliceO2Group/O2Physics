@@ -13,16 +13,22 @@
 // Container to store minimum and maximum orbit counter
 //
 
-#ifndef OrbitRange_H
-#define OrbitRange_H
+#ifndef COMMON_CORE_ORBITRANGE_H_
+#define COMMON_CORE_ORBITRANGE_H_
 
-#include "TNamed.h"
+#include <TNamed.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <cstdint>
+
 class TCollection;
 
 class OrbitRange : public TNamed
 {
  public:
-  OrbitRange(const char* name = "orbitRange") : TNamed(name, name), fRunNumber(0), fMinOrbit(0xFFFFFFFF), fMaxOrbit(0) {}
+  explicit OrbitRange(const char* name = "orbitRange") : TNamed(name, name), fRunNumber(0), fMinOrbit(0xFFFFFFFF), fMaxOrbit(0) {}
   ~OrbitRange() {}
   void SetRunNumber(uint32_t runNumber) { fRunNumber = runNumber; }
   void SetMinOrbit(uint32_t orbit) { fMinOrbit = orbit; }
@@ -39,4 +45,4 @@ class OrbitRange : public TNamed
   ClassDef(OrbitRange, 1)
 };
 
-#endif
+#endif // COMMON_CORE_ORBITRANGE_H_

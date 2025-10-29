@@ -27,6 +27,7 @@ std::map<TString, int> VarManager::fgVarNamesMap;
 bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
+float VarManager::fgzMatching = -77.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
 int VarManager::fgITSROFbias = 0;
@@ -45,6 +46,8 @@ o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
 bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
+int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
@@ -209,6 +212,148 @@ float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV)
 {
   return cpaFromKF(kfp, PV);
 }
+
+//__________________________________________________________________
+double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
+{
+  // species: 0 - electron, 1 - pion, 2 - kaon, 3 - proton
+  // Depending on the PID calibration type, we use different types of calibration histograms
+
+  if (fgCalibrationType == 1) {
+    // get the calibration histograms
+    CalibObjects calibMean, calibSigma;
+    switch (species) {
+      case 0:
+        calibMean = kTPCElectronMean;
+        calibSigma = kTPCElectronSigma;
+        break;
+      case 1:
+        calibMean = kTPCPionMean;
+        calibSigma = kTPCPionSigma;
+        break;
+      case 2:
+        calibMean = kTPCKaonMean;
+        calibSigma = kTPCKaonSigma;
+        break;
+      case 3:
+        calibMean = kTPCProtonMean;
+        calibSigma = kTPCProtonSigma;
+        break;
+      default:
+        LOG(fatal) << "Invalid species for PID calibration: " << species;
+        return -999.0; // Return zero if species is invalid
+    }
+
+    TH3F* calibMeanHist = reinterpret_cast<TH3F*>(fgCalibs[calibMean]);
+    TH3F* calibSigmaHist = reinterpret_cast<TH3F*>(fgCalibs[calibSigma]);
+    if (!calibMeanHist || !calibSigmaHist) {
+      LOG(fatal) << "Calibration histograms not found for species: " << species;
+      return -999.0; // Return zero if histograms are not found
+    }
+
+    // Get the bin indices for the calibration histograms
+    int binTPCncls = calibMeanHist->GetXaxis()->FindBin(fgValues[kTPCncls]);
+    binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
+    binTPCncls = (binTPCncls > calibMeanHist->GetXaxis()->GetNbins() ? calibMeanHist->GetXaxis()->GetNbins() : binTPCncls);
+    int binPin = calibMeanHist->GetYaxis()->FindBin(fgValues[kPin]);
+    binPin = (binPin == 0 ? 1 : binPin);
+    binPin = (binPin > calibMeanHist->GetYaxis()->GetNbins() ? calibMeanHist->GetYaxis()->GetNbins() : binPin);
+    int binEta = calibMeanHist->GetZaxis()->FindBin(fgValues[kEta]);
+    binEta = (binEta == 0 ? 1 : binEta);
+    binEta = (binEta > calibMeanHist->GetZaxis()->GetNbins() ? calibMeanHist->GetZaxis()->GetNbins() : binEta);
+
+    double mean = calibMeanHist->GetBinContent(binTPCncls, binPin, binEta);
+    double sigma = calibSigmaHist->GetBinContent(binTPCncls, binPin, binEta);
+    return (nSigmaValue - mean) / sigma; // Return the calibrated nSigma value
+  } else if (fgCalibrationType == 2) {
+    // get the calibration histograms
+    CalibObjects calibMean, calibSigma, calibStatus;
+    switch (species) {
+      case 0:
+        calibMean = kTPCElectronMean;
+        calibSigma = kTPCElectronSigma;
+        calibStatus = kTPCElectronStatus;
+        break;
+      case 1:
+        calibMean = kTPCPionMean;
+        calibSigma = kTPCPionSigma;
+        calibStatus = kTPCPionStatus;
+        break;
+      case 2:
+        calibMean = kTPCKaonMean;
+        calibSigma = kTPCKaonSigma;
+        calibStatus = kTPCKaonStatus;
+        break;
+      case 3:
+        calibMean = kTPCProtonMean;
+        calibSigma = kTPCProtonSigma;
+        calibStatus = kTPCProtonStatus;
+        break;
+      default:
+        LOG(fatal) << "Invalid species for PID calibration: " << species;
+        return -999.0; // Return zero if species is invalid
+    }
+
+    THnF* calibMeanHist = reinterpret_cast<THnF*>(fgCalibs[calibMean]);
+    THnF* calibSigmaHist = reinterpret_cast<THnF*>(fgCalibs[calibSigma]);
+    THnF* calibStatusHist = reinterpret_cast<THnF*>(fgCalibs[calibStatus]);
+    if (!calibMeanHist || !calibSigmaHist || !calibStatusHist) {
+      LOG(fatal) << "Calibration histograms not found for species: " << species;
+      return -999.0; // Return zero if histograms are not found
+    }
+
+    // Get the bin indices for the calibration histograms
+    int binEta = calibMeanHist->GetAxis(0)->FindBin(fgValues[kEta]);
+    binEta = (binEta == 0 ? 1 : binEta);
+    binEta = (binEta > calibMeanHist->GetAxis(0)->GetNbins() ? calibMeanHist->GetAxis(0)->GetNbins() : binEta);
+    int binNpv = calibMeanHist->GetAxis(1)->FindBin(fgValues[kVtxNcontribReal]);
+    binNpv = (binNpv == 0 ? 1 : binNpv);
+    binNpv = (binNpv > calibMeanHist->GetAxis(1)->GetNbins() ? calibMeanHist->GetAxis(1)->GetNbins() : binNpv);
+    int binNlong = calibMeanHist->GetAxis(2)->FindBin(fgValues[kNTPCcontribLongA]);
+    binNlong = (binNlong == 0 ? 1 : binNlong);
+    binNlong = (binNlong > calibMeanHist->GetAxis(2)->GetNbins() ? calibMeanHist->GetAxis(2)->GetNbins() : binNlong);
+    int binTlong = calibMeanHist->GetAxis(3)->FindBin(fgValues[kNTPCmedianTimeLongA]);
+    binTlong = (binTlong == 0 ? 1 : binTlong);
+    binTlong = (binTlong > calibMeanHist->GetAxis(3)->GetNbins() ? calibMeanHist->GetAxis(3)->GetNbins() : binTlong);
+
+    int bin[4] = {binEta, binNpv, binNlong, binTlong};
+    int status = static_cast<int>(calibStatusHist->GetBinContent(bin));
+    double mean = calibMeanHist->GetBinContent(bin);
+    double sigma = calibSigmaHist->GetBinContent(bin);
+    switch (status) {
+      case 0:
+        // good calibration, return the calibrated nSigma value
+        return (nSigmaValue - mean) / sigma;
+        break;
+      case 1:
+        // calibration not valid, return the original nSigma value
+        return nSigmaValue;
+        break;
+      case 2: // calibration constant has poor stat uncertainty, consider the user option for what to do
+      case 3:
+        // calibration constants have been interpolated
+        if (fgUseInterpolatedCalibration) {
+          return (nSigmaValue - mean) / sigma;
+        } else {
+          // return the original nSigma value
+          return nSigmaValue;
+        }
+        break;
+      case 4:
+        // calibration constants interpolation failed, return the original nSigma value
+        return nSigmaValue;
+        break;
+      default:
+        return nSigmaValue; // unknown status, return the original nSigma value
+        break;
+    }
+  } else {
+    // unknown calibration type, return the original nSigma value
+    LOG(fatal) << "Unknown calibration type: " << fgCalibrationType;
+    return nSigmaValue; // Return the original nSigma value
+  }
+}
+
 //__________________________________________________________________
 void VarManager::SetDefaultVarNames()
 {
@@ -300,6 +445,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCEventTime] = "MC event time";
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
+  fgVariableNames[kMCEventCentrFT0C] = "MC Centrality FT0C";
+  fgVariableNames[kMultMCNParticlesEta05] = "MC Multiplicity Central Barrel for |eta| < 0.5";
+  fgVariableNames[kMultMCNParticlesEta08] = "MC Multiplicity Central Barrel for |eta| < 0.8";
+  fgVariableNames[kMultMCNParticlesEta10] = "MC Multiplicity Central Barrel for |eta| < 1.0";
   fgVariableUnits[kMCEventGeneratorId] = "";
   fgVariableUnits[kMCEventSubGeneratorId] = "";
   fgVariableUnits[kMCVtxX] = "cm";
@@ -308,6 +457,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
+  fgVariableUnits[kMCEventCentrFT0C] = "%";
+  fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
+  fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
+  fgVariableUnits[kMultMCNParticlesEta10] = "Multiplicity_eta10";
   fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
   fgVariableUnits[kTwoEvPosZ1] = "cm";
   fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
@@ -995,6 +1148,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairPt] = "GeV/c";
   fgVariableNames[kPairEta] = "#eta";
   fgVariableUnits[kPairEta] = "";
+  fgVariableNames[kPairRap] = "#rap";
+  fgVariableUnits[kPairRap] = "";
   fgVariableNames[kPairPhi] = "#varphi";
   fgVariableUnits[kPairPhi] = "rad.";
   fgVariableNames[kPairPhiv] = "#varphi_{V}";
@@ -1131,6 +1286,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kS13] = "GeV^{2}/c^{4}";
   fgVariableNames[kS23] = "m_{23}^{2}";
   fgVariableUnits[kS23] = "GeV^{2}/c^{4}";
+  fgVariableNames[kBdtBackground] = "kBdtBackground";
+  fgVariableUnits[kBdtBackground] = " ";
+  fgVariableNames[kBdtPrompt] = "kBdtPrompt";
+  fgVariableUnits[kBdtPrompt] = " ";
+  fgVariableNames[kBdtNonprompt] = "kBdtNonprompt";
+  fgVariableUnits[kBdtNonprompt] = " ";
 
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
@@ -1445,8 +1606,6 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTPCnCRoverFindCls"] = kTPCnCRoverFindCls;
   fgVarNamesMap["kTPCchi2"] = kTPCchi2;
   fgVarNamesMap["kTPCsignal"] = kTPCsignal;
-  fgVarNamesMap["kTPCsignalRandomized"] = kTPCsignalRandomized;
-  fgVarNamesMap["kTPCsignalRandomizedDelta"] = kTPCsignalRandomizedDelta;
   fgVarNamesMap["kPhiTPCOuter"] = kPhiTPCOuter;
   fgVarNamesMap["kTrackIsInsideTPCModule"] = kTrackIsInsideTPCModule;
   fgVarNamesMap["kTRDsignal"] = kTRDsignal;
@@ -1470,20 +1629,14 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTrackCTglTgl"] = kTrackCTglTgl;
   fgVarNamesMap["kTrackC1Pt21Pt2"] = kTrackC1Pt21Pt2;
   fgVarNamesMap["kTPCnSigmaEl"] = kTPCnSigmaEl;
-  fgVarNamesMap["kTPCnSigmaElRandomized"] = kTPCnSigmaElRandomized;
-  fgVarNamesMap["kTPCnSigmaElRandomizedDelta"] = kTPCnSigmaElRandomizedDelta;
   fgVarNamesMap["kTPCnSigmaMu"] = kTPCnSigmaMu;
   fgVarNamesMap["kTPCnSigmaPi"] = kTPCnSigmaPi;
-  fgVarNamesMap["kTPCnSigmaPiRandomized"] = kTPCnSigmaPiRandomized;
-  fgVarNamesMap["kTPCnSigmaPiRandomizedDelta"] = kTPCnSigmaPiRandomizedDelta;
   fgVarNamesMap["kTPCnSigmaKa"] = kTPCnSigmaKa;
   fgVarNamesMap["kTPCnSigmaPr"] = kTPCnSigmaPr;
   fgVarNamesMap["kTPCnSigmaEl_Corr"] = kTPCnSigmaEl_Corr;
   fgVarNamesMap["kTPCnSigmaPi_Corr"] = kTPCnSigmaPi_Corr;
   fgVarNamesMap["kTPCnSigmaKa_Corr"] = kTPCnSigmaKa_Corr;
   fgVarNamesMap["kTPCnSigmaPr_Corr"] = kTPCnSigmaPr_Corr;
-  fgVarNamesMap["kTPCnSigmaPrRandomized"] = kTPCnSigmaPrRandomized;
-  fgVarNamesMap["kTPCnSigmaPrRandomizedDelta"] = kTPCnSigmaPrRandomizedDelta;
   fgVarNamesMap["kTOFnSigmaEl"] = kTOFnSigmaEl;
   fgVarNamesMap["kTOFnSigmaMu"] = kTOFnSigmaMu;
   fgVarNamesMap["kTOFnSigmaPi"] = kTOFnSigmaPi;
@@ -1736,6 +1889,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPairPt"] = kPairPt;
   fgVarNamesMap["kPairPtDau"] = kPairPtDau;
   fgVarNamesMap["kPairEta"] = kPairEta;
+  fgVarNamesMap["kPairRap"] = kPairRap;
   fgVarNamesMap["kPairPhi"] = kPairPhi;
   fgVarNamesMap["kPairPhiv"] = kPairPhiv;
   fgVarNamesMap["kDileptonHadronKstar"] = kDileptonHadronKstar;
@@ -1770,4 +1924,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kV24ME"] = kV24ME;
   fgVarNamesMap["kWV22ME"] = kWV22ME;
   fgVarNamesMap["kWV24ME"] = kWV24ME;
+  fgVarNamesMap["kBdtBackground"] = kBdtBackground;
+  fgVarNamesMap["kBdtPrompt"] = kBdtPrompt;
+  fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
 }

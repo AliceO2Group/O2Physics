@@ -12,10 +12,12 @@
 #ifndef COMMON_CCDB_TRIGGERALIASES_H_
 #define COMMON_CCDB_TRIGGERALIASES_H_
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cstdint>
 #include <map>
 #include <string>
-#include <Rtypes.h>
 
 enum triggerAliases {
   kINT7 = 0,
@@ -57,7 +59,7 @@ class TriggerAliases
   TriggerAliases() = default;
   ~TriggerAliases() = default;
 
-  void AddAlias(uint32_t aliasId, std::string classNames) { mAliasToClassNames[aliasId] = classNames; }
+  void AddAlias(uint32_t aliasId, std::string const& classNames) { mAliasToClassNames[aliasId] = classNames; }
   void AddClassIdToAlias(uint32_t aliasId, int classId);
   const std::map<uint32_t, std::string>& GetAliasToClassNamesMap() const { return mAliasToClassNames; }
   const std::map<uint32_t, ULong64_t>& GetAliasToTriggerMaskMap() const { return mAliasToTriggerMask; }

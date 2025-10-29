@@ -127,6 +127,9 @@ static constexpr int FirstDCal23SM = 12;      // index of the first 2/3 DCal SM
 static constexpr int LastDCal23SM = 17;       // index of the last 2/3 DCal SM
 static constexpr float MinCellEnergy = 0.01f; // Minimum energy a new cell needs to be added
 
+static constexpr int NColumns[NSM] = {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 32, 32, 32, 32, 32, 32, 48, 48};
+static constexpr int NRows[NSM] = {24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 24, 24, 24, 24, 24, 24, 8, 8};
+
 // these labels are for later once labeledArrays work on hyperloop. Currently they sadly only allow fixed size not variable size.
 // static const std::vector<std::string> labelsSM{"SM0/all", "SM1", "SM2", "SM3", "SM4", "SM5", "SM6", "SM7", "SM8", "SM9", "SM10", "SM11", "SM12", "SM13", "SM14", "SM15", "SM16", "SM17", "SM18", "SM19"};
 // static const std::vector<std::string> labelsCells = {"Up&Down", "Up&Down x Left|Right", "Left|Right", "2Up&Down + 2Up&Down xLeft|Right"};

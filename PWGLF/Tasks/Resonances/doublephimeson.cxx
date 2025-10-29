@@ -13,26 +13,31 @@
 /// \author sourav kundu
 /// \since 02/11/2023
 
+#include "PWGLF/DataModel/ReducedDoublePhiTables.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
-#include <TLorentzVector.h>
+
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <TLorentzVector.h>
 #include <TMath.h>
+#include <TVector2.h>
+
 #include <fairlogger/Logger.h>
+
 #include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/ReducedDoublePhiTables.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,11 +77,16 @@ struct doublephimeson {
   ConfigurableAxis configThnAxisDeltaR{"configThnAxisDeltaR", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisCosTheta{"configThnAxisCosTheta", {160, 0.0, 3.2}, "cos #theta{*}"};
   ConfigurableAxis configThnAxisNumPhi{"configThnAxisNumPhi", {101, -0.5, 100.5}, "cos #theta{*}"};
+  ConfigurableAxis configThnAxisDeltaPt{"configThnAxisDeltaPt", {100, 0.0, 1.0}, "delta pt"};
+  Configurable<float> maxDeltaMPhi{"maxDeltaMPhi", 0.01f, "Delta-m cut on the two phi masses: sqrt((m1-mPDG)^2 + (m2-mPDG)^2) < maxDeltaMPhi (GeV/c^2)"};
 
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
   {
     // register histograms
+    histos.add("hnsigmaTPCKaonPlusBefore", "hnsigmaTPCKaonPlusBefore", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
+    histos.add("hnsigmaTPCKaonMinusBefore", "hnsigmaTPCKaonMinusBefore", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
+    histos.add("hnsigmaTPCTOFKaonBefore", "hnsigmaTPCTOFKaonBefore", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCKaonPlus", "hnsigmaTPCKaonPlus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCKaonMinus", "hnsigmaTPCKaonMinus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCTOFKaon", "hnsigmaTPCTOFKaon", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
@@ -84,16 +94,19 @@ struct doublephimeson {
     histos.add("hPhiMass2", "hPhiMass2", kTH2F, {{40, 1.0, 1.04f}, {40, 1.0f, 1.04f}});
     histos.add("hkPlusDeltaetaDeltaPhi", "hkPlusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
     histos.add("hkMinusDeltaetaDeltaPhi", "hkMinusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
+    histos.add("hDeltaRkaonplus", "hDeltaRkaonplus", kTH1F, {{800, 0.0, 8.0}});
+    histos.add("hDeltaRkaonminus", "hDeltaRkaonminus", kTH1F, {{800, 0.0, 8.0}});
 
+    const AxisSpec thnAxisdeltapt{configThnAxisDeltaPt, "Delta pt"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisInvMassPhi{configThnAxisInvMassPhi, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisInvMassDeltaPhi{configThnAxisInvMassDeltaPhi, "#it{M} (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisDeltaR{configThnAxisDeltaR, "#Delta R)"};
     const AxisSpec thnAxisCosTheta{configThnAxisCosTheta, "cos #theta"};
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
 
-    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisNumPhi});
+    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisdeltapt, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisNumPhi});
     // histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
     histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi});
   }
@@ -169,6 +182,92 @@ struct doublephimeson {
 
   bool selectionPID(float nsigmaTPC, float nsigmaTOF, int TOFHit, int PIDStrategy, float ptcand)
   {
+
+    if (PIDStrategy == 100) {
+      if (ptcand < 1.2) {
+        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
+          return true;
+        } else if (TOFHit != 1) {
+          if (ptcand < 0.5 && nsigmaTPC > -2.0 && nsigmaTPC < 2.5) {
+            return true;
+          }
+          if (ptcand >= 0.5 && ptcand < 0.6 && nsigmaTPC > -1.5 && nsigmaTPC < 2.5) {
+            return true;
+          }
+          if (ptcand >= 0.6 && ptcand < 0.7 && nsigmaTPC > -1.0 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 0.7 && ptcand < 0.8 && nsigmaTPC > -0.4 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 0.8 && ptcand < 1.0 && nsigmaTPC > 0.0 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 1.0 && ptcand < 1.2 && nsigmaTPC > -2.5 && nsigmaTPC < 0.5) {
+            return true;
+          }
+        }
+      } else {
+        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
+          return true;
+        } else if (TOFHit != 1 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0) {
+          return true;
+        }
+      }
+    }
+
+    if (PIDStrategy == 101) {
+      if (ptcand < 1.0) {
+        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
+          return true;
+        } else if (TOFHit != 1) {
+          if (ptcand < 0.5 && nsigmaTPC > -2.0 && nsigmaTPC < 2.5) {
+            return true;
+          }
+          if (ptcand >= 0.5 && ptcand < 0.6 && nsigmaTPC > -1.5 && nsigmaTPC < 2.5) {
+            return true;
+          }
+          if (ptcand >= 0.6 && ptcand < 0.7 && nsigmaTPC > -1.0 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 0.7 && ptcand < 0.8 && nsigmaTPC > -0.4 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 0.8 && ptcand < 1.0 && nsigmaTPC > 0.0 && nsigmaTPC < 2.0) {
+            return true;
+          }
+        }
+      } else if (ptcand >= 1.0 && ptcand < 2.0 && TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.5) {
+        return true;
+      } else if (ptcand > 2.0) {
+        if (TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
+          return true;
+        } else if (TOFHit != 1 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0) {
+          return true;
+        }
+      }
+    }
+
+    if (PIDStrategy == 102) {
+      if (TOFHit != 1) {
+        if (ptcand < 0.5 && nsigmaTPC > -2.0 && nsigmaTPC < 2.5) {
+          return true;
+        }
+        if (ptcand >= 0.5 && ptcand < 0.6 && nsigmaTPC > -1.5 && nsigmaTPC < 2.5) {
+          return true;
+        }
+        if (ptcand >= 0.6 && ptcand < 0.7 && nsigmaTPC > -1.0 && nsigmaTPC < 2.0) {
+          return true;
+        }
+        if (ptcand >= 2.2 && nsigmaTPC > -2.5 && nsigmaTPC < 1.0) {
+          return true;
+        }
+      }
+      if (TOFHit == 1 && ptcand > 0.4 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.0) {
+        return true;
+      }
+    }
+
     // optimized TPC TOF
     if (PIDStrategy == 0) {
       if (ptcand < 0.4) {
@@ -418,10 +517,10 @@ struct doublephimeson {
           continue;
         }
         if (!isDeep) {
-          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deltam, phimult);
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), std::abs(Phid1.Pt() - Phid2.Pt()) / exotic.Pt(), exotic.Pt(), deltaR, deltam, phimult);
         }
         if (isDeep) {
-          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deltam, phimult);
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), std::abs(Phid1.Pt() - Phid2.Pt()) / exotic.Pt(), exotic.Pt(), deltaR, deltam, phimult);
         }
       }
     }
@@ -462,6 +561,11 @@ struct doublephimeson {
     for (auto phitrackd1 : phitracks) {
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
+
+      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), kaonplusd1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), phitrackd1.phid1TPC(), kaonplusd1pt);
+      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), phitrackd1.phid2TPC(), kaonminusd1pt);
+
       if (kaonplusd1pt > maxKaonPt) {
         continue;
       }
@@ -559,6 +663,8 @@ struct doublephimeson {
         auto exotic1kaonminus2 = kaonminus2.at(i5);
         auto deltaRkaonplus1 = TMath::Sqrt(TMath::Power(exotic1kaonplus1.Phi() - exotic1kaonplus2.Phi(), 2.0) + TMath::Power(exotic1kaonplus1.Eta() - exotic1kaonplus2.Eta(), 2.0));
         auto deltaRkaonminus1 = TMath::Sqrt(TMath::Power(exotic1kaonminus1.Phi() - exotic1kaonminus2.Phi(), 2.0) + TMath::Power(exotic1kaonminus1.Eta() - exotic1kaonminus2.Eta(), 2.0));
+        histos.fill(HIST("hDeltaRkaonplus"), deltaRkaonplus1);
+        histos.fill(HIST("hDeltaRkaonminus"), deltaRkaonminus1);
 
         auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
         auto deltaR1 = TMath::Sqrt(TMath::Power(exotic1phi1.Phi() - exotic1phi2.Phi(), 2.0) + TMath::Power(exotic1phi1.Eta() - exotic1phi2.Eta(), 2.0));
@@ -592,13 +698,13 @@ struct doublephimeson {
               (d4trackid.at(i5) == d3trackid.at(i6) || d4trackid.at(i5) == d4trackid.at(i6))) {
 
             if (deltam2 < deltam1 && deltaRkaonplus2 > daughterDeltaR && deltaRkaonminus2 > daughterDeltaR) {
-              histos.fill(HIST("SEMassUnlike"), exotic2.M(), exotic2.Pt(), deltaR2, deltam2, phimult);
+              histos.fill(HIST("SEMassUnlike"), exotic2.M(), std::abs(exotic2phi1.Pt() - exotic2phi2.Pt()) / exotic2.Pt(), exotic2.Pt(), deltaR2, deltam2, phimult);
               // LOGF(info, "Fill exotic Id %d which is pair of Id %d", i6, i5);
             } else {
-              histos.fill(HIST("SEMassUnlike"), exotic1.M(), exotic1.Pt(), deltaR1, deltam1, phimult);
+              histos.fill(HIST("SEMassUnlike"), exotic1.M(), std::abs(exotic2phi1.Pt() - exotic2phi2.Pt()) / exotic1.Pt(), exotic1.Pt(), deltaR1, deltam1, phimult);
             }
           } else {
-            histos.fill(HIST("SEMassUnlike"), exotic1.M(), exotic1.Pt(), deltaR1, deltam1, phimult);
+            histos.fill(HIST("SEMassUnlike"), exotic1.M(), std::abs(exotic2phi1.Pt() - exotic2phi2.Pt()) / exotic1.Pt(), exotic1.Pt(), deltaR1, deltam1, phimult);
           }
         }
       }
@@ -618,6 +724,9 @@ struct doublephimeson {
         auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
         auto deltaR1 = TMath::Sqrt(TMath::Power(exotic1phi1.Phi() - exotic1phi2.Phi(), 2.0) + TMath::Power(exotic1phi1.Eta() - exotic1phi2.Eta(), 2.0));
 
+        histos.fill(HIST("hDeltaRkaonplus"), deltaRkaonplus1);
+        histos.fill(HIST("hDeltaRkaonminus"), deltaRkaonminus1);
+
         if (deltaRkaonplus1 < daughterDeltaR) {
           continue;
         }
@@ -625,11 +734,166 @@ struct doublephimeson {
           continue;
         }
 
-        histos.fill(HIST("SEMassUnlike"), exotic1.M(), exotic1.Pt(), deltaR1, deltam1, phimult);
+        histos.fill(HIST("SEMassUnlike"), exotic1.M(), std::abs(exotic1phi1.Pt() - exotic1phi2.Pt()) / exotic1.Pt(), exotic1.Pt(), deltaR1, deltam1, phimult);
       }
     }
   }
   PROCESS_SWITCH(doublephimeson, processopti, "Process Optimized same event", false);
+
+  void processopti3(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
+  {
+    if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2))
+      return;
+
+    // --- φ multiplicity with PID ---
+    int phimult = 0;
+    for (auto const& t : phitracks) {
+      if (t.phiMass() < minPhiMass1 || t.phiMass() > maxPhiMass1)
+        continue;
+      const double kpluspt = std::hypot(t.phid1Px(), t.phid1Py());
+      const double kminuspt = std::hypot(t.phid2Px(), t.phid2Py());
+      if (kpluspt > maxKaonPt || kminuspt > maxKaonPt)
+        continue;
+      if (!selectionPID(t.phid1TPC(), t.phid1TOF(), t.phid1TOFHit(), strategyPID1, kpluspt))
+        continue;
+      if (!selectionPID(t.phid2TPC(), t.phid2TOF(), t.phid2TOFHit(), strategyPID2, kminuspt))
+        continue;
+      ++phimult;
+    }
+    if (phimult < 2)
+      return;
+    // --- helpers ---
+    constexpr double mPhiPDG = 1.019461; // GeV/c^2
+
+    const auto deltaMPhi = [=](double m1, double m2) {
+      const double d1 = m1 - mPhiPDG, d2 = m2 - mPhiPDG;
+      return std::sqrt(d1 * d1 + d2 * d2);
+    };
+
+    const auto deltaR = [](double phi1, double eta1, double phi2, double eta2) {
+      const double dphi = TVector2::Phi_mpi_pi(phi1 - phi2);
+      const double deta = eta1 - eta2;
+      return std::sqrt(dphi * dphi + deta * deta);
+    };
+
+    // anti-merging: same-sign kaons must be separated
+    const auto passDaughterDR = [&](const ROOT::Math::PtEtaPhiMVector& kplusA,
+                                    const ROOT::Math::PtEtaPhiMVector& kplusB,
+                                    const ROOT::Math::PtEtaPhiMVector& kminusA,
+                                    const ROOT::Math::PtEtaPhiMVector& kminusB,
+                                    double thr) {
+      const double dRkplus = deltaR(kplusA.Phi(), kplusA.Eta(), kplusB.Phi(), kplusB.Eta());
+      const double dRkminus = deltaR(kminusA.Phi(), kminusA.Eta(), kminusB.Phi(), kminusB.Eta());
+      histos.fill(HIST("hDeltaRkaonplus"), dRkplus);
+      histos.fill(HIST("hDeltaRkaonminus"), dRkminus);
+      return (dRkplus > thr) && (dRkminus > thr);
+    };
+    // --- collect candidates once ---
+    std::vector<ROOT::Math::PtEtaPhiMVector> pairV, phi1V, phi2V, kplus1V, kplus2V, kminus1V, kminus2V;
+
+    for (auto const& t1 : phitracks) {
+      const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
+      const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
+
+      // PID QA before
+      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t1.phid1TPC(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t1.phid2TPC(), kminus1pt);
+
+      if (kplus1pt > maxKaonPt || kminus1pt > maxKaonPt)
+        continue;
+      if (!selectionPID(t1.phid1TPC(), t1.phid1TOF(), t1.phid1TOFHit(), strategyPID1, kplus1pt))
+        continue;
+      if (!selectionPID(t1.phid2TPC(), t1.phid2TOF(), t1.phid2TOFHit(), strategyPID2, kminus1pt))
+        continue;
+
+      TLorentzVector phi1, k1p, k1m;
+      phi1.SetXYZM(t1.phiPx(), t1.phiPy(), t1.phiPz(), t1.phiMass());
+      k1p.SetXYZM(t1.phid1Px(), t1.phid1Py(), t1.phid1Pz(), 0.493);
+      k1m.SetXYZM(t1.phid2Px(), t1.phid2Py(), t1.phid2Pz(), 0.493);
+
+      // φ mass windows
+      if (t1.phiMass() < minPhiMass1 || t1.phiMass() > maxPhiMass1)
+        continue;
+
+      // PID QA after
+      histos.fill(HIST("hnsigmaTPCTOFKaon"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlus"), t1.phid1TPC(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonMinus"), t1.phid2TPC(), kminus1pt);
+      histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
+
+      const auto id1 = t1.index();
+
+      for (auto const& t2 : phitracks) {
+        const auto id2 = t2.index();
+        if (id2 <= id1)
+          continue;
+
+        const double kplus2pt = std::hypot(t2.phid1Px(), t2.phid1Py());
+        const double kminus2pt = std::hypot(t2.phid2Px(), t2.phid2Py());
+        if (kplus2pt > maxKaonPt || kminus2pt > maxKaonPt)
+          continue;
+        if (!selectionPID(t2.phid1TPC(), t2.phid1TOF(), t2.phid1TOFHit(), strategyPID1, kplus2pt))
+          continue;
+        if (!selectionPID(t2.phid2TPC(), t2.phid2TOF(), t2.phid2TOFHit(), strategyPID2, kminus2pt))
+          continue;
+
+        // block shared same-sign daughters
+        if ((t1.phid1Index() == t2.phid1Index()) || (t1.phid2Index() == t2.phid2Index()))
+          continue;
+
+        TLorentzVector phi2, k2p, k2m;
+        phi2.SetXYZM(t2.phiPx(), t2.phiPy(), t2.phiPz(), t2.phiMass());
+        k2p.SetXYZM(t2.phid1Px(), t2.phid1Py(), t2.phid1Pz(), 0.493);
+        k2m.SetXYZM(t2.phid2Px(), t2.phid2Py(), t2.phid2Pz(), 0.493);
+        if (t2.phiMass() < minPhiMass2 || t2.phiMass() > maxPhiMass2)
+          continue;
+
+        // Δm cut (configurable)
+        const double dM = deltaMPhi(phi1.M(), phi2.M());
+        if (dM > maxDeltaMPhi)
+          continue;
+
+        TLorentzVector pair = phi1 + phi2;
+        if (pair.M() < minExoticMass || pair.M() > maxExoticMass)
+          continue;
+
+        // daughter anti-merging
+        ROOT::Math::PtEtaPhiMVector k1pV(k1p.Pt(), k1p.Eta(), k1p.Phi(), 0.493);
+        ROOT::Math::PtEtaPhiMVector k1mV(k1m.Pt(), k1m.Eta(), k1m.Phi(), 0.493);
+        ROOT::Math::PtEtaPhiMVector k2pV(k2p.Pt(), k2p.Eta(), k2p.Phi(), 0.493);
+        ROOT::Math::PtEtaPhiMVector k2mV(k2m.Pt(), k2m.Eta(), k2m.Phi(), 0.493);
+        if (!passDaughterDR(k1pV, k2pV, k1mV, k2mV, daughterDeltaR))
+          continue;
+
+        // store for one-pass fill
+        pairV.emplace_back(pair.Pt(), pair.Eta(), pair.Phi(), pair.M());
+        phi1V.emplace_back(phi1.Pt(), phi1.Eta(), phi1.Phi(), phi1.M());
+        phi2V.emplace_back(phi2.Pt(), phi2.Eta(), phi2.Phi(), phi2.M());
+        kplus1V.emplace_back(k1p.Pt(), k1p.Eta(), k1p.Phi(), 0.493);
+        kminus1V.emplace_back(k1m.Pt(), k1m.Eta(), k1m.Phi(), 0.493);
+        kplus2V.emplace_back(k2p.Pt(), k2p.Eta(), k2p.Phi(), 0.493);
+        kminus2V.emplace_back(k2m.Pt(), k2m.Eta(), k2m.Phi(), 0.493);
+      }
+    }
+
+    if (pairV.empty())
+      return;
+
+    // --- fill the single THnSparse ---
+    for (size_t i = 0; i < pairV.size(); ++i) {
+      TLorentzVector p1, p2, pair;
+      p1.SetPtEtaPhiM(phi1V[i].Pt(), phi1V[i].Eta(), phi1V[i].Phi(), phi1V[i].M());
+      p2.SetPtEtaPhiM(phi2V[i].Pt(), phi2V[i].Eta(), phi2V[i].Phi(), phi2V[i].M());
+      pair.SetPtEtaPhiM(pairV[i].Pt(), pairV[i].Eta(), pairV[i].Phi(), pairV[i].M());
+      const double dM = deltaMPhi(p1.M(), p2.M());
+      const double M = pair.M();
+      // const double pT = pair.Pt();
+      const double dR = deltaR(p1.Phi(), p1.Eta(), p2.Phi(), p2.Eta());
+      histos.fill(HIST("SEMassUnlike"), M, std::abs(p1.Pt() - p2.Pt()) / pair.Pt(), pair.Pt(), dR, dM, pairV.size());
+    }
+  }
+  PROCESS_SWITCH(doublephimeson, processopti3, "Process Optimized same event", false);
 
   SliceCache cache;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;

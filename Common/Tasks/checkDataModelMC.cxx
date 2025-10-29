@@ -13,8 +13,20 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <limits>
+#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,7 +54,7 @@ void checkDaughters(const T& particlesMC,
       LOG(fatal) << "MC particle " << particle.globalIndex() << " with PDG " << particle.pdgCode() << " has first and last daughter indices " << firstDauIdx << ", " << lastDauIdx;
     }
   }
-  for (auto& idxDau : particle.daughtersIds()) {
+  for (const auto& idxDau : particle.daughtersIds()) {
     if (idxDau >= 0 && ((unsigned long int)idxDau > offset + particlesMC.size() || (unsigned long int)idxDau < offset)) {
       if (debugMode) {
         debugHisto->Fill(1);
@@ -88,7 +100,7 @@ struct CheckMcParticlesIndices {
   void process(aod::McParticles const& particlesMC)
   {
     long unsigned int offset = 0;
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       checkDaughters(particlesMC, particle, offset, debugMode.value, hDebug);
     }
   }
@@ -112,7 +124,7 @@ struct CheckMcParticlesIndicesGrouped {
   void process(aod::McCollision const&,
                aod::McParticles const& particlesMC)
   {
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       checkDaughters(particlesMC, particle, particlesMC.offset(), debugMode.value, hDebug);
     }
   }
