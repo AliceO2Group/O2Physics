@@ -92,6 +92,7 @@ struct FemtoPairTrackCascade {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   pairbuilder::PairTrackCascadeBuilder<
     trackhistmanager::PrefixTrack1,
@@ -158,21 +159,21 @@ struct FemtoPairTrackCascade {
     auto bachelorHistSpec = trackhistmanager::makeTrackHistSpecMap(confBachelorBinning);
     auto posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
     auto negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confXiBinning);
+    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
     // setup for xis
     if (doprocessXiSameEvent || doprocessXiMixedEvent) {
       auto xiHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confXiBinning);
-      auto pairTrackXiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confXiBinning);
-      pairTrackXiBuilder.init(&hRegistry, trackSelection, xiSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackXiHistSpec, cprHistSpec);
+      auto pairTrackXiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackXiBuilder.init(&hRegistry, trackSelection, xiSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackXiHistSpec, cprHistSpec);
     }
 
     // setup for omegas
     if (doprocessOmegaSameEvent || doprocessOmegaMixedEvent) {
       auto omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
-      auto pairTrackOmegaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confOmegaBinning);
-      pairTrackOmegaBuilder.init(&hRegistry, trackSelection, omegaSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackOmegaHistSpec, cprHistSpec);
+      auto pairTrackOmegaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackOmegaBuilder.init(&hRegistry, trackSelection, omegaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackOmegaHistSpec, cprHistSpec);
     }
 
     if (((doprocessXiSameEvent || doprocessXiMixedEvent) + (doprocessOmegaSameEvent || doprocessOmegaMixedEvent)) > 1) {

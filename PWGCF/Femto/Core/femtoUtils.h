@@ -27,8 +27,10 @@
 
 #include <cmath>
 #include <cstdint>
+#include <experimental/type_traits>
 #include <optional>
 #include <unordered_map>
+#include <utility>
 
 namespace o2::analysis::femto
 {
@@ -194,10 +196,10 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
 }
 
 template <typename T>
-inline int sign(T value)
-{
-  return (value > 0) - (value < 0); // Returns 1 for positive, -1 for negative, 0 for zero
-}
+using HasMass = decltype(std::declval<T&>().mass());
+
+template <typename T>
+using HasSign = decltype(std::declval<T&>().sign());
 
 }; // namespace utils
 }; // namespace o2::analysis::femto

@@ -85,6 +85,7 @@ struct FemtoPairV0V0 {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   pairbuilder::PairV0V0Builder<
     v0histmanager::PrefixLambda1,
@@ -154,15 +155,15 @@ struct FemtoPairV0V0 {
     // setup for lambda
     if (doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
-      auto pairLambdaLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confLambdaBinning, confLambdaBinning);
-      pairLambdaLambdaBuilder.init(&hRegistry, lambdaSelection, lambdaSelection, confCpr, confMixing, confPairBinning, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairLambdaLambdaHistSpec, cprHistSpec);
+      auto pairLambdaLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairLambdaLambdaBuilder.init(&hRegistry, lambdaSelection, lambdaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairLambdaLambdaHistSpec, cprHistSpec);
     }
 
     // setup for k0short
     if (doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
-      auto pairLambdaLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confLambdaBinning, confLambdaBinning);
-      pairLambdaLambdaBuilder.init(&hRegistry, k0shortSelection, k0shortSelection, confCpr, confMixing, confPairBinning, colHistSpec, k0shortHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairLambdaLambdaHistSpec, cprHistSpec);
+      auto pairLambdaLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairLambdaLambdaBuilder.init(&hRegistry, k0shortSelection, k0shortSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairLambdaLambdaHistSpec, cprHistSpec);
     }
 
     if (((doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent) + (doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent)) > 1) {
