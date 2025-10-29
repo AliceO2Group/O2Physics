@@ -71,6 +71,27 @@ enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
   kPTpc,  // momentum at inner wall of tpc
 };
 
+enum class Particle : o2::aod::femtodatatypes::ParticleType {
+  kTrack,
+  kTwoTrackResonance,
+  kV0,
+  kKink,
+  kCascade,
+};
+
+constexpr bool hasMass(Particle p)
+{
+  switch (p) {
+    case Particle::kV0:
+    case Particle::kTwoTrackResonance:
+    case Particle::kKink:
+    case Particle::kCascade:
+      return true;
+    default:
+      return false;
+  }
+}
+
 enum class Track : o2::aod::femtodatatypes::TrackType {
   kPrimaryTrack,
   kV0Daughter,

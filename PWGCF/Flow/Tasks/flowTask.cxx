@@ -45,9 +45,11 @@
 #include <TRandom3.h>
 
 #include <cmath>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -100,6 +102,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRunbyRun, bool, false, "NUA weights are filled run-by-run")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
@@ -198,6 +201,9 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  int lastRunNumber = -1;
+  std::vector<int> runNumbers;
+  std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
   enum CentEstimators {
     kCentFT0C = 0,
     kCentFT0CVariant1,
@@ -478,7 +484,7 @@ struct FlowTask {
     gfwConfigs.SetCorrs(cfgUserPtVnCorrConfig->GetCorrs());
     gfwConfigs.SetHeads(cfgUserPtVnCorrConfig->GetHeads());
     gfwConfigs.SetpTDifs(cfgUserPtVnCorrConfig->GetpTDifs());
-    // Mask 1: vn-[pT], 2: vn-[pT^2], 4: vn-[pT^3]
+    // Mask 1: vn-[pT], 3: vn-[pT^2], 7: vn-[pT^3], 15: vn-[pT^4]
     gfwConfigs.SetpTCorrMasks(cfgUserPtVnCorrConfig->GetpTCorrMasks());
     gfwConfigs.Print();
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
@@ -543,6 +549,13 @@ struct FlowTask {
       funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
+  }
+
+  void createOutputObjectsForRun(int runNumber)
+  {
+    const AxisSpec axisPhi{60, 0.0, constants::math::TwoPI, "#varphi"};
+    std::shared_ptr<TH3> histPhiEtaVtxz = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+    th3sPerRun.insert(std::make_pair(runNumber, histPhiEtaVtxz));
   }
 
   template <char... chars>
@@ -874,6 +887,20 @@ struct FlowTask {
         return;
       }
     }
+    if (cfgOutputNUAWeightsRunbyRun && currentRunNumber != lastRunNumber) {
+      lastRunNumber = currentRunNumber;
+      if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        createOutputObjectsForRun(currentRunNumber);
+        runNumbers.push_back(currentRunNumber);
+      }
+
+      if (th3sPerRun.find(currentRunNumber) == th3sPerRun.end()) {
+        LOGF(fatal, "RunNumber %d not found in th3sPerRun", currentRunNumber);
+        return;
+      }
+    }
+
     registry.fill(HIST("hEventCount"), 2.5);
     if (!cfgUseSmallMemory) {
       registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
@@ -975,10 +1002,15 @@ struct FlowTask {
       bool withinEtaGap08 = (std::abs(track.eta()) < cfgEtaPtPt);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
-          if (withinPtRef)
+          if (withinPtRef) {
             fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            if (cfgOutputNUAWeightsRunbyRun)
+              th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
+          }
         } else {
           fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          if (cfgOutputNUAWeightsRunbyRun)
+            th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
         }
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))

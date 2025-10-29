@@ -457,8 +457,8 @@ struct DileptonHadronMPC {
     delete emh_ref;
     emh_ref = 0x0;
 
-    used_trackIds.clear();
-    used_trackIds.shrink_to_fit();
+    used_trackIds_per_col.clear();
+    used_trackIds_per_col.shrink_to_fit();
   }
 
   void addhistograms()
@@ -786,8 +786,6 @@ struct DileptonHadronMPC {
     // store tracks for event mixing without double counting
     if constexpr (ev_id == 0) {
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
-      std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, t1.globalIndex());
-      std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, t2.globalIndex());
 
       std::vector<int> possibleIds1;
       std::vector<int> possibleIds2;
@@ -796,8 +794,8 @@ struct DileptonHadronMPC {
         std::copy(t1.ambiguousElectronsIds().begin(), t1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds1));
         std::copy(t2.ambiguousElectronsIds().begin(), t2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds2));
 
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
-          used_trackIds.emplace_back(pair_tmp_id1);
+        if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t1.globalIndex()) == used_trackIds_per_col.end()) {
+          used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
             if (t1.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(ndf, t1.globalIndex(), collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.dcaXY(), t1.dcaZ(), possibleIds1, t1.cYY(), t1.cZY(), t1.cZZ()));
@@ -806,8 +804,8 @@ struct DileptonHadronMPC {
             }
           }
         }
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
-          used_trackIds.emplace_back(pair_tmp_id2);
+        if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t2.globalIndex()) == used_trackIds_per_col.end()) {
+          used_trackIds_per_col.emplace_back(t2.globalIndex());
           if (cfgDoMix) {
             if (t2.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(ndf, t2.globalIndex(), collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.dcaXY(), t2.dcaZ(), possibleIds2, t2.cYY(), t2.cZY(), t2.cZZ()));
@@ -820,8 +818,8 @@ struct DileptonHadronMPC {
         std::copy(t1.ambiguousMuonsIds().begin(), t1.ambiguousMuonsIds().end(), std::back_inserter(possibleIds1));
         std::copy(t2.ambiguousMuonsIds().begin(), t2.ambiguousMuonsIds().end(), std::back_inserter(possibleIds2));
 
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
-          used_trackIds.emplace_back(pair_tmp_id1);
+        if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t1.globalIndex()) == used_trackIds_per_col.end()) {
+          used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
             if (t1.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
@@ -832,8 +830,8 @@ struct DileptonHadronMPC {
             }
           }
         }
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
-          used_trackIds.emplace_back(pair_tmp_id2);
+        if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t2.globalIndex()) == used_trackIds_per_col.end()) {
+          used_trackIds_per_col.emplace_back(t2.globalIndex());
           if (cfgDoMix) {
             if (t2.sign() > 0) {
               emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
@@ -1082,7 +1080,7 @@ struct DileptonHadronMPC {
   MyEMH_track* emh_ref = nullptr; // for reference flow
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
-  std::vector<std::pair<int, int>> used_trackIds;
+  std::vector<int> used_trackIds_per_col;
   int ndf = 0;
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TLeptons, typename TPresilce, typename TCut, typename TAllTracks, typename TRefTracks>
@@ -1120,8 +1118,9 @@ struct DileptonHadronMPC {
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
-      int nuls = 0, nlspp = 0, nlsmm = 0;
+      used_trackIds_per_col.reserve(posTracks_per_coll.size() + negTracks_per_coll.size());
 
+      int nuls = 0, nlspp = 0, nlsmm = 0;
       for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         bool is_pair_ok = fillDilepton<0>(collision, pos, neg, cut, tracks);
         if (is_pair_ok) {
@@ -1149,6 +1148,8 @@ struct DileptonHadronMPC {
           }
         }
       }
+      used_trackIds_per_col.clear();
+      used_trackIds_per_col.shrink_to_fit();
 
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
