@@ -848,6 +848,14 @@ struct McPidTof {
         }
         break;
       }
+      case IdxDe: {
+        if (fullTable) {
+          tablePIDFullDe.reserve(size);
+        } else {
+          tablePIDDe.reserve(size);
+        }
+        break;
+      }
       default:
         LOG(fatal) << "Wrong particle ID in reserveTable() for " << (fullTable ? "full" : "tiny") << " tables";
         break;
