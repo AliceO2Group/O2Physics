@@ -104,6 +104,16 @@ struct UpcPhotonuclearAnalysisJMG {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Declare configurables on events/collisions
+  Configurable<int> minMultiplicity{"minMultiplicity", 2, {"Range on multiplicity"}};
+  Configurable<int> range1Max{"range1Max", 10, {"Range on multiplicity"}};
+  Configurable<int> range2Min{"range2Min", 11, {"Range on multiplicity"}};
+  Configurable<int> range2Max{"range2Max", 20, {"Range on multiplicity"}};
+  Configurable<int> range3Min{"range3Min", 21, {"Range on multiplicity"}};
+  Configurable<int> range3Max{"range3Max", 30, {"Range on multiplicity"}};
+  Configurable<int> range4Min{"range4Min", 31, {"Range on multiplicity"}};
+  Configurable<int> range4Max{"range4Max", 40, {"Range on multiplicity"}};
+  Configurable<int> range5Min{"range5Min", 41, {"Range on multiplicity"}};
+  Configurable<int> range5Max{"range5Max", 50, {"Range on multiplicity"}};
   Configurable<int> nEventsMixed{"nEventsMixed", 3, {"Events to be Mixed"}};
   Configurable<int> factorEventsMixed{"factorEventsMixed", 100, {"factorEventsMixed to events mixed"}};
   Configurable<float> myZVtxCut{"myZVtxCut", 10., {"My collision cut"}};
@@ -479,41 +489,41 @@ struct UpcPhotonuclearAnalysisJMG {
                                     deltaPhi,
                                     posZ);
         if constexpr (std::is_same_v<TTag, SameEventTag>) {
-          if (2 <= multiplicity) {
+          if (minMultiplicity <= multiplicity) {
             histos.fill(HIST("sameEvent2D"), deltaEta, deltaPhi);
           }
-          if (2 <= multiplicity && multiplicity <= 10) {
+          if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
             histos.fill(HIST("sameEvent_2_10"), deltaEta, deltaPhi);
           }
-          if (11 <= multiplicity && multiplicity <= 20) {
+          if (range2Min <= multiplicity && multiplicity <= range2Max) {
             histos.fill(HIST("sameEvent_11_20"), deltaEta, deltaPhi);
           }
-          if (21 <= multiplicity && multiplicity <= 30) {
+          if (range3Min <= multiplicity && multiplicity <= range3Max) {
             histos.fill(HIST("sameEvent_21_30"), deltaEta, deltaPhi);
           }
-          if (31 <= multiplicity && multiplicity <= 40) {
+          if (range4Min <= multiplicity && multiplicity <= range4Max) {
             histos.fill(HIST("sameEvent_31_40"), deltaEta, deltaPhi);
           }
-          if (41 <= multiplicity && multiplicity <= 50) {
+          if (range5Min <= multiplicity && multiplicity <= range5Max) {
             histos.fill(HIST("sameEvent_41_50"), deltaEta, deltaPhi);
           }
         } else if constexpr (std::is_same_v<TTag, MixedEventTag>) {
-          if (2 <= multiplicity) {
+          if (minMultiplicity <= multiplicity) {
             histos.fill(HIST("mixedEvent2D"), deltaEta, deltaPhi);
           }
-          if (2 <= multiplicity && multiplicity <= 10) {
+          if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
             histos.fill(HIST("mixedEvent_2_10"), deltaEta, deltaPhi);
           }
-          if (11 <= multiplicity && multiplicity <= 20) {
+          if (range2Min <= multiplicity && multiplicity <= range2Max) {
             histos.fill(HIST("mixedEvent_11_20"), deltaEta, deltaPhi);
           }
-          if (21 <= multiplicity && multiplicity <= 30) {
+          if (range3Min <= multiplicity && multiplicity <= range3Max) {
             histos.fill(HIST("mixedEvent_21_30"), deltaEta, deltaPhi);
           }
-          if (31 <= multiplicity && multiplicity <= 40) {
+          if (range4Min <= multiplicity && multiplicity <= range4Max) {
             histos.fill(HIST("mixedEvent_31_40"), deltaEta, deltaPhi);
           }
-          if (41 <= multiplicity && multiplicity <= 50) {
+          if (range5Min <= multiplicity && multiplicity <= range5Max) {
             histos.fill(HIST("mixedEvent_41_50"), deltaEta, deltaPhi);
           }
         }
