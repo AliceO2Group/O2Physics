@@ -307,14 +307,15 @@ struct UpcPhotonuclearAnalysisJMG {
     // mixedGapSideA.setObject(new CorrelationContainer("mixedEventGapSideA", "mixedEventGapSideA", corrAxis, effAxis, {}));
     // sameGapSideC.setObject(new CorrelationContainer("sameEventGapSideC", "sameEventGapSideC", corrAxis, effAxis, {}));
     // mixedGapSideC.setObject(new CorrelationContainer("mixedEventGapSideC", "mixedEventGapSideC", corrAxis, effAxis, {}));
-
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -7.0f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.0f, 10.0f};
   std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
 
-  struct SameEventTag {};
-  struct MixedEventTag {};
+  struct SameEventTag {
+  };
+  struct MixedEventTag {
+  };
 
   SliceCache cache;
   // int countEvents = 0;
@@ -496,8 +497,7 @@ struct UpcPhotonuclearAnalysisJMG {
           if (41 <= multiplicity && multiplicity <= 50) {
             histos.fill(HIST("sameEvent_41_50"), deltaEta, deltaPhi);
           }
-        }
-        else if constexpr (std::is_same_v<TTag, MixedEventTag>) {
+        } else if constexpr (std::is_same_v<TTag, MixedEventTag>) {
           if (2 <= multiplicity) {
             histos.fill(HIST("mixedEvent2D"), deltaEta, deltaPhi);
           }
