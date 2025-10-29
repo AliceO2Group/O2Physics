@@ -1602,17 +1602,15 @@ struct qaMatchEff {
         auto mcpart = track.mcParticle();
         siPDGCode = mcpart.pdgCode();
         tpPDGCode = std::abs(siPDGCode);
-        //if (mcpart.isPhysicalPrimary()) {
-          // histos.get<TH1>(HIST("MC/control/etahist_diff"))->Fill(mcpart.eta() - track.eta());
-          // auto delta = RecoDecay::constrainAngle(mcpart.phi() - track.phi());
-          // if (delta > o2::constants::math::PI) {
-          //   delta -= o2::constants::math::TwoPI;
-          // }
-          // if (delta < o2::constants::math::PI) {
-          //   delta += o2::constants::math::TwoPI;
-          // }
-          // histos.get<TH1>(HIST("MC/control/phihist_diff"))->Fill(delta);
-        //}
+        if (mcpart.isPhysicalPrimary()) {
+          histos.get<TH1>(HIST("MC/control/etahist_diff"))->Fill(mcpart.eta() - track.eta());
+          auto delta = RecoDecay::constrainAngle(mcpart.phi() - track.phi());
+          if (delta > o2::constants::math::PI) {
+             delta -= o2::constants::math::TwoPI;}
+          if (delta < o2::constants::math::PI) {
+            delta += o2::constants::math::TwoPI;}
+          histos.get<TH1>(HIST("MC/control/phihist_diff"))->Fill(delta);
+        }
 
         /// MC info for THnSparse filling
         sayPrim = -99;
