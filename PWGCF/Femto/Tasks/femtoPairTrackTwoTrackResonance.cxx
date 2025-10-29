@@ -98,6 +98,7 @@ struct FemtoPairTrackTwoTrackResonance {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   // setup for track-phi pairs
   pairbuilder::PairTrackTwoTrackResonanceBuilder<
@@ -184,22 +185,22 @@ struct FemtoPairTrackTwoTrackResonance {
     // setup for phi
     if (doprocessPhiSameEvent || doprocessPhiMixedEvent) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
-      auto pairTrackPhiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confPhiBinning);
-      pairTrackPhiBuilder.init(&hRegistry, trackSelection, phiSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, phiHistSpec, posDauSpec, negDauSpec, pairTrackPhiHistSpec, cprHistSpec);
+      auto pairTrackPhiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackPhiBuilder.init(&hRegistry, trackSelection, phiSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, phiHistSpec, posDauSpec, negDauSpec, pairTrackPhiHistSpec, cprHistSpec);
     }
 
     // setup for kstar0
     if (doprocessKstar0SameEvent || doprocessKstar0MixedEvent) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
-      auto pairTrackKstar0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confKstar0Binning);
-      pairTrackKstar0Builder.init(&hRegistry, trackSelection, kstar0Selection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, kstar0HistSpec, posDauSpec, negDauSpec, pairTrackKstar0HistSpec, cprHistSpec);
+      auto pairTrackKstar0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackKstar0Builder.init(&hRegistry, trackSelection, kstar0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, kstar0HistSpec, posDauSpec, negDauSpec, pairTrackKstar0HistSpec, cprHistSpec);
     }
 
     // setup for kstar0
     if (doprocessRho0SameEvent || doprocessRho0MixedEvent) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
-      auto pairTrackRho0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confRho0Binning);
-      pairTrackRho0Builder.init(&hRegistry, trackSelection, rho0Selection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, rho0HistSpec, posDauSpec, negDauSpec, pairTrackRho0HistSpec, cprHistSpec);
+      auto pairTrackRho0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackRho0Builder.init(&hRegistry, trackSelection, rho0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, rho0HistSpec, posDauSpec, negDauSpec, pairTrackRho0HistSpec, cprHistSpec);
     }
   };
 

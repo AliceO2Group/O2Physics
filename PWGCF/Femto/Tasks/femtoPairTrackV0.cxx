@@ -91,6 +91,7 @@ struct FemtoPairTrackV0 {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   pairbuilder::PairTrackV0Builder<
     trackhistmanager::PrefixTrack1,
@@ -155,15 +156,15 @@ struct FemtoPairTrackV0 {
     // setup for lambda
     if (doprocessLambdaSameEvent || doprocessLambdaMixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
-      auto pairTrackLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confLambdaBinning);
-      pairTrackLambdaBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairTrackLambdaHistSpec, cprHistSpec);
+      auto pairTrackLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackLambdaBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairTrackLambdaHistSpec, cprHistSpec);
     }
 
     // setup for k0short
     if (doprocessK0shortSameEvent || doprocessK0shortMixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
-      auto pairTrackK0shortHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confLambdaBinning);
-      pairTrackK0shortBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, confPairBinning, colHistSpec, trackHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairTrackK0shortHistSpec, cprHistSpec);
+      auto pairTrackK0shortHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackK0shortBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairTrackK0shortHistSpec, cprHistSpec);
     }
 
     if (((doprocessLambdaSameEvent || doprocessLambdaMixedEvent) + (doprocessK0shortSameEvent || doprocessK0shortMixedEvent)) > 1) {
