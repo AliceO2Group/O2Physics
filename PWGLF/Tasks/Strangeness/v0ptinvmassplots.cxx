@@ -257,8 +257,8 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hK0shDCAPosDaughter", "hK0shDCAPosDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hK0shDCANegDaughter", "hK0shDCANegDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       for (int i = 0; i < nmaxHistograms; i++) {
-        pthistos::kaonPt[i] = rKaonshMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
-        pthistos::kaonSplit[i] = rKaonshSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
+        pthistos::kaonPt[i] = rKaonshMassPlotsPerPtBin.add<TH1>(fmt::format("hK0shPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hK0shPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
+        pthistos::kaonSplit[i] = rKaonshSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hK0shSplitPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hK0shSplitPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
       }
       rFeeddownMatrices.add("hK0shFeeddownMatrix", "hK0shFeeddownMatrix", {HistType::kTH2F, {{k0ShortPtAxis}, {k0ShortPtAxis}}});
       rFeeddownMatrices.add("hK0shPhiFeeddownMatrix", "hK0shPhiFeeddownMatrix", {HistType::kTH2F, {{k0ShortPtAxis}, {k0ShortPtAxis}}});
@@ -268,7 +268,6 @@ struct V0PtInvMassPlots {
       // same method as in Kzerosh above
       rPtAnalysis.add("hMassLambdavsCuts", "hMassLambdavsCuts", {HistType::kTH2F, {{partCutsAxis}, {k0ShortMassAxis}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotLambda", "hArmenterosPodolanskiPlotLambda", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
-      rPtAnalysis.add("hLambdaAlphaTestPtSpectrum", "hLambdaAlphaTestPtSpectrum", {HistType::kTH1F, {lambdaPtAxis}});
       rPtAnalysis.add("hNSigmaPosProtonFromLambdas", "hNSigmaPosProtonFromLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {lambdaPtAxis}}});
       rPtAnalysis.add("hNSigmaNegPionFromLambdas", "hNSigmaNegPionFromLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {lambdaPtAxis}}});
       rPtAnalysis.add("hLambdaV0radius", "hLambdaV0radius", {HistType::kTH1F, {{nBins, 0.0f, 50.0f}}});
@@ -277,8 +276,8 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hLambdaDCAPosDaughter", "hLambdaDCAPosDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hLambdaDCANegDaughter", "hLambdaDCANegDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       for (int i = 0; i < nmaxHistograms; i++) {
-        pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
-        pthistos::lambdaSplit[i] = rLambdaSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
+        pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hLambdaPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hLambdaPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
+        pthistos::lambdaSplit[i] = rLambdaSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hLambdaSplitPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hLambdaSplitPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
       }
       // lambdafeeddown matrices
       rFeeddownMatrices.add("hLambdaFeeddownMatrix", "hLambdaFeeddownMatrix", {HistType::kTH2F, {{lambdaPtAxis}, {lambdaPtAxis}}});
@@ -291,7 +290,6 @@ struct V0PtInvMassPlots {
       // same method as in Lambda and Kzerosh above
       rPtAnalysis.add("hMassAntilambdavsCuts", "hMassAntilambdavsCuts", {HistType::kTH2F, {{partCutsAxis}, {k0ShortMassAxis}}});
       rPtAnalysis.add("hArmenterosPodolanskiPlotAntilambda", "hArmenterosPodolanskiPlotAntilambda", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
-      rPtAnalysis.add("hAntilambdaAlphaTestPtSpectrum", "hAntilambdaAlphaTestPtSpectrum", {HistType::kTH1F, {antilambdaPtAxis}});
       rPtAnalysis.add("hNSigmaPosPionFromAntilambdas", "hNSigmaPosPionFromAntilambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {antilambdaPtAxis}}});
       rPtAnalysis.add("hNSigmaNegProtonFromAntilambdas", "hNSigmaNegProtonFromAntilambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {antilambdaPtAxis}}});
       rPtAnalysis.add("hAntilambdaV0radius", "hAntilambdaV0radius", {HistType::kTH1F, {{nBins, 0.0f, 50.0f}}});
@@ -300,8 +298,8 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hAntilambdaDCAPosDaughter", "hAntilambdaDCAPosDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hAntilambdaDCANegDaughter", "hAntilambdaDCANegDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       for (int i = 0; i < nmaxHistograms; i++) {
-        pthistos::antilambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
-        pthistos::antilambdaSplit[i] = rAntilambdaSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
+        pthistos::antilambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hAntilambdaPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hAntilambdaPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
+        pthistos::antilambdaSplit[i] = rAntilambdaSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hAntilambdaSplitPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hAntilambdaSplitPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
       }
       // antilambdafeeddown matrices
       rFeeddownMatrices.add("hAntiLambdaFeeddownMatrix", "hAntiLambdaFeeddownMatrix", {HistType::kTH2F, {{antilambdaPtAxis}, {antilambdaPtAxis}}});
