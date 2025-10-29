@@ -185,7 +185,7 @@ struct UpcRhoAnalysis {
   HistogramRegistry rSystem{"rSystem", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rMC{"rMC", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
     // QA //
     // collisions
@@ -285,42 +285,45 @@ struct UpcRhoAnalysis {
     rSystem.addClone("system/selected/no-selection/", "system/selected/Xn0n/");
     rSystem.addClone("system/selected/no-selection/", "system/selected/0nXn/");
     rSystem.addClone("system/selected/no-selection/", "system/selected/XnXn/");
-
-    // MC
-    // collisions
-    rMC.add("MC/collisions/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
-    rMC.add("MC/collisions/hPosZ", ";vertex #it{z} (cm);counts", kTH1D, {{400, -20.0, 20.0}});
-    rMC.add("MC/collisions/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
-    rMC.add("MC/collisions/hNumOfCollisionRecos", ";number of collision reconstructions;counts", kTH1D, {{6, -0.5, 5.5}});
-    // tracks
-    rMC.add("MC/tracks/all/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
-    rMC.add("MC/tracks/all/hMotherPdgCode", ";mother pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
-    rMC.add("MC/tracks/all/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
-    rMC.add("MC/tracks/all/hIsPhysicalPrimary", ";is physical primary;counts", kTH1D, {{2, -0.5, 1.5}});
-    rMC.add("MC/tracks/all/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    rMC.add("MC/tracks/all/hEta", ";#it{#eta};counts", kTH1D, {etaAxis});
-    rMC.add("MC/tracks/all/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
-    rMC.addClone("MC/tracks/all/", "MC/tracks/primaries/");
-    rMC.addClone("MC/tracks/all/", "MC/tracks/prodByGen/");
-    rMC.add("MC/tracks/hPt", ";#it{p}_{T leading} (GeV/#it{c});#it{p}_{T subleading} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    rMC.add("MC/tracks/hEta", ";#it{#eta}_{leading};#it{#eta}_{subleading};counts", kTH2D, {etaAxis, etaAxis});
-    rMC.add("MC/tracks/hPhi", ";#it{#phi}_{leading};#it{#phi}_{subleading};counts", kTH2D, {phiAxis, phiAxis});
-    // resolution
-    rMC.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
-    rMC.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
-    rMC.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {{200, -0.2, 0.2}});
-    // system
-    rMC.add("MC/system/hM", ";#it{m} (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    rMC.add("MC/system/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    rMC.add("MC/system/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
-    rMC.add("MC/system/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    rMC.add("MC/system/hY", ";#it{y};counts", kTH1D, {yAxis});
-    rMC.add("MC/system/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
-    rMC.add("MC/system/hPhiRandom", ";#Delta#it{#phi}_{random};counts", kTH1D, {deltaPhiAxis});
-    rMC.add("MC/system/hPhiCharge", ";#Delta#it{#phi}_{charge};counts", kTH1D, {deltaPhiAxis});
-    rMC.add("MC/system/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi};counts", kTH2D, {mAxis, deltaPhiAxis});
-    rMC.add("MC/system/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi};counts", kTH2D, {mAxis, deltaPhiAxis});
-    rMC.addClone("MC/system/", "MC/system/selected/");
+    
+    if (context.mOptions.get<bool>("processMCdata")) {
+      // MC
+      // collisions
+      rMC.add("MC/collisions/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
+      rMC.add("MC/collisions/hPosZ", ";vertex #it{z} (cm);counts", kTH1D, {{400, -20.0, 20.0}});
+      rMC.add("MC/collisions/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
+      if (context.mOptions.get<bool>("processCollisionRecoCheck"))
+        rMC.add("MC/collisions/hNumOfCollisionRecos", ";number of collision reconstructions;counts", kTH1D, {{6, -0.5, 5.5}});
+      // tracks
+      rMC.add("MC/tracks/all/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
+      rMC.add("MC/tracks/all/hMotherPdgCode", ";mother pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
+      rMC.add("MC/tracks/all/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
+      rMC.add("MC/tracks/all/hIsPhysicalPrimary", ";is physical primary;counts", kTH1D, {{2, -0.5, 1.5}});
+      rMC.add("MC/tracks/all/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      rMC.add("MC/tracks/all/hEta", ";#it{#eta};counts", kTH1D, {etaAxis});
+      rMC.add("MC/tracks/all/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
+      rMC.addClone("MC/tracks/all/", "MC/tracks/primaries/");
+      rMC.addClone("MC/tracks/all/", "MC/tracks/prodByGen/");
+      rMC.add("MC/tracks/hPt", ";#it{p}_{T leading} (GeV/#it{c});#it{p}_{T subleading} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+      rMC.add("MC/tracks/hEta", ";#it{#eta}_{leading};#it{#eta}_{subleading};counts", kTH2D, {etaAxis, etaAxis});
+      rMC.add("MC/tracks/hPhi", ";#it{#phi}_{leading};#it{#phi}_{subleading};counts", kTH2D, {phiAxis, phiAxis});
+      // resolution
+      rMC.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
+      rMC.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
+      rMC.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {{200, -0.2, 0.2}});
+      // system
+      rMC.add("MC/system/hM", ";#it{m} (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+      rMC.add("MC/system/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      rMC.add("MC/system/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+      rMC.add("MC/system/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+      rMC.add("MC/system/hY", ";#it{y};counts", kTH1D, {yAxis});
+      rMC.add("MC/system/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
+      rMC.add("MC/system/hPhiRandom", ";#Delta#it{#phi}_{random};counts", kTH1D, {deltaPhiAxis});
+      rMC.add("MC/system/hPhiCharge", ";#Delta#it{#phi}_{charge};counts", kTH1D, {deltaPhiAxis});
+      rMC.add("MC/system/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi};counts", kTH2D, {mAxis, deltaPhiAxis});
+      rMC.add("MC/system/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi};counts", kTH2D, {mAxis, deltaPhiAxis});
+      rMC.addClone("MC/system/", "MC/system/selected/");
+    }
   }
 
   static constexpr std::string_view AppliedSelections[3] = {"all/", "trackSelections/", "systemSelections/"};
