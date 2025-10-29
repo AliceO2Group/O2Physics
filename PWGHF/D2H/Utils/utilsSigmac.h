@@ -18,6 +18,8 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
+#include <Rtypes.h>
+
 #include <cstdint>
 
 namespace o2::hf_sigmac_utils

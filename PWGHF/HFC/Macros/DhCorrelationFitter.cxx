@@ -27,7 +27,6 @@
 #include <TMinuit.h>
 #include <TPaveText.h>
 #include <TString.h>
-#include <TText.h>
 #include <TVirtualFitter.h>
 #include <TVirtualPad.h>
 
@@ -38,150 +37,115 @@
 #include <iostream>
 
 DhCorrelationFitter::DhCorrelationFitter() : // default constructor
+                                             fHist(nullptr),
+                                             fFit(nullptr),
+                                             fGausNS(nullptr),
+                                             fGausAS(nullptr),
+                                             fPed(nullptr),
+                                             fBaseTransvReg(nullptr),
                                              fIsReflected(kFALSE),
-                                             fTypeOfFitFunc(kConstwoGaus),
-                                             fFixBase(0),
-                                             fFixMean(0),
-                                             fMinCandPt(0.),
-                                             fMaxCandPt(99.),
-                                             fMinAssoPt(0.),
-                                             fMaxAssoPt(99.),
-                                             fNpars(0),
-                                             fExtParsVals(0x0),
-                                             fExtParsLowBounds(0x0),
-                                             fExtParsUppBounds(0x0),
                                              fUseExternalPars(kFALSE),
                                              fShiftBaselineUp(kFALSE),
                                              fShiftBaselineDown(kFALSE),
                                              fIsTotal(kTRUE),
+                                             fTypeOfFitFunc(kConstwoGaus),
+                                             fFixBase(0),
+                                             fFixMean(0),
+                                             fNpars(0),
                                              fNbasleinePoints(0),
-                                             fBinsBaseline(0x0),
-                                             fHist(0x0),
+                                             fBinsBaseline(nullptr),
                                              fMinCorr(0),
                                              fMaxCorr(0),
+                                             fMinCandPt(0.),
+                                             fMaxCandPt(99.),
+                                             fMinAssoPt(0.),
+                                             fMaxAssoPt(99.),
                                              fBaseline(0.),
                                              fErrBaseline(0.),
-                                             fFit(0x0),
-                                             fGausNS(0x0),
-                                             fGausAS(0x0),
-                                             fPed(0x0),
-                                             fv2AssocPart(0.),
-                                             fv2Dmeson(0.),
                                              fNSyieldBinCount(0.),
                                              fErrNSyieldBinCount(0.),
                                              fASyieldBinCount(0.),
-                                             fErrASyieldBinCount(0.)
+                                             fErrASyieldBinCount(0.),
+                                             fv2AssocPart(0.),
+                                             fv2Dmeson(0.),
+                                             fExtParsVals(nullptr),
+                                             fExtParsLowBounds(nullptr),
+                                             fExtParsUppBounds(nullptr)
 {
 }
 
 DhCorrelationFitter::DhCorrelationFitter(TH1F* histoToFit, Double_t min, Double_t max) : // standard constructor
+                                                                                         fHist(histoToFit),
+                                                                                         fFit(nullptr),
+                                                                                         fGausNS(nullptr),
+                                                                                         fGausAS(nullptr),
+                                                                                         fPed(nullptr),
+                                                                                         fBaseTransvReg(nullptr),
                                                                                          fIsReflected(kFALSE),
-                                                                                         fTypeOfFitFunc(kConstwoGaus),
-                                                                                         fFixBase(0),
-                                                                                         fFixMean(0),
-                                                                                         fMinCandPt(0.),
-                                                                                         fMaxCandPt(99.),
-                                                                                         fMinAssoPt(0.),
-                                                                                         fMaxAssoPt(99.),
-                                                                                         fNpars(0),
-                                                                                         fExtParsVals(0x0),
-                                                                                         fExtParsLowBounds(0x0),
-                                                                                         fExtParsUppBounds(0x0),
                                                                                          fUseExternalPars(kFALSE),
                                                                                          fShiftBaselineUp(kFALSE),
                                                                                          fShiftBaselineDown(kFALSE),
                                                                                          fIsTotal(kTRUE),
+                                                                                         fTypeOfFitFunc(kConstwoGaus),
+                                                                                         fFixBase(0),
+                                                                                         fFixMean(0),
+                                                                                         fNpars(0),
                                                                                          fNbasleinePoints(0),
-                                                                                         fBinsBaseline(0x0),
-                                                                                         fHist(0x0),
-                                                                                         fMinCorr(0.),
-                                                                                         fMaxCorr(0.),
+                                                                                         fBinsBaseline(nullptr),
+                                                                                         fMinCorr(min),
+                                                                                         fMaxCorr(max),
+                                                                                         fMinCandPt(0.),
+                                                                                         fMaxCandPt(99.),
+                                                                                         fMinAssoPt(0.),
+                                                                                         fMaxAssoPt(99.),
                                                                                          fBaseline(0.),
                                                                                          fErrBaseline(0.),
-                                                                                         fFit(0x0),
-                                                                                         fGausNS(0x0),
-                                                                                         fGausAS(0x0),
-                                                                                         fPed(0x0),
-                                                                                         fBaseTransvReg(0x0),
-                                                                                         fv2AssocPart(0.),
-                                                                                         fv2Dmeson(0.),
                                                                                          fNSyieldBinCount(0.),
                                                                                          fErrNSyieldBinCount(0.),
                                                                                          fASyieldBinCount(0.),
-                                                                                         fErrASyieldBinCount(0.)
+                                                                                         fErrASyieldBinCount(0.),
+                                                                                         fv2AssocPart(0.),
+                                                                                         fv2Dmeson(0.),
+                                                                                         fExtParsVals(nullptr),
+                                                                                         fExtParsLowBounds(nullptr),
+                                                                                         fExtParsUppBounds(nullptr)
 {
-  fHist = histoToFit;
-  fMinCorr = min;
-  fMaxCorr = max;
 }
 
-DhCorrelationFitter::DhCorrelationFitter(const DhCorrelationFitter& source) : // copy constructor
-                                                                              fIsReflected(source.fIsReflected),
-                                                                              fTypeOfFitFunc(source.fTypeOfFitFunc),
-                                                                              fFixBase(source.fFixBase),
-                                                                              fFixMean(source.fFixMean),
-                                                                              fMinCandPt(source.fMinCandPt),
-                                                                              fMaxCandPt(source.fMaxCandPt),
-                                                                              fMinAssoPt(source.fMinAssoPt),
-                                                                              fMaxAssoPt(source.fMaxAssoPt),
-                                                                              fNpars(source.fNpars),
-                                                                              fExtParsVals(source.fExtParsVals),
-                                                                              fExtParsLowBounds(source.fExtParsLowBounds),
-                                                                              fExtParsUppBounds(source.fExtParsUppBounds),
-                                                                              fUseExternalPars(source.fUseExternalPars),
-                                                                              fShiftBaselineUp(source.fShiftBaselineUp),
-                                                                              fShiftBaselineDown(source.fShiftBaselineDown),
-                                                                              fIsTotal(source.fIsTotal),
-                                                                              fNbasleinePoints(source.fNbasleinePoints),
-                                                                              fBinsBaseline(source.fBinsBaseline),
-                                                                              fHist(source.fHist),
-                                                                              fMinCorr(source.fMinCorr),
-                                                                              fMaxCorr(source.fMaxCorr),
-                                                                              fBaseline(source.fBaseline),
-                                                                              fErrBaseline(source.fErrBaseline),
-                                                                              fFit(source.fFit),
-                                                                              fGausNS(source.fGausNS),
-                                                                              fGausAS(source.fGausAS),
-                                                                              fPed(source.fPed),
-                                                                              fBaseTransvReg(source.fBaseTransvReg),
-                                                                              fv2AssocPart(source.fv2AssocPart),
-                                                                              fv2Dmeson(source.fv2Dmeson),
-                                                                              fNSyieldBinCount(source.fNSyieldBinCount),
-                                                                              fErrNSyieldBinCount(source.fErrNSyieldBinCount),
-                                                                              fASyieldBinCount(source.fASyieldBinCount),
-                                                                              fErrASyieldBinCount(source.fErrASyieldBinCount)
-{
-}
+DhCorrelationFitter::DhCorrelationFitter(const DhCorrelationFitter& source)
+
+  = default;
 
 DhCorrelationFitter::~DhCorrelationFitter()
 // destructor
 {
   Info("DhCorrelationFitter.cxx", "Destructor is calling");
 
-  if (fHist) {
+  if (fHist != nullptr) {
     delete fHist;
-    fHist = 0;
+    fHist = nullptr;
   }
-  if (fFit) {
+  if (fFit != nullptr) {
     delete fFit;
-    fFit = 0;
+    fFit = nullptr;
   }
-  if (fGausNS) {
+  if (fGausNS != nullptr) {
     delete fGausNS;
-    fGausNS = 0;
+    fGausNS = nullptr;
   }
   // if (fGausNS2) {delete fGausNS2; fGausNS2 = 0;}
-  if (fPed) {
+  if (fPed != nullptr) {
     delete fPed;
-    fPed = 0;
+    fPed = nullptr;
   }
 }
 
 DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& cfit)
 // assignment operator
 {
-  if (&cfit == this)
+  if (&cfit == this) {
     return *this;
+  }
 
   fIsReflected = cfit.fIsReflected;
   fTypeOfFitFunc = cfit.fTypeOfFitFunc;
@@ -196,6 +160,9 @@ DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& c
   fExtParsLowBounds = cfit.fExtParsLowBounds;
   fExtParsUppBounds = cfit.fExtParsUppBounds;
   fUseExternalPars = cfit.fUseExternalPars;
+  fShiftBaselineUp = cfit.fShiftBaselineUp;
+  fShiftBaselineDown = cfit.fShiftBaselineDown;
+  fIsTotal = cfit.fIsTotal;
   fNbasleinePoints = cfit.fNbasleinePoints;
   fBinsBaseline = cfit.fBinsBaseline;
   fHist = cfit.fHist;
@@ -207,6 +174,9 @@ DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& c
   fGausNS = cfit.fGausNS;
   fGausAS = cfit.fGausAS;
   fPed = cfit.fPed;
+  fBaseTransvReg = cfit.fBaseTransvReg;
+  fv2AssocPart = cfit.fv2AssocPart;
+  fv2Dmeson = cfit.fv2Dmeson;
   fNSyieldBinCount = cfit.fNSyieldBinCount;
   fErrNSyieldBinCount = cfit.fErrNSyieldBinCount;
   fASyieldBinCount = cfit.fASyieldBinCount;
@@ -215,7 +185,7 @@ DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& c
   return *this;
 }
 
-void DhCorrelationFitter::SetExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds)
+void DhCorrelationFitter::setExternalValsAndBounds(Int_t nPars, const Double_t* vals, const Double_t* lowBounds, const Double_t* uppBounds)
 {
 
   fNpars = nPars;
@@ -229,11 +199,9 @@ void DhCorrelationFitter::SetExternalValsAndBounds(Int_t nPars, Double_t* vals, 
     fExtParsLowBounds[i] = lowBounds[i];
     fExtParsUppBounds[i] = uppBounds[i];
   }
-
-  return;
 }
 
-void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
+void DhCorrelationFitter::fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
 {
   // -> fFixBase = 0 : baseline free
   //             = 1 : fix the baseline to the minimum of the histogram
@@ -247,23 +215,24 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
   //             = 2 : AS mean fixed to pi, NS mean free
   //             = 3 : NS mean fixed to 0, AS mean to pi
 
-  if (useExternalPars)
+  if (useExternalPars) {
     fUseExternalPars = kTRUE;
+  }
 
   if (fFixBase != 0 && fFixBase != 6) {
     Printf("[INFO] DhCorrelationFitter::Fitting, Finding baseline");
-    FindBaseline();
+    findBaseline();
   }
   if (fFixBase == 0) {
     // set initial value of the fBaseline
-    fBaseline = CalculateBaseline(fHist, fIsTotal);
+    fBaseline = calculateBaseline(fHist, fIsTotal);
   }
   Printf("[INFO] DhCorrelationFitter::Fitting, Setting Function");
   if (fTypeOfFitFunc == 7) { // case for v2 modulation
-    FitBaselineWv2();        // to contrain the B parameter in the fit function for the pedestal
+    fitBaselineWv2();        // to contrain the B parameter in the fit function for the pedestal
     Printf("[INFO] B parameter for v2 fit: %.3f", fBaseline);
   }
-  SetFitFunction();
+  setFitFunction();
 
   if (fFixBase != 0) {
     fFit->FixParameter(0, fBaseline);
@@ -272,17 +241,19 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
     fFit->FixParameter(2, 0.);
   }
   if (fFixMean == 2 || fFixMean == 3) {
-    if (fTypeOfFitFunc != 0 && fTypeOfFitFunc != 3)
+    if (fTypeOfFitFunc != 0 && fTypeOfFitFunc != 3) {
       fFit->FixParameter(5, TMath::Pi());
-    if (fTypeOfFitFunc == 3 || fTypeOfFitFunc == 6)
+    }
+    if (fTypeOfFitFunc == 3 || fTypeOfFitFunc == 6) {
       fFit->FixParameter(2, TMath::Pi());
+    }
   }
 
   Printf("[INFO] DhCorrelationFitter::Fitting, Fitting");
   TVirtualFitter::SetMaxIterations(20000);
-  TFitResultPtr fitptr = fHist->Fit(fFit, "RIMES", "", fMinCorr, fMaxCorr);
-  TMatrixD cor = fitptr->GetCorrelationMatrix();
-  TMatrixD cov = fitptr->GetCovarianceMatrix();
+  TFitResultPtr const fitptr = fHist->Fit(fFit, "RIMES", "", fMinCorr, fMaxCorr);
+  TMatrixD const cor = fitptr->GetCorrelationMatrix();
+  TMatrixD const cov = fitptr->GetCovarianceMatrix();
   printf("[INFO] Correlation Matrix - The final one! \n");
   cor.Print();
   gMinuit->mnmatu(1);
@@ -293,10 +264,10 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
     fErrBaseline = fFit->GetParError(0);
   }
   Printf("[INFO] DhCorrelationFitter::Fitting, Calculating yields with BC");
-  CalculateYieldsAboveBaseline();
+  calculateYieldsAboveBaseline();
   fHist->SetTitle(";#Delta#varphi (rad); #frac{1}{N_{D}}#frac{dN^{assoc}}{d#Delta#varphi} (rad^{-1})");
   Printf("[INFO] DhCorrelationFitter::Fitting, Now drawing, if requested");
-  SetSingleTermsForDrawing(drawSplitTerm);
+  setSingleTermsForDrawing(drawSplitTerm);
 
   // NS yield from bin counting
   double fNSyield = 0.;
@@ -321,7 +292,7 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
   printf("[RESULT MINE] Bin counting results: NS Yield = %.3f +- %.3f \n[RESULT MINE] Bin counting results: AS Yield: %.3f +- %.3f \n[RESULT MINE] baseline = %.3f \n", fNSyield, fNSyieldErr, fASyield, fASyieldErr, baselinBinCount);
 }
 
-void DhCorrelationFitter::SetFitFunction()
+void DhCorrelationFitter::setFitFunction()
 {
   // -> fitFunc = 1: const + G NS + G AS (w/o periodicity)
   //            = 2: const + G NS + G AS  (w/ periodicity)
@@ -331,7 +302,7 @@ void DhCorrelationFitter::SetFitFunction()
   //            = 6: const + VonMises AS
   //            = 7: baseline w v2 modulation + G NS + G AS  (w/ periodicity)
 
-  if (fFit) {
+  if (fFit != nullptr) {
     delete fFit;
     delete fGausNS;
     // delete fGausNS2;
@@ -596,7 +567,7 @@ void DhCorrelationFitter::SetFitFunction()
   }
 }
 
-void DhCorrelationFitter::SetPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline)
+void DhCorrelationFitter::setPointsForBaseline(Int_t nBaselinePoints, const Int_t* binsBaseline)
 {
 
   fNbasleinePoints = nBaselinePoints;
@@ -606,17 +577,15 @@ void DhCorrelationFitter::SetPointsForBaseline(Int_t nBaselinePoints, Int_t* bin
   for (int i = 0; i < fNbasleinePoints; i++) {
     fBinsBaseline[i] = binsBaseline[i];
   }
-
-  return;
 }
 
-Double_t DhCorrelationFitter::FindBaseline()
+Double_t DhCorrelationFitter::findBaseline()
 {
 
   // baseline free
   if (fFixBase == 0) {
     Printf("[INFO] DhCorrelationFitter::FindBasline(). The baseline option is set to free baseline: now the full fit will be done. Beware!");
-    Fitting(); // TODO: not sure
+    fitting(); // TODO: not sure
     return fBaseline;
   }
 
@@ -649,13 +618,14 @@ Double_t DhCorrelationFitter::FindBaseline()
   // fix the baseline to the weighted average of the abs(fFixBaseline) lower points
   if (fFixBase < 0) {
     Int_t npointsAv = TMath::Abs(fFixBase);
-    Int_t* ind = new Int_t[fHist->GetNbinsX()];
-    Float_t* hval = new Float_t[fHist->GetNbinsX()];
+    auto* ind = new Int_t[fHist->GetNbinsX()];
+    auto* hval = new Float_t[fHist->GetNbinsX()];
     for (Int_t k = 1; k <= fHist->GetNbinsX(); k++) {
       hval[k - 1] = fHist->GetBinContent(k);
     }
-    Double_t errAv = 0., Av = 0.;
+    Double_t errAv = 0., av = 0.;
     TMath::Sort(fHist->GetNbinsX(), hval, ind, kFALSE); //  KFALSE -> increasing order
+    delete[] hval;
     // Average of abs(fFixBase) lower points
     for (Int_t k = 0; k < npointsAv; k++) {
       if (fHist->GetBinError(ind[k] + 1) == 0.) // in case of null entries which induce a crash. Could bias the basline in upward direction!
@@ -664,13 +634,14 @@ Double_t DhCorrelationFitter::FindBaseline()
         npointsAv++;
         continue;
       }
-      Av += fHist->GetBinContent(ind[k] + 1) / (fHist->GetBinError(ind[k] + 1) * fHist->GetBinError(ind[k] + 1));
+      av += fHist->GetBinContent(ind[k] + 1) / (fHist->GetBinError(ind[k] + 1) * fHist->GetBinError(ind[k] + 1));
       errAv += 1. / (fHist->GetBinError(ind[k] + 1) * fHist->GetBinError(ind[k] + 1));
     }
-    Av /= errAv;
+    delete[] ind;
+    av /= errAv;
     errAv = TMath::Sqrt(1. / errAv);
-    printf("[RESULT] Average fBaseline: %.3f +- %.3f", Av, errAv);
-    fBaseline = Av;
+    printf("[RESULT] Average fBaseline: %.3f +- %.3f", av, errAv);
+    fBaseline = av;
     fErrBaseline = errAv;
 
     if (fShiftBaselineUp) {
@@ -688,23 +659,24 @@ Double_t DhCorrelationFitter::FindBaseline()
 
   // zyam at pi/2. Fix the baseline averaging the 2 points around +-pi/2 value
   if (fFixBase == 2) {
-    Double_t errAv = 0., Av = 0.;
+    Double_t errAv = 0., av = 0.;
     Int_t binPhi = fHist->FindBin(TMath::Pi() / 2.);
-    Av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
+    av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     errAv += 1. / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     if (!fIsReflected) {
       binPhi = fHist->FindBin(-TMath::Pi() / 2.);
-      if (binPhi < 1)
+      if (binPhi < 1) {
         binPhi = 1;
-      Av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
+      }
+      av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
       errAv += 1. / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     } else {
       printf("[INFO] Reflected histo: only the point at +pi/2 used to evaluate baseline");
     }
-    Av /= errAv;
+    av /= errAv;
     errAv = TMath::Sqrt(1. / errAv);
-    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", Av, errAv);
-    fBaseline = Av;
+    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", av, errAv);
+    fBaseline = av;
     fErrBaseline = errAv;
 
     if (fShiftBaselineUp) {
@@ -726,15 +698,15 @@ Double_t DhCorrelationFitter::FindBaseline()
       printf("[ERROR] No baseline points set for the baseline evaluation, SetPointsForBaseline(Int_t nBaselinePoints, Double_t* valsBaseline). Returning -1");
       return -1;
     }
-    Double_t errAv = 0., Av = 0.;
+    Double_t errAv = 0., av = 0.;
     for (int i = 0; i < fNbasleinePoints; i++) {
-      Av += fHist->GetBinContent(fBinsBaseline[i]) / (fHist->GetBinError(fBinsBaseline[i]) * fHist->GetBinError(fBinsBaseline[i]));
+      av += fHist->GetBinContent(fBinsBaseline[i]) / (fHist->GetBinError(fBinsBaseline[i]) * fHist->GetBinError(fBinsBaseline[i]));
       errAv += 1. / (fHist->GetBinError(fBinsBaseline[i]) * fHist->GetBinError(fBinsBaseline[i]));
     }
-    Av /= errAv;
+    av /= errAv;
     errAv = TMath::Sqrt(1. / errAv);
-    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", Av, errAv);
-    fBaseline = Av;
+    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", av, errAv);
+    fBaseline = av;
     fErrBaseline = errAv;
 
     if (fShiftBaselineUp) {
@@ -751,8 +723,8 @@ Double_t DhCorrelationFitter::FindBaseline()
   }
 
   if (fFixBase == 4) {
-    fBaseline = CalculateBaseline(fHist, fIsTotal); // TODO: add the option for total range/ reflected range to pass in input
-    fErrBaseline = CalculateBaselineError(fHist, fIsTotal);
+    fBaseline = calculateBaseline(fHist, fIsTotal); // TODO: add the option for total range/ reflected range to pass in input
+    fErrBaseline = calculateBaselineError(fHist, fIsTotal);
 
     if (fShiftBaselineUp) {
       fBaseline += fErrBaseline;
@@ -771,11 +743,11 @@ Double_t DhCorrelationFitter::FindBaseline()
   return -1.;
 }
 
-void DhCorrelationFitter::FitBaselineWv2()
+void DhCorrelationFitter::fitBaselineWv2()
 {
 
-  fBaseTransvReg = new TF1("fBaseTransvReg", [](double* x, double* p) {
-    double xx = x[0]; // x value
+  fBaseTransvReg = new TF1("fBaseTransvReg", [](const double* x, const double* p) {
+    double const xx = x[0]; // x value
     if ((xx >= -TMath::Pi()/2 && xx <= -3*TMath::Pi()/8) || (xx >= 3*TMath::Pi()/8 && xx <= 5*TMath::Pi()/8) || (xx >= 11*TMath::Pi()/8 && xx <= 3*TMath::Pi()/2)) {
         // Gaussian example: p[0] = amplitude, p[1] = mean, p[2] = sigma
         return p[0]*(1+2*p[1]*p[2]*TMath::Cos(2*xx));
@@ -785,33 +757,33 @@ void DhCorrelationFitter::FitBaselineWv2()
   fBaseTransvReg->FixParameter(1, fv2AssocPart);
   fBaseTransvReg->FixParameter(2, fv2Dmeson);
 
-  TFitResultPtr rFit = fHist->Fit(fBaseTransvReg, "RIMES", "", fMinCorr, fMaxCorr);
+  TFitResultPtr const rFit = fHist->Fit(fBaseTransvReg, "RIMES", "", fMinCorr, fMaxCorr);
   fBaseline = fBaseTransvReg->GetParameter(0);
-
-  return;
 }
 
-void DhCorrelationFitter::CalculateYieldsAboveBaseline()
+void DhCorrelationFitter::calculateYieldsAboveBaseline()
 {
 
   fNSyieldBinCount = 0;
   fErrNSyieldBinCount = 0;
   fASyieldBinCount = 0;
   fErrASyieldBinCount = 0;
-  cout << "[RESULT] Baseline: " << fBaseline << " +- " << fErrBaseline << endl;
+  std::cout << "[RESULT] Baseline: " << fBaseline << " +- " << fErrBaseline << std::endl;
   Int_t binMinNS = fHist->FindBin(-1.5); // slightly more than -pi/2
-  if (binMinNS < 1)
-    binMinNS = 1;      // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
-  Int_t binMaxNS = 6;  // fHist -> FindBin(1.5); // slightly less than +pi/2
-  Int_t binMinAS = 11; // fHist -> FindBin(1.6); // slightly more than +pi/2
-  Int_t binMaxAS = 16; // fHist -> FindBin(3.14+1.5); // slightly less than +3pi/2
-  if (binMaxAS > fHist->GetNbinsX())
+  if (binMinNS < 1) {
+    binMinNS = 1; // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
+  }
+  Int_t const binMaxNS = 6;  // fHist -> FindBin(1.5); // slightly less than +pi/2
+  Int_t const binMinAS = 11; // fHist -> FindBin(1.6); // slightly more than +pi/2
+  Int_t binMaxAS = 16;       // fHist -> FindBin(3.14+1.5); // slightly less than +3pi/2
+  if (binMaxAS > fHist->GetNbinsX()) {
     binMaxAS = fHist->GetNbinsX(); // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
-  cout << "N bins : " << fHist->GetNbinsX() << endl;
-  cout << "binMinNS : " << binMinNS << endl;
-  cout << "binMaxNS : " << binMaxNS << endl;
-  cout << "binMinAS : " << binMinAS << endl;
-  cout << "binMaxAS : " << binMaxAS << endl;
+  }
+  std::cout << "N bins : " << fHist->GetNbinsX() << std::endl;
+  std::cout << "binMinNS : " << binMinNS << std::endl;
+  std::cout << "binMaxNS : " << binMaxNS << std::endl;
+  std::cout << "binMinAS : " << binMinAS << std::endl;
+  std::cout << "binMaxAS : " << binMaxAS << std::endl;
   // Near Side Yield from bin counting
   for (Int_t bmNS = binMinNS; bmNS <= binMaxNS; bmNS++) {
     fNSyieldBinCount += 2 * (fHist->GetBinContent(bmNS) - fBaseline) * fHist->GetBinWidth(bmNS);
@@ -827,22 +799,20 @@ void DhCorrelationFitter::CalculateYieldsAboveBaseline()
   fErrASyieldBinCount = TMath::Sqrt(fErrASyieldBinCount);
 
   printf("[RESULT] Bin counting results: NS Yield = %.3f +- %.3f \n[RESULT] Bin counting results: AS Yield: %.3f +- %.3f \n", fNSyieldBinCount, fErrNSyieldBinCount, fASyieldBinCount, fErrASyieldBinCount);
-
-  return;
 }
 
-Double_t DhCorrelationFitter::CalculateBaseline(TH1F*& histo, Bool_t totalRange)
+Double_t DhCorrelationFitter::calculateBaseline(TH1F*& histo, Bool_t totalRange)
 {
 
   // total range = 2*Pi
   // half range = Pi , for histogram reflected under symmetric assumption
 
-  Double_t baseline, errBaseline;
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t binPhiHalf = nBinsPhi / 2;
-  Int_t binPhiHalfMinus1 = nBinsPhi / 2 - 1;
-  Int_t binPhiHalfPlus1 = nBinsPhi / 2 + 1;
-  Int_t binPhiHalfPlus2 = nBinsPhi / 2 + 1;
+  Double_t baseline;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const binPhiHalf = nBinsPhi / 2;
+  Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
+  Int_t const binPhiHalfPlus1 = nBinsPhi / 2 + 1;
+  Int_t const binPhiHalfPlus2 = nBinsPhi / 2 + 1;
 
   if (totalRange) {
     printf("[INFO] Using total deltaPhi range \n");
@@ -904,18 +874,18 @@ Double_t DhCorrelationFitter::CalculateBaseline(TH1F*& histo, Bool_t totalRange)
   return baseline;
 }
 
-Double_t DhCorrelationFitter::CalculateBaselineError(TH1F*& histo, Bool_t totalRange)
+Double_t DhCorrelationFitter::calculateBaselineError(TH1F*& histo, Bool_t totalRange)
 {
 
   // total range = 2*Pi
   // half range = Pi , for histogram reflected under symmetric assumption
 
   Double_t errBaseline;
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t binPhiHalf = nBinsPhi / 2;
-  Int_t binPhiHalfMinus1 = nBinsPhi / 2 - 1;
-  Int_t binPhiHalfPlus1 = nBinsPhi / 2 + 1;
-  Int_t binPhiHalfPlus2 = nBinsPhi / 2 + 1;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const binPhiHalf = nBinsPhi / 2;
+  Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
+  Int_t const binPhiHalfPlus1 = nBinsPhi / 2 + 1;
+  Int_t const binPhiHalfPlus2 = nBinsPhi / 2 + 1;
 
   if (totalRange) {
     // baseline evaluated considering: the two first points, the last two points and four points in the middle (corresponding to the outer points)
@@ -954,9 +924,9 @@ Double_t DhCorrelationFitter::CalculateBaselineError(TH1F*& histo, Bool_t totalR
   return errBaseline;
 }
 
-void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
+void DhCorrelationFitter::setSingleTermsForDrawing(Bool_t draw)
 {
-  Double_t* par = 0;
+  Double_t* par = nullptr;
   if (fTypeOfFitFunc == 1 || fTypeOfFitFunc == 2 || fTypeOfFitFunc == 5) {
     par = new Double_t[7];
   } else if (fTypeOfFitFunc == 3 || fTypeOfFitFunc == 6) {
@@ -987,15 +957,15 @@ void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
     fGausAS->SetLineColor(kGreen);
     fGausAS->SetLineWidth(4);
 
-    TPaveText* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
+    auto* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
     pvStatTests1->SetFillStyle(0);
     pvStatTests1->SetTextSize(0.045);
     pvStatTests1->SetBorderSize(0);
-    TText *t0, *t1, *t2, *t3;
-    t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
-    t1 = pvStatTests1->AddText(0., 0.80, Form("Ped = %.3f#pm%.3f ", fBaseline, fErrBaseline));
-    t2 = pvStatTests1->AddText(0., 0.65, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
-    t3 = pvStatTests1->AddText(0., 0.50, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
+    // TText *t0, *t1, *t2, *t3;
+    // t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
+    // t1 = pvStatTests1->AddText(0., 0.80, Form("Ped = %.3f#pm%.3f ", fBaseline, fErrBaseline));
+    // t2 = pvStatTests1->AddText(0., 0.65, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
+    // t3 = pvStatTests1->AddText(0., 0.50, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
 
     if (draw) {
       fFit->Draw("same");
@@ -1027,18 +997,18 @@ void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
     fGausNS->SetLineWidth(4);
     fGausAS->SetLineWidth(4);
 
-    TPaveText* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
+    auto* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
     pvStatTests1->SetFillStyle(0);
     pvStatTests1->SetTextSize(0.045);
     pvStatTests1->SetBorderSize(0);
-    TText *t0, *t1, *t2, *t3, *t4, *t5, *t6;
-    t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
-    t1 = pvStatTests1->AddText(0., 0.80, Form("Ped = %.3f#pm%.3f ", fBaseline, fErrBaseline));
-    t2 = pvStatTests1->AddText(0., 0.65, Form("NS Y = %.3f#pm%.3f ", fFit->GetParameter("NS Y"), fFit->GetParError(fFit->GetParNumber("NS Y"))));
-    t3 = pvStatTests1->AddText(0., 0.50, Form("NS #sigma = %.3f#pm%.3f ", fFit->GetParameter("NS #sigma"), fFit->GetParError(fFit->GetParNumber("NS #sigma"))));
-    t4 = pvStatTests1->AddText(0., 0.35, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
-    t5 = pvStatTests1->AddText(0., 0.20, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
-    t6 = pvStatTests1->AddText(0., 0.05, Form("#beta = %.3f#pm%.3f ", fFit->GetParameter("NS shape par"), fFit->GetParError(fFit->GetParNumber("NS shape par"))));
+    // TText *t0, *t1, *t2, *t3, *t4, *t5, *t6;
+    // t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
+    // t1 = pvStatTests1->AddText(0., 0.80, Form("Ped = %.3f#pm%.3f ", fBaseline, fErrBaseline));
+    // t2 = pvStatTests1->AddText(0., 0.65, Form("NS Y = %.3f#pm%.3f ", fFit->GetParameter("NS Y"), fFit->GetParError(fFit->GetParNumber("NS Y"))));
+    // t3 = pvStatTests1->AddText(0., 0.50, Form("NS #sigma = %.3f#pm%.3f ", fFit->GetParameter("NS #sigma"), fFit->GetParError(fFit->GetParNumber("NS #sigma"))));
+    // t4 = pvStatTests1->AddText(0., 0.35, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
+    // t5 = pvStatTests1->AddText(0., 0.20, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
+    // t6 = pvStatTests1->AddText(0., 0.05, Form("#beta = %.3f#pm%.3f ", fFit->GetParameter("NS shape par"), fFit->GetParError(fFit->GetParNumber("NS shape par"))));
 
     if (draw) {
       fFit->Draw("same");
@@ -1077,25 +1047,25 @@ void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
     fGausNS->SetLineWidth(4);
     fGausAS->SetLineWidth(4);
 
-    TPaveText* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
+    auto* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
     pvStatTests1->SetFillStyle(0);
     pvStatTests1->SetTextSize(0.045);
     pvStatTests1->SetBorderSize(0);
-    TText *t0, *t1, *t2, *t3, *t4, *t5, *t6, *t7, *t8;
-    t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
-    t2 = pvStatTests1->AddText(0., 0.80, Form("NS Y = %.3f#pm%.3f ", fFit->GetParameter("NS Y"), fFit->GetParError(fFit->GetParNumber("NS Y"))));
-    t3 = pvStatTests1->AddText(0., 0.65, Form("NS #sigma = %.3f#pm%.3f ", fFit->GetParameter("NS #sigma"), fFit->GetParError(fFit->GetParNumber("NS #sigma"))));
-    t4 = pvStatTests1->AddText(0., 0.50, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
-    t5 = pvStatTests1->AddText(0., 0.35, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
+    // TText *t0, *t1, *t2, *t3, *t4, *t5, *t6, *t7, *t8;
+    // t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
+    // t2 = pvStatTests1->AddText(0., 0.80, Form("NS Y = %.3f#pm%.3f ", fFit->GetParameter("NS Y"), fFit->GetParError(fFit->GetParNumber("NS Y"))));
+    // t3 = pvStatTests1->AddText(0., 0.65, Form("NS #sigma = %.3f#pm%.3f ", fFit->GetParameter("NS #sigma"), fFit->GetParError(fFit->GetParNumber("NS #sigma"))));
+    // t4 = pvStatTests1->AddText(0., 0.50, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
+    // t5 = pvStatTests1->AddText(0., 0.35, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
     // t6 = pvStatTests1 -> AddText(0., 0.20, Form("#beta = %.3f#pm%.3f ", fFit -> GetParameter("NS shape par"), fFit -> GetParError(fFit->GetParNumber("NS shape par"))));
 
-    TPaveText* pvStatTests2 = new TPaveText(0.51, 0.28, 0.85, 0.60, "NDC");
+    auto* pvStatTests2 = new TPaveText(0.51, 0.28, 0.85, 0.60, "NDC");
     pvStatTests2->SetFillStyle(0);
     pvStatTests2->SetTextSize(0.045);
     pvStatTests2->SetBorderSize(0);
-    t1 = pvStatTests2->AddText(0., 1.00, Form("Ped = %.3f#pm%.3f ", fFit->GetParameter("ped"), fErrBaseline /*fFit -> GetParError(fFit->GetParNumber("ped")*/));
-    t7 = pvStatTests2->AddText(0., 0.65, Form("v_{2}^{hadron} = %.3f#pm%.3f ", fFit->GetParameter("v_{2} hadron"), fFit->GetParError(fFit->GetParNumber("v_{2} hadron"))));
-    t8 = pvStatTests2->AddText(0., 0.35, Form("v_{2}^{D} = %.3f#pm%.3f ", fFit->GetParameter("v_{2} D meson"), fFit->GetParError(fFit->GetParNumber("v_{2} D meson"))));
+    // t1 = pvStatTests2->AddText(0., 1.00, Form("Ped = %.3f#pm%.3f ", fFit->GetParameter("ped"), fErrBaseline /*fFit -> GetParError(fFit->GetParNumber("ped")*/));
+    // t7 = pvStatTests2->AddText(0., 0.65, Form("v_{2}^{hadron} = %.3f#pm%.3f ", fFit->GetParameter("v_{2} hadron"), fFit->GetParError(fFit->GetParNumber("v_{2} hadron"))));
+    // t8 = pvStatTests2->AddText(0., 0.35, Form("v_{2}^{D} = %.3f#pm%.3f ", fFit->GetParameter("v_{2} D meson"), fFit->GetParError(fFit->GetParNumber("v_{2} D meson"))));
 
     if (draw) {
       fFit->Draw("same");
@@ -1129,17 +1099,17 @@ void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
     fGausNS->SetLineWidth(4);
     fGausAS->SetLineWidth(4);
 
-    TPaveText* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
+    auto* pvStatTests1 = new TPaveText(0.51, 0.58, 0.85, 0.90, "NDC");
     pvStatTests1->SetFillStyle(0);
     pvStatTests1->SetTextSize(0.045);
     pvStatTests1->SetBorderSize(0);
-    TText *t0, *t1, *t2, *t3, *t4, *t5, *t6;
-    t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
-    t1 = pvStatTests1->AddText(0., 0.80, Form("Ped = %.3f#pm%.3f ", fBaseline, fErrBaseline));
-    t2 = pvStatTests1->AddText(0., 0.65, Form("NS Y = %.3f#pm%.3f ", fFit->GetParameter("NS Y"), fFit->GetParError(fFit->GetParNumber("NS Y"))));
-    t3 = pvStatTests1->AddText(0., 0.50, Form("NS #sigma = %.3f#pm%.3f ", fFit->GetParameter("NS #sigma"), fFit->GetParError(fFit->GetParNumber("NS #sigma"))));
-    t4 = pvStatTests1->AddText(0., 0.35, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
-    t5 = pvStatTests1->AddText(0., 0.20, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
+    // TText *t0, *t1, *t2, *t3, *t4, *t5, *t6;
+    // t0 = pvStatTests1->AddText(0., 1.00, Form("#chi^{2}/ndf = %.1f/%d ", fFit->GetChisquare(), fFit->GetNDF()));
+    // t1 = pvStatTests1->AddText(0., 0.80, Form("Ped = %.3f#pm%.3f ", fBaseline, fErrBaseline));
+    // t2 = pvStatTests1->AddText(0., 0.65, Form("NS Y = %.3f#pm%.3f ", fFit->GetParameter("NS Y"), fFit->GetParError(fFit->GetParNumber("NS Y"))));
+    // t3 = pvStatTests1->AddText(0., 0.50, Form("NS #sigma = %.3f#pm%.3f ", fFit->GetParameter("NS #sigma"), fFit->GetParError(fFit->GetParNumber("NS #sigma"))));
+    // t4 = pvStatTests1->AddText(0., 0.35, Form("AS Y = %.3f#pm%.3f ", fFit->GetParameter("AS Y"), fFit->GetParError(fFit->GetParNumber("AS Y"))));
+    // t5 = pvStatTests1->AddText(0., 0.20, Form("AS #sigma = %.3f#pm%.3f ", fFit->GetParameter("AS #sigma"), fFit->GetParError(fFit->GetParNumber("AS #sigma"))));
 
     if (draw) {
       fFit->Draw("same");
@@ -1149,4 +1119,5 @@ void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
       pvStatTests1->Draw("same");
     }
   }
+  delete[] par;
 }

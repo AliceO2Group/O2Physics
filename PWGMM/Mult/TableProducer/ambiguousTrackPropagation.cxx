@@ -76,6 +76,7 @@ struct AmbiguousTrackPropagation {
 
   Configurable<bool> produceExtra{"produceExtra", false, "Produce table with refitted track parameters"};
   Configurable<bool> produceHistos{"produceHistos", false, "Produce control histograms"};
+  Configurable<bool> removeTrivialAssoc{"removeTrivialAssoc", false, "Skip trivial associations"};
 
   ConfigurableAxis binsDCAxy{"binsDCAxy", {200, -1., 1.}, ""};
   ConfigurableAxis binsDCAz{"binsDCAz", {200, -1., 1.}, ""};
@@ -108,6 +109,9 @@ struct AmbiguousTrackPropagation {
         registry.add({"TracksAmbDegree", " ; N_{coll}^{comp}", {HistType::kTH1D, {{41, -0.5, 40.5}}}});
         registry.add({"TrackIsAmb", " ; isAmbiguous", {HistType::kTH1D, {{2, -0.5, 1.5}}}});
         if (doprocessMFTReassoc3D) {
+          registry.add({"TracksAmbDegreeWoTrivial", " ; N_{coll}^{comp}", {HistType::kTH1F, {{41, -0.5, 40.5}}}});
+          registry.add({"TracksFirstDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaXYAxis}}});
+          registry.add({"TracksFirstDCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcaZAxis}}});
           registry.add({"TracksDCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcaZAxis}}});
           registry.add({"ReassignedDCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcaZAxis}}});
           registry.add({"TracksOrigDCAZ", " ; DCA_{Z} (wrt orig coll) (cm)", {HistType::kTH1F, {dcaZAxis}}});
@@ -437,6 +441,16 @@ struct AmbiguousTrackPropagation {
       bestDCA[1] = 999.f;    // minimal DCAz
 
       auto bestCol = track.has_collision() ? track.collisionId() : -1;
+
+      if (removeTrivialAssoc) {
+        if (track.compatibleCollIds().empty() || (track.compatibleCollIds().size() == 1 && bestCol == track.compatibleCollIds()[0])) {
+          if (produceHistos) {
+            registry.fill(HIST("TracksAmbDegreeWoTrivial"), track.compatibleCollIds().size());
+          }
+          continue;
+        }
+      }
+
       auto compatibleColls = track.compatibleColl();
 
       std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
@@ -458,6 +472,8 @@ struct AmbiguousTrackPropagation {
         }
         if ((track.collisionId() != collision.globalIndex()) && produceHistos) {
           registry.fill(HIST("DeltaZ"), track.collision().posZ() - collision.posZ()); // deltaZ between the 1st coll zvtx and the other compatible ones
+          registry.fill(HIST("TracksFirstDCAXY"), dcaInfo[0]);
+          registry.fill(HIST("TracksFirstDCAZ"), dcaInfo[1]);
         }
         if (produceHistos) {
           registry.fill(HIST("TracksDCAXY"), dcaInfo[0]);

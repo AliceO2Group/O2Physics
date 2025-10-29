@@ -371,10 +371,10 @@ struct femtoDreamPairTaskV0V0 {
         continue;
       }
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceV02))) {
-        const auto& posChild_1 = parts.iteratorAt(p1.index() - 2);
-        const auto& negChild_1 = parts.iteratorAt(p1.index() - 1);
-        const auto& posChild_2 = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild_2 = parts.iteratorAt(p2.index() - 1);
+        const auto& posChild_1 = parts.iteratorAt(p1.globalIndex() - 2);
+        const auto& negChild_1 = parts.iteratorAt(p1.globalIndex() - 1);
+        const auto& posChild_2 = parts.iteratorAt(p2.globalIndex() - 2);
+        const auto& negChild_2 = parts.iteratorAt(p2.globalIndex() - 1);
         if (((posChild_1.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
             ((posChild_1.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
             ((negChild_1.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&

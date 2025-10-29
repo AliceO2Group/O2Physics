@@ -104,13 +104,13 @@ struct HfTaskMcEfficiencyToXiPi {
   }
 
   template <typename T>
-  inline bool checkTrackGlbTrk(T const& track)
+  bool checkTrackGlbTrk(T const& track)
   {
     return (track.isGlobalTrackWoDCA() && track.tpcNClsFound() > nClustersTpcMin && track.itsNCls() > nClustersItsMin);
   }
 
   template <typename T>
-  inline bool checkTrackItsTrk(T const& track)
+  bool checkTrackItsTrk(T const& track)
   {
     return (track.isQualityTrackITS() && track.itsNCls() > nClustersItsMin);
   }

@@ -13,7 +13,11 @@
 /// \file uecharged.cxx
 /// \brief Underlying event analysis task
 /// \since November 2021
-/// \last update: September 2025
+/// \last update: October 2025
+
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+#include "PWGLF/Utils/mcParticle.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -30,7 +34,7 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "TDatabasePDG.h"
+#include "TPDGCode.h"
 #include <TF1.h>
 #include <TH1F.h>
 #include <TH2F.h>
@@ -45,8 +49,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
-                          aod::Run3MatchedToBCSparse>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 struct ueCharged {
 
@@ -80,8 +83,7 @@ struct ueCharged {
     selectedTracks.SetMaxChi2PerClusterTPC(4.f);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
     selectedTracks.SetMaxChi2PerClusterITS(36.f);
-    // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f /
-    // pow(pt, 1.1f); });
+    // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
     selectedTracks.SetMaxDcaZ(2.f);
     return selectedTracks;
   }
@@ -91,6 +93,7 @@ struct ueCharged {
 
   Service<o2::framework::O2DatabasePDG> pdg;
   float deltaPhi(float phia, float phib, float rangeMin, float rangeMax);
+
   // Configurable for event selection
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<bool> piluprejection{"piluprejection", true, "Pileup rejection"};
@@ -98,7 +101,7 @@ struct ueCharged {
   Configurable<bool> sel8{"sel8", true, "Apply the sel8 event selection"};
   Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
   Configurable<bool> analyzeEvandTracksel{"analyzeEvandTracksel", true, "Analyze the event and track selection"};
-
+  Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
@@ -130,6 +133,9 @@ struct ueCharged {
   static constexpr std::string_view hPtVsPtLeadingTrue[3] = {
     "hPtVsPtLeadingTrue_NS", "hPtVsPtLeadingTrue_AS",
     "hPtVsPtLeadingTrue_TS"};
+  static constexpr std::string_view hPtVsPtLeadingTruePS[3] = {
+    "hPtVsPtLeadingTruePS_NS", "hPtVsPtLeadingTruePS_AS",
+    "hPtVsPtLeadingTruePS_TS"};
   // all wo detector effects
   static constexpr std::string_view pNumDenTrueAll[3] = {
     "pNumDenTrueAll_NS", "pNumDenTrueAll_AS", "pNumDenTrueAll_TS"};
@@ -140,7 +146,6 @@ struct ueCharged {
     "pNumDenTrue_NS", "pNumDenTrue_AS", "pNumDenTrue_TS"};
   static constexpr std::string_view pSumPtTrue[3] = {
     "pSumPtTrue_NS", "pSumPtTrue_AS", "pSumPtTrue_TS"};
-
   // this must have all event selection effects, but it has not been implemented
   // 50%
   static constexpr std::string_view pNumDenTruePS[3] = {
@@ -165,16 +170,11 @@ struct ueCharged {
   template <typename C, typename T>
   void analyzeEventAndTrackSelection(const C& collision, const T& tracks);
 
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) &&
-                       (aod::track::pt > cfgTrkLowPtCut);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
 
   using CollisionTableMCTrue = aod::McCollisions;
-  using CollisionTableMC =
-    soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions,
-                               aod::EvSels, aod::PVMults>>;
-  using TrackTableMC =
-    soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                            aod::McTrackLabels, aod::TrackSelection>>;
+  using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::PVMults>>;
+  using TrackTableMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>>;
   using ParticleTableMC = aod::McParticles;
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision,
@@ -183,23 +183,16 @@ struct ueCharged {
                  BCsRun3 const&);
   PROCESS_SWITCH(ueCharged, processMC, "process MC", false);
 
-  using CollisionTableMCData =
-    soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels,
-              aod::PVMults>;
-  using TrackTableMCData =
-    soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra,
-                            aod::TracksDCA, aod::TrackSelection>>;
+  using CollisionTableMCData = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults>;
+  using TrackTableMCData = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
   void processDataMC(CollisionTableMCData::iterator const& collision,
                      TrackTableMCData const& tracks,
                      ParticleTableMC const& particles,
                      aod::McCollisions const& mcCollisions);
   PROCESS_SWITCH(ueCharged, processDataMC, "process data MC", false);
 
-  using CollisionTableData =
-    soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
-  using TrackTableData =
-    soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                            aod::TrackSelection>>;
+  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
+  using TrackTableData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
   void processData(CollisionTableData::iterator const& collision,
                    TrackTableData const& tracks, aod::FT0s const&,
                    BCsRun3 const&);
@@ -207,12 +200,14 @@ struct ueCharged {
 
   // add new method
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{};
   workflow.push_back(adaptAnalysisTask<ueCharged>(cfgc));
   return workflow;
 }
+
 // implementation
 float ueCharged::deltaPhi(float phia, float phib,
                           float rangeMin = -o2::constants::math::PI / 2.0,
@@ -289,7 +284,6 @@ void ueCharged::init(InitContext const&)
            {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
     ue.add("hPtDCAMat", "Material; DCA_xy; Nch", HistType::kTH2D,
            {{ptAxis}, {121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
-
     ue.add("hmultTrue", "mult true", HistType::kTH1F,
            {{200, -0.5, 199.5, " "}});
     ue.add("hmultTrueGen", "mult true all Gen", HistType::kTH1F,
@@ -299,8 +293,8 @@ void ueCharged::init(InitContext const&)
            HistType::kTH1D, {ptAxist});
 
     for (int i = 0; i < 3; ++i) {
-      ue.add(hPtVsPtLeadingTrue[i].data(), " ", HistType::kTH2D,
-             {{ptAxist}, {ptAxis}});
+      ue.add(hPtVsPtLeadingTrue[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
+      ue.add(hPtVsPtLeadingTruePS[i].data(), " ", HistType::kTH2D, {{ptAxist}, {ptAxis}});
       ue.add(pNumDenTrueAll[i].data(), "", HistType::kTProfile, {ptAxist});
       ue.add(pSumPtTrueAll[i].data(), "", HistType::kTProfile, {ptAxist});
       ue.add(pNumDenTrue[i].data(), "", HistType::kTProfile, {ptAxist});
@@ -324,13 +318,20 @@ void ueCharged::init(InitContext const&)
   ue.add("phiEta", ";#eta;#varphi", HistType::kTH2F,
          {{50, -2.5, 2.5}, {200, 0., 2 * o2::constants::math::PI, " "}});
   ue.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
-
   ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{7, 0, 7, " "}});
   ue.add("hPtLeadingRecPS", "rec pTleading after physics selection",
          HistType::kTH1D, {ptAxist});
   ue.add("hPtLeadingMeasured", "measured pTleading after physics selection",
          HistType::kTH1D, {ptAxist});
   ue.add("hPtLeadingVsTracks", "", HistType::kTProfile, {{ptAxist}});
+
+  auto h = ue.get<TH1>(HIST("hCounter"));
+  h->GetXaxis()->SetBinLabel(1, "Events read");
+  h->GetXaxis()->SetBinLabel(2, "INEL");
+  h->GetXaxis()->SetBinLabel(3, "Sel8");
+  h->GetXaxis()->SetBinLabel(4, "NoSameBunchPileup");
+  h->GetXaxis()->SetBinLabel(5, "IsGoodZvtxFT0vsPV");
+  h->GetXaxis()->SetBinLabel(6, "posZ passed");
 
   for (int i = 0; i < 3; ++i) {
     ue.add(pNumDenMeasuredPS[i].data(),
@@ -512,7 +513,7 @@ template <typename C, typename P>
 void ueCharged::processTrue(const C& mcCollision, const P& particles)
 {
   int multTrue = 0;
-  int multTrueINEL = 0;
+  //  int multTrueINEL = 0;
   for (const auto& particle : particles) {
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
     if (!pdgParticle || pdgParticle->Charge() == 0.) {
@@ -522,7 +523,7 @@ void ueCharged::processTrue(const C& mcCollision, const P& particles)
       continue;
     }
     if (std::abs(particle.eta()) <= 1.0) {
-      multTrueINEL++;
+      //      multTrueINEL++;
     }
     if (std::abs(particle.eta()) >= cfgTrkEtaCut) {
       continue;
@@ -534,7 +535,16 @@ void ueCharged::processTrue(const C& mcCollision, const P& particles)
     ue.fill(HIST("hPtInPrimGen"), particle.pt());
   }
   ue.fill(HIST("hmultTrueGen"), multTrue);
-  if (std::abs(mcCollision.posZ()) > 10.f && multTrueINEL <= 0) {
+
+  if (cfgINELCut == 1 && !o2::pwglf::isINELgt0mc(particles, pdg)) {
+    return;
+  }
+
+  if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(particles, pdg)) {
+    return;
+  }
+
+  if (std::abs(mcCollision.posZ()) > 10.f) {
     return;
   }
 
@@ -648,6 +658,14 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   ue.fill(HIST("hCounter"), 0);
 
+  if (cfgINELCut == 1 && !collision.isInelGt0()) {
+    return;
+  }
+
+  if (cfgINELCut == 2 && !collision.isInelGt1()) {
+    return;
+  }
+
   ue.fill(HIST("hCounter"), 1);
 
   if (sel8 && !collision.sel8()) {
@@ -668,6 +686,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
   }
 
   ue.fill(HIST("hCounter"), 3);
+
   if (goodzvertex &&
       !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
     return;
@@ -860,6 +879,14 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks,
                               const P& particles)
 {
 
+  if (cfgINELCut == 1 && !o2::pwglf::isINELgt0mc(particles, pdg)) {
+    return;
+  }
+
+  if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(particles, pdg)) {
+    return;
+  }
+
   ue.fill(HIST("hStat"), collision.size());
   auto vtxZ = collision.posZ();
 
@@ -960,6 +987,14 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks,
 
   ue.fill(HIST("hCounter"), 0);
 
+  if (cfgINELCut == 1 && !collision.isInelGt0()) {
+    return;
+  }
+
+  if (cfgINELCut == 2 && !collision.isInelGt1()) {
+    return;
+  }
+
   ue.fill(HIST("hCounter"), 1);
 
   if (sel8 && !collision.sel8()) {
@@ -978,18 +1013,20 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks,
       !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
     return;
   }
+
   ue.fill(HIST("hCounter"), 3);
 
   if (goodzvertex &&
       !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
     return;
   }
+
   ue.fill(HIST("hCounter"), 4);
 
-  // only PS
   if ((std::abs(collision.posZ()) >= 10.f)) {
     return;
   }
+
   ue.fill(HIST("hCounter"), 5);
 
   ue.fill(HIST(pNumDenTruePS[0]), flPtTrue, ueTrue[0]);
@@ -1020,7 +1057,24 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks,
       continue;
     }
     ue.fill(HIST("hPtInPrim"), particle.pt());
+
+    // remove the autocorrelation
+    if (flIndexTrue == particle.globalIndex()) {
+      continue;
+    }
+    double dPhi = deltaPhi(particle.phi(), flPhiTrue);
+
+    // definition of the topological regions
+    if (std::abs(dPhi) < o2::constants::math::PI / 3.0) { // near side
+      ue.fill(HIST(hPtVsPtLeadingTruePS[0]), flPtTrue, particle.pt());
+    } else if (std::abs(dPhi - o2::constants::math::PI) <
+               o2::constants::math::PI / 3.0) { // away side
+      ue.fill(HIST(hPtVsPtLeadingTruePS[1]), flPtTrue, particle.pt());
+    } else { // transverse side
+      ue.fill(HIST(hPtVsPtLeadingTruePS[2]), flPtTrue, particle.pt());
+    }
   }
+
   ue.fill(HIST("hmultTrue"), multTrue);
 
   // loop over selected tracks
@@ -1228,6 +1282,14 @@ template <typename C, typename T>
 void ueCharged::analyzeEventAndTrackSelection(const C& collision,
                                               const T& tracks)
 {
+
+  if (cfgINELCut == 1 && !collision.isInelGt0()) {
+    return;
+  }
+
+  if (cfgINELCut == 2 && !collision.isInelGt1()) {
+    return;
+  }
 
   // z-vertex from FT0 vs PV analysis
 

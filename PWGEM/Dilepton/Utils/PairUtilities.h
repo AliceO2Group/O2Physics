@@ -51,10 +51,14 @@ enum class DileptonHadronAnalysisType : int {
 };
 
 enum class DileptonPrefilterBit : int {
-  kElFromPC = 0,    // electron from photon conversion
-  kElFromPi0_1 = 1, // electron from pi0 dalitz decay, threshold 1
-  kElFromPi0_2 = 2, // electron from  pi0 dalitz decay, threshold 2
-  kElFromPi0_3 = 3, // electron from pi0 dalitz decay, threshold 3
+  kElFromPC = 0,         // electron from photon conversion
+  kElFromPi0_20MeV = 1,  // electron from pi0 dalitz decay in mee <  20 MeV/c2
+  kElFromPi0_40MeV = 2,  // electron from pi0 dalitz decay in mee <  40 MeV/c2
+  kElFromPi0_60MeV = 3,  // electron from pi0 dalitz decay in mee <  60 MeV/c2
+  kElFromPi0_80MeV = 4,  // electron from pi0 dalitz decay in mee <  80 MeV/c2
+  kElFromPi0_100MeV = 5, // electron from pi0 dalitz decay in mee < 100 MeV/c2
+  kElFromPi0_120MeV = 6, // electron from pi0 dalitz decay in mee < 120 MeV/c2
+  kElFromPi0_140MeV = 7, // electron from pi0 dalitz decay in mee < 140 MeV/c2
 };
 
 enum class DileptonPrefilterBitDerived : int {

@@ -43,8 +43,8 @@ using namespace o2::framework::expressions;
 
 struct HfTaskMultiplicityEstimatorCorrelation {
   HistogramRegistry registry{"registry", {}};
-  static constexpr int8_t nEstimators = 8;
-  static constexpr std::array<std::string_view, nEstimators> estimatorsNames = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
+  static constexpr int8_t NEstimators = 8;
+  static constexpr std::array<std::string_view, NEstimators> EstimatorsNames = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
 
   std::vector<unsigned> consideredParticles = {
     kElectron,
@@ -72,9 +72,9 @@ struct HfTaskMultiplicityEstimatorCorrelation {
 
   void init(InitContext&)
   {
-    for (int8_t i = 0; i < nEstimators; i++) {
-      registry.add<TH2>(("etaPFive/" + std::string(estimatorsNames[i]) + "VsdNdeta").c_str(), (std::string(estimatorsNames[i]) + "VsdNdeta;" + std::string(estimatorsNames[i]) + ";<dN_{ch}/d#eta>").c_str(), HistType::kTH2F, {*(estimatorsAxes[i]), axisdNdEta});
-      registry.add<TH2>(("etaOne/" + std::string(estimatorsNames[i]) + "VsdNdeta").c_str(), (std::string(estimatorsNames[i]) + "VsdNdeta;" + std::string(estimatorsNames[i]) + ";<dN_{ch}/d#eta>").c_str(), HistType::kTH2F, {*(estimatorsAxes[i]), axisdNdEta});
+    for (int8_t i = 0; i < NEstimators; i++) {
+      registry.add<TH2>(("etaPFive/" + std::string(EstimatorsNames[i]) + "VsdNdeta").c_str(), (std::string(EstimatorsNames[i]) + "VsdNdeta;" + std::string(EstimatorsNames[i]) + ";<dN_{ch}/d#eta>").c_str(), HistType::kTH2F, {*(estimatorsAxes[i]), axisdNdEta});
+      registry.add<TH2>(("etaOne/" + std::string(EstimatorsNames[i]) + "VsdNdeta").c_str(), (std::string(EstimatorsNames[i]) + "VsdNdeta;" + std::string(EstimatorsNames[i]) + ";<dN_{ch}/d#eta>").c_str(), HistType::kTH2F, {*(estimatorsAxes[i]), axisdNdEta});
     }
   }
 
@@ -132,11 +132,11 @@ struct HfTaskMultiplicityEstimatorCorrelation {
 
       float dNdetaFive = nChargedInEtaFive;
       float dNdetaOne = nChargedInEtaOne / 2.0;
-      for (int i = 0; i < nEstimators; i++) {
-        static_for<0, nEstimators - 1>([&](auto j) {
-          constexpr int index = j.value;
-          registry.fill(HIST("etaPFive/") + HIST(estimatorsNames[index]) + HIST("VsdNdeta"), multiplicity[index], dNdetaFive);
-          registry.fill(HIST("etaOne/") + HIST(estimatorsNames[index]) + HIST("VsdNdeta"), multiplicity[index], dNdetaOne);
+      for (int i = 0; i < NEstimators; i++) {
+        static_for<0, NEstimators - 1>([&](auto j) {
+          constexpr int Index = j.value;
+          registry.fill(HIST("etaPFive/") + HIST(EstimatorsNames[Index]) + HIST("VsdNdeta"), multiplicity[Index], dNdetaFive);
+          registry.fill(HIST("etaOne/") + HIST(EstimatorsNames[Index]) + HIST("VsdNdeta"), multiplicity[Index], dNdetaOne);
         });
       }
     }

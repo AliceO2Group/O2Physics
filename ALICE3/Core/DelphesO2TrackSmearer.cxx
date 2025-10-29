@@ -105,7 +105,18 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     mLUTHeader[ipdg] = nullptr;
     return false;
   }
-  if (mLUTHeader[ipdg]->pdg != pdg) {
+  bool specialPdgCase = false;
+  switch (pdg) {                         // Handle special cases
+    case o2::constants::physics::kAlpha: // Special case: Allow Alpha particles to use He3 LUT
+      specialPdgCase = (mLUTHeader[ipdg]->pdg == o2::constants::physics::kHelium3);
+      if (specialPdgCase)
+        LOG(info)
+          << " --- Alpha particles (PDG " << pdg << ") will use He3 LUT data (PDG " << mLUTHeader[ipdg]->pdg << ")" << std::endl;
+      break;
+    default:
+      break;
+  }
+  if (mLUTHeader[ipdg]->pdg != pdg && !specialPdgCase) {
     LOG(info) << " --- LUT header PDG mismatch: expected/detected = " << pdg << "/" << mLUTHeader[ipdg]->pdg << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
@@ -142,12 +153,13 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 
 /*****************************************************************/
 
-lutEntry_t*
-  TrackSmearer::getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff)
+lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, const float radius, const float eta, const float pt, float& interpolatedEff)
 {
-  auto ipdg = getIndexPDG(pdg);
-  if (!mLUTHeader[ipdg])
+  const int ipdg = getIndexPDG(pdg);
+  if (!mLUTHeader[ipdg]) {
+    LOG(error) << " --- getLUTEntry: LUT header not loaded for pdg=" << pdg << ". Returning nullptr.";
     return nullptr;
+  }
   auto inch = mLUTHeader[ipdg]->nchmap.find(nch);
   auto irad = mLUTHeader[ipdg]->radmap.find(radius);
   auto ieta = mLUTHeader[ipdg]->etamap.find(eta);
@@ -279,7 +291,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
   }
   auto eta = o2track.getEta();
   float interpolatedEff = 0.0f;
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, interpolatedEff);
+  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, interpolatedEff);
   if (!lutEntry || !lutEntry->valid)
     return false;
   return smearTrack(o2track, lutEntry, interpolatedEff);
@@ -287,20 +299,20 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 
 /*****************************************************************/
 // relative uncertainty on pt
-double TrackSmearer::getPtRes(int pdg, float nch, float eta, float pt)
+double TrackSmearer::getPtRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt;
   return val;
 }
 
 /*****************************************************************/
 // relative uncertainty on eta
-double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
+double TrackSmearer::getEtaRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
   auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   etaRes /= lutEntry->eta;                                                       // relative uncertainty
@@ -308,27 +320,27 @@ double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 }
 /*****************************************************************/
 // absolute uncertainty on pt
-double TrackSmearer::getAbsPtRes(int pdg, float nch, float eta, float pt)
+double TrackSmearer::getAbsPtRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt * lutEntry->pt;
   return val;
 }
 
 /*****************************************************************/
 // absolute uncertainty on eta
-double TrackSmearer::getAbsEtaRes(int pdg, float nch, float eta, float pt)
+double TrackSmearer::getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
   auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   return etaRes;
 }
 /*****************************************************************/
 // efficiency
-double TrackSmearer::getEfficiency(int pdg, float nch, float eta, float pt)
+double TrackSmearer::getEfficiency(const int pdg, const float nch, const float eta, const float pt)
 {
   float efficiency = 0.0f;
   getLUTEntry(pdg, nch, 0., eta, pt, efficiency);
@@ -349,7 +361,7 @@ double TrackSmearer::getEfficiency(int pdg, float nch, float eta, float pt)
 //   return true;
 
 // #if 0
-//   auto lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
+//   lutEntry_t* lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
 //   if (!lutEntry)
 //     return;
 

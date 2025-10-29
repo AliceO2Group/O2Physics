@@ -75,6 +75,8 @@ DECLARE_SOA_COLUMN(PzPiFromCharmBaryon, pzPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
 DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
 DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
+DECLARE_SOA_COLUMN(PtCharmBaryon, ptCharmBaryon, float);
+DECLARE_SOA_COLUMN(PtPiFromCharmBaryon, ptPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(PxPiFromCasc, pxPiFromCasc, float);
 DECLARE_SOA_COLUMN(PyPiFromCasc, pyPiFromCasc, float);
 DECLARE_SOA_COLUMN(PzPiFromCasc, pzPiFromCasc, float);
@@ -169,6 +171,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay,
                   full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
+                  full::PtCharmBaryon, full::PtPiFromCharmBaryon,
                   full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
                   full::PxCasc, full::PyCasc, full::PzCasc,
                   full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
@@ -202,15 +205,16 @@ DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay,
-                  full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
-                  full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
+                  full::PtCharmBaryon, full::PtPiFromCharmBaryon,
                   full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
                   full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
                   full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
                   full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
                   full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
+                  full::CosPAV0, full::CosPACharmBaryon, full::CosPACasc,
                   full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
+                  full::EtaCharmBaryon,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
                   full::ErrorDecayLengthCharmBaryon, full::NormImpParCascade, full::NormImpParPiFromCharmBar,
@@ -246,19 +250,19 @@ struct HfTreeCreatorToXiPi {
     }
   }
 
-  template <bool useCentrality, typename T>
+  template <bool UseCentrality, typename T>
   void fillEvent(const T& collision, float cutZPv)
   {
     rowEv(
       collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-  template <bool useCentrality, typename MyEventTableType, typename T>
+  template <bool UseCentrality, typename MyEventTableType, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
 
     float centrality = -999.f;
-    if constexpr (useCentrality) {
+    if constexpr (UseCentrality) {
       auto const& collision = candidate.template collision_as<MyEventTableType>();
       centrality = o2::hf_centrality::getCentralityColl(collision);
     }
@@ -283,6 +287,8 @@ struct HfTreeCreatorToXiPi {
       candidate.covVtxCharmBaryon0(),
       candidate.covVtxCharmBaryon3(),
       candidate.covVtxCharmBaryon5(),
+      RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon()),
+      RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon()),
       candidate.pxCharmBaryon(),
       candidate.pyCharmBaryon(),
       candidate.pzCharmBaryon(),
@@ -376,13 +382,13 @@ struct HfTreeCreatorToXiPi {
       collisionMatched);
   }
 
-  template <bool useCentrality, typename MyEventTableType, typename T>
+  template <bool UseCentrality, typename MyEventTableType, typename T>
   void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       float centrality = -999.f;
-      if constexpr (useCentrality) {
+      if constexpr (UseCentrality) {
         auto const& collision = candidate.template collision_as<MyEventTableType>();
         centrality = o2::hf_centrality::getCentralityColl(collision);
       }
@@ -404,15 +410,11 @@ struct HfTreeCreatorToXiPi {
         candidate.yDecayVtxV0(),
         candidate.zDecayVtxV0(),
         candidate.signDecay(),
+        RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon()),
+        RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon()),
         candidate.pxCharmBaryon(),
         candidate.pyCharmBaryon(),
         candidate.pzCharmBaryon(),
-        candidate.pxBachFromCharmBaryon(),
-        candidate.pyBachFromCharmBaryon(),
-        candidate.pzBachFromCharmBaryon(),
-        candidate.pxBachFromCasc(),
-        candidate.pyBachFromCasc(),
-        candidate.pzBachFromCasc(),
         candidate.pxPosV0Dau(),
         candidate.pyPosV0Dau(),
         candidate.pzPosV0Dau(),
@@ -426,10 +428,14 @@ struct HfTreeCreatorToXiPi {
         candidate.invMassLambda(),
         candidate.invMassCascade(),
         candidate.invMassCharmBaryon(),
+        candidate.cosPAV0(),
+        candidate.cosPACharmBaryon(),
+        candidate.cosPACasc(),
         candidate.etaV0PosDau(),
         candidate.etaV0NegDau(),
         candidate.etaBachFromCasc(),
         candidate.etaBachFromCharmBaryon(),
+        candidate.etaCharmBaryon(),
         candidate.dcaXYToPvV0Dau0(),
         candidate.dcaXYToPvV0Dau1(),
         candidate.dcaXYToPvCascDau(),

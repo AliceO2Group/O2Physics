@@ -245,14 +245,14 @@ DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);                    //! Track et
 DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);                    //! Track phi of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);                    //! Track phi of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);                    //! Track phi of charm hadron prong2
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);        //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                            //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);                  //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);                  //! flag for generator level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int);    //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
 DECLARE_SOA_COLUMN(TrkPt, trkPt, float);                            //! Transverse momentum of associate femto particle
 DECLARE_SOA_COLUMN(TrkEta, trkEta, float);                          //! Eta of associate femto particle
 DECLARE_SOA_COLUMN(TrkPhi, trkPhi, float);                          //! Phi of associate femto particle

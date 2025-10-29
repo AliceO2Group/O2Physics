@@ -19,9 +19,10 @@
 #ifndef ALICE3_CORE_DETLAYER_H_
 #define ALICE3_CORE_DETLAYER_H_
 
-#include <string>
+#include <TGraph.h>
+#include <TString.h>
 
-#include "TString.h"
+#include <string>
 
 namespace o2::fastsim
 {
@@ -47,6 +48,17 @@ struct DetLayer {
   void setEfficiency(float eff_) { eff = eff_; }
   void setType(int type_) { type = type_; }
 
+  // Dead areas
+
+  /// @brief Add a dead region in phi for this layer
+  /// @param phiStart starting angle in radians of the dead region
+  /// @param phiEnd ending angle in radians of the dead region
+  void addDeadPhiRegion(float phiStart, float phiEnd);
+
+  /// @brief Set the dead regions in phi for this layer with a TGraph containing all regions. The graph should have y=2 for dead regions and y=0 for alive regions.
+  /// @param graph graph of the dead regions. Can be nullptr to clear the dead regions.
+  void setDeadPhiRegions(TGraph* graph);
+
   // Getters
   float getRadius() const { return r; }
   float getZ() const { return z; }
@@ -57,6 +69,7 @@ struct DetLayer {
   float getEfficiency() const { return eff; }
   int getType() const { return type; }
   const TString& getName() const { return name; }
+  const TGraph* getDeadPhiRegions() const { return mDeadPhiRegions; }
 
   // Check layer type
   bool isInert() const { return type == layerInert; }
@@ -70,6 +83,15 @@ struct DetLayer {
     os << layer.toString();
     return os;
   }
+  /// @brief Check if a given phi angle is in a dead region
+  /// @param phi The phi angle to check
+  /// @return True if the phi angle is in a dead region, false otherwise
+  bool isInDeadPhiRegion(float phi) const
+  {
+    if (mDeadPhiRegions == nullptr)
+      return false;
+    return mDeadPhiRegions->Eval(phi) > 1.f;
+  };
 
  private:
   // TString for holding name
@@ -89,6 +111,9 @@ struct DetLayer {
 
   // efficiency
   float eff; // detection efficiency
+
+  // dead regions in phi (in radians)
+  TGraph* mDeadPhiRegions = nullptr;
 
   // layer type
   int type;                              // 0: undefined/inert, 1: silicon, 2: gas/tpc

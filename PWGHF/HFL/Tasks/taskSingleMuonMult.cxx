@@ -88,25 +88,25 @@ struct HfTaskSingleMuonMult {
 
   void init(InitContext&)
   {
-    AxisSpec axisCent = {101, -0.5, 100.5, "centrality"};
-    AxisSpec axisEvent{NEventSelection, 0, NEventSelection, "Event Selection"};
-    AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
-    AxisSpec axisMuon{NMuonSelection, 0, NMuonSelection, "Muon Selection"};
-    AxisSpec axisNCh{500, 0.5, 500.5, "#it{N}_{ch}"};
-    AxisSpec axisNMu{20, -0.5, 19.5, "#it{N}_{#mu}"};
-    AxisSpec axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisEta{250, -5., 5., "#it{#eta}"};
-    AxisSpec axisTheta{500, 170., 180., "#it{#theta}"};
-    AxisSpec axisRAbsorb{1000, 0., 100., "#it{R}_{Absorb} (cm)"};
-    AxisSpec axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
-    AxisSpec axisChi2MatchMCHMFT{1000, 0., 1000., "MCH-MFT matching #chi^{2}"};
-    AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
-    AxisSpec axisPDca{100000, 0, 100000, "#it{p} #times DCA (GeV/#it{c} * cm)"};
-    AxisSpec axisDCAx{1000, -5., 5., "#it{DCA}_{x or y} (cm)"};
-    AxisSpec axisEtaDif{200, -2., 2., "#it{#eta} diff"};
-    AxisSpec axisDeltaPt{10000, -50, 50, "#Delta #it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisTrackType{8, -1.5, 6.5, "TrackType"};
-    AxisSpec axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
+    AxisSpec const axisCent = {101, -0.5, 100.5, "centrality"};
+    AxisSpec const axisEvent{NEventSelection, 0, NEventSelection, "Event Selection"};
+    AxisSpec const axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
+    AxisSpec const axisMuon{NMuonSelection, 0, NMuonSelection, "Muon Selection"};
+    AxisSpec const axisNCh{500, 0.5, 500.5, "#it{N}_{ch}"};
+    AxisSpec const axisNMu{20, -0.5, 19.5, "#it{N}_{#mu}"};
+    AxisSpec const axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisEta{250, -5., 5., "#it{#eta}"};
+    AxisSpec const axisTheta{500, 170., 180., "#it{#theta}"};
+    AxisSpec const axisRAbsorb{1000, 0., 100., "#it{R}_{Absorb} (cm)"};
+    AxisSpec const axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
+    AxisSpec const axisChi2MatchMCHMFT{1000, 0., 1000., "MCH-MFT matching #chi^{2}"};
+    AxisSpec const axisSign{5, -2.5, 2.5, "Charge"};
+    AxisSpec const axisPDca{100000, 0, 100000, "#it{p} #times DCA (GeV/#it{c} * cm)"};
+    AxisSpec const axisDCAx{1000, -5., 5., "#it{DCA}_{x or y} (cm)"};
+    AxisSpec const axisEtaDif{200, -2., 2., "#it{#eta} diff"};
+    AxisSpec const axisDeltaPt{10000, -50, 50, "#Delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisTrackType{8, -1.5, 6.5, "TrackType"};
+    AxisSpec const axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
 
     registry.add("hCentrality", "Centrality Percentile", {HistType::kTH1F, {axisCent}});
     registry.add("hEventSel", " Number of Events", {HistType::kTH1F, {axisEvent}});

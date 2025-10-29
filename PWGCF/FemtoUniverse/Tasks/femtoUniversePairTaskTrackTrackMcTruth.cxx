@@ -35,6 +35,7 @@
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -82,6 +83,10 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   /// The configurables need to be passed to an std::vector
   int vPIDPartOne, vPIDPartTwo;
   std::vector<float> kNsigma;
+
+  // D0/D0bar options
+  Configurable<bool> confActiveD0OriginCheck{"confActiveD0OriginCheck", false, "If true - calculate correlation for D0/D0bar mesons with a given origin"};
+  Configurable<int8_t> confD0OriginFlag{"confD0OriginFlag", 1, "D0/D0bar origin: 0 - none, 1 - prompt, 2 - non-prompt"};
 
   /// particle part
   ConfigurableAxis confTempFitVarpTBins{"confTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
@@ -164,12 +169,18 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
       if (!confNoPDGPartOne && part.tempFitVar() != confPDGCodePartOne) {
         continue;
       }
+      if (static_cast<int>(part.tempFitVar()) == static_cast<int>(Pdg::kD0) && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
+        continue;
+      }
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!confIsSame) {
       for (auto const& part : groupPartsTwo) {
         if (!confNoPDGPartTwo && part.tempFitVar() != confPDGCodePartTwo) {
+          continue;
+        }
+        if (static_cast<int>(part.tempFitVar()) == static_cast<int>(Pdg::kD0) && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, false>(part);

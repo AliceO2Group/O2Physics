@@ -115,6 +115,9 @@ struct JflucWeightsLoader {
         LOGF(fatal, "NUA correction weights file not found: %s", cfgPathPhiWeights.value.substr(8).c_str());
       }
       useNUAFromCCDB = false;
+    } else if (cfgPathPhiWeights.value == "") {
+      LOGF(info, "No NUA corrections provided.");
+      useNUAFromCCDB = false;
     } else {
       LOGF(info, "Assuming NUA corrections from CCDB.");
       useNUAFromCCDB = true;
@@ -135,6 +138,9 @@ struct JflucWeightsLoader {
       } else {
         LOGF(info, "Loaded efficiency correction histogram locally.");
       }
+      useEffFromCCDB = false;
+    } else if (cfgPathEffWeights.value == "") {
+      LOGF(info, "No efficiency corrections provided.");
       useEffFromCCDB = false;
     } else {
       LOGF(info, "Assuming efficiency corrections from CCDB.");
@@ -169,10 +175,9 @@ struct JflucWeightsLoader {
           initCCDB(collision.runNumber(), timestamp, kNUA);
           LOGF(info, "Loaded NUA correction histogram from CCDB for run %d.", collision.runNumber());
         }
-        runNumber = collision.runNumber();
       }
     }
-    if (pfeff) {
+    if (pfeff || useEffFromCCDB) {
       if (collision.runNumber() != runNumber) {
         if (pheff)
           delete pheff;
@@ -188,6 +193,10 @@ struct JflucWeightsLoader {
         }
       }
     }
+
+    // Set run number after reading corrections
+    runNumber = collision.runNumber();
+
     for (const auto& track : tracks) {
       float phiWeight, effWeight;
       if (ph) {

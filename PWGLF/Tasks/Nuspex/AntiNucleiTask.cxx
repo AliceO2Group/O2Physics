@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file antinucleiTask.cxx
+/// \file AntiNucleiTask.cxx
 /// \brief A task to analyse Anti-nuclei
 /// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
@@ -48,14 +48,15 @@ static const int minTpcCrossedRowsCut = 70;
 static const float maxVertexZCut = 10.f;
 } // namespace
 
-struct antinucleiTask {
+struct AntiNucleiTask {
   // Histogram registry: for holding histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurable track cuts
   Configurable<float> trackNclusTPCcut{"trackNclusTPCcut", 70.0f, "min number of TPC clusters"};
   Configurable<float> trackNclusITScut{"trackNclusITScut", 4.0f, "min number of ITS clusters"};
-  Configurable<float> chi2TPC{"chi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> minChi2TPC{"minChi2TPC", 0.0f, "min chi2 per cluster TPC"};
   Configurable<float> chi2ITS{"chi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> trackDCAz{"trackDCAz", 0.1f, "maxDCAz"};
   Configurable<float> trackDCAxy{"trackDCAxy", 0.1f, "maxDCAxy"};
@@ -68,7 +69,7 @@ struct antinucleiTask {
     ConfigurableAxis phiAxis{"phiAxis", {70, 0.f, 7.f}, "#phi"};
     ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Primary Vertex z (cm)"};
     ConfigurableAxis nSigmaAxis{"nSigmaAxis", {50, -5.f, 5.f}, "N_{#sigma}"};
-    ConfigurableAxis ptAxis{"ptAxis", {100, -5.0f, 5.0f}, "p_{T} (GeV/c)"};
+    ConfigurableAxis ptAxis{"ptAxis", {200, -10.0f, 10.0f}, "p_{T} (GeV/c)"};
     ConfigurableAxis centAxis{"centAxis", {100, 0, 100.0f}, "Centrality"};
     ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
     ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
@@ -101,7 +102,9 @@ struct antinucleiTask {
       return false;
     if (track.itsNCls() < trackNclusITScut)
       return false;
-    if (track.tpcChi2NCl() > chi2TPC)
+    if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.tpcChi2NCl() < minChi2TPC)
       return false;
     if (track.itsChi2NCl() > chi2ITS)
       return false;
@@ -135,16 +138,16 @@ struct antinucleiTask {
     // Track Selection
     for (const auto& track : tracks) {
 
-      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / o2::constants::physics::MassDeuteron), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam()), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
       double expSigma{expBethe * cfgBetheBlochParams->get("resolution")};
-      float tpcNSigmaDeuteron = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+      float tpcNSigma = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 
-      float pt = track.sign() > 0 ? track.pt() : -track.pt();
+      float pt = track.sign() > 0 ? 2 * track.pt() : -2 * track.pt();
       // Filling histograms with track data before applying any cuts.
       histos.fill(HIST("RawEta"), track.eta());
       histos.fill(HIST("RawPhi"), track.phi());
       histos.fill(HIST("RawPt"), pt);
-      histos.fill(HIST("RawtpcNSigma"), collision.centFT0C(), pt, tpcNSigmaDeuteron);
+      histos.fill(HIST("RawtpcNSigma"), collision.centFT0C(), pt, tpcNSigma);
       histos.fill(HIST("RawtofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
 
       // If the track is good, fill the "after cuts" histograms.
@@ -152,21 +155,21 @@ struct antinucleiTask {
         histos.fill(HIST("Eta"), track.eta());
         histos.fill(HIST("Phi"), track.phi());
         histos.fill(HIST("Pt"), pt);
-        histos.fill(HIST("tpcNSigma"), collision.centFT0C(), pt, tpcNSigmaDeuteron);
+        histos.fill(HIST("tpcNSigma"), collision.centFT0C(), pt, tpcNSigma);
         histos.fill(HIST("TpcSignal"), track.tpcInnerParam(), track.tpcSignal());
 
-        if (std::abs(tpcNSigmaDeuteron) < tpcNSigmaCut) {
+        if (std::abs(tpcNSigma) < tpcNSigmaCut) {
           histos.fill(HIST("tofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
         }
       }
     }
   }
 
-  PROCESS_SWITCH(antinucleiTask, process, "process", true);
+  PROCESS_SWITCH(AntiNucleiTask, process, "process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<antinucleiTask>(cfgc)};
+    adaptAnalysisTask<AntiNucleiTask>(cfgc)};
 }

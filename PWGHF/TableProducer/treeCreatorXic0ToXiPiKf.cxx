@@ -156,14 +156,14 @@ struct HfTreeCreatorXic0ToXiPiKf {
     registry.add("hV0Dau1ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
   }
 
-  template <bool useCentrality, typename MyEventTableType, typename T>
+  template <bool UseCentrality, typename MyEventTableType, typename T>
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
 
     if (candidate.resultSelections()) {
 
       float centrality = -999.f;
-      if constexpr (useCentrality) {
+      if constexpr (UseCentrality) {
         auto const& collision = candidate.template collision_as<MyEventTableType>();
         centrality = o2::hf_centrality::getCentralityColl(collision);
       }

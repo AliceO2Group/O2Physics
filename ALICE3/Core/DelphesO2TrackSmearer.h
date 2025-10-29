@@ -29,6 +29,7 @@
 
 #include <TRandom.h>
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -179,23 +180,24 @@ class TrackSmearer
 
   /** LUT methods **/
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
-  void useEfficiency(bool val) { mUseEfficiency = val; }                      //;
-  void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }      //;
-  void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }          //;
-  void setWhatEfficiency(int val) { mWhatEfficiency = val; }                  //;
-  lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; } //;
-  lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff);
+  bool hasTable(int pdg) { return (mLUTHeader[getIndexPDG(pdg)] != nullptr); } //;
+  void useEfficiency(bool val) { mUseEfficiency = val; }                       //;
+  void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }       //;
+  void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }           //;
+  void setWhatEfficiency(int val) { mWhatEfficiency = val; }                   //;
+  lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; }  //;
+  lutEntry_t* getLUTEntry(const int pdg, const float nch, const float radius, const float eta, const float pt, float& interpolatedEff);
 
   bool smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff);
   bool smearTrack(O2Track& o2track, int pdg, float nch);
   // bool smearTrack(Track& track, bool atDCA = true); // Only in DelphesO2
-  double getPtRes(int pdg, float nch, float eta, float pt);
-  double getEtaRes(int pdg, float nch, float eta, float pt);
-  double getAbsPtRes(int pdg, float nch, float eta, float pt);
-  double getAbsEtaRes(int pdg, float nch, float eta, float pt);
-  double getEfficiency(int pdg, float nch, float eta, float pt);
+  double getPtRes(const int pdg, const float nch, const float eta, const float pt);
+  double getEtaRes(const int pdg, const float nch, const float eta, const float pt);
+  double getAbsPtRes(const int pdg, const float nch, const float eta, const float pt);
+  double getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt);
+  double getEfficiency(const int pdg, const float nch, const float eta, const float pt);
 
-  int getIndexPDG(int pdg)
+  int getIndexPDG(const int pdg)
   {
     switch (abs(pdg)) {
       case 11:
@@ -214,6 +216,8 @@ class TrackSmearer
         return 6; // Triton
       case 1000020030:
         return 7; // Helium3
+      case 1000020040:
+        return 8; // Alphas
       default:
         return 2; // Default: pion
     }
@@ -238,6 +242,8 @@ class TrackSmearer
         return "triton";
       case 1000020030:
         return "helium3";
+      case 1000020040:
+        return "alpha";
       default:
         return "pion"; // Default: pion
     }
@@ -246,7 +252,7 @@ class TrackSmearer
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
 
  protected:
-  static constexpr unsigned int nLUTs = 8; // Number of LUT available
+  static constexpr unsigned int nLUTs = 9; // Number of LUT available
   lutHeader_t* mLUTHeader[nLUTs] = {nullptr};
   lutEntry_t***** mLUTEntry[nLUTs] = {nullptr};
   bool mUseEfficiency = true;

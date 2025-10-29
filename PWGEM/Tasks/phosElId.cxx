@@ -16,36 +16,39 @@
 /// \author Yeghishe Hambardzumyan, MIPT
 /// \since Apr, 2024
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <vector>
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "PHOSBase/Geometry.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DetectorsBase/Propagator.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+
 #include "TF1.h"
+
+#include <climits>
+#include <cmath>
+#include <map>
+#include <memory>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -111,8 +114,8 @@ struct PhosElId {
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                             aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl,
-                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+                             aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi,
+                             aod::pidTPCFullKa, aod::pidTPCFullPr>;
   Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"},
     mSwapM20M02ForTestLambda{"mSwapM20M02ForTestLambda", false, "Swap m20 and m02 arguments for testLambda (false for note's correct order, true for swapped/original incorrect order)"},
     mUseNegativeCrossTerm{"mUseNegativeCrossTerm", true, "Use negative sign for the cross-term in testLambda (true for analysis note version, false for old version)"};
@@ -639,8 +642,8 @@ struct MassSpectra {
                                   aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
                                   aod::CentFDDMs, aod::CentNTPVs>;
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                             aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl,
-                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+                             aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi,
+                             aod::pidTPCFullKa, aod::pidTPCFullPr>;
   Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
     MassBinning{"MassBinning", 1000, "Binning for mass"},
@@ -883,8 +886,8 @@ struct TpcElIdMassSpectrum {
                                   aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
                                   aod::CentFDDMs, aod::CentNTPVs>;
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                             aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl,
-                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+                             aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi,
+                             aod::pidTPCFullKa, aod::pidTPCFullPr>;
   Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"},
     mSwapM20M02ForTestLambda{"mSwapM20M02ForTestLambda", false, "Swap m20 and m02 arguments for testLambda (false for note's correct order, true for swapped/original incorrect order)"},
     mUseNegativeCrossTerm{"mUseNegativeCrossTerm", true, "Use negative sign for the cross-term in testLambda (true for analysis note version, false for old version)"};

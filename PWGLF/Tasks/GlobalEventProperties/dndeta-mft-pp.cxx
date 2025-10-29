@@ -118,30 +118,44 @@ struct PseudorapidityDensityMFT {
 
   HistogramRegistry registry{
     "registry",
-    {
-      {"TracksEtaZvtx",
-       "; #eta; #it{z}_{vtx} (cm); tracks",
-       {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
-      {"Tracks/EtaZvtx_gt0",
-       "; #eta; #it{z}_{vtx} (cm); tracks",
-       {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
-      {"TracksPhiEta",
-       "; #varphi; #eta; tracks",
-       {HistType::kTH2F, {PhiAxis, EtaAxis}}}, //
-      {"TracksPhiZvtx",
-       "; #varphi; #it{z}_{vtx} (cm); tracks",
-       {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
-      {"TracksPtEta",
-       " ; p_{T} (GeV/c); #eta",
-       {HistType::kTH2F, {PtAxis, EtaAxis}}}, //
-      {"EventSelection",
-       ";status;events",
-       {HistType::kTH1F, {{15, 0.5, 15.5}}}},
-      {"EventCounts",
-       ";status;events",
-       {HistType::kTH1F, {{2, 0.5, 2.5}}}},
-      {"Tracks/Control/TrackCount", ";status;Track counts", {HistType::kTH1F, {{15, 0.5, 15.5}}}}, // added
-    }};
+    {{"TracksEtaZvtx",
+      "; #eta; #it{z}_{vtx} (cm); tracks",
+      {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
+     {"Tracks/EtaZvtx_gt0",
+      "; #eta; #it{z}_{vtx} (cm); tracks",
+      {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
+     {"TracksPhiEta",
+      "; #varphi; #eta; tracks",
+      {HistType::kTH2F, {PhiAxis, EtaAxis}}}, //
+     {"TracksPhiZvtx",
+      "; #varphi; #it{z}_{vtx} (cm); tracks",
+      {HistType::kTH2F, {PhiAxis, ZAxis}}}, //
+     {"TracksPtEta",
+      " ; p_{T} (GeV/c); #eta",
+      {HistType::kTH2F, {PtAxis, EtaAxis}}}, //
+     {"EventSelection",
+      ";status;events",
+      {HistType::kTH1F, {{15, 0.5, 15.5}}}},
+     {"EventCounts",
+      ";status;events",
+      {HistType::kTH1F, {{2, 0.5, 2.5}}}},
+     {"Tracks/Control/TrackCount", ";status;Track counts", {HistType::kTH1F, {{15, 0.5, 15.5}}}}, // added
+     // Purity-related histograms
+     {"Purity/SelectedAfterDCAxy/All",
+      ";bin;counts",
+      {HistType::kTH1F, {{1, 0.5, 1.5}}}},
+     {"Purity/SelectedAfterDCAxy/AllEta",
+      ";#eta;counts",
+      {HistType::kTH1F, {EtaAxis}}},
+     {"Purity/Gen/PrimaryEta",
+      ";#eta;primaries",
+      {HistType::kTH1F, {EtaAxis}}},
+     {"Purity/Gen/All",
+      ";bin;counts",
+      {HistType::kTH1F, {{1, 0.5, 1.5}}}},
+     {"Purity/Gen/AllEta",
+      ";#eta;counts",
+      {HistType::kTH1F, {EtaAxis}}}}};
 
   void init(InitContext&)
   {
@@ -725,6 +739,9 @@ struct PseudorapidityDensityMFT {
                     continue;
                 }
               }
+              // Purity denominator: all tracks that pass the DCA selection and other quality cuts
+              registry.fill(HIST("Purity/SelectedAfterDCAxy/All"), 1.);
+              registry.fill(HIST("Purity/SelectedAfterDCAxy/AllEta"), track.eta());
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
@@ -1049,6 +1066,13 @@ struct PseudorapidityDensityMFT {
             continue;
         }
         if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
+          // Purity numerator reference at generator level: physical primaries in the same eta window
+          if (particle.isPhysicalPrimary()) {
+            registry.fill(HIST("Purity/Gen/PrimaryEta"), particle.eta());
+            // Truth-side total counters for primaries in acceptance (for purity calculations)
+            registry.fill(HIST("Purity/Gen/All"), 1.);
+            registry.fill(HIST("Purity/Gen/AllEta"), particle.eta());
+          }
           registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
                         mcCollision.posZ());
           if (perCollisionMCSampleCentral.size() > 0) {

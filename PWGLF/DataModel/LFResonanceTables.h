@@ -351,16 +351,26 @@ struct PidNSigma {
   /// @brief Encode 0.2 sigma interval to 0~10 range
   static uint8_t encodeNSigma(float nSigma)
   {
-    float encoded = std::abs((nSigma - 1.5) / 0.2);   // Convert to 0~10 range
-    encoded = std::min(std::max(encoded, 0.f), 10.f); // Clamp to 0~10 range
-    return (uint8_t)round(encoded);
+    const float x = std::abs(nSigma);
+    if (x <= 1.5)
+      return 0; // Return 0 when absolute nSigma is smaller than 1.5
+    float t = (x - 1.5) / 0.2;
+    int encoded = static_cast<int>(std::ceil(t)); // (1.5,1.7]->1, ..., (3.3,3.5]->10
+    if (encoded < 1)
+      encoded = 1;
+    if (encoded > 10)
+      encoded = 10;
+    return static_cast<uint8_t>(encoded);
   }
 
   /// @brief Decode 0~10 value to original 1.5~3.5 sigma range
   static float decodeNSigma(uint8_t encoded)
   {
-    encoded = std::min(encoded, (uint8_t)10); // Safety check, should not be needed if encode is used properly
-    return (encoded * 0.2) + 1.5;
+    if (encoded == 0)
+      return 1.5;
+    if (encoded > 10)
+      encoded = 10;
+    return 1.5 + static_cast<float>(encoded) * 0.2;
   }
 
   /// @brief Check if TOF info is available
@@ -416,14 +426,18 @@ struct ResoMicroTrackSelFlag {
     flag = (DCAxyEncoded << 4) | DCAzEncoded; // Upper 4 bits = DCAxy, Lower 4 bits = DCAz
   }
 
-  /// @brief Convert DCA to 1~15 steps (0 value is not used)
+  /// @brief Convert DCA to 1~15 steps (|DCA|<0.1 is saved in 0)
   static uint8_t encodeDCA(float DCA)
   {
-    for (uint8_t i = 1; i < 15; i++) {
-      if (DCA < i * 0.1f)
-        return i;
-    }
-    return 15;
+    float x = std::fabs(DCA);
+    if (x < 0.1)
+      return 0;
+    int encoded = static_cast<int>(std::ceil((x - 0.1) / 0.1)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
+    if (encoded < 1)
+      encoded = 1;
+    if (encoded > 14)
+      encoded = 15;
+    return static_cast<uint8_t>(encoded);
   }
 
   /// @brief Operator to convert to `uint8_t` (for SOA storage)

@@ -9,25 +9,24 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// ========================
-//
-// This code loops over photons and makes pairs for neutral mesons analyses.
-//    Please write to: daiki.sekihata@cern.ch
+/// \file Pi0EtaToGammaGammaMCEMCEMC.cxx
+/// \brief This code loops over photons and makes pairs for neutral mesons analyses in MC for EMC-EMC.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
+#include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGammaMC.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGammaMC.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
+using namespace o2::framework;
+using namespace o2::aod::pwgem::photonmeson::photonpair;
 
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
-using MyEMCCluster = MyEMCClusters::iterator;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

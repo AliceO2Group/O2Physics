@@ -32,6 +32,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -55,8 +56,6 @@
 #include <TH3.h>
 #include <TMath.h>
 
-#include <GPU/GPUROOTCartesianFwd.h>
-
 #include <RtypesCore.h>
 
 #include <algorithm>
@@ -77,7 +76,6 @@
 
 #include <math.h> // FIXME: Replace M_PI
 
-using namespace std;
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::mch;
@@ -170,9 +168,9 @@ struct VarTrack {
 };
 
 struct VarClusters {
-  vector<vector<float>> posClusters;   // (x,y,z)
-  vector<vector<float>> errorClusters; // (ex,ey)
-  vector<int> DEIDs;
+  std::vector<std::vector<float>> posClusters;   // (x,y,z)
+  std::vector<std::vector<float>> errorClusters; // (ex,ey)
+  std::vector<int> DEIDs;
 };
 
 struct muonQa {
@@ -182,6 +180,8 @@ struct muonQa {
     Configurable<bool> fEnableQAResidual{"cfgEnableQAResidual", false, "Enable residual QA checks"};
     Configurable<bool> fEnableQADCA{"cfgEnableQADCA", false, "Enable DCA QA checks"};
     Configurable<bool> fEnableQADimuon{"cfgEnableQADimuon", false, "Enable dimuon QA checks"};
+    Configurable<bool> fEnableQADimuonSameSignDCA{"cfgEnableQADimuonSameSignDCA", false, "Enable same sign dimuon DCA QA checks"};
+    Configurable<bool> fEnableSingleMuonDiMuonCorrelations{"cfgEnableMuonDiMuonCorrelations", false, "Enable muon-dimuon QA checks"};
   } configQAs;
 
   ////   Variables for selecting muon tracks
@@ -207,6 +207,10 @@ struct muonQa {
 
   ////   Variables for selecting global tracks
   Configurable<float> fMatchingChi2MftMchUp{"cfgMatchingChi2MftMchUp", 50.f, ""};
+
+  ////   Variables for selecting dimuon DCA candidates
+  Configurable<float> fDimuonDCAMassLow{"cfgDimuonDCAMassLow", 2.8f, ""};
+  Configurable<float> fDimuonDCAMassHigh{"cfgDimuonDCAMassHigh", 3.4f, ""};
 
   ////   Variables for alignment corrections
   Configurable<bool> fEnableMFTAlignmentCorrections{"cfgEnableMFTAlignmentCorrections", false, ""};
@@ -251,8 +255,8 @@ struct muonQa {
   double Bz; // Bz for MFT
 
   geo::TransformationCreator transformation;
-  map<int, math_utils::Transform3D> transformRef; // reference geometry w.r.t track data
-  map<int, math_utils::Transform3D> transformNew; // new geometry
+  std::map<int, math_utils::Transform3D> transformRef; // reference geometry w.r.t track data
+  std::map<int, math_utils::Transform3D> transformNew; // new geometry
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
 
@@ -262,6 +266,7 @@ struct muonQa {
 
   HistogramRegistry registry{"registry", {}};
   HistogramRegistry registryDCA{"registryDCA", {}};
+  HistogramRegistry registryDCAdiMuons{"registryDCAdiMuons", {}};
   HistogramRegistry registryResiduals{"registryResiduals", {}};
   HistogramRegistry registryResidualsMFT{"registryResidualsMFT", {}};
   HistogramRegistry registryResidualsMCH{"registryResidualsMCH", {}};
@@ -288,7 +293,7 @@ struct muonQa {
   VarTrack fgValuesMCHpv;
   VarTrack fgValuesMFT;
   VarTrack fgValuesGlobal;
-  vector<VarTrack> fgValuesCandidates;
+  std::vector<VarTrack> fgValuesCandidates;
 
   void CreateBasicHistograms()
   {
@@ -596,7 +601,8 @@ struct muonQa {
       AxisSpec transverseMomentumAxis = {100, 0, 30, "p_{T} (GeV/c)"};
       AxisSpec etaAxis = {40, -5, -1, "#eta"};
       AxisSpec rAbsAxis = {10, 0., 100.0, "R_{abs} (cm)"};
-      AxisSpec dcaAxis = {40, 0.0, 20.0, "DCA"};
+      AxisSpec dcaAxis = {400, -10.0, 10.0, "DCA"};
+      AxisSpec dcaAxisReduced = {40, -10.0, 10.0, "DCA"};
       AxisSpec phiAxis = {36, -180.0, 180.0, "#phi (degrees)"};
       // dimuons
       AxisSpec invMassAxis = {400, 1, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
@@ -605,21 +611,68 @@ struct muonQa {
       AxisSpec yPairAxis = {120, 0.0, 6.0, "#y_{pair}"};
       AxisSpec invMassAxis2D = {750, 0, 15, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec pTAxis2D = {120, 0, 30, "p_{T} (GeV/c)"};
-      // Single muons - dimuons correlations
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPt_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} p_{T}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPt_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} p_{T}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, pTAxis2D}});
-      //
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosEta_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #eta", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, etaAxis}});
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegEta_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #eta", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, etaAxis}});
-      //
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosRabs_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} R_{abs}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, rAbsAxis}});
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegRabs_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} R_{abs}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, rAbsAxis}});
-      //
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxis}});
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxis}});
-      //
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
-      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
+      // Jpsi candidate DCA histograms
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosDCAx_minus_MuNegDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} minus DCA_x #mu^{-} and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} top minus DCA_x #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} top minus DCA_x #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} bottom minus DCA_x #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} bottom minus DCA_x #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosDCAy_minus_MuNegDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} minus DCA_y #mu^{-} and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} top minus DCA_y #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} top minus DCA_y #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} bottom minus DCA_y #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} bottom minus DCA_y #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      if (configQAs.fEnableQADimuonSameSignDCA) {
+        // mu+mu+
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1DCAx_minus_Mu2DCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} minus DCA_x #mu_{2} and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} top minus DCA_x #mu_{2} top and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} top minus DCA_x #mu_{2} bottom and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} bottom minus DCA_x #mu_{2} bottom and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} bottom minus DCA_x #mu_{2} top and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1DCAy_minus_Mu2DCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} minus DCA_y #mu_{2} and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} top minus DCA_y #mu_{2} top and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} top minus DCA_y #mu_{2} bottom and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} bottom minus DCA_y #mu_{2} bottom and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} bottom minus DCA_y #mu_{2} top and #mu^{+}#mu^{+} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        // mu-mu-
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1DCAx_minus_Mu2DCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} minus DCA_x #mu_{2} and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} top minus DCA_x #mu_{2} top and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} top minus DCA_x #mu_{2} bottom and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} bottom minus DCA_x #mu_{2} bottom and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts", "DCA_x #mu_{1} bottom minus DCA_x #mu_{2} top and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1DCAy_minus_Mu2DCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} minus DCA_y #mu_{-} and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} top minus DCA_y #mu_{2} top and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} top minus DCA_y #mu_{2} bottom and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} bottom minus DCA_y #mu_{2} bottom and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+        registryDimuon.add("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts", "DCA_y #mu_{1} bottom minus DCA_y #mu_{2} top and #mu^{-}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      }
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosDCAx_minus_MuNegDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} minus DCA_x #mu^{-} and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosTDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} top minus DCA_x #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosTDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} top minus DCA_x #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosBDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} bottom minus DCA_x #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosBDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts", "DCA_x #mu^{+} bottom minus DCA_x #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosDCAy_minus_MuNegDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} minus DCA_y #mu^{-} and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosTDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} top minus DCA_y #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosTDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} top minus DCA_y #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosBDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} bottom minus DCA_y #mu^{-} bottom and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/mixed-event/DCA/pT_MuPosBDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts", "DCA_y #mu^{+} bottom minus DCA_y #mu^{-} top and #mu^{+}#mu^{-} p_{T}", {HistType::kTH2F, {pTAxis2D, dcaAxis}});
+      if (configQAs.fEnableSingleMuonDiMuonCorrelations) {
+        // Single muons - dimuons correlations
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPt_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} p_{T}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, pTAxis2D}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPt_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} p_{T}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, pTAxis2D}});
+        //
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosEta_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #eta", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, etaAxis}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegEta_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #eta", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, etaAxis}});
+        //
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosRabs_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} R_{abs}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, rAbsAxis}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegRabs_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} R_{abs}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, rAbsAxis}});
+        //
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxisReduced}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxisReduced}});
+        //
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
+      }
       // MCH-MID tracks with MCH acceptance cuts
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_MuonCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
@@ -941,7 +994,7 @@ struct muonQa {
     bool removeTrack = false;
     try {
       trackFitter.fit(track, false);
-    } catch (exception const& e) {
+    } catch (std::exception const& e) {
       removeTrack = true;
       return removeTrack;
     }
@@ -952,7 +1005,7 @@ struct muonQa {
 
       try {
         trackFitter.fit(track, true, false, (itStartingParam == track.rbegin()) ? nullptr : &itStartingParam);
-      } catch (exception const&) {
+      } catch (std::exception const&) {
         removeTrack = true;
         break;
       }
@@ -1206,11 +1259,11 @@ struct muonQa {
                     std::vector<GlobalMuonPair>& globalMuonPairs)
   {
     // muon tracks - outer loop over collisions
-    for (auto& [collisionIndex1, collisionInfo1] : collisionInfos) {
+    for (const auto& [collisionIndex1, collisionInfo1] : collisionInfos) {
 
       // outer loop over muon tracks
       auto muonCollision1 = muons.sliceBy(fwdtracksPerCollision, collisionInfo1.globalIndex);
-      for (auto muon1 : muonCollision1) {
+      for (const auto& muon1 : muonCollision1) {
 
         if (muon1.trackType() <= 2) {
           continue;
@@ -1218,7 +1271,7 @@ struct muonQa {
         auto mchIndex1 = muon1.globalIndex();
 
         // inner loop over collisions
-        for (auto& [collisionIndex2, collisionInfo2] : collisionInfos) {
+        for (const auto& [collisionIndex2, collisionInfo2] : collisionInfos) {
           // avoid double-counting of collisions
           if (collisionIndex2 < collisionIndex1)
             continue;
@@ -1231,7 +1284,7 @@ struct muonQa {
 
           // inner loop over muon tracks
           auto muonCollision2 = muons.sliceBy(fwdtracksPerCollision, collisionInfo2.globalIndex);
-          for (auto muon2 : muonCollision2) {
+          for (const auto& muon2 : muonCollision2) {
             if (muon2.trackType() <= 2) {
               continue;
             }
@@ -1249,11 +1302,11 @@ struct muonQa {
     }
 
     // global muon tracks - outer loop over collisions
-    for (auto& [collisionIndex1, collisionInfo1] : collisionInfos) {
+    for (const auto& [collisionIndex1, collisionInfo1] : collisionInfos) {
 
       // outer loop over global muon tracks
       auto muonCollision1 = muons.sliceBy(fwdtracksPerCollision, collisionInfo1.globalIndex);
-      for (auto muon1 : muonCollision1) {
+      for (const auto& muon1 : muonCollision1) {
 
         if (muon1.trackType() <= 2) {
           continue;
@@ -1265,7 +1318,7 @@ struct muonQa {
         }
 
         // inner loop over collisions
-        for (auto& [collisionIndex2, collisionInfo2] : collisionInfos) {
+        for (const auto& [collisionIndex2, collisionInfo2] : collisionInfos) {
           // avoid double-counting of collisions
           if (collisionIndex2 < collisionIndex1)
             continue;
@@ -1278,7 +1331,7 @@ struct muonQa {
 
           // outer loop over global muon tracks
           auto muonCollision2 = muons.sliceBy(fwdtracksPerCollision, collisionInfo2.globalIndex);
-          for (auto muon2 : muonCollision2) {
+          for (const auto& muon2 : muonCollision2) {
 
             if (muon2.trackType() <= 2) {
               continue;
@@ -1373,7 +1426,7 @@ struct muonQa {
   {
     int removable = 0;
     auto clustersSliced = mchcls.sliceBy(perMuon, muon.globalIndex()); // Slice clusters by muon id
-    vector<vector<float>> posClusters;
+    std::vector<std::vector<float>> posClusters;
 
     int clIndex = -1;
     // Get re-aligned clusters associated to current track
@@ -1402,8 +1455,8 @@ struct muonQa {
       clusterMCH->ey = cluster.isGoodY() ? 0.2 : 10.0;
 
       // Fill temporary values
-      vector<float> posCls = {clusterMCH->x, clusterMCH->y, clusterMCH->z};
-      vector<float> eCls = {clusterMCH->ex, clusterMCH->ey};
+      std::vector<float> posCls = {clusterMCH->x, clusterMCH->y, clusterMCH->z};
+      std::vector<float> eCls = {clusterMCH->ex, clusterMCH->ey};
       posClusters.emplace_back(posCls);
       fgValues.errorClusters.emplace_back(eCls);
       fgValues.DEIDs.emplace_back(cluster.deId());
@@ -1421,7 +1474,7 @@ struct muonQa {
       }
 
       for (auto it = convertedTrack.begin(); it != convertedTrack.end(); it++) {
-        vector<float> pos = {static_cast<float>(it->getNonBendingCoor()), static_cast<float>(it->getBendingCoor()), static_cast<float>(it->getZ())};
+        std::vector<float> pos = {static_cast<float>(it->getNonBendingCoor()), static_cast<float>(it->getBendingCoor()), static_cast<float>(it->getZ())};
         fgValues.posClusters.emplace_back(pos);
       }
 
@@ -1485,9 +1538,9 @@ struct muonQa {
       fgValues.phi = propmuon.getPhi();
 
       fgValues.p = propmuon.getP();
-      fgValues.px = propmuon.getP() * sin(M_PI / 2 - atan(propmuon.getTgl())) * cos(propmuon.getPhi());
-      fgValues.py = propmuon.getP() * sin(M_PI / 2 - atan(propmuon.getTgl())) * sin(propmuon.getPhi());
-      fgValues.pz = propmuon.getP() * cos(M_PI / 2 - atan(propmuon.getTgl()));
+      fgValues.px = propmuon.getP() * std::sin(M_PI / 2 - std::atan(propmuon.getTgl())) * std::cos(propmuon.getPhi());
+      fgValues.py = propmuon.getP() * std::sin(M_PI / 2 - std::atan(propmuon.getTgl())) * std::sin(propmuon.getPhi());
+      fgValues.pz = propmuon.getP() * std::cos(M_PI / 2 - std::atan(propmuon.getTgl()));
     }
 
     if (endPoint == kToDCA) {
@@ -1557,8 +1610,8 @@ struct muonQa {
         double pMCH = fgValuesMCH.p;
         int sign = fgValuesMCH.sign;
 
-        double px = pMCH * sin(M_PI / 2 - atan(muon.tgl())) * cos(muon.phi());
-        double py = pMCH * sin(M_PI / 2 - atan(muon.tgl())) * sin(muon.phi());
+        double px = pMCH * std::sin(M_PI / 2 - std::atan(muon.tgl())) * std::cos(muon.phi());
+        double py = pMCH * std::sin(M_PI / 2 - std::atan(muon.tgl())) * std::sin(muon.phi());
         // double pz = pMCH * cos(M_PI / 2 - atan(mft.tgl()));
         double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
 
@@ -1611,6 +1664,10 @@ struct muonQa {
       propmuon.setParameters(track.getParameters());
       propmuon.setZ(track.getZ());
       propmuon.setCovariances(track.getCovariances());
+      if (endPoint == kToDCA) {
+        fgValues.dcaX = (propmuon.getX() - collision.x);
+        fgValues.dcaY = (propmuon.getY() - collision.y);
+      }
     }
 
     //// Fill propagation informations
@@ -1624,9 +1681,9 @@ struct muonQa {
       fgValues.phi = propmuon.getPhi();
 
       fgValues.p = propmuon.getP();
-      fgValues.px = propmuon.getP() * sin(M_PI / 2 - atan(propmuon.getTgl())) * cos(propmuon.getPhi());
-      fgValues.py = propmuon.getP() * sin(M_PI / 2 - atan(propmuon.getTgl())) * sin(propmuon.getPhi());
-      fgValues.pz = propmuon.getP() * cos(M_PI / 2 - atan(propmuon.getTgl()));
+      fgValues.px = propmuon.getP() * std::sin(M_PI / 2 - std::atan(propmuon.getTgl())) * std::cos(propmuon.getPhi());
+      fgValues.py = propmuon.getP() * std::sin(M_PI / 2 - std::atan(propmuon.getTgl())) * std::sin(propmuon.getPhi());
+      fgValues.pz = propmuon.getP() * std::cos(M_PI / 2 - std::atan(propmuon.getTgl()));
     }
 
     if (endPoint == kToDCA) {
@@ -2158,8 +2215,8 @@ struct muonQa {
       auto& fgValuesCollMatched = collisions.at(mfttrack.collisionId());
 
       // Do extrapolation for muons to all reference planes
-      vector<VarTrack> mchTrackExtrap;
-      for (double z : zRefPlane) {
+      std::vector<VarTrack> mchTrackExtrap;
+      for (const double z : zRefPlane) {
         VarTrack fgValues;
         if (configRealign.fDoRealign) {
           FillPropagation(mchrealigned, VarColl{}, fgValues, kToZ, z);
@@ -2194,8 +2251,8 @@ struct muonQa {
         }
 
         // Do extrapolation for MFTs to all reference planes
-        vector<VarTrack> mftTrackExtrap;
-        for (double z : zRefPlane) {
+        std::vector<VarTrack> mftTrackExtrap;
+        for (const double z : zRefPlane) {
           VarTrack fgValues;
           FillPropagation<0, 1>(mft, fgValuesCollMFT, mchTrackExtrap[1], fgValues, kToZ, z);
           mftTrackExtrap.emplace_back(fgValues);
@@ -2476,7 +2533,7 @@ struct muonQa {
 
     GetMuonPairs(muonTracks, matchingCandidates, collisions, muonPairs, globalMuonPairs);
 
-    for (auto& [muon1, muon2] : muonPairs) {
+    for (const auto& [muon1, muon2] : muonPairs) {
       auto collisionIndex1 = muon1.first;
       auto const& collision1 = collisions.at(collisionIndex1);
       auto collisionIndex2 = muon2.first;
@@ -2515,7 +2572,10 @@ struct muonQa {
 
         // Propagate MCH to PV
         FillPropagation<1>(muonTrack1, collision1, fgValuesMuon1, fgValuesMuonPV1);
-        FillPropagation<1>(muonTrack2, collision2, fgValuesMuon1, fgValuesMuonPV2);
+        FillPropagation<1>(muonTrack2, collision2, fgValuesMuon2, fgValuesMuonPV2);
+        // Calculate DCA
+        FillPropagation<1>(muonTrack1, collision1, fgValuesMuon1, fgValuesMuonPV1, kToDCA);
+        FillPropagation<1>(muonTrack2, collision2, fgValuesMuon2, fgValuesMuonPV2, kToDCA);
       }
 
       int sign1 = muonTrack1.sign();
@@ -2527,6 +2587,9 @@ struct muonQa {
 
       const auto& muonPos = fgValuesMuon1.sign > 0 ? fgValuesMuon1 : fgValuesMuon2;
       const auto& muonNeg = fgValuesMuon1.sign < 0 ? fgValuesMuon1 : fgValuesMuon2;
+      // for DCA
+      const auto& muonPosPV = fgValuesMuon1.sign > 0 ? fgValuesMuonPV1 : fgValuesMuonPV2;
+      const auto& muonNegPV = fgValuesMuon1.sign < 0 ? fgValuesMuonPV1 : fgValuesMuonPV2;
       // μ⁺ variables
       double muPosPt = muonPos.pT;
       double muPosEta = muonPos.eta;
@@ -2552,35 +2615,54 @@ struct muonQa {
 
       bool sameEvent = (collisionIndex1 == collisionIndex2);
 
+      // dimuon variables
       double mass = GetMuMuInvariantMass(fgValuesMuonPV1, fgValuesMuonPV2);
       double pT = GetMuMuPt(fgValuesMuonPV1, fgValuesMuonPV2);
       double yPair = GetMuMuRap(fgValuesMuonPV1, fgValuesMuonPV2);
+      double dcaXPair;
+      double dcaYPair;
+      if (configRealign.fDoRealign) {
+        dcaXPair = muonPos.dcaX - muonNeg.dcaX;
+        dcaYPair = muonPos.dcaY - muonNeg.dcaY;
+      } else {
+        dcaXPair = muonPosPV.dcaX - muonNegPV.dcaX;
+        dcaYPair = muonPosPV.dcaY - muonNegPV.dcaY;
+      }
       if (goodMuonTracks) {
         if (sameEvent) {
           // same-event case
-          // single muons
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPt_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPt);
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPt_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPt);
-          //
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosEta_MuonKine_MuonCuts"))->Fill(mass, pT, muPosEta);
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegEta_MuonKine_MuonCuts"))->Fill(mass, pT, muNegEta);
-          //
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosRabs_MuonKine_MuonCuts"))->Fill(mass, pT, muPosRabs);
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegRabs_MuonKine_MuonCuts"))->Fill(mass, pT, muNegRabs);
-          //
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts"))->Fill(mass, pT, muPosDca);
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts"))->Fill(mass, pT, muNegDca);
-          //
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPhi);
-          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPhi);
-          // dimuons
-          registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
-          registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
-          registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
-          registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts"))->Fill(yPair);
-          registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts"))->Fill(mass, yPair);
-          registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts"))->Fill(pT, yPair);
+          if (configQAs.fEnableSingleMuonDiMuonCorrelations) {
+            // single muons
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPt_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPt);
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPt_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPt);
+            //
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosEta_MuonKine_MuonCuts"))->Fill(mass, pT, muPosEta);
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegEta_MuonKine_MuonCuts"))->Fill(mass, pT, muNegEta);
+            //
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosRabs_MuonKine_MuonCuts"))->Fill(mass, pT, muPosRabs);
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegRabs_MuonKine_MuonCuts"))->Fill(mass, pT, muNegRabs);
+            //
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts"))->Fill(mass, pT, muPosDca);
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts"))->Fill(mass, pT, muNegDca);
+            //
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPhi);
+            registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPhi);
+            // dimuons
+            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
+            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
+            registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts"))->Fill(yPair);
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts"))->Fill(mass, yPair);
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts"))->Fill(pT, yPair);
+          }
 
+          // dimuon DCA
+          if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosDCAx_minus_MuNegDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosDCAy_minus_MuNegDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+          }
+
+          // dimuon top-bottom and left-right separation
           if (TopBottom1 == 0 && TopBottom2 == 0) {
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_TT"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_TT"))->Fill(mass);
@@ -2588,6 +2670,10 @@ struct muonQa {
             registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts_TT"))->Fill(yPair);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts_TT"))->Fill(mass, yPair);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts_TT"))->Fill(pT, yPair);
+            if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            }
           } else if ((TopBottom1 == 0 && TopBottom2 == 1) || (TopBottom1 == 1 && TopBottom2 == 0)) {
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_TB"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_TB"))->Fill(mass);
@@ -2600,20 +2686,36 @@ struct muonQa {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts_TPBN"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               } else {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts_TNBP"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               }
             } else if (TopBottom1 == 1 && TopBottom2 == 0) {
               if (sign2 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts_TPBN"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosTDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               } else {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts_TNBP"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               }
             }
           } else if (TopBottom1 == 1 && TopBottom2 == 1) {
@@ -2623,6 +2725,10 @@ struct muonQa {
             registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts_BB"))->Fill(yPair);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts_BB"))->Fill(mass, yPair);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts_BB"))->Fill(pT, yPair);
+            if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/opposite-sign/DCA/pT_MuPosBDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            }
           }
 
           if (LeftRight1 == 0 && LeftRight2 == 0) {
@@ -2637,7 +2743,7 @@ struct muonQa {
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts_LR"))->Fill(mass, pT);
             registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts_LR"))->Fill(yPair);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts_LR"))->Fill(mass, yPair);
-            if (TopBottom1 == 0 && TopBottom2 == 1) {
+            if (LeftRight1 == 0 && LeftRight2 == 1) {
               if (sign1 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_LPRN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_LPRN"))->Fill(mass);
@@ -2647,7 +2753,7 @@ struct muonQa {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_LNRP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts_LNRP"))->Fill(mass, pT);
               }
-            } else if (TopBottom1 == 1 && TopBottom2 == 0) {
+            } else if (LeftRight1 == 1 && LeftRight2 == 0) {
               if (sign2 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts_LPRN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts_LPRN"))->Fill(mass);
@@ -2671,10 +2777,21 @@ struct muonQa {
           registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
           registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
 
+          // dimuon DCA
+          if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+            registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosDCAx_minus_MuNegDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+            registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosDCAy_minus_MuNegDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+          }
+
+          // dimuon top-bottom and left-right separation
           if (TopBottom1 == 0 && TopBottom2 == 0) {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_TT"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_TT"))->Fill(mass);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_TT"))->Fill(mass, pT);
+            if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+              registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosTDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosTDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            }
           } else if ((TopBottom1 == 0 && TopBottom2 == 1) || (TopBottom1 == 1 && TopBottom2 == 0)) {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_TB"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_TB"))->Fill(mass);
@@ -2684,26 +2801,46 @@ struct muonQa {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_TPBN"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosTDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosTDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               } else {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_TNBP"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosBDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosBDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               }
             } else if (TopBottom1 == 1 && TopBottom2 == 0) {
               if (sign2 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_TPBN"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_TPBN"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosTDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosTDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               } else {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_TNBP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_TNBP"))->Fill(mass, pT);
+                if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosBDCAx_minus_MuNegTDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosBDCAy_minus_MuNegTDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
               }
             }
           } else if (TopBottom1 == 1 && TopBottom2 == 1) {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_BB"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_BB"))->Fill(mass);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_BB"))->Fill(mass, pT);
+            if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
+              registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosBDCAx_minus_MuNegBDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/mixed-event/DCA/pT_MuPosBDCAy_minus_MuNegBDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            }
           }
 
           if (LeftRight1 == 0 && LeftRight2 == 0) {
@@ -2714,7 +2851,7 @@ struct muonQa {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_LR"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_LR"))->Fill(mass);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_LR"))->Fill(mass, pT);
-            if (TopBottom1 == 0 && TopBottom2 == 1) {
+            if (LeftRight1 == 0 && LeftRight2 == 1) {
               if (sign1 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_LPRN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_LPRN"))->Fill(mass);
@@ -2724,7 +2861,7 @@ struct muonQa {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_LNRP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_MuonCuts_LNRP"))->Fill(mass, pT);
               }
-            } else if (TopBottom1 == 1 && TopBottom2 == 0) {
+            } else if (LeftRight1 == 1 && LeftRight2 == 0) {
               if (sign2 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_MuonCuts_LPRN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_MuonCuts_LPRN"))->Fill(mass);
@@ -2898,7 +3035,154 @@ struct muonQa {
       }
     }
 
-    for (auto& [muon1, muon2] : globalMuonPairs) {
+    if (configQAs.fEnableQADimuonSameSignDCA) {
+      for (const auto& [muon1, muon2] : muonPairs) {
+        auto collisionIndex1 = muon1.first;
+        auto const& collision1 = collisions.at(collisionIndex1);
+        auto collisionIndex2 = muon2.first;
+        auto const& collision2 = collisions.at(collisionIndex2);
+
+        auto mchIndex1 = muon1.second;
+        auto mchIndex2 = muon2.second;
+        auto const& muonTrack1 = muonTracks.rawIteratorAt(mchIndex1);
+        auto const& muonTrack2 = muonTracks.rawIteratorAt(mchIndex2);
+
+        VarTrack fgValuesMuon1, fgValuesMuonPV1;
+        VarTrack fgValuesMuon2, fgValuesMuonPV2;
+        mch::Track mchrealigned1, mchrealigned2;
+        VarClusters fgValuesCls1, fgValuesCls2;
+        if (!FillClusters(muonTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(muonTrack2, clusters, fgValuesCls2, mchrealigned2)) {
+          continue; // Refit is not valid
+        }
+
+        if (configRealign.fDoRealign) {
+
+          FillTrack(mchrealigned1, fgValuesMuon1);
+          FillTrack(mchrealigned2, fgValuesMuon2);
+
+          // Propagate MCH to PV
+          FillPropagation(mchrealigned1, collision1, fgValuesMuonPV1);
+          FillPropagation(mchrealigned2, collision2, fgValuesMuonPV2);
+
+          // Recalculate pDCA and Rabs values
+          FillPropagation(mchrealigned1, collision1, fgValuesMuon1, kToAbsEnd);
+          FillPropagation(mchrealigned1, collision1, fgValuesMuon1, kToDCA);
+          FillPropagation(mchrealigned2, collision2, fgValuesMuon2, kToAbsEnd);
+          FillPropagation(mchrealigned2, collision2, fgValuesMuon2, kToDCA);
+        } else {
+          FillTrack<1>(muonTrack1, fgValuesMuon1);
+          FillTrack<1>(muonTrack2, fgValuesMuon2);
+
+          // Propagate MCH to PV
+          FillPropagation<1>(muonTrack1, collision1, fgValuesMuon1, fgValuesMuonPV1);
+          FillPropagation<1>(muonTrack2, collision2, fgValuesMuon2, fgValuesMuonPV2);
+          // Calculate DCA
+          FillPropagation<1>(muonTrack1, collision1, fgValuesMuon1, fgValuesMuonPV1, kToDCA);
+          FillPropagation<1>(muonTrack2, collision2, fgValuesMuon2, fgValuesMuonPV2, kToDCA);
+        }
+
+        int sign1 = muonTrack1.sign();
+        int sign2 = muonTrack2.sign();
+
+        // only consider same-sign pairs
+        if ((sign1 * sign2) <= 0)
+          continue;
+
+        bool isPP = false;
+        bool isMM = false;
+        if (sign1 > 0 && sign2 > 0)
+          isPP = true;
+        else
+          isMM = true;
+
+        int Quadrant1 = GetQuadrantPhi(muonTrack1.phi() * 180.0 / TMath::Pi());
+        int Quadrant2 = GetQuadrantPhi(muonTrack2.phi() * 180.0 / TMath::Pi());
+        int TopBottom1 = (Quadrant1 == 0 || Quadrant1 == 1) ? 0 : 1;
+        int TopBottom2 = (Quadrant2 == 0 || Quadrant2 == 1) ? 0 : 1;
+
+        bool goodMuonTracks = (IsGoodMuon(fgValuesMuon1, fgValuesMuonPV1) && IsGoodMuon(fgValuesMuon2, fgValuesMuonPV2));
+
+        // dimuon variables
+        double mass = GetMuMuInvariantMass(fgValuesMuonPV1, fgValuesMuonPV2);
+        double pT = GetMuMuPt(fgValuesMuonPV1, fgValuesMuonPV2);
+        double dcaXPair;
+        double dcaYPair;
+        if (configRealign.fDoRealign) {
+          dcaXPair = fgValuesMuon1.dcaX - fgValuesMuon2.dcaX;
+          dcaYPair = fgValuesMuon1.dcaY - fgValuesMuon2.dcaY;
+        } else {
+          dcaXPair = fgValuesMuonPV1.dcaX - fgValuesMuonPV2.dcaX;
+          dcaYPair = fgValuesMuonPV1.dcaY - fgValuesMuonPV2.dcaY;
+        }
+        if (mass < fDimuonDCAMassLow || mass > fDimuonDCAMassHigh)
+          continue;
+
+        if (goodMuonTracks) {
+          // dimuon DCA
+          if (isPP) {
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1DCAx_minus_Mu2DCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1DCAy_minus_Mu2DCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+          } else if (isMM) {
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1DCAx_minus_Mu2DCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+            registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1DCAy_minus_Mu2DCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+          }
+          // dimuon top-bottom and left-right separation
+          if (TopBottom1 == 0 && TopBottom2 == 0) {
+            if (isPP) {
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            } else if (isMM) {
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            }
+          } else if ((TopBottom1 == 0 && TopBottom2 == 1) || (TopBottom1 == 1 && TopBottom2 == 0)) {
+            if (TopBottom1 == 0 && TopBottom2 == 1) {
+              if (isPP) {
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+              } else if (isMM) {
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+              } else {
+                if (isPP) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                } else if (isMM) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
+              }
+            } else if (TopBottom1 == 1 && TopBottom2 == 0) {
+              if (isPP) {
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1TDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+              } else if (isMM) {
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1TDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+              } else {
+                if (isPP) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                } else if (isMM) {
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAx_minus_Mu2TDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+                  registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAy_minus_Mu2TDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+                }
+              }
+            }
+          } else if (TopBottom1 == 1 && TopBottom2 == 1) {
+            if (isPP) {
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-PP/DCA/pT_Mu1BDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            } else if (isMM) {
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAx_minus_Mu2BDCAx_MuonKine_MuonCuts"))->Fill(pT, dcaXPair);
+              registryDimuon.get<TH2>(HIST("dimuon/same-event/same-sign-MM/DCA/pT_Mu1BDCAy_minus_Mu2BDCAy_MuonKine_MuonCuts"))->Fill(pT, dcaYPair);
+            }
+          }
+        }
+      }
+    }
+
+    for (const auto& [muon1, muon2] : globalMuonPairs) {
       auto collisionIndex1 = muon1.first;
       auto collisionIndex2 = muon2.first;
       auto& globalTracksVector1 = muon1.second;

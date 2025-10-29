@@ -170,5 +170,11 @@ DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS", //!
                   o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId,
                   emcalmatchedtrack::DeltaPhi, emcalmatchedtrack::DeltaEta); //!
 using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
+
+// table for matched secondary tracks
+DECLARE_SOA_TABLE(EMCMatchSecs, "AOD", "EMCMATCHSEC", //!
+                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId,
+                  emcalmatchedtrack::DeltaPhi, emcalmatchedtrack::DeltaEta); //!
+using EMCMatchSec = EMCMatchSecs::iterator;
 } // namespace o2::aod
 #endif // PWGJE_DATAMODEL_EMCALCLUSTERS_H_

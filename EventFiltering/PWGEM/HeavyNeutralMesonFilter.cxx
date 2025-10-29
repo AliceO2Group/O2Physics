@@ -10,38 +10,52 @@
 // or submit itself to any jurisdiction.
 ///
 /// \file HeavyNeutralMesonFilter.cxx
-///
 /// \brief This code loops over collisions to filter events contaning heavy neutral mesons (omega or eta') using EMCal clusters and V0s (PCM)
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt; Maximilian Korwieser (maximilian.korwieser@cern.ch) - Technical University Munich
 ///
 
-#include <vector>
-#include <iterator>
-#include <string>
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector4D.h"
-#include "TMath.h"
-#include "TRandom3.h"
-
+#include "EventFiltering/filterTables.h"
+//
 #include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "fairlogger/Logger.h"
-#include "Framework/Configurable.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -90,21 +104,22 @@ const std::vector<std::string> pidCutsName{"TPC min", "TPC max", "TPCTOF max", "
 const std::vector<std::string> femtoFilterNames{"PPOmega", "PPEtaPrime", "Omegad", "EtaPrimed", "OmegaP", "EtaPrimeP"};
 
 // configs for tracks
-const float pidcutsTable[kNFemtoPartners][kNPIDLimits]{
+// these are need [[maybe_unused]] to silence a warning from clangd, since the compiler will inline them directly to the configs down below and then say: Variable 'X' is not needed and will not be emitted
+[[maybe_unused]] const float pidcutsTable[kNFemtoPartners][kNPIDLimits]{
   {-4.f, 4.f, 4.f, -99.f, 99.f},
   {-4.f, 4.f, 4.f, -6.f, 6.f},
   {-4.f, 4.f, 4.f, -99.f, 99.f}};
 
-const float ptcutsTable[kNFemtoPartners][3]{
+[[maybe_unused]] const float ptcutsTable[kNFemtoPartners][3]{
   {0.35f, 6.f, 0.75f},
   {0.55f, 2.f, 1.2f},
   {0.35f, 6.f, 0.75f}};
 
-const float nClusterMinTPC[1][kNFemtoPartners]{{80.0f, 80.0f, 80.0f}};
-const float nClusterMinITS[1][kNFemtoPartners]{{4, 4, 4}};
+[[maybe_unused]] const float nClusterMinTPC[1][kNFemtoPartners]{{80.0f, 80.0f, 80.0f}};
+[[maybe_unused]] const float nClusterMinITS[1][kNFemtoPartners]{{4, 4, 4}};
 
-static const float triggerSwitches[1][kNFemtoTriggers]{{1, 1, 1, 1, 1, 1}};
-const float triggerLimits[1][kNFemtoTriggers]{{1.f, 1.f, 1.f, 1.f, 1.f, 1.f}};
+[[maybe_unused]] static const float triggerSwitches[1][kNFemtoTriggers]{{1, 1, 1, 1, 1, 1}};
+[[maybe_unused]] const float triggerLimits[1][kNFemtoTriggers]{{1.f, 1.f, 1.f, 1.f, 1.f, 1.f}};
 } // namespace hnmtrigger
 
 struct HeavyNeutralMesonFilter {

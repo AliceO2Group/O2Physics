@@ -27,8 +27,10 @@
 
 #include <cmath>
 #include <cstdint>
+#include <experimental/type_traits>
 #include <optional>
 #include <unordered_map>
+#include <utility>
 
 namespace o2::analysis::femto
 {
@@ -145,6 +147,15 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kHelium3:
       mass = o2::constants::physics::MassHelium3;
       break;
+    case kSigmaMinus:
+      mass = o2::constants::physics::MassSigmaMinus;
+      break;
+    case kXiMinus:
+      mass = o2::constants::physics::MassXiMinus;
+      break;
+    case kOmegaMinus:
+      mass = o2::constants::physics::MassOmegaMinus;
+      break;
     default:
       LOG(fatal) << "PDG code is not suppored";
   }
@@ -158,9 +169,9 @@ float qn(T const& col)
   return qn;
 }
 
-inline std::optional<float> dphistar(float magfield, float radius, float sign, float pt, float phi)
+inline std::optional<float> dphistar(float magfield, float radius, float signedPt, float phi)
 {
-  float arg = 0.3f * sign * magfield * radius * 0.01f / (2.f * pt);
+  float arg = 0.3f * (0.1f * magfield) * (0.01 * radius) / (2.f * signedPt);
   if (std::fabs(arg) < 1.f) {
     return phi - std::asin(arg);
   }
@@ -185,10 +196,10 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
 }
 
 template <typename T>
-inline int sign(T value)
-{
-  return (value > 0) - (value < 0); // Returns 1 for positive, -1 for negative, 0 for zero
-}
+using HasMass = decltype(std::declval<T&>().mass());
+
+template <typename T>
+using HasSign = decltype(std::declval<T&>().sign());
 
 }; // namespace utils
 }; // namespace o2::analysis::femto

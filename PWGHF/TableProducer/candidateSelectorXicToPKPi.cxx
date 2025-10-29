@@ -90,8 +90,8 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<bool> activateQA{"activateQA", true, "Flag to enable QA histogram"};
 
   o2::analysis::HfMlResponseXicToPKPi<float> hfMlResponse;
-  std::vector<float> outputMlXicToPKPi = {};
-  std::vector<float> outputMlXicToPiKP = {};
+  std::vector<float> outputMlXicToPKPi;
+  std::vector<float> outputMlXicToPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -148,7 +148,7 @@ struct HfCandidateSelectorXicToPKPi {
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -212,7 +212,7 @@ struct HfCandidateSelectorXicToPKPi {
   {
 
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -283,8 +283,8 @@ struct HfCandidateSelectorXicToPKPi {
 
       // conjugate-dependent topplogical selection for Xic
 
-      bool topolXicToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolXicToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
+      bool const topolXicToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolXicToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
 
       if (!topolXicToPKPi && !topolXicToPiKP) {
         hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
@@ -313,11 +313,11 @@ struct HfCandidateSelectorXicToPKPi {
         pidXicToPiKP = 1;
       } else {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
-        TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos1Proton;
+        TrackSelectorPID::Status pidTrackPos2Proton;
+        TrackSelectorPID::Status pidTrackPos1Pion;
+        TrackSelectorPID::Status pidTrackPos2Pion;
+        TrackSelectorPID::Status pidTrackNegKaon;
         if (usePidTpcAndTof) {
 
           pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
@@ -376,11 +376,11 @@ struct HfCandidateSelectorXicToPKPi {
         bool isSelectedMlXicToPKPi = false;
         bool isSelectedMlXicToPiKP = false;
 
-        if (topolXicToPKPi && pidXicToPKPi) {
+        if (topolXicToPKPi && (pidXicToPKPi != 0)) {
           std::vector<float> inputFeaturesXicToPKPi = hfMlResponse.getInputFeatures(candidate, true);
           isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
         }
-        if (topolXicToPiKP && pidXicToPiKP) {
+        if (topolXicToPiKP && (pidXicToPiKP != 0)) {
           std::vector<float> inputFeaturesXicToPiKP = hfMlResponse.getInputFeatures(candidate, false);
           isSelectedMlXicToPiKP = hfMlResponse.isSelectedMl(inputFeaturesXicToPiKP, ptCand, outputMlXicToPiKP);
         }

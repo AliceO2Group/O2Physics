@@ -389,6 +389,7 @@ struct strangederivedbuilder {
     }
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
+    histos.add("h2dCollisionTimesVsNTracks", "h2dCollisionTimesVsNTracks", kTH2D, {{100, -0.5f, 99.5}, {2000, -1000.0f, 1000.0f}});
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -602,6 +603,7 @@ struct strangederivedbuilder {
       } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
       }
+      histos.fill(HIST("h2dCollisionTimesVsNTracks"), collisionNtracks[collision.globalIndex()], collisionEventTime[collision.globalIndex()]);
       products.straEvTimes(collisionEventTime[collision.globalIndex()]);
     }
   }

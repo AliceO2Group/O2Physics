@@ -411,6 +411,16 @@ using EMPrimaryElectronsFromDalitz = EMPrimaryElectronsFromDalitz_001;
 // iterators
 using EMPrimaryElectronFromDalitz = EMPrimaryElectronsFromDalitz::iterator;
 
+namespace v0photonsphiv
+{
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent); //!
+DECLARE_SOA_COLUMN(PhiV, phiv, float);      //!
+} // namespace v0photonsphiv
+DECLARE_SOA_TABLE(V0PhotonsPhiV, "AOD", "V0PHOTONPHIV", //!
+                  o2::soa::Index<>, v0photonsphiv::PhiV);
+// iterators
+using V0PhotonsPhiV = V0PhotonsPhiV;
+
 namespace dalitzee
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                         //!
@@ -572,6 +582,12 @@ DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTER", //! table of skimmed
                   o2::soa::Index<>, skimmedcluster::CollisionId, emccluster::Definition, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
                   skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::DeltaPhi,
                   emccluster::DeltaEta, emccluster::TrackP, emccluster::TrackPt, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+using SkimEMCCluster = SkimEMCClusters::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(SkimEMCClusters_001, "AOD", "SKIMEMCCLUSTER", 1, //! table of skimmed EMCal clusters
+                            o2::soa::Index<>, skimmedcluster::CollisionId, emccluster::Definition, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
+                            skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::DeltaPhi,
+                            emccluster::DeltaEta, emccluster::TrackP, emccluster::TrackPt, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
 using SkimEMCCluster = SkimEMCClusters::iterator;
 
 DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.

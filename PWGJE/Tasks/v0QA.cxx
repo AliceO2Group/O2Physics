@@ -69,6 +69,7 @@ struct V0QA {
 
   Configurable<std::string> evSel{"evSel", "sel8WithoutTimeFrameBorderCut", "choose event selection"};
   Configurable<float> yPartMax{"yPartMax", 0.5, "Maximum rapidity of particles"};
+  Configurable<float> etaV0Max{"etaV0Max", 0.75, "Maximum pseudorapidity of V0s"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "Vertex Z cut"};
   Configurable<float> v0Fraction{"v0Fraction", 1.0, "Fraction of V0s to be kept inside jets"};
 
@@ -265,6 +266,7 @@ struct V0QA {
       registry.add("tests/weighted/AntiLambdaPtEtaPhi", "AntiLambda Pt Eta Phi", HistType::kTH3D, {axisV0Pt, axisEta, axisPhi});
 
       registry.add("tests/weighted/JetPtEtaPhi", "Jet Pt, Eta, Phi", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("tests/weighted/inclJetPtEtaPhi", "Jet Pt, Eta, Phi, inclusive jets", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("tests/weighted/JetPtEtaV0Pt", "Jet Pt, Eta, V0 Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
       registry.add("tests/weighted/JetPtEtaV0Z", "Jet Pt, Eta, V0 Z", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
       registry.add("tests/weighted/JetPtEtaK0SPt", "Jet Pt, Eta, K0S Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
@@ -286,6 +288,7 @@ struct V0QA {
       registry.add("tests/sub/AntiLambdaPtEtaPhi", "AntiLambda Pt, Eta, Phi", HistType::kTH3D, {axisV0Pt, axisEta, axisPhi});
 
       registry.add("tests/nosub/JetPtEtaPhi", "Jet Pt, Eta, Phi", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("tests/nosub/inclJetPtEtaPhi", "Jet Pt, Eta, Phi, inclusive jets", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("tests/nosub/JetPtEtaV0Pt", "Jet Pt, Eta, V0 Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
       registry.add("tests/nosub/JetPtEtaV0Z", "Jet Pt, Eta, V0 Z", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
       registry.add("tests/nosub/JetPtEtaK0SPt", "Jet Pt, Eta, K0S Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
@@ -296,6 +299,7 @@ struct V0QA {
       registry.add("tests/nosub/JetPtEtaAntiLambdaZ", "Jet Pt, Eta, AntiLambda Z", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
 
       registry.add("tests/sub/JetPtEtaPhi", "Jet Pt, Eta, Phi", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("tests/sub/JetPtEtaPhiAllV0sSubtracted", "Jet Pt, Eta, Phi (All V0s Subtracted)", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("tests/sub/JetPtEtaV0Pt", "Jet Pt, Eta, V0 Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
       registry.add("tests/sub/JetPtEtaV0Z", "Jet Pt, Eta, V0 Z", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
       registry.add("tests/sub/JetPtEtaK0SPt", "Jet Pt, Eta, K0S Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
@@ -325,14 +329,26 @@ struct V0QA {
       registry.add("sharing/AntiLambdaAntiLambda", "AntiLambda-AntiLambda w shared daughter", HistType::kTHnSparseD, {axisV0Pt, axisEta, axisV0Pt});
 
       registry.add("sharing/JetPtEtaPhi", "JetPtEtaPhi", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("sharing/JetPtEtaPhiNone", "JetPtEtaPhiNone", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("sharing/JetPtEtaPhiSingle", "JetPtEtaPhiSingle", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
       registry.add("sharing/JetPtEtaPhiMultiple", "JetPtEtaPhiMultiple", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
-      registry.add("sharing/JetPtEtaV0Pt", "JetPtEtaV0Pt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
-      registry.add("sharing/JetPtEtaK0SPt", "JetPtEtaK0SPt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
-      registry.add("sharing/JetPtEtaLambdaPt", "JetPtEtaLambdaPt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
-      registry.add("sharing/JetPtEtaAntiLambdaPt", "JetPtEtaAntiLambdaPt", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("sharing/JetPtEtaPhiShared", "JetPtEtaPhiShared", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+      registry.add("sharing/JetPtEtaPhiNoShared", "JetPtEtaPhiNoShared", HistType::kTH3D, {axisJetPt, axisEta, axisPhi});
+
+      registry.add("sharing/JetPtEtaV0Pt", "JetPtEtaV0Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
+      registry.add("sharing/JetPtEtaK0SPt", "JetPtEtaK0SPt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
+      registry.add("sharing/JetPtEtaLambdaPt", "JetPtEtaLambdaPt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
+      registry.add("sharing/JetPtEtaAntiLambdaPt", "JetPtEtaAntiLambdaPt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
       registry.add("sharing/JetPtEtaV0PtPt", "JetPtEtaV0PtPt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
       registry.add("sharing/JetPtEtaV0PtPtDaughterPt", "JetPtEtaV0PtPtDaughterPt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt, axisV0Pt});
+
+      registry.add("sharing/JetPtEtaV0Z", "JetPtEtaV0Z", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaK0SZ", "JetPtEtaK0SZ", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaLambdaZ", "JetPtEtaLambdaZ", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaAntiLambdaZ", "JetPtEtaAntiLambdaZ", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaV0ZZ", "JetPtEtaV0ZZ", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Z, axisV0Z});
+      registry.add("sharing/JetPtEtaV0ZZDaughterPt", "JetPtEtaV0ZZDaughterPt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Z, axisV0Z, axisV0Pt});
+
       registry.add("sharing/JetK0SK0S", "JetK0SK0S", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
       registry.add("sharing/JetK0SLambda", "JetK0SLambda", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
       registry.add("sharing/JetK0SAntiLambda", "JetK0SAntiLambda", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
@@ -737,7 +753,9 @@ struct V0QA {
   template <typename T>
   void fillWeightedJetFinderJet(T const& jet)
   {
-    registry.fill(HIST("tests/weighted/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+    registry.fill(HIST("tests/weighted/inclJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+    if (jet.candidatesIds().size() > 0)
+      registry.fill(HIST("tests/weighted/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
   }
 
   template <typename T, typename U>
@@ -790,7 +808,9 @@ struct V0QA {
   template <typename T>
   void fillSubtractedJetFinderJetNoSubtraction(T const& jet)
   {
-    registry.fill(HIST("tests/nosub/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+    registry.fill(HIST("tests/nosub/inclJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+    if (jet.candidatesIds().size() > 0)
+      registry.fill(HIST("tests/nosub/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
   }
 
   template <typename T, typename U>
@@ -814,9 +834,11 @@ struct V0QA {
   }
 
   template <typename T>
-  void fillSubtractedJetFinderJetSubtracted(T const& jet, double ptjetsub)
+  void fillSubtractedJetFinderJetSubtracted(T const& jet, double ptjetsub, bool allV0sSubtracted)
   {
     registry.fill(HIST("tests/sub/JetPtEtaPhi"), ptjetsub, jet.eta(), jet.phi());
+    if (allV0sSubtracted)
+      registry.fill(HIST("tests/sub/JetPtEtaPhiAllV0sSubtracted"), ptjetsub, jet.eta(), jet.phi());
   }
 
   void fillSubtractedJetFinderV0InJetSubtracted(const double ptjetsub, const double etajet, const double v0Pt, const int v0Type)
@@ -900,26 +922,40 @@ struct V0QA {
   }
 
   template <typename T>
-  void fillV0DaughterSharingJet(T const& jet, bool jetHasSingleV0)
+  void fillV0DaughterSharingJet(T const& jet, bool jetContainsSharedDaughters)
   {
     registry.fill(HIST("sharing/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
-
-    if (jetHasSingleV0)
+    if (jet.candidatesIds().size() == 0)
+      registry.fill(HIST("sharing/JetPtEtaPhiNone"), jet.pt(), jet.eta(), jet.phi());
+    else if (jet.candidatesIds().size() == 1)
       registry.fill(HIST("sharing/JetPtEtaPhiSingle"), jet.pt(), jet.eta(), jet.phi());
     else
       registry.fill(HIST("sharing/JetPtEtaPhiMultiple"), jet.pt(), jet.eta(), jet.phi());
+
+    if (jetContainsSharedDaughters)
+      registry.fill(HIST("sharing/JetPtEtaPhiShared"), jet.pt(), jet.eta(), jet.phi());
+    else
+      registry.fill(HIST("sharing/JetPtEtaPhiNoShared"), jet.pt(), jet.eta(), jet.phi());
   }
 
   template <typename T, typename U>
   void fillV0DaughterSharingJet(T const& jet, U const& v0)
   {
+    double z = v0.pt() / jet.pt();
     registry.fill(HIST("sharing/JetPtEtaV0Pt"), jet.pt(), jet.eta(), v0.pt());
-    if (v0.isK0SCandidate())
+    registry.fill(HIST("sharing/JetPtEtaV0Z"), jet.pt(), jet.eta(), z);
+    if (v0.isK0SCandidate()) {
       registry.fill(HIST("sharing/JetPtEtaK0SPt"), jet.pt(), jet.eta(), v0.pt());
-    if (v0.isLambdaCandidate())
+      registry.fill(HIST("sharing/JetPtEtaK0SZ"), jet.pt(), jet.eta(), z);
+    }
+    if (v0.isLambdaCandidate()) {
       registry.fill(HIST("sharing/JetPtEtaLambdaPt"), jet.pt(), jet.eta(), v0.pt());
-    if (v0.isAntiLambdaCandidate())
+      registry.fill(HIST("sharing/JetPtEtaLambdaZ"), jet.pt(), jet.eta(), z);
+    }
+    if (v0.isAntiLambdaCandidate()) {
       registry.fill(HIST("sharing/JetPtEtaAntiLambdaPt"), jet.pt(), jet.eta(), v0.pt());
+      registry.fill(HIST("sharing/JetPtEtaAntiLambdaZ"), jet.pt(), jet.eta(), z);
+    }
   }
 
   template <typename T, typename U, typename V, typename W>
@@ -935,7 +971,11 @@ struct V0QA {
       ptsoft = trigger.pt();
     }
 
+    double zhard = pthard / jet.pt();
+    double zsoft = ptsoft / jet.pt();
+
     registry.fill(HIST("sharing/JetPtEtaV0PtPt"), jet.pt(), jet.eta(), pthard, ptsoft, weight);
+    registry.fill(HIST("sharing/JetPtEtaV0ZZ"), jet.pt(), jet.eta(), zhard, zsoft, weight);
     auto trigNeg = trigger.template negTrack_as<T>().template track_as<U>();
     auto trigPos = trigger.template posTrack_as<T>().template track_as<U>();
     auto assocNeg = associate.template negTrack_as<T>().template track_as<U>();
@@ -945,7 +985,9 @@ struct V0QA {
       sharedDaughterPt = trigNeg.pt();
     else
       sharedDaughterPt = trigPos.pt();
+
     registry.fill(HIST("sharing/JetPtEtaV0PtPtDaughterPt"), jet.pt(), jet.eta(), pthard, ptsoft, sharedDaughterPt, weight);
+    registry.fill(HIST("sharing/JetPtEtaV0ZZDaughterPt"), jet.pt(), jet.eta(), zhard, zsoft, sharedDaughterPt, weight);
 
     if (trigger.isK0SCandidate() && associate.isK0SCandidate())
       registry.fill(HIST("sharing/JetK0SK0S"), jet.pt(), jet.eta(), pthard, ptsoft, weight);
@@ -1729,7 +1771,8 @@ struct V0QA {
         }
       } // V0s in jet loop
 
-      fillSubtractedJetFinderJetSubtracted(jet, ptjetsub);
+      bool allV0sSubtracted = (v0Pt.size() == 0);
+      fillSubtractedJetFinderJetSubtracted(jet, ptjetsub, allV0sSubtracted);
       for (unsigned int i = 0; i < v0Pt.size(); ++i) {
         fillSubtractedJetFinderV0InJetSubtracted(ptjetsub, jet.eta(), v0Pt[i], v0Type[i]);
       } // Accepted V0s in jet loop
@@ -1749,10 +1792,16 @@ struct V0QA {
       if (trigger.isRejectedCandidate())
         continue;
 
+      if (abs(trigger.eta()) > etaV0Max)
+        continue;
+
       fillV0DaughterSharingInclusive(trigger);
 
       for (const auto& associate : v0s) {
         if (associate.isRejectedCandidate())
+          continue;
+
+        if (abs(associate.eta()) > etaV0Max)
           continue;
 
         if (trigger == associate)
@@ -1767,7 +1816,7 @@ struct V0QA {
 
     // Check if V0s within the same jet share daughters
     for (const auto& jet : jets) {
-      bool jetHasSingleV0 = true;
+      bool jetContainsSharedDaughters = false;
 
       for (const auto& trigger : jet.template candidates_as<aod::CandidatesV0Data>()) {
         if (trigger.isRejectedCandidate())
@@ -1782,14 +1831,14 @@ struct V0QA {
           if (trigger == associate)
             continue;
 
-          jetHasSingleV0 = false;
-
           // Double-counting accounted for by filling histograms with weight 0.5
-          if (v0sShareDaughter<DaughterJTracks>(trigger, associate))
+          if (v0sShareDaughter<DaughterJTracks>(trigger, associate)) {
+            jetContainsSharedDaughters = true;
             fillV0DaughterSharingJet<DaughterJTracks, DaughterTracks>(jet, trigger, associate);
+          }
         }
       }
-      fillV0DaughterSharingJet(jet, jetHasSingleV0);
+      fillV0DaughterSharingJet(jet, jetContainsSharedDaughters);
     }
   }
   PROCESS_SWITCH(V0QA, processTestV0DaughterSharing, "Test V0s with shared daughters", false);

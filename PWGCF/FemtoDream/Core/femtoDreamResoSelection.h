@@ -50,11 +50,6 @@ enum Daughtertype {
   kPosdaugh,
   kNegdaugh
 };
-
-enum ResoMothers {
-  kPhi,
-  kKStar
-};
 } // namespace femto_dream_reso_selection
 
 class FemtoDreamResoSelection
@@ -70,7 +65,7 @@ class FemtoDreamResoSelection
   virtual ~FemtoDreamResoSelection() = default;
 
   template <typename V>
-  uint32_t getType(V const& track1, V const& track2);
+  int getType(V const& track1, V const& track2, bool resoIsNotAnti);
 
   /// assigns value from configurbale to private class member
   template <typename V>
@@ -104,21 +99,19 @@ class FemtoDreamResoSelection
   bool daughterSelectionNeg(V const& track2);
 
   template <typename V, typename T>
-  bool isSelectedMinimalPIDPos(V const& track1, T const& pids);
+  bool isSelectedMinimalPIDPos(V const& track1, T const& pidVector);
 
   template <typename V, typename T>
-  bool isSelectedMinimalPIDNeg(V const& track2, T const& pids);
+  bool isSelectedMinimalPIDNeg(V const& track2, T const& pidVector);
 
   template <typename cutContainerType, typename V>
   std::array<cutContainerType, 5> getCutContainer(V const& track1, V const& track2, float sign);
 
-  template <typename T>
-  std::pair<bool, bool> checkCombination(T const& PosTrack, T const& NegTrack, femto_dream_reso_selection::ResoMothers mother);
+  template <typename T, typename V>
+  std::pair<bool, bool> checkCombination(T const& PosTrack, T const& NegTrack, V const& pidVector, float massDiff, float massDiffAnti, bool useMassDiff);
 
-  std::pair<o2::track::PID::ID, o2::track::PID::ID> getPIDPairFromMother(femto_dream_reso_selection::ResoMothers mother);
-
-  template <typename T>
-  bool checkPID(T const& Track, float nSigTPC, float nSigTOF, float nSig2TPC, float nSig2TOF, float PTPCThrvalue);
+  template <typename T, typename V>
+  float getNSigTotal(T const& track, V const& pid, float const& threshold);
 
   void updateThreshold()
   {
@@ -148,8 +141,6 @@ class FemtoDreamResoSelection
         return 0.;
     }
   }
-
-  std::pair<float, float> getMassDaughters(femto_dream_reso_selection::ResoMothers mother);
 
   /// The following functions might not be needed, as right now there is only one ResoSel (sign).
   /// However all the other selections are implemented this way (also in the CutCulator).
@@ -227,18 +218,28 @@ class FemtoDreamResoSelection
 }; // namespace femtoDream
 
 template <typename V>
-uint32_t FemtoDreamResoSelection::getType(V const& track1, V const& track2)
+int FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool resoIsNotAnti)
 {
-  if (track1.pt() <= mDaughPTPCThr[0] && track2.pt() <= mDaughPTPCThr[1]) {
+  float posThresh = 0.;
+  float negThresh = 0.;
+  if (resoIsNotAnti) {
+    posThresh = mDaughPTPCThr[0];
+    negThresh = mDaughPTPCThr[1];
+  } else {
+    posThresh = mDaughPTPCThr[1];
+    negThresh = mDaughPTPCThr[0];
+  }
+
+  if (track1.pt() <= posThresh && track2.pt() <= negThresh) {
     return aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC;
   }
-  if (track1.pt() <= mDaughPTPCThr[0] && track2.pt() > mDaughPTPCThr[1]) {
+  if (track1.pt() <= posThresh && track2.pt() > negThresh) {
     return aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF;
   }
-  if (track1.pt() > mDaughPTPCThr[0] && track2.pt() <= mDaughPTPCThr[1]) {
+  if (track1.pt() > posThresh && track2.pt() <= negThresh) {
     return aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC;
   }
-  if (track1.pt() > mDaughPTPCThr[0] && track2.pt() > mDaughPTPCThr[1]) {
+  if (track1.pt() > posThresh && track2.pt() > negThresh) {
     return aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF;
   }
   return 255; // as error filler
@@ -321,101 +322,90 @@ bool FemtoDreamResoSelection::daughterSelectionNeg(V const& track2)
 }
 
 template <typename V, typename T>
-bool FemtoDreamResoSelection::isSelectedMinimalPIDPos(V const& track1, T const& pid)
+bool FemtoDreamResoSelection::isSelectedMinimalPIDPos(V const& track1, T const& pidVector)
 {
-  float pidTPC = posDaughTrack.getNsigmaTPC(track1, pid); // pids[0] for pos track
-  float pidTOF = posDaughTrack.getNsigmaTOF(track1, pid);
+  int pidVecSize = pidVector.size();
+  for (int i = 0; i < pidVecSize; i++) {
+    const float pidTPC = posDaughTrack.getNsigmaTPC(track1, pidVector[i]);
+    const float pidTOF = posDaughTrack.getNsigmaTOF(track1, pidVector[i]);
 
-  bool pass = false;
-  if (track1.pt() < mDaughPTPCThr[0]) {
-    pass = std::fabs(pidTPC) < mSigmaPIDMax;
-  } else {
-    pass = std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax;
+    if (track1.pt() < mDaughPTPCThr[i]) {
+      if (std::fabs(pidTPC) < mSigmaPIDMax) {
+        return true;
+      }
+    } else if ((std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax)) {
+      return true;
+    }
   }
-
-  return pass;
+  return false;
 }
 
 template <typename V, typename T>
-bool FemtoDreamResoSelection::isSelectedMinimalPIDNeg(V const& track2, T const& pid)
+bool FemtoDreamResoSelection::isSelectedMinimalPIDNeg(V const& track2, T const& pidVector)
 {
-  float pidTPC = negDaughTrack.getNsigmaTPC(track2, pid); // pids[1] for neg track
-  float pidTOF = negDaughTrack.getNsigmaTOF(track2, pid);
+  int pidVecSize = pidVector.size();
+  for (int i = 0; i < pidVecSize; i++) {
+    const float pidTPC = negDaughTrack.getNsigmaTPC(track2, pidVector[i]);
+    const float pidTOF = negDaughTrack.getNsigmaTOF(track2, pidVector[i]);
 
-  bool pass = false;
-  if (track2.pt() < mDaughPTPCThr[1]) {
-    pass = std::fabs(pidTPC) < mSigmaPIDMax;
-  } else {
-    pass = std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax;
+    if (track2.pt() < mDaughPTPCThr[i]) {
+      if (std::fabs(pidTPC) < mSigmaPIDMax) {
+        return true;
+      }
+    } else if ((std::sqrt(pidTPC * pidTPC + pidTOF * pidTOF) < mSigmaPIDMax)) {
+      return true;
+    }
   }
-
-  return pass;
+  return false;
 }
 
-template <typename T>
-std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrack, T const& NegTrack, femto_dream_reso_selection::ResoMothers mother)
+template <typename T, typename V>
+std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrack, T const& NegTrack, V const& pidVector, float massDiff, float massDiffAnti, bool useMassDiff)
 {
-  /// first bool: normal or anti
+  /// first bool: true (normal resonance) / false (anti resonance)
   /// second bool: is not a valid combination
 
-  auto [part1, part2] = getPIDPairFromMother(mother);
+  const auto part1 = pidVector[0]; /// particle type 1
+  const auto part2 = pidVector[1]; /// particle type 2
 
-  float nSigPosTPC1 = o2::aod::pidutils::tpcNSigma(part1, PosTrack) - mPIDoffsetTPC;
-  float nSigPosTOF1 = posDaughTrack.getNsigmaTOF(PosTrack, part1) - mPIDoffsetTOF; /// for TOF use function in TrackSelection, because it also checks hasTOF()
-  float nSigPosTPC2 = o2::aod::pidutils::tpcNSigma(part2, PosTrack) - mPIDoffsetTPC;
-  float nSigPosTOF2 = posDaughTrack.getNsigmaTOF(PosTrack, part2) - mPIDoffsetTOF;
-  float nSigNegTPC1 = o2::aod::pidutils::tpcNSigma(part1, NegTrack) - mPIDoffsetTPC;
-  float nSigNegTOF1 = negDaughTrack.getNsigmaTOF(NegTrack, part1) - mPIDoffsetTOF;
-  float nSigNegTPC2 = o2::aod::pidutils::tpcNSigma(part2, NegTrack) - mPIDoffsetTPC;
-  float nSigNegTOF2 = negDaughTrack.getNsigmaTOF(NegTrack, part2) - mPIDoffsetTOF;
+  float nSigPosPart1Total = getNSigTotal(PosTrack, part1, mDaughPTPCThr[0]); /// Total propability that PosTrack is of particle type 1
+  float nSigPosPart2Total = getNSigTotal(PosTrack, part2, mDaughPTPCThr[1]); /// Total propability that PosTrack is of particle type 2
+  float nSigNegPart1Total = getNSigTotal(NegTrack, part1, mDaughPTPCThr[0]);
+  float nSigNegPart2Total = getNSigTotal(NegTrack, part2, mDaughPTPCThr[1]);
 
-  if (checkPID(PosTrack, nSigPosTPC1, nSigPosTOF1, nSigPosTPC2, nSigPosTOF2, mDaughPTPCThr[0]) && checkPID(NegTrack, nSigNegTPC2, nSigNegTOF2, nSigNegTPC1, nSigNegTOF1, mDaughPTPCThr[1])) {
+  // check if PosTrack is more likely to be part1 than part2 (and vice versa for NegTrack) -> normal resonance
+  bool couldBeNormal = nSigPosPart1Total < nSigPosPart2Total && nSigNegPart2Total < nSigNegPart1Total;
+  // check if PosTrack is more likely to be part2 than part1 (and vice versa for NegTrack) -> anti resonance
+  bool couldBeAnti = nSigPosPart2Total < nSigPosPart1Total && nSigNegPart1Total < nSigNegPart2Total;
+
+  if (useMassDiff) {
+    couldBeNormal = couldBeNormal && massDiff < massDiffAnti;
+    couldBeAnti = couldBeAnti && massDiffAnti < massDiff;
+  }
+
+  if (couldBeNormal && !couldBeAnti) {
     return {true, false};
-  } else if (checkPID(PosTrack, nSigPosTPC2, nSigPosTOF2, nSigPosTPC1, nSigPosTOF1, mDaughPTPCThr[0]) && checkPID(NegTrack, nSigNegTPC1, nSigNegTOF1, nSigNegTPC2, nSigNegTOF2, mDaughPTPCThr[1])) {
+  }
+  if (!couldBeNormal && couldBeAnti) {
     return {false, false};
-  } else {
-    return {false, true};
   }
+  // if ambiguous (both true) or invalid (both false)
+  return {false, true};
 }
 
-template <typename T>
-bool FemtoDreamResoSelection::checkPID(T const& Track, float nSig1TPC, float nSig1TOF, float nSig2TPC, float nSig2TOF, float PTPCThrvalue)
+template <typename T, typename V>
+float FemtoDreamResoSelection::getNSigTotal(T const& track, V const& pid, float const& threshold)
 {
-  if (Track.pt() < PTPCThrvalue) {
-    return (std::abs(nSig1TPC) <= std::abs(nSig2TPC));
-  } else {
-    return (std::sqrt(nSig1TPC * nSig1TPC + nSig1TOF * nSig1TOF) <= std::sqrt(nSig2TPC * nSig2TPC + nSig2TOF * nSig2TOF));
-  }
-}
+  float nSigTPC = o2::aod::pidutils::tpcNSigma(pid, track);
+  float pTtrack = track.pt();
 
-std::pair<o2::track::PID::ID, o2::track::PID::ID> FemtoDreamResoSelection::getPIDPairFromMother(femto_dream_reso_selection::ResoMothers mother)
-{
-  /// return is structured this way:
-  /// The mother particle is assumed to be normal (not antiparticle). Then:
-  /// 1. return value is positive daughter
-  /// 2. return value is negative daughter
-  switch (mother) {
-    case (femto_dream_reso_selection::kPhi):
-      return {o2::track::PID::Kaon, o2::track::PID::Kaon};
-    case (femto_dream_reso_selection::kKStar):
-      return {o2::track::PID::Kaon, o2::track::PID::Pion};
-    default:
-      LOG(warn) << "MotherPID not implemented in femto_dream_reso_selection.getPIDPairFromMother";
-      return {o2::track::PID::Kaon, o2::track::PID::Kaon};
+  if (pTtrack < threshold) {
+    return std::abs(nSigTPC);
   }
-}
 
-std::pair<float, float> FemtoDreamResoSelection::getMassDaughters(femto_dream_reso_selection::ResoMothers mother)
-{
-  switch (mother) {
-    case (femto_dream_reso_selection::kPhi):
-      return {o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus};
-    case (femto_dream_reso_selection::kKStar):
-      return {o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus};
-    default:
-      LOG(warn) << "MotherPID not implemented in femto_dream_reso_selection.getMassDauhters";
-      return {o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus};
-  }
+  float nSigTOF = track.hasTOF() ? o2::aod::pidutils::tofNSigma(pid, track) : 999.f;
+
+  return std::hypot(nSigTPC, nSigTOF);
 }
 
 //// new getCutContainer

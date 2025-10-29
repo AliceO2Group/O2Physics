@@ -94,7 +94,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
 
   o2::analysis::HfMlResponseLbToLcPi<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -157,7 +157,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
   /// \param hfCandsLb Lb candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the charm-hadron data creator
-  template <bool withLcMl, typename Cands>
+  template <bool WithLcMl, typename Cands>
   void runSelection(Cands const& hfCandsLb,
                     TracksPion const&,
                     HfCandLbConfigs const&)
@@ -181,7 +181,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
         continue;
       }
 
-      if constexpr (withLcMl) { // we include it in the topological selections
+      if constexpr (WithLcMl) { // we include it in the topological selections
         if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandLb, cutsLcMl, binsPtLcMl)) {
           hfSelLbToLcPiCandidate(statusLbToLcPi);
           if (applyLbMl) {
@@ -220,8 +220,8 @@ struct HfCandidateSelectorLbToLcPiReduced {
 
       if (applyLbMl) {
         // Lb ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withLcMl>(hfCandLb, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandLb, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithLcMl>(hfCandLb, trackPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandLb, outputMl);
         hfMlLbToLcPiCandidate(outputMl[1]);
 
         if (!isSelectedMl) {

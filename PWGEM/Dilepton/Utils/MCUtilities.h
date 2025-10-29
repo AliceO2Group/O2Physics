@@ -241,14 +241,14 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 
   int motherid = p.mothersIds()[0]; // first mother index
   auto mp_tmp = mcparticles.iteratorAt(motherid);
-  if (abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 2] == '5' && std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 3] == '5') && abs(mp_tmp.pdgCode()) % 2 == 1) {
+  if (std::abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 2] == '5' && std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 3] == '5') && std::abs(mp_tmp.pdgCode()) % 2 == 1) {
     return -999; // reject bottomonia
   }
 
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
-      if (abs(mp.pdgCode()) < 1e+9 && (std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 3] == '5' || std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 4] == '5')) {
+      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '5' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '5')) {
         return motherid;
       }
       if (mp.has_mothers()) {
@@ -274,13 +274,13 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
 
   int motherid = p.mothersIds()[0]; // first mother index
   auto mp_tmp = mcparticles.iteratorAt(motherid);
-  if (abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 2] == '4' && std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 3] == '4') && abs(mp_tmp.pdgCode()) % 2 == 1) {
+  if (std::abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 2] == '4' && std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 3] == '4') && std::abs(mp_tmp.pdgCode()) % 2 == 1) {
     return -999; // reject bottomonia
   }
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
-      if (abs(mp.pdgCode()) < 1e+9 && (std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 3] == '4' || std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 4] == '4')) {
+      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '4' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '4')) {
         return motherid;
       }
       if (mp.has_mothers()) {
@@ -355,7 +355,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   bool is_c_from_b1 = IsFromBeauty(p1, mcparticles) > 0 && IsFromCharm(p1, mcparticles) > 0;
   bool is_c_from_b2 = IsFromBeauty(p2, mcparticles) > 0 && IsFromCharm(p2, mcparticles) > 0;
 
-  if (is_direct_from_b1 && is_direct_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
+  if (is_direct_from_b1 && is_direct_from_b2) {
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -366,7 +366,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     mothers_pdg2.shrink_to_fit();
     return static_cast<int>(EM_HFeeType::kBe_Be); // bb->ee, decay type = 2
   }
-  if (is_prompt_c1 && is_prompt_c2 && p1.pdgCode() * p2.pdgCode() < 0) {
+  if (is_prompt_c1 && is_prompt_c2) {
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -377,7 +377,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     mothers_pdg2.shrink_to_fit();
     return static_cast<int>(EM_HFeeType::kCe_Ce); // cc->ee, decay type = 0
   }
-  if (is_c_from_b1 && is_c_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
+  if (is_c_from_b1 && is_c_from_b2) {
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -389,52 +389,50 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
   }
   if ((is_direct_from_b1 && is_c_from_b2) || (is_direct_from_b2 && is_c_from_b1)) {
-    if (p1.pdgCode() * p2.pdgCode() < 0) { // ULS
-      for (auto& mid1 : mothers_id1) {
-        for (auto& mid2 : mothers_id2) {
-          if (mid1 == mid2) {
-            auto common_mp = mcparticles.iteratorAt(mid1);
-            int mp_pdg = common_mp.pdgCode();
-            bool is_mp_diquark = (1100 < abs(mp_pdg) && abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
-            if (!is_mp_diquark && abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
-              mothers_id1.clear();
-              mothers_pdg1.clear();
-              mothers_id2.clear();
-              mothers_pdg2.clear();
-              mothers_id1.shrink_to_fit();
-              mothers_pdg1.shrink_to_fit();
-              mothers_id2.shrink_to_fit();
-              mothers_pdg2.shrink_to_fit();
-              return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3. this should happen only in ULS.
-            }
+    for (const auto& mid1 : mothers_id1) {
+      for (const auto& mid2 : mothers_id2) {
+        if (mid1 == mid2) {
+          auto common_mp = mcparticles.iteratorAt(mid1);
+          int mp_pdg = common_mp.pdgCode();
+          bool is_mp_diquark = (1100 < std::abs(mp_pdg) && std::abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
+          if (!is_mp_diquark && std::abs(mp_pdg) < 1e+9 && (std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 3] == '5' || std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 4] == '5')) {
+            mothers_id1.clear();
+            mothers_pdg1.clear();
+            mothers_id2.clear();
+            mothers_pdg2.clear();
+            mothers_id1.shrink_to_fit();
+            mothers_pdg1.shrink_to_fit();
+            mothers_id2.shrink_to_fit();
+            mothers_pdg2.shrink_to_fit();
+            return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3. this should happen only in ULS.
           }
-        } // end of motherid2
-      } // end of motherid1
-    } else { // LS
-      bool is_same_mother_found = false;
-      for (auto& mid1 : mothers_id1) {
-        for (auto& mid2 : mothers_id2) {
-          if (mid1 == mid2) {
-            auto common_mp = mcparticles.iteratorAt(mid1);
-            int mp_pdg = common_mp.pdgCode();
-            bool is_mp_diquark = (1100 < abs(mp_pdg) && abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
-            if (!is_mp_diquark && abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
-              is_same_mother_found = true;
-            }
+        }
+      } // end of motherid2
+    } // end of motherid1
+
+    bool is_same_mother_found = false;
+    for (const auto& mid1 : mothers_id1) {
+      for (const auto& mid2 : mothers_id2) {
+        if (mid1 == mid2) {
+          auto common_mp = mcparticles.iteratorAt(mid1);
+          int mp_pdg = common_mp.pdgCode();
+          bool is_mp_diquark = (1100 < std::abs(mp_pdg) && std::abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
+          if (!is_mp_diquark && std::abs(mp_pdg) < 1e+9 && (std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 3] == '5' || std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 4] == '5')) {
+            is_same_mother_found = true;
           }
-        } // end of motherid2
-      } // end of motherid1
-      if (!is_same_mother_found) {
-        mothers_id1.clear();
-        mothers_pdg1.clear();
-        mothers_id2.clear();
-        mothers_pdg2.clear();
-        mothers_id1.shrink_to_fit();
-        mothers_pdg1.shrink_to_fit();
-        mothers_id2.shrink_to_fit();
-        mothers_pdg2.shrink_to_fit();
-        return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4. this should happen only in LS. But, this may happen, when ele/pos is reconstructed as pos/ele wrongly. and create LS pair
-      }
+        }
+      } // end of motherid2
+    } // end of motherid1
+    if (!is_same_mother_found) {
+      mothers_id1.clear();
+      mothers_pdg1.clear();
+      mothers_id2.clear();
+      mothers_pdg2.clear();
+      mothers_id1.shrink_to_fit();
+      mothers_pdg1.shrink_to_fit();
+      mothers_id2.shrink_to_fit();
+      mothers_pdg2.shrink_to_fit();
+      return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4. this should happen only in LS. But, this may happen, when ele/pos is reconstructed as pos/ele wrongly. and create LS pair
     }
   }
 
@@ -466,7 +464,7 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
     } else if (mothersids[1] < mothersids[0]) {
       allmothersids.push_back(mothersids[0]);
       allmothersids.push_back(mothersids[1]);
-    } else if ((80 < abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110)) { // NOTE: THIS IS GENERATOR DEPENDENT AND WORKS ONLY FOR PYTHIA!
+    } else if ((80 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110)) { // NOTE: THIS IS GENERATOR DEPENDENT AND WORKS ONLY FOR PYTHIA!
       for (int i = mothersids[0]; i <= mothersids[1]; i++) {
         allmothersids.push_back(i);
       }
@@ -484,16 +482,16 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
     for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
       int mpdg = mother.pdgCode();
-      // if (abs(mpdg) == pdg && mpdg * p.pdgCode() > 0) { // check for quark
-      if (abs(mpdg) == pdg) {                       // check for quark to allow for beauty and charm + oscillation
+      // if (std::abs(mpdg) == pdg && mpdg * p.pdgCode() > 0) { // check for quark
+      if (std::abs(mpdg) == pdg) {                  // check for quark to allow for beauty and charm + oscillation
         if (quark_id > -1 || next_mother_id > -1) { // we already found a possible candidate in the list of mothers, so now we have (at least) two
           // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
           return -1;
         }
         quark_id = i;
-        //} else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
-      } else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg)) { // check for other mothers with flavour content to allow for beauty and charm
-        if (quark_id > -1 || next_mother_id > -1) {                                                         // we already found a possible candidate in the list of mothers, so now we have (at least) two
+        //} else if ((static_cast<int>(std::abs(mpdg) / 100) == pdg || static_cast<int>(std::abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
+      } else if ((static_cast<int>(std::abs(mpdg) / 100) == pdg || static_cast<int>(std::abs(mpdg) / 1000) == pdg)) { // check for other mothers with flavour content to allow for beauty and charm
+        if (quark_id > -1 || next_mother_id > -1) {                                                                   // we already found a possible candidate in the list of mothers, so now we have (at least) two
           // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
           return -1;
         }
@@ -555,7 +553,7 @@ bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg)
 template <typename T>
 bool isCharmMeson(T const& track)
 {
-  if (400 < abs(track.pdgCode()) && abs(track.pdgCode()) < 500) {
+  if (400 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 500) {
     return true;
   } else {
     return false;
@@ -565,7 +563,7 @@ bool isCharmMeson(T const& track)
 template <typename T>
 bool isCharmBaryon(T const& track)
 {
-  if (4000 < abs(track.pdgCode()) && abs(track.pdgCode()) < 5000) {
+  if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
     return true;
   } else {
     return false;
@@ -575,7 +573,7 @@ bool isCharmBaryon(T const& track)
 template <typename T>
 bool isBeautyMeson(T const& track)
 {
-  if (500 < abs(track.pdgCode()) && abs(track.pdgCode()) < 600) {
+  if (500 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 600) {
     return true;
   } else {
     return false;
@@ -585,7 +583,7 @@ bool isBeautyMeson(T const& track)
 template <typename T>
 bool isBeautyBaryon(T const& track)
 {
-  if (5000 < abs(track.pdgCode()) && abs(track.pdgCode()) < 6000) {
+  if (5000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 6000) {
     return true;
   } else {
     return false;

@@ -37,7 +37,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   24.,
   1000.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 1   < pt < 2 */
                                             {1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 2 < pt < 4 */
@@ -73,7 +73,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   12.,
   24.,
   1000.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 // default values for the cuts
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.48, 0.52, 0.99, 1., 0.9},  /* 1   < pt < 2 */
                                             {0.48, 0.52, 0.99, 1., 0.9},  /* 2 < pt < 4 */

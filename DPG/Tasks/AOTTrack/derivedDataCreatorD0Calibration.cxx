@@ -104,7 +104,8 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
@@ -169,10 +170,10 @@ struct DerivedDataCreatorD0Calibration {
   }
 
   // main function
-  template <bool withTrackQa, typename TTrackQa>
+  template <bool withTrackQa, typename TTrackQa, typename TTracks>
   void runDataCreation(CollisionsWEvSel const& collisions,
                        aod::TrackAssoc const& trackIndices,
-                       TracksWCovExtraPid const&,
+                       TTracks const&,
                        aod::BCsWithTimestamps const&,
                        TrackMeanOccs const&,
                        TTrackQa const&)
@@ -203,7 +204,7 @@ struct DerivedDataCreatorD0Calibration {
 
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       for (auto const& trackIndexPos : groupedTrackIndices) {
-        auto trackPos = trackIndexPos.template track_as<TracksWCovExtraPid>();
+        auto trackPos = trackIndexPos.template track_as<TTracks>();
         // track selections
         if (trackPos.sign() < 0) { // first positive track
           continue;
@@ -239,7 +240,7 @@ struct DerivedDataCreatorD0Calibration {
         }
 
         for (auto const& trackIndexNeg : groupedTrackIndices) {
-          auto trackNeg = trackIndexNeg.template track_as<TracksWCovExtraPid>();
+          auto trackNeg = trackIndexNeg.template track_as<TTracks>();
           // track selections
           if (trackNeg.sign() > 0) { // second negative track
             continue;
@@ -484,7 +485,7 @@ struct DerivedDataCreatorD0Calibration {
             uint8_t tmoRobustT0V0PrimUnfm80{0u};
             uint8_t twmoRobustT0V0PrimUnfm80{0u};
             if (trackPos.has_tmo()) {
-              auto tmoFromTrack = trackPos.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              auto tmoFromTrack = trackPos.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
               tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
               tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
               tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
@@ -649,7 +650,7 @@ struct DerivedDataCreatorD0Calibration {
             uint8_t tmoRobustT0V0PrimUnfm80{0u};
             uint8_t twmoRobustT0V0PrimUnfm80{0u};
             if (trackNeg.has_tmo()) {
-              auto tmoFromTrack = trackNeg.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              auto tmoFromTrack = trackNeg.template tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
               tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
               tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
               tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
@@ -835,7 +836,7 @@ struct DerivedDataCreatorD0Calibration {
   // process functions
   void processWithTrackQa(CollisionsWEvSel const& collisions,
                           aod::TrackAssoc const& trackIndices,
-                          TracksWCovExtraPid const& tracks,
+                          TracksWCovExtraPidAndQa const& tracks,
                           aod::BCsWithTimestamps const& bcs,
                           TrackMeanOccs const& occ,
                           aod::TracksQAVersion const& trackQa)

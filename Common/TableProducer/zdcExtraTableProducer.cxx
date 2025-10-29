@@ -9,14 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file zdcTaskInterCalib.cxx
-/// \brief Task for ZDC tower inter-calibration
-/// \author chiara.oppedisano@cern.ch
+/// \file zdcExtraTableProducer.cxx
+/// \brief Task creating table with ZDC PMTs energies and calculated centroid (Q-vector) to be used for spectator plane measurement
+/// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>, INFN Torino
+/// \author Uliana Dmitrieva <uliana.dmitrieva@cern.ch>, INFN Torino
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/ZDCInterCalib.h"
+#include "Common/DataModel/ZDCExtra.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -29,6 +30,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
 
 #include <cstdint>
 
@@ -40,9 +42,9 @@ using namespace o2::aod::evsel;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
-struct ZdcTaskInterCalib {
+struct ZdcExtraTableProducer {
 
-  Produces<aod::ZDCInterCalib> zTab;
+  Produces<aod::ZdcExtras> zdcextras;
 
   // Configurable parameters
   //
@@ -50,7 +52,8 @@ struct ZdcTaskInterCalib {
   Configurable<float> maxZN{"maxZN", 399.5, "Max ZN signal"};
   Configurable<bool> tdcCut{"tdcCut", false, "Flag for TDC cut"};
   Configurable<float> tdcZNmincut{"tdcZNmincut", -2.5, "Min ZN TDC cut"};
-  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", -2.5, "Max ZN TDC cut"};
+  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 2.5, "Max ZN TDC cut"};
+  Configurable<bool> cfgUsePMC{"cfgUsePMC", true, "Use common PM (true) or sum of PMs (false) "};
   // Event selections
   Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
   Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx"};
@@ -92,6 +95,9 @@ struct ZdcTaskInterCalib {
     registry.add("ZNAsumq", "ZNAsumq; ZNA uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNCsumq", "ZNCsumq; ZNC uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
 
+    registry.add("ZNACentroid", "ZNACentroid; ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
+    registry.add("ZNCCentroid", "ZNCCentroid; ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
+
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
@@ -101,7 +107,7 @@ struct ZdcTaskInterCalib {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
   }
 
   template <typename TCollision>
@@ -206,18 +212,8 @@ struct ZdcTaskInterCalib {
         //
         double sumZNC = 0;
         double sumZNA = 0;
-        double pmqZNC[4] = {
-          0,
-          0,
-          0,
-          0,
-        };
-        double pmqZNA[4] = {
-          0,
-          0,
-          0,
-          0,
-        };
+        double pmqZNC[4] = {};
+        double pmqZNA[4] = {};
         //
         if (isZNChit) {
           for (int it = 0; it < nTowers; it++) {
@@ -244,15 +240,87 @@ struct ZdcTaskInterCalib {
           registry.get<TH1>(HIST("ZNApm4"))->Fill(pmqZNA[3]);
           registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
         }
-        if (isZNAhit || isZNChit)
-          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNC, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNA, centrality, foundBC.timestamp(), evSelection);
+
+        // Q-vectors (centroid) calculation
+        // kBeamEne --  LHC Run 3 Pb-Pb collision energy (5.36 TeV per nucleon pair)
+        constexpr float kBeamEne = 5.36 * 0.5;
+
+        // Provide coordinates of centroid over ZN (side C) front face
+        constexpr float X[4] = {-1.75, 1.75, -1.75, 1.75};
+        constexpr float Y[4] = {-1.75, -1.75, 1.75, 1.75};
+        constexpr float kAlpha = 0.395; // saturation correction
+
+        float numXZNC = 0., numYZNC = 0., denZNC = 0.;
+        float numXZNA = 0., numYZNA = 0., denZNA = 0.;
+
+        // Calculate weighted sums of the x and y coordinates
+        constexpr int kNTowers = 4; // number of ZDC towers
+        for (int i = 0; i < kNTowers; i++) {
+          if (pmqZNC[i] > 0.) {
+            float wZNC = std::pow(pmqZNC[i], kAlpha);
+            numXZNC -= X[i] * wZNC; // numerator x (minus sign due to opposite orientation of ZNC)
+            numYZNC += Y[i] * wZNC; // numerator y
+            denZNC += wZNC;         // denominator
+          }
+          if (pmqZNA[i] > 0.) {
+            float wZNA = std::pow(pmqZNA[i], kAlpha);
+            numXZNA += X[i] * wZNA; // numerator x
+            numYZNA += Y[i] * wZNA; // numerator y
+            denZNA += wZNA;         // denominator
+          }
+        }
+        // Calculate centroid coordinates (in cm) with correction factor c depending on the number of spectator nucleons (nSpec)
+
+        float zncCommon = 0;
+        float znaCommon = 0;
+
+        // Use sum of PMTs (cfgUsePMC == false) when common PMT is saturated
+        if (cfgUsePMC) {
+          zncCommon = pmcZNC;
+          znaCommon = pmcZNA;
+        } else {
+          zncCommon = sumZNC;
+          znaCommon = sumZNA;
+        }
+
+        float centroidZNC[2], centroidZNA[2];
+
+        if (denZNC != 0.) {
+          float nSpecnC = zncCommon / kBeamEne;
+          float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
+          centroidZNC[0] = cZNC * numXZNC / denZNC;
+          centroidZNC[1] = cZNC * numYZNC / denZNC;
+        } else {
+          centroidZNC[0] = 999.;
+          centroidZNC[1] = 999.;
+        }
+        //
+        if (denZNA != 0.) {
+          float nSpecnA = znaCommon / kBeamEne;
+          float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
+          centroidZNA[0] = cZNA * numXZNA / denZNA;
+          centroidZNA[1] = cZNA * numYZNA / denZNA;
+        } else {
+          centroidZNA[0] = 999.;
+          centroidZNA[1] = 999.;
+        }
+        registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
+        registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
+
+        auto vz = collision.posZ();
+        auto vx = collision.posX();
+        auto vy = collision.posY();
+
+        if (isZNAhit || isZNChit) {
+          zdcextras(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNA, centroidZNA[0], centroidZNA[1], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNC, centroidZNC[0], centroidZNC[1], centrality, vx, vy, vz, foundBC.timestamp(), evSelection);
+        }
       }
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ZdcTaskInterCalib>(cfgc)};
+    adaptAnalysisTask<ZdcExtraTableProducer>(cfgc)};
 }
