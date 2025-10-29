@@ -640,7 +640,7 @@ struct FlowTask {
           continue;
         auto val = fGFW->Calculate(corrconfigsPtVn.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]);
+          (dt == kGen) ? fFCptgen->fillVnPtProfiles(l_ind, centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(l_ind, centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]);
         }
         continue;
       }
