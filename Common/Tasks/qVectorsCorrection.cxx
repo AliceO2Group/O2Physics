@@ -180,9 +180,11 @@ struct qVectorsCorrection {
 
     AxisSpec axisShift = {10, 0, 10, "shift"};
     AxisSpec axisBasis = {20, 0, 20, "basis"};
+    AxisSpec axisVertex = {220, -11, 11, "vertex"};
 
-    histosQA.add("histCentFull", "Centrality distribution for valid events",
-                 HistType::kTH1F, {axisCent});
+    histosQA.add("histCentFull", "Centrality distribution for valid events", HistType::kTH1F, {axisCent});
+    histosQA.add("histCentSelected", "Centrality distribution for valid events", HistType::kTH1F, {axisCent});
+    histosQA.add("histVtxSelected", "Centrality distribution for valid events", HistType::kTH1F, {axisVertex});
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
       histosQA.add(Form("histQvecUncorV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
@@ -268,6 +270,10 @@ struct qVectorsCorrection {
     int RefAInd = RefAId * 4 + cfgnTotalSystem * 4 * (nmode - 2) + 3;
     int RefBInd = RefBId * 4 + cfgnTotalSystem * 4 * (nmode - 2) + 3;
 
+    if (vec.qvecAmp()[DetId] < 1e-8 || vec.qvecAmp()[RefAId] < 1e-8 || vec.qvecAmp()[RefBId] < 1e-8) {
+      return;
+    }
+
     if (nmode == 2) {
       for (int ishift = 1; ishift <= 10; ishift++) {
         histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
@@ -310,6 +316,10 @@ struct qVectorsCorrection {
     int DetInd = DetId + cfgnTotalSystem * (nmode - 2);
     int RefAInd = RefAId + cfgnTotalSystem * (nmode - 2);
     int RefBInd = RefBId + cfgnTotalSystem * (nmode - 2);
+
+    if (coll.qvecAmp()[DetId] < 1e-8 || coll.qvecAmp()[RefAId] < 1e-8 || coll.qvecAmp()[RefBId] < 1e-8) {
+      return;
+    }
 
     for (auto& trk : track) {
       if (!SelTrack(trk)) {
@@ -424,6 +434,11 @@ struct qVectorsCorrection {
     int DetInd = DetId + cfgnTotalSystem * (nmode - 2);
     int RefAInd = RefAId + cfgnTotalSystem * (nmode - 2);
     int RefBInd = RefBId + cfgnTotalSystem * (nmode - 2);
+
+    if (vec.qvecAmp()[DetId] < 1e-8 || vec.qvecAmp()[RefAId] < 1e-8 || vec.qvecAmp()[RefBId] < 1e-8) {
+      return;
+    }
+
     if (nmode == 2) {
       histosQA.fill(HIST("histQvecFinalV2"), vec.qvecShiftedRe()[DetInd], vec.qvecShiftedIm()[DetInd], vec.cent());
       histosQA.fill(HIST("histEvtPlFinalV2"), helperEP.GetEventPlane(vec.qvecShiftedRe()[DetInd], vec.qvecShiftedIm()[DetInd], nmode), vec.cent());
@@ -723,6 +738,8 @@ struct qVectorsCorrection {
       if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)
         return;
     }
+    histosQA.fill(HIST("histCentSelected"), qVec.cent());
+    histosQA.fill(HIST("histVtxSelected"), qVec.posZ());
 
     if (cfgShiftCorPrep) {
       for (uint i = 0; i < cfgnMods->size(); i++) {
@@ -768,6 +785,8 @@ struct qVectorsCorrection {
       if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)
         return;
     }
+    histosQA.fill(HIST("histCentSelected"), qVec.cent());
+    histosQA.fill(HIST("histVtxSelected"), qVec.posZ());
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvecWithSC(qVec, cfgnMods->at(i));
