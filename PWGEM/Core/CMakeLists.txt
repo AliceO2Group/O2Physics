@@ -10,6 +10,6 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(qvec-converter
-                    SOURCES emQvecConverter.cxx
+                    SOURCES qvecConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

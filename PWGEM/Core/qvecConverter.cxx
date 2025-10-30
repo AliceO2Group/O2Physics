@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file emQvecConverter.cxx
+/// \file qvecConverter.cxx
 /// \brief Analysis task for neutral pion flow with EMCal
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // Converts EMEventsQvec_000 into EMEventsQvec_001
-struct EmQvecConverter {
+struct QvecConverter {
   Produces<aod::EMEventsQvec_001> qvec001;
 
   void process(aod::EMEventsQvec_000 const& emEventsQVec)
@@ -39,6 +39,6 @@ struct EmQvecConverter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<EmQvecConverter>(cfgc),
+    adaptAnalysisTask<QvecConverter>(cfgc),
   };
 }
