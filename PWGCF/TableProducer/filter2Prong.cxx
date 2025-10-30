@@ -123,6 +123,7 @@ struct Filter2Prong {
   } grpV0;
 
   struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(storeLooseTightforphi, bool, true, "Store also loose and tight phi candidates for systematics");
     O2_DEFINE_CONFIGURABLE(ImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)");
     O2_DEFINE_CONFIGURABLE(ImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)");
     O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS");
@@ -130,9 +131,9 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(lowITSPIDNsigma, float, 3.0, "lower cut on PID nsigma for ITS");
     O2_DEFINE_CONFIGURABLE(highITSPIDNsigma, float, 3.0, "higher cut on PID nsigma for ITS");
     O2_DEFINE_CONFIGURABLE(ITSclusterPhiMeson, int, 5, "Minimum number of ITS cluster for phi meson track");
-    O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, int, 80, "Minimum number of TPC Crossed Rows for phi meson track");
-    O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, float, 0.1, "Maximum DCAxy for phi meson track");
-    O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, float, 0.1, "Maximum DCAz for phi meson track");
+    O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, std::vector<int>, (std::vector<int>{70, 80, 90}), "Minimum number of TPC Crossed Rows for phi meson track (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, std::vector<float>, (std::vector<float>{0.12, 0.1, 0.08}), "Maximum DCAxy for phi meson tracks (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, std::vector<float>, (std::vector<float>{0.12, 0.1, 0.08}), "Maximum DCAz for phi meson tracks (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(cutEtaPhiMeson, float, 0.8, "Maximum eta for phi meson track");
     O2_DEFINE_CONFIGURABLE(cutPTPhiMeson, float, 0.15, "Maximum pt for phi meson track");
     O2_DEFINE_CONFIGURABLE(isDeepAngle, bool, true, "Flag for applying deep angle");
@@ -318,7 +319,18 @@ struct Filter2Prong {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPhi.ITSclusterPhiMeson && candidate.tpcNClsCrossedRows() > grpPhi.TPCCrossedRowsPhiMeson && std::abs(candidate.dcaXY()) <= grpPhi.cutDCAxyPhiMeson && std::abs(candidate.dcaZ()) <= grpPhi.cutDCAzPhiMeson && std::abs(candidate.eta()) <= grpPhi.cutEtaPhiMeson && candidate.pt() >= grpPhi.cutPTPhiMeson) {
+    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPhi.ITSclusterPhiMeson && std::abs(candidate.eta()) <= grpPhi.cutEtaPhiMeson && candidate.pt() >= grpPhi.cutPTPhiMeson) {
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionSys(const T& candidate, bool isLoose, bool isTight)
+  {
+    const int indexCut = isLoose ? 0 : (isTight ? 2 : 1);
+
+    if (std::abs(candidate.dcaXY()) <= grpPhi.cutDCAxyPhiMeson.value[indexCut] && std::abs(candidate.dcaZ()) <= grpPhi.cutDCAzPhiMeson.value[indexCut] && candidate.tpcNClsCrossedRows() > grpPhi.TPCCrossedRowsPhiMeson.value[indexCut]) {
       return true;
     }
     return false;
@@ -735,8 +747,24 @@ struct Filter2Prong {
                              cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID2);
         }
         if (selectionPID3(p1) && selectionPID3(p2)) {
-          output2ProngTracks(cfcollisions.begin().globalIndex(),
-                             cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3);
+          if (selectionSys(p1, false, false) && selectionSys(p2, false, false)) // default
+          {
+            output2ProngTracks(cfcollisions.begin().globalIndex(),
+                               cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3);
+          }
+          if (grpPhi.storeLooseTightforphi) // store also loose and tight K0s
+          {
+            if (selectionSys(p1, true, false) && selectionSys(p2, true, false)) // loose
+            {
+              output2ProngTracks(cfcollisions.begin().globalIndex(),
+                                 cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3Loose);
+            }
+            if (selectionSys(p1, false, true) && selectionSys(p2, false, true)) // tight
+            {
+              output2ProngTracks(cfcollisions.begin().globalIndex(),
+                                 cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3Tight);
+            }
+          }
         }
       } // end of loop over second track
     } // end of loop over first track

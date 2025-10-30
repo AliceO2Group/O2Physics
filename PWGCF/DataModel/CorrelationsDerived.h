@@ -143,6 +143,8 @@ enum ParticleDecay {
   PhiToKKPID1,
   PhiToKKPID2,
   PhiToKKPID3,
+  PhiToKKPID3Loose,
+  PhiToKKPID3Tight,
   K0stoPiPi,
   LambdatoPPi,
   AntiLambdatoPiP,
