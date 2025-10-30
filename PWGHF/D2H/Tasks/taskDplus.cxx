@@ -16,6 +16,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, University and INFN Torino
+/// \author Minjung Kim <minjung.kim@cern.ch>, Inha University
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -26,11 +27,13 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -50,6 +53,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <numeric>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -58,6 +62,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
+using namespace o2::hf_evsel;
+
+enum class GapType {
+  GapA = 0,
+  GapC = 1,
+  DoubleGap = 2,
+};
 
 /// D± analysis task
 struct HfTaskDplus {
@@ -73,6 +84,13 @@ struct HfTaskDplus {
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
   Configurable<bool> storePvContributors{"storePvContributors", false, "Flag to store number of PV contributors information"};
   Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  HfEventSelection hfEvSel; // event selection and monitoring
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandDplusDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
@@ -85,6 +103,7 @@ struct HfTaskDplus {
 
   Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
 
+  Preslice<aod::HfCand3Prong> candDplusPerCollision = aod::hf_cand::collisionId;
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<aod::McCollisionLabels> recoColPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
@@ -122,9 +141,11 @@ struct HfTaskDplus {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   void init(InitContext&)
   {
-    std::array<bool, 4> doprocess{doprocessData, doprocessDataWithMl, doprocessMc, doprocessMcWithMl};
+    std::array<bool, 5> doprocess{doprocessData, doprocessDataWithMl, doprocessMc, doprocessMcWithMl, doprocessDataWithMlWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
@@ -239,6 +260,19 @@ struct HfTaskDplus {
       registry.add("hSparseMassGenPrompt", "THn for gen Prompt Dplus", HistType::kTHnSparseF, axesGenPrompt);
       registry.add("hSparseMassGenFD", "THn for gen FD Dplus", HistType::kTHnSparseF, axesGenFD);
     }
+
+    qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+    qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+    qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+
+    hfEvSel.addHistograms(qaRegistry); // collision monitoring
+
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
   }
 
   // Fill histograms of quantities for the reconstructed Dplus candidates
@@ -646,6 +680,71 @@ struct HfTaskDplus {
     }
   }
 
+  GapType determineGapType(float FT0A, float FT0C, float ZNA, float ZNC)
+  {
+    constexpr float FT0AThreshold = 100.0;
+    constexpr float FT0CThreshold = 50.0;
+    constexpr float ZDCThreshold = 1.0;
+    if (FT0A < FT0AThreshold && FT0C > FT0CThreshold && ZNA < ZDCThreshold && ZNC > ZDCThreshold) {
+      return GapType::GapA;
+    }
+    if (FT0A > FT0AThreshold && FT0C < FT0CThreshold && ZNA > ZDCThreshold && ZNC < ZDCThreshold) {
+      return GapType::GapC;
+    }
+    return GapType::DoubleGap;
+  }
+
+  template <bool fillMl, typename CollType, typename CandType, typename BCsType>
+  void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
+                                          CandType const& candidates,
+                                          BCsType const& bcs,
+                                          aod::FT0s const& ft0s,
+                                          aod::FV0As const& fv0as,
+                                          aod::FDDs const& fdds)
+  {
+    for (const auto& collision : collisions) {
+      uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
+      float centrality{-1.f};
+      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
+      }
+      auto bc = collision.template bc_as<BCsType>();
+      upchelpers::FITInfo fitInfo{};
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+      GapType gap = GapType::DoubleGap;
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
+      }
+      if (gap == GapType::GapA || gap == GapType::GapC) {
+        // Use the candidates from this collision
+        const auto thisCollId = collision.globalIndex();
+        const auto& groupedDplusCandidates = candidates.sliceBy(candDplusPerCollision, thisCollId);
+        float cent{-1.f};
+        float occ{-1.f};
+        float numPvContr{-1.f};
+        float ptBhad{-1.f};
+        int const flagBHad{-1};
+
+        for (const auto& candidate : groupedDplusCandidates) {
+          if ((yCandRecoMax >= 0. && std::abs(HfHelper::yDplus(candidate)) > yCandRecoMax)) {
+            continue;
+          }
+          fillHisto(candidate);
+          if constexpr (fillMl) {
+            fillSparseML<false, false>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
+          }
+        }
+      }
+    }
+  }
+
   // process functions
   void processData(CandDplusData const& candidates, CollisionsCent const& collisions)
   {
@@ -678,6 +777,19 @@ struct HfTaskDplus {
     runAnalysisMcGen<true>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
+
+  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                aod::BcFullInfos const& bcs,
+                                CandDplusDataWithMl const& selectedDplusCandidatesMl,
+                                aod::Tracks const&,
+                                aod::FT0s const& ft0s,
+                                aod::FV0As const& fv0as,
+                                aod::FDDs const& fdds,
+                                aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedDplusCandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskDplus, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
