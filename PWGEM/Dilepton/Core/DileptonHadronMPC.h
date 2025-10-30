@@ -822,10 +822,10 @@ struct DileptonHadronMPC {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
             if (t1.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
+              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
                                                                         t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
+              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t1.globalIndex(), collision.globalIndex(), t1.fwdtrackId(), t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), possibleIds1,
                                                                         t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
             }
           }
@@ -834,10 +834,10 @@ struct DileptonHadronMPC {
           used_trackIds_per_col.emplace_back(t2.globalIndex());
           if (cfgDoMix) {
             if (t2.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
+              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
                                                                         t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
+              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(ndf, t2.globalIndex(), collision.globalIndex(), t2.fwdtrackId(), t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), possibleIds2,
                                                                         t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
             }
           }
