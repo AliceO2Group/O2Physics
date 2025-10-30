@@ -279,12 +279,12 @@ struct UpcRhoAnalysis {
     rSystem.addClone("system/all/unlike-sign/", "system/all/like-sign/positive/");
     rSystem.addClone("system/all/unlike-sign/", "system/all/like-sign/negative/");
     // selected rhos
-    rSystem.addClone("system/all/", "system/selected/no-selection/");
+    rSystem.addClone("system/all/", "system/selected/AnAn/");
     // clones for neutron classes
-    rSystem.addClone("system/selected/no-selection/", "system/selected/0n0n/");
-    rSystem.addClone("system/selected/no-selection/", "system/selected/Xn0n/");
-    rSystem.addClone("system/selected/no-selection/", "system/selected/0nXn/");
-    rSystem.addClone("system/selected/no-selection/", "system/selected/XnXn/");
+    rSystem.addClone("system/selected/AnAn/", "system/selected/0n0n/");
+    rSystem.addClone("system/selected/AnAn/", "system/selected/Xn0n/");
+    rSystem.addClone("system/selected/AnAn/", "system/selected/0nXn/");
+    rSystem.addClone("system/selected/AnAn/", "system/selected/XnXn/");
     
     if (context.mOptions.get<bool>("processMCdata")) {
       // MC
@@ -328,7 +328,7 @@ struct UpcRhoAnalysis {
 
   static constexpr std::string_view AppliedSelections[3] = {"all/", "trackSelections/", "systemSelections/"};
   static constexpr std::string_view ChargeLabel[3] = {"unlike-sign/", "like-sign/positive/", "like-sign/negative/"};
-  static constexpr std::string_view NeutronClass[5] = {"no-selection/", "0n0n/", "Xn0n/", "0nXn/", "XnXn/"};
+  static constexpr std::string_view NeutronClass[5] = {"AnAn/", "0n0n/", "Xn0n/", "0nXn/", "XnXn/"};
 
   template <int cuts, typename C>
   void fillCollisionQcHistos(const C& collision) // fills collision QC histograms before/after cuts
