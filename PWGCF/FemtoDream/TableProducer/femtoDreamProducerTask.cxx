@@ -75,14 +75,6 @@ using FemtoFullTracks =
             aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
 } // namespace o2::aod
 
-namespace softwareTriggers
-{
-static const int nTriggers = 11;
-static const std::vector<std::string> triggerNames{"fPPP", "fPPL", "fPLL", "fLLL", "fPD", "fLD", "fDoubleXi", "fDoubleOmega", "fOmegaHighMult", "fTrackedXi", "fTrackedOmega"};
-static const float triggerSwitches[1][nTriggers]{
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
-} // namespace softwareTriggers
-
 template <typename T>
 int getRowDaughters(int daughID, T const& vecID)
 {
@@ -119,10 +111,7 @@ struct femtoDreamProducerTask {
   FemtoDreamCollisionSelection colCuts;
   // Event cuts - Triggers
   Configurable<bool> ConfEnableTriggerSelection{"ConfEnableTriggerSelection", false, "Should the trigger selection be enabled for collisions?"};
-  Configurable<LabeledArray<float>> ConfTriggerSwitches{
-    "ConfTriggerSwitches",
-    {softwareTriggers::triggerSwitches[0], 1, softwareTriggers::nTriggers, std::vector<std::string>{"Switch"}, softwareTriggers::triggerNames},
-    "Turn on which trigger should be checked for recorded events to pass selection"};
+  Configurable<std::string> ConfSoftwareTriggerNames{"ConfSoftwareTriggerNames", "fPPL", "Names of the software triggers, use comma and no space"};
   Configurable<std::string> ConfBaseCCDBPathForTriggers{"ConfBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
 
   // Event cuts - usual selection criteria
@@ -304,7 +293,6 @@ struct femtoDreamProducerTask {
 
   int mRunNumber;
   float mMagField;
-  std::string zorroTriggerNames = "";
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   RCTFlagsChecker rctChecker;
 
@@ -339,15 +327,6 @@ struct femtoDreamProducerTask {
     ResoRegistry.add("AnalysisQA/Reso/Daughter2/Phi", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     ResoRegistry.add("AnalysisQA/Reso/PtD1_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     ResoRegistry.add("AnalysisQA/Reso/PtD2_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-
-    if (ConfEnableTriggerSelection) {
-      for (const std::string& triggerName : softwareTriggers::triggerNames) {
-        if (ConfTriggerSwitches->get("Switch", triggerName.c_str())) {
-          zorroTriggerNames += triggerName + ",";
-        }
-      }
-      zorroTriggerNames.pop_back();
-    }
 
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, false, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
@@ -521,7 +500,7 @@ struct femtoDreamProducerTask {
     // Init for zorro to get trigger flags
     if (ConfEnableTriggerSelection) {
       zorro.setCCDBpath(ConfBaseCCDBPathForTriggers);
-      zorro.initCCDB(ccdb.service, mRunNumber, timestamp, zorroTriggerNames);
+      zorro.initCCDB(ccdb.service, mRunNumber, timestamp, ConfSoftwareTriggerNames.value);
     }
   }
 
