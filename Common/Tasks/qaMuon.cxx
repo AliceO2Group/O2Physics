@@ -3148,8 +3148,8 @@ struct muonQa {
         // dimuon variables
         double mass = GetMuMuInvariantMass(fgValuesMuonPV1, fgValuesMuonPV2);
         double pT = GetMuMuPt(fgValuesMuonPV1, fgValuesMuonPV2);
-        double dcaXPair;
-        double dcaYPair;
+        double dcaXPair = 0.0;
+        double dcaYPair = 0.0;
         if (TopBottom1 != TopBottom2) {             // only mixed pairs
           if (TopBottom1 == 0 && TopBottom2 == 1) { // muon1 = top, muon2 = bottom
             if (configRealign.fDoRealign) {
