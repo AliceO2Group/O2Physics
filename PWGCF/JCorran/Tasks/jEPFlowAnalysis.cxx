@@ -189,7 +189,8 @@ struct jEPFlowAnalysis {
       }
     }
 
-    if (coll.qvecAmp()[detId] < 1e-5 || coll.qvecAmp()[refAId] < 1e-5 || coll.qvecAmp()[refBId] < 1e-5) return;
+    if (coll.qvecAmp()[detId] < 1e-5 || coll.qvecAmp()[refAId] < 1e-5 || coll.qvecAmp()[refBId] < 1e-5)
+      return;
 
     for (int i = 0; i < cfgnMode; i++) {       // loop over different harmonic orders
       harmInd = cfgnTotalSystem * 4 * (i) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
@@ -225,8 +226,6 @@ struct jEPFlowAnalysis {
 
       if (cfgSPmethod)
         weight *= std::sqrt(std::pow(coll.qvecRe()[4 * detId + harmInd], 2) + std::pow(coll.qvecIm()[4 * detId + harmInd], 2));
-
-
 
       float resNumA = helperEP.GetResolution(eps[0], eps[1], i + 2);
       float resNumB = helperEP.GetResolution(eps[0], eps[2], i + 2);
