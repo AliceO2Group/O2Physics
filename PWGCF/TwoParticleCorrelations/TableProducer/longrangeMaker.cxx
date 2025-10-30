@@ -270,7 +270,7 @@ struct LongrangeMaker {
         float ampl = ft0.amplitudeC()[iCh];
         auto phi = getPhiFT0(chanelid, 1);
         auto eta = getEtaFT0(chanelid, 1);
-        ft0aLRTable(collisionLRTable.lastIndex(), chanelid, ampl, eta, phi);
+        ft0cLRTable(collisionLRTable.lastIndex(), chanelid, ampl, eta, phi);
       }
     }
 
@@ -284,6 +284,7 @@ struct LongrangeMaker {
       mftLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), phi);
     }
 
+    // v0 loop
     auto v0tracksInCollision = V0s.sliceBy(perColV0, col.globalIndex());
     for (const auto& v0 : v0tracksInCollision) {
       if (!isSelectV0Track(v0)) { // Quality selection for V0 prongs
