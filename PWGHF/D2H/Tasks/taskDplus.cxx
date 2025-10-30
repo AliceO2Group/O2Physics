@@ -16,7 +16,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, University and INFN Torino
-/// \author Minjung Kim <minjung.kim@cern.ch>, Inha University
+/// \author Minjung Kim <minjung.kim@cern.ch>, CERN 
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
