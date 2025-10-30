@@ -221,7 +221,7 @@ DECLARE_SOA_TABLE(ReducedEventsInfo, "AOD", "REDUCEVENTINFO", //!   Main event i
 DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC truth information
                   o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
-                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter,
+                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
                   mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
 
 using ReducedEvent = ReducedEvents::iterator;
