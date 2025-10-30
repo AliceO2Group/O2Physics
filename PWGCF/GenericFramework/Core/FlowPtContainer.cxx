@@ -112,16 +112,21 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& 
     }
   }
   if (fUseGap) {
+    int obsIndex = 0;
+    fCovFirstIndex.resize(configs.GetSize(), 0);
     for (int i = 0; i < configs.GetSize(); ++i) {
+      fCovFirstIndex[i] = obsIndex;
       for (auto m(1); m <= mpar; ++m) {
         if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
           continue;
         if (fUseCentralMoments) {
           for (auto j = 0; j <= m; ++j) {
             fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, j), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, j), nMultiBins, &multiBins[0]));
+            obsIndex++;
           }
         } else {
           fCovList->Add(new BootstrapProfile(Form("%spt%i", configs.GetHeads()[i].c_str(), m), Form("%spt%i", configs.GetHeads()[i].c_str(), m), nMultiBins, &multiBins[0]));
+          obsIndex++;
         }
       }
     }
@@ -197,16 +202,21 @@ void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const 
     }
   }
   if (fUseGap) {
+    int obsIndex = 0;
+    fCovFirstIndex.resize(configs.GetSize(), 0);
     for (int i = 0; i < configs.GetSize(); ++i) {
+      fCovFirstIndex[i] = obsIndex;
       for (auto m(1); m <= mpar; ++m) {
         if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
           continue;
         if (fUseCentralMoments) {
           for (auto j = 0; j <= m; ++j) {
             fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, j), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, j), nbinsx, xbins));
+            obsIndex++;
           }
         } else {
           fCovList->Add(new BootstrapProfile(Form("%spt%i", configs.GetHeads()[i].c_str(), m), Form("%spt%i", configs.GetHeads()[i].c_str(), m), nbinsx, xbins));
+          obsIndex++;
         }
       }
     }
@@ -280,16 +290,21 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
     }
   }
   if (fUseGap) {
+    int obsIndex = 0;
+    fCovFirstIndex.resize(configs.GetSize(), 0);
     for (int i = 0; i < configs.GetSize(); ++i) {
+      fCovFirstIndex[i] = obsIndex;
       for (auto m(1); m <= mpar; ++m) {
         if (!(configs.GetpTCorrMasks()[i] & (1 << (m - 1))))
           continue;
         if (fUseCentralMoments) {
           for (auto j = 0; j <= m; ++j) {
             fCovList->Add(new BootstrapProfile(Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, j), Form("%spt%i_Mpt%i", configs.GetHeads()[i].c_str(), m, j), nbinsx, xlow, xhigh));
+            obsIndex++;
           }
         } else {
           fCovList->Add(new BootstrapProfile(Form("%spt%i", configs.GetHeads()[i].c_str(), m), Form("%spt%i", configs.GetHeads()[i].c_str(), m), nbinsx, xlow, xhigh));
+          obsIndex++;
         }
       }
     }
@@ -408,6 +423,41 @@ void FlowPtContainer::fillVnDeltaPtProfiles(const double& centmult, const double
         dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + i + 1]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
       }
       ++fillCounter;
+    }
+  }
+  return;
+}
+void FlowPtContainer::fillVnPtCorrProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+{
+  if (!mask) {
+    return;
+  }
+  int startIndex = fCovFirstIndex[configIndex];
+  for (auto m(1); m <= mpar; ++m) {
+    if (!(mask & (1 << (m - 1)))) {
+      continue;
+    }
+    if (corrDen[m] != 0) {
+      dynamic_cast<BootstrapProfile*>(fCovList->At(startIndex))->FillProfile(centmult, flowval * corrNum[m] / corrDen[m], (fEventWeight == UnityWeight) ? 1.0 : flowtuples * corrDen[m], rn);
+    }
+    ++startIndex;
+  }
+  return;
+}
+void FlowPtContainer::fillVnDeltaPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+{
+  if (!mask) {
+    return;
+  }
+  int startIndex = fCovFirstIndex[configIndex];
+  for (auto m(1); m <= mpar; ++m) {
+    if (!(mask & (1 << (m - 1))))
+      continue;
+    for (auto i = 0; i <= m; ++i) {
+      if (cmDen[m] != 0) {
+        dynamic_cast<BootstrapProfile*>(fCovList->At(startIndex))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + i + 1]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
+      }
+      ++startIndex;
     }
   }
   return;

@@ -59,6 +59,8 @@ class FlowPtContainer : public TNamed
   void fillPtProfiles(const double& lMult, const double& rn);
   void fillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillVnPtCorrProfiles(const int configIndex, const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
+  void fillVnDeltaPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtStdProfiles(const double& centmult, const double& rn);
   void fillVnPtCorrStdProfiles(const double& centmult, const double& rn);
   void fillVnPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
@@ -67,6 +69,29 @@ class FlowPtContainer : public TNamed
       fillVnDeltaPtProfiles(centmult, flowval, flowtuples, rn, mask);
     else
       fillVnPtCorrProfiles(centmult, flowval, flowtuples, rn, mask);
+  }
+  void fillVnPtProfiles(const int configIndex, const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask)
+  {
+    if (fUseCentralMoments)
+      fillVnDeltaPtProfiles(configIndex, centmult, flowval, flowtuples, rn, mask);
+    else
+      fillVnPtCorrProfiles(configIndex, centmult, flowval, flowtuples, rn, mask);
+  }
+  void skipVnPtProfiles(uint8_t mask)
+  {
+    for (auto m(1); m <= mpar; ++m) {
+      if (!(mask & (1 << (m - 1)))) {
+        continue;
+      }
+      if (fUseCentralMoments) {
+        for (auto i = 0; i <= m; ++i) {
+          ++fillCounter;
+        }
+      } else {
+        ++fillCounter;
+      }
+    }
+    return;
   }
   void fillVnPtStdProfiles(const double& centmult, const double& rn)
   {
@@ -129,6 +154,7 @@ class FlowPtContainer : public TNamed
   std::vector<double> cmDen;             //!
   std::vector<std::complex<double>> arr; //!
   std::vector<double> warr;              //!
+  std::vector<int> fCovFirstIndex;       //!
   template <typename T>
   double getStdAABBCC(T& inarr);
   template <typename T>
