@@ -2007,6 +2007,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+    values[kMCEventCentrFT0C] = event.centFT0C();
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {

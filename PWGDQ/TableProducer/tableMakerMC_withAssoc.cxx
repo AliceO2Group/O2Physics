@@ -469,7 +469,7 @@ struct TableMakerMC {
       fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
       // Create the skimmed table entry for this collision
       eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-              mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(),
+              mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), mcCollision.bestCollisionCentFT0C(),
               mcCollision.multMCNParticlesEta05(), mcCollision.multMCNParticlesEta08(), mcCollision.multMCNParticlesEta10());
     }
   }
