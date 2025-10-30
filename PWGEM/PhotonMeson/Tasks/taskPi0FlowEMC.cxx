@@ -102,7 +102,7 @@ enum Harmonics {
 enum class MapLevel {
   kGood = 1,
   kNoBad = 2,
-  kinEMC = 3,
+  kInEMC = 3,
   kAll = 4
 };
 
