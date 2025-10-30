@@ -235,8 +235,8 @@ struct JetFinderHFTask {
   }
 
   // function that generalically processes gen level events
-  template <bool checkIsDaughter, typename T, typename U, typename V>
-  void analyseMCP(T const& collision, U const& particles, V const& candidate, int jetTypeParticleLevel, float minJetPt, float maxJetPt)
+  template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N>
+  void analyseMCP(T const& collision, U const& particles, V const& candidate, M& jetsTableInput, N& constituentsTableInput, int jetTypeParticleLevel, float minJetPt, float maxJetPt)
   {
     if (rejectIncorrectDecaysMCP && !jetcandidateutilities::isMatchedCandidate(candidate)) { // is this even needed in the new derived format? it means any simulations run have to force the decay channel
       return;
@@ -246,12 +246,12 @@ struct JetFinderHFTask {
     if (!jetfindingutilities::analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax)) {
       return;
     }
-    if constexpr (checkIsDaughter) {
+    if constexpr (!isEvtWiseSub) {
       jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, &candidate);
     } else {
       jetfindingutilities::analyseParticles<false>(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, &candidate);
     }
-    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
   }
 
   void processDummy(aod::JetCollisions const&)
@@ -296,7 +296,7 @@ struct JetFinderHFTask {
                              CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {
-      analyseMCP<true>(collision, particles, candidate, 1, jetPtMin, jetPtMax);
+      analyseMCP<false>(collision, particles, candidate, jetsTable, constituentsTable, 1, jetPtMin, jetPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
@@ -306,7 +306,7 @@ struct JetFinderHFTask {
                                        CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {
-      analyseMCP<false>(collision, jetcandidateutilities::slicedPerCandidate(particles, candidate, perD0McCandidate, perDplusMcCandidate, perDsMcCandidate, perDstarMcCandidate, perLcMcCandidate, perB0McCandidate, perBplusMcCandidate, perXicToXiPiPiMcCandidate, perDielectronMcCandidate), candidate, 1, jetPtMin, jetPtMax);
+      analyseMCP<true>(collision, jetcandidateutilities::slicedPerCandidate(particles, candidate, perD0McCandidate, perDplusMcCandidate, perDsMcCandidate, perDstarMcCandidate, perLcMcCandidate, perB0McCandidate, perBplusMcCandidate, perXicToXiPiPiMcCandidate, perDielectronMcCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, 1, jetPtMin, jetPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCP, "hf jet finding on MC particle level", false);
