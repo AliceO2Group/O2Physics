@@ -14,6 +14,7 @@
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
+/// \author Minjung Kim <minjung.kim@cern.ch>, CERN 
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -24,6 +25,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
@@ -58,6 +60,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
+using namespace o2::hf_evsel;
+
+enum class GapType {
+  GapA = 0,
+  GapC = 1,
+  DoubleGap = 2,
+};
 
 /// D0 analysis task
 namespace
@@ -89,7 +98,11 @@ struct HfTaskD0 {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+
+  HfEventSelection hfEvSel; // event selection and monitoring
 
   ctpRateFetcher mRateFetcher;
 
@@ -111,6 +124,8 @@ struct HfTaskD0 {
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
+
+  Preslice<aod::HfCand2Prong> candD0PerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsWithMcLabelsCent> colPerMcCollisionCent = aod::mccollisionlabel::mcCollisionId;
 
@@ -219,9 +234,11 @@ struct HfTaskD0 {
      {"hMassReflBkgD0bar", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}},
      {"hMassSigBkgD0bar", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{y}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, {20, -5., 5.}}}}}};
 
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   void init(InitContext&)
   {
-    std::array<bool, 12> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithDCAFitterNCent, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithDCAFitterNCent, doprocessMcWithKFParticle, doprocessDataWithDCAFitterNMl, doprocessDataWithDCAFitterNMlCent, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterNMl, doprocessMcWithDCAFitterNMlCent, doprocessMcWithKFParticleMl};
+    std::array<bool, 13> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithDCAFitterNCent, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithDCAFitterNCent, doprocessMcWithKFParticle, doprocessDataWithDCAFitterNMl, doprocessDataWithDCAFitterNMlCent, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterNMl, doprocessMcWithDCAFitterNMlCent, doprocessMcWithKFParticleMl, doprocessDataWithDCAFitterNMlWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
       LOGP(fatal, "At least one process function should be enabled at a time.");
     }
@@ -332,6 +349,15 @@ struct HfTaskD0 {
       registry.add("hMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates", HistType::kTHnSparseD, axes);
       registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
     }
+
+    qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+    qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+    qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
+    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+
+    hfEvSel.addHistograms(qaRegistry);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -517,6 +543,99 @@ struct HfTaskD0 {
       }
     }
   }
+
+  GapType determineGapType(float FT0A, float FT0C, float ZNA, float ZNC)
+  {
+    constexpr float FT0AThreshold = 100.0;
+    constexpr float FT0CThreshold = 50.0;
+    constexpr float ZDCThreshold = 1.0;
+    if (FT0A < FT0AThreshold && FT0C > FT0CThreshold && ZNA < ZDCThreshold && ZNC > ZDCThreshold) {
+      return GapType::GapA;
+    }
+    if (FT0A > FT0AThreshold && FT0C < FT0CThreshold && ZNA > ZDCThreshold && ZNC < ZDCThreshold) {
+      return GapType::GapC;
+    }
+    return GapType::DoubleGap;
+  }
+
+  template <bool fillMl, typename CollType, typename CandType, typename BCsType>
+  void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
+                                          CandType const& candidates,
+                                          BCsType const& bcs,
+                                          aod::FT0s const& ft0s,
+                                          aod::FV0As const& fv0as,
+                                          aod::FDDs const& fdds)
+  {
+    for (const auto& collision : collisions) {
+      uint32_t rejectionMask{0};
+      float centrality{-1.f};
+      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      if (rejectionMask != 0) {
+        continue;
+      }
+      auto bc = collision.template bc_as<BCsType>();
+      upchelpers::FITInfo fitInfo{};
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+      GapType gap = GapType::DoubleGap;
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
+      }
+      if (gap == GapType::GapA || gap == GapType::GapC) {
+        const auto thisCollId = collision.globalIndex();
+        const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
+
+        for (const auto& candidate : groupedD0Candidates) {
+          if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            continue;
+          }
+          if (yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > yCandRecoMax) {
+            continue;
+          }
+
+          float massD0 = HfHelper::invMassD0ToPiK(candidate);
+          float massD0bar = HfHelper::invMassD0barToKPi(candidate);
+          auto ptCandidate = candidate.pt();
+
+          if (candidate.isSelD0() >= selectionFlagD0) {
+            registry.fill(HIST("hMass"), massD0, ptCandidate);
+            registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
+            registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
+          }
+          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+            registry.fill(HIST("hMass"), massD0bar, ptCandidate);
+            registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
+            registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
+          }
+
+          if constexpr (fillMl) {
+            if (candidate.isSelD0() >= selectionFlagD0) {
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), SigD0);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
+            }
+            if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar);
+            }
+          } else {
+            if (candidate.isSelD0() >= selectionFlagD0) {
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), SigD0);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
+            }
+            if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar);
+            }
+          }
+        }
+      }
+    }
+  }
+
   void processDataWithDCAFitterN(D0Candidates const&, Collisions const& collisions, aod::TracksWExtra const& tracks, aod::BcFullInfos const& bcs)
   {
     processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates, collisions, tracks, bcs);
@@ -978,6 +1097,19 @@ struct HfTaskD0 {
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
   // TODO: add the processMcWithKFParticleMlCent
+
+  void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                          aod::BcFullInfos const& bcs,
+                                          D0CandidatesMl const&,
+                                          aod::TracksWExtra const& tracks,
+                                          aod::FT0s const& ft0s,
+                                          aod::FV0As const& fv0as,
+                                          aod::FDDs const& fdds,
+                                          aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedD0CandidatesMl, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMlWithUpc, "Process real data with DCAFitterN and ML with UPC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
