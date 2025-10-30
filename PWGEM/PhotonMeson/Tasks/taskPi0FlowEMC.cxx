@@ -99,6 +99,13 @@ enum Harmonics {
   kOctagonal = 8
 };
 
+enum class MapLevel {
+  kGood = 1,
+  kNoBad = 2,
+  kinEMC = 3,
+  kAll = 4
+};
+
 struct TaskPi0FlowEMC {
   static constexpr float MinEnergy = 0.7f;
 
@@ -221,13 +228,13 @@ struct TaskPi0FlowEMC {
   o2::emcal::BadChannelMap* mBadChannels;
   TH1D* h1SPResolution = nullptr;
   // Constants for eta and phi ranges for the look up table
-  static constexpr double etaMin = -0.75, etaMax = 0.75;
-  static constexpr int nBinsEta = 150; // 150 bins for eta
+  static constexpr double EtaMin = -0.75, etaMax = 0.75;
+  static constexpr int NBinsEta = 150; // 150 bins for eta
 
-  static constexpr double phiMin = 1.35, phiMax = 5.75;
-  static constexpr int nBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
+  static constexpr double PhiMin = 1.35, phiMax = 5.75;
+  static constexpr int NBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
 
-  std::array<int8_t, nBinsEta * nBinsPhi> lookupTable1D;
+  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D;
   float epsilon = 1.e-8;
 
   // static constexpr
@@ -239,19 +246,19 @@ struct TaskPi0FlowEMC {
   // To access the 1D array
   inline int getIndex(int iEta, int iPhi)
   {
-    return iEta * nBinsPhi + iPhi;
+    return iEta * NBinsPhi + iPhi;
   }
 
   // Function to access the lookup table
   inline int8_t checkEtaPhi1D(double eta, double phi)
   {
-    if (eta < etaMin || eta > etaMax || phi < phiMin || phi > phiMax) {
+    if (eta < EtaMin || eta > etaMax || phi < PhiMin || phi > phiMax) {
       return 3; // Out of bounds
     }
 
     // Compute indices directly
-    int iEta = static_cast<int>((eta - etaMin) / ((etaMax - etaMin) / nBinsEta));
-    int iPhi = static_cast<int>((phi - phiMin) / ((phiMax - phiMin) / nBinsPhi));
+    int iEta = static_cast<int>((eta - EtaMin) / ((etaMax - EtaMin) / NBinsEta));
+    int iPhi = static_cast<int>((phi - PhiMin) / ((phiMax - PhiMin) / NBinsPhi));
 
     return lookupTable1D[getIndex(iEta, iPhi)];
   }
@@ -665,17 +672,17 @@ struct TaskPi0FlowEMC {
     // Load Bad Channel map
     mBadChannels = ccdb->getForTimeStamp<o2::emcal::BadChannelMap>("EMC/Calib/BadChannelMap", collision.timestamp());
     lookupTable1D.fill(-1);
-    double binWidthEta = (etaMax - etaMin) / nBinsEta;
-    double binWidthPhi = (phiMax - phiMin) / nBinsPhi;
+    double binWidthEta = (etaMax - EtaMin) / NBinsEta;
+    double binWidthPhi = (phiMax - PhiMin) / NBinsPhi;
 
-    if (cfgEMCalMapLevelBackground.value >= 4 && cfgEMCalMapLevelSameEvent >= 4) {
+    if (cfgEMCalMapLevelBackground.value >= static_cast<int>(MapLevel::kAll) && cfgEMCalMapLevelSameEvent >= static_cast<int>(MapLevel::kAll)) {
       // in this case we do not want to check the clusters, so just say thery are all good.
       lookupTable1D.fill(0); // good
     } else {
-      for (int iEta = 0; iEta < nBinsEta; ++iEta) {
-        double etaCenter = etaMin + (iEta + 0.5) * binWidthEta;
-        for (int iPhi = 0; iPhi < nBinsPhi; ++iPhi) {
-          double phiCenter = phiMin + (iPhi + 0.5) * binWidthPhi;
+      for (int iEta = 0; iEta < NBinsEta; ++iEta) {
+        double etaCenter = EtaMin + (iEta + 0.5) * binWidthEta;
+        for (int iPhi = 0; iPhi < NBinsPhi; ++iPhi) {
+          double phiCenter = PhiMin + (iPhi + 0.5) * binWidthPhi;
           try {
             // Get the cell ID
             int cellID = emcalGeom->GetAbsCellIdFromEtaPhi(etaCenter, phiCenter);
