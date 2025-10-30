@@ -33,6 +33,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -91,7 +92,7 @@ struct pidTPCConfigurables : o2::framework::ConfigurableGroup {
   // Parameters for loading network from a file / downloading the file
   o2::framework::Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   o2::framework::Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
-  o2::framework::Configurable<bool> skipTPCOnly{"skipTPCOnly", false, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks)"};
+  o2::framework::Configurable<int> skipTPCOnly{"skipTPCOnly", -1, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks). 0: do not skip, 1: skip, -1: check if needed by specific tasks"};
   o2::framework::Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   o2::framework::Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
   o2::framework::Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
@@ -242,6 +243,54 @@ class pidTPCModule
       LOGF(info, " this option off UNLESS you are absolutely SURE");
       LOGF(info, " of what you're doing! You've been warned!");
       LOGF(info, "***************************************************");
+    }
+
+    if (pidTPCopts.skipTPCOnly.value == -1) {
+      LOGF(info, "***************************************************");
+      LOGF(info, " the skipTPConly flag has a value of -1! ");
+      LOGF(info, " ---> autodetecting TPC-only track necessity now ");
+      LOGF(info, "***************************************************");
+
+      // assume that TPC tracks are not needed, but check if tasks
+      // requiring them are present in the chain
+      pidTPCopts.skipTPCOnly.value = 1;
+
+      // loop over devices in this execution
+      auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+      for (o2::framework::DeviceSpec const& device : workflows.devices) {
+
+        // Check 1: the photon builder (in any configuration) needs TPC only
+        if (device.name.compare("photon-conversion-builder") == 0) {
+          LOGF(info, " ---> photon conversion builder detected! ");
+          LOGF(info, " ---> enabling TPC only track TPC PID calculations now.");
+          pidTPCopts.skipTPCOnly.value = 0;
+        }
+
+        // Check 2: propagation service with generation of photons
+        if (device.name.compare("propagation-service") == 0) {
+          LOGF(info, " ---> propagation service detected, checking if photons enabled...");
+          for (auto const& option : device.options) {
+            // check for photon generation enabled or not
+            if (option.name.compare("v0BuilderOpts.generatePhotonCandidates") == 0) {
+              if (option.defaultValue.get<bool>()) {
+                LOGF(info, " ---> propagation service: photons enabled, will calculate TPC PID for TPC only tracks.");
+                pidTPCopts.skipTPCOnly.value = 0;
+              } else {
+                LOGF(info, " ---> propagation service: photons disabled, TPC PID not required for TPC-only tracks");
+              }
+            }
+          }
+        }
+
+        // if extra tasks require TPC PID and enabling is to be automatic,
+        // this is the place where one should add the conditionals.
+      }
+
+      if (pidTPCopts.skipTPCOnly.value == 1) {
+        LOGF(info, "No need for TPC only information detected. Will not generate Nsigma for TPC only tracks");
+        LOGF(info, "If this is unexpected behaviour and a necessity was not identified, please add the");
+        LOGF(info, "corresponding task to the list in pidTPCModule::Init().");
+      }
     }
 
     // initialize PID response
