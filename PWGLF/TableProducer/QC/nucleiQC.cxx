@@ -266,7 +266,7 @@ struct nucleiQC {
       default:
         candidate.flags |= 0;
     }
-    
+
     if (track.hasTOF())
       candidate.flags |= nuclei::Flags::kHasTOF;
 
@@ -441,7 +441,7 @@ struct nucleiQC {
     mcParticlesThisCollision.bindExternalIndices(&mcParticles);
 
     for (const auto& particle : mcParticlesThisCollision) {
-      
+
       if (std::find(mFilledMcParticleIds.begin(), mFilledMcParticleIds.end(), particle.globalIndex()) != mFilledMcParticleIds.end())
         continue;
 
@@ -484,7 +484,6 @@ struct nucleiQC {
     }
   }
   PROCESS_SWITCH(nucleiQC, processMc, "Mc analysis", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
