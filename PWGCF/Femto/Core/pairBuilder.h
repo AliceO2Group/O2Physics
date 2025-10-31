@@ -239,21 +239,25 @@ class PairV0V0Builder
             typename T10,
             typename T11,
             typename T12,
-            typename T13>
+            typename T13,
+            typename T14,
+            typename T15>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confV0Selection1,
             T2 const& confV0Selection2,
-            T3 const& confCpr,
-            T4 const& confMixing,
-            T5 const& confPairBinning,
-            T6 const& confPairCuts,
-            std::map<T7, std::vector<framework::AxisSpec>>& colHistSpec,
-            std::map<T8, std::vector<framework::AxisSpec>>& V0HistSpec1,
-            std::map<T9, std::vector<framework::AxisSpec>>& V0HistSpec2,
-            std::map<T10, std::vector<framework::AxisSpec>>& PosDauHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>>& NegDauHistSpec,
-            std::map<T12, std::vector<framework::AxisSpec>>& pairHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>>& cprHistSpec)
+            T3 const& confCprPos,
+            T4 const& confCprNeg,
+            T5 const& confMixing,
+            T6 const& confPairBinning,
+            T7 const& confPairCuts,
+            std::map<T8, std::vector<framework::AxisSpec>> const& colHistSpec,
+            std::map<T9, std::vector<framework::AxisSpec>> const& V0HistSpec1,
+            std::map<T10, std::vector<framework::AxisSpec>> const& V0HistSpec2,
+            std::map<T11, std::vector<framework::AxisSpec>> const& PosDauHistSpec,
+            std::map<T12, std::vector<framework::AxisSpec>> const& NegDauHistSpec,
+            std::map<T13, std::vector<framework::AxisSpec>> const& pairHistSpec,
+            std::map<T14, std::vector<framework::AxisSpec>> const& cprHistSpecPos,
+            std::map<T15, std::vector<framework::AxisSpec>> const& cprHistSpecNeg)
   {
 
     // check if correlate the same tracks or not
@@ -268,22 +272,22 @@ class PairV0V0Builder
 
       mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
       mPairHistManagerSe.setCharge(1, 1);
-      mCprSe.init(registry, cprHistSpec, confCpr);
+      mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprPos);
 
       mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
       mPairHistManagerMe.setCharge(1, 1);
-      mCprMe.init(registry, cprHistSpec, confCpr);
+      mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
     } else {
       mV0HistManager1.init(registry, V0HistSpec1, PosDauHistSpec, NegDauHistSpec);
       mV0HistManager2.init(registry, V0HistSpec2, PosDauHistSpec, NegDauHistSpec);
 
       mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection2.pdgCode.value);
       mPairHistManagerSe.setCharge(1, 1);
-      mCprSe.init(registry, cprHistSpec, confCpr);
+      mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
 
       mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection2.pdgCode.value);
       mPairHistManagerMe.setCharge(1, 1);
-      mCprMe.init(registry, cprHistSpec, confCpr);
+      mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
     }
 
     // setup mixing
@@ -384,10 +388,8 @@ template <
   const char* prefixNegDau,
   const char* prefixSe,
   const char* prefixMe,
-  const char* prefixCprSameChargeSe,
-  const char* prefixCprSameChargeMe,
-  const char* prefixCprOppositeChargeSe,
-  const char* prefixCprOppositeChargeMe,
+  const char* prefixCprSe,
+  const char* prefixCprMe,
   modes::Mode mode,
   modes::V0 v0Type>
 class PairTrackV0Builder
@@ -481,8 +483,8 @@ class PairTrackV0Builder
   v0histmanager::V0HistManager<prefixV0, prefixPosDau, prefixNegDau, mode, v0Type> mV0HistManager;
   pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kV0, mode> mPairHistManagerSe;
   pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kV0, mode> mPairHistManagerMe;
-  closepairrejection::ClosePairRejectionTrackV0<prefixCprSameChargeSe, prefixCprOppositeChargeSe> mCprSe;
-  closepairrejection::ClosePairRejectionTrackV0<prefixCprSameChargeMe, prefixCprOppositeChargeMe> mCprMe;
+  closepairrejection::ClosePairRejectionTrackV0<prefixCprSe> mCprSe;
+  closepairrejection::ClosePairRejectionTrackV0<prefixCprMe> mCprMe;
   paircleaner::TrackV0PairCleaner mPc;
   pairhistmanager::MixingPolicy mMixingPolicy = pairhistmanager::MixingPolicy::kVtxMult;
   int mMixingDepth = 5;
@@ -495,10 +497,8 @@ template <
   const char* prefixNegDau,
   const char* prefixSe,
   const char* prefixMe,
-  const char* prefixCprSameChargeSe,
-  const char* prefixCprSameChargeMe,
-  const char* prefixCprOppositeChargeSe,
-  const char* prefixCprOppositeChargeMe,
+  const char* prefixCprSe,
+  const char* prefixCprMe,
   modes::Mode mode,
   modes::TwoTrackResonance resonanceType>
 class PairTrackTwoTrackResonanceBuilder
@@ -592,9 +592,9 @@ class PairTrackTwoTrackResonanceBuilder
   twotrackresonancehistmanager::TwoTrackResonanceHistManager<prefixResonance, prefixPosDau, prefixNegDau, mode, resonanceType> mResonanceHistManager;
   pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kTwoTrackResonance, mode> mPairHistManagerSe;
   pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kTwoTrackResonance, mode> mPairHistManagerMe;
-  closepairrejection::ClosePairRejectionTrackV0<prefixCprSameChargeSe, prefixCprOppositeChargeSe> mCprSe; // cpr for twotrackresonances and v0 work the same way
-  closepairrejection::ClosePairRejectionTrackV0<prefixCprSameChargeMe, prefixCprOppositeChargeMe> mCprMe; // cpr for twotrackresonances and v0 work the same way
-  paircleaner::TrackV0PairCleaner mPc;                                                                    // pc for twotrackresonances and v0 work the same way
+  closepairrejection::ClosePairRejectionTrackV0<prefixCprSe> mCprSe; // cpr for twotrackresonances and v0 work the same way
+  closepairrejection::ClosePairRejectionTrackV0<prefixCprMe> mCprMe; // cpr for twotrackresonances and v0 work the same way
+  paircleaner::TrackV0PairCleaner mPc;                               // pc for twotrackresonances and v0 work the same way
   pairhistmanager::MixingPolicy mMixingPolicy = pairhistmanager::MixingPolicy::kVtxMult;
   int mMixingDepth = 5;
 };
@@ -714,11 +714,9 @@ template <
   const char* prefixSe,
   const char* prefixMe,
   const char* prefixCprBachelorSe,
-  const char* prefixCprSameChargeSe,
-  const char* prefixCprOppositeChargeSe,
+  const char* prefixCprV0DaughterSe,
   const char* prefixCprBachelorMe,
-  const char* prefixCprSameChargeMe,
-  const char* prefixCprOppositeChargeMe,
+  const char* prefixCprV0DaughterMe,
   modes::Mode mode,
   modes::Cascade cascadeType>
 class PairTrackCascadeBuilder
@@ -740,22 +738,26 @@ class PairTrackCascadeBuilder
             typename T11,
             typename T12,
             typename T13,
-            typename T14>
+            typename T14,
+            typename T15,
+            typename T16>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confTrackSelection,
             T2 const& confCascadeSelection,
-            T3 const& confCpr,
-            T4 const& confMixing,
-            T5 const& confPairBinning,
-            T6 const& confPairCuts,
-            std::map<T7, std::vector<framework::AxisSpec>> const& colHistSpec,
-            std::map<T8, std::vector<framework::AxisSpec>> const& trackHistSpec,
-            std::map<T9, std::vector<framework::AxisSpec>> const& cascadeHistSpec,
-            std::map<T10, std::vector<framework::AxisSpec>> const& bachelorHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>> const& posDauHistSpec,
-            std::map<T12, std::vector<framework::AxisSpec>> const& negDauHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>> const& pairHistSpec,
-            std::map<T14, std::vector<framework::AxisSpec>> const& cprHistSpec)
+            T3 const& confCprBachelor,
+            T4 const& confCprV0Daughter,
+            T5 const& confMixing,
+            T6 const& confPairBinning,
+            T7 const& confPairCuts,
+            std::map<T8, std::vector<framework::AxisSpec>> const& colHistSpec,
+            std::map<T9, std::vector<framework::AxisSpec>> const& trackHistSpec,
+            std::map<T10, std::vector<framework::AxisSpec>> const& cascadeHistSpec,
+            std::map<T11, std::vector<framework::AxisSpec>> const& bachelorHistSpec,
+            std::map<T12, std::vector<framework::AxisSpec>> const& posDauHistSpec,
+            std::map<T13, std::vector<framework::AxisSpec>> const& negDauHistSpec,
+            std::map<T14, std::vector<framework::AxisSpec>> const& pairHistSpec,
+            std::map<T15, std::vector<framework::AxisSpec>> const& cprHistSpecBachelor,
+            std::map<T16, std::vector<framework::AxisSpec>> const& cprHistSpecV0Daughter)
   {
     mColHistManager.init(registry, colHistSpec);
 
@@ -765,12 +767,12 @@ class PairTrackCascadeBuilder
     mPairHistManagerSe.init(registry, pairHistSpec, confPairBinning, confPairCuts);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
-    mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
+    mCprSe.init(registry, cprHistSpecBachelor, cprHistSpecV0Daughter, confCprBachelor, confCprV0Daughter, confTrackSelection.chargeAbs.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec, confPairBinning, confPairCuts);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
-    mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
+    mCprMe.init(registry, cprHistSpecBachelor, cprHistSpecV0Daughter, confCprBachelor, confCprV0Daughter, confTrackSelection.chargeAbs.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPolicy>(confMixing.policy.value);
@@ -814,8 +816,8 @@ class PairTrackCascadeBuilder
   cascadehistmanager::CascadeHistManager<prefixCascade, prefixBachelor, prefixPosDau, prefixNegDau, mode, cascadeType> mCascadeHistManager;
   pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kCascade, mode> mPairHistManagerSe;
   pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kCascade, mode> mPairHistManagerMe;
-  closepairrejection::ClosePairRejectionTrackCascade<prefixCprBachelorSe, prefixCprSameChargeSe, prefixCprOppositeChargeSe> mCprSe;
-  closepairrejection::ClosePairRejectionTrackCascade<prefixCprBachelorMe, prefixCprSameChargeMe, prefixCprOppositeChargeMe> mCprMe;
+  closepairrejection::ClosePairRejectionTrackCascade<prefixCprBachelorSe, prefixCprV0DaughterSe> mCprSe;
+  closepairrejection::ClosePairRejectionTrackCascade<prefixCprBachelorMe, prefixCprV0DaughterMe> mCprMe;
   paircleaner::TrackCascadePairCleaner mPc;
   pairhistmanager::MixingPolicy mMixingPolicy = pairhistmanager::MixingPolicy::kVtxMult;
   int mMixingDepth = 5;

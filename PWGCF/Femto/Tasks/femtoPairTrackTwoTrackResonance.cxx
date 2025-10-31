@@ -108,10 +108,8 @@ struct FemtoPairTrackTwoTrackResonance {
     trackhistmanager::PrefixResonanceNegDaughter,
     pairhistmanager::PrefixTrackResonanceSe,
     pairhistmanager::PrefixTrackResonanceMe,
-    closepairrejection::PrefixTrackV0SameChargeSe,
-    closepairrejection::PrefixTrackV0SameChargeMe,
-    closepairrejection::PrefixTrackV0OppositeChargeSe,
-    closepairrejection::PrefixTrackV0OppositeChargeMe,
+    closepairrejection::PrefixTrackTwoTrackResonanceSe,
+    closepairrejection::PrefixTrackTwoTrackResonanceMe,
     modes::Mode::kAnalysis,
     modes::TwoTrackResonance::kPhi>
     pairTrackPhiBuilder;
@@ -124,10 +122,8 @@ struct FemtoPairTrackTwoTrackResonance {
     trackhistmanager::PrefixResonanceNegDaughter,
     pairhistmanager::PrefixTrackResonanceSe,
     pairhistmanager::PrefixTrackResonanceMe,
-    closepairrejection::PrefixTrackV0SameChargeSe,
-    closepairrejection::PrefixTrackV0SameChargeMe,
-    closepairrejection::PrefixTrackV0OppositeChargeSe,
-    closepairrejection::PrefixTrackV0OppositeChargeMe,
+    closepairrejection::PrefixTrackTwoTrackResonanceSe,
+    closepairrejection::PrefixTrackTwoTrackResonanceMe,
     modes::Mode::kAnalysis,
     modes::TwoTrackResonance::kKstar0>
     pairTrackKstar0Builder;
@@ -140,10 +136,8 @@ struct FemtoPairTrackTwoTrackResonance {
     trackhistmanager::PrefixResonanceNegDaughter,
     pairhistmanager::PrefixTrackResonanceSe,
     pairhistmanager::PrefixTrackResonanceMe,
-    closepairrejection::PrefixTrackV0SameChargeSe,
-    closepairrejection::PrefixTrackV0SameChargeMe,
-    closepairrejection::PrefixTrackV0OppositeChargeSe,
-    closepairrejection::PrefixTrackV0OppositeChargeMe,
+    closepairrejection::PrefixTrackTwoTrackResonanceSe,
+    closepairrejection::PrefixTrackTwoTrackResonanceMe,
     modes::Mode::kAnalysis,
     modes::TwoTrackResonance::kRho0>
     pairTrackRho0Builder;
@@ -160,7 +154,7 @@ struct FemtoPairTrackTwoTrackResonance {
   HistogramRegistry hRegistry{"FemtoTrackTwoTrackResonance", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
-  closepairrejection::ConfCprTrackV0 confCpr;
+  closepairrejection::ConfCprTrackResonanceDaughter confCpr;
 
   void init(InitContext&)
   {

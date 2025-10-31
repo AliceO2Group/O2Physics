@@ -461,7 +461,7 @@ struct TableMakerMC {
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
         eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-                mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), 1, 1, 1);
+                mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), 1, 1, 1, 1);
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -1096,7 +1096,7 @@ struct TableMakerMC {
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
         eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-                mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), 1, 1, 1);
+                mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter(), 1, 1, 1, 1);
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }

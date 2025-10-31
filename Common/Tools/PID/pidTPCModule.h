@@ -810,39 +810,44 @@ class pidTPCModule
       // if this is a MC process function, go for MC tune on data processing
       if constexpr (requires { trk.mcParticleId(); }) {
         // Perform TuneOnData sampling for MC dE/dx
-        float mcTunedTPCSignal = 0.;
-        if (!trk.hasTPC()) {
-          mcTunedTPCSignal = -999.f;
+        if (!trk.has_mcParticle()) {
+          products.tableTuneOnData(-999.f);
+          tpcSignalToEvaluatePID = -999.f; // pass this for further eval
         } else {
-          if (pidTPCopts.skipTPCOnly) {
-            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
-              mcTunedTPCSignal = -999.f;
-            }
-          }
-          int pid = getPIDIndex(trk.mcParticle().pdgCode());
-
-          auto expSignal = response->GetExpectedSignal(trk, pid);
-          auto expSigma = response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid);
-          if (expSignal < 0. || expSigma < 0.) { // if expectation invalid then give undefined signal
+          float mcTunedTPCSignal = 0.;
+          if (!trk.hasTPC()) {
             mcTunedTPCSignal = -999.f;
-          }
-          float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
-
-          if (pidTPCopts.useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > pidTPCopts.networkBetaGammaCutoff) {
-            auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
-            auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-            if (mean < 0.f || sigma < 0.f) {
-              mcTunedTPCSignal = -999.f;
-            } else {
-              mcTunedTPCSignal = gRandom->Gaus(mean, sigma);
-            }
           } else {
-            mcTunedTPCSignal = gRandom->Gaus(expSignal, expSigma);
+            if (pidTPCopts.skipTPCOnly) {
+              if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+                mcTunedTPCSignal = -999.f;
+              }
+            }
+            int pid = getPIDIndex(trk.mcParticle().pdgCode());
+
+            auto expSignal = response->GetExpectedSignal(trk, pid);
+            auto expSigma = response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid);
+            if (expSignal < 0. || expSigma < 0.) { // if expectation invalid then give undefined signal
+              mcTunedTPCSignal = -999.f;
+            }
+            float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
+
+            if (pidTPCopts.useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > pidTPCopts.networkBetaGammaCutoff) {
+              auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
+              auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+              if (mean < 0.f || sigma < 0.f) {
+                mcTunedTPCSignal = -999.f;
+              } else {
+                mcTunedTPCSignal = gRandom->Gaus(mean, sigma);
+              }
+            } else {
+              mcTunedTPCSignal = gRandom->Gaus(expSignal, expSigma);
+            }
           }
+          tpcSignalToEvaluatePID = mcTunedTPCSignal; // pass this for further eval
+          if (pidTPCopts.enableTuneOnDataTable)
+            products.tableTuneOnData(mcTunedTPCSignal);
         }
-        tpcSignalToEvaluatePID = mcTunedTPCSignal; // pass this for further eval
-        if (pidTPCopts.enableTuneOnDataTable)
-          products.tableTuneOnData(mcTunedTPCSignal);
       }
 
       auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &multTPC, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
