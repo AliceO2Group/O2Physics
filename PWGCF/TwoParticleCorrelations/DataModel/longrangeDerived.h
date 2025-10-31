@@ -112,6 +112,14 @@ DECLARE_SOA_TABLE(MftTrkLRTables, "AOD", "MFTTRKLRTABLE",
                   LRCorrTrkTable::Phi);
 using MftTrkLRTable = MftTrkLRTables::iterator;
 
+DECLARE_SOA_TABLE(MftBestTrkLRTables, "AOD", "MFTBESTTRKLRTABLE",
+                  o2::soa::Index<>,
+                  LRCorrTrkTable::CollLRTableId,
+                  LRCorrTrkTable::Pt,
+                  LRCorrTrkTable::Eta,
+                  LRCorrTrkTable::Phi);
+using MftBestTrkLRTable = MftBestTrkLRTables::iterator;
+
 } // namespace o2::aod
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_LONGRANGEDERIVED_H_
