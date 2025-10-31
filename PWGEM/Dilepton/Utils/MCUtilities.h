@@ -317,7 +317,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
       auto mp = mcparticles.iteratorAt(motherid1);
       mothers_id1.emplace_back(motherid1);
       mothers_pdg1.emplace_back(mp.pdgCode());
-
+      // LOGF(info, "mp1.globalIndex() = %d, mp1.pdgCode() = %d, mp1.getGenStatusCode() = %d", mp.globalIndex(), mp.pdgCode(), mp.getGenStatusCode());
       if (mp.has_mothers()) {
         motherid1 = mp.mothersIds()[0];
       } else {
@@ -337,6 +337,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
       auto mp = mcparticles.iteratorAt(motherid2);
       mothers_id2.emplace_back(motherid2);
       mothers_pdg2.emplace_back(mp.pdgCode());
+      // LOGF(info, "mp2.globalIndex() = %d, mp2.pdgCode() = %d, mp2.getGenStatusCode() = %d", mp.globalIndex(), mp.pdgCode(), mp.getGenStatusCode());
 
       if (mp.has_mothers()) {
         motherid2 = mp.mothersIds()[0];
@@ -347,6 +348,8 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
       LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid2, mcparticles.size());
     }
   }
+
+  // require correlation between q-qbar. (not q-q) // need statusCode
 
   bool is_direct_from_b1 = IsFromBeauty(p1, mcparticles) > 0 && IsFromCharm(p1, mcparticles) < 0;
   bool is_direct_from_b2 = IsFromBeauty(p2, mcparticles) > 0 && IsFromCharm(p2, mcparticles) < 0;

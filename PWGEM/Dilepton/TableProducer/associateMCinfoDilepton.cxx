@@ -625,7 +625,7 @@ struct AssociateMCInfoDilepton {
         }
       }
 
-      emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.flags(),
+      emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.flags(), mctrack.statusCode(),
                     mothers, daughters,
                     mctrack.px(), mctrack.py(), mctrack.pz(), mctrack.e(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz());
