@@ -17,7 +17,7 @@
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/longrangeDerived.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
@@ -67,7 +67,10 @@ using namespace o2::aod::fwdtrack;
 using namespace o2::aod::evsel;
 using namespace o2::constants::math;
 
-auto static constexpr kMinFt0cCell = 96;
+auto static constexpr KminFt0cCell = 96;
+auto static constexpr PionTrackN = 1;
+auto static constexpr KaonTrackN = 2;
+auto static constexpr ProtonTrackN = 3;
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 
 enum KindOfParticles {
@@ -157,7 +160,6 @@ struct LongrangeMaker {
   Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.3f, "Minimum pt to use TOF N-sigma"};
   Configurable<bool> isUseItsPid{"isUseItsPid", false, "Use ITS PID for particle identification"};
 
-  SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
   o2::ccdb::CcdbApi ccdbApi;
@@ -197,6 +199,8 @@ struct LongrangeMaker {
     x->SetBinLabel(9, "ApplyNoHighMultCollInPrevRof");
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    myTrackFilter.SetPtRange(cfgtrksel.cfgPtCutMin, cfgtrksel.cfgPtCutMax);
+    myTrackFilter.SetEtaRange(-cfgtrksel.cfgEtaCut, cfgtrksel.cfgEtaCut);
     myTrackFilter.SetMinNCrossedRowsTPC(cfgtrksel.minNCrossedRowsTPC);
     myTrackFilter.SetMinNClustersTPC(cfgtrksel.minTPCNClsFound);
     myTrackFilter.SetMaxDcaZ(cfgtrksel.maxDcaZ);
@@ -213,46 +217,41 @@ struct LongrangeMaker {
   Produces<aod::Ft0aLRTable> ft0aLRTable;
   Produces<aod::Ft0cLRTable> ft0cLRTable;
   Produces<aod::MftTrkLRTable> mftLRTable;
+  Produces<aod::MftBestTrkLRTable> mftbestLRTable;
   Produces<aod::V0TrkLRTable> v0LRTable;
 
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
-  Filter fMftTrackColID = (aod::fwdtrack::bestCollisionId >= 0);
-  Filter fMftTrackDca = (nabs(aod::fwdtrack::bestDCAXY) < cfgmfttrksel.cfigMftDcaxy);
 
   using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  using MftTrkTable = soa::Filtered<aod::MFTTracks>;
+  using MftTrkTable = aod::MFTTracks;
 
-  Preslice<TrksTable> perColGlobal = aod::track::collisionId;
-  Preslice<MftTrkTable> perColMft = aod::fwdtrack::collisionId;
-  Preslice<aod::V0Datas> perColV0 = aod::v0data::collisionId;
-
-  void process(CollTable::iterator const& col, TrksTable const& tracks, aod::FT0s const&, MftTrkTable const& mfttracks, aod::V0Datas const& V0s)
+  void process(CollTable::iterator const& col, TrksTable const& tracks, aod::FT0s const&, MftTrkTable const& mfttracks, soa::SmallGroups<aod::BestCollisionsFwd> const& retracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
-    auto tracksInCollision = tracks.sliceBy(perColGlobal, col.globalIndex());
-    auto multiplicity = countNTracks(tracksInCollision);
+
+    auto multiplicity = countNTracks(tracks);
     auto centrality = selColCent(col);
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
 
     collisionLRTable(bc.runNumber(), col.posZ(), multiplicity, centrality, bc.timestamp());
 
     // track loop
-    for (const auto& track : tracksInCollision) {
+    for (const auto& track : tracks) {
       if (!track.isGlobalTrack())
         continue;
       if (!myTrackFilter.IsSelected(track))
         continue;
-      tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpCharge);
-      if (getTrackPID(track) == 1)
-        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpPion);
-      if (getTrackPID(track) == 2)
-        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpKaon);
-      if (getTrackPID(track) == 3)
-        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpProton);
+      tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpCharge);
+      if (getTrackPID(track) == PionTrackN)
+        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpPion);
+      if (getTrackPID(track) == KaonTrackN)
+        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpKaon);
+      if (getTrackPID(track) == ProtonTrackN)
+        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpProton);
     }
 
     // ft0 loop
@@ -275,8 +274,7 @@ struct LongrangeMaker {
     }
 
     // mft loop
-    auto mfttracksInCollision = mfttracks.sliceBy(perColMft, col.globalIndex());
-    for (const auto& track : mfttracksInCollision) {
+    for (const auto& track : mfttracks) {
       if (!isMftTrackSelected(track))
         continue;
       auto phi = track.phi();
@@ -284,9 +282,23 @@ struct LongrangeMaker {
       mftLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), phi);
     }
 
+    if (retracks.size() > 0) {
+      for (const auto& retrack : retracks) {
+        if (std::abs(retrack.bestDCAXY()) > cfgmfttrksel.cfigMftDcaxy) {
+          continue; // does not point to PV properly
+        }
+        auto track = retrack.mfttrack();
+        if (!isMftTrackSelected(track)) {
+          continue;
+        }
+        auto phi = track.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        mftbestLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), phi);
+      }
+    }
+
     // v0 loop
-    auto v0tracksInCollision = V0s.sliceBy(perColV0, col.globalIndex());
-    for (const auto& v0 : v0tracksInCollision) {
+    for (const auto& v0 : V0s) {
       if (!isSelectV0Track(v0)) { // Quality selection for V0 prongs
         continue;
       }
@@ -297,23 +309,23 @@ struct LongrangeMaker {
       // K0short
       if (isSelectK0s(col, v0)) { // candidate is K0s
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                  v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::LRCorrTrkTable::kSpK0short);
+                  v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::lrcorrtrktable::kSpK0short);
       }
 
       // Lambda and Anti-Lambda
-      bool LambdaTag = isSelectLambda<KindOfV0::kLambda>(col, v0);
-      bool ALambdaTag = isSelectLambda<KindOfV0::kAntiLambda>(col, v0);
+      bool lambdaTag = isSelectLambda<KindOfV0::kLambda>(col, v0);
+      bool antilambdaTag = isSelectLambda<KindOfV0::kAntiLambda>(col, v0);
 
       // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
-      if (LambdaTag) { // candidate is Lambda
+      if (lambdaTag) { // candidate is Lambda
         massV0 = v0.mLambda();
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::LRCorrTrkTable::kSpLambda);
+                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpLambda);
       }
-      if (ALambdaTag) { // candidate is Anti-lambda
+      if (antilambdaTag) { // candidate is Anti-lambda
         massV0 = v0.mAntiLambda();
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::LRCorrTrkTable::kSpALambda);
+                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpALambda);
       } // end of Lambda and Anti-Lambda processing
     }
   } // process function
@@ -452,7 +464,7 @@ struct LongrangeMaker {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= kMinFt0cCell)
+    if (chno >= KminFt0cCell)
       z = -z;
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
@@ -504,7 +516,7 @@ struct LongrangeMaker {
     const auto& posTrack = v0.template posTrack_as<TrksTable>();
     const auto& negTrack = v0.template negTrack_as<TrksTable>();
 
-    float CtauK0s = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassK0;
+    float ctauK0s = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassK0;
 
     if (v0.mK0Short() < cfgv0trksel.minK0sMass || v0.mK0Short() > cfgv0trksel.maxK0sMass) {
       return false;
@@ -521,13 +533,13 @@ struct LongrangeMaker {
     if (v0.dcaV0daughters() > cfgv0trksel.maxDcaV0DauK0s) {
       return false;
     }
-    if (std::abs(CtauK0s) > cfgv0trksel.maxK0sLifeTime) {
+    if (std::abs(ctauK0s) > cfgv0trksel.maxK0sLifeTime) {
       return false;
     }
     if (((std::abs(posTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts))) {
       return false;
     }
-    if ((TMath::Abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiK0s || TMath::Abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiK0s)) {
+    if ((std::abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiK0s || std::abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiK0s)) {
       return false;
     }
     return true;
@@ -538,7 +550,7 @@ struct LongrangeMaker {
   {
     const auto& posTrack = v0.template posTrack_as<TrksTable>();
     const auto& negTrack = v0.template negTrack_as<TrksTable>();
-    float CtauLambda = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassLambda;
+    float ctauLambda = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassLambda;
     if ((v0.mLambda() < cfgv0trksel.minLambdaMass || v0.mLambda() > cfgv0trksel.maxLambdaMass) &&
         (v0.mAntiLambda() < cfgv0trksel.minLambdaMass || v0.mAntiLambda() > cfgv0trksel.maxLambdaMass)) {
       return false;
@@ -552,10 +564,10 @@ struct LongrangeMaker {
     if (v0.dcaV0daughters() > cfgv0trksel.maxDcaV0DauLambda) {
       return false;
     }
-    if (pid == KindOfV0::kLambda && (TMath::Abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPr || TMath::Abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiLambda)) {
+    if (pid == KindOfV0::kLambda && (std::abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPr || std::abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiLambda)) {
       return false;
     }
-    if (pid == KindOfV0::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiLambda || TMath::Abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPr)) {
+    if (pid == KindOfV0::kAntiLambda && (std::abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiLambda || std::abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPr)) {
       return false;
     }
     if (pid == KindOfV0::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > cfgv0trksel.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts))) {
@@ -564,7 +576,7 @@ struct LongrangeMaker {
     if (pid == KindOfV0::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > cfgv0trksel.daughPIDCuts))) {
       return false;
     }
-    if (std::abs(CtauLambda) > cfgv0trksel.maxLambdaLifeTime) {
+    if (std::abs(ctauLambda) > cfgv0trksel.maxLambdaLifeTime) {
       return false;
     }
     return true;

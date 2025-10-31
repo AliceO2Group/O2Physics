@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file longrangeDerived.h
+/// \file LongRangeDerived.h
 ///
 /// \brief task derived table definition for long range correlation
 /// \author Abhi Modak (abhi.modak@cern.ch)
@@ -23,23 +23,23 @@
 
 namespace o2::aod
 {
-namespace LRCorrCollTable
+namespace lrcorrcolltable
 {
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-} // namespace LRCorrCollTable
+} // namespace lrcorrcolltable
 
 DECLARE_SOA_TABLE(CollLRTables, "AOD", "COLLLRTABLE",
                   o2::soa::Index<>,
                   bc::RunNumber,
-                  LRCorrCollTable::Zvtx,
-                  LRCorrCollTable::Multiplicity,
-                  LRCorrCollTable::Centrality,
+                  lrcorrcolltable::Zvtx,
+                  lrcorrcolltable::Multiplicity,
+                  lrcorrcolltable::Centrality,
                   timestamp::Timestamp);
 using CollLRTable = CollLRTables::iterator;
 
-namespace LRCorrTrkTable
+namespace lrcorrtrktable
 {
 DECLARE_SOA_INDEX_COLUMN(CollLRTable, collLRTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
@@ -63,54 +63,62 @@ enum V0TrackPid {
   kSpLambda,
   kSpALambda
 };
-} // namespace LRCorrTrkTable
+} // namespace lrcorrtrktable
 
 DECLARE_SOA_TABLE(TrkLRTables, "AOD", "TRKLRTABLE",
                   o2::soa::Index<>,
-                  LRCorrTrkTable::CollLRTableId,
-                  LRCorrTrkTable::Pt,
-                  LRCorrTrkTable::Eta,
-                  LRCorrTrkTable::Phi,
-                  LRCorrTrkTable::TrackType);
+                  lrcorrtrktable::CollLRTableId,
+                  lrcorrtrktable::Pt,
+                  lrcorrtrktable::Eta,
+                  lrcorrtrktable::Phi,
+                  lrcorrtrktable::TrackType);
 using TrkLRTable = TrkLRTables::iterator;
 
 DECLARE_SOA_TABLE(Ft0aLRTables, "AOD", "FT0ALRTABLE",
                   o2::soa::Index<>,
-                  LRCorrTrkTable::CollLRTableId,
-                  LRCorrTrkTable::ChannelID,
-                  LRCorrTrkTable::Amplitude,
-                  LRCorrTrkTable::Eta,
-                  LRCorrTrkTable::Phi);
+                  lrcorrtrktable::CollLRTableId,
+                  lrcorrtrktable::ChannelID,
+                  lrcorrtrktable::Amplitude,
+                  lrcorrtrktable::Eta,
+                  lrcorrtrktable::Phi);
 using Ft0aLRTable = Ft0aLRTables::iterator;
 
 DECLARE_SOA_TABLE(Ft0cLRTables, "AOD", "FT0CLRTABLE",
                   o2::soa::Index<>,
-                  LRCorrTrkTable::CollLRTableId,
-                  LRCorrTrkTable::ChannelID,
-                  LRCorrTrkTable::Amplitude,
-                  LRCorrTrkTable::Eta,
-                  LRCorrTrkTable::Phi);
+                  lrcorrtrktable::CollLRTableId,
+                  lrcorrtrktable::ChannelID,
+                  lrcorrtrktable::Amplitude,
+                  lrcorrtrktable::Eta,
+                  lrcorrtrktable::Phi);
 using Ft0cLRTable = Ft0cLRTables::iterator;
 
 DECLARE_SOA_TABLE(V0TrkLRTables, "AOD", "V0TRKLRTABLE",
                   o2::soa::Index<>,
-                  LRCorrTrkTable::CollLRTableId,
-                  LRCorrTrkTable::IdPos,
-                  LRCorrTrkTable::IdNeg,
-                  LRCorrTrkTable::Pt,
-                  LRCorrTrkTable::Eta,
-                  LRCorrTrkTable::Phi,
-                  LRCorrTrkTable::InvMass,
-                  LRCorrTrkTable::V0Type);
+                  lrcorrtrktable::CollLRTableId,
+                  lrcorrtrktable::IdPos,
+                  lrcorrtrktable::IdNeg,
+                  lrcorrtrktable::Pt,
+                  lrcorrtrktable::Eta,
+                  lrcorrtrktable::Phi,
+                  lrcorrtrktable::InvMass,
+                  lrcorrtrktable::V0Type);
 using V0TrkLRTable = V0TrkLRTables::iterator;
 
 DECLARE_SOA_TABLE(MftTrkLRTables, "AOD", "MFTTRKLRTABLE",
                   o2::soa::Index<>,
-                  LRCorrTrkTable::CollLRTableId,
-                  LRCorrTrkTable::Pt,
-                  LRCorrTrkTable::Eta,
-                  LRCorrTrkTable::Phi);
+                  lrcorrtrktable::CollLRTableId,
+                  lrcorrtrktable::Pt,
+                  lrcorrtrktable::Eta,
+                  lrcorrtrktable::Phi);
 using MftTrkLRTable = MftTrkLRTables::iterator;
+
+DECLARE_SOA_TABLE(MftBestTrkLRTables, "AOD", "MFTBESTTRKLRTABLE",
+                  o2::soa::Index<>,
+                  lrcorrtrktable::CollLRTableId,
+                  lrcorrtrktable::Pt,
+                  lrcorrtrktable::Eta,
+                  lrcorrtrktable::Phi);
+using MftBestTrkLRTable = MftBestTrkLRTables::iterator;
 
 } // namespace o2::aod
 
