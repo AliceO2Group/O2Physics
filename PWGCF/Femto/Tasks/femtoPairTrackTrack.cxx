@@ -78,7 +78,7 @@ struct FemtoPairTrackTrack {
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
 
-  closepairrejection::ConfCpr confCpr;
+  closepairrejection::ConfCprTrackTrack confCpr;
 
   pairbuilder::PairTrackTrackBuilder<
     trackhistmanager::PrefixTrack1,

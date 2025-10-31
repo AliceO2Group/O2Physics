@@ -50,11 +50,9 @@ void processSameEvent(T1 const& SliceParticle,
   }
   std::uniform_real_distribution<float> dist(0.f, 1.f);
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2, TrackTable);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
+    CprManager.setPair(p1, p2, TrackTable);
+    if (CprManager.isClosePair()) {
+      continue;
     }
     // Randomize pair order if enabled
     float threshold = 0.5f;
@@ -104,11 +102,9 @@ void processSameEvent(T1 const& SliceParticle1,
       continue;
     }
     // Close pair rejection
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2, TrackTable);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
+    CprManager.setPair(p1, p2, TrackTable);
+    if (CprManager.isClosePair()) {
+      continue;
     }
     PairHistManager.setPair(p1, p2, Collision);
     if (PairHistManager.checkPairCuts()) {
@@ -154,11 +150,9 @@ void processMixedEvent(T1& Collisions,
         continue;
       }
       // Close pair rejection
-      if (CprManager.isActivated()) {
-        CprManager.setPair(p1, p2, TrackTable);
-        if (CprManager.isClosePair()) {
-          continue;
-        }
+      CprManager.setPair(p1, p2, TrackTable);
+      if (CprManager.isClosePair()) {
+        continue;
       }
       PairHistManager.setPair(p1, p2, collision1, collision2);
       if (PairHistManager.checkPairCuts()) {
@@ -207,11 +201,9 @@ void processMixedEvent(T1& Collisions,
         continue;
       }
       // Close pair rejection
-      if (CprManager.isActivated()) {
-        CprManager.setPair(p1, p2, TrackTable);
-        if (CprManager.isClosePair()) {
-          continue;
-        }
+      CprManager.setPair(p1, p2, TrackTable);
+      if (CprManager.isClosePair()) {
+        continue;
       }
       PairHistManager.setPair(p1, p2, collision1, collision2);
       if (PairHistManager.checkPairCuts()) {
