@@ -224,11 +224,11 @@ DECLARE_SOA_TABLE(ReducedMCEvents_000, "AOD", "REDUCEDMCEVENT", //!   Event leve
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 
-DECLARE_SOA_TABLE_VERSIONED(ReducedMCEvents_001, "AOD", "REDUCEDMCEVENT", 1,//!   Event level MC truth information
-                  o2::soa::Index<>,
-                  mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
-                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
-                  mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
+DECLARE_SOA_TABLE_VERSIONED(ReducedMCEvents_001, "AOD", "REDUCEDMCEVENT", 1, //!   Event level MC truth information
+                            o2::soa::Index<>,
+                            mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
+                            mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
+                            mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
 
 using ReducedMCEvents = ReducedMCEvents_001;
 
