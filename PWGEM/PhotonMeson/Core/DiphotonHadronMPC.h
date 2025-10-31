@@ -321,10 +321,12 @@ struct DiphotonHadronMPC {
     delete emh_ref;
     emh_ref = 0x0;
 
-    used_photonIds.clear();
-    used_photonIds.shrink_to_fit();
-    used_dileptonIds.clear();
-    used_dileptonIds.shrink_to_fit();
+    used_photonIds_per_col.clear();
+    used_photonIds_per_col.shrink_to_fit();
+    used_dileptonIds_per_col.clear();
+    used_dileptonIds_per_col.shrink_to_fit();
+    used_diphotonIds_per_col.clear();
+    used_diphotonIds_per_col.shrink_to_fit();
 
     map_mixed_eventId_to_globalBC.clear();
   }
@@ -482,9 +484,9 @@ struct DiphotonHadronMPC {
   MyEMH_track* emh_diphoton = nullptr;
   MyEMH_track* emh_ref = nullptr;
 
-  std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
-  std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
-  std::vector<std::tuple<int, int, int, int>> used_diphotonIds; // <ndf, trackId>
+  std::vector<int> used_photonIds_per_col;                         // <ndf, trackId>
+  std::vector<std::pair<int, int>> used_dileptonIds_per_col;       // <ndf, trackId>
+  std::vector<std::tuple<int, int, int>> used_diphotonIds_per_col; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TRefTracks>
@@ -599,22 +601,20 @@ struct DiphotonHadronMPC {
           } // end of ref track loop
 
           if (npair > 0) {
-            std::tuple<int, int, int, int> tuple_tmp_diphoton = std::make_tuple(ndf, g1.globalIndex(), g2.globalIndex(), -1);
-            if (std::find(used_diphotonIds.begin(), used_diphotonIds.end(), tuple_tmp_diphoton) == used_diphotonIds.end()) {
+            std::tuple<int, int, int> tuple_tmp_diphoton = std::make_tuple(g1.globalIndex(), g2.globalIndex(), -1);
+            if (std::find(used_diphotonIds_per_col.begin(), used_diphotonIds_per_col.end(), tuple_tmp_diphoton) == used_diphotonIds_per_col.end()) {
               emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, v12.Pt(), v12.Eta(), v12.Phi(), v12.M()));
-              used_diphotonIds.emplace_back(tuple_tmp_diphoton);
+              used_diphotonIds_per_col.emplace_back(tuple_tmp_diphoton);
             }
           }
 
-          std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-          std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
-          if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
+          if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
             emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
-            used_photonIds.emplace_back(pair_tmp_id1);
+            used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
-          if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
+          if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
             emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
-            used_photonIds.emplace_back(pair_tmp_id2);
+            used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
           ndiphoton++;
         } // end of pairing loop
@@ -677,27 +677,33 @@ struct DiphotonHadronMPC {
             } // end of ref track loop
 
             if (npair > 0) {
-              std::tuple<int, int, int, int> tuple_tmp_diphoton = std::make_tuple(ndf, g1.globalIndex(), pos2.trackId(), ele2.trackId());
-              if (std::find(used_diphotonIds.begin(), used_diphotonIds.end(), tuple_tmp_diphoton) == used_diphotonIds.end()) {
+              std::tuple<int, int, int> tuple_tmp_diphoton = std::make_tuple(g1.globalIndex(), pos2.trackId(), ele2.trackId());
+              if (std::find(used_diphotonIds_per_col.begin(), used_diphotonIds_per_col.end(), tuple_tmp_diphoton) == used_diphotonIds_per_col.end()) {
                 emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, veeg.Pt(), veeg.Eta(), veeg.Phi(), veeg.M()));
-                used_diphotonIds.emplace_back(tuple_tmp_diphoton);
+                used_diphotonIds_per_col.emplace_back(tuple_tmp_diphoton);
               }
             }
 
-            std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-            std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.trackId(), ele2.trackId());
-            if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
+            std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.trackId(), ele2.trackId());
+            if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
               emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
-              used_photonIds.emplace_back(pair_tmp_id1);
+              used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
-            if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
+            if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
               emh2->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
-              used_dileptonIds.emplace_back(tuple_tmp_id2);
+              used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
           } // end of dielectron loop
         } // end of g1 loop
       } // end of pairing in same event
+
+      used_photonIds_per_col.clear();
+      used_photonIds_per_col.shrink_to_fit();
+      used_dileptonIds_per_col.clear();
+      used_dileptonIds_per_col.shrink_to_fit();
+      used_diphotonIds_per_col.clear();
+      used_diphotonIds_per_col.shrink_to_fit();
 
       if (ndiphoton > 0) {
         emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_collision.size());
