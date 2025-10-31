@@ -107,6 +107,7 @@ struct f1protoncorrelation {
     const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
     const AxisSpec thnAxisNsigma{configThnAxisNsigma, "NsigmaCombined"};
     const AxisSpec thnAxisCharge{configThnAxisCharge, "Charge"};
+    const AxisSpec thnAxisMultiplicity{CfgMultBins, "Multiplicity"};
 
     // register histograms
     histos.add("hPhaseSpaceProtonKaonSame", "hPhaseSpaceProtonKaonSame", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
@@ -120,12 +121,12 @@ struct f1protoncorrelation {
     histos.add("hNsigmaPionKaonTPC", "Nsigma Pion Kaon TPC correlation", kTH2F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}});
     histos.add("h2SameEventPtCorrelation", "Pt correlation of F1 and proton", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {100, 0.0, 10.0}});
 
-    histos.add("h2SameEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
-    histos.add("h2SameEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2SameEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge, thnAxisMultiplicity});
+    histos.add("h2SameEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge, thnAxisMultiplicity});
     histos.add("h2SameEventInvariantMassRot_mass", "Rotational Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
 
-    histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
-    histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge, thnAxisMultiplicity});
+    histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge, thnAxisMultiplicity});
     histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
 
     histos.add("h2MixEventInvariantMassUnlike_mass_SEFP", "Unlike-sign invariant mass of f1 mix event (SE-F1P: π mixed, p same event)", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
@@ -318,7 +319,7 @@ struct f1protoncorrelation {
           }
           histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz), relative_momentum); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz), relative_momentum); // Phase Space Proton Pion
-          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                                       // F1 sign = 1 unlike, F1 sign = -1 like
+          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge, collision.numContrib());                                                  // F1 sign = 1 unlike, F1 sign = -1 like
           if (fillSparse) {
             histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
           }
@@ -344,7 +345,7 @@ struct f1protoncorrelation {
           }
         }
         if (f1track.f1SignalStat() == -1) {
-          histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), protontrack.protonCharge());
+          histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), protontrack.protonCharge(), collision.numContrib());
           if (fillSparse) {
             histos.fill(HIST("SEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, protontrack.protonCharge());
           }
@@ -598,7 +599,7 @@ struct f1protoncorrelation {
             pionCharge = 1;
             kaonCharge = -1;
           }
-          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                               // F1 sign = 1 unlike, F1 sign = -1 like
+          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge, collision1.numContrib());                                         // F1 sign = 1 unlike, F1 sign = -1 like
           histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), kaonCharge, bz, bz2), relative_momentum); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2), relative_momentum); // Phase Space Proton Pion
           if (fillSparse) {
@@ -629,7 +630,7 @@ struct f1protoncorrelation {
           }
         }
         if (t1.f1SignalStat() == -1) {
-          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), t2.protonCharge());
+          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), t2.protonCharge(), collision1.numContrib());
           if (fillSparse) {
             histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, t2.protonCharge());
           }
