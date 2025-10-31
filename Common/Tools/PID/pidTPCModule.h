@@ -283,7 +283,7 @@ class pidTPCModule
         std::vector<std::string> devicesRequiringTPCOnlyPID = {"photon-conversion-builder"};
 
         // Check 2: specific tasks that require TPC PID
-        for (const std::string requiringDevice : devicesRequiringTPCOnlyPID) {
+        for (const std::string& requiringDevice : devicesRequiringTPCOnlyPID) {
           if (device.name.compare(requiringDevice) == 0) {
             LOGF(info, " ---> %s detected! ", requiringDevice);
             LOGF(info, " ---> enabling TPC only track TPC PID calculations now.");
