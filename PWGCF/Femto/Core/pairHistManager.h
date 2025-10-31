@@ -280,7 +280,7 @@ class PairHistManager
     mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
     mPdgAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
-    mPdgReducedMass = (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
+    mPdgReducedMass = 2 * (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
