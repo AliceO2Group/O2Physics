@@ -16,8 +16,11 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
+#include "RecoDecay.h"
+
 #include "Common/Core/TableHelper.h"
 
+#include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/InitContext.h"
 
@@ -172,8 +175,8 @@ float qn(T const& col)
 inline std::optional<float> dphistar(float magfield, float radius, float signedPt, float phi)
 {
   float arg = 0.3f * (0.1f * magfield) * (0.01 * radius) / (2.f * signedPt);
-  if (std::fabs(arg) < 1.f) {
-    return phi - std::asin(arg);
+  if (std::fabs(arg) <= 1.f) {
+    return RecoDecay::constrainAngle(phi - std::asin(arg));
   }
   return std::nullopt;
 }

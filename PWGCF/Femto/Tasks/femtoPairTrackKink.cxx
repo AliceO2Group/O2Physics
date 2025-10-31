@@ -110,7 +110,7 @@ struct FemtoPairTrackKink {
   HistogramRegistry hRegistry{"FemtoTrackKink", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
-  closepairrejection::ConfCpr confCpr;
+  closepairrejection::ConfCprTrackKinkDaughter confCpr;
 
   void init(InitContext&)
   {
