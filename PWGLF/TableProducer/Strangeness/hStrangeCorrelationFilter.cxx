@@ -375,7 +375,7 @@ struct HStrangeCorrelationFilter {
 
     // do this only if information is available
     float nSigmaTPCTOF[8] = {-10, -10, -10, -10, -10, -10, -10, -10};
-    if constexpr (requires { assoc.tofSignal(); }) {
+    if constexpr (requires { assoc.tofSignal(); } && !requires { assoc.mcParticle(); }) {
       if (assoc.tofSignal() > 0) {
         if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > systCuts.assocPionNSigmaTPCFOF)
           return false;
@@ -407,11 +407,13 @@ struct HStrangeCorrelationFilter {
 
     bool physicalPrimary = false;
     float origPt = -1;
+    float pdgCode = -9999;
     if constexpr (requires { assoc.mcParticle(); }) {
       if (assoc.has_mcParticle()) {
         auto mcParticle = assoc.mcParticle();
         physicalPrimary = mcParticle.isPhysicalPrimary();
         origPt = mcParticle.pt();
+        pdgCode = mcParticle.pdgCode();
       }
     }
 
@@ -419,7 +421,8 @@ struct HStrangeCorrelationFilter {
       assoc.collisionId(),
       physicalPrimary,
       assoc.globalIndex(),
-      origPt);
+      origPt,
+      pdgCode);
     assocPID(
       nSigmaTPCTOF[0],
       nSigmaTPCTOF[1],
@@ -582,7 +585,7 @@ struct HStrangeCorrelationFilter {
     }
   }
 
-  void processAssocPionsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracksMC> const& tracks, aod::BCsWithTimestamps const&)
+  void processAssocPionsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
