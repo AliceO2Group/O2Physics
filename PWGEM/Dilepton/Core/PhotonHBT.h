@@ -827,7 +827,7 @@ struct PhotonHBT {
           ndiphoton++;
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-            EMPair g1tmp = EMPair(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
+            EMPair g1tmp = EMPair(g1.pt(), g1.eta(), g1.phi(), 0);
             g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
             g1tmp.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
             g1tmp.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
@@ -835,7 +835,7 @@ struct PhotonHBT {
             used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
-            EMPair g2tmp = EMPair(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0);
+            EMPair g2tmp = EMPair(g2.pt(), g2.eta(), g2.phi(), 0);
             g2tmp.setConversionPointXYZ(g2.vx(), g2.vy(), g2.vz());
             g2tmp.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             g2tmp.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
@@ -945,34 +945,16 @@ struct PhotonHBT {
               std::pair<int, int> tuple_tmp_id1 = std::make_pair(pos1.globalIndex(), ele1.globalIndex());
               std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.globalIndex(), ele2.globalIndex());
               if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id1) == used_dileptonIds_per_col.end()) {
-                std::vector<int> possibleIds_pos1;
-                std::vector<int> possibleIds_ele1;
-                std::copy(pos1.ambiguousElectronsIds().begin(), pos1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_pos1));
-                std::copy(ele1.ambiguousElectronsIds().begin(), ele1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_ele1));
-
-                EMPair g1pair = EMPair(ndf, -1, collision.globalIndex(), -1, v1_ee.Pt(), v1_ee.Eta(), v1_ee.Phi(), v1_ee.M());
-                g1pair.setGlobalPosId(pos1.globalIndex());
-                g1pair.setGlobalNegId(ele1.globalIndex());
+                EMPair g1pair = EMPair(v1_ee.Pt(), v1_ee.Eta(), v1_ee.Phi(), v1_ee.M());
                 g1pair.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
                 g1pair.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
-                g1pair.setAmbPosLegSelfIds(possibleIds_pos1);
-                g1pair.setAmbNegLegSelfIds(possibleIds_ele1);
                 emh1->AddTrackToEventPool(key_df_collision, g1pair);
                 used_dileptonIds_per_col.emplace_back(tuple_tmp_id1);
               }
               if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
-                std::vector<int> possibleIds_pos2;
-                std::vector<int> possibleIds_ele2;
-                std::copy(pos2.ambiguousElectronsIds().begin(), pos2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_pos2));
-                std::copy(ele2.ambiguousElectronsIds().begin(), ele2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_ele2));
-
-                EMPair g2pair = EMPair(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
-                g2pair.setGlobalPosId(pos2.globalIndex());
-                g2pair.setGlobalNegId(ele2.globalIndex());
+                EMPair g2pair = EMPair(v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
                 g2pair.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
                 g2pair.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-                g2pair.setAmbPosLegSelfIds(possibleIds_pos2);
-                g2pair.setAmbNegLegSelfIds(possibleIds_ele2);
                 emh1->AddTrackToEventPool(key_df_collision, g2pair);
                 used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
               }
@@ -1056,7 +1038,7 @@ struct PhotonHBT {
             ndiphoton++;
             std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.globalIndex(), ele2.globalIndex());
             if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-              EMPair g1tmp = EMPair(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
+              EMPair g1tmp = EMPair(g1.pt(), g1.eta(), g1.phi(), 0);
               g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
               g1tmp.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
               g1tmp.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
@@ -1064,7 +1046,7 @@ struct PhotonHBT {
               used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
             if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
-              EMPair g2pair = EMPair(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
+              EMPair g2pair = EMPair(v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
               g2pair.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
               g2pair.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
               emh2->AddTrackToEventPool(key_df_collision, g2pair);
@@ -1173,26 +1155,10 @@ struct PhotonHBT {
 
           for (const auto& g1 : selected_photons1_in_this_event) {
             for (const auto& g2 : photons1_from_event_pool) {
-              auto v1amb_pos_Ids = g1.ambiguousPosLegIds();
-              auto v1amb_neg_Ids = g1.ambiguousNegLegIds();
-              auto v2amb_pos_Ids = g2.ambiguousPosLegIds();
-              auto v2amb_neg_Ids = g2.ambiguousNegLegIds();
-
-              bool is_found_pos1 = std::find(v2amb_pos_Ids.begin(), v2amb_pos_Ids.end(), g1.globalIndexPos()) != v2amb_pos_Ids.end();
-              bool is_found_neg1 = std::find(v2amb_neg_Ids.begin(), v2amb_neg_Ids.end(), g1.globalIndexPos()) != v2amb_neg_Ids.end();
-              bool is_found_pos2 = std::find(v1amb_pos_Ids.begin(), v1amb_pos_Ids.end(), g2.globalIndexPos()) != v1amb_pos_Ids.end();
-              bool is_found_neg2 = std::find(v1amb_neg_Ids.begin(), v1amb_neg_Ids.end(), g2.globalIndexPos()) != v1amb_neg_Ids.end();
-              // LOGF(info, "is_found_pos1 = %d, is_found_neg1 = %d, is_found_pos2 = %d, is_found_neg2 = %d", is_found_pos1, is_found_neg1, is_found_pos2, is_found_neg2);
-
               // auto pos1 = g1.getPositiveLeg();
               // auto ele1 = g1.getNegativeLeg();
               // auto pos2 = g2.getPositiveLeg();
               // auto ele2 = g2.getNegativeLeg();
-
-              if ((g1.dfId() == g2.dfId()) && ((is_found_pos1 && is_found_pos2) || (is_found_neg1 && is_found_neg2))) {
-                // LOGF(info, "event id = %d: same track is found. t1.globalIndex() = %d, t1.sign() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.globalIndex() = %d, t2.sign() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f, deta = %f, dphi = %f (rad.)", ev_id, t1.globalIndex(), t1.sign(), t1.pt(), t1.eta(), t1.phi(), t2.globalIndex(), t2.sign(), t2.pt(), t2.eta(), t2.phi(), t1.eta() - t2.eta(), t1.phi() - t2.phi());
-                continue; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
-              }
 
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
@@ -1354,9 +1320,6 @@ struct PhotonHBT {
         if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
           continue;
         }
-        // if (collision.spherocity_ptunweighted() < cfgSpherocityMin || cfgSpherocityMax < collision.spherocity_ptunweighted()) {
-        //   continue;
-        // }
       }
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
