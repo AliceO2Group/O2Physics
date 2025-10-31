@@ -61,6 +61,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Produces<aod::HfCorrSelEl> hfElectronSelection;
   Produces<aod::HfMcGenSelEl> hfGenElectronSel;
 
+  // select the emcal or dcal acceptance
   enum EMCalRegion {
     NoAcceptance = 0,
     EMCalAcceptance = 1,
@@ -71,6 +72,10 @@ struct HfElectronSelectionWithTpcEmcal {
   KFParticle kfNonHfe;
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
   Configurable<bool> fillTrackInfo{"fillTrackInfo", true, "Fill histograms with Track Information info before track match"};
+  Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
+
+  // select the emcal or dcal acceptance
+  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms (see EMCalRegion enum)"};
 
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
@@ -138,7 +143,6 @@ struct HfElectronSelectionWithTpcEmcal {
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   // configurable axis
-
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {100, -2.0, 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {32, 0.0, o2::constants::math::TwoPI}, "#it{#varphi}"};
@@ -181,6 +185,7 @@ struct HfElectronSelectionWithTpcEmcal {
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{trk}- #varphi_{cluster}"};
 
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
+    registry.add("hNeventsAfterPassEmcal", "No of events pass the Emcal", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hLikeMass", "Like mass", {HistType::kTH1D, {{axisMass}}});
     registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1D, {{axisMass}}});
@@ -370,7 +375,7 @@ struct HfElectronSelectionWithTpcEmcal {
       }
     }
     // Pass multiplicities and other required parameters for this electron
-    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), nElPairsLS, nElPairsUS, isEMcal);
+    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), invMassElectron, nElPairsLS, nElPairsUS, isEMcal);
   }
   // Electron Identification
   template <bool IsMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
@@ -380,14 +385,14 @@ struct HfElectronSelectionWithTpcEmcal {
       return;
     }
 
-    registry.fill(HIST("hNevents"), 1);
+    registry.fill(HIST("hNevents"), emcalRegion.value);
 
     // skip events with no clusters
-    if (emcClusters.size() == 0) {
+    if (emcClusters.size() == 0 && skipNoEmcClusters) {
       return;
     }
     registry.fill(HIST("hZvertex"), collision.posZ());
-
+    registry.fill(HIST("hNeventsAfterPassEmcal"), static_cast<int>(emcalRegion));
     /////////////////////////////////
     // EMCal cluster info before match ///
     ///////////////////////////////
