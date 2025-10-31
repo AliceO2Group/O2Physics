@@ -17,6 +17,7 @@
 ///
 /// \author Jinjoo Seo <jin.joo.seo@cern.ch>, Inha University
 
+#include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"

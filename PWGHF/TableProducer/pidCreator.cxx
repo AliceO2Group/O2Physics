@@ -14,6 +14,7 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
+#include "PWGHF/DataModel/AliasTables.h" // IWYU pragma: keep
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 

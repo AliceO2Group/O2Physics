@@ -16,8 +16,10 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/Utils/utilsSigmac.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 

@@ -18,6 +18,7 @@
 #define PWGJE_CORE_JETHFUTILITIES_H_
 
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGJE/DataModel/Jet.h"
 
 #include <CommonConstants/PhysicsConstants.h>
