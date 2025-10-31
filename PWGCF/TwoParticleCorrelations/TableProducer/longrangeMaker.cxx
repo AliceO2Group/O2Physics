@@ -17,7 +17,7 @@
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/longrangeDerived.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
@@ -67,7 +67,10 @@ using namespace o2::aod::fwdtrack;
 using namespace o2::aod::evsel;
 using namespace o2::constants::math;
 
-auto static constexpr kMinFt0cCell = 96;
+auto static constexpr KminFt0cCell = 96;
+auto static constexpr PionTrackN = 1;
+auto static constexpr KaonTrackN = 2;
+auto static constexpr ProtonTrackN = 3;
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 
 enum KindOfParticles {
@@ -243,11 +246,11 @@ struct LongrangeMaker {
       if (!myTrackFilter.IsSelected(track))
         continue;
       tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpCharge);
-      if (getTrackPID(track) == 1)
+      if (getTrackPID(track) == PionTrackN)
         tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpPion);
-      if (getTrackPID(track) == 2)
+      if (getTrackPID(track) == KaonTrackN)
         tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpKaon);
-      if (getTrackPID(track) == 3)
+      if (getTrackPID(track) == ProtonTrackN)
         tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpProton);
     }
 
@@ -310,16 +313,16 @@ struct LongrangeMaker {
       }
 
       // Lambda and Anti-Lambda
-      bool LambdaTag = isSelectLambda<KindOfV0::kLambda>(col, v0);
-      bool ALambdaTag = isSelectLambda<KindOfV0::kAntiLambda>(col, v0);
+      bool lambdaTag = isSelectLambda<KindOfV0::kLambda>(col, v0);
+      bool antilambdaTag = isSelectLambda<KindOfV0::kAntiLambda>(col, v0);
 
       // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
-      if (LambdaTag) { // candidate is Lambda
+      if (lambdaTag) { // candidate is Lambda
         massV0 = v0.mLambda();
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
                   v0.pt(), v0.eta(), v0.phi(), massV0, aod::LRCorrTrkTable::kSpLambda);
       }
-      if (ALambdaTag) { // candidate is Anti-lambda
+      if (antilambdaTag) { // candidate is Anti-lambda
         massV0 = v0.mAntiLambda();
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
                   v0.pt(), v0.eta(), v0.phi(), massV0, aod::LRCorrTrkTable::kSpALambda);
@@ -461,7 +464,7 @@ struct LongrangeMaker {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= kMinFt0cCell)
+    if (chno >= KminFt0cCell)
       z = -z;
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
@@ -513,7 +516,7 @@ struct LongrangeMaker {
     const auto& posTrack = v0.template posTrack_as<TrksTable>();
     const auto& negTrack = v0.template negTrack_as<TrksTable>();
 
-    float CtauK0s = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassK0;
+    float ctauK0s = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassK0;
 
     if (v0.mK0Short() < cfgv0trksel.minK0sMass || v0.mK0Short() > cfgv0trksel.maxK0sMass) {
       return false;
@@ -530,13 +533,13 @@ struct LongrangeMaker {
     if (v0.dcaV0daughters() > cfgv0trksel.maxDcaV0DauK0s) {
       return false;
     }
-    if (std::abs(CtauK0s) > cfgv0trksel.maxK0sLifeTime) {
+    if (std::abs(ctauK0s) > cfgv0trksel.maxK0sLifeTime) {
       return false;
     }
     if (((std::abs(posTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts))) {
       return false;
     }
-    if ((TMath::Abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiK0s || TMath::Abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiK0s)) {
+    if ((std::abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiK0s || std::abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiK0s)) {
       return false;
     }
     return true;
@@ -547,7 +550,7 @@ struct LongrangeMaker {
   {
     const auto& posTrack = v0.template posTrack_as<TrksTable>();
     const auto& negTrack = v0.template negTrack_as<TrksTable>();
-    float CtauLambda = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassLambda;
+    float ctauLambda = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * o2::constants::physics::MassLambda;
     if ((v0.mLambda() < cfgv0trksel.minLambdaMass || v0.mLambda() > cfgv0trksel.maxLambdaMass) &&
         (v0.mAntiLambda() < cfgv0trksel.minLambdaMass || v0.mAntiLambda() > cfgv0trksel.maxLambdaMass)) {
       return false;
@@ -561,10 +564,10 @@ struct LongrangeMaker {
     if (v0.dcaV0daughters() > cfgv0trksel.maxDcaV0DauLambda) {
       return false;
     }
-    if (pid == KindOfV0::kLambda && (TMath::Abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPr || TMath::Abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiLambda)) {
+    if (pid == KindOfV0::kLambda && (std::abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPr || std::abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPiLambda)) {
       return false;
     }
-    if (pid == KindOfV0::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiLambda || TMath::Abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPr)) {
+    if (pid == KindOfV0::kAntiLambda && (std::abs(v0.dcapostopv()) < cfgv0trksel.minV0DcaPiLambda || std::abs(v0.dcanegtopv()) < cfgv0trksel.minV0DcaPr)) {
       return false;
     }
     if (pid == KindOfV0::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > cfgv0trksel.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts))) {
@@ -573,7 +576,7 @@ struct LongrangeMaker {
     if (pid == KindOfV0::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > cfgv0trksel.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > cfgv0trksel.daughPIDCuts))) {
       return false;
     }
-    if (std::abs(CtauLambda) > cfgv0trksel.maxLambdaLifeTime) {
+    if (std::abs(ctauLambda) > cfgv0trksel.maxLambdaLifeTime) {
       return false;
     }
     return true;
