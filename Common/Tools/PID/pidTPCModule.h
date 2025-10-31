@@ -258,15 +258,7 @@ class pidTPCModule
       // loop over devices in this execution
       auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
       for (o2::framework::DeviceSpec const& device : workflows.devices) {
-
-        // Check 1: the photon builder (in any configuration) needs TPC only
-        if (device.name.compare("photon-conversion-builder") == 0) {
-          LOGF(info, " ---> photon conversion builder detected! ");
-          LOGF(info, " ---> enabling TPC only track TPC PID calculations now.");
-          pidTPCopts.skipTPCOnly.value = 0;
-        }
-
-        // Check 2: propagation service with generation of photons
+        // Look for propagation service
         if (device.name.compare("propagation-service") == 0) {
           LOGF(info, " ---> propagation service detected, checking if photons enabled...");
           for (auto const& option : device.options) {
@@ -282,15 +274,31 @@ class pidTPCModule
           }
         }
 
-        // if extra tasks require TPC PID and enabling is to be automatic,
+        // if extra tasks require TPC PID for TPC-only tracks and enabling is to be automatic,
         // this is the place where one should add the conditionals.
+        //
+        // note: this should be the device name (the name that gets printed in the
+        // logs when executing the task) and it is sufficient to just extend this array
+        // with the corresponding string.
+        std::vector<std::string> devicesRequiringTPCOnlyPID = {"photon-conversion-builder"};
+
+        // Check 2: specific tasks that require TPC PID
+        for (const std::string requiringDevice : devicesRequiringTPCOnlyPID) {
+          if (device.name.compare(requiringDevice) == 0) {
+            LOGF(info, " ---> %s detected! ", requiringDevice);
+            LOGF(info, " ---> enabling TPC only track TPC PID calculations now.");
+            pidTPCopts.skipTPCOnly.value = 0;
+          }
+        }
       }
 
       if (pidTPCopts.skipTPCOnly.value == 1) {
+        LOGF(info, "***************************************************");
         LOGF(info, "No need for TPC only information detected. Will not generate Nsigma for TPC only tracks");
         LOGF(info, "If this is unexpected behaviour and a necessity was not identified, please add the");
-        LOGF(info, "corresponding task to the list in pidTPCModule::Init().");
+        LOGF(info, "corresponding task to the list 'devicesRequiringTPCOnlyPID' in pidTPCModule::Init()");
       }
+      LOGF(info, "***************************************************");
     }
 
     // initialize PID response
