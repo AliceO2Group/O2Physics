@@ -1059,7 +1059,6 @@ struct DileptonHadronMPC {
 
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
-
       used_trackIds_per_col.reserve(posTracks_per_coll.size() + negTracks_per_coll.size());
 
       int nuls = 0, nlspp = 0, nlsmm = 0;

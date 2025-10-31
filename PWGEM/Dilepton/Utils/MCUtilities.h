@@ -513,7 +513,7 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
     int quark_id = -1;
     for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
-      int mpdg = abs(mother.pdgCode());
+      int mpdg = std::abs(mother.pdgCode());
       if (mpdg == pdg && mother.pdgCode() == p.pdgCode()) { // found the quark
         if (quark_id > -1) {                                // we already found a possible candidate in the list of mothers, so now we have (at least) two
           // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
