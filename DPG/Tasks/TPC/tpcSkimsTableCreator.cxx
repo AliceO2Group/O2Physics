@@ -383,9 +383,9 @@ struct TreeWriterTpcV0 {
   void init(o2::framework::InitContext&)
   {
     const std::array<bool, 7> doprocess{doprocessStandard, doprocessStandardWithCorrecteddEdx, doprocessWithdEdxTrQA, doprocessWithdEdxTrQAWithCorrecteddEdx, doprocessWithTrQA, doprocessWithTrQAWithCorrecteddEdx, doprocessDummy};
-    if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
-      LOGP(fatal, "One and only one process function should be enabled");
-    }
+    //     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
+    //       LOGP(fatal, "One and only one process function should be enabled");
+    //     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -850,9 +850,9 @@ struct TreeWriterTpcTof {
   void init(o2::framework::InitContext&)
   {
     const std::array<bool, 7> doprocess{doprocessStandard, doprocessStandardWithCorrecteddEdx, doprocessWithdEdxTrQA, doprocessWithdEdxTrQAWithCorrecteddEdx, doprocessWithTrQA, doprocessWithTrQAWithCorrecteddEdx, doprocessDummy};
-    if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
-      LOGP(fatal, "One and only one process function should be enabled");
-    }
+    //     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
+    //       LOGP(fatal, "One and only one process function should be enabled");
+    //     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
