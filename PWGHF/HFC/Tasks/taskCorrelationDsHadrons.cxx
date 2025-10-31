@@ -139,7 +139,6 @@ struct HfTaskCorrelationDsHadrons {
 
   static constexpr float Epsilon{1.e-8};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -965,7 +964,7 @@ struct HfTaskCorrelationDsHadrons {
             auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
             // DsToKKPi and DsToPiKK division
             if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-              if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
+              if (std::abs(HfHelper::yDs(candidate)) <= yCandMax) {
                 if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
                   if (useHighDimHistoForEff) {
                     registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt(), collision.numContrib());
@@ -1047,7 +1046,7 @@ struct HfTaskCorrelationDsHadrons {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-          if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
+          if (std::abs(HfHelper::yDs(candidate)) <= yCandMax) {
             if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
               registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
             }

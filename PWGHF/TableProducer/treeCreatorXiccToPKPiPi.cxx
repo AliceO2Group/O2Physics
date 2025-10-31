@@ -173,8 +173,6 @@ struct HfTreeCreatorXiccToPKPiPi {
   Produces<o2::aod::HfCandXiccFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXiccFullPs> rowCandidateFullParticles;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)
@@ -238,10 +236,10 @@ struct HfTreeCreatorXiccToPKPiPi {
             candidate.errorImpactParameter0(),
             candidate.errorImpactParameter1(),
             candidate.impactParameterProduct(),
-            hfHelper.invMassXicToPKPi(xicCand),
-            hfHelper.ctXic(xicCand),
-            hfHelper.yXic(xicCand),
-            hfHelper.eXic(xicCand),
+            HfHelper::invMassXicToPKPi(xicCand),
+            HfHelper::ctXic(xicCand),
+            HfHelper::yXic(xicCand),
+            HfHelper::eXic(xicCand),
             xicCand.eta(),
             xicCand.cpa(),
             xicCand.cpaXY(),
@@ -269,7 +267,7 @@ struct HfTreeCreatorXiccToPKPiPi {
         }
       };
 
-      fillTable(0, candidate.isSelXiccToPKPiPi(), hfHelper.invMassXiccToXicPi(candidate), hfHelper.ctXicc(candidate), hfHelper.yXicc(candidate));
+      fillTable(0, candidate.isSelXiccToPKPiPi(), HfHelper::invMassXiccToXicPi(candidate), HfHelper::ctXicc(candidate), HfHelper::yXicc(candidate));
     }
 
     // Filling particle properties

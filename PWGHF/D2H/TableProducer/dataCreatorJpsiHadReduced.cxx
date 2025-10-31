@@ -186,8 +186,6 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
-
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorEl selectorElectron;
@@ -359,7 +357,7 @@ struct HfDataCreatorJpsiHadReduced {
   bool selectionTopol(const T1& candidate, const T2& trackPos, const T2& trackNeg)
   {
     auto candpT = candidate.pt();
-    auto candInvMass = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
+    auto candInvMass = runJpsiToee ? HfHelper::invMassJpsiToEE(candidate) : HfHelper::invMassJpsiToMuMu(candidate);
     auto pseudoPropDecLen = candidate.decayLengthXY() * candInvMass / candpT;
     auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
@@ -826,7 +824,7 @@ struct HfDataCreatorJpsiHadReduced {
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
       int const indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float const invMassJpsi = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
+      float const invMassJpsi = runJpsiToee ? HfHelper::invMassJpsiToEE(candidate) : HfHelper::invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
@@ -1051,9 +1049,9 @@ struct HfDataCreatorJpsiHadReduced {
       if (fillHfCandJpsi) { // fill Jpsi table only once per Jpsi candidate
         double invMassJpsi{0.};
         if (runJpsiToee) {
-          invMassJpsi = hfHelper.invMassJpsiToEE(candidate);
+          invMassJpsi = HfHelper::invMassJpsiToEE(candidate);
         } else {
-          invMassJpsi = hfHelper.invMassJpsiToMuMu(candidate);
+          invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
         }
         hfJpsi(trackPos.globalIndex(), trackNeg.globalIndex(),
                indexHfReducedCollision,

@@ -118,8 +118,6 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
 
-  HfHelper hfHelper;
-
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenD0ToPiKPi,
                        kCandidateStepMcCandInAcceptance,
@@ -860,7 +858,7 @@ struct HfTaskCorrelationD0Hadrons {
       multiplicity = collision.multFT0M();
       if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
-        if (std::abs(hfHelper.yD0(candidate)) <= yCandMax) {
+        if (std::abs(HfHelper::yD0(candidate)) <= yCandMax) {
           hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
           if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());

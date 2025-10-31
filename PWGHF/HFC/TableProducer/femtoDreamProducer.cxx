@@ -159,7 +159,6 @@ struct HfFemtoDreamProducer {
 
   FemtoDreamTrackSelection trackCuts;
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponseDplus;
   std::vector<float> outputMlDplus;

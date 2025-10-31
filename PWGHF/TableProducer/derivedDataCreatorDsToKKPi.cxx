@@ -86,7 +86,6 @@ struct HfDerivedDataCreatorDsToKKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassDS};
 
@@ -289,9 +288,9 @@ struct HfDerivedDataCreatorDsToKKPi {
             }
           }
         }
-        double const ct = hfHelper.ctDs(candidate);
-        double const y = hfHelper.yDs(candidate);
-        float const massDsToKKPi = hfHelper.invMassDsToKKPi(candidate);
+        double const ct = HfHelper::ctDs(candidate);
+        double const y = HfHelper::yDs(candidate);
+        float const massDsToKKPi = HfHelper::invMassDsToKKPi(candidate);
         std::vector<float> mlScoresDsToKKPi;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbDsToKKPi().begin(), candidate.mlProbDsToKKPi().end(), std::back_inserter(mlScoresDsToKKPi));
