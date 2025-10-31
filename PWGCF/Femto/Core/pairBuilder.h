@@ -141,7 +141,7 @@ class PairTrackTrackBuilder
       }
       mColHistManager.fill(col);
       mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent(trackSlice1, trackTable, col, mTrackHistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
+      pairprocesshelpers::processSameEvent(trackSlice1, trackTable, col, mTrackHistManager1, mPairHistManagerSe, mCprSe, mPc, mRng, mMixIdenticalParticles);
     } else {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -317,7 +317,7 @@ class PairV0V0Builder
       }
       mColHistManager.fill(col);
       mCprSe.setMagField(col.magField());
-      pairprocesshelpers::processSameEvent(v0Slice1, trackTable, col, mV0HistManager1, mPairHistManagerSe, mCprSe, mRng, mMixIdenticalParticles);
+      pairprocesshelpers::processSameEvent(v0Slice1, trackTable, col, mV0HistManager1, mPairHistManagerSe, mCprSe, mPc, mRng, mMixIdenticalParticles);
     } else {
       auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto v0Slice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);

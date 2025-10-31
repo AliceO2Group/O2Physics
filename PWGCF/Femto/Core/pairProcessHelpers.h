@@ -35,14 +35,16 @@ template <typename T1,
           typename T4,
           typename T5,
           typename T6,
-          typename T7>
+          typename T7,
+          typename T8>
 void processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& Collision,
                       T4& ParticleHistManager,
                       T5& PairHistManager,
                       T6& CprManager,
-                      T7& rng,
+                      T7& PcManager,
+                      T8& rng,
                       bool randomize)
 {
   for (auto const& part : SliceParticle) {
@@ -50,6 +52,11 @@ void processSameEvent(T1 const& SliceParticle,
   }
   std::uniform_real_distribution<float> dist(0.f, 1.f);
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
+    // check if pair is clean
+    if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
+      continue;
+    }
+    // check if pair is close
     CprManager.setPair(p1, p2, TrackTable);
     if (CprManager.isClosePair()) {
       continue;
@@ -62,8 +69,10 @@ void processSameEvent(T1 const& SliceParticle,
     } else {
       PairHistManager.setPair(p1, p2, Collision);
     }
+    // fill deta-dphi histograms with kstar cutoff
+    CprManager.fill(PairHistManager.getKstar());
+    // if pair cuts are configured check them before filling
     if (PairHistManager.checkPairCuts()) {
-      CprManager.fill();
       PairHistManager.fill();
     }
   }
@@ -107,8 +116,8 @@ void processSameEvent(T1 const& SliceParticle1,
       continue;
     }
     PairHistManager.setPair(p1, p2, Collision);
+    CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
-      CprManager.fill();
       PairHistManager.fill();
     }
   }
@@ -155,8 +164,8 @@ void processMixedEvent(T1& Collisions,
         continue;
       }
       PairHistManager.setPair(p1, p2, collision1, collision2);
+      CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
-        CprManager.fill();
         PairHistManager.fill();
       }
     }
@@ -206,8 +215,8 @@ void processMixedEvent(T1& Collisions,
         continue;
       }
       PairHistManager.setPair(p1, p2, collision1, collision2);
+      CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
-        CprManager.fill();
         PairHistManager.fill();
       }
     }

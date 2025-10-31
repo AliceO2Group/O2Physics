@@ -71,6 +71,12 @@ enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
   kPTpc,  // momentum at inner wall of tpc
 };
 
+enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
+  kAveragePdgMass,
+  kReducedPdgMass,
+  kMt4Vector
+};
+
 enum class Particle : o2::aod::femtodatatypes::ParticleType {
   kTrack,
   kTwoTrackResonance,
