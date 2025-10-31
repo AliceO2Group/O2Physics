@@ -258,7 +258,6 @@ struct HfTreeCreatorTccToD0D0Pi {
   o2::vertexing::DCAFitterN<2> dfD1;  // 2-prong vertex fitter (to rebuild D01 vertex)
   o2::vertexing::DCAFitterN<2> dfD2;  // 2-prong vertex fitter (to rebuild D02 vertex)
 
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -510,23 +509,23 @@ struct HfTreeCreatorTccToD0D0Pi {
           if (candidateD1.isSelD0()) {
             candFlagD1 = (candidateD1.isSelD0bar()) ? 3 : 1;
             std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
-            massD01 = hfHelper.invMassD0ToPiK(candidateD1);
+            massD01 = HfHelper::invMassD0ToPiK(candidateD1);
           }
           if (candidateD1.isSelD0bar() && !candidateD1.isSelD0()) {
             candFlagD1 = 2;
             std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
-            massD01 = hfHelper.invMassD0barToKPi(candidateD1);
+            massD01 = HfHelper::invMassD0barToKPi(candidateD1);
           }
 
           if (candidateD2.isSelD0()) {
             candFlagD2 = (candidateD2.isSelD0bar()) ? 3 : 1;
             std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
-            massD02 = hfHelper.invMassD0ToPiK(candidateD2);
+            massD02 = HfHelper::invMassD0ToPiK(candidateD2);
           }
           if (candidateD2.isSelD0bar() && !candidateD2.isSelD0()) {
             candFlagD2 = 2;
             std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
-            massD02 = hfHelper.invMassD0barToKPi(candidateD2);
+            massD02 = HfHelper::invMassD0barToKPi(candidateD2);
           }
 
           // const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1, pVecD2}, std::array{MassD0, MassD0});
@@ -626,8 +625,8 @@ struct HfTreeCreatorTccToD0D0Pi {
               impactParameterYSoftPi = impactParameterSoftPi.getY();
             }
             // Retrieve properties of the two D0 candidates
-            float yD1 = hfHelper.yD0(candidateD1);
-            float yD2 = hfHelper.yD0(candidateD2);
+            float yD1 = HfHelper::yD0(candidateD1);
+            float yD2 = HfHelper::yD0(candidateD2);
             float deltaMassD01 = -999;
             float deltaMassD02 = -999;
 

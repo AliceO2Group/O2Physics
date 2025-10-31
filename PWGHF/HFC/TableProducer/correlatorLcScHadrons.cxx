@@ -109,7 +109,6 @@ struct HfCorrelatorLcScHadronsSelection {
     Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   } cfgV0;
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
@@ -137,13 +136,13 @@ struct HfCorrelatorLcScHadronsSelection {
           int8_t const chargeCand = candidate.charge();
 
           if (chargeCand == chargeZero) {
-            yCand = hfHelper.ySc0(candidate);
+            yCand = HfHelper::ySc0(candidate);
           } else {
-            yCand = hfHelper.yScPlusPlus(candidate);
+            yCand = HfHelper::yScPlusPlus(candidate);
           }
 
         } else {
-          yCand = hfHelper.yLc(candidate);
+          yCand = HfHelper::yLc(candidate);
         }
 
         if (std::abs(yCand) > yCandMax || candidate.pt() < ptCandMin) {
@@ -374,7 +373,6 @@ struct HfCorrelatorLcScHadrons {
     Configurable<float> cfgHypMassWindow{"cfgHypMassWindow", 0.5, "single lambda mass selection"};
   } cfgV0;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   int8_t chargeCand = 3;
@@ -545,13 +543,13 @@ struct HfCorrelatorLcScHadrons {
       int8_t const chargeCand = candidate.charge();
 
       if (chargeCand == ChargeZero) {
-        y = hfHelper.ySc0(candidate);
+        y = HfHelper::ySc0(candidate);
       } else {
-        y = hfHelper.yScPlusPlus(candidate);
+        y = HfHelper::yScPlusPlus(candidate);
       }
 
     } else {
-      y = hfHelper.yLc(candidate);
+      y = HfHelper::yLc(candidate);
     }
     return y;
   }
@@ -819,12 +817,12 @@ struct HfCorrelatorLcScHadrons {
         if (selLcPKPi) {
           const auto& probs = candidateLc.mlProbLcToPKPi();
           fillMlOutput(probs, outputMlPKPi);
-          massCandPKPi = std::abs(hfHelper.invMassScRecoLcToPKPi(candidate, candidateLc) - hfHelper.invMassLcToPKPi(candidateLc));
+          massCandPKPi = std::abs(HfHelper::invMassScRecoLcToPKPi(candidate, candidateLc) - HfHelper::invMassLcToPKPi(candidateLc));
         }
         if (selLcPiKP) {
           const auto& probs = candidateLc.mlProbLcToPiKP();
           fillMlOutput(probs, outputMlPiKP);
-          massCandPiKP = std::abs(hfHelper.invMassScRecoLcToPiKP(candidate, candidateLc) - hfHelper.invMassLcToPiKP(candidateLc));
+          massCandPiKP = std::abs(HfHelper::invMassScRecoLcToPiKP(candidate, candidateLc) - HfHelper::invMassLcToPiKP(candidateLc));
         }
         if constexpr (IsMcRec) {
           // isSignal =
@@ -857,12 +855,12 @@ struct HfCorrelatorLcScHadrons {
         if (selLcPKPi) {
           const auto& probs = candidate.mlProbLcToPKPi();
           fillMlOutput(probs, outputMlPKPi);
-          massCandPKPi = hfHelper.invMassLcToPKPi(candidate);
+          massCandPKPi = HfHelper::invMassLcToPKPi(candidate);
         }
         if (selLcPiKP) {
           const auto& probs = candidate.mlProbLcToPiKP();
           fillMlOutput(probs, outputMlPiKP);
-          massCandPiKP = hfHelper.invMassLcToPiKP(candidate);
+          massCandPiKP = HfHelper::invMassLcToPiKP(candidate);
         }
         auto trackPos1 = candidate.template prong0_as<TrackType>();
         auto trackPos2 = candidate.template prong2_as<TrackType>();
@@ -1050,12 +1048,12 @@ struct HfCorrelatorLcScHadrons {
           if (selLcPKPi) {
             const auto& probs = candidateLc.mlProbLcToPKPi();
             fillMlOutput(probs, outputMlPKPi);
-            massCandPKPi = std::abs(hfHelper.invMassScRecoLcToPKPi(candidate, candidateLc) - hfHelper.invMassLcToPKPi(candidateLc));
+            massCandPKPi = std::abs(HfHelper::invMassScRecoLcToPKPi(candidate, candidateLc) - HfHelper::invMassLcToPKPi(candidateLc));
           }
           if (selLcPiKP) {
             const auto& probs = candidateLc.mlProbLcToPiKP();
             fillMlOutput(probs, outputMlPiKP);
-            massCandPiKP = std::abs(hfHelper.invMassScRecoLcToPiKP(candidate, candidateLc) - hfHelper.invMassLcToPiKP(candidateLc));
+            massCandPiKP = std::abs(HfHelper::invMassScRecoLcToPiKP(candidate, candidateLc) - HfHelper::invMassLcToPiKP(candidateLc));
           }
           if constexpr (IsMcRec) {
             isSignal =
@@ -1074,12 +1072,12 @@ struct HfCorrelatorLcScHadrons {
           if (selLcPKPi) {
             const auto& probs = candidate.mlProbLcToPKPi();
             fillMlOutput(probs, outputMlPKPi);
-            massCandPKPi = hfHelper.invMassLcToPKPi(candidate);
+            massCandPKPi = HfHelper::invMassLcToPKPi(candidate);
           }
           if (selLcPiKP) {
             const auto& probs = candidate.mlProbLcToPiKP();
             fillMlOutput(probs, outputMlPiKP);
-            massCandPiKP = hfHelper.invMassLcToPiKP(candidate);
+            massCandPiKP = HfHelper::invMassLcToPiKP(candidate);
           }
           auto trackPos1 = candidate.template prong0_as<TrackType>();
           chargeCand = trackPos1.sign();

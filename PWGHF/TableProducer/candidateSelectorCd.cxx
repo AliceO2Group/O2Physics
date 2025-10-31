@@ -78,8 +78,6 @@ struct HfCandidateSelectorCd {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
-  HfHelper hfHelper;
-
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorDe selectorDeuteron;
@@ -214,9 +212,9 @@ struct HfCandidateSelectorCd {
 
     float massCd{0.f};
     if (trackDeuteron.globalIndex() == candidate.prong0Id()) {
-      massCd = hfHelper.invMassCdToDeKPi(candidate);
+      massCd = HfHelper::invMassCdToDeKPi(candidate);
     } else {
-      massCd = hfHelper.invMassCdToPiKDe(candidate);
+      massCd = HfHelper::invMassCdToPiKDe(candidate);
     }
 
     // cut on Cd->deKpi, piKde mass values

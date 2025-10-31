@@ -74,7 +74,6 @@ struct HfTaskOmegac0ToOmegapi {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "Max. cand. rapidity"};
   Configurable<bool> fillTree{"fillTree", false, "Fill tree for local analysis (enabled only with ML)"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>>;

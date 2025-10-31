@@ -52,8 +52,6 @@ struct HfTaskLcToK0sP {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
@@ -270,14 +268,14 @@ struct HfTaskLcToK0sP {
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandRecoMax) {
         continue;
       }
 
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
-      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidate);
+      auto invMassLcToK0sP = HfHelper::invMassLcToK0sP(candidate);
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
       auto impactParameter0 = candidate.impactParameter0();
@@ -293,13 +291,13 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = hfHelper.ctV0K0s(candidate);
-      auto ctV0Lambda = hfHelper.ctV0Lambda(candidate);
+      auto ctV0K0Short = HfHelper::ctV0K0s(candidate);
+      auto ctV0Lambda = HfHelper::ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
-      auto ctLc = hfHelper.ctLc(candidate);
+      auto ctLc = HfHelper::ctLc(candidate);
 
       registry.fill(HIST("hPtCand"), ptCand);
       registry.fill(HIST("hEtaCand"), eta);
@@ -377,14 +375,14 @@ struct HfTaskLcToK0sP {
         continue;
       }
 
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandRecoMax) {
         continue;
       }
 
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
-      auto invMassLcToK0sP = hfHelper.invMassLcToK0sP(candidate);
+      auto invMassLcToK0sP = HfHelper::invMassLcToK0sP(candidate);
       auto ptProng0 = candidate.ptProng0();
       auto ptProng1 = candidate.ptProng1();
       auto impactParameter0 = candidate.impactParameter0();
@@ -400,13 +398,13 @@ struct HfTaskLcToK0sP {
       auto mLambda = candidate.mLambda();
       auto mAntiLambda = candidate.mAntiLambda();
       auto mGamma = candidate.mGamma();
-      auto ctV0K0Short = hfHelper.ctV0K0s(candidate);
-      auto ctV0Lambda = hfHelper.ctV0Lambda(candidate);
+      auto ctV0K0Short = HfHelper::ctV0K0s(candidate);
+      auto ctV0Lambda = HfHelper::ctV0Lambda(candidate);
       auto cpa = candidate.cpa();
       auto cpaXY = candidate.cpaXY();
       auto decayLength = candidate.decayLength();
       auto decayLengthXY = candidate.decayLengthXY();
-      auto ctLc = hfHelper.ctLc(candidate);
+      auto ctLc = HfHelper::ctLc(candidate);
 
       const auto& bach = candidate.prong0_as<TracksWPid>(); // bachelor track
       auto tpcNSigmaPr = bach.tpcNSigmaPr();

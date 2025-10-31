@@ -109,7 +109,6 @@ struct HfCandidateSelectorLc {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDCA;
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKF;
   std::vector<float> outputMlLcToPKPi;
@@ -307,11 +306,11 @@ struct HfCandidateSelectorLc {
       float massLc{0.f}, massKPi{0.f};
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {
-          massLc = hfHelper.invMassLcToPKPi(candidate);
-          massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
+          massLc = HfHelper::invMassLcToPKPi(candidate);
+          massKPi = HfHelper::invMassKPiPairLcToPKPi(candidate);
         } else {
-          massLc = hfHelper.invMassLcToPiKP(candidate);
-          massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
+          massLc = HfHelper::invMassLcToPiKP(candidate);
+          massKPi = HfHelper::invMassKPiPairLcToPiKP(candidate);
         }
       } else if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {

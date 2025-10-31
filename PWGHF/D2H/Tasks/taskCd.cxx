@@ -57,7 +57,6 @@ struct HfTaskCd {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_cd_to_de_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::EvSels>;
@@ -181,14 +180,14 @@ struct HfTaskCd {
       const auto cpaXY = candidate.cpaXY();
 
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
-        registry.fill(HIST("Data/hMass"), hfHelper.invMassCdToDeKPi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassCdToDeKPi(candidate), pt, numPvContributors);
-        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassCdToDeKPi(candidate), pt);
+        registry.fill(HIST("Data/hMass"), HfHelper::invMassCdToDeKPi(candidate));
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), HfHelper::invMassCdToDeKPi(candidate), pt, numPvContributors);
+        registry.fill(HIST("Data/hMassVsPt"), HfHelper::invMassCdToDeKPi(candidate), pt);
       }
       if (candidate.isSelCdToPiKDe() >= selectionFlagCd) {
-        registry.fill(HIST("Data/hMass"), hfHelper.invMassCdToPiKDe(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassCdToPiKDe(candidate), pt, numPvContributors);
-        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassCdToPiKDe(candidate), pt);
+        registry.fill(HIST("Data/hMass"), HfHelper::invMassCdToPiKDe(candidate));
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), HfHelper::invMassCdToPiKDe(candidate), pt, numPvContributors);
+        registry.fill(HIST("Data/hMassVsPt"), HfHelper::invMassCdToPiKDe(candidate), pt);
       }
       registry.fill(HIST("Data/hPt"), pt);
       registry.fill(HIST("Data/hPtProng0"), ptProng0);
@@ -224,12 +223,12 @@ struct HfTaskCd {
         float const cent = o2::hf_centrality::getCentralityColl(collision);
         double massCd(-1);
         if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
-          massCd = hfHelper.invMassCdToDeKPi(candidate);
+          massCd = HfHelper::invMassCdToDeKPi(candidate);
           std::vector<double> valuesToFill{massCd, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, cent};
           registry.get<THnSparse>(HIST("hnCdVars"))->Fill(valuesToFill.data());
         }
         if (candidate.isSelCdToPiKDe() >= selectionFlagCd) {
-          massCd = hfHelper.invMassCdToPiKDe(candidate);
+          massCd = HfHelper::invMassCdToPiKDe(candidate);
           std::vector<double> valuesToFill{massCd, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, cent};
           registry.get<THnSparse>(HIST("hnCdVars"))->Fill(valuesToFill.data());
         }

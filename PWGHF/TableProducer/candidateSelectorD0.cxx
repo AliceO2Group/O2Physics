@@ -107,7 +107,6 @@ struct HfCandidateSelectorD0 {
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
-  HfHelper hfHelper;
   HfTrigger2ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
@@ -250,8 +249,8 @@ struct HfCandidateSelectorD0 {
       massD0 = candidate.kfGeoMassD0();
       massD0bar = candidate.kfGeoMassD0bar();
     } else {
-      massD0 = hfHelper.invMassD0ToPiK(candidate);
-      massD0bar = hfHelper.invMassD0barToKPi(candidate);
+      massD0 = HfHelper::invMassD0ToPiK(candidate);
+      massD0bar = HfHelper::invMassD0barToKPi(candidate);
     }
     if (trackPion.sign() > 0) {
       if (std::abs(massD0 - o2::constants::physics::MassD0) > cuts->get(pTBin, "m")) {
@@ -281,11 +280,11 @@ struct HfCandidateSelectorD0 {
 
     // cut on cos(theta*)
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.cosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
+      if (std::abs(HfHelper::cosThetaStarD0(candidate)) > cuts->get(pTBin, "cos theta*")) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.cosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
+      if (std::abs(HfHelper::cosThetaStarD0bar(candidate)) > cuts->get(pTBin, "cos theta*")) {
         return false;
       }
     }
@@ -293,11 +292,11 @@ struct HfCandidateSelectorD0 {
     // in case only sideband candidates have to be stored, additional invariant-mass cut
     if (keepOnlySidebandCandidates) {
       if (trackPion.sign() > 0) {
-        if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(HfHelper::invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       } else {
-        if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
+        if (std::abs(HfHelper::invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) < distanceFromD0MassForSidebands) {
           return false;
         }
       }
@@ -481,13 +480,13 @@ struct HfCandidateSelectorD0 {
             registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0[0], statusD0);
             registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0[1], statusD0);
             registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0[2], statusD0);
-            registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0ToPiK(candidate));
+            registry.fill(HIST("DebugBdt/hMassDmesonSel"), HfHelper::invMassD0ToPiK(candidate));
           }
           if (isSelectedMlD0bar) {
             registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), outputMlD0bar[0], statusD0bar);
             registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), outputMlD0bar[1], statusD0bar);
             registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), outputMlD0bar[2], statusD0bar);
-            registry.fill(HIST("DebugBdt/hMassDmesonSel"), hfHelper.invMassD0barToKPi(candidate));
+            registry.fill(HIST("DebugBdt/hMassDmesonSel"), HfHelper::invMassD0barToKPi(candidate));
           }
         }
       }

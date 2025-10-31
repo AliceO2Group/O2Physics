@@ -15,14 +15,14 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,8 +31,6 @@ using namespace o2::framework::expressions;
 /// Fills MC histograms.
 struct HfTaskLcAlice3 {
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_alice3::isSelLcToPKPiNoPid == 1 || aod::hf_sel_candidate_lc_alice3::isSelLcToPiKPNoPid == 1);
-
-  HfHelper hfHelper;
 
   HistogramRegistry registry{
     "registry",
@@ -58,14 +56,14 @@ struct HfTaskLcAlice3 {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
-      if (std::abs(hfHelper.yLc(candidate)) > 4.0) {
+      if (std::abs(HfHelper::yLc(candidate)) > 4.0) {
         continue;
       }
 
-      auto massLc = hfHelper.invMassLcToPKPi(candidate);
-      auto massLcSwap = hfHelper.invMassLcToPiKP(candidate);
+      auto massLc = HfHelper::invMassLcToPKPi(candidate);
+      auto massLcSwap = HfHelper::invMassLcToPiKP(candidate);
       auto ptCandidate = candidate.pt();
-      auto rapidityCandidate = std::abs(hfHelper.yLc(candidate));
+      auto rapidityCandidate = std::abs(HfHelper::yLc(candidate));
 
       if (candidate.isSelLcToPKPiNoPid() == 1) {
         registry.fill(HIST("hMassSigBkgLcNoPid"), massLc, ptCandidate, rapidityCandidate);

@@ -71,7 +71,6 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
-  HfHelper hfHelper;
   EventPlaneHelper epHelper;
   SliceCache cache;
   HfEventSelection hfEvSel; // event selection and monitoring
@@ -253,8 +252,8 @@ struct HfTaskDirectedFlowCharmHadrons {
       double signDstarCand = 0.0;
       std::vector<double> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
-        massCand = hfHelper.invMassDplusToPiKPi(candidate);
-        rapCand = hfHelper.yDplus(candidate);
+        massCand = HfHelper::invMassDplusToPiKPi(candidate);
+        rapCand = HfHelper::yDplus(candidate);
         auto trackprong0 = candidate.template prong0_as<Trk>();
         sign = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
@@ -265,8 +264,8 @@ struct HfTaskDirectedFlowCharmHadrons {
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
         switch (Channel) {
           case DecayChannel::D0ToPiK:
-            massCand = hfHelper.invMassD0ToPiK(candidate);
-            rapCand = hfHelper.yD0(candidate);
+            massCand = HfHelper::invMassD0ToPiK(candidate);
+            rapCand = HfHelper::yD0(candidate);
             sign = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -275,8 +274,8 @@ struct HfTaskDirectedFlowCharmHadrons {
             }
             break;
           case DecayChannel::D0ToKPi:
-            massCand = hfHelper.invMassD0barToKPi(candidate);
-            rapCand = hfHelper.yD0(candidate);
+            massCand = HfHelper::invMassD0barToKPi(candidate);
+            rapCand = HfHelper::yD0(candidate);
             sign = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {

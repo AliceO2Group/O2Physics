@@ -70,7 +70,6 @@ struct HfTaskMcEfficiency {
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
   enum HFStep { kHFStepMC = 0,
                 kHFStepMcInRapidity,        // MC mothers in rapidity |y| < 0.5
@@ -258,23 +257,23 @@ struct HfTaskMcEfficiency {
         /// all candidates
         if (isHypoMass1TrackStep) {
           if (pdgCode == Pdg::kLambdaCPlus) {
-            massHypo1 = hfHelper.invMassLcToPKPi(candidate);
+            massHypo1 = HfHelper::invMassLcToPKPi(candidate);
           } else if (pdgCode == Pdg::kXiCPlus) {
-            massHypo1 = hfHelper.invMassXicToPKPi(candidate);
+            massHypo1 = HfHelper::invMassXicToPKPi(candidate);
           } else if (pdgCode == Pdg::kDPlus) {
-            massHypo1 = hfHelper.invMassDplusToPiKPi(candidate);
+            massHypo1 = HfHelper::invMassDplusToPiKPi(candidate);
           } else if (pdgCode == Pdg::kDS) {
-            massHypo1 = hfHelper.invMassDsToKKPi(candidate);
+            massHypo1 = HfHelper::invMassDsToKKPi(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo1, pdgCode, cpa, collisionMatched, origin);
         }
         if (isHypoMass2TrackStep) {
           if (pdgCode == Pdg::kLambdaCPlus) {
-            massHypo2 = hfHelper.invMassLcToPiKP(candidate);
+            massHypo2 = HfHelper::invMassLcToPiKP(candidate);
           } else if (pdgCode == Pdg::kXiCPlus) {
-            massHypo2 = hfHelper.invMassXicToPiKP(candidate);
+            massHypo2 = HfHelper::invMassXicToPiKP(candidate);
           } else if (pdgCode == Pdg::kDS) {
-            massHypo2 = hfHelper.invMassDsToPiKK(candidate);
+            massHypo2 = HfHelper::invMassDsToPiKK(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched, origin);
         }
@@ -376,10 +375,10 @@ struct HfTaskMcEfficiency {
         float const pt = candidate.pt();
         bool selected = false;
         if (pdgCode == Pdg::kD0) {
-          mass = hfHelper.invMassD0ToPiK(candidate);
+          mass = HfHelper::invMassD0ToPiK(candidate);
           selected = candidate.isSelD0() >= selectionFlagD0;
         } else if (pdgCode == Pdg::kD0Bar) {
-          mass = hfHelper.invMassD0barToKPi(candidate);
+          mass = HfHelper::invMassD0barToKPi(candidate);
           selected = candidate.isSelD0bar() >= selectionFlagD0bar;
         }
         LOGP(debug, "Candidate {} has prong {} and prong {} and pT {} and mass {}", candidate.globalIndex(), candidate.prong0Id(), candidate.prong1Id(), candidate.pt(), mass);

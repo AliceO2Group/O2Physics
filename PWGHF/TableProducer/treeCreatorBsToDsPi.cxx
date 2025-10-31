@@ -178,8 +178,6 @@ struct HfTreeCreatorBsToDsPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
-
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandBs, aod::HfCandBsMcRec, aod::HfSelBsToDsPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
@@ -226,14 +224,14 @@ struct HfTreeCreatorBsToDsPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBsToDsPi(),
-        hfHelper.invMassBsToDsPi(candidate),
+        HfHelper::invMassBsToDsPi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBs(candidate),
+        HfHelper::yBs(candidate),
         flagMc);
     } else {
       rowCandidateFull(
@@ -271,17 +269,17 @@ struct HfTreeCreatorBsToDsPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelBsToDsPi(),
-        hfHelper.invMassBsToDsPi(candidate),
+        HfHelper::invMassBsToDsPi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        hfHelper.ctBs(candidate),
+        HfHelper::ctBs(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBs(candidate),
-        hfHelper.eBs(candidate),
+        HfHelper::yBs(candidate),
+        HfHelper::eBs(candidate),
         flagMc);
     }
   }
