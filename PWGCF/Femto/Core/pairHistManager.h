@@ -114,6 +114,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter)"};
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter)"};
+  o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -254,6 +255,9 @@ class PairHistManager
     mPlotKstarVsMass2VsMult = ConfPairBinning.plotKstarVsMass2VsMult.value;
     mPlotKstarVsMass1VsMass2VsMult = ConfPairBinning.plotKstarVsMass1VsMass2VsMult.value;
 
+    // transverse mass type
+    mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
+
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
     mKstarMax = ConfPairCuts.kstarMax.value;
@@ -276,6 +280,7 @@ class PairHistManager
     mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
     mPdgAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
+    mPdgReducedMass = (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
@@ -298,7 +303,7 @@ class PairHistManager
     mKt = partSum.Pt() / 2.f;
 
     // set mT
-    mMt = std::hypot(mKt, mPdgAverageMass);
+    computeMt(partSum);
 
     // Boost particle to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
     // make a copy of particle 1
@@ -488,10 +493,31 @@ class PairHistManager
     }
   }
 
+  void computeMt(ROOT::Math::PtEtaPhiMVector const& PairMomentum)
+  {
+    switch (mMtType) {
+      case modes::TransverseMassType::kAveragePdgMass:
+        mMt = std::hypot(PairMomentum.Pt() / 2.f, mPdgAverageMass);
+        break;
+      case modes::TransverseMassType::kReducedPdgMass:
+        mMt = std::hypot(PairMomentum.Pt() / 2.f, mPdgReducedMass);
+        break;
+      case modes::TransverseMassType::kMt4Vector:
+        mMt = PairMomentum.Mt() / 2.f;
+        break;
+      default:
+        mMt = std::hypot(mKt, mPdgAverageMass);
+    };
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   float mPdgMass1 = 0.f;
   float mPdgMass2 = 0.f;
+
+  modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
   float mPdgAverageMass = 0.f;
+  float mPdgReducedMass = 0.f;
+
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
   ROOT::Math::PtEtaPhiMVector mParticle1{};
