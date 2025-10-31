@@ -15,7 +15,7 @@
 /// \author Martin Voelkl <martin.andreas.volkl@cern.ch>, University of Birmingham
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/AliasTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"

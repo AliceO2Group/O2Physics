@@ -17,9 +17,12 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch >, SALERNO
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
+#include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"

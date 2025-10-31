@@ -17,7 +17,7 @@
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"

@@ -14,7 +14,7 @@
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN Padova, Italy
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/trackUtilities.h"
 
