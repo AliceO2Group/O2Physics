@@ -50,4 +50,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<reducedMCeventConverter000_001>(cfgc)};
 }
- 
