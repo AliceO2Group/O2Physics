@@ -1042,13 +1042,7 @@ struct Dilepton {
     if constexpr (ev_id == 0) {
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
-      std::vector<int> possibleIds1;
-      std::vector<int> possibleIds2;
-
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        std::copy(t1.ambiguousElectronsIds().begin(), t1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds1));
-        std::copy(t2.ambiguousElectronsIds().begin(), t2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds2));
-
         if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t1.globalIndex()) == used_trackIds_per_col.end()) {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
@@ -1070,9 +1064,6 @@ struct Dilepton {
           }
         }
       } else if (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-        std::copy(t1.ambiguousMuonsIds().begin(), t1.ambiguousMuonsIds().end(), std::back_inserter(possibleIds1));
-        std::copy(t2.ambiguousMuonsIds().begin(), t2.ambiguousMuonsIds().end(), std::back_inserter(possibleIds2));
-
         if (std::find(used_trackIds_per_col.begin(), used_trackIds_per_col.end(), t1.globalIndex()) == used_trackIds_per_col.end()) {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
