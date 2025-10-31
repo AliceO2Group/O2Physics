@@ -245,13 +245,13 @@ struct LongrangeMaker {
         continue;
       if (!myTrackFilter.IsSelected(track))
         continue;
-      tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpCharge);
+      tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpCharge);
       if (getTrackPID(track) == PionTrackN)
-        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpPion);
+        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpPion);
       if (getTrackPID(track) == KaonTrackN)
-        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpKaon);
+        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpKaon);
       if (getTrackPID(track) == ProtonTrackN)
-        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::LRCorrTrkTable::kSpProton);
+        tracksLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpProton);
     }
 
     // ft0 loop
@@ -309,7 +309,7 @@ struct LongrangeMaker {
       // K0short
       if (isSelectK0s(col, v0)) { // candidate is K0s
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                  v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::LRCorrTrkTable::kSpK0short);
+                  v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::lrcorrtrktable::kSpK0short);
       }
 
       // Lambda and Anti-Lambda
@@ -320,12 +320,12 @@ struct LongrangeMaker {
       if (lambdaTag) { // candidate is Lambda
         massV0 = v0.mLambda();
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::LRCorrTrkTable::kSpLambda);
+                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpLambda);
       }
       if (antilambdaTag) { // candidate is Anti-lambda
         massV0 = v0.mAntiLambda();
         v0LRTable(collisionLRTable.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::LRCorrTrkTable::kSpALambda);
+                  v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpALambda);
       } // end of Lambda and Anti-Lambda processing
     }
   } // process function
