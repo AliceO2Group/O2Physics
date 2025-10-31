@@ -19,40 +19,41 @@
 #ifndef PWGEM_PHOTONMESON_CORE_TAGGINGPI0_H_
 #define PWGEM_PHOTONMESON_CORE_TAGGINGPI0_H_
 
-#include <cstring>
-#include <iterator>
-#include <string>
-#include <map>
-#include <vector>
-#include <tuple>
-#include <utility>
-#include <array>
-#include <algorithm>
-
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/Dilepton/Utils/EMTrack.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TString.h"
+
+#include <algorithm>
+#include <array>
+#include <cstring>
+#include <iterator>
+#include <map>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -306,10 +307,10 @@ struct TaggingPi0 {
     delete emh2;
     emh2 = 0x0;
 
-    used_photonIds.clear();
-    used_photonIds.shrink_to_fit();
-    used_dileptonIds.clear();
-    used_dileptonIds.shrink_to_fit();
+    used_photonIds_per_col.clear();
+    used_photonIds_per_col.shrink_to_fit();
+    used_dileptonIds_per_col.clear();
+    used_dileptonIds_per_col.shrink_to_fit();
     map_mixed_eventId_to_globalBC.clear();
   }
 
@@ -453,14 +454,14 @@ struct TaggingPi0 {
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
-  std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
-  std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
+  std::vector<int> used_photonIds_per_col;                   // <ndf, trackId>
+  std::vector<std::pair<int, int>> used_dileptonIds_per_col; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
   void runPairing(TCollisions const& collisions,
                   TPhotons1 const& photons1, TPhotons2 const& photons2,
-                  TSubInfos1 const& /*subinfos1*/, TSubInfos2 const& /*subinfos2*/,
+                  TSubInfos1 const&, TSubInfos2 const&,
                   TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                   TCut1 const& cut1, TCut2 const& cut2)
   {
@@ -571,15 +572,14 @@ struct TaggingPi0 {
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
             fRegistry.fill(HIST("Pair/same/hMvsPt"), veeg.M(), v_gamma.Pt(), weight);
 
-            std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-            std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.trackId(), ele2.trackId());
-            if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
+            std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.trackId(), ele2.trackId());
+            if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
               emh1->AddTrackToEventPool(key_df_collision, EMTrack(-1, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
-              used_photonIds.emplace_back(pair_tmp_id1);
+              used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
-            if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
+            if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
               emh2->AddTrackToEventPool(key_df_collision, EMTrack(-1, -1, collision.globalIndex(), -1, v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
-              used_dileptonIds.emplace_back(tuple_tmp_id2);
+              used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
           } // end of dielectron loop
@@ -598,20 +598,22 @@ struct TaggingPi0 {
 
           fRegistry.fill(HIST("Pair/same/hMvsPt"), v12.M(), v1.Pt(), weight);
 
-          std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-          std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
-
-          if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
+          if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
             emh1->AddTrackToEventPool(key_df_collision, EMTrack(-1, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
-            used_photonIds.emplace_back(pair_tmp_id1);
+            used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
-          if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
+          if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
             emh2->AddTrackToEventPool(key_df_collision, EMTrack(-1, g2.globalIndex(), collision.globalIndex(), -1, g2.pt(), g2.eta(), g2.phi(), 0));
-            used_photonIds.emplace_back(pair_tmp_id2);
+            used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
           ndiphoton++;
         } // end of pairing loop
       } // end of pairing in same event
+
+      used_photonIds_per_col.clear();
+      used_photonIds_per_col.shrink_to_fit();
+      used_dileptonIds_per_col.clear();
+      used_dileptonIds_per_col.shrink_to_fit();
 
       // event mixing
       if (!cfgDoMix || !(ndiphoton > 0)) {

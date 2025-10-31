@@ -459,6 +459,7 @@ struct DileptonHadronMPC {
 
     used_trackIds_per_col.clear();
     used_trackIds_per_col.shrink_to_fit();
+    map_mixed_eventId_to_globalBC.clear();
   }
 
   void addhistograms()
