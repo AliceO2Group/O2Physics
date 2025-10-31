@@ -1354,6 +1354,7 @@ struct Chk892pp {
   void processMCQA(MCEventCandidates::iterator const& collision,
                    MCTrackCandidates const& tracks,
                    MCV0Candidates const& v0s,
+                   soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const& mccolls,
                    aod::BCsWithTimestamps const&)
   {
     if (!colCuts.isSelected(collision))
@@ -1365,7 +1366,10 @@ struct Chk892pp {
 
     if (!collision.has_mcCollision())
       return;
-    auto mccoll = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+
+    auto id = collision.mcCollisionId();
+
+    auto mccoll = mccolls.iteratorAt(id);
     const float lCentrality = mccoll.centFT0M();
 
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
