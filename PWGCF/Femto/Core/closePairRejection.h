@@ -63,8 +63,8 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
-  o2::framework::Configurable<float> kstarMin{"kstarMin", -1.f, "Minimum kstar of pair for plotting (Set to negative value to turn of the cut)"};
-  o2::framework::Configurable<float> kstarMax{"kstarMax", -1.f, "Maximum kstar of pair for plotting (Set to negative value to turn of the cut)"};
+  o2::framework::Configurable<float> kstarMin{"kstarMin", -1.f, "Minimum kstar of pair for plotting (Set to negative value to turn off the cut)"};
+  o2::framework::Configurable<float> kstarMax{"kstarMax", -1.f, "Maximum kstar of pair for plotting (Set to negative value to turn off the cut)"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
   o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{250, -0.5, 0.5}}, "dphi"};
 };
