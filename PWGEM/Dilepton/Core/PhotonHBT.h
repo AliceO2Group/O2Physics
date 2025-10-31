@@ -276,10 +276,10 @@ struct PhotonHBT {
 
     map_mixed_eventId_to_globalBC.clear();
 
-    used_photonIds.clear();
-    used_photonIds.shrink_to_fit();
-    used_dileptonIds.clear();
-    used_dileptonIds.shrink_to_fit();
+    used_photonIds_per_col.clear();
+    used_photonIds_per_col.shrink_to_fit();
+    used_dileptonIds_per_col.clear();
+    used_dileptonIds_per_col.shrink_to_fit();
   }
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -304,7 +304,7 @@ struct PhotonHBT {
     if (ConfVtxBins.value[0] == VARIABLE_WIDTH) {
       zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
       zvtx_bin_edges.erase(zvtx_bin_edges.begin());
-      for (auto& edge : zvtx_bin_edges) {
+      for (const auto& edge : zvtx_bin_edges) {
         LOGF(info, "VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
       }
     } else {
@@ -321,7 +321,7 @@ struct PhotonHBT {
     if (ConfCentBins.value[0] == VARIABLE_WIDTH) {
       cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
       cent_bin_edges.erase(cent_bin_edges.begin());
-      for (auto& edge : cent_bin_edges) {
+      for (const auto& edge : cent_bin_edges) {
         LOGF(info, "VARIABLE_WIDTH: cent_bin_edges = %f", edge);
       }
     } else {
@@ -338,7 +338,7 @@ struct PhotonHBT {
     if (ConfEPBins.value[0] == VARIABLE_WIDTH) {
       ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
       ep_bin_edges.erase(ep_bin_edges.begin());
-      for (auto& edge : ep_bin_edges) {
+      for (const auto& edge : ep_bin_edges) {
         LOGF(info, "VARIABLE_WIDTH: ep_bin_edges = %f", edge);
       }
     } else {
@@ -356,7 +356,7 @@ struct PhotonHBT {
     if (ConfOccupancyBins.value[0] == VARIABLE_WIDTH) {
       occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
       occ_bin_edges.erase(occ_bin_edges.begin());
-      for (auto& edge : occ_bin_edges) {
+      for (const auto& edge : occ_bin_edges) {
         LOGF(info, "VARIABLE_WIDTH: occ_bin_edges = %f", edge);
       }
     } else {
@@ -703,7 +703,7 @@ struct PhotonHBT {
   template <bool isTriggerAnalysis, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2>
   void runPairing(TCollisions const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TSubInfos1 const&, TSubInfos2 const&, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCut1 const& cut1, TCut2 const& cut2)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       int ndiphoton = 0;
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -777,7 +777,7 @@ struct PhotonHBT {
       if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
         auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
-        for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
+        for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
@@ -826,23 +826,21 @@ struct PhotonHBT {
           fillPairHistogram<0>(collision, v1, v2, 1.f);
           ndiphoton++;
 
-          std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-          std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
-          if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-            EMTrack g1tmp = EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
+          if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
+            EMPair g1tmp = EMPair(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
             g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
             g1tmp.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
             g1tmp.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
             emh1->AddTrackToEventPool(key_df_collision, g1tmp);
-            used_photonIds.emplace_back(pair_tmp_id1);
+            used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
-          if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
-            EMTrack g2tmp = EMTrack(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0);
+          if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
+            EMPair g2tmp = EMPair(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0);
             g2tmp.setConversionPointXYZ(g2.vx(), g2.vy(), g2.vz());
             g2tmp.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             g2tmp.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             emh1->AddTrackToEventPool(key_df_collision, g2tmp);
-            used_photonIds.emplace_back(pair_tmp_id2);
+            used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
         } // end of pairing loop
       } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
@@ -852,7 +850,7 @@ struct PhotonHBT {
         used_pairs_per_collision.reserve(std::pow(positrons_per_collision.size() * electrons_per_collision.size(), 2));
         // LOGF(info, "collision.globalIndex() = %d, positrons_per_collision.size() = %d, electrons_per_collision.size() = %d", collision.globalIndex(), positrons_per_collision.size(), electrons_per_collision.size());
 
-        for (auto& [pos1, ele1] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+        for (const auto& [pos1, ele1] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
           if (pos1.trackId() == ele1.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
             continue;
           }
@@ -872,15 +870,15 @@ struct PhotonHBT {
           ROOT::Math::PtEtaPhiMVector v_pos1(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v_ele1(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v1_ee = v_pos1 + v_ele1;
-          float dca_pos1_3d = dca3DinSigma(pos1);
-          float dca_ele1_3d = dca3DinSigma(ele1);
-          float dca1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
+          // float dca_pos1_3d = dca3DinSigma(pos1);
+          // float dca_ele1_3d = dca3DinSigma(ele1);
+          // float dca1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
           float weight1 = 1.f;
           if (cfgApplyWeightTTCA) {
             weight1 = map_weight[std::make_pair(pos1.globalIndex(), ele1.globalIndex())];
           }
 
-          for (auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+          for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
               continue;
             }
@@ -906,9 +904,9 @@ struct PhotonHBT {
               weight2 = map_weight[std::make_pair(pos2.globalIndex(), ele2.globalIndex())];
             }
 
-            float dca_pos2_3d = dca3DinSigma(pos2);
-            float dca_ele2_3d = dca3DinSigma(ele2);
-            float dca2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
+            // float dca_pos2_3d = dca3DinSigma(pos2);
+            // float dca_ele2_3d = dca3DinSigma(ele2);
+            // float dca2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
 
             ROOT::Math::PtEtaPhiMVector v_pos2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
@@ -944,41 +942,39 @@ struct PhotonHBT {
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.second, pair_tmp.first));
               // LOGF(info, "collision.globalIndex() = %d, pos1.trackId() = %d, ele1.trackId() = %d, pos2.trackId() = %d, ele2.trackId() = %d", collision.globalIndex(), pos1.trackId(), ele1.trackId(), pos2.trackId(), ele2.trackId());
 
-              std::tuple<int, int, int, int> tuple_tmp_id1 = std::make_tuple(ndf, collision.globalIndex(), pos1.globalIndex(), ele1.globalIndex());
-              std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
-              if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id1) == used_dileptonIds.end()) {
+              std::pair<int, int> tuple_tmp_id1 = std::make_pair(pos1.globalIndex(), ele1.globalIndex());
+              std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.globalIndex(), ele2.globalIndex());
+              if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id1) == used_dileptonIds_per_col.end()) {
                 std::vector<int> possibleIds_pos1;
                 std::vector<int> possibleIds_ele1;
                 std::copy(pos1.ambiguousElectronsIds().begin(), pos1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_pos1));
                 std::copy(ele1.ambiguousElectronsIds().begin(), ele1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_ele1));
 
-                EMTrack g1pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v1_ee.Pt(), v1_ee.Eta(), v1_ee.Phi(), v1_ee.M());
+                EMPair g1pair = EMPair(ndf, -1, collision.globalIndex(), -1, v1_ee.Pt(), v1_ee.Eta(), v1_ee.Phi(), v1_ee.M());
                 g1pair.setGlobalPosId(pos1.globalIndex());
                 g1pair.setGlobalNegId(ele1.globalIndex());
-                g1pair.setPairDca3DinSigmaOTF(dca1_3d);
                 g1pair.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
                 g1pair.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
                 g1pair.setAmbPosLegSelfIds(possibleIds_pos1);
                 g1pair.setAmbNegLegSelfIds(possibleIds_ele1);
                 emh1->AddTrackToEventPool(key_df_collision, g1pair);
-                used_dileptonIds.emplace_back(tuple_tmp_id1);
+                used_dileptonIds_per_col.emplace_back(tuple_tmp_id1);
               }
-              if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
+              if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
                 std::vector<int> possibleIds_pos2;
                 std::vector<int> possibleIds_ele2;
                 std::copy(pos2.ambiguousElectronsIds().begin(), pos2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_pos2));
                 std::copy(ele2.ambiguousElectronsIds().begin(), ele2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds_ele2));
 
-                EMTrack g2pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
+                EMPair g2pair = EMPair(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
                 g2pair.setGlobalPosId(pos2.globalIndex());
                 g2pair.setGlobalNegId(ele2.globalIndex());
-                g2pair.setPairDca3DinSigmaOTF(dca2_3d);
                 g2pair.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
                 g2pair.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
                 g2pair.setAmbPosLegSelfIds(possibleIds_pos2);
                 g2pair.setAmbNegLegSelfIds(possibleIds_ele2);
                 emh1->AddTrackToEventPool(key_df_collision, g2pair);
-                used_dileptonIds.emplace_back(tuple_tmp_id2);
+                used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
               }
             }
           } // end of g2 loop
@@ -990,7 +986,7 @@ struct PhotonHBT {
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
-        for (auto& g1 : photons1_per_collision) {
+        for (const auto& g1 : photons1_per_collision) {
           if (!cut1.template IsSelected<TSubInfos1>(g1)) {
             continue;
           }
@@ -998,7 +994,7 @@ struct PhotonHBT {
           auto ele1 = g1.template negTrack_as<TSubInfos1>();
           ROOT::Math::PtEtaPhiMVector v1_gamma(g1.pt(), g1.eta(), g1.phi(), 0.);
 
-          for (auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+          for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
               continue;
             }
@@ -1025,9 +1021,9 @@ struct PhotonHBT {
             }
             // LOGF(info, "g1.globalIndex() = %d, map_weight[std::make_pair(%d, %d)] = %f", g1.globalIndex(), pos2.globalIndex(), ele2.globalIndex(), weight);
 
-            float dca_pos2_3d = dca3DinSigma(pos2);
-            float dca_ele2_3d = dca3DinSigma(ele2);
-            float dca2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
+            // float dca_pos2_3d = dca3DinSigma(pos2);
+            // float dca_ele2_3d = dca3DinSigma(ele2);
+            // float dca2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
 
             ROOT::Math::PtEtaPhiMVector v_pos2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
@@ -1058,27 +1054,30 @@ struct PhotonHBT {
 
             fillPairHistogram<0>(collision, v1_gamma, v2_ee, weight);
             ndiphoton++;
-            std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-            std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
-            if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-              EMTrack g1tmp = EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
+            std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.globalIndex(), ele2.globalIndex());
+            if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
+              EMPair g1tmp = EMPair(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
               g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
               g1tmp.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
               g1tmp.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
               emh1->AddTrackToEventPool(key_df_collision, g1tmp);
-              used_photonIds.emplace_back(pair_tmp_id1);
+              used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
-            if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
-              EMTrack g2pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
-              g2pair.setPairDca3DinSigmaOTF(dca2_3d);
+            if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
+              EMPair g2pair = EMPair(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
               g2pair.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
               g2pair.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
               emh2->AddTrackToEventPool(key_df_collision, g2pair);
-              used_dileptonIds.emplace_back(tuple_tmp_id2);
+              used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
           } // end of g2 loop
         } // end of g1 loop
       }
+
+      used_photonIds_per_col.clear();
+      used_photonIds_per_col.shrink_to_fit();
+      used_dileptonIds_per_col.clear();
+      used_dileptonIds_per_col.shrink_to_fit();
 
       // event mixing
       if (!cfgDoMix || !(ndiphoton > 0)) {
@@ -1093,7 +1092,7 @@ struct PhotonHBT {
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -1111,8 +1110,8 @@ struct PhotonHBT {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {
-            for (auto& g2 : photons1_from_event_pool) {
+          for (const auto& g1 : selected_photons1_in_this_event) {
+            for (const auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
 
@@ -1155,7 +1154,7 @@ struct PhotonHBT {
           }
         } // end of loop over mixed event pool
       } else if constexpr (pairtype == ggHBTPairType::kEEEE) {
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -1172,8 +1171,8 @@ struct PhotonHBT {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {
-            for (auto& g2 : photons1_from_event_pool) {
+          for (const auto& g1 : selected_photons1_in_this_event) {
+            for (const auto& g2 : photons1_from_event_pool) {
               auto v1amb_pos_Ids = g1.ambiguousPosLegIds();
               auto v1amb_neg_Ids = g1.ambiguousNegLegIds();
               auto v2amb_pos_Ids = g2.ambiguousPosLegIds();
@@ -1224,7 +1223,7 @@ struct PhotonHBT {
           }
         } // end of loop over mixed event pool
       } else if constexpr (pairtype == ggHBTPairType::kPCMEE) { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -1241,8 +1240,8 @@ struct PhotonHBT {
           auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {                    // PCM
-            for (auto& g2 : photons2_from_event_pool) {                         // dielectron
+          for (const auto& g1 : selected_photons1_in_this_event) {              // PCM
+            for (const auto& g2 : photons2_from_event_pool) {                   // dielectron
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
 
@@ -1277,7 +1276,7 @@ struct PhotonHBT {
           }
         } // end of loop over mixed event pool2
 
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -1294,8 +1293,8 @@ struct PhotonHBT {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons2_in_this_event) {                    // dielectron
-            for (auto& g2 : photons1_from_event_pool) {                         // PCM
+          for (const auto& g1 : selected_photons2_in_this_event) {              // dielectron
+            for (const auto& g2 : photons1_from_event_pool) {                   // PCM
               ROOT::Math::PtEtaPhiMVector v1(g2.pt(), g2.eta(), g2.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g1.pt(), g1.eta(), g1.phi(), g1.mass());
 
@@ -1345,7 +1344,7 @@ struct PhotonHBT {
     std::vector<std::pair<int, int>> passed_pairIds;
     passed_pairIds.reserve(positrons.size() * electrons.size());
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -1366,7 +1365,7 @@ struct PhotonHBT {
       auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
-      for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+      for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
         if (pos.trackId() == ele.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
           continue;
         }
@@ -1386,14 +1385,14 @@ struct PhotonHBT {
       } // end of dielectron pairing loop
     } // end of collision loop
 
-    for (auto& pairId : passed_pairIds) {
+    for (const auto& pairId : passed_pairIds) {
       auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
       auto t2 = tracks.rawIteratorAt(std::get<1>(pairId));
       // LOGF(info, "std::get<0>(pairId) = %d, std::get<1>(pairId) = %d, t1.globalIndex() = %d, t2.globalIndex() = %d", std::get<0>(pairId), std::get<1>(pairId), t1.globalIndex(), t2.globalIndex());
 
       float n = 1.f; // include myself.
-      for (auto& ambId1 : t1.ambiguousElectronsIds()) {
-        for (auto& ambId2 : t2.ambiguousElectronsIds()) {
+      for (const auto& ambId1 : t1.ambiguousElectronsIds()) {
+        for (const auto& ambId2 : t2.ambiguousElectronsIds()) {
           if (std::find(passed_pairIds.begin(), passed_pairIds.end(), std::make_pair(ambId1, ambId2)) != passed_pairIds.end()) {
             // LOGF(info, "repeated pair is found. t1.globalIndex() = %d, t2.globalIndex() = %d, ambId1 = %d, ambId2 = %d", t1.globalIndex(), t2.globalIndex(), ambId1, ambId2);
             n += 1.f;
@@ -1415,11 +1414,11 @@ struct PhotonHBT {
   Partition<FilteredMyTracks> positrons = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<FilteredMyTracks> electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
 
-  using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
+  using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMPair>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
-  std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
-  std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
+  std::vector<int> used_photonIds_per_col;                   // <trackId>
+  std::vector<std::pair<int, int>> used_dileptonIds_per_col; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   SliceCache cache;
