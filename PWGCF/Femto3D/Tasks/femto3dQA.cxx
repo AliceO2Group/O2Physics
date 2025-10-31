@@ -197,7 +197,7 @@ struct QAHistograms {
     }
 
     for (const auto& track : tracks) {
-      if (track.sign()!=_sign)
+      if (track.sign() != _sign)
         continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<ColsType>().isNoSameBunchPileup())
         continue;
