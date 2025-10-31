@@ -279,8 +279,8 @@ class PairHistManager
   {
     mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
-    mPdgAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
-    mPdgReducedMass = 2 * (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
+    mAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
+    mReducedMass = 2.f * (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
@@ -497,16 +497,16 @@ class PairHistManager
   {
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
-        mMt = std::hypot(PairMomentum.Pt() / 2.f, mPdgAverageMass);
+        mMt = std::hypot(PairMomentum.Pt() / 2.f, mAverageMass);
         break;
       case modes::TransverseMassType::kReducedPdgMass:
-        mMt = std::hypot(PairMomentum.Pt() / 2.f, mPdgReducedMass);
+        mMt = std::hypot(PairMomentum.Pt() / 2.f, mReducedMass);
         break;
       case modes::TransverseMassType::kMt4Vector:
         mMt = PairMomentum.Mt() / 2.f;
         break;
       default:
-        mMt = std::hypot(mKt, mPdgAverageMass);
+        mMt = std::hypot(mKt, mAverageMass);
     }
   }
 
@@ -515,8 +515,8 @@ class PairHistManager
   float mPdgMass2 = 0.f;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  float mPdgAverageMass = 0.f;
-  float mPdgReducedMass = 0.f;
+  float mAverageMass = 0.f;
+  float mReducedMass = 0.f;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
