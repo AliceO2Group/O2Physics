@@ -66,9 +66,15 @@ enum class System : uint32_t {
 };
 
 enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
-  kPt,    // transverse momentum
-  kPAtPv, // momentum at primary vertex
-  kPTpc,  // momentum at inner wall of tpc
+  kPt = 0,    // transverse momentum
+  kPAtPv = 1, // momentum at primary vertex
+  kPTpc = 2,  // momentum at inner wall of tpc
+};
+
+enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
+  kAveragePdgMass = 0,
+  kReducedPdgMass = 1,
+  kMt4Vector = 2
 };
 
 enum class Particle : o2::aod::femtodatatypes::ParticleType {
