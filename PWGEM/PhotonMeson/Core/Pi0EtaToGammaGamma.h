@@ -77,7 +77,7 @@ struct Pi0EtaToGammaGamma {
   o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 198, "difference in global BC required in mixed events"};
+  o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
 
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -649,11 +649,11 @@ struct Pi0EtaToGammaGamma {
           }
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(-1, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
             used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(-1, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g2.pt(), g2.eta(), g2.phi(), 0));
             used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
           ndiphoton++;
@@ -700,11 +700,11 @@ struct Pi0EtaToGammaGamma {
 
             std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.trackId(), ele2.trackId());
             if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-              emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(-1, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
+              emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
               used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
             if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
-              emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(-1, -1, collision.globalIndex(), -1, v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
+              emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
               used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
@@ -728,11 +728,11 @@ struct Pi0EtaToGammaGamma {
           fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), weight);
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(-1, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
             used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
-            emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(-1, g2.globalIndex(), collision.globalIndex(), -1, g2.pt(), g2.eta(), g2.phi(), 0));
+            emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g2.pt(), g2.eta(), g2.phi(), 0));
             used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
           ndiphoton++;

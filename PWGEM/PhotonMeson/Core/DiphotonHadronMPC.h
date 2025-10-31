@@ -603,17 +603,17 @@ struct DiphotonHadronMPC {
           if (npair > 0) {
             std::tuple<int, int, int> tuple_tmp_diphoton = std::make_tuple(g1.globalIndex(), g2.globalIndex(), -1);
             if (std::find(used_diphotonIds_per_col.begin(), used_diphotonIds_per_col.end(), tuple_tmp_diphoton) == used_diphotonIds_per_col.end()) {
-              emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, v12.Pt(), v12.Eta(), v12.Phi(), v12.M()));
+              emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(v12.Pt(), v12.Eta(), v12.Phi(), v12.M()));
               used_diphotonIds_per_col.emplace_back(tuple_tmp_diphoton);
             }
           }
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
             used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(g2.pt(), g2.eta(), g2.phi(), 0));
             used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
           ndiphoton++;
@@ -679,18 +679,18 @@ struct DiphotonHadronMPC {
             if (npair > 0) {
               std::tuple<int, int, int> tuple_tmp_diphoton = std::make_tuple(g1.globalIndex(), pos2.trackId(), ele2.trackId());
               if (std::find(used_diphotonIds_per_col.begin(), used_diphotonIds_per_col.end(), tuple_tmp_diphoton) == used_diphotonIds_per_col.end()) {
-                emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, veeg.Pt(), veeg.Eta(), veeg.Phi(), veeg.M()));
+                emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(veeg.Pt(), veeg.Eta(), veeg.Phi(), veeg.M()));
                 used_diphotonIds_per_col.emplace_back(tuple_tmp_diphoton);
               }
             }
 
             std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.trackId(), ele2.trackId());
             if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-              emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
+              emh1->AddTrackToEventPool(key_df_collision, EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
               used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
             if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
-              emh2->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
+              emh2->AddTrackToEventPool(key_df_collision, EMTrack(v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
               used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
@@ -711,7 +711,7 @@ struct DiphotonHadronMPC {
           if (fEMTrackCut.IsSelected(track)) {
             fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
             fRegistry.fill(HIST("Hadron/hTrackBit"), track.trackBit());
-            emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
+            emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(track.pt(), track.eta(), track.phi(), 0.139));
           }
         }
 
