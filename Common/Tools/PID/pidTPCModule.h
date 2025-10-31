@@ -93,6 +93,7 @@ struct pidTPCConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   o2::framework::Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
   o2::framework::Configurable<int> skipTPCOnly{"skipTPCOnly", -1, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks). 0: do not skip, 1: skip, -1: check if needed by specific tasks"};
+  o2::framework::Configurable<std::vector<std::string>> devicesRequiringTPCOnlyPID{"devicesRequiringTPCOnlyPID", std::vector<std::string>{"photon-conversion-builder"}, "List of device names of tasks requiring TPC-only tracks to have TPC PID calculated"};
   o2::framework::Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   o2::framework::Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
   o2::framework::Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
@@ -250,6 +251,11 @@ class pidTPCModule
       LOGF(info, " the skipTPConly flag has a value of -1! ");
       LOGF(info, " ---> autodetecting TPC-only track necessity now ");
       LOGF(info, "***************************************************");
+      // print list of devices that are being checked for
+      for (std::size_t devIdx{0}; devIdx < pidTPCopts.devicesRequiringTPCOnlyPID->size(); devIdx++) {
+        LOGF(info, "Will search for #%i device requiring TPC PID for TPC only: %s", devIdx, pidTPCopts.devicesRequiringTPCOnlyPID->at(devIdx));
+      }
+      LOGF(info, "***************************************************");
 
       // assume that TPC tracks are not needed, but check if tasks
       // requiring them are present in the chain
@@ -274,18 +280,10 @@ class pidTPCModule
           }
         }
 
-        // if extra tasks require TPC PID for TPC-only tracks and enabling is to be automatic,
-        // this is the place where one should add the conditionals.
-        //
-        // note: this should be the device name (the name that gets printed in the
-        // logs when executing the task) and it is sufficient to just extend this array
-        // with the corresponding string.
-        std::vector<std::string> devicesRequiringTPCOnlyPID = {"photon-conversion-builder"};
-
-        // Check 2: specific tasks that require TPC PID
-        for (const std::string& requiringDevice : devicesRequiringTPCOnlyPID) {
-          if (device.name.compare(requiringDevice) == 0) {
-            LOGF(info, " ---> %s detected! ", requiringDevice);
+        // Check 2: specific tasks that require TPC PID based on configurable
+        for (std::size_t devIdx{0}; devIdx < pidTPCopts.devicesRequiringTPCOnlyPID->size(); devIdx++) {
+          if (device.name.compare(pidTPCopts.devicesRequiringTPCOnlyPID->at(devIdx)) == 0) {
+            LOGF(info, " ---> %s detected! ", pidTPCopts.devicesRequiringTPCOnlyPID->at(devIdx));
             LOGF(info, " ---> enabling TPC only track TPC PID calculations now.");
             pidTPCopts.skipTPCOnly.value = 0;
           }
@@ -387,12 +385,16 @@ class pidTPCModule
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << time << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
         o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(pidTPCopts.cfgPathGrpLhcIf.value, time);
-        LOG(info) << " collision type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
-        collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
-        if (collsys == CollisionSystemType::kCollSyspp) {
-          irSource = std::string("T0VTX");
+        if (grpo) {
+          LOG(info) << " collision type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          if (collsys == CollisionSystemType::kCollSyspp) {
+            irSource = std::string("T0VTX");
+          } else {
+            irSource = std::string("ZNC hadronic");
+          }
         } else {
-          irSource = std::string("ZNC hadronic");
+          LOGF(info, "No grpo object found. irSource will remain undefined.");
         }
         response->PrintAll();
       }
@@ -469,12 +471,16 @@ class pidTPCModule
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
         o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(pidTPCopts.cfgPathGrpLhcIf.value, bc.timestamp());
-        LOG(info) << "Collision type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
-        collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
-        if (collsys == CollisionSystemType::kCollSyspp) {
-          irSource = std::string("T0VTX");
+        if (grpo) {
+          LOG(info) << "Collision type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          if (collsys == CollisionSystemType::kCollSyspp) {
+            irSource = std::string("T0VTX");
+          } else {
+            irSource = std::string("ZNC hadronic");
+          }
         } else {
-          irSource = std::string("ZNC hadronic");
+          LOGF(info, "No grpo object found. irSource will remain undefined.");
         }
         response->PrintAll();
       }
@@ -515,11 +521,19 @@ class pidTPCModule
     size_t i = 0;
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<B>();
-      hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+      if (irSource.compare("") != 0) {
+        hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+      } else {
+        hadronicRateForCollision[i] = 0.0f;
+      }
       i++;
     }
     auto bc = bcs.begin();
-    hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
+    if (irSource.compare("") != 0) {
+      hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
+    } else {
+      hadronicRateBegin = 0.0f;
+    }
 
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
@@ -742,11 +756,19 @@ class pidTPCModule
       size_t i = 0;
       for (const auto& collision : cols) {
         const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
-        hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+        if (irSource.compare("") != 0) {
+          hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+        } else {
+          hadronicRateForCollision[i] = 0.0f;
+        }
         i++;
       }
       auto bc = bcs.begin();
-      hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
+      if (irSource.compare("") != 0) {
+        hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
+      } else {
+        hadronicRateBegin = 0.0f;
+      }
     }
 
     for (auto const& trk : tracks) {
@@ -854,12 +876,16 @@ class pidTPCModule
         }
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(pidTPCopts.cfgPathGrpLhcIf.value, bc.timestamp());
-        LOG(info) << "Collisions type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
-        collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
-        if (collsys == CollisionSystemType::kCollSyspp) {
-          irSource = std::string("T0VTX");
+        if (grpo) {
+          LOG(info) << "Collisions type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          if (collsys == CollisionSystemType::kCollSyspp) {
+            irSource = std::string("T0VTX");
+          } else {
+            irSource = std::string("ZNC hadronic");
+          }
         } else {
-          irSource = std::string("ZNC hadronic");
+          LOGF(info, "No grpo object found. irSource will remain undefined.");
         }
         response->PrintAll();
       }
