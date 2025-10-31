@@ -182,7 +182,7 @@ struct HfCorrelatorHfeHadrons {
       return;
     }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<BcType>();
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
