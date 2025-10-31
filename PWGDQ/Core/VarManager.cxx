@@ -736,15 +736,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonTimeRes] = "ns";
   fgVariableNames[kMCPdgCode] = "MC PDG code";
   fgVariableUnits[kMCPdgCode] = "";
-  /////
   fgVariableNames[kMCCosTheta] = "Cos#theta";
   fgVariableUnits[kMCCosTheta] = "";
   fgVariableNames[kMCHadronPdgCode] = "HadronPdgCode";
   fgVariableUnits[kMCHadronPdgCode] = "";
-  fgVariableNames[kMCCosChi_pion] = "Cos#chi";
-  fgVariableUnits[kMCCosChi_pion] = "";
-  fgVariableNames[kMCCosChi_hadron] = "Cos#chi";
-  fgVariableUnits[kMCCosChi_hadron] = "";
+  fgVariableNames[kMCCosChi] = "Cos#chi";
+  fgVariableUnits[kMCCosChi] = "";
   fgVariableNames[kMCJpsiPt] = "Jpsi p_{T}";
   fgVariableUnits[kMCJpsiPt] = "GeV/c";
   fgVariableNames[kMCHadronPt] = "Hadron p_{T}";
@@ -757,7 +754,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCdeltaeta] = "";
   fgVariableNames[kNhadron] = "N_{hadron}";
   fgVariableUnits[kNhadron] = "";
-  /////
   fgVariableNames[kMCParticleWeight] = "MC particle weight";
   fgVariableUnits[kMCParticleWeight] = "";
   fgVariableNames[kMCPx] = "MC px";
@@ -1725,16 +1721,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMuonNAssocsOutOfBunch"] = kMuonNAssocsOutOfBunch;
   fgVarNamesMap["kNMuonTrackVariables"] = kNMuonTrackVariables;
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
-  //////
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
-  fgVarNamesMap["kMCCosChi_pion"] = kMCCosChi_pion;
-  fgVarNamesMap["kMCCosChi_hadron"] = kMCCosChi_hadron;
+  fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCCosChi_minus"] = kMCCosChi_minus;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
-
-  /////
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
   fgVarNamesMap["kMCPx"] = kMCPx;
   fgVarNamesMap["kMCPy"] = kMCPy;

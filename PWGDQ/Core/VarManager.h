@@ -159,6 +159,12 @@ class VarManager : public TObject
     kNMaxCandidateTypes
   };
 
+  enum HadronMassCandidateType {
+    // The mass of the associated hadron
+    kRealHadronMass = 0, // using the real hadron mass
+    kTreatAsPion         // treat the hadron as pion
+  };
+
   enum BarrelTrackFilteringBits {
     kIsConversionLeg = 0,     // electron from conversions
     kIsK0sLeg,                // pion from K0s
@@ -617,19 +623,17 @@ class VarManager : public TObject
     kMCY,
     kMCParticleGeneratorId,
     kNMCParticleVariables,
-    kMCHadronPdgCode, ////
+    kMCHadronPdgCode,
     kMCCosTheta,
-    kMCJpsiPt, ///
-    kMCCosChi_pion,
-    kMCCosChi_hadron,
+    kMCJpsiPt,
+    kMCCosChi,
     kMCdeltaphi,
     kMCdeltaeta,
     kMCHadronPt,
     kMCHadronEta,
-    kMCWeight_pion,
-    kMCWeight_hadron,
+    kMCWeight,
     kNhadron,
-    kMCCosChi_minus, /////
+    kMCCosChi_minus,
     kMCCosTheta_minus,
     kMCWeight_minus,
     kMCCosChi_toward_minus,
@@ -1152,7 +1156,7 @@ class VarManager : public TObject
   static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
-  template <typename T, typename T1>
+  template <int massType, typename T, typename T1>
   static void FillEnergyCorrelators(T const& track, T1 const& t1, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
@@ -2074,7 +2078,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
-    values[kMCEventCentrFT0C] = event.centFT0C();
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
@@ -2822,26 +2825,26 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   FillTrackDerived(values);
 }
 
-template <typename T, typename T1>
+template <int massType, typename T, typename T1>
 void VarManager::FillEnergyCorrelators(T const& track, T1 const& t1, float* values)
 {
   // energy correlators
-  float p2 = t1.p();
-  float E_hadron = t1.e();
-  float MassPion = o2::constants::physics::MassPionCharged;
-  float MassHadron = TMath::Sqrt(E_hadron * E_hadron - p2 * p2);
+  float MassHadron;
+  if constexpr (massType == kRealHadronMass) {
+    MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
+    ;
+  }
+  if constexpr (massType == kTreatAsPion) {
+    MassHadron = o2::constants::physics::MassPionCharged;
+  }
   ROOT::Math::PtEtaPhiMVector v1(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
   float deltaphi = RotationDeltaPhi(track.phi() - t1.phi());
   float deltaeta = t1.eta() - track.eta();
-  ROOT::Math::PtEtaPhiMVector v2_pion(t1.pt(), t1.eta(), t1.phi(), MassPion);
-  ROOT::Math::PtEtaPhiMVector v2_hadron(t1.pt(), t1.eta(), t1.phi(), MassHadron);
-  float E_boost_pion = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_pion);
-  float E_boost_hadron = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron);
-  float CosChi_pion = LorentzTransformJpsihadroncosChi("coschi", v1, v2_pion);
-  float CosChi_hadron = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron);
-  float CosTheta = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron);
-  values[kMCCosChi_pion] = CosChi_pion;
-  values[kMCCosChi_hadron] = CosChi_hadron;
+  ROOT::Math::PtEtaPhiMVector v2(t1.pt(), t1.eta(), t1.phi(), MassHadron);
+  float E_boost = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2);
+  float CosChi = LorentzTransformJpsihadroncosChi("coschi", v1, v2);
+  float CosTheta = LorentzTransformJpsihadroncosChi("costheta", v1, v2);
+  values[kMCCosChi] = CosChi;
   values[kMCWeight_before] = t1.pt() / o2::constants::physics::MassJPsi;
   values[kMCCosTheta] = CosTheta;
   values[kMCdeltaphi] = deltaphi;
@@ -2849,8 +2852,7 @@ void VarManager::FillEnergyCorrelators(T const& track, T1 const& t1, float* valu
   values[kMCHadronPt] = t1.pt();
   values[kMCHadronEta] = t1.eta();
   values[kMCHadronPdgCode] = t1.pdgCode();
-  values[kMCWeight_pion] = E_boost_pion / o2::constants::physics::MassJPsi;
-  values[kMCWeight_hadron] = E_boost_hadron / o2::constants::physics::MassJPsi;
+  values[kMCWeight] = E_boost / o2::constants::physics::MassJPsi;
   values[kMCCosChi_minus] = -999.9f;
   values[kMCCosTheta_minus] = -999.9f;
   values[kMCCosChi_toward_minus] = -999.9f;
@@ -2866,24 +2868,24 @@ void VarManager::FillEnergyCorrelators(T const& track, T1 const& t1, float* valu
 
   if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -0.25 * TMath::Pi()) || (deltaphi > 1.25 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi())) {
 
-    values[kMCCosChi_minus] = CosChi_hadron;
+    values[kMCCosChi_minus] = CosChi;
     values[kMCCosTheta_minus] = CosTheta;
-    values[kMCWeight_minus] = E_boost_hadron / o2::constants::physics::MassJPsi;
+    values[kMCWeight_minus] = E_boost / o2::constants::physics::MassJPsi;
 
-    ROOT::Math::PtEtaPhiMVector v2_hadron_toward_minus(t1.pt(), t1.eta(), t1.phi() - 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_toward_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron_toward_minus);
-    values[kMCCosTheta_toward_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron_toward_minus);
-    values[kMCWeight_toward_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron_toward_minus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_toward_minus(t1.pt(), t1.eta(), t1.phi() - 0.5 * TMath::Pi(), MassHadron);
+    values[kMCCosChi_toward_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_toward_minus);
+    values[kMCCosTheta_toward_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_toward_minus);
+    values[kMCWeight_toward_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_toward_minus) / o2::constants::physics::MassJPsi;
 
-    ROOT::Math::PtEtaPhiMVector v2_hadron_away_minus(t1.pt(), t1.eta(), t1.phi() + 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_away_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron_away_minus);
-    values[kMCCosTheta_away_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron_away_minus);
-    values[kMCWeight_away_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron_away_minus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_away_minus(t1.pt(), t1.eta(), t1.phi() + 0.5 * TMath::Pi(), MassHadron);
+    values[kMCCosChi_away_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_away_minus);
+    values[kMCCosTheta_away_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_away_minus);
+    values[kMCWeight_away_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_away_minus) / o2::constants::physics::MassJPsi;
 
-    ROOT::Math::PtEtaPhiMVector v2_hadron_trans_minus(t1.pt(), t1.eta(), t1.phi() + TMath::Pi(), MassHadron);
-    values[kMCCosChi_trans_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron_trans_minus);
-    values[kMCCosTheta_trans_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron_trans_minus);
-    values[kMCWeight_trans_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron_trans_minus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_trans_minus(t1.pt(), t1.eta(), t1.phi() + TMath::Pi(), MassHadron);
+    values[kMCCosChi_trans_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_trans_minus);
+    values[kMCCosTheta_trans_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_trans_minus);
+    values[kMCWeight_trans_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_trans_minus) / o2::constants::physics::MassJPsi;
 
     values[kMCdeltaphi_minus] = deltaphi;
     values[kMCdeltaphi_toward_minus] = RotationDeltaPhi(track.phi() - (t1.phi() - 0.5 * TMath::Pi()));
@@ -2905,24 +2907,24 @@ void VarManager::FillEnergyCorrelators(T const& track, T1 const& t1, float* valu
   values[kMCdeltaphi_trans_plus] = -999.9f;
 
   if (deltaphi > 0.25 * TMath::Pi() && deltaphi < 0.75 * TMath::Pi()) {
-    values[kMCCosChi_plus] = CosChi_hadron;
+    values[kMCCosChi_plus] = CosChi;
     values[kMCCosTheta_plus] = CosTheta;
-    values[kMCWeight_plus] = E_boost_hadron / o2::constants::physics::MassJPsi;
+    values[kMCWeight_plus] = E_boost / o2::constants::physics::MassJPsi;
 
-    ROOT::Math::PtEtaPhiMVector v2_hadron_toward_plus(t1.pt(), t1.eta(), t1.phi() + 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_toward_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron_toward_plus);
-    values[kMCCosTheta_toward_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron_toward_plus);
-    values[kMCWeight_toward_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron_toward_plus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_toward_plus(t1.pt(), t1.eta(), t1.phi() + 0.5 * TMath::Pi(), MassHadron);
+    values[kMCCosChi_toward_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_toward_plus);
+    values[kMCCosTheta_toward_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_toward_plus);
+    values[kMCWeight_toward_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_toward_plus) / o2::constants::physics::MassJPsi;
 
-    ROOT::Math::PtEtaPhiMVector v2_hadron_away_plus(t1.pt(), t1.eta(), t1.phi() - 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_away_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron_away_plus);
-    values[kMCCosTheta_away_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron_away_plus);
-    values[kMCWeight_away_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron_away_plus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_away_plus(t1.pt(), t1.eta(), t1.phi() - 0.5 * TMath::Pi(), MassHadron);
+    values[kMCCosChi_away_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_away_plus);
+    values[kMCCosTheta_away_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_away_plus);
+    values[kMCWeight_away_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_away_plus) / o2::constants::physics::MassJPsi;
 
-    ROOT::Math::PtEtaPhiMVector v2_hadron_trans_plus(t1.pt(), t1.eta(), t1.phi() + TMath::Pi(), MassHadron);
-    values[kMCCosChi_trans_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_hadron_trans_plus);
-    values[kMCCosTheta_trans_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_hadron_trans_plus);
-    values[kMCWeight_trans_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_hadron_trans_plus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_trans_plus(t1.pt(), t1.eta(), t1.phi() + TMath::Pi(), MassHadron);
+    values[kMCCosChi_trans_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_trans_plus);
+    values[kMCCosTheta_trans_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_trans_plus);
+    values[kMCWeight_trans_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_trans_plus) / o2::constants::physics::MassJPsi;
 
     values[kMCdeltaphi_plus] = deltaphi;
     values[kMCdeltaphi_toward_plus] = RotationDeltaPhi(track.phi() - (t1.phi() + 0.5 * TMath::Pi()));
@@ -4524,16 +4526,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[VarManager::kPairMassDau] = v12.M();
       values[VarManager::kPairPtDau] = v12.Pt();
     }
-    if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kPhiDau] || fgUsedVars[kEtaDau]) {
-      values[VarManager::kCosTheta] = LorentzTransformJpsihadroncosChi("costheta", v12, v3);
-      values[VarManager::kEWeight_before] = v3.Pt() / v12.M();
-      values[VarManager::kPtDau] = v3.Pt();
-      values[VarManager::kEtaDau] = v3.Eta();
-      values[VarManager::kPhiDau] = v3.Phi();
-      float E_boost = LorentzTransformJpsihadroncosChi("weight_boost", v12, v3);
-      values[VarManager::kCosChi] = LorentzTransformJpsihadroncosChi("coschi", v12, v3);
-      values[VarManager::kECWeight] = E_boost / v12.M();
-    }
     values[VarManager::kPt] = track.pt();
     values[kS12] = (v1 + v2).M2();
     values[kS13] = (v1 + v3).M2();
@@ -5222,7 +5214,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values = fgValues;
   }
 
-  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi] || fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau] || fgUsedVars[kDileptonHadronKstar] || fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau]) {
+  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi] || fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau] || fgUsedVars[kDileptonHadronKstar]) {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
     ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), hadronMass);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -5239,11 +5231,18 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     double Pinv = v12.M();
     double Q1 = (dilepton.mass() * dilepton.mass() - hadronMass * hadronMass) / Pinv;
     values[kDileptonHadronKstar] = sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
+  }
+  if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau]) {
+    ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
+    ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
     values[kCosChi] = LorentzTransformJpsihadroncosChi("coschi", v1, v2);
     float E_boost = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2);
     values[kECWeight] = E_boost / v1.M();
     values[kCosTheta] = LorentzTransformJpsihadroncosChi("costheta", v1, v2);
     values[kEWeight_before] = v2.Pt() / v1.M();
+    values[kPtDau] = v2.pt();
+    values[kEtaDau] = v2.eta();
+    values[kPhiDau] = v2.phi();
   }
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();
@@ -5832,29 +5831,23 @@ void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
 template <typename T1, typename T2>
 float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1, T2 const& v2)
 {
-  float value = -999;
-  float p1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
-  float p2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
-  float beta = p1 / v1.E();
-  float gamma = 1.0 / TMath::Sqrt(1 - beta * beta);
-  float nx = v1.Px() / p1;
-  float ny = v1.Py() / p1;
-  float nz = v1.Pz() / p1;
-  float px_boost = (-gamma * beta * nx) * v2.E() + (1 + (gamma - 1) * nx * nx) * v2.Px() + ((gamma - 1) * nx * ny) * v2.Py() + ((gamma - 1) * nx * nz) * v2.Pz();
-  float py_boost = (-gamma * beta * ny) * v2.E() + ((gamma - 1) * ny * nx) * v2.Px() + (1 + (gamma - 1) * ny * ny) * v2.Py() + ((gamma - 1) * ny * nz) * v2.Pz();
-  float pz_boost = (-gamma * beta * nz) * v2.E() + ((gamma - 1) * nz * nx) * v2.Px() + ((gamma - 1) * nz * ny) * v2.Py() + (1 + (gamma - 1) * nz * nz) * v2.Pz();
-  float p_boost = TMath::Sqrt(px_boost * px_boost + py_boost * py_boost + pz_boost * pz_boost);
-
+  float value = -999.0f;
+  auto beta_v1 = v1.BoostToCM();
+  ROOT::Math::Boost boostv1{beta_v1};
+  auto v2_boost = boostv1(v2);
+  auto p_v1_lab = v1.Vect();
+  float p1_lab = p_v1_lab.R();
   if (Option == "coschi") {
-    value = (px_boost * v1.Px() + py_boost * v1.Py() + pz_boost * v1.Pz()) / (p1 * p_boost);
+    auto p_v2_boost = v2_boost.Vect();
+    float p_boost = p_v2_boost.R();
+    value = p_v2_boost.Dot(p_v1_lab) / (p1_lab * p_boost);
+  } else if (Option == "costheta") {
+    auto p_v2_lab = v2.Vect();
+    float p2_lab = p_v2_lab.R();
+    value = p_v1_lab.Dot(p_v2_lab) / (p1_lab * p2_lab);
+  } else if (Option == "weight_boost") {
+    value = v2_boost.E();
   }
-  if (Option == "costheta") {
-    value = (v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / (p1 * p2);
-  }
-  if (Option == "weight_boost") {
-    value = gamma * (v2.E() - v1.Px() / v1.E() * v2.Px() - v1.Py() / v1.E() * v2.Py() - v1.Pz() / v1.E() * v2.Pz());
-  }
-
   return value;
 }
 
