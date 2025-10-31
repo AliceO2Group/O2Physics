@@ -157,7 +157,6 @@ struct LongrangeMaker {
   Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.3f, "Minimum pt to use TOF N-sigma"};
   Configurable<bool> isUseItsPid{"isUseItsPid", false, "Use ITS PID for particle identification"};
 
-  SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
   o2::ccdb::CcdbApi ccdbApi;
@@ -197,6 +196,8 @@ struct LongrangeMaker {
     x->SetBinLabel(9, "ApplyNoHighMultCollInPrevRof");
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    myTrackFilter.SetPtRange(cfgtrksel.cfgPtCutMin, cfgtrksel.cfgPtCutMax);
+    myTrackFilter.SetEtaRange(-cfgtrksel.cfgEtaCut, cfgtrksel.cfgEtaCut);
     myTrackFilter.SetMinNCrossedRowsTPC(cfgtrksel.minNCrossedRowsTPC);
     myTrackFilter.SetMinNClustersTPC(cfgtrksel.minTPCNClsFound);
     myTrackFilter.SetMaxDcaZ(cfgtrksel.maxDcaZ);
@@ -213,35 +214,30 @@ struct LongrangeMaker {
   Produces<aod::Ft0aLRTable> ft0aLRTable;
   Produces<aod::Ft0cLRTable> ft0cLRTable;
   Produces<aod::MftTrkLRTable> mftLRTable;
+  Produces<aod::MftBestTrkLRTable> mftbestLRTable;
   Produces<aod::V0TrkLRTable> v0LRTable;
 
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
-  Filter fMftTrackColID = (aod::fwdtrack::bestCollisionId >= 0);
-  Filter fMftTrackDca = (nabs(aod::fwdtrack::bestDCAXY) < cfgmfttrksel.cfigMftDcaxy);
 
   using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  using MftTrkTable = soa::Filtered<aod::MFTTracks>;
+  using MftTrkTable = aod::MFTTracks;
 
-  Preslice<TrksTable> perColGlobal = aod::track::collisionId;
-  Preslice<MftTrkTable> perColMft = aod::fwdtrack::collisionId;
-  Preslice<aod::V0Datas> perColV0 = aod::v0data::collisionId;
-
-  void process(CollTable::iterator const& col, TrksTable const& tracks, aod::FT0s const&, MftTrkTable const& mfttracks, aod::V0Datas const& V0s)
+  void process(CollTable::iterator const& col, TrksTable const& tracks, aod::FT0s const&, MftTrkTable const& mfttracks, soa::SmallGroups<aod::BestCollisionsFwd> const& retracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
     }
-    auto tracksInCollision = tracks.sliceBy(perColGlobal, col.globalIndex());
-    auto multiplicity = countNTracks(tracksInCollision);
+
+    auto multiplicity = countNTracks(tracks);
     auto centrality = selColCent(col);
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
 
     collisionLRTable(bc.runNumber(), col.posZ(), multiplicity, centrality, bc.timestamp());
 
     // track loop
-    for (const auto& track : tracksInCollision) {
+    for (const auto& track : tracks) {
       if (!track.isGlobalTrack())
         continue;
       if (!myTrackFilter.IsSelected(track))
@@ -275,8 +271,7 @@ struct LongrangeMaker {
     }
 
     // mft loop
-    auto mfttracksInCollision = mfttracks.sliceBy(perColMft, col.globalIndex());
-    for (const auto& track : mfttracksInCollision) {
+    for (const auto& track : mfttracks) {
       if (!isMftTrackSelected(track))
         continue;
       auto phi = track.phi();
@@ -284,9 +279,23 @@ struct LongrangeMaker {
       mftLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), phi);
     }
 
+    if (retracks.size() > 0) {
+      for (const auto& retrack : retracks) {
+        if (std::abs(retrack.bestDCAXY()) > cfgmfttrksel.cfigMftDcaxy) {
+          continue; // does not point to PV properly
+        }
+        auto track = retrack.mfttrack();
+        if (!isMftTrackSelected(track)) {
+          continue;
+        }
+        auto phi = track.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        mftbestLRTable(collisionLRTable.lastIndex(), track.pt(), track.eta(), phi);
+      }
+    }
+
     // v0 loop
-    auto v0tracksInCollision = V0s.sliceBy(perColV0, col.globalIndex());
-    for (const auto& v0 : v0tracksInCollision) {
+    for (const auto& v0 : V0s) {
       if (!isSelectV0Track(v0)) { // Quality selection for V0 prongs
         continue;
       }
