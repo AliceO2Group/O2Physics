@@ -255,16 +255,22 @@ struct nucleiQC {
     switch (iSpecies) {
       case nuclei::Species::kPr:
         candidate.flags |= nuclei::Flags::kProton;
+        break;
       case nuclei::Species::kDe:
         candidate.flags |= nuclei::Flags::kDeuteron;
+        break;
       case nuclei::Species::kTr:
         candidate.flags |= nuclei::Flags::kTriton;
+        break;
       case nuclei::Species::kHe:
         candidate.flags |= nuclei::Flags::kHe3;
+        break;
       case nuclei::Species::kAl:
         candidate.flags |= nuclei::Flags::kHe4;
+        break;
       default:
         candidate.flags |= 0;
+        break;
     }
 
     if (track.hasTOF())
