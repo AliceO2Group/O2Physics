@@ -507,7 +507,7 @@ class PairHistManager
         break;
       default:
         mMt = std::hypot(mKt, mPdgAverageMass);
-    };
+    }
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
