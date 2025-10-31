@@ -39,8 +39,8 @@ struct reducedMCeventConverter000_001 {
   {
     for (const auto& event : events) {
       reducedMCevent_001(event.generatorsID(), event.mcPosX(), event.mcPosY(), event.mcPosZ(),
-                         event.t(), event.weight(), event.impactParameter(),
-                         -1.0f, -1.0f, -1.0f);
+                      event.t(), event.weight(), event.impactParameter(), 
+                      -1.0f, -1.0f, -1.0f, -1.0f);
     }
   }
 };
