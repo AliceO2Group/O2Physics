@@ -165,7 +165,7 @@ namespace femtouniversecascparticle
 DECLARE_SOA_INDEX_COLUMN(FDParticle, fdParticle);
 DECLARE_SOA_COLUMN(DcaV0daughters, dcaV0daughters, float);     //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(Cpav0, cpav0, float);                       //! V0 cos of pointing angle
-DECLARE_SOA_COLUMN(V0radius, v0radius, float);                 //! V0 transverse radius*/
+DECLARE_SOA_COLUMN(V0radius, v0radius, float);                 //! V0 transverse radius
 DECLARE_SOA_COLUMN(CpaCasc, cpaCasc, float);                   //! cascade cosinus of pointing angle
 DECLARE_SOA_COLUMN(Dcacascdaughters, dcacascdaughters, float); //! DCA between cascade daughters
 DECLARE_SOA_COLUMN(Cascradius, cascradius, float);             //! cascade transverse radius
