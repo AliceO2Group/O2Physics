@@ -100,10 +100,8 @@ struct FemtoPairTrackV0 {
     trackhistmanager::PrefixV0NegDaughter1,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
-    closepairrejection::PrefixTrackV0SameChargeSe,
-    closepairrejection::PrefixTrackV0SameChargeMe,
-    closepairrejection::PrefixTrackV0OppositeChargeSe,
-    closepairrejection::PrefixTrackV0OppositeChargeMe,
+    closepairrejection::PrefixTrackV0DaughterSe,
+    closepairrejection::PrefixTrackV0DaughterMe,
     modes::Mode::kAnalysis,
     modes::V0::kLambda>
     pairTrackLambdaBuilder;
@@ -115,10 +113,8 @@ struct FemtoPairTrackV0 {
     trackhistmanager::PrefixV0NegDaughter1,
     pairhistmanager::PrefixTrackV0Se,
     pairhistmanager::PrefixTrackV0Me,
-    closepairrejection::PrefixTrackV0SameChargeSe,
-    closepairrejection::PrefixTrackV0SameChargeMe,
-    closepairrejection::PrefixTrackV0OppositeChargeSe,
-    closepairrejection::PrefixTrackV0OppositeChargeMe,
+    closepairrejection::PrefixTrackV0DaughterSe,
+    closepairrejection::PrefixTrackV0DaughterMe,
     modes::Mode::kAnalysis,
     modes::V0::kK0short>
     pairTrackK0shortBuilder;
@@ -135,7 +131,7 @@ struct FemtoPairTrackV0 {
   HistogramRegistry hRegistry{"FemtoTrackV0", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
-  closepairrejection::ConfCprTrackV0 confCpr;
+  closepairrejection::ConfCprTrackV0Daughter confCpr;
 
   void init(InitContext&)
   {
