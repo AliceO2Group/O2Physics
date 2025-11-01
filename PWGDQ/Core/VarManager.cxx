@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include "PWGDQ/Core/VarManager.h"
+
+#include "Tools/KFparticle/KFUtilities.h"
+
 #include <cmath>
 #include <iostream>
-#include <vector>
 #include <map>
-#include "PWGDQ/Core/VarManager.h"
-#include "Tools/KFparticle/KFUtilities.h"
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -29,7 +31,7 @@ bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
-float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
 int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
 int VarManager::fgITSROFBorderMarginLow = 0;
@@ -734,6 +736,24 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonTimeRes] = "ns";
   fgVariableNames[kMCPdgCode] = "MC PDG code";
   fgVariableUnits[kMCPdgCode] = "";
+  fgVariableNames[kMCCosTheta] = "Cos#theta";
+  fgVariableUnits[kMCCosTheta] = "";
+  fgVariableNames[kMCHadronPdgCode] = "HadronPdgCode";
+  fgVariableUnits[kMCHadronPdgCode] = "";
+  fgVariableNames[kMCCosChi] = "Cos#chi";
+  fgVariableUnits[kMCCosChi] = "";
+  fgVariableNames[kMCJpsiPt] = "Jpsi p_{T}";
+  fgVariableUnits[kMCJpsiPt] = "GeV/c";
+  fgVariableNames[kMCHadronPt] = "Hadron p_{T}";
+  fgVariableUnits[kMCHadronPt] = "GeV/c";
+  fgVariableNames[kMCHadronEta] = "Hadron #eta";
+  fgVariableUnits[kMCHadronEta] = "";
+  fgVariableNames[kMCdeltaphi] = "#Delta#phi";
+  fgVariableUnits[kMCdeltaphi] = "";
+  fgVariableNames[kMCdeltaeta] = "#Delta#eta";
+  fgVariableUnits[kMCdeltaeta] = "";
+  fgVariableNames[kNhadron] = "N_{hadron}";
+  fgVariableUnits[kNhadron] = "";
   fgVariableNames[kMCParticleWeight] = "MC particle weight";
   fgVariableUnits[kMCParticleWeight] = "";
   fgVariableNames[kMCPx] = "MC px";
@@ -1162,6 +1182,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhi] = "rad.";
   fgVariableNames[kDeltaPhiSym] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiSym] = "rad.";
+  fgVariableNames[kCosChi] = "Cos#chi";
+  fgVariableUnits[kCosChi] = "";
+  fgVariableNames[kCosTheta] = "Cos#theta";
+  fgVariableUnits[kCosTheta] = "";
+  fgVariableNames[kPtDau] = "hadron P_{T}";
+  fgVariableUnits[kPtDau] = "GeV/c";
+  fgVariableNames[kEtaDau] = "hadron #eta";
+  fgVariableUnits[kEtaDau] = "";
+  fgVariableNames[kPhiDau] = "hadron #phi";
+  fgVariableUnits[kPhiDau] = "";
   fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
   fgVariableNames[kPhiHE] = "#varphi_{HE}";
@@ -1691,6 +1721,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMuonNAssocsOutOfBunch"] = kMuonNAssocsOutOfBunch;
   fgVarNamesMap["kNMuonTrackVariables"] = kNMuonTrackVariables;
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
+  fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
+  fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
+  fgVarNamesMap["kMCCosChi"] = kMCCosChi;
+  fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
+  fgVarNamesMap["kMCCosChi_minus"] = kMCCosChi_minus;
+  fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
   fgVarNamesMap["kMCPx"] = kMCPx;
   fgVarNamesMap["kMCPy"] = kMCPy;
@@ -1896,6 +1932,13 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaEta"] = kDeltaEta;
   fgVarNamesMap["kDeltaPhi"] = kDeltaPhi;
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
+  fgVarNamesMap["kCosTheta"] = kCosTheta;
+  fgVarNamesMap["kCosChi"] = kCosChi;
+  fgVarNamesMap["kECWeight"] = kECWeight;
+  fgVarNamesMap["kEWeight_before"] = kEWeight_before;
+  fgVarNamesMap["kPtDau"] = kPtDau;
+  fgVarNamesMap["kEtaDau"] = kEtaDau;
+  fgVarNamesMap["kPhiDau"] = kPhiDau;
   fgVarNamesMap["kNCorrelationVariables"] = kNCorrelationVariables;
   fgVarNamesMap["kQuadMass"] = kQuadMass;
   fgVarNamesMap["kQuadDefaultDileptonMass"] = kQuadDefaultDileptonMass;
