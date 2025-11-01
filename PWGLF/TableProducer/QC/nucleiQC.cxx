@@ -9,15 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Nuclei spectra analysis task
-// ========================
-//
-// Executable + dependencies:
-//
-// Data (run3):
-// o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
-// o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
-// (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
+/// \brief TableProducer/Task for nuclei QC. The produced table can be disabled with a configurable.
+///
+/// \author Giorgio Alberto Lucia (giorgio.alberto.lucia@cern.ch)
+///
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
@@ -250,19 +245,33 @@ struct nucleiQC {
     } else {
       candidate.flags |= nuclei::Flags::kIsSecondaryFromMaterial;
     }
-
-    mFilledMcParticleIds.emplace_back(particle.globalIndex());
   }
 
   template <typename Tcollision, typename Ttrack>
   void fillNucleusFlagsPdgs(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate)
   {
     candidate.flags = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
-    candidate.flags |= iSpecies == nuclei::Species::kPr ? nuclei::Flags::kProton : iSpecies == nuclei::Species::kDe ? nuclei::Flags::kDeuteron
-                                                                                 : iSpecies == nuclei::Species::kTr ? nuclei::Flags::kTriton
-                                                                                 : iSpecies == nuclei::Species::kHe ? nuclei::Flags::kHe3
-                                                                                 : iSpecies == nuclei::Species::kAl ? nuclei::Flags::kHe4
-                                                                                                                    : 0;
+
+    switch (iSpecies) {
+      case nuclei::Species::kPr:
+        candidate.flags |= nuclei::Flags::kProton;
+        break;
+      case nuclei::Species::kDe:
+        candidate.flags |= nuclei::Flags::kDeuteron;
+        break;
+      case nuclei::Species::kTr:
+        candidate.flags |= nuclei::Flags::kTriton;
+        break;
+      case nuclei::Species::kHe:
+        candidate.flags |= nuclei::Flags::kHe3;
+        break;
+      case nuclei::Species::kAl:
+        candidate.flags |= nuclei::Flags::kHe4;
+        break;
+      default:
+        candidate.flags |= 0;
+        break;
+    }
 
     if (track.hasTOF())
       candidate.flags |= nuclei::Flags::kHasTOF;
@@ -414,11 +423,6 @@ struct nucleiQC {
         if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
           return;
 
-        nuclei::SlimCandidate candidate;
-        candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
-        if ((candidate.flags >> 10) & 0b1)
-          LOG(info) << "track from material before track selection";
-
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
         if (!trackSelection(track))
           return;
@@ -428,10 +432,11 @@ struct nucleiQC {
           return;
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
 
-        // nuclei::SlimCandidate candidate;
-        // candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
+        nuclei::SlimCandidate candidate;
+        candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
 
         mNucleiCandidates.emplace_back(candidate);
+        mFilledMcParticleIds.emplace_back(particle.globalIndex());
         dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
         dispatchFillHistograms</*isGenerated*/ false>(kSpeciesRt, candidate);
       });
@@ -442,10 +447,14 @@ struct nucleiQC {
     mcParticlesThisCollision.bindExternalIndices(&mcParticles);
 
     for (const auto& particle : mcParticlesThisCollision) {
+
       if (std::find(mFilledMcParticleIds.begin(), mFilledMcParticleIds.end(), particle.globalIndex()) != mFilledMcParticleIds.end())
         continue;
 
       if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
+        continue;
+
+      if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
         continue;
 
       int iSpecies = nuclei::getSpeciesFromPdg(particle.pdgCode());
@@ -457,6 +466,7 @@ struct nucleiQC {
       fillNucleusGeneratedVariables(particle, candidate);
 
       mNucleiCandidates.emplace_back(candidate);
+      mFilledMcParticleIds.emplace_back(particle.globalIndex());
       dispatchFillHistograms</*isGenerated*/ true>(iSpecies, candidate);
     }
 
