@@ -4227,6 +4227,9 @@ struct AnalysisDileptonTrack {
 
             for (auto& sig : fRecMCSignals) {
               if (sig->CheckSignal(true, track1, track2, track3)) {
+
+                VarManager::FillTripleMC<VarManager::kBtoJpsiEEK>(track1, track2, track3, VarManager::fgValues); // nb! hardcoded for jpsiK
+
                 fHistMan->FillHistClass(Form("MCTruthGenSelBR_%s", sig->GetName()), VarManager::fgValues);
 
                 // apply kinematic cuts
@@ -4332,9 +4335,15 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair");
     }
 
-    if (classStr.Contains("MCTruthGen")) {
+    if (classStr.Contains("MCTruthGenSelBR")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_triple");
+    } else if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
     }
+
+    //if (classStr.Contains("MCTruthGen")) {
+    //  dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
+    //}
 
     if (classStr.Contains("DileptonsSelected")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing");
