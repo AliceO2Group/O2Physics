@@ -84,9 +84,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
     Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-    Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-    Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-    Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0., "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0., "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0., "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<std::vector<float>> ConfCPRdeltaPhiCutMaxVector{"ConfCPRdeltaPhiCutMaxVector", std::vector<float>{0.0, 0.0, 0.0, 0.0}, "Delta Phi max cut for Close Pair Rejection"};
+    Configurable<std::vector<float>> ConfCPRdeltaPhiCutMinVector{"ConfCPRdeltaPhiCutMinVector", std::vector<float>{0.0, 0.0, 0.0, 0.0}, "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<std::vector<float>> ConfCPRdeltaEtaCutMaxVector{"ConfCPRdeltaEtaCutMaxVector", std::vector<float>{0.0, 0.0, 0.0, 0.0}, "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<std::vector<float>> ConfCPRdeltaEtaCutMinVector{"ConfCPRdeltaEtaCutMinVector", std::vector<float>{0.0, 0.0, 0.0, 0.0}, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<bool> confIsCPRkT{"confIsCPRkT", true, "kT dependent deltaEta-deltaPhi cut for Close Pair Rejection"};
     Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confUseCCImCut{"confUseCCImCut", false, "Fill SH within specific quadrants of qout-qside"};
     Configurable<bool> confUse1stand3rd{"confUse1stand3rd", false, "Use first and third quadrants of qout-qside"};
@@ -97,7 +102,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   // Filters for selecting particles (both p1 and p2)
   Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
   using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
-  // using FilteredFemtoFullParticles = FemtoFullParticles; //if no filtering is applied uncomment this option
+  // using FilteredFemtoFullParticles = FemtoFullParticles; //if no filtering is applied uncomment this optionconfIsCPRkT
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   using FilteredFemtoRecoParticles = soa::Filtered<FemtoRecoParticles>;
 
@@ -454,7 +459,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     pairCleaner.init(&qaRegistry);
     if (twotracksconfigs.ConfIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.ConfCPRdeltaPhiCutMin.value, twotracksconfigs.ConfCPRdeltaPhiCutMax.value, twotracksconfigs.ConfCPRdeltaEtaCutMin.value, twotracksconfigs.ConfCPRdeltaEtaCutMax.value, twotracksconfigs.ConfCPRChosenRadii.value, twotracksconfigs.ConfCPRPlotPerRadii.value);
-      pairCloseRejection.init_kT(&resultRegistry, ConfKtKstarBins);
+      pairCloseRejection.init_kT(&resultRegistry, ConfKtKstarBins, twotracksconfigs.ConfCPRdeltaPhiCutMaxVector, twotracksconfigs.ConfCPRdeltaPhiCutMinVector, twotracksconfigs.ConfCPRdeltaEtaCutMaxVector, twotracksconfigs.ConfCPRdeltaEtaCutMinVector);
     }
 
     vPIDPartOne = trackonefilter.ConfPIDPartOne.value;
@@ -520,14 +525,24 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
 
+        float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+        if (kT > ConfKtKstarBins.value.back() || kT < ConfKtKstarBins.value.front())
+          continue;
+
         if (twotracksconfigs.ConfIsCPR.value) {
           if (confCPRIsAtITS.value) {
             if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
               continue;
             }
           } else {
-            if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax, confIsCircularCut)) {
-              continue;
+            if (twotracksconfigs.confIsCPRkT) {
+              if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::same, kT, confIsCircularCut)) {
+                continue;
+              }
+            } else {
+              if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax, confIsCircularCut)) {
+                continue;
+              }
             }
           }
         }
@@ -536,7 +551,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
         sameEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
       }
     } else {
@@ -551,15 +565,23 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+        if (kT > ConfKtKstarBins.value.back() || kT < ConfKtKstarBins.value.front())
+          continue;
+
         if (twotracksconfigs.ConfIsCPR.value) {
-          pairCloseRejection.kTdetadphi(p1, p2, femto_universe_container::EventType::same, kT);
           if (confCPRIsAtITS.value) {
             if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
               continue;
             }
           } else {
-            if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax, confIsCircularCut)) {
-              continue;
+            if (twotracksconfigs.confIsCPRkT) {
+              if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::same, kT, confIsCircularCut)) {
+                continue;
+              }
+            } else {
+              if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax, confIsCircularCut)) {
+                continue;
+              }
             }
           }
         }
@@ -922,15 +944,23 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
+      if (kT > ConfKtKstarBins.value.back() || kT < ConfKtKstarBins.value.front())
+        continue;
+
       if (twotracksconfigs.ConfIsCPR.value) {
-        pairCloseRejection.kTdetadphi(p1, p2, femto_universe_container::EventType::mixed, kT);
         if (confCPRIsAtITS.value) {
           if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed)) {
             continue;
           }
         } else {
-          if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax, confIsCircularCut)) {
-            continue;
+          if (twotracksconfigs.confIsCPRkT) {
+            if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::mixed, kT, confIsCircularCut)) {
+              continue;
+            }
+          } else {
+            if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax, confIsCircularCut)) {
+              continue;
+            }
           }
         }
       }
