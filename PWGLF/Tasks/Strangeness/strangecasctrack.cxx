@@ -162,9 +162,8 @@ struct strangecasctrack {
         return efficiencyCCDBPath_pO;
       } else if (doProcessPbPb) {
         return efficiencyCCDBPath_PbPb;
-      } else {
-        return efficiencyCCDBPath_OO;
       }
+      return efficiencyCCDBPath_OO;
     }();
 
     TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
