@@ -63,13 +63,19 @@ struct HStrangeCorrelationFilter {
   Configurable<float> strangedEdxNSigmaLoose{"strangedEdxNSigmaLoose", 5, "Nsigmas for strange decay daughters"};
   Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 4, "Nsigmas for strange decay daughters"};
   Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
+  Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
   // used for event selections in Pb-Pb
   Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
   Configurable<int> cfgCutOccupancyLow{"cfgCutOccupancyLow", 0, "Low cut on TPC occupancy"};
 
-  // event filtering
-  Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
+  struct : ConfigurableGroup {
+    // event filtering
+    Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
+    Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
+    Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+  } eventSelections;
+
   struct : ConfigurableGroup {
     // Trigger particle selections in phase space
     Configurable<float> triggerEtaMin{"triggerEtaMin", -0.8, "triggeretamin"};
@@ -123,21 +129,17 @@ struct HStrangeCorrelationFilter {
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
 
     // cascade selections
-    Configurable<float> cascadeSettingCospa{"cascadeSettingCospa", 0.95, "cascadeSettingCospa"};
-    Configurable<float> cascadeSettingDcacascdau{"cascadeSettingDcacascdau", 1.0, "cascadeSettingDcacascdau"};
-    Configurable<float> cascadeSettingDcabachtopv{"cascadeSettingDcabachtopv", 0.1, "cascadeSettingDcabachtopv"};
-    Configurable<float> cascadeSettingCascradius{"cascadeSettingCascradius", 0.5, "cascadeSettingCascradius"};
-    Configurable<float> cascadeSettingV0masswindow{"cascadeSettingV0masswindow", 0.01, "cascadeSettingV0masswindow"};
-    Configurable<float> cascadeSettingMindcav0topv{"cascadeSettingMindcav0topv", 0.01, "cascadeSettingMindcav0topv"};
+    Configurable<float> cascCospa{"cascCospa", 0.95, "cascCospa"};
+    Configurable<float> cascRadius{"cascRadius", 0.5, "cascRadius"};
+    Configurable<float> dcaCascdau{"dcaCascdau", 1.0, "dcaCascdau"};
+    Configurable<float> dcaBachtopv{"dcaBachtopv", 0.1, "dcaBachtopv"};
+    Configurable<float> cascV0masswindow{"cascV0masswindow", 0.01, "cascV0masswindow"};
+    Configurable<float> cascMindcav0topv{"cascMindcav0topv", 0.01, "cascMindcav0topv"};
   } systCuts;
   struct : ConfigurableGroup {
     // cascade selections in PbPb
-    Configurable<float> cascCospa{"cascCospa", 0.95, "cascCospa"};
     Configurable<float> cascDcacascdau{"cascDcacascdau", 1.0, "cascDcacascdau"};
     Configurable<float> cascDcabachtopv{"cascDcabachtopv", 0.1, "cascDcabachtopv"};
-    Configurable<float> cascRadius{"cascRadius", 0.5, "cascRadius"};
-    Configurable<float> cascV0masswindow{"cascV0masswindow", 0.01, "cascV0masswindow"};
-    Configurable<float> cascMindcav0topv{"cascMindcav0topv", 0.01, "cascMindcav0topv"};
     Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
     Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.08, "DCA bachelor baryon to PV"};
     Configurable<float> dcaBaryonToPV{"dcaBaryonToPV", 0.05, "DCA of baryon doughter track To PV"};
@@ -178,7 +180,7 @@ struct HStrangeCorrelationFilter {
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > systCuts.dcaPostopv&&
                                                          nabs(aod::v0data::dcanegtopv) > systCuts.dcaNegtopv&& aod::v0data::dcaV0daughters < systCuts.dcaV0dau;
   Filter preFilterCascade =
-    nabs(aod::cascdata::dcapostopv) > systCuts.dcaPostopv&& nabs(aod::cascdata::dcanegtopv) > systCuts.dcaNegtopv&& nabs(aod::cascdata::dcabachtopv) > systCuts.cascadeSettingDcabachtopv&& aod::cascdata::dcaV0daughters < systCuts.dcaV0dau&& aod::cascdata::dcacascdaughters < systCuts.cascadeSettingCospa;
+    nabs(aod::cascdata::dcapostopv) > systCuts.dcaPostopv&& nabs(aod::cascdata::dcanegtopv) > systCuts.dcaNegtopv&& nabs(aod::cascdata::dcabachtopv) > systCuts.dcaBachtopv&& aod::cascdata::dcaV0daughters < systCuts.dcaV0dau&& aod::cascdata::dcacascdaughters < systCuts.dcaCascdau;
 
   // using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   // using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
@@ -308,6 +310,38 @@ struct HStrangeCorrelationFilter {
       hOmegaWidth = static_cast<TH1F*>(listParameters->FindObject("hOmegaWidth"));
     }
     LOG(info) << "parameters now loaded for " << mRunNumber;
+  }
+
+  // this function allows for all event selections to be done in a modular way
+  template <typename TCollision>
+  bool isCollisionSelected(TCollision const& collision)
+  {
+    // ________________________________________________
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return false;
+    }
+    if (std::abs(collision.posZ()) > eventSelections.zVertexCut) {
+      return false;
+    }
+    if (collision.centFT0M() > 100 || collision.centFT0M() < 0) {
+      return false;
+    }
+    if (!collision.isInelGt0() && eventSelections.selectINELgtZERO) {
+      return false;
+    }
+    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && eventSelections.requireAllGoodITSLayers) {
+      return false;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // more event selections in Pb-Pb
@@ -446,7 +480,7 @@ struct HStrangeCorrelationFilter {
     if (std::abs(casc.bachBaryonDCAxyToPV()) > MorePbPbsystCuts.bachBaryonDCAxyToPV)
       return false;
     // casccosPA
-    if (casc.casccosPA(pvx, pvy, pvz) < MorePbPbsystCuts.cascCospa)
+    if (casc.casccosPA(pvx, pvy, pvz) < systCuts.cascCospa)
       return false;
     // dcacascdaughters
     float ptDepCut = MorePbPbsystCuts.dcaCacsDauPar0;
@@ -463,7 +497,7 @@ struct HStrangeCorrelationFilter {
     if (std::abs(casc.dcav0topv(pvx, pvy, pvz)) < MorePbPbsystCuts.cascdcaV0ToPV)
       return false;
     // cascradius
-    if (casc.cascradius() < MorePbPbsystCuts.cascRadius)
+    if (casc.cascradius() < systCuts.cascRadius)
       return false;
     // v0radius
     if (casc.v0radius() < MorePbPbsystCuts.cascv0RadiusMin)
@@ -478,25 +512,13 @@ struct HStrangeCorrelationFilter {
   }
 
   // for real data processing
-  void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initParametersFromCCDB(bc);
-    // Perform basic event selection
-    if (!collision.sel8()) {
+    if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
-    }
-    // No need to correlate stuff that's in far collisions
-    if (std::abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    if (zorroMask.value != "") {
-      initCCDB(bc);
-      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return;
-      }
     }
 
     /// _________________________________________________
@@ -514,25 +536,13 @@ struct HStrangeCorrelationFilter {
   }
 
   // for MC processing
-  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initParametersFromCCDB(bc);
-    // Perform basic event selection
-    if (!collision.sel8()) {
+    if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
-    }
-    // No need to correlate stuff that's in far collisions
-    if (std::abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    if (zorroMask.value != "") {
-      initCCDB(bc);
-      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return;
-      }
     }
 
     /// _________________________________________________
@@ -671,28 +681,13 @@ struct HStrangeCorrelationFilter {
     }
   }
 
-  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& V0s, aod::BCsWithTimestamps const&)
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& V0s, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-    // Perform basic event selection
-    if (!collision.sel8()) {
+    if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
     }
-    // No need to correlate stuff that's in far collisions
-    if (std::abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    if (zorroMask.value != "") {
-      initCCDB(bc);
-      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return;
-      }
-    }
-    if (!doPPAnalysis && !isCollisionSelectedPbPb(collision))
-      return;
-
     /// _________________________________________________
     /// Populate table with associated V0s
     for (auto const& v0 : V0s) {
@@ -826,27 +821,13 @@ struct HStrangeCorrelationFilter {
     }
   }
 
-  void processV0sMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracksMC const&, soa::Filtered<V0DatasWithoutTrackXMC> const& V0s, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processV0sMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, DauTracksMC const&, soa::Filtered<V0DatasWithoutTrackXMC> const& V0s, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    // Perform basic event selection
-    if (!collision.sel8()) {
+    if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
     }
-    // No need to correlate stuff that's in far collisions
-    if (std::abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    if (zorroMask.value != "") {
-      initCCDB(bc);
-      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return;
-      }
-    }
-    if (!doPPAnalysis && !isCollisionSelectedPbPb(collision))
-      return;
     /// _________________________________________________
     /// Populate table with associated V0s
 
@@ -993,27 +974,13 @@ struct HStrangeCorrelationFilter {
     }
   }
 
-  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& /*V0s*/, soa::Filtered<aod::CascDatas> const& Cascades, aod::BCsWithTimestamps const&)
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& /*V0s*/, soa::Filtered<aod::CascDatas> const& Cascades, aod::BCsWithTimestamps const&)
   {
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    // Perform basic event selection
-    if (!collision.sel8()) {
+    if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
     }
-    // No need to correlate stuff that's in far collisions
-    if (std::abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    if (zorroMask.value != "") {
-      initCCDB(bc);
-      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return;
-      }
-    }
-    if (!doPPAnalysis && !isCollisionSelectedPbPb(collision))
-      return;
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
@@ -1023,6 +990,12 @@ struct HStrangeCorrelationFilter {
       if (casc.pt() > systCuts.assocPtCutMax || casc.pt() < systCuts.assocPtCutMin) {
         continue;
       }
+      if (doPPAnalysis && (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0Cospa ||
+                           casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.cascCospa ||
+                           casc.cascradius() < systCuts.cascRadius ||
+                           std::abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < systCuts.cascMindcav0topv ||
+                           std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > systCuts.cascV0masswindow))
+        continue;
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = casc.posTrack_as<DauTracks>();
       auto negTrackCast = casc.negTrack_as<DauTracks>();
@@ -1171,27 +1144,14 @@ struct HStrangeCorrelationFilter {
     }
   }
 
-  void processCascadesMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackXMC> const& /*V0s*/, soa::Filtered<CascDatasMC> const& Cascades, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processCascadesMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackXMC> const& /*V0s*/, soa::Filtered<CascDatasMC> const& Cascades, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     // Perform basic event selection
-    if (!collision.sel8()) {
+    if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
     }
-    // No need to correlate stuff that's in far collisions
-    if (std::abs(collision.posZ()) > 10.0) {
-      return;
-    }
-    if (zorroMask.value != "") {
-      initCCDB(bc);
-      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-      if (!zorroSelected) {
-        return;
-      }
-    }
-    if (!doPPAnalysis && !isCollisionSelectedPbPb(collision))
-      return;
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
@@ -1201,6 +1161,13 @@ struct HStrangeCorrelationFilter {
       if (casc.pt() > systCuts.assocPtCutMax || casc.pt() < systCuts.assocPtCutMin) {
         continue;
       }
+      if (doPPAnalysis && (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0Cospa ||
+                           casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.cascCospa ||
+                           casc.cascradius() < systCuts.cascRadius ||
+                           std::abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < systCuts.cascMindcav0topv ||
+                           std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > systCuts.cascV0masswindow))
+        continue;
+
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = casc.posTrack_as<DauTracks>();
       auto negTrackCast = casc.negTrack_as<DauTracks>();
