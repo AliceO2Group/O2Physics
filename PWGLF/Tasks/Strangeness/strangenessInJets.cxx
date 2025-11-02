@@ -75,7 +75,7 @@ using std::array;
 
 // Define convenient aliases for joined AOD tables
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCentFT0Ms, aod::McCollisionLabels>;
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -1429,9 +1429,9 @@ struct StrangenessInJets {
   PROCESS_SWITCH(StrangenessInJets, processMCgenerated, "process generated events", false);
 
   // Reconstructed MC events
-  void processMCreconstructed(SimCollisions const& collisions, DaughterTracksMC const& mcTracks,
-                              aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades,
-                              const aod::McParticles&)
+  void processMCreconstructed(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                              DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
+                              aod::CascDataExt const& Cascades, const aod::McParticles&)
   {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -1445,6 +1445,12 @@ struct StrangenessInJets {
 
     // Loop over reconstructed collisions
     for (const auto& collision : collisions) {
+
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
@@ -1466,7 +1472,7 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_rec"), 2.5);
 
       // Event multiplicity
-      const float multiplicity = collision.centFT0M();
+      const float multiplicity = mcCollision.centFT0M();
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
