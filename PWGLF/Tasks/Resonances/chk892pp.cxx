@@ -35,7 +35,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -684,7 +685,7 @@ struct Chk892pp {
 
     // Check bTrack first
     if (std::abs(motherbTrack.pdgCode()) != kKstarPlus) // Are you charged Kstar's daughter?
-      return false;                                // Apply first since it's more restrictive
+      return false;                                     // Apply first since it's more restrictive
 
     if (std::abs(motherkV0.pdgCode()) != kPDGK0s) // Is it K0s?
       return false;
