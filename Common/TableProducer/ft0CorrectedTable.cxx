@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 
@@ -102,4 +103,12 @@ struct ft0CorrectedTable {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<ft0CorrectedTable>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  o2::common::core::MetadataHelper metadataInfo;
+  metadataInfo.initMetadata(cfgc);
+  if (metadataInfo.isMC() && !metadataInfo.isCommitInSoftwareTag("63bc2e3893851ef0f849bb4c98c65eae1ba21e47")) {
+    LOG(fatal) << "This workflow should not be used with this AO2D. Use the MC override instead";
+  }
+  return WorkflowSpec{adaptAnalysisTask<ft0CorrectedTable>(cfgc)};
+}
