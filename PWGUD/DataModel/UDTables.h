@@ -21,7 +21,7 @@
 #ifndef PWGUD_DATAMODEL_UDTABLES_H_
 #define PWGUD_DATAMODEL_UDTABLES_H_
 
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoA.h"

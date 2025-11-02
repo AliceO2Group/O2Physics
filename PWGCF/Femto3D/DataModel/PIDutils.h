@@ -22,7 +22,6 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include "Common/DataModel/PIDResponse.h"
 
 namespace o2::aod::singletrackselector
 {

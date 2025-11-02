@@ -22,7 +22,6 @@
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Framework/Logger.h"
 #include "Common/DataModel/Multiplicity.h"

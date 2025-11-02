@@ -20,7 +20,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
 
 enum ParticleSpecies {
   kPionTrack = BIT(0),

@@ -17,7 +17,6 @@
 #define PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoA.h"

@@ -14,7 +14,6 @@
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 

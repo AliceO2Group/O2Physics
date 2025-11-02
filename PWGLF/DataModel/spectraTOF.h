@@ -28,7 +28,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/StaticFor.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
