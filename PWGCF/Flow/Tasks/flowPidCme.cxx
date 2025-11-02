@@ -34,8 +34,9 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -237,7 +238,7 @@ struct FillPIDcolums {
     if (std::abs(track.eta()) > cfgMaxEtaPID)
       return false;
     if (cfgRequireGlobalTrack) {
-      if (!(track.isGlobalTrackSDD() == (uint8_t) true))
+      if (!(track.isGlobalTrackSDD() == (uint8_t)true))
         return false;
     }
     if (cfgUseCostomTrackCuts) {

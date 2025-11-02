@@ -13,42 +13,44 @@
 /// \brief Task to analyse angular and transverse momentum correlations with GFW
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <complex>
-#include <string>
-#include <map>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-
-#include "GFWPowerArray.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
 #include "FlowContainer.h"
 #include "FlowPtContainer.h"
+#include "GFW.h"
 #include "GFWConfig.h"
+#include "GFWCumulant.h"
+#include "GFWPowerArray.h"
 #include "GFWWeights.h"
 #include "GFWWeightsList.h"
-#include <TProfile.h>
-#include <TRandom3.h>
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+
 #include <TF1.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
+#include <TRandom3.h>
+
+#include <algorithm>
+#include <complex>
+#include <map>
+#include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1017,7 +1019,7 @@ struct FlowGenericFramework {
   }
 
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
+  o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
 
