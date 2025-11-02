@@ -156,14 +156,15 @@ struct strangecasctrack {
     auto timeStamp = timestamp;
 
     std::string efficiencyCCDBPath = [&]() {
-      if (doProcesspp)
+      if (doProcesspp) {
         return efficiencyCCDBPath_pp;
-      if (doProcesspO)
+      } else if (doProcesspO) {
         return efficiencyCCDBPath_pO;
-      if (doProcessPbPb)
+      } else if (doProcessPbPb) {
         return efficiencyCCDBPath_PbPb;
-      if (doProcessOO)
+      } else {
         return efficiencyCCDBPath_OO;
+      }
     }();
 
     TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
