@@ -56,7 +56,7 @@ using DerMCRecTraCascDatas = soa::Join<aod::TraCascCores, aod::TraCascCollRefs, 
 // tables for PID selection
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
-struct StrangeCascTrack {
+struct strangecasctrack {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -95,9 +95,9 @@ struct StrangeCascTrack {
     Configurable<double> cutV0CosPA{"cutV0CosPA", 0.97f, "max V0 cosPA"};
     Configurable<double> cutBachCosPA{"cutBachCosPA", 0.97f, "max Bachelor cosPA"};
     // TPC PID selection
-    Configurable<float> nSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
-    Configurable<float> nSigmaTPCKaon{"NSigmaTPCKaon", 4, "NSigmaTPCKaon"};
-    Configurable<float> nSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
+    Configurable<float> nSigmaTPCPion{"nSigmaTPCPion", 4, "NSigmaTPCPion"};
+    Configurable<float> nSigmaTPCKaon{"nSigmaTPCKaon", 4, "NSigmaTPCKaon"};
+    Configurable<float> nSigmaTPCProton{"nSigmaTPCProton", 4, "NSigmaTPCProton"};
     // TOF PID selection
     Configurable<float> nSigmaTOFXi{"nSigmaTOFXi", 3, "nSigmaTOFXi"};
     Configurable<float> nSigmaTOFOmega{"nSigmaTOFOmega", 3, "nSigmaTOFOmega"};
@@ -105,10 +105,10 @@ struct StrangeCascTrack {
 
   // axes
   struct : ConfigurableGroup {
-    ConfigurableAxis axisPhi{"Phi", {72, 0, TwoPI}, "#phi"};
-    ConfigurableAxis axisEta{"Eta", {102, -2.01, 2.01}, "#eta"};
-    ConfigurableAxis axisDCAxy{"DCA to xy plane", {500, 0., 0.5}, "cm"};
-    ConfigurableAxis axisDCAz{"DCA to z plane", {500, 0., 0.5}, "cm"};
+    ConfigurableAxis axisPhi{"axisPhi", {72, 0, TwoPI}, "#phi"};
+    ConfigurableAxis axisEta{"axisEta", {102, -2.01, 2.01}, "#eta"};
+    ConfigurableAxis axisDCAxy{"axisDCAxy", {500, 0., 0.5}, "cm"};
+    ConfigurableAxis axisDCAz{"axisDCAz", {500, 0., 0.5}, "cm"};
     ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "p_{T} (GeV/c)"};
     ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 5.0, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "FT0 mult %"};
     ConfigurableAxis axisOmegaMass{"axisOmegaMass", {2000, 1.6, 1.8}, "#Omega M_{inv} (GeV/c^{2})"};
@@ -629,14 +629,14 @@ struct StrangeCascTrack {
     analyseCascs(collision, traCascs); // process tracked cascades
   }
 
-  PROCESS_SWITCH(StrangeCascTrack, processDerivedData, "process derived data", true);
-  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCGen, "process derived generated mc data", false);
-  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
+  PROCESS_SWITCH(strangecasctrack, processDerivedData, "process derived data", true);
+  PROCESS_SWITCH(strangecasctrack, processDerivedMCGen, "process derived generated mc data", false);
+  PROCESS_SWITCH(strangecasctrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<StrangeCascTrack>(cfgc),
+    adaptAnalysisTask<strangecasctrack>(cfgc),
   };
 }
