@@ -43,16 +43,11 @@ enum {
 template <typename CollisionType>
 inline bool isEventSelected(const CollisionType& collision, const int applyEvSel)
 {
-  if (applyEvSel == EventSelectionRun2) {
-    if (!collision.sel7()) {
-      return false;
-    }
-  } else if (applyEvSel == EventSelectionRun3) {
-    if (!collision.sel8()) {
-      return false;
-    }
+  if ((applyEvSel == EventSelectionRun2 && !collision.sel7()) || (applyEvSel == EventSelectionRun3 && !collision.sel8())) {
+    return false;
+  } else {
+    return true;
   }
-  return true;
 };
 
 /// Random downsampling trigger function using Tsalis/Hagedorn spectra fit (sqrt(s) = 62.4 GeV to 13 TeV)
