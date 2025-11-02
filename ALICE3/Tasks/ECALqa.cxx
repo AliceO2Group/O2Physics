@@ -17,12 +17,12 @@
 ///
 
 // O2 includes
-#include "Framework/AnalysisTask.h"
 #include "ALICE3/DataModel/ECAL.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "ReconstructionDataFormats/PID.h"
+
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 
 using namespace o2;
 using namespace o2::track;
