@@ -174,7 +174,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   o2::common::core::MetadataHelper metadataInfo;
   metadataInfo.initMetadata(cfgc);
   if (metadataInfo.isCommitInSoftwareTag("63bc2e3893851ef0f849bb4c98c65eae1ba21e47")) {
-    LOG(fatal) << "This workflow should not be used with this AO2D.";
+    LOG(fatal) << "This workflow should not be used with this AO2D. Use standard workflow instead";
   }
   return WorkflowSpec{adaptAnalysisTask<ft0CorrectedTableMcOverride>(cfgc)};
 }
