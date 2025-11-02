@@ -221,7 +221,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/all/hTpcNClsCrossedRowsOverNClsFindable", ";TPC crossed rows/findable #it{N}_{cls};counts", kTH1D, {{300, 0.5, 2.5}});
     rQC.add("QC/tracks/all/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     rQC.add("QC/tracks/all/hEta", ";#it{#eta};counts", kTH1D, {etaAxis});
-    rQC.add("QC/tracks/all/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
+    rQC.add("QC/tracks/all/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
     rQC.add("QC/tracks/all/hTpcSignalVsP", ";|#it{p}| (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     rQC.add("QC/tracks/all/hTpcSignalVsPt", ";#it{p}_{T} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     // tracks passing selections
@@ -258,7 +258,7 @@ struct UpcRhoAnalysis {
     // TRACKS (2D)
     rTracks.add("tracks/trackSelections/unlike-sign/hPt", ";#it{p}_{T leading} (GeV/#it{c});#it{p}_{T subleading} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
     rTracks.add("tracks/trackSelections/unlike-sign/hEta", ";#it{#eta}_{leading};#it{#eta}_{subleading};counts", kTH2D, {etaAxis, etaAxis});
-    rTracks.add("tracks/trackSelections/unlike-sign/hPhi", ";#it{#phi}_{leading};#it{#phi}_{subleading};counts", kTH2D, {phiAxis, phiAxis});
+    rTracks.add("tracks/trackSelections/unlike-sign/hPhi", ";#it{#phi}_{leading} (rad);#it{#phi}_{subleading} (rad);counts", kTH2D, {phiAxis, phiAxis});
     rTracks.addClone("tracks/trackSelections/unlike-sign/", "tracks/trackSelections/like-sign/positive/");
     rTracks.addClone("tracks/trackSelections/unlike-sign/", "tracks/trackSelections/like-sign/negative/");
     rTracks.addClone("tracks/trackSelections/", "tracks/systemSelections/");
@@ -270,11 +270,11 @@ struct UpcRhoAnalysis {
     rSystem.add("system/all/unlike-sign/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     rSystem.add("system/all/unlike-sign/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
     rSystem.add("system/all/unlike-sign/hY", ";#it{y};counts", kTH1D, {yAxis});
-    rSystem.add("system/all/unlike-sign/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
-    rSystem.add("system/all/unlike-sign/hPhiRandom", ";#Delta#it{#phi}_{random};counts", kTH1D, {deltaPhiAxis});
-    rSystem.add("system/all/unlike-sign/hPhiCharge", ";#Delta#it{#phi}_{charge};counts", kTH1D, {deltaPhiAxis});
-    rSystem.add("system/all/unlike-sign/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi}_{random};counts", kTH2D, {mAxis, deltaPhiAxis});
-    rSystem.add("system/all/unlike-sign/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi}_{charge};counts", kTH2D, {mAxis, deltaPhiAxis});
+    rSystem.add("system/all/unlike-sign/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
+    rSystem.add("system/all/unlike-sign/hPhiRandom", ";#Delta#it{#phi}_{random} (rad);counts", kTH1D, {deltaPhiAxis});
+    rSystem.add("system/all/unlike-sign/hPhiCharge", ";#Delta#it{#phi}_{charge} (rad);counts", kTH1D, {deltaPhiAxis});
+    rSystem.add("system/all/unlike-sign/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi}_{random} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
+    rSystem.add("system/all/unlike-sign/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi}_{charge} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
     // clones for like-sign
     rSystem.addClone("system/all/unlike-sign/", "system/all/like-sign/positive/");
     rSystem.addClone("system/all/unlike-sign/", "system/all/like-sign/negative/");
@@ -301,12 +301,12 @@ struct UpcRhoAnalysis {
       rMC.add("MC/tracks/all/hIsPhysicalPrimary", ";is physical primary;counts", kTH1D, {{2, -0.5, 1.5}});
       rMC.add("MC/tracks/all/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
       rMC.add("MC/tracks/all/hEta", ";#it{#eta};counts", kTH1D, {etaAxis});
-      rMC.add("MC/tracks/all/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
+      rMC.add("MC/tracks/all/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
       rMC.addClone("MC/tracks/all/", "MC/tracks/primaries/");
       rMC.addClone("MC/tracks/all/", "MC/tracks/prodByGen/");
       rMC.add("MC/tracks/hPt", ";#it{p}_{T leading} (GeV/#it{c});#it{p}_{T subleading} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
       rMC.add("MC/tracks/hEta", ";#it{#eta}_{leading};#it{#eta}_{subleading};counts", kTH2D, {etaAxis, etaAxis});
-      rMC.add("MC/tracks/hPhi", ";#it{#phi}_{leading};#it{#phi}_{subleading};counts", kTH2D, {phiAxis, phiAxis});
+      rMC.add("MC/tracks/hPhi", ";#it{#phi}_{leading} (rad);#it{#phi}_{subleading} (rad);counts", kTH2D, {phiAxis, phiAxis});
       // resolution
       rMC.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
       rMC.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
@@ -317,11 +317,11 @@ struct UpcRhoAnalysis {
       rMC.add("MC/system/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
       rMC.add("MC/system/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
       rMC.add("MC/system/hY", ";#it{y};counts", kTH1D, {yAxis});
-      rMC.add("MC/system/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
-      rMC.add("MC/system/hPhiRandom", ";#Delta#it{#phi}_{random};counts", kTH1D, {deltaPhiAxis});
-      rMC.add("MC/system/hPhiCharge", ";#Delta#it{#phi}_{charge};counts", kTH1D, {deltaPhiAxis});
-      rMC.add("MC/system/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi};counts", kTH2D, {mAxis, deltaPhiAxis});
-      rMC.add("MC/system/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi};counts", kTH2D, {mAxis, deltaPhiAxis});
+      rMC.add("MC/system/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
+      rMC.add("MC/system/hPhiRandom", ";#Delta#it{#phi}_{random} (rad);counts", kTH1D, {deltaPhiAxis});
+      rMC.add("MC/system/hPhiCharge", ";#Delta#it{#phi}_{charge} (rad);counts", kTH1D, {deltaPhiAxis});
+      rMC.add("MC/system/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
+      rMC.add("MC/system/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
       rMC.addClone("MC/system/", "MC/system/selected/");
     }
   }
