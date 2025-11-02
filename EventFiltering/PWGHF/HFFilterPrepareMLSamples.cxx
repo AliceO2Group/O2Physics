@@ -20,15 +20,13 @@
 
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 //
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 //
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
-#include <onnxruntime_cxx_api.h>
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>

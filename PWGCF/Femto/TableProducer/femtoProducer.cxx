@@ -126,7 +126,7 @@ struct FemtoProducer {
   twotrackresonancebuilder::ConfTwoTrackResonanceDaughterFilters confResonanceDaughterFilters;
   // caching and preslicing
   SliceCache cache;
-  Preslice<Tracks> perColTracks = o2::aod::track::collisionId;
+  Preslice<Tracks> perColTracks = track::collisionId;
   Partition<consumeddata::Run3FullPidTracks> partitionPositiveDaughters =
     (track::signed1Pt > 0.f) &&
     (track::pt > confResonanceDaughterFilters.ptMin && track::pt < confResonanceDaughterFilters.ptMax) &&
@@ -226,8 +226,8 @@ struct FemtoProducer {
   template <typename T1, typename T2>
   void processResonances(T1 const& col, T2 const& /*tracks*/)
   {
-    auto groupPositiveTracks = partitionPositiveDaughters->sliceByCached(o2::aod::track::collisionId, col.globalIndex(), cache);
-    auto groupNegativeTracks = partitionNegativeDaughters->sliceByCached(o2::aod::track::collisionId, col.globalIndex(), cache);
+    auto groupPositiveTracks = partitionPositiveDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
+    auto groupNegativeTracks = partitionNegativeDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
     rho0Builder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
     phiBuilder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
     kstar0Builder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);

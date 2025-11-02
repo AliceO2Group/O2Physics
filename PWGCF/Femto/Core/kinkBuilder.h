@@ -148,8 +148,8 @@ template <modes::Kink kinkType>
 class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkMaskType, kKinkSelsMax>
 {
  public:
-  KinkSelection() {}
-  virtual ~KinkSelection() = default;
+  KinkSelection() = default;
+  ~KinkSelection() = default;
 
   template <typename T1, typename T2>
   void configure(T1& config, T2& filter)
@@ -304,8 +304,8 @@ template <modes::Kink kinkType>
 class KinkBuilder
 {
  public:
-  KinkBuilder() {}
-  virtual ~KinkBuilder() = default;
+  KinkBuilder() = default;
+  ~KinkBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)

@@ -16,8 +16,10 @@
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 
@@ -75,8 +77,6 @@ struct HfCandidateSelectorCd {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_cd_to_de_k_pi::Cuts[0], hf_cuts_cd_to_de_k_pi::NBinsPt, hf_cuts_cd_to_de_k_pi::NCutVars, hf_cuts_cd_to_de_k_pi::labelsPt, hf_cuts_cd_to_de_k_pi::labelsCutVar}, "Cd candidate selection per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-
-  HfHelper hfHelper;
 
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -212,9 +212,9 @@ struct HfCandidateSelectorCd {
 
     float massCd{0.f};
     if (trackDeuteron.globalIndex() == candidate.prong0Id()) {
-      massCd = hfHelper.invMassCdToDeKPi(candidate);
+      massCd = HfHelper::invMassCdToDeKPi(candidate);
     } else {
-      massCd = hfHelper.invMassCdToPiKDe(candidate);
+      massCd = HfHelper::invMassCdToPiKDe(candidate);
     }
 
     // cut on Cd->deKpi, piKde mass values

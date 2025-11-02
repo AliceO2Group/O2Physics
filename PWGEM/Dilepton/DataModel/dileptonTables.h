@@ -301,7 +301,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 } // namespace emmcparticle
 
 // This table contains all MC truth tracks
-DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
+DECLARE_SOA_TABLE_FULL(EMMCParticles_000, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::Flags,
                        emmcparticle::MothersIds, emmcparticle::DaughtersIds,
@@ -312,13 +312,33 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
                        emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                        emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
-
                        emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                        emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
                        mcparticle::ProducedByGenerator<mcparticle::Flags>,
                        mcparticle::FromBackgroundEvent<mcparticle::Flags>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
+DECLARE_SOA_TABLE_VERSIONED(EMMCParticles_001, "AOD", "EMMCPARTICLE", 1, //!  MC track information (on disk)
+                            o2::soa::Index<>, emmcparticle::EMMCEventId,
+                            mcparticle::PdgCode, mcparticle::Flags, mcparticle::StatusCode,
+                            emmcparticle::MothersIds, emmcparticle::DaughtersIds,
+                            mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                            mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
+
+                            // dynamic column
+                            emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
+                            emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                            emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
+                            emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                            emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
+                            mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                            mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                            mcparticle::IsPhysicalPrimary<mcparticle::Flags>,
+                            mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                            mcparticle::GetHepMCStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                            mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>);
+
+using EMMCParticles = EMMCParticles_001;
 using EMMCParticle = EMMCParticles::iterator;
 
 namespace emmcgenvectormeson

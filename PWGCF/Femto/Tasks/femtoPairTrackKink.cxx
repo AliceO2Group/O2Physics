@@ -71,7 +71,7 @@ struct FemtoPairTrackKink {
   trackbuilder::ConfTrackSelection1 trackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::collisionId;
+  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
 
   // setup for daughters
   trackhistmanager::ConfKinkChaDauBinning confChaDauBinning;
@@ -80,10 +80,11 @@ struct FemtoPairTrackKink {
   kinkbuilder::ConfSigmaSelection1 sigmaSelection;
   kinkhistmanager::ConfSigmaBinning1 confSigmaBinning;
   Partition<Sigmas> sigmaPartition = MAKE_SIGMA_PARTITION(sigmaSelection);
-  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::collisionId;
+  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   pairbuilder::PairTrackKinkBuilder<
     trackhistmanager::PrefixTrack1,
@@ -109,7 +110,7 @@ struct FemtoPairTrackKink {
   HistogramRegistry hRegistry{"FemtoTrackKink", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
-  closepairrejection::ConfCpr confCpr;
+  closepairrejection::ConfCprTrackKinkDaughter confCpr;
 
   void init(InitContext&)
   {
@@ -124,14 +125,14 @@ struct FemtoPairTrackKink {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
     auto chaDauSpec = trackhistmanager::makeTrackHistSpecMap(confChaDauBinning);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confSigmaBinning);
+    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
     // setup for sigma
     // if (doprocessSigmaSameEvent || doprocessSigmaMixedEvent) {
     if (doprocessSigmaSameEvent) {
       auto sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
-      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairHistSpec, cprHistSpec);
+      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairHistSpec, cprHistSpec);
     }
   };
 

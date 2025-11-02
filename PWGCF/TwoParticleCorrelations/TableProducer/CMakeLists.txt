@@ -28,3 +28,8 @@ o2physics_add_dpl_workflow(two-particle-correlations-filtering
                            SOURCES twoParticleCorrelationsFiltering.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(longrange-maker
+                           SOURCES longrangeMaker.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
+                           COMPONENT_NAME Analysis)

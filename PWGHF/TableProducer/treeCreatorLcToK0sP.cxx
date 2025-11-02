@@ -18,6 +18,7 @@
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -242,8 +243,6 @@ struct HfTreeCreatorLcToK0sP {
 
   constexpr static float UndefValueFloat = -999.f;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
@@ -307,8 +306,8 @@ struct HfTreeCreatorLcToK0sP {
         candidate.mAntiLambda(),
         candidate.mK0Short(),
         candidate.mGamma(),
-        hfHelper.ctV0K0s(candidate),
-        hfHelper.ctV0Lambda(candidate),
+        HfHelper::ctV0K0s(candidate),
+        HfHelper::ctV0Lambda(candidate),
         candidate.dcaV0daughters(),
         candidate.ptV0Pos(),
         candidate.ptV0Neg(),
@@ -316,15 +315,15 @@ struct HfTreeCreatorLcToK0sP {
         candidate.dcapostopv(),
         bach.tpcNSigmaPr(),
         bach.tofNSigmaPr(),
-        hfHelper.invMassLcToK0sP(candidate),
+        HfHelper::invMassLcToK0sP(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
-        hfHelper.ctLc(candidate),
+        HfHelper::ctLc(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yLc(candidate),
-        hfHelper.eLc(candidate),
+        HfHelper::yLc(candidate),
+        HfHelper::eLc(candidate),
         flagMc,
         originMcRec,
         mlScoreFirstClass,
@@ -373,8 +372,8 @@ struct HfTreeCreatorLcToK0sP {
         candidate.mAntiLambda(),
         candidate.mK0Short(),
         candidate.mGamma(),
-        hfHelper.ctV0K0s(candidate),
-        hfHelper.ctV0Lambda(candidate),
+        HfHelper::ctV0K0s(candidate),
+        HfHelper::ctV0Lambda(candidate),
         candidate.dcaV0daughters(),
         candidate.pxpos(),
         candidate.pypos(),
@@ -388,16 +387,16 @@ struct HfTreeCreatorLcToK0sP {
         candidate.dcanegtopv(),
         bach.tpcNSigmaPr(),
         bach.tofNSigmaPr(),
-        hfHelper.invMassLcToK0sP(candidate),
+        HfHelper::invMassLcToK0sP(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
-        hfHelper.ctLc(candidate),
+        HfHelper::ctLc(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yLc(candidate),
-        hfHelper.eLc(candidate),
+        HfHelper::yLc(candidate),
+        HfHelper::eLc(candidate),
         flagMc,
         originMcRec,
         mlScoreFirstClass,

@@ -186,7 +186,7 @@ struct JetFragmentation {
 
     AxisSpec ptJetRelDiffAxis = {binPtRelDiff, "(#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part})/#it{p}_{T, jet}^{part}"};
     AxisSpec ptTrackRelDiffAxis = {binPtRelDiff, "(#it{p}_{T}^{track, det} - #it{p}_{T}^{track, part})/#it{p}_{T, track}^{part}"};
-    AxisSpec zRelDiffAxis = {binZRelDiff, "(#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part})/#it{p}_{T, jet}^{part}"};
+    AxisSpec zRelDiffAxis = {binZRelDiff, "(#it{z}^{det} - #it{z}^{part})/#it{z}^{part}"};
 
     AxisSpec v0PtAxis = {binV0Pt, "#it{p}_{T}^{V0}"};
     AxisSpec v0PtRatioAxis = {binPtRatio, "#it{p}_{T}^{V0, det}/#it{p}_{T, V0}^{part}"};
@@ -778,7 +778,9 @@ struct JetFragmentation {
 
       registry.add("matching/jets/V0/jetPtnV0MatchednK0SnLambdanAntiLambda", "jet Pt, nV0 matched, nK0S nLambdan AntiLambda", HistType::kTHnSparseD, {detJetPtAxis, v0Count, v0Count, v0Count, v0Count}, true);
       registry.add("matching/jets/V0/partJetPtV0PtDetPt", "V0PartPtDetPt", HistType::kTH3D, {partJetPtAxis, v0partPtAxis, v0detPtAxis}, true);
-      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt", "V0PartPtRatioRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRatioAxis, v0PtRelDiffAxis}, true);
+      // registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt", "V0PartPtRatioRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRatioAxis, v0PtRelDiffAxis}, true);
+      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRelDiffPt", "V0PartPtRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRelDiffAxis}, true);
+      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0ZRelDiffZ", "V0PartPtRelDiffZ", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, partZAxis, zRelDiffAxis}, true);
 
       // Matching - Matched V0s
       registry.add("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj", "Matched", HistType::kTHnSparseD, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis}, true);
@@ -2209,7 +2211,9 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0Pt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetPt"), partJet.pt(), particle.pt(), detJet.pt(), weight);
-    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    // registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0ZRelDiffZ"), partJet.pt(), detJet.pt(), partTrackProj, (detTrackProj - partTrackProj) / partTrackProj, weight);
 
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0PtCtauLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauLambda, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0PtCtauAntiLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauAntiLambda, weight);
