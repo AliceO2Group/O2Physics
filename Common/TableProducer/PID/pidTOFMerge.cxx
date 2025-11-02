@@ -9,9 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file   pidTOFMerge.cxx
-/// \brief  Task to produce PID tables for TOF split for each particle.
-///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+/// \file pidTOFMerge.cxx
+///
+/// \brief Task to produce PID tables for TOF split for each particle.
+///        Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+///
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
@@ -709,7 +711,7 @@ struct tofPidMerge {
             doprocessRun3BetaM.value = false;
           }
         } else {
-          metadataInfo.print();
+          tofResponse->metadataInfo.print();
           LOG(warning) << "Metadata is not defined, cannot autodetect process functions for mass and beta";
         }
       } else {
