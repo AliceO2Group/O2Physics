@@ -116,9 +116,9 @@ struct StrangeCascTrack {
   } axesConfig;
 
   // Filters events
-   // Filter eventFilter = (o2::aod::evsel::sel8 == true);
-   // Filter posZFilter = (nabs(o2::aod::collision::posZ) < selCuts.cutZVertex);
-   // Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < selCuts.cutZVertex);
+  // Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  // Filter posZFilter = (nabs(o2::aod::collision::posZ) < selCuts.cutZVertex);
+  // Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < selCuts.cutZVertex);
 
   // cascade reconstruction types
   static constexpr std::string_view kTypeNames[] = {"Standard", "Tracked"};
@@ -156,10 +156,14 @@ struct StrangeCascTrack {
     auto timeStamp = timestamp;
 
     std::string efficiencyCCDBPath = [&]() {
-      if (doProcesspp) return efficiencyCCDBPath_pp;
-      if (doProcesspO) return efficiencyCCDBPath_pO;
-      if (doProcessPbPb) return efficiencyCCDBPath_PbPb;
-      if (doProcessOO) return efficiencyCCDBPath_OO;
+      if (doProcesspp)
+        return efficiencyCCDBPath_pp;
+      if (doProcesspO)
+        return efficiencyCCDBPath_pO;
+      if (doProcessPbPb)
+        return efficiencyCCDBPath_PbPb;
+      if (doProcessOO)
+        return efficiencyCCDBPath_OO;
     }();
 
     TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
@@ -249,8 +253,10 @@ struct StrangeCascTrack {
   template <typename TCascade>
   bool passesTOF(TCascade cascade, TString particle)
   {
-    if (particle == "xi") return cascade.tofXiCompatibility(selCuts.nSigmaTOFXi);
-    if (particle == "omega") return cascade.tofOmegaCompatibility(selCuts.nSigmaTOFOmega);
+    if (particle == "xi")
+      return cascade.tofXiCompatibility(selCuts.nSigmaTOFXi);
+    if (particle == "omega")
+      return cascade.tofOmegaCompatibility(selCuts.nSigmaTOFOmega);
   }
   // checks whether gen cascade corresponds to PDG code
   template <typename TCascade>
@@ -366,10 +372,9 @@ struct StrangeCascTrack {
             efficiencyXi = 1.;
             efficiencyXiErr = 0.;
           }
-
         }
       }
-      
+
       if (doApplyPurity) {
         if constexpr (requires { cascade.topologyChi2(); }) {
           purityOmega = hPurityOmegaTra->Interpolate(cascade.pt(), mult);
@@ -424,39 +429,47 @@ struct StrangeCascTrack {
       histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel/MassOmega"), massOmega);
 
       if constexpr (requires { collision.straMCCollisionId(); }) {
-          if (isMCTruth(stdCasc, "xi") || isMCTruth(stdCasc, "omega"))  {  
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/DCAxy"), cascade.dcaXYCascToPV());
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/DCAz"), cascade.dcaZCascToPV());
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/DCAzVSpt"), pt, cascade.dcaZCascToPV());
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/Phi"), cascade.phi());
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/Eta"), cascade.eta());
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/EvMult"), mult);
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/BachCosPA"), stdCasc.bachBaryonCosPA());
-            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/V0CosPA"), v0cosPA);
-            if (isMCTruth(stdCasc, "xi")) histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/MassXi"), massXi);
-            if (isMCTruth(stdCasc, "omega")) histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/MassOmega"), massOmega);
-      }}
+        if (isMCTruth(stdCasc, "xi") || isMCTruth(stdCasc, "omega")) {
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/DCAxy"), cascade.dcaXYCascToPV());
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/DCAz"), cascade.dcaZCascToPV());
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/DCAzVSpt"), pt, cascade.dcaZCascToPV());
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/Phi"), cascade.phi());
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/Eta"), cascade.eta());
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/EvMult"), mult);
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/BachCosPA"), stdCasc.bachBaryonCosPA());
+          histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/V0CosPA"), v0cosPA);
+          if (isMCTruth(stdCasc, "xi"))
+            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/MassXi"), massXi);
+          if (isMCTruth(stdCasc, "omega"))
+            histos.fill(HIST(kTypeNames[type]) + HIST("/NoSel-Truth/MassOmega"), massOmega);
+        }
+      }
 
       // start checking selections
       bool passedAllSels = true;
       // apply general selection criteria
       if (doApplyCuts) {
-        if (!isValidCasc(collision, stdCasc)) passedAllSels = false;
+        if (!isValidCasc(collision, stdCasc))
+          passedAllSels = false;
       }
       // apply tpc pid
       if (doApplyTPCPID) {
-        if (!passesTPC(stdCasc)) passedAllSels = false;
+        if (!passesTPC(stdCasc))
+          passedAllSels = false;
       }
       // apply tof pid
       bool passedAllSelsXi = passedAllSels;
       bool passedAllSelsOmega = passedAllSels;
       if (doApplyTOFPID) {
-        if (!passesTOF(stdCasc, "xi")) passedAllSelsXi = false;
-        if (!passesTOF(stdCasc, "omega")) passedAllSelsOmega = false;
+        if (!passesTOF(stdCasc, "xi"))
+          passedAllSelsXi = false;
+        if (!passesTOF(stdCasc, "omega"))
+          passedAllSelsOmega = false;
       }
       // apply competing mass rej
       if (doCompetingMassRej) {
-        if (!(std::abs(massXi - o2::constants::physics::MassXiMinus) > selCuts.compMassRej)) passedAllSelsOmega = false;
+        if (!(std::abs(massXi - o2::constants::physics::MassXiMinus) > selCuts.compMassRej))
+          passedAllSelsOmega = false;
       }
 
       // fill truth w/ cascs that passed all applied sels
@@ -464,7 +477,7 @@ struct StrangeCascTrack {
 
       if constexpr (requires { collision.straMCCollisionId(); }) {
         if (passedAllSels && (passedAllSelsXi || passedAllSelsOmega)) { // fill once for every desired cascade
-          if (isMCTruth(stdCasc, "xi") || isMCTruth(stdCasc, "omega"))  {  
+          if (isMCTruth(stdCasc, "xi") || isMCTruth(stdCasc, "omega")) {
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/DCAxy"), cascade.dcaXYCascToPV());
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/DCAz"), cascade.dcaZCascToPV());
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/DCAzVSpt"), pt, cascade.dcaZCascToPV());
@@ -473,17 +486,20 @@ struct StrangeCascTrack {
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/EvMult"), mult);
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/BachCosPA"), stdCasc.bachBaryonCosPA());
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/V0CosPA"), v0cosPA);
-      }}}
+          }
+        }
+      }
 
       // fill rec
       if (passedAllSelsXi) {
         histos.fill(HIST(kTypeNames[type]) + HIST("/Rec/MassXi"), massXi);
         fillHist(histos.get<THn>(HIST(kTypeNames[type]) + HIST("/Rec/Xi")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
         if constexpr (requires { collision.straMCCollisionId(); }) {
-          if (isMCTruth(stdCasc, "xi"))  {        
+          if (isMCTruth(stdCasc, "xi")) {
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/MassXi"), massXi);
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/Xi"), massXi, pt, mult);
-        }}
+          }
+        }
       }
       double binFillOmega[3] = {massOmega, pt, mult};
       if (passedAllSelsOmega) {
@@ -493,7 +509,8 @@ struct StrangeCascTrack {
           if (isMCTruth(stdCasc, "omega")) {
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/MassOmega"), massOmega);
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/Omega"), massOmega, pt, mult);
-        }}
+          }
+        }
       }
     }
   }
@@ -547,16 +564,15 @@ struct StrangeCascTrack {
       histos.add(Form("%s/Rec-Truth/MassOmega", kTypeNames[type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec-Truth/Omega", kTypeNames[type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
       histos.add(Form("%s/Rec-Truth/Xi", kTypeNames[type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
-
     });
     // for MC-specific processing
     histos.add("MC/Gen/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}});
-    histos.add("MC/Gen/Xi", "Xi", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});       // generated Xis
-    histos.add("MC/Gen/Omega", "Omega", kTH2F, {axesConfig.axisPt, axesConfig.axisMult}); // generated Omegas
+    histos.add("MC/Gen/Xi", "Xi", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});                        // generated Xis
+    histos.add("MC/Gen/Omega", "Omega", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});                  // generated Omegas
     histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Xis
     histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas
-    histos.add("MC/Rec/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}}); // counter of all recreated events
-    histos.add("MC/Rec/EvMult", "Multiplicity", kTH1F, {axesConfig.axisMult}); // multiplicity of all recreated events
+    histos.add("MC/Rec/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}});                                   // counter of all recreated events
+    histos.add("MC/Rec/EvMult", "Multiplicity", kTH1F, {axesConfig.axisMult});                             // multiplicity of all recreated events
   }
 
   void processDerivedData(DerCollisionWMults::iterator const& collision, DerCascDatas const& allCascs, DerTraCascDatas const& traCascs, DauTracks const&)
