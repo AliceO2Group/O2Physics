@@ -256,10 +256,9 @@ struct StrangeCascTrack {
   template <typename TCascade>
   bool isValidPDG(TCascade cascade, TString particle)
   {
-    static constexpr int kPdgCodes[] = {3312, 3334}; // "XiMinus", "OmegaMinus"
-    if (particle == "xi" && std::abs(cascade.pdgCode()) == kPdgCodes[0])
+    if (particle == "xi" && std::abs(cascade.pdgCode()) == PDG_t::kXiMinus)
       return true;
-    if (particle == "omega" && std::abs(cascade.pdgCode()) == kPdgCodes[1])
+    if (particle == "omega" && std::abs(cascade.pdgCode()) == PDG_t::kOmegaMinus)
       return true;
     return false;
   }
@@ -273,9 +272,9 @@ struct StrangeCascTrack {
         return false;
       int pdg = std::abs(cascmccore.pdgCode());
       if (particle == "xi")
-        return (pdg == 3312);
+        return (pdg == PDG_t::kXiMinus);
       if (particle == "omega")
-        return (pdg == 3334);
+        return (pdg == PDG_t::kOmegaMinus);
     }
     return false;
   }
@@ -457,7 +456,7 @@ struct StrangeCascTrack {
       }
       // apply competing mass rej
       if (doCompetingMassRej) {
-        if (!(std::abs(massXi - pdgDB->Mass(3312)) > selCuts.compMassRej)) passedAllSelsOmega = false;
+        if (!(std::abs(massXi - o2::constants::physics::MassXiMinus) > selCuts.compMassRej)) passedAllSelsOmega = false;
       }
 
       // fill truth w/ cascs that passed all applied sels
