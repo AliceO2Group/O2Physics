@@ -567,7 +567,6 @@ struct strangecasctrack {
       histos.add(Form("%s/Rec-Truth/MassOmega", kTypeNames[type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec-Truth/Omega", kTypeNames[type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
       histos.add(Form("%s/Rec-Truth/Xi", kTypeNames[type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
-
     });
     // for MC-specific processing
     histos.add("MC/Gen/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}});
