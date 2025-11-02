@@ -81,8 +81,8 @@ struct TreeWriterTpcV0 {
   constexpr static o2::track::PID::ID PidProton{o2::track::PID::Proton};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
-  constexpr static float NSigmaTofUnmatched{-1e6f};
-  constexpr static float NSigmaTofUnmatchedEqualityTolerance{1000.f};
+  constexpr static float NSigmaTofUnmatched{o2::aod::v0data::kNoTOFValue};
+  constexpr static float NSigmaTofUnmatchedEqualityTolerance{std::fabs(NSigmaTofUnmatched) / 1e4f};
 
   // an arbitrary value of "N sigma TOF" assigned to electorns (for uniformity reasons)
   constexpr static float NSigmaTofElectorn{1000.f};
