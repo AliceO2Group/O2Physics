@@ -208,6 +208,7 @@ struct HfCorrelatorLcHadrons {
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
+  Configurable<int> numberOfDeltaPhiBins{"numberOfDeltaPhiBins", 32, "number of Delta Phi bins"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying Lc efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
@@ -277,6 +278,7 @@ struct HfCorrelatorLcHadrons {
   ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
   ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
+  ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {32, -PIHalf, 3. * PIHalf}, "#it{#varphi}^{Hadron}-#it{#varphi}^{#Lambda_c} (rad)"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassLc{"binsMassLc", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
@@ -290,6 +292,7 @@ struct HfCorrelatorLcHadrons {
     AxisSpec axisMassLc = {binsMassLc, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
     AxisSpec const axisEta = {binsEta, "#it{eta}"};
     AxisSpec const axisPhi = {binsPhi, "#it{#varphi}"};
+    AxisSpec const axisDeltaPhi = {binsDeltaPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{#Lambda_c} (rad)"};
     AxisSpec axisPtLc = {(std::vector<double>)binsPtLc, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
     AxisSpec axisPtTrack = {500, 0, 50, "#it{p}_{T} Hadron (GeV/#it{c})"};
@@ -320,6 +323,7 @@ struct HfCorrelatorLcHadrons {
     registry.add("hLcBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1D, {{9, 0., 9.}}});
     registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1D, {{9, 0., 9.}}});
     registry.add("hMassLcVsPtVsCent", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
+    registry.add("hMassLcVsPtVsDeltaPhi", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisDeltaPhi}}});
     registry.add("hMassLcData", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{axisMassLc}}});
     registry.add("hLcPoolBin", "Lc candidates pool bin", {HistType::kTH1D, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1D, {axisPoolBin}});
@@ -413,6 +417,8 @@ struct HfCorrelatorLcHadrons {
     std::vector<float> outputMl = {-1., -1., -1.};
 
     for (const auto& candidate : candidates) {
+      std::vector<float> binNumOfDeltaPhi(numberOfDeltaPhiBins, 0.0f);
+
       if (std::abs(hfHelper.yLc(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
       }
@@ -481,6 +487,12 @@ struct HfCorrelatorLcHadrons {
             continue;
           }
         }
+        int index = static_cast<int>((getDeltaPhi(track.phi(), candidate.phi()) + PIHalf) / (PIHalf / (numberOfDeltaPhiBins / 4)));
+        if (index < 0)
+          index = 0;
+        if (index >= numberOfDeltaPhiBins)
+          index = numberOfDeltaPhiBins - 1;
+        binNumOfDeltaPhi[index]++;
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
@@ -494,6 +506,9 @@ struct HfCorrelatorLcHadrons {
           entryLcHadronGenInfo(false, false, 0);
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
+          if (binNumOfDeltaPhi[index] == 1) {
+            registry.fill(HIST("hMassLcVsPtVsDeltaPhi"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), getDeltaPhi(track.phi(), candidate.phi()), efficiencyWeightLc);
+          }
           if (fillTrkPID) {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
           }
@@ -511,6 +526,9 @@ struct HfCorrelatorLcHadrons {
           entryLcHadronGenInfo(false, false, 0);
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
+          if (binNumOfDeltaPhi[index] == 1) {
+            registry.fill(HIST("hMassLcVsPtVsDeltaPhi"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), getDeltaPhi(track.phi(), candidate.phi()), efficiencyWeightLc);
+          }
           if (fillTrkPID) {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
           }
