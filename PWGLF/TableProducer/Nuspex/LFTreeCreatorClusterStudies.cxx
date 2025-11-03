@@ -20,7 +20,6 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -58,9 +57,8 @@ using namespace ::o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using Track = o2::track::TrackParCov;
 using TracksFullIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime>;
-using TracksFullIUMc = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using TracksFullIUMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCDe, aod::pidTOFDe, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 using CollisionsCustom = soa::Join<aod::Collisions, aod::EvSels>;
 
 namespace BetheBloch
@@ -75,7 +73,7 @@ enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
   AntiLambda,
-  Photon,
+  Photon, // deprecated, electrons are now selected from pi0 photons
   V0TypeAll
 };
 
@@ -113,20 +111,12 @@ enum CascSelections {
   kCascAll
 };
 
-enum DeSelections {
-  kDeNoCut = 0,
-  kDeNClsIts,
-  kDePIDtpc,
-  kDePIDtof,
-  kDeAll
-};
-
-enum He3Selections {
-  kHe3NoCut = 0,
-  kHe3NClsIts,
-  kHe3PIDtpc,
-  kHe3PIDtof,
-  kHe3All
+enum NucleiSelections {
+  kNucleiNoCut = 0,
+  kNucleiNClsIts,
+  kNucleiPIDtpc,
+  kNucleiPIDtof,
+  kNucleiAll
 };
 
 enum PartID {
@@ -136,8 +126,11 @@ enum PartID {
   ka,
   pr,
   de,
-  he
+  he,
+  all
 };
+
+static constexpr std::string_view cNames[] = {"none", "electron", "pion", "kaon", "proton", "deuteron", "He3"};
 
 struct Candidate {
   float p = -999.f; // momentum * charge
@@ -164,11 +157,8 @@ struct LfTreeCreatorClusterStudies {
   uint32_t m_randomSeed = 0.;
 
   Configurable<bool> setting_fillV0{"fillV0", true, "Fill the V0 tree"};
-  Configurable<bool> setting_fillK{"fillK", true, "Fill the K tree"};
-  Configurable<bool> setting_fillDe{"fillDe", true, "Fill the De tree"};
-  Configurable<bool> setting_fillHe3{"fillHe3", true, "Fill the He3 tree"};
-  Configurable<bool> setting_fillPKPi{"fillPKPPi", true, "Fill the p, K, pi tree"};
-  Configurable<bool> setting_smallTable{"smallTable", true, "Use a small table for testing"};
+  Configurable<bool> setting_fillExtraTable{"fillExtraTable", false, "Fill the extra table"};
+  Configurable<bool> setting_fillCollTable{"fillCollTable", false, "Fill the collision table"};
 
   Configurable<int> setting_materialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
 
@@ -230,59 +220,36 @@ struct LfTreeCreatorClusterStudies {
     {{"collision_selections", "Collision selection; selection; counts", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
      {"v0_selections", "V0 selection; selection; counts", {HistType::kTH1F, {{V0Selections::kV0All, -0.5, static_cast<double>(V0Selections::kV0All) - 0.5}}}},
      {"casc_selections", "Cascade selection; selection; counts", {HistType::kTH1F, {{CascSelections::kCascAll, -0.5, static_cast<double>(CascSelections::kCascAll) - 0.5}}}},
-     {"de_selections", "Deuteron track selection; selection; counts", {HistType::kTH1F, {{DeSelections::kDeAll, -0.5, static_cast<double>(DeSelections::kDeAll) - 0.5}}}},
-     {"he3_selections", "He3 track selection; selection; counts", {HistType::kTH1F, {{He3Selections::kHe3All, -0.5, static_cast<double>(He3Selections::kHe3All) - 0.5}}}},
      {"v0_type", "Selected V0; particle; counts", {HistType::kTH1F, {{V0Type::V0TypeAll, -0.5, static_cast<double>(V0Type::V0TypeAll) - 0.5}}}},
      {"radiusV0", "Decay radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"massLambda", "#Lambda invariant mass; signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
-     {"massLambdaMc", "#Lambda invariant mass (MC); signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
-     {"Lambda_vs_K0s", "Mass #Lambda vs K^{0}_s; m_{K^{0}_{s}} (GeV/#it{c}^{2}); m_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 0.f, 1.f}, {70, 0.6f, 2.f}}}},
-     {"armenteros_plot_before_selections", "Armenteros-Podolanski plot; #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"armenteros_plot", "Armenteros-Podolanski plot; #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"armenteros_plot_lambda", "Armenteros-Podolanski plot (#Lambda only); #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"armenteros_plot_gamma", "Armenteros-Podolanski plot (#gamma only); #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"photon_radiusV0", "Photon conversion radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"photon_conversion_position", "Photon conversion position; x (cm); y (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
-     {"photon_conversion_position_layer", "Photon conversion position (ITS layers); x (cm); y (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
-     {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCAxy (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
-     {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); mass Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
-     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
-     {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
-     {"massOmegaWithBkg", "Mass Omega with Background; mass Omega (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 1.62f, 1.72f}}}},
-     {"nSigmaTPCEl", "nSigma TPC Electron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
-     {"nSigmaTPCPi", "nSigma TPC Pion; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} #pi", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
-     {"nSigmaTPCKa", "nSigma TPC Kaon; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -4.0f, 4.0f}}}},
-     {"nSigmaTPCPr", "nSigma TPC Proton; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} p", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
-     {"nSigmaTPCDe", "nSigma TPC Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"nSigmaTPCHe", "nSigma TPC He3; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"nSigmaTOFDe", "nSigma TOF Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TOF} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"TOFmassDe", "TOF mass De; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
-     {"TOFmassHe", "TOF mass He3; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
-     {"nSigmaITSEl", "nSigma ITS Electron; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} e", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
-     {"nSigmaITSPi", "nSigma ITS Pion; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} #pi", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
-     {"nSigmaITSKa", "nSigma ITS Kaon; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} e", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -4.0f, 4.0f}}}},
-     {"nSigmaITSPr", "nSigma ITS Proton; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} p", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
-     {"nSigmaITSDe", "nSigma ITS Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} d", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"nSigmaITSHe", "nSigma ITS He3; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
-     {"pmatchingEl", "#it{p} matching e; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingPi", "#it{p} matching #pi; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingKa", "#it{p} matching K; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingPr", "#it{p} matching p; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingDe", "#it{p} matching d; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"pmatchingHe", "#it{p} matching ^{3}He; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
-     {"zVtx", "Binning for the vertex z in cm", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
+     {"massLambda", "#Lambda invariant mass; signed #it{p} (GeV/#it{c}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
+     {"massLambdaMc", "#Lambda invariant mass (MC); signed #it{p} (GeV/#it{c}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
+     {"Lambda_vs_K0s", "Mass #Lambda vs K^{0}_s; #it{m}_{K^{0}_{s}} (GeV/#it{c}^{2}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 0.f, 1.f}, {70, 0.6f, 2.f}}}},
+     {"armenteros_plot_before_selections", "Armenteros-Podolanski plot; #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+     {"armenteros_plot", "Armenteros-Podolanski plot; #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+     {"armenteros_plot_lambda", "Armenteros-Podolanski plot (#Lambda only); #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+     {"armenteros_plot_gamma", "Armenteros-Podolanski plot (#gamma only); #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+     {"photon_radiusV0", "Photon conversion radius (xy) V0; #it{r} (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
+     {"photon_conversion_position", "Photon conversion position; #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
+     {"photon_conversion_position_layer", "Photon conversion position (ITS layers); #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
+     {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCA_#it{xy} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
+     {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); #it{m}_#Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
+     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
+     {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
+     {"massOmegaWithBkg", "Mass Omega with Background; #it{m}_{#Omega} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 1.62f, 1.72f}}}},
+     {"zVtx", "Binning for the vertex z in cm; #it{z}_{vertex} (cm)", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
      {"isPositive", "is the candidate positive?; isPositive; counts", {HistType::kTH1F, {{2, -0.5f, 1.5f}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
-    false,
-    true}; // check histograms
+    false};
 
   Produces<o2::aod::ClStTable> m_ClusterStudiesTable;
   Produces<o2::aod::ClStTableExtra> m_ClusterStudiesTableExtra;
+  Produces<o2::aod::ClStTableColl> m_ClusterStudiesTableCollision;
   Produces<o2::aod::ClStTableMc> m_ClusterStudiesTableMc;
 
   struct V0TrackParCov {
     int64_t globalIndex;
-    Track trackParCov;
+    o2::track::TrackParCov trackParCov;
   };
   std::vector<V0TrackParCov> m_v0TrackParCovs;
 
@@ -442,9 +409,9 @@ struct LfTreeCreatorClusterStudies {
   uint8_t selectV0MotherHypothesis(float massK0sV0, float massLambdaV0, float massAntiLambdaV0, float alphaAP, const o2::aod::V0& v0)
   {
     uint8_t v0Bitmask(0);
-    if (v0.isPhotonV0()) {
-      SETBIT(v0Bitmask, Photon);
-    }
+    //if (v0.isPhotonV0()) {
+    //  SETBIT(v0Bitmask, Photon);
+    //}
     if (std::abs(massK0sV0 - o2::constants::physics::MassK0Short) < v0setting_massWindowK0s) {
       SETBIT(v0Bitmask, K0s);
     }
@@ -492,20 +459,20 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("v0_type"), V0Type::K0s);
       return false; // K0s not implemented
 
-    } else if (TESTBIT(v0Bitmask, Photon)) {
-      // require photon conversion to happen in one of the Inner Tracker layers (± 0.5 cm resolution)
-      m_hAnalysis.fill(HIST("photon_conversion_position"), decayVtx[0], decayVtx[1]);
-      m_hAnalysis.fill(HIST("photon_radiusV0"), radiusV0);
-      if (!(radiusV0 > electronsetting_conversion_rmin && radiusV0 < electronsetting_conversion_rmax))
-        return false;
-      if (std::abs(posTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl || std::abs(negTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl)
-        return false;
-      m_hAnalysis.fill(HIST("photon_conversion_position_layer"), decayVtx[0], decayVtx[1]);
-      candidatePos.partID = PartID::el;
-      candidateNeg.partID = PartID::el;
-      candidatePos.nsigmaTPC = posTrack.tpcNSigmaEl();
-      candidateNeg.nsigmaTPC = negTrack.tpcNSigmaEl();
-      m_hAnalysis.fill(HIST("v0_type"), V0Type::Photon);
+    //} else if (TESTBIT(v0Bitmask, Photon)) {
+    //  // require photon conversion to happen in one of the Inner Tracker layers (± 0.5 cm resolution)
+    //  m_hAnalysis.fill(HIST("photon_conversion_position"), decayVtx[0], decayVtx[1]);
+    //  m_hAnalysis.fill(HIST("photon_radiusV0"), radiusV0);
+    //  if (!(radiusV0 > electronsetting_conversion_rmin && radiusV0 < electronsetting_conversion_rmax))
+    //    return false;
+    //  if (std::abs(posTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl || std::abs(negTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl)
+    //    return false;
+    //  m_hAnalysis.fill(HIST("photon_conversion_position_layer"), decayVtx[0], decayVtx[1]);
+    //  candidatePos.partID = PartID::el;
+    //  candidateNeg.partID = PartID::el;
+    //  candidatePos.nsigmaTPC = posTrack.tpcNSigmaEl();
+    //  candidateNeg.nsigmaTPC = negTrack.tpcNSigmaEl();
+    //  m_hAnalysis.fill(HIST("v0_type"), V0Type::Photon);
 
     } else {
       return false;
@@ -527,34 +494,34 @@ struct LfTreeCreatorClusterStudies {
       massV0 = massLambdaV0;
       m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambdaV0);
       m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("nSigmaTPCPr"), candidatePos.p, candidatePos.nsigmaTPC);
-      m_hAnalysis.fill(HIST("nSigmaITSPr"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Proton>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
-      m_hAnalysis.fill(HIST("nSigmaTPCPi"), candidateNeg.p, candidateNeg.nsigmaTPC);
-      m_hAnalysis.fill(HIST("nSigmaITSPi"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Pion>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
-      m_hAnalysis.fill(HIST("pmatchingPr"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
-      m_hAnalysis.fill(HIST("pmatchingPi"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pr]) + HIST("/nSigmaTPC"), candidatePos.p, candidatePos.nsigmaTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pr]) + HIST("/nSigmaITS"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Proton>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
+      m_hAnalysis.fill(HIST(cNames[PartID::pr]) + HIST("/pmatching"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pi]) + HIST("/nSigmaTPC"), candidateNeg.p, candidateNeg.nsigmaTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pi]) + HIST("/nSigmaITS"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Pion>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
+      m_hAnalysis.fill(HIST(cNames[PartID::pi]) + HIST("/pmatching"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
 
     } else if (TESTBIT(v0Bitmask, AntiLambda)) {
       massV0 = massAntiLambdaV0;
       m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambdaV0);
       // "signed" pt for antimatter
       m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("nSigmaTPCPi"), candidatePos.p, candidatePos.nsigmaTPC);
-      m_hAnalysis.fill(HIST("nSigmaITSPi"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Pion>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
-      m_hAnalysis.fill(HIST("nSigmaTPCPr"), candidateNeg.p, candidateNeg.nsigmaTPC);
-      m_hAnalysis.fill(HIST("nSigmaITSPr"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Proton>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
-      m_hAnalysis.fill(HIST("pmatchingPi"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
-      m_hAnalysis.fill(HIST("pmatchingPr"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pi]) + HIST("/nSigmaTPC"), candidatePos.p, candidatePos.nsigmaTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pi]) + HIST("/nSigmaITS"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Pion>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
+      m_hAnalysis.fill(HIST(cNames[PartID::pi]) + HIST("/pmatching"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pr]) + HIST("/nSigmaTPC"), candidateNeg.p, candidateNeg.nsigmaTPC);
+      m_hAnalysis.fill(HIST(cNames[PartID::pr]) + HIST("/nSigmaITS"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Proton>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
+      m_hAnalysis.fill(HIST(cNames[PartID::pr]) + HIST("/pmatching"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
 
-    } else if (TESTBIT(v0Bitmask, Photon)) {
-      massV0 = 0.f;
-      m_hAnalysis.fill(HIST("nSigmaTPCEl"), candidatePos.p, candidatePos.nsigmaTPC);
-      m_hAnalysis.fill(HIST("nSigmaTPCEl"), candidateNeg.p, candidateNeg.nsigmaTPC);
-      m_hAnalysis.fill(HIST("nSigmaITSEl"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Electron>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
-      m_hAnalysis.fill(HIST("nSigmaITSEl"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Electron>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
-      m_hAnalysis.fill(HIST("armenteros_plot_gamma"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("pmatchingEl"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
-      m_hAnalysis.fill(HIST("pmatchingEl"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
+    //} else if (TESTBIT(v0Bitmask, Photon)) {
+    //  massV0 = 0.f;
+    //  m_hAnalysis.fill(HIST("nSigmaTPCEl"), candidatePos.p, candidatePos.nsigmaTPC);
+    //  m_hAnalysis.fill(HIST("nSigmaTPCEl"), candidateNeg.p, candidateNeg.nsigmaTPC);
+    //  m_hAnalysis.fill(HIST("nSigmaITSEl"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Electron>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
+    //  m_hAnalysis.fill(HIST("nSigmaITSEl"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Electron>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
+    //  m_hAnalysis.fill(HIST("armenteros_plot_gamma"), alphaAP, qtAP);
+    //  m_hAnalysis.fill(HIST("pmatchingEl"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
+    //  m_hAnalysis.fill(HIST("pmatchingEl"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
     }
     m_hAnalysis.fill(HIST("radiusV0"), radiusV0);
     m_hAnalysis.fill(HIST("armenteros_plot"), alphaAP, qtAP);
@@ -567,8 +534,8 @@ struct LfTreeCreatorClusterStudies {
                           const std::array<float, 3>& momMother,
                           const McPart& posDaughter, const McPart& negDaughter)
   {
-    if ((std::abs(posDaughter.pdgCode()) != 2212 && std::abs(posDaughter.pdgCode()) != 211) ||
-        (std::abs(negDaughter.pdgCode()) != 2212 && std::abs(negDaughter.pdgCode()) != 211)) {
+    if ((std::abs(posDaughter.pdgCode()) != PDG_t::kProton && std::abs(posDaughter.pdgCode()) != PDG_t::kPiPlus) ||
+        (std::abs(negDaughter.pdgCode()) != PDG_t::kProton && std::abs(negDaughter.pdgCode()) != PDG_t::kPiPlus)) {
       return;
     }
 
@@ -581,9 +548,9 @@ struct LfTreeCreatorClusterStudies {
       }
     }
 
-    if (motherPdgCode == 3122) {
+    if (motherPdgCode == PDG_t::kLambda0) {
       m_hAnalysis.fill(HIST("massLambdaMc"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambda);
-    } else if (motherPdgCode == -3122) {
+    } else if (motherPdgCode == PDG_t::kLambda0Bar) {
       m_hAnalysis.fill(HIST("massLambdaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambda);
     }
   }
@@ -595,12 +562,12 @@ struct LfTreeCreatorClusterStudies {
   {
     McPart v0Daughter;
     for (const auto& iterV0Daughter : posV0Daughter.template mothers_as<aod::McParticles>()) {
-      if (std::abs(iterV0Daughter.pdgCode()) != 3122) {
+      if (std::abs(iterV0Daughter.pdgCode()) != PDG_t::kLambda0) {
         continue;
       }
       v0Daughter = iterV0Daughter;
     }
-    if (std::abs(bachelorDaughter.pdgCode()) != 321) {
+    if (std::abs(bachelorDaughter.pdgCode()) != PDG_t::kKPlus) {
       return;
     }
 
@@ -613,9 +580,9 @@ struct LfTreeCreatorClusterStudies {
       }
     }
 
-    if (motherPdgCode == 3334) {
+    if (motherPdgCode == PDG_t::kOmegaMinus) {
       m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]), massOmega);
-    } else if (motherPdgCode == -3334) {
+    } else if (motherPdgCode == -PDG_t::kOmegaMinus) {
       m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massOmega);
     }
   }
@@ -629,7 +596,7 @@ struct LfTreeCreatorClusterStudies {
       candidate.phi,                           // phi
       candidate.itsClusterSize,                // itsClsize
       static_cast<uint8_t>(candidate.partID)); // partID
-    if (!setting_smallTable) {
+    if (setting_fillExtraTable) {
       m_ClusterStudiesTableExtra(
         candidate.pTPC,        // pTPC
         candidate.pidInTrk,    // pidInTrk
@@ -638,6 +605,10 @@ struct LfTreeCreatorClusterStudies {
         candidate.tofMass,     // TofMass
         candidate.cosPAMother, // cosPA
         candidate.massMother); // massMother
+    }
+    if (setting_fillCollTable) {
+      m_ClusterStudiesTableCollision(
+        m_runNumber);
     }
 
     if constexpr (isMC) {
@@ -666,36 +637,17 @@ struct LfTreeCreatorClusterStudies {
 
   // =========================================================================================================
 
-  template <typename T>
-  float computeNSigmaDe(const T& candidate)
-  {
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam() / constants::physics::MassDeuteron), m_BBparamsDe[0], m_BBparamsDe[1], m_BBparamsDe[2], m_BBparamsDe[3], m_BBparamsDe[4]);
-    double resoTPC{expTPCSignal * m_BBparamsDe[5]};
-    return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
-  }
-
-  template <typename T>
-  bool selectionPIDtpcDe(const T& candidate)
-  {
-    auto nSigmaDe = computeNSigmaDe(candidate);
-    if (std::abs(nSigmaDe) < desetting_nsigmatpc) {
-      return true;
-    }
-    return false;
-  }
-
   template <bool isMC = false, typename T>
   float computeTOFmassDe(const T& candidate)
   {
     float beta = o2::pid::tof::Beta::GetBeta(candidate);
-    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
     return candidate.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================
 
   template <typename T>
-  float computeNSigmaHe3(const T& candidate)
+  float computeNSigmaTPCHe3(const T& candidate)
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
@@ -704,21 +656,10 @@ struct LfTreeCreatorClusterStudies {
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }
 
-  template <typename T>
-  bool selectionPIDtpcHe3(const T& candidate)
-  {
-    auto nSigmaHe3 = computeNSigmaHe3(candidate);
-    if (std::abs(nSigmaHe3) < he3setting_nsigmatpc) {
-      return true;
-    }
-    return false;
-  }
-
   template <bool isMC = false, typename T>
   float computeTOFmassHe3(const T& candidate)
   {
     float beta = o2::pid::tof::Beta::GetBeta(candidate);
-    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParamHe3 = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
     return correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
@@ -759,7 +700,6 @@ struct LfTreeCreatorClusterStudies {
 
     m_ccdb->setURL("http://alice-ccdb.cern.ch");
     m_ccdb->setCaching(true);
-    m_ccdb->setLocalObjectValidityChecking();
     m_ccdb->setFatalWhenNull(false);
     // lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
@@ -774,6 +714,26 @@ struct LfTreeCreatorClusterStudies {
     m_fitter.setWeightedFinalPCA(false);
     int mat{static_cast<int>(setting_materialCorrection)};
     m_fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+
+    for (int ipartid = 0; ipartid < static_cast<int>(PartID::all); ipartid++) {
+      if (ipartid == 0)
+        continue;
+
+      m_hAnalysis.add(fmt::format("{}/nSigmaITS", cNames[ipartid]).c_str(), (fmt::format("nSigma ITS {};", cNames[ ipartid]) + std::string("signed #it{p} (GeV/#it{c}); n#sigma_{ITS}")).c_str(), HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}});
+      m_hAnalysis.add(fmt::format("{}/nSigmaTPC", cNames[ipartid]).c_str(), (fmt::format("nSigma TPC {};", cNames[ ipartid]) + std::string("signed #it{p} (GeV/#it{c}); n#sigma_{TPC}")).c_str(), HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -3.0f, 3.0f}});
+      m_hAnalysis.add(fmt::format("{}/nSigmaTOF", cNames[ipartid]).c_str(), (fmt::format("nSigma TOF {};", cNames[ ipartid]) + std::string("signed #it{p} (GeV/#it{c}); n#sigma_{TOF}")).c_str(), HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -3.0f, 3.0f}});
+      if (ipartid == static_cast<int>(PartID::de) || ipartid == static_cast<int>(PartID::he)) {
+        m_hAnalysis.add(fmt::format("{}/TOFmass", cNames[ipartid]).c_str(), (fmt::format("TOF mass {};", cNames[ ipartid]) + std::string("signed #it{p} (GeV/#it{c}); #it{m}_{TOF} (GeV/#it{c}^{2})")).c_str(), HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}});
+        m_hAnalysis.add(fmt::format("{}/trackSelections", cNames[ipartid]).c_str(), (fmt::format("track selections {};", cNames[ ipartid]) + std::string("Selections; Counts")).c_str(), HistType::kTH1F, {{NucleiSelections::kNucleiAll, -0.5, static_cast<double>(NucleiSelections::kNucleiAll) - 0.5}});
+      }
+      m_hAnalysis.add(fmt::format("{}/pmatching", cNames[ipartid]).c_str(), (fmt::format("p matching {};", cNames[ipartid]) + std::string("signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}")).c_str(), HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}});
+    }
+
+    std::vector<std::string> trackSelectionLabels = {"All", "n clusters ITS", "TPC", "TOF"};
+    for (int i = 0; i < NucleiSelections::kNucleiAll; i++) {
+      m_hAnalysis.get<TH1>(HIST(cNames[static_cast<int>(PartID::de)]) + HIST("/trackSelections"))->GetXaxis()->SetBinLabel(i + 1, trackSelectionLabels[i].c_str());
+      m_hAnalysis.get<TH1>(HIST(cNames[static_cast<int>(PartID::he)]) + HIST("/trackSelections"))->GetXaxis()->SetBinLabel(i + 1, trackSelectionLabels[i].c_str());
+    }
 
     LOG(info) << "Bethe-Bloch parameters for He3:";
     for (int i = 0; i < 5; i++) {
@@ -802,14 +762,6 @@ struct LfTreeCreatorClusterStudies {
     std::vector<std::string> Casc_selection_labels = {"All", "Casc DCA", "Casc CosPA", "Accepted Omega", "Veto Xi", "n#sigma_{TPC} K"};
     for (int i = 0; i < CascSelections::kCascAll; i++)
       m_hAnalysis.get<TH1>(HIST("casc_selections"))->GetXaxis()->SetBinLabel(i + 1, Casc_selection_labels[i].c_str());
-
-    std::vector<std::string> De_selection_labels = {"All", "n clusters ITS", "n#sigma_{TPC} d", "n#sigma_{TOF} d"};
-    for (int i = 0; i < DeSelections::kDeAll; i++)
-      m_hAnalysis.get<TH1>(HIST("de_selections"))->GetXaxis()->SetBinLabel(i + 1, De_selection_labels[i].c_str());
-
-    std::vector<std::string> He3_selection_labels = {"All", "n clusters ITS", "n#sigma_{TPC} ^{3}He", "TOF mass ^{3}He"};
-    for (int i = 0; i < He3Selections::kHe3All; i++)
-      m_hAnalysis.get<TH1>(HIST("he3_selections"))->GetXaxis()->SetBinLabel(i + 1, He3_selection_labels[i].c_str());
 
     std::vector<std::string> V0Type_labels = {"K0s", "#Lambda", "#bar{#Lambda}", "Photon"};
     for (int i = 0; i < V0Type::V0TypeAll; i++)
@@ -972,8 +924,8 @@ struct LfTreeCreatorClusterStudies {
     }
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
     m_hAnalysis.fill(HIST("massOmega"), std::hypot(momMother[0], momMother[1]) * bachelorTrack.sign(), massOmega);
-    m_hAnalysis.fill(HIST("pmatchingKa"), bachelorTrack.sign() * bachelorTrack.tpcInnerParam(), (bachelorTrack.tpcInnerParam() - bachelorTrack.p()) / bachelorTrack.tpcInnerParam());
-    m_hAnalysis.fill(HIST("nSigmaTPCKa"), bachelorTrack.sign() * std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]), bachelorTrack.tpcNSigmaKa());
+    m_hAnalysis.fill(HIST(cNames[PartID::ka]) + HIST("/pmatching"), bachelorTrack.sign() * bachelorTrack.tpcInnerParam(), (bachelorTrack.tpcInnerParam() - bachelorTrack.p()) / bachelorTrack.tpcInnerParam());
+    m_hAnalysis.fill(HIST(cNames[PartID::ka]) + HIST("/nSigmaTPC"), bachelorTrack.sign() * std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]), bachelorTrack.tpcNSigmaKa());
 
     uint8_t partID_bachelor = PartID::ka;
 
@@ -983,7 +935,7 @@ struct LfTreeCreatorClusterStudies {
       RecoDecay::phi(momBachelor),                                                       // phi_K
       bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
       partID_bachelor);                                                                  // partID_K
-    if (!setting_smallTable) {
+    if (setting_fillExtraTable) {
       m_ClusterStudiesTableExtra(
         bachelorTrack.tpcInnerParam() * bachelorTrack.sign(), // pTPC_K
         bachelorTrack.pidForTracking(),                       // PIDinTrk_K
@@ -992,6 +944,10 @@ struct LfTreeCreatorClusterStudies {
         -999.f,                                               // TofMass_K
         cosPA,                                                // cosPA
         massOmega);
+    }
+    if (setting_fillCollTable) {
+      m_ClusterStudiesTableCollision(
+        m_runNumber);
     }
 
     if constexpr (isMC) {
@@ -1014,48 +970,64 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("isPositive"), bachelorTrack.p() > 0);
   }
 
-  template <bool isMC = false, typename Track>
-  void fillDeTable(const Track& track)
+  template <int partID, bool isMC = false, typename Track>
+  void fillNucleusTable(const Track& track)
   {
-    if (track.sign() > 0) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNoCut);
-    if (track.itsNCls() < desetting_nClsIts) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNClsIts);
-    if (std::abs(track.tpcNSigmaDe()) > desetting_nsigmatpc) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtpc);
-    if (!track.hasTOF() || std::abs(track.tofNSigmaDe()) > desetting_nsigmatof) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), track.tpcNSigmaDe());
-    m_hAnalysis.fill(HIST("nSigmaITSDe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta()));
-    m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
-    m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe<isMC>(track));
-    m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
+    constexpr int kPartID = partID;
 
-    uint8_t partID = PartID::de;
+    if (kPartID == static_cast<int>(PartID::de) && track.sign() > 0)
+      return;
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiNoCut);
+
+    if (track.itsNCls() < desetting_nClsIts)
+      return;
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiNClsIts);
+
+    const float tpcNsigma = kPartID == static_cast<int>(PartID::de) ? track.tpcNSigmaDe() : computeNSigmaTPCHe3(track);
+    const float tpcNsigmaMax = kPartID == static_cast<int>(PartID::de) ? desetting_nsigmatpc : he3setting_nsigmatpc;
+    if (std::abs(tpcNsigma) > tpcNsigmaMax)
+      return;
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiPIDtpc);
+
+    const float tofMass = track.hasTOF() ? (kPartID == static_cast<int>(PartID::de) ? computeTOFmassDe<isMC>(track) : computeTOFmassHe3<isMC>(track)) : -999.f;
+    const float tofNsigma = kPartID == static_cast<int>(PartID::de) ? track.tofNSigmaDe() : -999.f;
+    float correctedTPCinnerParam = track.tpcInnerParam();
+
+    if (kPartID == static_cast<int>(PartID::de)) {
+      if (!track.hasTOF() || std::abs(tofNsigma) > desetting_nsigmatof)
+        return;
+    } else {
+      if (track.hasTOF() && (tofMass < he3setting_tofmasslow || tofMass > he3setting_tofmasshigh))
+        return;
+
+      bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
+      correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
+    }
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiPIDtof);
+
+    const float itsNsigma = kPartID == static_cast<int>(PartID::de) ? m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta()) 
+                                : m_responseITS.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), track.p(), track.eta());
+
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/nSigmaTPC"), track.p() * track.sign(), tpcNsigma);
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/nSigmaITS"), track.p() * track.sign(), itsNsigma);
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/nSigmaTOF"), track.p() * track.sign(), tofNsigma);
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/TOFmass"), track.p() * track.sign(), tofMass);
+    m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/pmatching"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
     m_ClusterStudiesTable(
-      track.p() * track.sign(), // p_De,
-      track.eta(),              // eta_De,
-      track.phi(),              // phi_De,
-      track.itsClusterSizes(),  // itsClSize_De,
-      partID);                  // partID_De
-    if (!setting_smallTable) {
+      track.p() * track.sign(), track.eta(), track.phi(),
+      track.itsClusterSizes(), kPartID);
+    if (setting_fillExtraTable) {
       m_ClusterStudiesTableExtra(
-        track.tpcInnerParam() * track.sign(), // pTPC_De,
-        track.pidForTracking(),               // PIDinTrk_De,
-        track.tpcNSigmaDe(),                  // TpcNSigma_De,
-        track.tofNSigmaDe(),                  // TofNSigma_De,
-        computeTOFmassDe<isMC>(track),        // TofMass_De,
-        -999.f,                               // cosPA,
-        -999.f);                              // massMother
+        correctedTPCinnerParam * track.sign(), // pTPC,
+        track.pidForTracking(),
+        tpcNsigma, tofNsigma, tofMass,
+        -999.f,   // cosPA,
+        -999.f);  // massMother
+    }
+    if (setting_fillCollTable) {
+      m_ClusterStudiesTableCollision(
+        m_runNumber);
     }
 
     if constexpr (isMC) {
@@ -1066,64 +1038,7 @@ struct LfTreeCreatorClusterStudies {
       auto mcParticle = track.mcParticle();
 
       m_ClusterStudiesTableMc(
-        mcParticle.pdgCode()); // pdgCode_De
-    }
-
-    m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
-  }
-
-  template <bool isMC = false, typename Track>
-  void fillHe3Table(const Track& track)
-  {
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3NoCut);
-
-    if (track.itsNCls() < he3setting_nClsIts) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3NClsIts);
-    if (!selectionPIDtpcHe3(track)) {
-      return;
-    }
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtpc);
-    float tofMass = track.hasTOF() ? computeTOFmassHe3<isMC>(track) : -999.f;
-    if (track.hasTOF() && (tofMass < he3setting_tofmasslow || tofMass > he3setting_tofmasshigh)) {
-      return;
-    }
-    uint8_t partID = PartID::he;
-    bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
-    float correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
-
-    m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
-    m_hAnalysis.fill(HIST("nSigmaITSHe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), track.p(), track.eta()));
-    m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
-    m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
-
-    m_ClusterStudiesTable(
-      track.p() * track.sign(), // p_He3,
-      track.eta(),              // eta_He3,
-      track.phi(),              // phi_He3,
-      track.itsClusterSizes(),  // itsClSize_He3,
-      partID);                  // partID_He3
-    if (!setting_smallTable) {
-      m_ClusterStudiesTableExtra(
-        correctedTPCinnerParam * track.sign(), // pTPC_He3,
-        track.pidForTracking(),                // PIDinTrk_He3,
-        computeNSigmaHe3(track),               // TpcNSigma_He3,
-        -999.f,                                // TofNSigma_He3,
-        tofMass,                               // TofMass_He3,
-        -999.f,                                // cosPA,
-        -999.f);                               // massMother
-    }
-
-    if constexpr (isMC) {
-      if (!track.has_mcParticle()) {
-        return;
-      }
-      auto mcParticle = track.mcParticle();
-
-      m_ClusterStudiesTableMc(
-        mcParticle.pdgCode()); // pdgCodeMc_He3
+        mcParticle.pdgCode());
     }
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
@@ -1155,7 +1070,7 @@ struct LfTreeCreatorClusterStudies {
       track.phi(),
       track.itsClusterSizes(),
       partID);
-    if (!setting_smallTable) {
+    if (setting_fillExtraTable) {
       m_ClusterStudiesTableExtra(
         track.tpcInnerParam() * track.sign(), // pTPC,
         track.pidForTracking(),               // PIDinTrk,
@@ -1165,6 +1080,10 @@ struct LfTreeCreatorClusterStudies {
         -999.f,                               // cosPA,
         -999.f);                              // massMother
     }
+    if (setting_fillCollTable) {
+      m_ClusterStudiesTableCollision(
+        m_runNumber);
+    }
   }
 
   // =========================================================================================================
@@ -1172,12 +1091,13 @@ struct LfTreeCreatorClusterStudies {
   void processDataV0Casc(CollisionsCustom const& collisions, TracksFullIU const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
 
       if (!collisionSelection(collision)) {
         continue;
       }
+      
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
       std::array<float, 3> PV = {collision.posX(), collision.posY(), collision.posZ()};
@@ -1189,16 +1109,13 @@ struct LfTreeCreatorClusterStudies {
       cascTable_thisCollision.bindExternalIndices(&tracks);
       cascTable_thisCollision.bindExternalIndices(&v0s);
 
-      if (setting_fillV0 || setting_fillK) {
-        m_v0TrackParCovs.clear();
-        for (auto& v0 : v0Table_thisCollision) {
-          fillV0Cand</*isMC*/ false>(PV, v0, tracks);
-        }
+      m_v0TrackParCovs.clear();
+      for (auto& v0 : v0Table_thisCollision) {
+        fillV0Cand</*isMC*/ false>(PV, v0, tracks);
       }
-      if (setting_fillK) { // the v0 loops are needed for the Ks
-        for (auto& cascade : cascTable_thisCollision) {
-          fillKCand</*isMC*/ false>(PV, cascade, tracks);
-        }
+
+      for (auto& cascade : cascTable_thisCollision) {
+        fillKCand</*isMC*/ false>(PV, cascade, tracks);
       }
     }
   }
@@ -1210,6 +1127,9 @@ struct LfTreeCreatorClusterStudies {
       if (!collisionSelection(collision)) {
         continue;
       }
+      
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
@@ -1222,10 +1142,8 @@ struct LfTreeCreatorClusterStudies {
           continue;
         }
 
-        if (setting_fillDe)
-          fillDeTable</*isMC*/ false>(track);
-        if (setting_fillHe3)
-          fillHe3Table</*isMC*/ false>(track);
+        fillNucleusTable<PartID::de, /*isMC*/ false>(track);
+        fillNucleusTable<PartID::he, /*isMC*/ false>(track);
       }
     }
   }
@@ -1241,6 +1159,9 @@ struct LfTreeCreatorClusterStudies {
         continue;
       }
 
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
@@ -1252,8 +1173,7 @@ struct LfTreeCreatorClusterStudies {
           continue;
         }
 
-        if (setting_fillPKPi)
-          fillPKPiTable(track);
+        fillPKPiTable(track);
       }
     }
   }
@@ -1262,12 +1182,12 @@ struct LfTreeCreatorClusterStudies {
   void processMcV0Casc(CollisionsCustom const& collisions, TracksFullIUMc const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
       if (!collisionSelection(collision)) {
         continue;
       }
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
       std::array<float, 3> PV = {collision.posX(), collision.posY(), collision.posZ()};
@@ -1275,22 +1195,20 @@ struct LfTreeCreatorClusterStudies {
       const uint64_t collIdx = collision.globalIndex();
       auto v0Table_thisCollision = v0s.sliceBy(m_perCollisionV0, collIdx);
       auto cascTable_thisCollision = cascades.sliceBy(m_perCollisionCascade, collIdx);
+
       v0Table_thisCollision.bindExternalIndices(&tracks);
       cascTable_thisCollision.bindExternalIndices(&tracks);
       cascTable_thisCollision.bindExternalIndices(&v0s);
 
       m_v0TrackParCovs.clear();
-      if (setting_fillV0 || setting_fillK) {
-        for (auto& v0 : v0Table_thisCollision) {
-          fillV0Cand</*isMC*/ true>(PV, v0, tracks);
-        }
+      for (auto& v0 : v0Table_thisCollision) {
+        fillV0Cand</*isMC*/ true>(PV, v0, tracks);
       }
 
-      if (setting_fillK) { // the v0 loops are needed for the Ks
-        for (auto& cascade : cascTable_thisCollision) {
-          fillKCand</*isMC*/ true>(PV, cascade, tracks);
-        }
+      for (auto& cascade : cascTable_thisCollision) {
+        fillKCand</*isMC*/ true>(PV, cascade, tracks);
       }
+    
     }
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcV0Casc, "process Mc V0 and cascade", false);
@@ -1301,7 +1219,6 @@ struct LfTreeCreatorClusterStudies {
       if (!collisionSelection(collision)) {
         continue;
       }
-
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
@@ -1313,12 +1230,8 @@ struct LfTreeCreatorClusterStudies {
           continue;
         }
 
-        if (setting_fillDe) {
-          fillDeTable</*isMC*/ true>(track);
-        }
-        if (setting_fillHe3) {
-          fillHe3Table</*isMC*/ true>(track);
-        }
+        fillNucleusTable<PartID::de, /*isMC*/ true>(track);
+        fillNucleusTable<PartID::he, /*isMC*/ true>(track);
       }
     }
   }
