@@ -78,6 +78,7 @@ struct f1protoncorrelation {
   Configurable<float> momentumTOFKaonMax{"momentumTOFKaonMax", 0.9, "Kaon momentum TOF Max"};
   Configurable<float> momentumTOFProton{"momentumTOFProton", 0.7, "Proton momentum TOF"};
   Configurable<float> momentumProtonMax{"momentumProtonMax", 3.0, "Maximum proton momentum"};
+  Configurable<float> momentumProtonMin{"momentumProtonMin", 0.1, "Minimum proton momentum"};
   Configurable<float> lowPtF1{"lowPtF1", 1.0, "PT cut F1"};
   Configurable<int> nRot{"nRot", 4, "Number of rotational bkg"};
   // Event Mixing
@@ -289,7 +290,7 @@ struct f1protoncorrelation {
       }
       for (auto protontrack : protontracks) {
         Proton.SetXYZM(protontrack.protonPx(), protontrack.protonPy(), protontrack.protonPz(), 0.938);
-        if (Proton.Pt() > momentumProtonMax) {
+        if (Proton.Pt() > momentumProtonMax || Proton.Pt() < momentumProtonMin) {
           continue;
         }
         if (Proton.P() < momentumTOFProton && TMath::Abs(protontrack.protonNsigmaTPC()) > 2.5) {
@@ -405,7 +406,7 @@ struct f1protoncorrelation {
 
         for (auto const& t2 : p_c1) { // proton from c1
           Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
-          if (Proton.Pt() > momentumProtonMax)
+          if (Proton.Pt() > momentumProtonMax || Proton.Pt() < momentumProtonMin)
             continue;
           if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5)
             continue;
@@ -475,7 +476,7 @@ struct f1protoncorrelation {
 
         for (auto const& t2 : p_c2) { // proton from c2
           Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
-          if (Proton.Pt() > momentumProtonMax)
+          if (Proton.Pt() > momentumProtonMax || Proton.Pt() < momentumProtonMin)
             continue;
           if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5)
             continue;
@@ -580,7 +581,7 @@ struct f1protoncorrelation {
           combinedTPC = (t1.f1d1TPC() - t1.f1d2TPC()) / (t1.f1d1TPC() + t1.f1d2TPC());
         }
         Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
-        if (Proton.Pt() > momentumProtonMax) {
+        if (Proton.Pt() > momentumProtonMax || Proton.Pt() < momentumProtonMin) {
           continue;
         }
         if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5) {
