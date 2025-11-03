@@ -66,20 +66,6 @@ void FastTracker::addDeadPhiRegionInLayer(const std::string& layerName, float ph
   layers[layerIdx].addDeadPhiRegion(phiStart, phiEnd);
 }
 
-DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers) const
-{
-  int layerIdx = layer;
-  if (ignoreBarrelLayers) {
-    for (int il = 0, trackingLayerIdx = 0; trackingLayerIdx <= layer; il++) {
-      if (layers[il].isInert())
-        continue;
-      trackingLayerIdx++;
-      layerIdx = il;
-    }
-  }
-  return layers[layerIdx];
-}
-
 int FastTracker::GetLayerIndex(const std::string& name) const
 {
   int i = 0;
