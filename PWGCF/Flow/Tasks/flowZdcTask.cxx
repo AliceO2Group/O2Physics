@@ -455,8 +455,6 @@ struct FlowZdcTask {
       for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
         aT0C += amplitude;
       }
-    } else {
-      return;
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::TZero);
     if (foundBC.has_fv0a()) {

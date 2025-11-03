@@ -155,6 +155,13 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
+    // for deltaPt/<pT> vs c22 vs centrality
+    O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs c22 vs centrality")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisCorrConfigIndex, int, 7, "Index in CorrConfig, this decide which correlation is filled")
+    TH1D* hEvAvgMeanPt = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDptDishEvAvgMeanPt, std::string, "", "CCDB path to hMeanPt object")
+    ConfigurableAxis cfgDptDisAxisCorr{"cfgDptDisAxisCorr", {50, 0., 0.005}, "pt axis for histograms"};
+    ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -316,6 +323,9 @@ struct FlowTask {
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    if (cfgFuncParas.cfgDptDisEnable) {
+      registry.add("hNormDeltaPt_Corr_X", " #delta p_{T}/[p_{T}]; Corr; X", {HistType::kTH3D, {cfgFuncParas.cfgDptDisAxisNormal, cfgFuncParas.cfgDptDisAxisCorr, axisIndependent}});
+    }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
@@ -593,6 +603,25 @@ struct FlowTask {
     return;
   }
 
+  template <char... chars>
+  void fillDeltaPtvsCorr(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& histo, const double& cent)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        double meanPt = sum_pt / WeffEvent;
+        double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(cent));
+        registry.fill(histo, deltaPt / meanPt, val, cent, dnx * WeffEvent);
+      }
+      return;
+    }
+    return;
+  }
+
   template <DataType dt>
   void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
@@ -665,6 +694,13 @@ struct FlowTask {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDishEvAvgMeanPt.value.empty() == false) {
+      cfgFuncParas.hEvAvgMeanPt = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDishEvAvgMeanPt, timestamp);
+      if (cfgFuncParas.hEvAvgMeanPt == nullptr) {
+        LOGF(fatal, "Could not load mean pT histogram from %s", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str());
+      }
+      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgFuncParas.hEvAvgMeanPt);
     }
     correctionsLoaded = true;
   }
@@ -1063,6 +1099,10 @@ struct FlowTask {
         fillPtSums<kReco>(track, weff);
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+
+    if (cfgFuncParas.cfgDptDisEnable) {
+      fillDeltaPtvsCorr(corrconfigs.at(cfgFuncParas.cfgDptDisCorrConfigIndex), ptSum, weffEvent, HIST("hNormDeltaPt_Corr_X"), independent);
+    }
 
     double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
     // MeanPt
