@@ -4218,7 +4218,7 @@ struct AnalysisDileptonTrack {
         auto track1 = mcTracks.rawIteratorAt(*(&t1));
         for (auto t2 : mcTrackIndices) {
           if (t1 == t2) continue; 
-          if (t2 < t1) continue; 
+          //if (t2 < t1) continue; 
           auto track2 = mcTracks.rawIteratorAt(*(&t2));
           for (auto t3 : mcTrackIndices) {
             if (t3 == t1) continue; 
