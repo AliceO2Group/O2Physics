@@ -135,6 +135,8 @@ struct BjetTaggingGnn {
 
     if (doprocessDataTracks || doprocessMCDTracks) {
       registry.add("h_trackpT", "", {HistType::kTH1F, {axisTrackpT}}, callSumw2);
+      registry.add("h_tracketa", "", {HistType::kTH1F, {{100, trackEtaMin, trackEtaMax, "#it{#eta}"}}}, callSumw2);
+      registry.add("h_trackphi", "", {HistType::kTH1F, {{100, 0.0, 2.0 * M_PI, "#it{#phi}"}}}, callSumw2);
     }
 
     if (doprocessMCDTracks) {
@@ -352,6 +354,8 @@ struct BjetTaggingGnn {
         continue;
       }
       registry.fill(HIST("h_trackpT"), track.pt());
+      registry.fill(HIST("h_tracketa"), track.eta());
+      registry.fill(HIST("h_trackphi"), track.phi());
     }
   }
   PROCESS_SWITCH(BjetTaggingGnn, processDataTracks, "track information in Data", false);
@@ -648,7 +652,7 @@ struct BjetTaggingGnn {
 
   Preslice<aod::JetParticles> mcparticlesPerMCPCollision = aod::jmcparticle::mcCollisionId;
 
-  void processMCDTracks(FilteredCollisionsMCD::iterator const& collision, AnalysisTracksMCD const& tracks, FilteredCollisionsMCP const& mcCollisions, aod::JetParticles const& allParticles)
+  void processMCDTracks(FilteredCollisionsMCD::iterator const& collision, AnalysisTracksMCD const& tracks, FilteredCollisionsMCP const& /*mcCollisions*/, aod::JetParticles const& allParticles)
   {
     float weightEvt = useEventWeight ? collision.weight() : 1.f;
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -666,6 +670,8 @@ struct BjetTaggingGnn {
         continue;
       }
       registry.fill(HIST("h_trackpT"), track.pt(), weightEvt);
+      registry.fill(HIST("h_tracketa"), track.eta(), weightEvt);
+      registry.fill(HIST("h_trackphi"), track.phi(), weightEvt);
 
       if (!matchedMcColl || !track.has_mcParticle()) {
         continue;
