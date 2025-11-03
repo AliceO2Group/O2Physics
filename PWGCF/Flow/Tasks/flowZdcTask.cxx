@@ -937,7 +937,7 @@ struct FlowZdcTask {
         histos.fill(HIST("Zem2VsTdc"), zdc.timeZEM2(), aZEM2);
       }
     }
-}
+  }
 
   PROCESS_SWITCH(FlowZdcTask, processQA, "Process QA", true);
   PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", false);
