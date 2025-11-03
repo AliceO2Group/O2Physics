@@ -9,16 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include <iostream>
-#include "PWGUD/DataModel/UDTables.h"
-#include <TString.h>
-#include "TLorentzVector.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TLorentzVector.h"
+#include <TString.h>
+
+#include <iostream>
+#include <vector>
 
 using std::array;
 using namespace std;
@@ -298,7 +300,7 @@ struct sgExclusivePhiITSselections {
             }
           }
         } // Mass cut
-      }   // end of two tracks only loop
+      } // end of two tracks only loop
 
       if (allTracksAreKaonsBandPID.size() == 2) {
         registry.fill(HIST("hTracksKaons"), allTracksAreKaonsBandPID.size() + 10);
@@ -357,7 +359,7 @@ struct sgExclusivePhiITSselections {
       } // Kaon Band
 
     } // double gap
-  }   // end of process
+  } // end of process
 
   void processSG(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   // process function subscribing to SG data
