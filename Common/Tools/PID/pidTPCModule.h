@@ -294,7 +294,7 @@ class pidTPCModule
         LOGF(info, "***************************************************");
         LOGF(info, "No need for TPC only information detected. Will not generate Nsigma for TPC only tracks");
         LOGF(info, "If this is unexpected behaviour and a necessity was not identified, please add the");
-        LOGF(info, "corresponding task to the list 'devicesRequiringTPCOnlyPID' in pidTPCModule::Init()");
+        LOGF(info, "corresponding task to the configurable 'devicesRequiringTPCOnlyPID' of this task");
       }
       LOGF(info, "***************************************************");
     }
