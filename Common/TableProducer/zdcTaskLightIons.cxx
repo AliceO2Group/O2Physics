@@ -208,7 +208,7 @@ struct ZdcTaskLightIons {
           }
         }
         if (isZNChit && isZNAhit) {
-          registry.get<TH1>(HIST("zdcDebunchHist"))->Fill(zna - znc, zna + znc);
+          registry.get<TH2>(HIST("zdcDebunchHist"))->Fill(zna - znc, zna + znc);
         }
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
@@ -311,7 +311,7 @@ struct ZdcTaskLightIons {
           }
         }
         if (isZNChit && isZNAhit) {
-          registry.get<TH1>(HIST("zdcDebunchHist"))->Fill(zna - znc, zna + znc);
+          registry.get<TH2>(HIST("zdcDebunchHist"))->Fill(zna - znc, zna + znc);
         }
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
