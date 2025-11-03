@@ -1086,7 +1086,7 @@ struct FemtoDreamProducerTaskReso {
     }
 
     if (confIsActivateCascade.value) {
-      for (auto& casc : fullCascades) {
+      for (const auto& casc : fullCascades) {
         // get the daughter tracks
         const auto& posTrackCasc = casc.template posTrack_as<TrackType>();
         const auto& negTrackCasc = casc.template negTrack_as<TrackType>();
