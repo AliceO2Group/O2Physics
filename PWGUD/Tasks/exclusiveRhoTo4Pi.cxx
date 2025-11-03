@@ -18,8 +18,6 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/DataModel/PIDResponse.h"
-
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"

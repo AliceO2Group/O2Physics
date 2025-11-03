@@ -34,6 +34,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 
@@ -63,7 +64,41 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
+
 struct V0ptHadPiKaProt {
+
+  // ITS response
+  o2::aod::ITSResponse itsResponse;
+  // Connect to ccdb
+  Service<ccdb::BasicCCDBManager> ccdb;
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+
+  enum Particles {
+    PIONS = 0,
+    KAONS,
+    PROTONS
+  };
+  enum ParticleNsigma {
+    kPionUpCut = 0,
+    kKaonUpCut,
+    kProtonUpCut,
+    kPionLowCut,
+    kKaonLowCut,
+    kProtonLowCut
+  };
+  enum DetectorType {
+    kTPC = 0,
+    kTOF,
+    kITS
+  };
+  enum CentralityEstimator {
+    kFT0C = 0,
+    kFT0A,
+    kFT0M,
+    kFV0A
+  };
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
@@ -87,16 +122,16 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgCutEtaLeft{"cfgCutEtaLeft", 0.8f, "Left end of eta gap"};
   Configurable<float> cfgCutEtaRight{"cfgCutEtaRight", 0.8f, "Right end of eta gap"};
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
-  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 1-->FT0C, 2-->FT0A, 3-->FT0M, 4-->FV0A"};
+  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Which centrality estimator? 0-->FT0C, 1-->FT0A, 2-->FT0M, 3-->FV0A"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
   Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
-
-  // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
+  Configurable<bool> cfgUseItsPID{"cfgUseItsPID", false, "Use ITS PID for particle identification"};
+  Configurable<float> cfgPtCutTOF{"cfgPtCutTOF", 0.3f, "Minimum pt to use TOF N-sigma"};
+  Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
+  Configurable<bool> cfgUseRun3V2PID{"cfgUseRun3V2PID", true, "True if PID cuts to be used are similar to Run3 v2 PID analysis"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
@@ -110,9 +145,35 @@ struct V0ptHadPiKaProt {
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
 
+  std::array<float, 6> tofNsigmaCut;
+  std::array<float, 6> itsNsigmaCut;
+  std::array<float, 6> tpcNsigmaCut;
+
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
   {
+    // Get nSigma values of TPC, TOF, ITS for various particles from the matrix "nSigmas"
+    tpcNsigmaCut[kPionUpCut] = nSigmas->getData()[kTPC][kPionUpCut];
+    tpcNsigmaCut[kKaonUpCut] = nSigmas->getData()[kTPC][kKaonUpCut];
+    tpcNsigmaCut[kProtonUpCut] = nSigmas->getData()[kTPC][kProtonUpCut];
+    tpcNsigmaCut[kPionLowCut] = nSigmas->getData()[kTPC][kPionLowCut];
+    tpcNsigmaCut[kKaonLowCut] = nSigmas->getData()[kTPC][kKaonLowCut];
+    tpcNsigmaCut[kProtonLowCut] = nSigmas->getData()[kTPC][kProtonLowCut];
+
+    tofNsigmaCut[kPionUpCut] = nSigmas->getData()[kTOF][kPionUpCut];
+    tofNsigmaCut[kKaonUpCut] = nSigmas->getData()[kTOF][kKaonUpCut];
+    tofNsigmaCut[kProtonUpCut] = nSigmas->getData()[kTOF][kProtonUpCut];
+    tofNsigmaCut[kPionLowCut] = nSigmas->getData()[kTOF][kPionLowCut];
+    tofNsigmaCut[kKaonLowCut] = nSigmas->getData()[kTOF][kKaonLowCut];
+    tofNsigmaCut[kProtonLowCut] = nSigmas->getData()[kTOF][kProtonLowCut];
+
+    itsNsigmaCut[kPionUpCut] = nSigmas->getData()[kITS][kPionUpCut];
+    itsNsigmaCut[kKaonUpCut] = nSigmas->getData()[kITS][kKaonUpCut];
+    itsNsigmaCut[kProtonUpCut] = nSigmas->getData()[kITS][kProtonUpCut];
+    itsNsigmaCut[kPionLowCut] = nSigmas->getData()[kITS][kPionLowCut];
+    itsNsigmaCut[kKaonLowCut] = nSigmas->getData()[kITS][kKaonLowCut];
+    itsNsigmaCut[kProtonLowCut] = nSigmas->getData()[kITS][kProtonLowCut];
+
     // Define axes
     std::vector<double> ptBin = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0};
     AxisSpec ptAxis = {ptBin, "#it{p}_{T} (GeV/#it{c})"};
@@ -332,6 +393,56 @@ struct V0ptHadPiKaProt {
       return false;
   }
 
+  template <typename TTrack>
+  int getNsigmaPID(TTrack track)
+  {
+    // Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
+    int pid = 0; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
+
+    std::array<float, 3> nSigmaToUse = cfgUseItsPID ? nSigmaITS : nSigmaTPC;             // Choose which nSigma to use: TPC or ITS
+    std::array<float, 6> detectorNsigmaCut = cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
+
+    bool isPion, isKaon, isProton;
+    bool isDetectedPion = nSigmaToUse[PIONS] < detectorNsigmaCut[kPionUpCut] && nSigmaToUse[PIONS] > detectorNsigmaCut[kPionLowCut];
+    bool isDetectedKaon = nSigmaToUse[KAONS] < detectorNsigmaCut[kKaonUpCut] && nSigmaToUse[KAONS] > detectorNsigmaCut[kKaonLowCut];
+    bool isDetectedProton = nSigmaToUse[PROTONS] < detectorNsigmaCut[kProtonUpCut] && nSigmaToUse[PROTONS] > detectorNsigmaCut[kProtonLowCut];
+
+    bool isTofPion = nSigmaTOF[PIONS] < tofNsigmaCut[kPionUpCut] && nSigmaTOF[PIONS] > tofNsigmaCut[kPionLowCut];
+    bool isTofKaon = nSigmaTOF[KAONS] < tofNsigmaCut[kKaonUpCut] && nSigmaTOF[KAONS] > tofNsigmaCut[kKaonLowCut];
+    bool isTofProton = nSigmaTOF[PROTONS] < tofNsigmaCut[kProtonUpCut] && nSigmaTOF[PROTONS] > tofNsigmaCut[kProtonLowCut];
+
+    if (track.pt() > cfgPtCutTOF && !track.hasTOF()) {
+      return 0;
+    } else if (track.pt() > cfgPtCutTOF && track.hasTOF()) {
+      isPion = isTofPion && isDetectedPion;
+      isKaon = isTofKaon && isDetectedKaon;
+      isProton = isTofProton && isDetectedProton;
+    } else {
+      isPion = isDetectedPion;
+      isKaon = isDetectedKaon;
+      isProton = isDetectedProton;
+    }
+
+    if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
+      return 0; // more than one particle satisfy the criteria
+    }
+
+    if (isPion) {
+      pid = PIONS + 1;
+    } else if (isKaon) {
+      pid = KAONS + 1;
+    } else if (isProton) {
+      pid = PROTONS + 1;
+    } else {
+      return 0; // no particle satisfies the criteria
+    }
+
+    return pid; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
+  }
+
   // process Data
   void process(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
@@ -350,16 +461,19 @@ struct V0ptHadPiKaProt {
     if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
       return;
     }
+    if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
 
     // Centrality
     double cent = 0.0;
-    if (cfgCentralityChoice == 1)
+    if (cfgCentralityChoice == kFT0C)
       cent = coll.centFT0C();
-    else if (cfgCentralityChoice == 2)
+    else if (cfgCentralityChoice == kFT0A)
       cent = coll.centFT0A();
-    else if (cfgCentralityChoice == 3)
+    else if (cfgCentralityChoice == kFT0M)
       cent = coll.centFT0M();
-    else if (cfgCentralityChoice == 4)
+    else if (cfgCentralityChoice == kFV0A)
       cent = coll.centFV0A();
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
@@ -438,9 +552,23 @@ struct V0ptHadPiKaProt {
       histos.fill(HIST("h2DnsigmaProtonTpcVsTofBeforeCut"), nSigmaTpcProt, nSigmaTofProt);
 
       // identified particles selection
-      bool isPion = selectionPion(track);
-      bool isKaon = selectionKaon(track);
-      bool isProton = selectionProton(track);
+      bool isPion = false;
+      bool isKaon = false;
+      bool isProton = false;
+
+      if (cfgUseRun3V2PID) {
+        int pidVal = getNsigmaPID(track);
+        if (pidVal == PIONS + 1)
+          isPion = true;
+        if (pidVal == KAONS + 1)
+          isKaon = true;
+        if (pidVal == PROTONS + 1)
+          isProton = true;
+      } else {
+        isPion = selectionPion(track);
+        isKaon = selectionKaon(track);
+        isProton = selectionProton(track);
+      }
 
       // PID QAs after selection
       if (isPion) {

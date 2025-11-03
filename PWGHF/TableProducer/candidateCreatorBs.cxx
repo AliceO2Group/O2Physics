@@ -18,6 +18,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -97,7 +98,6 @@ struct HfCandidateCreatorBs {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -350,7 +350,7 @@ struct HfCandidateCreatorBs {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           // fill output histograms for Bs candidates
-          hMassDsToKKPi->Fill(hfHelper.invMassDsToKKPi(candDs), candDs.pt());
+          hMassDsToKKPi->Fill(HfHelper::invMassDsToKKPi(candDs), candDs.pt());
           hCovSVXX->Fill(covMatrixPCA[0]);
           hCovPVXX->Fill(covMatrixPV[0]);
           hMassBsToDsPi->Fill(massDsPi);

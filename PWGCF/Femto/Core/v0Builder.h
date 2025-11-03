@@ -177,8 +177,8 @@ template <modes::V0 v0Type>
 class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskType, kV0SelsMax>
 {
  public:
-  V0Selection() {}
-  virtual ~V0Selection() = default;
+  V0Selection() = default;
+  ~V0Selection() = default;
 
   template <typename T1, typename T2>
   void configure(T1& config, T2& filter)

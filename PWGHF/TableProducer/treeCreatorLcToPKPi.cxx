@@ -19,6 +19,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -401,8 +402,8 @@ struct HfTreeCreatorLcToPKPi {
   Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
   Configurable<bool> fillCandidateMcTable{"fillCandidateMcTable", false, "Switch to fill a table with MC particles matched to candidates"};
   Configurable<bool> applyMl{"applyMl", false, "Whether ML was used in candidateSelectorLc"};
-  Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
-  Configurable<bool> keepOnlyBkg{"keepOnlyBkg", false, "Fill MC tree only with background candidates"};
+  Configurable<bool> keepSignalMc{"keepSignalMc", false, "Fill MC tree with signal candidates"};
+  Configurable<bool> keepBkgMc{"keepBkgMc", false, "Fill MC tree with background candidates"};
   Configurable<bool> keepCorrBkgMC{"keepCorrBkgMC", false, "Flag to keep correlated background sources (Λc+ -> p K− π+ π0, p π− π+, p K− K+ and other charm hadrons)"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
   Configurable<float> downSampleBkgPtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
@@ -410,8 +411,6 @@ struct HfTreeCreatorLcToPKPi {
   constexpr static float UndefValueFloat = -999.f;
   constexpr static int UndefValueInt = -999;
   constexpr static float NanoToPico = 1000.f;
-
-  HfHelper hfHelper;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
@@ -571,8 +570,8 @@ struct HfTreeCreatorLcToPKPi {
   template <typename CandType>
   std::pair<float, float> evaluateInvariantMassesDCAFitter(CandType const& candidate, int candFlag)
   {
-    const float invMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
-    const float invMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
+    const float invMass = candFlag == 0 ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+    const float invMassKPi = candFlag == 0 ? HfHelper::invMassKPiPairLcToPKPi(candidate) : HfHelper::invMassKPiPairLcToPiKP(candidate);
 
     return std::make_pair(invMass, invMassKPi);
   }
@@ -613,8 +612,8 @@ struct HfTreeCreatorLcToPKPi {
   void fillLiteTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
-    const float functionCt = hfHelper.ctLc(candidate);
-    const float functionY = hfHelper.yLc(candidate);
+    const float functionCt = HfHelper::ctLc(candidate);
+    const float functionY = HfHelper::yLc(candidate);
 
     int8_t functionFlagMcMatchRec{0};
     int8_t functionOriginMcRec{0};
@@ -699,9 +698,9 @@ struct HfTreeCreatorLcToPKPi {
   void fillFullTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
-    const float functionCt = hfHelper.ctLc(candidate);
-    const float functionY = hfHelper.yLc(candidate);
-    const float functionE = hfHelper.eLc(candidate);
+    const float functionCt = HfHelper::ctLc(candidate);
+    const float functionY = HfHelper::yLc(candidate);
+    const float functionE = HfHelper::eLc(candidate);
 
     int8_t functionFlagMcMatchRec{0};
     int8_t functionOriginMcRec{0};
@@ -940,11 +939,11 @@ struct HfTreeCreatorLcToPKPi {
         const int sigbgstatus = determineSignalBgStatus(candidate, candFlag);
         const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
         const bool passSelection = functionSelection >= selectionFlagLc;
-        const bool keepAll = !keepOnlySignalMc && !keepOnlyBkg && !keepCorrBkgMC;
+        const bool keepAll = !keepSignalMc && !keepBkgMc && !keepCorrBkgMC;
         const int flag = candidate.flagMcMatchRec();
-        const bool isCorrBkg = (std::abs(flag) != 0 && std::abs(flag) != o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi);
+        const bool isCorrBkg = (std::abs(flag) != 0 && std::abs(flag) != o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) || sigbgstatus == WrongOrder;
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
-        if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal) || (keepCorrBkgMC && isCorrBkg))) {
+        if (passSelection && notSkippedBkg && (keepAll || (keepSignalMc && isMcCandidateSignal) || (keepBkgMc && !isMcCandidateSignal) || (keepCorrBkgMC && isCorrBkg))) {
           if (fillCandidateLiteTable) {
             fillLiteTable<IsMc>(candidate, candidateMlScore, candFlag);
           } else {

@@ -261,7 +261,6 @@ struct HfTaskBsToJpsiPhiReduced {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   TrackSelectorKa selectorKaon;
   o2::analysis::HfMlResponseBsToJpsiPhiReduced<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
@@ -372,7 +371,7 @@ struct HfTaskBsToJpsiPhiReduced {
                 aod::HfRedBach1Tracks const&)
   {
     auto ptCandBs = candidate.pt();
-    auto invMassBs = hfHelper.invMassBsToJpsiPhi(candidate);
+    auto invMassBs = HfHelper::invMassBsToJpsiPhi(candidate);
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa0 = candidate.template prong0Phi_as<aod::HfRedBach0Tracks>();
     auto candKa1 = candidate.template prong1Phi_as<aod::HfRedBach1Tracks>();
@@ -394,7 +393,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
 
     SETBIT(statusBs, SelectionStep::RecoSkims);
-    if (hfHelper.selectionBsToJpsiPhiTopol(candidate, candKa0, candKa1, cuts, binsPt)) {
+    if (HfHelper::selectionBsToJpsiPhiTopol(candidate, candKa0, candKa1, cuts, binsPt)) {
       SETBIT(statusBs, SelectionStep::RecoTopol);
     } else if (selectionFlagBs >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -411,8 +410,8 @@ struct HfTaskBsToJpsiPhiReduced {
         pidTrackKa0 = selectorKaon.statusTpcAndTof(candKa0);
         pidTrackKa1 = selectorKaon.statusTpcAndTof(candKa1);
       }
-      if (hfHelper.selectionBsToJpsiPhiPid(pidTrackKa0, acceptPIDNotApplicable.value) &&
-          hfHelper.selectionBsToJpsiPhiPid(pidTrackKa1, acceptPIDNotApplicable.value)) {
+      if (HfHelper::selectionBsToJpsiPhiPid(pidTrackKa0, acceptPIDNotApplicable.value) &&
+          HfHelper::selectionBsToJpsiPhiPid(pidTrackKa1, acceptPIDNotApplicable.value)) {
         // LOGF(info, "Bs candidate selection failed at PID selection");
         SETBIT(statusBs, SelectionStep::RecoPID);
       } else if (selectionFlagBs >= BIT(SelectionStep::RecoPID) * 2 - 1) {
@@ -461,7 +460,7 @@ struct HfTaskBsToJpsiPhiReduced {
         ptCandBs,
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBs(candidate),
+        HfHelper::yBs(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.chi2PCA(),
@@ -550,7 +549,7 @@ struct HfTaskBsToJpsiPhiReduced {
                    aod::HfRedBach1Tracks const& kaon1Tracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false>(candidate, candidatesJpsi, kaon0Tracks, kaon1Tracks);
@@ -564,7 +563,7 @@ struct HfTaskBsToJpsiPhiReduced {
                            aod::HfRedBach1Tracks const& kaon1Tracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, true>(candidate, candidatesJpsi, kaon0Tracks, kaon1Tracks);
@@ -580,7 +579,7 @@ struct HfTaskBsToJpsiPhiReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false>(candidate, candidatesJpsi, kaon0Tracks, kaon1Tracks);
@@ -601,7 +600,7 @@ struct HfTaskBsToJpsiPhiReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBs(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true>(candidate, candidatesJpsi, kaon0Tracks, kaon1Tracks);

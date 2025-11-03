@@ -76,7 +76,9 @@ struct FemtoPairTrackTrack {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
-  closepairrejection::ConfCpr confCpr;
+  pairhistmanager::ConfPairCuts confPairCuts;
+
+  closepairrejection::ConfCprTrackTrack confCpr;
 
   pairbuilder::PairTrackTrackBuilder<
     trackhistmanager::PrefixTrack1,
@@ -111,10 +113,10 @@ struct FemtoPairTrackTrack {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     auto trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
     auto trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning1, confTrackBinning2);
+    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
-    pairTrackTrackBuilder.init(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+    pairTrackTrackBuilder.init(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
   };
 
   void processSameEvent(FilteredCollision const& col, Tracks const& tracks)

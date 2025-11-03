@@ -37,7 +37,7 @@ struct TrackSelectorPID {
   };
 };
 
-template <uint64_t pdg = kPiPlus>
+template <uint64_t pdg = PDG_t::kPiPlus>
 class TrackSelectorPidBase
 {
  public:
@@ -121,15 +121,15 @@ class TrackSelectorPidBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-    if constexpr (pdg == kElectron) {
+    if constexpr (pdg == PDG_t::kElectron) {
       nSigma = track.tpcNSigmaEl();
-    } else if constexpr (pdg == kMuonMinus) {
+    } else if constexpr (pdg == PDG_t::kMuonMinus) {
       nSigma = track.tpcNSigmaMu();
-    } else if constexpr (pdg == kPiPlus) {
+    } else if constexpr (pdg == PDG_t::kPiPlus) {
       nSigma = track.tpcNSigmaPi();
-    } else if constexpr (pdg == kKPlus) {
+    } else if constexpr (pdg == PDG_t::kKPlus) {
       nSigma = track.tpcNSigmaKa();
-    } else if constexpr (pdg == kProton) {
+    } else if constexpr (pdg == PDG_t::kProton) {
       nSigma = track.tpcNSigmaPr();
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       nSigma = track.tpcNSigmaDe();
@@ -217,15 +217,15 @@ class TrackSelectorPidBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-    if constexpr (pdg == kElectron) {
+    if constexpr (pdg == PDG_t::kElectron) {
       nSigma = track.tofNSigmaEl();
-    } else if constexpr (pdg == kMuonMinus) {
+    } else if constexpr (pdg == PDG_t::kMuonMinus) {
       nSigma = track.tofNSigmaMu();
-    } else if constexpr (pdg == kPiPlus) {
+    } else if constexpr (pdg == PDG_t::kPiPlus) {
       nSigma = track.tofNSigmaPi();
-    } else if constexpr (pdg == kKPlus) {
+    } else if constexpr (pdg == PDG_t::kKPlus) {
       nSigma = track.tofNSigmaKa();
-    } else if constexpr (pdg == kProton) {
+    } else if constexpr (pdg == PDG_t::kProton) {
       nSigma = track.tofNSigmaPr();
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       nSigma = track.tofNSigmaDe();
@@ -315,15 +315,15 @@ class TrackSelectorPidBase
 
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
-    if constexpr (pdg == kElectron) {
+    if constexpr (pdg == PDG_t::kElectron) {
       nSigma = track.rich().richNsigmaEl();
-    } else if constexpr (pdg == kMuonMinus) {
+    } else if constexpr (pdg == PDG_t::kMuonMinus) {
       nSigma = track.rich().richNsigmaMu();
-    } else if constexpr (pdg == kPiPlus) {
+    } else if constexpr (pdg == PDG_t::kPiPlus) {
       nSigma = track.rich().richNsigmaPi();
-    } else if constexpr (pdg == kKPlus) {
+    } else if constexpr (pdg == PDG_t::kKPlus) {
       nSigma = track.rich().richNsigmaKa();
-    } else if constexpr (pdg == kProton) {
+    } else if constexpr (pdg == PDG_t::kProton) {
       nSigma = track.rich().richNsigmaPr();
     } else {
       errorPdg();
@@ -364,7 +364,7 @@ class TrackSelectorPidBase
   template <typename T>
   bool isValidForMid(const T& track)
   {
-    if constexpr (pdg == kMuonMinus) {
+    if constexpr (pdg == PDG_t::kMuonMinus) {
       return track.midId() > -1;
     } else {
       errorPdg();
@@ -378,7 +378,7 @@ class TrackSelectorPidBase
   template <typename T>
   bool isSelectedByMid(const T& track)
   {
-    if constexpr (pdg == kMuonMinus) {
+    if constexpr (pdg == PDG_t::kMuonMinus) {
       return track.mid().midIsMuon() == 1; // FIXME: change to return track.midIsMuon() once the column is bool.
     } else {
       errorPdg();
@@ -392,7 +392,7 @@ class TrackSelectorPidBase
   template <typename T>
   TrackSelectorPID::Status statusMid(const T& track)
   {
-    if constexpr (pdg == kMuonMinus) {
+    if constexpr (pdg == PDG_t::kMuonMinus) {
       if (!isValidForMid(track)) {
         return TrackSelectorPID::NotApplicable;
       }
@@ -555,15 +555,15 @@ class TrackSelectorPidBase
   bool isSelectedByBayes(const T& track)
   {
     // Get index of the most probable species for a given track.
-    if constexpr (pdg == kElectron) {
+    if constexpr (pdg == PDG_t::kElectron) {
       return track.bayesID() == o2::track::PID::Electron;
-    } else if constexpr (pdg == kMuonMinus) {
+    } else if constexpr (pdg == PDG_t::kMuonMinus) {
       return track.bayesID() == o2::track::PID::Muon;
-    } else if constexpr (pdg == kPiPlus) {
+    } else if constexpr (pdg == PDG_t::kPiPlus) {
       return track.bayesID() == o2::track::PID::Pion;
-    } else if constexpr (pdg == kKPlus) {
+    } else if constexpr (pdg == PDG_t::kKPlus) {
       return track.bayesID() == o2::track::PID::Kaon;
-    } else if constexpr (pdg == kProton) {
+    } else if constexpr (pdg == PDG_t::kProton) {
       return track.bayesID() == o2::track::PID::Proton;
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       return track.bayesID() == o2::track::PID::Deuteron;
@@ -585,15 +585,15 @@ class TrackSelectorPidBase
 
     // Get probability for a given particle hypothesis.
     double prob = 0.;
-    if constexpr (pdg == kElectron) {
+    if constexpr (pdg == PDG_t::kElectron) {
       prob = track.bayesEl();
-    } else if constexpr (pdg == kMuonMinus) {
+    } else if constexpr (pdg == PDG_t::kMuonMinus) {
       prob = track.bayesMu();
-    } else if constexpr (pdg == kPiPlus) {
+    } else if constexpr (pdg == PDG_t::kPiPlus) {
       prob = track.bayesPi();
-    } else if constexpr (pdg == kKPlus) {
+    } else if constexpr (pdg == PDG_t::kKPlus) {
       prob = track.bayesKa();
-    } else if constexpr (pdg == kProton) {
+    } else if constexpr (pdg == PDG_t::kProton) {
       prob = track.bayesPr();
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       prob = track.bayesDe();
@@ -674,11 +674,11 @@ class TrackSelectorPidBase
 };
 
 // Predefined types
-using TrackSelectorEl = TrackSelectorPidBase<kElectron>;                              // El
-using TrackSelectorMu = TrackSelectorPidBase<kMuonMinus>;                             // Mu
-using TrackSelectorPi = TrackSelectorPidBase<kPiPlus>;                                // Pi
-using TrackSelectorKa = TrackSelectorPidBase<kKPlus>;                                 // Ka
-using TrackSelectorPr = TrackSelectorPidBase<kProton>;                                // Pr
+using TrackSelectorEl = TrackSelectorPidBase<PDG_t::kElectron>;                       // El
+using TrackSelectorMu = TrackSelectorPidBase<PDG_t::kMuonMinus>;                      // Mu
+using TrackSelectorPi = TrackSelectorPidBase<PDG_t::kPiPlus>;                         // Pi
+using TrackSelectorKa = TrackSelectorPidBase<PDG_t::kKPlus>;                          // Ka
+using TrackSelectorPr = TrackSelectorPidBase<PDG_t::kProton>;                         // Pr
 using TrackSelectorDe = TrackSelectorPidBase<o2::constants::physics::Pdg::kDeuteron>; // De
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_

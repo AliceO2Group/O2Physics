@@ -84,8 +84,12 @@ struct FlowEventPlane {
   Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
   Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
 
+  // Gain calibration
+  Configurable<bool> cDoGainCalib{"cDoGainCalib", false, "Gain Calib Flag"};
+  Configurable<bool> cUseAlphaZDC{"cUseAlphaZDC", true, "Use Alpha ZDC"};
+
   // Coarse binning factor
-  Configurable<int> cAxisCBF{"cAxisCBF", 1, "Coarse Bin Factor"};
+  Configurable<int> cAxisCBF{"cAxisCBF", 5, "Coarse Bin Factor"};
 
   // Cent Vx Vy Vz Bins
   Configurable<int> cAxisCentBins{"cAxisCentBins", 20, "NBins Centrality"};
@@ -97,6 +101,7 @@ struct FlowEventPlane {
   Configurable<float> cAxisVyMax{"cAxisVyMax", 0.006, "Vy Max"};
 
   // Corrections
+  Configurable<bool> cApplyRecentCorr{"cApplyRecentCorr", false, "Apply recentering"};
   Configurable<std::vector<int>> cCorrFlagVector{"cCorrFlagVector", {0, 0, 0, 0, 0, 0}, "Correction Flag"};
 
   // CCDB
@@ -110,14 +115,9 @@ struct FlowEventPlane {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Global objects
+  const float zdcDenThrs = 1e-4;
   float cent = 0., mult = 0.;
   float posX = 0., posY = 0., posZ = 0.;
-
-  std::array<float, 4> znaXWeigthEnergy = {1., 1., 1., 1.};
-  std::array<float, 4> znaYWeigthEnergy = {1., 1., 1., 1.};
-  std::array<float, 4> zncXWeigthEnergy = {1., 1., 1., 1.};
-  std::array<float, 4> zncYWeigthEnergy = {1., 1., 1., 1.};
-
   std::vector<std::vector<std::string>> vCoarseCorrHistNames = {
     {"hXZNAVsCentVxVyVz"},
     {"hYZNAVsCentVxVyVz"},
@@ -128,17 +128,7 @@ struct FlowEventPlane {
     {"hYZNAVsCent", "hYZNAVsVx", "hYZNAVsVy", "hYZNAVsVz"},
     {"hXZNCVsCent", "hXZNCVsVx", "hXZNCVsVy", "hXZNCVsVz"},
     {"hYZNCVsCent", "hYZNCVsVx", "hYZNCVsVy", "hYZNCVsVz"}};
-
-  // Map for Correction Type and Histogram Names
   std::map<CorrectionType, std::vector<std::vector<std::string>>> corrTypeHistNameMap = {{kFineCorr, vFineCorrHistNames}, {kCoarseCorr, vCoarseCorrHistNames}};
-
-  // Structure to hold CCDB objects
-  struct CcdbObjects {
-    TList* ccdbList;
-    TObject* obj;
-    TProfile* hp;
-    THnSparseF* hn;
-  } ccdbObjects;
 
   void init(InitContext const&)
   {
@@ -185,14 +175,12 @@ struct FlowEventPlane {
     histos.add("Event/hVx", "V_{x}", kTH1F, {axisVx});
     histos.add("Event/hVy", "V_{y}", kTH1F, {axisVy});
     histos.add("Event/hVz", "V_{z}", kTH1F, {axisVz});
-    histos.add("QA/hZNASignalSector1", "ZNA Signal Sector 1", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNASignalSector2", "ZNA Signal Sector 2", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNASignalSector3", "ZNA Signal Sector 3", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNASignalSector4", "ZNA Signal Sector 4", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNCSignalSector1", "ZNC Signal Sector 1", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNCSignalSector2", "ZNC Signal Sector 2", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNCSignalSector3", "ZNC Signal Sector 3", kTH1F, {axisZDCEnergy});
-    histos.add("QA/hZNCSignalSector4", "ZNC Signal Sector 4", kTH1F, {axisZDCEnergy});
+    histos.add("QA/GainCalib/hZNASignal", "ZNA Signal", kTH2F, {{4, 0, 4}, {axisZDCEnergy}});
+    histos.add("QA/GainCalib/hZNCSignal", "ZNC Signal", kTH2F, {{4, 0, 4}, {axisZDCEnergy}});
+    histos.add("QA/hZNASignal", "ZNA Signal", kTProfile2D, {{4, 0, 4}, {axisVz}});
+    histos.add("QA/hZNCSignal", "ZNC Signal", kTProfile2D, {{4, 0, 4}, {axisVz}});
+    histos.add("QA/hZNAEnergyCommon", "ZNA Energy Common", kTProfile, {axisVz});
+    histos.add("QA/hZNCEnergyCommon", "ZNC Energy Common", kTProfile, {axisVz});
     histos.add("CorrHist/hWtXZNA", "X^{ZNA}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
     histos.add("CorrHist/hWtYZNA", "Y^{ZNA}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
     histos.add("CorrHist/hWtXZNC", "X^{ZNC}_{1}", kTHnSparseF, {axisCoarseCent, axisCoarseVx, axisCoarseVy, axisCoarseVz});
@@ -221,17 +209,19 @@ struct FlowEventPlane {
     histos.add("Checks/hPsiSPC", "#Psi_{SP}^{C} distribution", kTH2F, {axisCent, axisPsi});
     histos.add("Checks/hCosPsiSPAC", "Cos(#Psi_{SP}^{A} #minus #Psi_{SP}^{C}) distribution", kTProfile, {axisCent});
     histos.add("Checks/hSinPsiSPAC", "Sin(#Psi_{SP}^{A} #minus #Psi_{SP}^{C}) distribution", kTProfile, {axisCent});
-    histos.add("Checks/hXaXc", "X^{ZNC}_{1} Vs X^{ZNA}_{1}", kTProfile, {axisCent});
-    histos.add("Checks/hYaYc", "Y^{ZNC}_{1} Vs Y^{ZNA}_{1}", kTProfile, {axisCent});
+    histos.add("Checks/hXaXc", "X^{A}_{1}X^{C}_{1}", kTProfile, {axisCent});
+    histos.add("Checks/hYaYc", "Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
+    histos.add("Checks/hXaYc", "X^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
+    histos.add("Checks/hYaXc", "Y^{A}_{1}X^{C}_{1}", kTProfile, {axisCent});
     histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
     histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
     histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
-    histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
-    histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
-    histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
-    histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
-    histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
-    histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTH3F, {axisCent, axisV1, axisTrackEta});
+    histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
   }
 
   template <typename C>
@@ -307,6 +297,23 @@ struct FlowEventPlane {
     return true;
   }
 
+  void gainCalib(float const& vz, int const& runNumber, std::array<float, 4>& energy, const char* histName = "hZNAEnergy")
+  {
+    // Set CCDB path
+    std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(runNumber);
+
+    // Get object from CCDB
+    auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+
+    // Get gain calibration
+    TH2F* h = reinterpret_cast<TH2F*>(ccdbObj->FindObject(histName));
+    float v = 0.;
+    for (int i = 0; i < static_cast<int>(energy.size()); ++i) {
+      v = h->GetBinContent(h->FindBin(i + 0.5, vz + 0.00001));
+      energy[i] *= v;
+    }
+  }
+
   template <typename C, typename F>
   std::vector<float> getAvgCorrFactors(const C& ccdbObject, const F& corrType, const std::vector<float>& vCollParam)
   {
@@ -317,18 +324,15 @@ struct FlowEventPlane {
     for (auto const& x : vHistNames) {
       int cntry = 0;
       for (auto const& y : x) {
-        ccdbObjects.obj = reinterpret_cast<TObject*>(ccdbObject->FindObject(y.c_str()));
         if (corrType == kFineCorr) {
-          ccdbObjects.hp = reinterpret_cast<TProfile*>(ccdbObjects.obj->Clone());
-          vAvgOutput[cntrx] += ccdbObjects.hp->GetBinContent(ccdbObjects.hp->GetXaxis()->FindBin(vCollParam[cntry]));
-          delete ccdbObjects.hp;
+          TProfile* hp = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+          vAvgOutput[cntrx] += hp->GetBinContent(hp->GetXaxis()->FindBin(vCollParam[cntry]));
         } else {
-          ccdbObjects.hn = reinterpret_cast<THnSparseF*>(ccdbObjects.obj->Clone());
+          THnSparseF* hn = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
           for (int i = 0; i < static_cast<int>(vHistNames.size()); ++i) {
-            binarray[i] = ccdbObjects.hn->GetAxis(i)->FindBin(vCollParam[i]);
+            binarray[i] = hn->GetAxis(i)->FindBin(vCollParam[i]);
           }
-          vAvgOutput[cntrx] += ccdbObjects.hn->GetBinContent(ccdbObjects.hn->GetBin(binarray));
-          delete ccdbObjects.hn;
+          vAvgOutput[cntrx] += hn->GetBinContent(hn->GetBin(binarray));
         }
         ++cntry;
       }
@@ -337,7 +341,7 @@ struct FlowEventPlane {
     return vAvgOutput;
   }
 
-  void applyCorrection(const std::vector<float> inputParam, const int& runNumber, std::vector<float>& outputParam)
+  void applyCorrection(const std::vector<float>& inputParam, const int& runNumber, std::vector<float>& outputParam)
   {
     std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
     int nitr = vCorrFlags.size();
@@ -361,16 +365,16 @@ struct FlowEventPlane {
       ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(runNumber);
 
       // Get object from CCDB
-      ccdbObjects.ccdbList = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
 
       // Check CCDB Object
-      if (!ccdbObjects.ccdbList) {
+      if (!ccdbObj) {
         LOGF(warning, "CCDB OBJECT NOT FOUND");
         return;
       }
 
       // Get averages
-      std::vector<float> vAvg = getAvgCorrFactors(ccdbObjects.ccdbList, corrType, inputParam);
+      std::vector<float> vAvg = getAvgCorrFactors(ccdbObj, corrType, inputParam);
 
       // Apply correction
       outputParam[kXa] -= vAvg[kXa];
@@ -437,6 +441,7 @@ struct FlowEventPlane {
 
     // Get bunch crossing
     auto bc = collision.foundBC_as<BCsRun3>();
+    int runNumber = collision.foundBC_as<BCsRun3>().runNumber();
 
     // check zdc
     if (!bc.has_zdc()) {
@@ -454,59 +459,82 @@ struct FlowEventPlane {
       return;
     }
 
-    // Fill QA histograms
-    histos.fill(HIST("QA/hZNASignalSector1"), znaEnergy[0]);
-    histos.fill(HIST("QA/hZNASignalSector2"), znaEnergy[1]);
-    histos.fill(HIST("QA/hZNASignalSector3"), znaEnergy[2]);
-    histos.fill(HIST("QA/hZNASignalSector4"), znaEnergy[3]);
-    histos.fill(HIST("QA/hZNCSignalSector1"), zncEnergy[0]);
-    histos.fill(HIST("QA/hZNCSignalSector2"), zncEnergy[1]);
-    histos.fill(HIST("QA/hZNCSignalSector3"), zncEnergy[2]);
-    histos.fill(HIST("QA/hZNCSignalSector4"), zncEnergy[3]);
+    // Fill gain calib histograms
+    for (int iCh = 0; iCh < kXYAC; ++iCh) {
+      histos.fill(HIST("QA/hZNASignal"), iCh + 0.5, vCollParam[kVz], znaEnergy[iCh]);
+      histos.fill(HIST("QA/hZNCSignal"), iCh + 0.5, vCollParam[kVz], zncEnergy[iCh]);
+      histos.fill(HIST("QA/hZNAEnergyCommon"), vCollParam[kVz], znaEnergyCommon);
+      histos.fill(HIST("QA/hZNCEnergyCommon"), vCollParam[kVz], zncEnergyCommon);
+    }
 
-    /*auto alphaZDC = 0.395;*/
+    // Do gain calibration
+    if (cDoGainCalib) {
+      gainCalib(vCollParam[kVz], runNumber, znaEnergy, "hZNASignal");
+      gainCalib(vCollParam[kVz], runNumber, zncEnergy, "hZNCSignal");
+    }
+
+    // Fill zdc signal
+    for (int iCh = 0; iCh < kXYAC; ++iCh) {
+      histos.fill(HIST("QA/GainCalib/hZNASignal"), iCh + 0.5, znaEnergy[iCh]);
+      histos.fill(HIST("QA/GainCalib/hZNCSignal"), iCh + 0.5, zncEnergy[iCh]);
+    }
+
+    auto alphaZDC = 0.395;
     const double x[4] = {-1.75, 1.75, -1.75, 1.75};
     const double y[4] = {-1.75, -1.75, 1.75, 1.75};
 
     // Calculate X and Y
-    float znaXSumNum = 0., znaXSumDnm = 0.;
-    float znaYSumNum = 0., znaYSumDnm = 0.;
-    float zncXSumNum = 0., zncXSumDnm = 0.;
-    float zncYSumNum = 0., zncYSumDnm = 0.;
+    float znaXNum = 0., znaYNum = 0., zncXNum = 0., zncYNum = 0.;
+    float znaDen = 0., zncDen = 0.;
+    float znaWt = 0., zncWt = 0.;
 
     // Loop over zdc sectors
     for (int i = 0; i < kXYAC; ++i) {
-      znaXSumNum += znaXWeigthEnergy[i] * znaEnergy[i] * x[i];
-      znaYSumNum += znaYWeigthEnergy[i] * znaEnergy[i] * y[i];
-      znaXSumDnm += znaXWeigthEnergy[i] * znaEnergy[i];
-      znaYSumDnm += znaYWeigthEnergy[i] * znaEnergy[i];
-      zncXSumNum += zncXWeigthEnergy[i] * zncEnergy[i] * x[i];
-      zncYSumNum += zncYWeigthEnergy[i] * zncEnergy[i] * y[i];
-      zncXSumDnm += zncXWeigthEnergy[i] * zncEnergy[i];
-      zncYSumDnm += zncYWeigthEnergy[i] * zncEnergy[i];
+      if (cUseAlphaZDC) {
+        znaWt = std::pow(znaEnergy[i], alphaZDC);
+        zncWt = std::pow(zncEnergy[i], alphaZDC);
+      } else {
+        znaWt = znaEnergy[i];
+        zncWt = zncEnergy[i];
+      }
+      znaXNum -= znaWt * x[i];
+      znaYNum += znaWt * y[i];
+      zncXNum += zncWt * x[i];
+      zncYNum += zncWt * y[i];
+      znaDen += znaWt;
+      zncDen += zncWt;
+    }
+
+    if (znaDen < zdcDenThrs || zncDen < zdcDenThrs) {
+      return;
     }
 
     // Get X and Y for A and C side ZNA
     std::vector<float> vSP = {0, 0, 0, 0};
-    vSP[kXa] = znaXSumNum / znaXSumDnm;
-    vSP[kYa] = znaYSumNum / znaYSumDnm;
-    vSP[kXc] = zncXSumNum / zncXSumDnm;
-    vSP[kYc] = zncYSumNum / zncYSumDnm;
+    vSP[kXa] = znaXNum / znaDen;
+    vSP[kYa] = znaYNum / znaDen;
+    vSP[kXc] = zncXNum / zncDen;
+    vSP[kYc] = zncYNum / zncDen;
 
     // Do corrections
-    int runNumber = collision.foundBC_as<BCsRun3>().runNumber();
-    applyCorrection(vCollParam, runNumber, vSP);
+    if (cApplyRecentCorr) {
+      applyCorrection(vCollParam, runNumber, vSP);
+    }
 
-    // Fill X and Y histograms
+    // Fill X and Y histograms for corrections after each iteration
     fillCorrHist(vCollParam, vSP);
+
+    // Evaluate spectator plane angle and [X,Y] correlations
     float psiA = std::atan2(vSP[kYa], vSP[kXa]);
-    float psiC = std::atan2(vSP[kYa], vSP[kXa]);
-    histos.fill(HIST("Checks/hXaXc"), cent, (vSP[kXa] * vSP[kXc]));
-    histos.fill(HIST("Checks/hYaYc"), cent, (vSP[kYa] * vSP[kYc]));
+    float psiC = std::atan2(vSP[kYc], vSP[kXc]);
     histos.fill(HIST("Checks/hPsiSPA"), cent, psiA);
     histos.fill(HIST("Checks/hPsiSPC"), cent, psiC);
     histos.fill(HIST("Checks/hCosPsiSPAC"), cent, std::cos(psiA - psiC));
     histos.fill(HIST("Checks/hSinPsiSPAC"), cent, std::sin(psiA - psiC));
+    histos.fill(HIST("Checks/hXaXc"), cent, (vSP[kXa] * vSP[kXc]));
+    histos.fill(HIST("Checks/hYaYc"), cent, (vSP[kYa] * vSP[kYc]));
+    histos.fill(HIST("Checks/hXaYc"), cent, (vSP[kXa] * vSP[kYc]));
+    histos.fill(HIST("Checks/hYaXc"), cent, (vSP[kYa] * vSP[kXc]));
 
     // Directed flow
     float qac = (vSP[kXa] * vSP[kXc]) + (vSP[kYa] * vSP[kYc]);
@@ -530,14 +558,14 @@ struct FlowEventPlane {
       v1c = ux * vSP[kXc] + uy * vSP[kYc];
 
       // Fill histogram
-      histos.fill(HIST("DF/hAQu"), cent, v1a, track.eta());
-      histos.fill(HIST("DF/hCQu"), cent, v1c, track.eta());
+      histos.fill(HIST("DF/hAQu"), cent, track.eta(), v1a);
+      histos.fill(HIST("DF/hCQu"), cent, track.eta(), v1c);
       if (track.sign() > 0) {
-        histos.fill(HIST("DF/hAQuPos"), cent, v1a, track.eta());
-        histos.fill(HIST("DF/hCQuPos"), cent, v1c, track.eta());
+        histos.fill(HIST("DF/hAQuPos"), cent, track.eta(), v1a);
+        histos.fill(HIST("DF/hCQuPos"), cent, track.eta(), v1c);
       } else {
-        histos.fill(HIST("DF/hAQuNeg"), cent, v1a, track.eta());
-        histos.fill(HIST("DF/hCQuNeg"), cent, v1c, track.eta());
+        histos.fill(HIST("DF/hAQuNeg"), cent, track.eta(), v1a);
+        histos.fill(HIST("DF/hCQuNeg"), cent, track.eta(), v1c);
       }
     }
   }

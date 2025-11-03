@@ -166,7 +166,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
 {
  public:
   CollisionSelection() = default;
-  virtual ~CollisionSelection() = default;
+  ~CollisionSelection() = default;
 
   template <typename T1, typename T2>
   void configure(T1 const& filter, T2 const& config)
@@ -348,8 +348,8 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
 class CollisionBuilder
 {
  public:
-  CollisionBuilder() {}
-  virtual ~CollisionBuilder() = default;
+  CollisionBuilder() = default;
+  ~CollisionBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void init(T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
@@ -505,7 +505,7 @@ class CollisionBuilderDerivedToDerived
 {
  public:
   CollisionBuilderDerivedToDerived() = default;
-  virtual ~CollisionBuilderDerivedToDerived() = default;
+  ~CollisionBuilderDerivedToDerived() = default;
 
   template <typename T1, typename T2>
   void processCollision(T1& col, T2& newCollisionTable)

@@ -18,13 +18,13 @@
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Università/INFN Cagliari
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -122,8 +122,6 @@ struct HfTreeCreatorChicToJpsiGamma {
   Produces<o2::aod::HfCandChicFullEs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandChicFullPs> rowCandidateFullParticles;
 
-  HfHelper hfHelper;
-
   void init(InitContext const&)
   {
   }
@@ -203,8 +201,8 @@ struct HfTreeCreatorChicToJpsiGamma {
             candidate.originMcRec());
         }
       };
-      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), hfHelper.invMassChicToJpsiGamma(candidate), hfHelper.ctChic(candidate), hfHelper.yChic(candidate));
-      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), hfHelper.invMassChicToJpsiGamma(candidate), hfHelper.ctChic(candidate), hfHelper.yChic(candidate));
+      fillTable(0, candidate.isSelChicToJpsiToMuMuGamma(), HfHelper::invMassChicToJpsiGamma(candidate), HfHelper::ctChic(candidate), HfHelper::yChic(candidate));
+      //      fillTable(1, candidate.isSelChicToJpsiToEEGamma(), HfHelper::invMassChicToJpsiGamma(candidate), HfHelper::ctChic(candidate), HfHelper::yChic(candidate));
     }
 
     // Filling particle properties

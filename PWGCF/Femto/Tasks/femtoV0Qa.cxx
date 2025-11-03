@@ -106,7 +106,7 @@ struct FemtoV0Qa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, colHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec, confCollisionQaBinning);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
@@ -117,12 +117,12 @@ struct FemtoV0Qa {
 
     if (doprocessLambda) {
       auto lambdaHistSpec = v0histmanager::makeV0QaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-      lambdaHistManager.init(&hRegistry, lambdaHistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      lambdaHistManager.init(&hRegistry, lambdaHistSpec, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
     }
 
     if (doprocessK0short) {
       auto k0shortHistSpec = v0histmanager::makeV0QaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-      k0shortHistManager.init(&hRegistry, k0shortHistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      k0shortHistManager.init(&hRegistry, k0shortHistSpec, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
     }
   };
 

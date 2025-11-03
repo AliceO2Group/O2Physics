@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
@@ -92,7 +93,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassBPlus};
 
@@ -210,7 +210,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.pyProng1(),
         candidate.pzProng1(),
         candidate.errorImpactParameter1(),
-        hfHelper.cosThetaStarBplus(candidate),
+        HfHelper::cosThetaStarBplus(candidate),
         ct);
     }
     if (fillCandidateSel) {
@@ -313,9 +313,9 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         }
         auto prongCharm = candidate.template prong0_as<CandCharmType>();
         auto prongBachelor = candidate.template prong1_as<TracksWPid>();
-        double const ct = hfHelper.ctBplus(candidate);
-        double const y = hfHelper.yBplus(candidate);
-        float const massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
+        double const ct = HfHelper::ctBplus(candidate);
+        double const y = HfHelper::yBplus(candidate);
+        float const massBplusToD0Pi = HfHelper::invMassBplusToD0Pi(candidate);
         float mlScoreBplusToD0Pi{-1.f};
         std::vector<float> mlScoresD0;
         bool const isD0 = prongBachelor.sign() < 0;
