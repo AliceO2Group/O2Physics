@@ -218,7 +218,7 @@ struct FemtoDreamProducerTaskReso {
     Configurable<float> confCascV0InvMassLowLimit{"confCascV0InvMassLowLimit", 1.011461, "Lower limit of the Cascade invariant mass"};
     Configurable<float> confCascV0InvMassUpLimit{"confCascV0InvMassUpLimit", 1.027461, "Upper limit of the Cascade invariant mass"};
     // Cascade Daughter Tracks
-    Configurable<std::vector<float>> confCascV0ChildCharge{"confCascV0ChildSign", std::vector<float>{-1, 1}, "CascV0 Child sel: Charge"};
+    Configurable<std::vector<float>> confCascV0ChildSign{"confCascV0ChildSign", std::vector<float>{-1, 1}, "CascV0 Child sel: Charge"};
     Configurable<std::vector<float>> confCascV0ChildPtMin{"confCascV0ChildPtMin", std::vector<float>{0.8f}, "CascV0 Child sel: min pt"};
     Configurable<std::vector<float>> confCascV0ChildEtaMax{"confCascV0ChildEtaMax", std::vector<float>{0.8f}, "CascV0 Child sel: max eta"};
     Configurable<std::vector<float>> confCascV0ChildTPCnClsMin{"confCascV0ChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "CascV0 Child sel: Min. nCls TPC"};
@@ -226,7 +226,7 @@ struct FemtoDreamProducerTaskReso {
     Configurable<std::vector<float>> confCascV0ChildPIDnSigmaMax{"confCascV0ChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "CascV0 Child sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> confCascV0ChildPIDspecies{"confCascV0ChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "CascV0 Child sel: Particles species for PID"};
     // Cascade Bachelor Track
-    Configurable<std::vector<float>> confCascBachelorCharge{"confCascBachelorSign", std::vector<float>{-1, 1}, "Cascade Bachelor sel: Charge"};
+    Configurable<std::vector<float>> confCascBachelorSign{"confCascBachelorSign", std::vector<float>{-1, 1}, "Cascade Bachelor sel: Charge"};
     Configurable<std::vector<float>> confCascBachelorPtMin{"confCascBachelorPtMin", std::vector<float>{0.8f}, "Cascade Bachelor sel: min pt"};
     Configurable<std::vector<float>> confCascBachelorEtaMax{"confCascBachelorEtaMax", std::vector<float>{0.8f}, "Cascade Bachelor sel: max eta"};
     Configurable<std::vector<float>> confCascBachelorTPCnClsMin{"confCascBachelorTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Cascade Bachelor sel: Min. nCls TPC"};
@@ -488,7 +488,7 @@ struct FemtoDreamProducerTaskReso {
       cascadeCuts.setSelection(confCascSel.confCascadeV0DCAtoPVMax, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax));
 
       // Cascade Daughter Tracks
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
@@ -496,7 +496,7 @@ struct FemtoDreamProducerTaskReso {
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildPIDspecies);
 
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
@@ -505,7 +505,7 @@ struct FemtoDreamProducerTaskReso {
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildPIDspecies);
 
       // Cascade Bachelor Track
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
@@ -732,9 +732,9 @@ struct FemtoDreamProducerTaskReso {
   {
     if (particle.has_mcParticle()) {
 
-      constexpr int kProcessDirectMother = 4;
-      constexpr int kProcessInelasticHadronic = 23;
-      constexpr int kGenStatusTransport = -1;
+      constexpr int ProcessDirectMother = 4;
+      constexpr int ProcessInelasticHadronic = 23;
+      constexpr int GenStatusTransport = -1;
 
       // get corresponding MC particle and its info
       auto particleMC = particle.mcParticle();
@@ -760,7 +760,7 @@ struct FemtoDreamProducerTaskReso {
           // particle is from a decay -> getProcess() == 4
           // particle is generated during transport -> getGenStatusCode() == -1
           // list of mothers is not empty
-        } else if (particleMC.getProcess() == kProcessDirectMother && particleMC.getGenStatusCode() == kGenStatusTransport && !motherparticlesMC.empty()) {
+        } else if (particleMC.getProcess() == ProcessDirectMother && particleMC.getGenStatusCode() == GenStatusTransport && !motherparticlesMC.empty()) {
           // get direct mother
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
@@ -769,7 +769,7 @@ struct FemtoDreamProducerTaskReso {
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
-        } else if (particleMC.getProcess() == kProcessInelasticHadronic && particleMC.getGenStatusCode() == kGenStatusTransport) {
+        } else if (particleMC.getProcess() == ProcessInelasticHadronic && particleMC.getGenStatusCode() == GenStatusTransport) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
           // cross check to see if we missed a case
         } else {
