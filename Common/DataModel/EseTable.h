@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file EseTable.h
-/// \brief ESE Framework (20/08/2024) 
+/// \brief ESE Framework (20/08/2024)
 /// \author Joachim C. K. B. Hansen, Lund University, joachim.hansen@cern.ch
 
 //
@@ -51,7 +51,7 @@ namespace meanptshape
 {
 DECLARE_SOA_COLUMN(FMEANPT, fMEANPT, std::vector<float>);
 DECLARE_SOA_COLUMN(FMEANPTSHAPE, fMEANPTSHAPE, std::vector<float>);
-}
+} // namespace meanptshape
 DECLARE_SOA_TABLE(MeanPts, "AOD", "MEANPT", meanptshape::FMEANPT);
 DECLARE_SOA_TABLE(MeanPtShapes, "AOD", "MEANPTSHAPE", meanptshape::FMEANPTSHAPE);
 using MeanPt = MeanPts::iterator;

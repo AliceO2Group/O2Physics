@@ -19,9 +19,9 @@
 #include <TCollection.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TProfile.h>
 #include <TNamed.h>
 #include <TObjArray.h>
+#include <TProfile.h>
 #include <TSpline.h>
 #include <TString.h>
 
@@ -77,8 +77,8 @@ void FFitWeights::init()
 
   if (!ptAxis)
     this->setPtAxis(3000, -3, 3);
-  //fW_data->Add(new TH2D("hPtWeight", "", centBin, 0, centBin, ptBin, ptAxis->GetXmin(), ptAxis->GetXmax()));
-  fW_data->Add(new TProfile("pMeanPt","", centBin, 0, centBin));
+  // fW_data->Add(new TH2D("hPtWeight", "", centBin, 0, centBin, ptBin, ptAxis->GetXmin(), ptAxis->GetXmax()));
+  fW_data->Add(new TProfile("pMeanPt", "", centBin, 0, centBin));
   fW_data->Add(new TH2D("hPtWeight", "", centBin, 0, centBin, ptBin, ptAxis->GetXmin(), ptAxis->GetXmax()));
 };
 
@@ -110,8 +110,7 @@ void FFitWeights::fillPt(float centrality, float pt, bool first)
       tp = reinterpret_cast<TProfile*>(tar->At(tar->GetEntries() - 1));
     }
     tp->Fill(centrality, pt);
-  }
-  else {
+  } else {
     auto th2 = reinterpret_cast<TH2D*>(tar->FindObject("hPtWeight"));
     if (!th2) {
       tar->Add(new TH2D("hPtWeight", "", centBin, 0, centBin, ptBin, ptAxis->GetXmin(), ptAxis->GetXmax()));
@@ -142,9 +141,9 @@ Long64_t FFitWeights::Merge(TCollection* collist)
     fW_data->SetName("FFitWeights_Data");
     fW_data->SetOwner(kTRUE);
   }
-  FFitWeights* lW= 0;
+  FFitWeights* lW = 0;
   TIter allW(collist);
-  while ((lW= (reinterpret_cast<FFitWeights*>(allW())))) {
+  while ((lW = (reinterpret_cast<FFitWeights*>(allW())))) {
     addArray(fW_data, lW->getDataArray());
     nmerged++;
   }
@@ -154,7 +153,7 @@ void FFitWeights::addArray(TObjArray* targ, TObjArray* sour)
 {
   if (!sour) {
     // printf("Source array does not exist!\n");
-    //LOGF(info, "FFitWeights source array does not exist!");
+    // LOGF(info, "FFitWeights source array does not exist!");
     return;
   }
   for (int i = 0; i < sour->GetEntries(); i++) {
@@ -195,7 +194,6 @@ void FFitWeights::mptSel()
     tmpgr->SetName(Form("sp_mpt_%i", iSP));
     fW_data->Add(tmpgr);
   }
-
 }
 
 void FFitWeights::qSelection(const std::vector<int>& nhv, const std::vector<std::string>& stv) /* only execute OFFLINE */
@@ -210,8 +208,8 @@ void FFitWeights::qSelection(const std::vector<int>& nhv, const std::vector<std:
     for (const auto& nh : nhv) {
       TH2D* th2{reinterpret_cast<TH2D*>(tar->FindObject(this->getQName(nh, pf.c_str())))};
       if (!th2) {
-        //printf("qh not found!\n");
-        //LOGF(info, "FFitWeights qh not found!");
+        // printf("qh not found!\n");
+        // LOGF(info, "FFitWeights qh not found!");
         return;
       }
 
@@ -287,4 +285,3 @@ float FFitWeights::evalPt(float centr, const float& mpt)
   }
   return ptVal;
 };
-

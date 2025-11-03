@@ -67,7 +67,6 @@ class FFitWeights : public TNamed
 
   void mptSel();
 
-
  private:
   TObjArray* fW_data;
 

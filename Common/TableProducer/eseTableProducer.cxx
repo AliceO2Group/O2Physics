@@ -16,13 +16,12 @@
 
 #include "FFitWeights.h"
 
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
-
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -64,7 +63,6 @@ struct EseTableProducer {
   Produces<o2::aod::MeanPt> meanPts;
   Produces<o2::aod::MeanPtShapes> meanPtShapes;
 
-
   OutputObj<FFitWeights> weightsFFit{FFitWeights("weights")};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -85,7 +83,6 @@ struct EseTableProducer {
   static constexpr float ThresholdAmplitude{1e-8f};
   static constexpr int Step1{1};
   static constexpr int Step2{2};
-
 
   enum class DetID { FT0C,
                      FT0A,
@@ -108,7 +105,6 @@ struct EseTableProducer {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-
   Configurable<float> cfgVtxZ{"cfgVtxZ", 10.0f, "max z vertex position"};
   Configurable<float> cfgEta{"cfgEta", 0.8f, "max eta"};
   Configurable<float> cfgPtmin{"cfgPtmin", 0.2f, "min pt"};
@@ -119,10 +115,9 @@ struct EseTableProducer {
 
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
-  
+
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-
 
   void init(o2::framework::InitContext&)
   {
@@ -260,17 +255,16 @@ struct EseTableProducer {
     }
   };
 
-
   template <typename TTracks, typename Cent>
   double calculateMeanPt(TTracks const& tracks, Cent const& centrality)
   {
     std::vector<double> meanPtEvent;
-    for (const auto& track : tracks)
-    {
+    for (const auto& track : tracks) {
       meanPtEvent.push_back(track.pt());
       weightsFFit->fillPt(centrality, track.pt(), true);
     }
-    if (meanPtEvent.empty()) return 0.0;
+    if (meanPtEvent.empty())
+      return 0.0;
     auto mean = std::accumulate(meanPtEvent.begin(), meanPtEvent.end(), 0.0) / meanPtEvent.size();
     return mean;
   }
@@ -306,44 +300,40 @@ struct EseTableProducer {
   }
   PROCESS_SWITCH(EseTableProducer, processESE, "process q vectors to calculate reduced q-vector", true);
 
-  void processMeanPt(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks) {
+  void processMeanPt(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  {
 
-  std::vector<float> meanPt{ -1 };
-  std::vector<float> meanPtShape{ -1 };
+    std::vector<float> meanPt{-1};
+    std::vector<float> meanPtShape{-1};
 
-  registry.fill(HIST("hMeanPtStat"), 0.5);
-  const auto centrality = collision.centFT0C();
-  const auto mean = calculateMeanPt(tracks, centrality);
+    registry.fill(HIST("hMeanPtStat"), 0.5);
+    const auto centrality = collision.centFT0C();
+    const auto mean = calculateMeanPt(tracks, centrality);
 
-  if (cfgMeanPt == 0) {
-    registry.fill(HIST("hMeanPtStat"), 1.5);
-  }
-  else {
-    const auto avgpt = eventShape->getPtMult(centrality);
-    if (mean == 0.0) {
-      registry.fill(HIST("hMeanPtStat"), cfgMeanPt == Step1 ? 2.5 : 3.5);
-    }
-    else {
-      const auto binval = (mean - avgpt) / avgpt;
-      weightsFFit->fillPt(centrality, binval, false);
-      meanPt[0] = binval;
+    if (cfgMeanPt == 0) {
+      registry.fill(HIST("hMeanPtStat"), 1.5);
+    } else {
+      const auto avgpt = eventShape->getPtMult(centrality);
+      if (mean == 0.0) {
+        registry.fill(HIST("hMeanPtStat"), cfgMeanPt == Step1 ? 2.5 : 3.5);
+      } else {
+        const auto binval = (mean - avgpt) / avgpt;
+        weightsFFit->fillPt(centrality, binval, false);
+        meanPt[0] = binval;
 
-      if (cfgMeanPt == Step1) {
-        registry.fill(HIST("hMeanPtStat"), 2.5);
+        if (cfgMeanPt == Step1) {
+          registry.fill(HIST("hMeanPtStat"), 2.5);
+        } else if (cfgMeanPt == Step2) {
+          registry.fill(HIST("hMeanPtStat"), 3.5);
+          const auto value = eventShape->evalPt(centrality, binval);
+          meanPtShape[0] = value;
+        }
       }
-      else if (cfgMeanPt == Step2) {
-        registry.fill(HIST("hMeanPtStat"), 3.5);
-        const auto value = eventShape->evalPt(centrality, binval);
-        meanPtShape[0] = value;
-      }
     }
-  }
 
-  meanPts(meanPt);
-  meanPtShapes(meanPtShape);
-
+    meanPts(meanPt);
+    meanPtShapes(meanPtShape);
   }
   PROCESS_SWITCH(EseTableProducer, processMeanPt, "process mean pt selection", false);
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EseTableProducer>(cfgc)}; }
