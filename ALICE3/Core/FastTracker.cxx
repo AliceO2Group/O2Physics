@@ -22,6 +22,7 @@
 #include <TObject.h>
 
 #include <fstream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -325,7 +326,7 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
           LOG(fatal) << "Cannot open dead phi regions file " << deadPhiRegions;
           return;
         }
-        TGraph* g = (TGraph*)infile.Get(infile.GetListOfKeys()->At(0)->GetName());
+        TGraph* g = reinterpret_cast<TGraph*>(infile.Get(infile.GetListOfKeys()->At(0)->GetName()));
         infile.Close();
         addedLayer->setDeadPhiRegions(g);
       }
