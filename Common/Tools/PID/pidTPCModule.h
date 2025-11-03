@@ -295,6 +295,8 @@ class pidTPCModule
         LOGF(info, "No need for TPC only information detected. Will not generate Nsigma for TPC only tracks");
         LOGF(info, "If this is unexpected behaviour and a necessity was not identified, please add the");
         LOGF(info, "corresponding task to the configurable 'devicesRequiringTPCOnlyPID' of this task");
+        LOGF(info, "This may require getting in touch with core service wagon maintainers:");
+        LOGF(info, "it is best to always use core service wagons instead of private copies");
       }
       LOGF(info, "***************************************************");
     }
