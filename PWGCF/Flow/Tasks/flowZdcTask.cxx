@@ -47,7 +47,6 @@ using namespace o2::aod::mult;
 using namespace o2::constants::math;
 using namespace o2::aod::evsel;
 
-
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct FlowZdcTask {
