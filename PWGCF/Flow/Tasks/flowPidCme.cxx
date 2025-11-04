@@ -238,7 +238,7 @@ struct FillPIDcolums {
     if (std::abs(track.eta()) > cfgMaxEtaPID)
       return false;
     if (cfgRequireGlobalTrack) {
-      if (!(track.isGlobalTrackSDD() == (uint8_t)true))
+      if (!(track.isGlobalTrackSDD() == (uint8_t) true))
         return false;
     }
     if (cfgUseCostomTrackCuts) {
