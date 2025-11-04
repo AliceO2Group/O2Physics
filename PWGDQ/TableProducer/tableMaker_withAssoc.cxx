@@ -33,6 +33,8 @@
 #include "PWGDQ/Core/MuonMatchingMlResponse.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TableHelper.h"
@@ -118,7 +120,7 @@ using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTrac
 using MyMuonsRealignWithCov = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign, aod::FwdTracksDCA>;
 using MyMuonsColl = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyMuonsCollWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
-using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
 // Declaration of various bit maps containing information on which tables are included in a Join
@@ -130,6 +132,7 @@ constexpr static uint32_t gkEventFillMapWithMultsZdc = VarManager::ObjTypes::BC 
 constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter;
 constexpr static uint32_t gkEventFillMapWithMultsEventFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter | VarManager::ObjTypes::Zdc;
 constexpr static uint32_t gkEventFillMapWithMultsRapidityGapFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::RapidityGapFilter | VarManager::ObjTypes::Zdc;
+constexpr static uint32_t gkEventFillMapWithMultsRapidityGapFilterZdcFit = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::RapidityGapFilter | VarManager::ObjTypes::Zdc | VarManager::ObjTypes::ReducedFit;
 // constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
@@ -166,6 +169,7 @@ struct TableMaker {
   Produces<ReducedEventsVtxCov> eventVtxCov;
   Produces<ReducedEventsInfo> eventInfo;
   Produces<ReducedZdcs> zdc;
+  Produces<ReducedFITs> fit;
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
@@ -786,9 +790,11 @@ struct TableMaker {
     } // end loop over collisions
   }
 
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs, typename TZdcs, typename TTrackAssoc, typename TTracks>
-  void skimCollisions(TEvents const& collisions, TBCs const& /*bcs*/, TZdcs const& /*zdcs*/,
-                      TTrackAssoc const& trackAssocs, TTracks const& tracks)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs, typename TZdcs, typename TTrackAssoc, typename TTracks,
+            typename TFT0s = std::nullptr_t, typename TFV0As = std::nullptr_t, typename TFDDs = std::nullptr_t>
+  void skimCollisions(TEvents const& collisions, TBCs const& bcs, TZdcs const& /*zdcs*/,
+                      TTrackAssoc const& trackAssocs, TTracks const& tracks,
+                      TFT0s const& ft0s = nullptr, TFV0As const& fv0as = nullptr, TFDDs const& fdds = nullptr)
   {
     // Skim collisions
     // NOTE: So far, collisions are filtered based on the user specified analysis cuts AND the filterPP or Zorro event filter.
@@ -961,6 +967,31 @@ struct TableMaker {
         } else {
           zdc(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);
         }
+      }
+      // Fill FIT information
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedFit) > 0) {
+        upchelpers::FITInfo fitInfo{};
+        if constexpr (!std::is_same_v<TFT0s, std::nullptr_t> &&
+                      !std::is_same_v<TFV0As, std::nullptr_t> &&
+                      !std::is_same_v<TFDDs, std::nullptr_t>) {
+          // Get the BC from the bcs table using the collision's BC index
+          auto bc = bcs.iteratorAt(collision.bcId());
+          udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+          VarManager::FillFIT(fitInfo); // Fill VarManager for QA histograms
+        }
+        fit(fitInfo.ampFT0A, fitInfo.ampFT0C,
+            fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.ampFV0A,
+            fitInfo.timeFT0A, fitInfo.timeFT0C,
+            fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.timeFV0A,
+            fitInfo.triggerMaskFT0, fitInfo.triggerMaskFDD, fitInfo.triggerMaskFV0A,
+            fitInfo.BBFT0Apf, fitInfo.BGFT0Apf,
+            fitInfo.BBFT0Cpf, fitInfo.BGFT0Cpf,
+            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
+            fitInfo.BBFDDApf, fitInfo.BGFDDApf,
+            fitInfo.BBFDDCpf, fitInfo.BGFDDCpf,
+            fitInfo.distClosestBcTOR, fitInfo.distClosestBcTSC,
+            fitInfo.distClosestBcTVX, fitInfo.distClosestBcV0A,
+            fitInfo.distClosestBcT0A);
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
@@ -1397,10 +1428,12 @@ struct TableMaker {
   // Produce standard barrel + muon tables with event filter (typically for pp and p-Pb) ------------------------------------------------------
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, uint32_t TMFTFillMap,
             typename TEvents, typename TBCs, typename TZdcs, typename TTracks, typename TMuons, typename TMFTTracks,
-            typename TTrackAssoc, typename TFwdTrackAssoc, typename TMFTTrackAssoc, typename TMFTCov>
+            typename TTrackAssoc, typename TFwdTrackAssoc, typename TMFTTrackAssoc, typename TMFTCov,
+            typename TFT0s = std::nullptr_t, typename TFV0As = std::nullptr_t, typename TFDDs = std::nullptr_t>
   void fullSkimming(TEvents const& collisions, TBCs const& bcs, TZdcs const& zdcs,
                     TTracks const& tracksBarrel, TMuons const& muons, TMFTTracks const& mftTracks,
-                    TTrackAssoc const& trackAssocs, TFwdTrackAssoc const& fwdTrackAssocs, TMFTTrackAssoc const& mftAssocs, TMFTCov const& mftCovs)
+                    TTrackAssoc const& trackAssocs, TFwdTrackAssoc const& fwdTrackAssocs, TMFTTrackAssoc const& mftAssocs, TMFTCov const& mftCovs,
+                    TFT0s const& ft0s = nullptr, TFV0As const& fv0as = nullptr, TFDDs const& fdds = nullptr)
   {
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
@@ -1455,7 +1488,7 @@ struct TableMaker {
     eventExtended.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
 
-    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, trackAssocs, tracksBarrel);
+    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, trackAssocs, tracksBarrel, ft0s, fv0as, fdds);
     if (fCollIndexMap.size() == 0) {
       return;
     }
@@ -1651,6 +1684,22 @@ struct TableMaker {
   {
     fullSkimming<gkEventFillMapWithMultsRapidityGapFilterZdc, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr);
   }
+
+  // produce the barrel-only DQ skimmed data model for UPC Pb-Pb with FIT information
+  void processPbPbWithFilterBarrelOnlyWithFIT(MyEventsWithMultsAndRapidityGapFilter const& collisions,
+                                              MyBCs const& bcs,
+                                              aod::Zdcs& zdcs,
+                                              aod::FT0s const& ft0s,
+                                              aod::FV0As const& fv0as,
+                                              aod::FDDs const& fdds,
+                                              MyBarrelTracksWithCov const& tracksBarrel,
+                                              TrackAssoc const& trackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsRapidityGapFilterZdcFit, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr,
+                                                                                                ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(TableMaker, processPbPbWithFilterBarrelOnlyWithFIT,
+                 "Produce barrel DQ skimmed data for UPC Pb-Pb with rapidity gap filter, ZDC, and FIT info", false);
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPbBarrelOnlyWithV0Bits(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,

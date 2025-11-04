@@ -108,6 +108,7 @@ class VarManager : public TObject
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
     RapidityGapFilter = BIT(21),
+    ReducedFit = BIT(22),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -436,6 +437,34 @@ class VarManager : public TObject
     kTwoR2SP2, // Scalar product resolution of event2 for ME technique
     kTwoR2EP1, // Event plane resolution of event2 for ME technique
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    // FIT timing information
+    kTimeFT0A, // FT0A time
+    kTimeFT0C, // FT0C time
+    kTimeFDDA, // FDDA time
+    kTimeFDDC, // FDDC time
+    kTimeFV0A, // FV0A time
+    // FIT trigger masks
+    kTriggerMaskFT0,  // FT0 trigger mask
+    kTriggerMaskFDD,  // FDD trigger mask
+    kTriggerMaskFV0A, // FV0A trigger mask
+    // FIT beam-beam pileup flags
+    kBBFT0Apf, // Beam-beam flag in FT0A
+    kBBFT0Cpf, // Beam-beam flag in FT0C
+    kBBFV0Apf, // Beam-beam flag in FV0A
+    kBBFDDApf, // Beam-beam flag in FDDA
+    kBBFDDCpf, // Beam-beam flag in FDDC
+    // FIT beam-gas pileup flags
+    kBGFT0Apf, // Beam-gas flag in FT0A
+    kBGFT0Cpf, // Beam-gas flag in FT0C
+    kBGFV0Apf, // Beam-gas flag in FV0A
+    kBGFDDApf, // Beam-gas flag in FDDA
+    kBGFDDCpf, // Beam-gas flag in FDDC
+    // Distance to closest BC with triggers
+    kDistClosestBcTOR, // Distance to closest BC with TOR trigger
+    kDistClosestBcTSC, // Distance to closest BC with TSC trigger
+    kDistClosestBcTVX, // Distance to closest BC with TVX trigger
+    kDistClosestBcV0A, // Distance to closest BC with V0A trigger
+    kDistClosestBcT0A, // Distance to closest BC with T0A trigger
     kNEventWiseVariables,
 
     // Variables for event mixing with cumulant
@@ -1155,6 +1184,8 @@ class VarManager : public TObject
   template <typename T>
   static void FillZDC(const T& zdc, float* values = nullptr);
   template <typename T>
+  static void FillFIT(const T& fit, float* values = nullptr);
+  template <typename T>
   static void FillBdtScore(const T& bdtScore, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
@@ -1230,15 +1261,15 @@ class VarManager : public TObject
 
   static float fgMagField;
   static float fgzMatching;
-  static float fgCenterOfMassEnergy;      // collision energy
-  static float fgMassofCollidingParticle; // mass of the colliding particle
-  static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
-  static int fgITSROFbias;                // ITS ROF bias (from ALPIDE parameters)
-  static int fgITSROFlength;              // ITS ROF length (from ALPIDE parameters)
-  static int fgITSROFBorderMarginLow;     // ITS ROF border low margin
-  static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
-  static uint64_t fgSOR;                  // Timestamp for start of run
-  static uint64_t fgEOR;                  // Timestamp for end of run
+  static float fgCenterOfMassEnergy;        // collision energy
+  static float fgMassofCollidingParticle;   // mass of the colliding particle
+  static float fgTPCInterSectorBoundary;    // TPC inter-sector border size at the TPC outer radius, in cm
+  static int fgITSROFbias;                  // ITS ROF bias (from ALPIDE parameters)
+  static int fgITSROFlength;                // ITS ROF length (from ALPIDE parameters)
+  static int fgITSROFBorderMarginLow;       // ITS ROF border low margin
+  static int fgITSROFBorderMarginHigh;      // ITS ROF border high margin
+  static uint64_t fgSOR;                    // Timestamp for start of run
+  static uint64_t fgEOR;                    // Timestamp for end of run
   static ROOT::Math::PxPyPzEVector fgBeamA; // beam from A-side 4-momentum vector
   static ROOT::Math::PxPyPzEVector fgBeamC; // beam from C-side 4-momentum vector
 
@@ -5028,6 +5059,56 @@ void VarManager::FillZDC(T const& zdc, float* values)
   values[kTimeZNC] = zdc.timeZNC();
   values[kTimeZPA] = zdc.timeZPA();
   values[kTimeZPC] = zdc.timeZPC();
+}
+
+// -----------------------------------------------------------------------
+// Fill FIT detector information
+template <typename T>
+void VarManager::FillFIT(T const& fit, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // FIT amplitudes (reuse existing multiplicity variables)
+  values[kMultFT0A] = fit.ampFT0A;
+  values[kMultFT0C] = fit.ampFT0C;
+  values[kMultFDDA] = fit.ampFDDA;
+  values[kMultFDDC] = fit.ampFDDC;
+  values[kMultFV0A] = fit.ampFV0A;
+
+  // FIT timing information
+  values[kTimeFT0A] = fit.timeFT0A;
+  values[kTimeFT0C] = fit.timeFT0C;
+  values[kTimeFDDA] = fit.timeFDDA;
+  values[kTimeFDDC] = fit.timeFDDC;
+  values[kTimeFV0A] = fit.timeFV0A;
+
+  // FIT trigger masks
+  values[kTriggerMaskFT0] = fit.triggerMaskFT0;
+  values[kTriggerMaskFDD] = fit.triggerMaskFDD;
+  values[kTriggerMaskFV0A] = fit.triggerMaskFV0A;
+
+  // Beam-beam pileup flags
+  values[kBBFT0Apf] = fit.BBFT0Apf;
+  values[kBBFT0Cpf] = fit.BBFT0Cpf;
+  values[kBBFV0Apf] = fit.BBFV0Apf;
+  values[kBBFDDApf] = fit.BBFDDApf;
+  values[kBBFDDCpf] = fit.BBFDDCpf;
+
+  // Beam-gas pileup flags
+  values[kBGFT0Apf] = fit.BGFT0Apf;
+  values[kBGFT0Cpf] = fit.BGFT0Cpf;
+  values[kBGFV0Apf] = fit.BGFV0Apf;
+  values[kBGFDDApf] = fit.BGFDDApf;
+  values[kBGFDDCpf] = fit.BGFDDCpf;
+
+  // Distance to closest BC with triggers
+  values[kDistClosestBcTOR] = fit.distClosestBcTOR;
+  values[kDistClosestBcTSC] = fit.distClosestBcTSC;
+  values[kDistClosestBcTVX] = fit.distClosestBcTVX;
+  values[kDistClosestBcV0A] = fit.distClosestBcV0A;
+  values[kDistClosestBcT0A] = fit.distClosestBcT0A;
 }
 
 template <typename T1, typename T2>

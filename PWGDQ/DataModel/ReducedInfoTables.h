@@ -281,6 +281,60 @@ DECLARE_SOA_TABLE(ReducedZdcsExtra, "AOD", "REDUCEDZDCEXTRA", //!   Event ZDC ex
 using ReducedZdc = ReducedZdcs::iterator;
 using ReducedZdcExtra = ReducedZdcsExtra::iterator;
 
+namespace reducedfit
+{
+// FIT amplitudes
+DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float); //! FT0A amplitude
+DECLARE_SOA_COLUMN(AmpFT0C, ampFT0C, float); //! FT0C amplitude
+DECLARE_SOA_COLUMN(AmpFDDA, ampFDDA, float); //! FDDA amplitude
+DECLARE_SOA_COLUMN(AmpFDDC, ampFDDC, float); //! FDDC amplitude
+DECLARE_SOA_COLUMN(AmpFV0A, ampFV0A, float); //! FV0A amplitude
+// FIT times
+DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float); //! FT0A time
+DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float); //! FT0C time
+DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float); //! FDDA time
+DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float); //! FDDC time
+DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float); //! FV0A time
+// FIT trigger masks
+DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);   //! FT0 trigger mask
+DECLARE_SOA_COLUMN(TriggerMaskFDD, triggerMaskFDD, uint8_t);   //! FDD trigger mask
+DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t); //! FV0A trigger mask
+// FIT pileup flags
+DECLARE_SOA_COLUMN(BBFT0Apf, bbFT0Apf, int32_t); //! Beam-beam flag in FT0A
+DECLARE_SOA_COLUMN(BGFT0Apf, bgFT0Apf, int32_t); //! Beam-gas flag in FT0A
+DECLARE_SOA_COLUMN(BBFT0Cpf, bbFT0Cpf, int32_t); //! Beam-beam flag in FT0C
+DECLARE_SOA_COLUMN(BGFT0Cpf, bgFT0Cpf, int32_t); //! Beam-gas flag in FT0C
+DECLARE_SOA_COLUMN(BBFV0Apf, bbFV0Apf, int32_t); //! Beam-beam flag in FV0A
+DECLARE_SOA_COLUMN(BGFV0Apf, bgFV0Apf, int32_t); //! Beam-gas flag in FV0A
+DECLARE_SOA_COLUMN(BBFDDApf, bbFDDApf, int32_t); //! Beam-beam flag in FDDA
+DECLARE_SOA_COLUMN(BGFDDApf, bgFDDApf, int32_t); //! Beam-gas flag in FDDA
+DECLARE_SOA_COLUMN(BBFDDCpf, bbFDDCpf, int32_t); //! Beam-beam flag in FDDC
+DECLARE_SOA_COLUMN(BGFDDCpf, bgFDDCpf, int32_t); //! Beam-gas flag in FDDC
+// Distance to closest BC with various triggers
+DECLARE_SOA_COLUMN(DistClosestBcTOR, distClosestBcTOR, int32_t); //! Distance to closest BC with TOR trigger
+DECLARE_SOA_COLUMN(DistClosestBcTSC, distClosestBcTSC, int32_t); //! Distance to closest BC with TSC trigger
+DECLARE_SOA_COLUMN(DistClosestBcTVX, distClosestBcTVX, int32_t); //! Distance to closest BC with TVX trigger
+DECLARE_SOA_COLUMN(DistClosestBcV0A, distClosestBcV0A, int32_t); //! Distance to closest BC with V0A trigger
+DECLARE_SOA_COLUMN(DistClosestBcT0A, distClosestBcT0A, int32_t); //! Distance to closest BC with T0A trigger
+} // namespace reducedfit
+
+DECLARE_SOA_TABLE(ReducedFITs, "AOD", "REDUCEDFIT", //! Event FIT information
+                  reducedfit::AmpFT0A, reducedfit::AmpFT0C,
+                  reducedfit::AmpFDDA, reducedfit::AmpFDDC, reducedfit::AmpFV0A,
+                  reducedfit::TimeFT0A, reducedfit::TimeFT0C,
+                  reducedfit::TimeFDDA, reducedfit::TimeFDDC, reducedfit::TimeFV0A,
+                  reducedfit::TriggerMaskFT0, reducedfit::TriggerMaskFDD, reducedfit::TriggerMaskFV0A,
+                  reducedfit::BBFT0Apf, reducedfit::BGFT0Apf,
+                  reducedfit::BBFT0Cpf, reducedfit::BGFT0Cpf,
+                  reducedfit::BBFV0Apf, reducedfit::BGFV0Apf,
+                  reducedfit::BBFDDApf, reducedfit::BGFDDApf,
+                  reducedfit::BBFDDCpf, reducedfit::BGFDDCpf,
+                  reducedfit::DistClosestBcTOR, reducedfit::DistClosestBcTSC,
+                  reducedfit::DistClosestBcTVX, reducedfit::DistClosestBcV0A,
+                  reducedfit::DistClosestBcT0A);
+
+using ReducedFIT = ReducedFITs::iterator;
+
 namespace reducedtrack
 {
 // basic track information

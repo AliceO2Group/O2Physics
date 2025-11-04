@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include "PWGDQ/Core/VarManager.h"
+
+#include "Tools/KFparticle/KFUtilities.h"
+
 #include <cmath>
 #include <iostream>
-#include <vector>
 #include <map>
-#include "PWGDQ/Core/VarManager.h"
-#include "Tools/KFparticle/KFUtilities.h"
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -29,7 +31,7 @@ bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
-float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
 int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
 int VarManager::fgITSROFBorderMarginLow = 0;
@@ -425,6 +427,57 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultFDDA] = "";
   fgVariableNames[kMultFDDC] = "Multiplicity FDDC";
   fgVariableUnits[kMultFDDC] = "";
+  // FIT timing information
+  fgVariableNames[kTimeFT0A] = "Time FT0A";
+  fgVariableUnits[kTimeFT0A] = "ns";
+  fgVariableNames[kTimeFT0C] = "Time FT0C";
+  fgVariableUnits[kTimeFT0C] = "ns";
+  fgVariableNames[kTimeFDDA] = "Time FDDA";
+  fgVariableUnits[kTimeFDDA] = "ns";
+  fgVariableNames[kTimeFDDC] = "Time FDDC";
+  fgVariableUnits[kTimeFDDC] = "ns";
+  fgVariableNames[kTimeFV0A] = "Time FV0A";
+  fgVariableUnits[kTimeFV0A] = "ns";
+  // FIT trigger masks
+  fgVariableNames[kTriggerMaskFT0] = "Trigger mask FT0";
+  fgVariableUnits[kTriggerMaskFT0] = "";
+  fgVariableNames[kTriggerMaskFDD] = "Trigger mask FDD";
+  fgVariableUnits[kTriggerMaskFDD] = "";
+  fgVariableNames[kTriggerMaskFV0A] = "Trigger mask FV0A";
+  fgVariableUnits[kTriggerMaskFV0A] = "";
+  // FIT beam-beam pileup flags
+  fgVariableNames[kBBFT0Apf] = "BB FT0A pileup flag";
+  fgVariableUnits[kBBFT0Apf] = "";
+  fgVariableNames[kBBFT0Cpf] = "BB FT0C pileup flag";
+  fgVariableUnits[kBBFT0Cpf] = "";
+  fgVariableNames[kBBFV0Apf] = "BB FV0A pileup flag";
+  fgVariableUnits[kBBFV0Apf] = "";
+  fgVariableNames[kBBFDDApf] = "BB FDDA pileup flag";
+  fgVariableUnits[kBBFDDApf] = "";
+  fgVariableNames[kBBFDDCpf] = "BB FDDC pileup flag";
+  fgVariableUnits[kBBFDDCpf] = "";
+  // FIT beam-gas pileup flags
+  fgVariableNames[kBGFT0Apf] = "BG FT0A pileup flag";
+  fgVariableUnits[kBGFT0Apf] = "";
+  fgVariableNames[kBGFT0Cpf] = "BG FT0C pileup flag";
+  fgVariableUnits[kBGFT0Cpf] = "";
+  fgVariableNames[kBGFV0Apf] = "BG FV0A pileup flag";
+  fgVariableUnits[kBGFV0Apf] = "";
+  fgVariableNames[kBGFDDApf] = "BG FDDA pileup flag";
+  fgVariableUnits[kBGFDDApf] = "";
+  fgVariableNames[kBGFDDCpf] = "BG FDDC pileup flag";
+  fgVariableUnits[kBGFDDCpf] = "";
+  // Distance to closest BC with triggers
+  fgVariableNames[kDistClosestBcTOR] = "Distance to closest BC with TOR";
+  fgVariableUnits[kDistClosestBcTOR] = "BC";
+  fgVariableNames[kDistClosestBcTSC] = "Distance to closest BC with TSC";
+  fgVariableUnits[kDistClosestBcTSC] = "BC";
+  fgVariableNames[kDistClosestBcTVX] = "Distance to closest BC with TVX";
+  fgVariableUnits[kDistClosestBcTVX] = "BC";
+  fgVariableNames[kDistClosestBcV0A] = "Distance to closest BC with V0A";
+  fgVariableUnits[kDistClosestBcV0A] = "BC";
+  fgVariableNames[kDistClosestBcT0A] = "Distance to closest BC with T0A";
+  fgVariableUnits[kDistClosestBcT0A] = "BC";
   fgVariableNames[kMultZNA] = "Multiplicity ZNA";
   fgVariableUnits[kMultZNA] = "";
   fgVariableNames[kMultZNC] = "Multiplicity ZNC";
@@ -1544,6 +1597,34 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2SP2"] = kTwoR2SP2;
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
+  // FIT timing information
+  fgVarNamesMap["kTimeFT0A"] = kTimeFT0A;
+  fgVarNamesMap["kTimeFT0C"] = kTimeFT0C;
+  fgVarNamesMap["kTimeFDDA"] = kTimeFDDA;
+  fgVarNamesMap["kTimeFDDC"] = kTimeFDDC;
+  fgVarNamesMap["kTimeFV0A"] = kTimeFV0A;
+  // FIT trigger masks
+  fgVarNamesMap["kTriggerMaskFT0"] = kTriggerMaskFT0;
+  fgVarNamesMap["kTriggerMaskFDD"] = kTriggerMaskFDD;
+  fgVarNamesMap["kTriggerMaskFV0A"] = kTriggerMaskFV0A;
+  // FIT beam-beam pileup flags
+  fgVarNamesMap["kBBFT0Apf"] = kBBFT0Apf;
+  fgVarNamesMap["kBBFT0Cpf"] = kBBFT0Cpf;
+  fgVarNamesMap["kBBFV0Apf"] = kBBFV0Apf;
+  fgVarNamesMap["kBBFDDApf"] = kBBFDDApf;
+  fgVarNamesMap["kBBFDDCpf"] = kBBFDDCpf;
+  // FIT beam-gas pileup flags
+  fgVarNamesMap["kBGFT0Apf"] = kBGFT0Apf;
+  fgVarNamesMap["kBGFT0Cpf"] = kBGFT0Cpf;
+  fgVarNamesMap["kBGFV0Apf"] = kBGFV0Apf;
+  fgVarNamesMap["kBGFDDApf"] = kBGFDDApf;
+  fgVarNamesMap["kBGFDDCpf"] = kBGFDDCpf;
+  // Distance to closest BC with triggers
+  fgVarNamesMap["kDistClosestBcTOR"] = kDistClosestBcTOR;
+  fgVarNamesMap["kDistClosestBcTSC"] = kDistClosestBcTSC;
+  fgVarNamesMap["kDistClosestBcTVX"] = kDistClosestBcTVX;
+  fgVarNamesMap["kDistClosestBcV0A"] = kDistClosestBcV0A;
+  fgVarNamesMap["kDistClosestBcT0A"] = kDistClosestBcT0A;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;
