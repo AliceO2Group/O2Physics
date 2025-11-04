@@ -294,6 +294,9 @@ struct FemtoDreamProducerTaskReso {
   } rctCut;
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistryV0{"QAHistosV0", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistryCascade{"QAHistosCascade", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry qaRegistryReso{"QAHistosReso", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry v0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry cascadeRegistry{"Cascade", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -325,6 +328,7 @@ struct FemtoDreamProducerTaskReso {
     trackRegistry.add("AnalysisQA/Mother", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
     trackRegistry.add("AnalysisQA/Particle", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
     v0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
+    cascadeRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     resoRegistry.add("AnalysisQA/Reso/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});
     resoRegistry.add("AnalysisQA/Reso/InvMassAnti", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});
@@ -451,7 +455,7 @@ struct FemtoDreamProducerTaskReso {
       v0Cuts.setChildCuts(femto_dream_v0_selection::kNegTrack, confChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
       v0Cuts.setChildPIDSpecies(femto_dream_v0_selection::kPosTrack, confChildPIDspecies);
       v0Cuts.setChildPIDSpecies(femto_dream_v0_selection::kNegTrack, confChildPIDspecies);
-      v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &v0Registry);
+      v0Cuts.init<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child, aod::femtodreamparticle::cutContainerType>(&qaRegistryV0, &v0Registry);
       v0Cuts.setInvMassLimits(confV0InvMassLowLimit, confV0InvMassUpLimit);
       v0Cuts.setIsMother(confV0MotherIsLambda);
 
@@ -513,7 +517,7 @@ struct FemtoDreamProducerTaskReso {
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorPIDspecies);
 
-      cascadeCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &cascadeRegistry, confCascSel.confCascIsSelectedOmega);
+      cascadeCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistryCascade, &cascadeRegistry, confCascSel.confCascIsSelectedOmega);
       cascadeCuts.setInvMassLimits(confCascSel.confCascInvMassLowLimit, confCascSel.confCascInvMassUpLimit);
       cascadeCuts.setV0InvMassLimits(confCascSel.confCascV0InvMassLowLimit, confCascSel.confCascV0InvMassUpLimit);
       if (confCascSel.confCascRejectCompetingMass) {
@@ -545,7 +549,7 @@ struct FemtoDreamProducerTaskReso {
       resoCuts.setDaughterCuts(femto_dream_reso_selection::kNegdaugh, Resonance.confDaughterPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
 
       resoCuts.init<aod::femtodreamparticle::ParticleType::kReso,
-                    aod::femtodreamparticle::ParticleType::kResoChild>(&qaRegistry, &v0Registry);
+                    aod::femtodreamparticle::ParticleType::kResoChild>(&qaRegistryReso, &v0Registry);
 
       resoCuts.assign(Resonance.confDaughterPTPCThr); // assigns Configurable value to class member
       resoCuts.setDaughterPIDSpecies(femto_dream_reso_selection::kPosdaugh, Resonance.confDaughterPIDspecies);
