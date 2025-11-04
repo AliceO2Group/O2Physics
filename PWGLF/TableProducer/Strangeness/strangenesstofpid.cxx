@@ -823,7 +823,7 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(doQA){
+          if (doQA) {
             histos.fill(HIST("hPropagationBookkeeping"), kPropagPosV0, static_cast<float>(successPropag));
           }
           if (successPropag) {
@@ -901,7 +901,7 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(doQA){
+          if (doQA) {
             histos.fill(HIST("hPropagationBookkeeping"), kPropagNegV0, static_cast<float>(successPropag));
           }
           if (successPropag) {
@@ -1096,7 +1096,7 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(doQA){
+          if (doQA) {
             histos.fill(HIST("hPropagationBookkeeping"), kPropagPosCasc, static_cast<float>(successPropag));
           }
           if (successPropag) {
@@ -1188,7 +1188,7 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(doQA){
+          if (doQA) {
             histos.fill(HIST("hPropagationBookkeeping"), kPropagNegCasc, static_cast<float>(successPropag));
           }
           if (successPropag) {
@@ -1280,7 +1280,7 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, bachTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(doQA){
+          if (doQA) {
             histos.fill(HIST("hPropagationBookkeeping"), kPropagBachCasc, static_cast<float>(successPropag));
           }
           if (successPropag) {

@@ -15,8 +15,8 @@
 //**********************************************************************
 
 //**********************************************************************
-// Nota bene: when using, do not check track.hasTOF! That conditional may not match 
-// the calculation of strangeness TOF, which requires e.g. a successful calculation 
+// Nota bene: when using, do not check track.hasTOF! That conditional may not match
+// the calculation of strangeness TOF, which requires e.g. a successful calculation
 // of the collision time for the reassociated collision
 //**********************************************************************
 
@@ -213,21 +213,21 @@ DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative 
 
 // dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
 // note: only single hypothesis check necessary; other hypotheses will always be valid
-DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid 
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid
                            [](float TOFNSigmaLaPr) -> bool {
-                                bool returnStatus = true;
-                                if(std::abs(TOFNSigmaLaPr - kNoTOFValue) < kEpsilon){ 
-                                  returnStatus = false; 
-                                }
-                                return returnStatus;
+                             bool returnStatus = true;
+                             if (std::abs(TOFNSigmaLaPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! negative daughter TOF calculation valid 
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! negative daughter TOF calculation valid
                            [](float TOFNSigmaALaPr) -> bool {
-                                bool returnStatus = true;
-                                if(std::abs(TOFNSigmaALaPr - kNoTOFValue) < kEpsilon){ 
-                                  returnStatus = false; 
-                                }
-                                return returnStatus;
+                             bool returnStatus = true;
+                             if (std::abs(TOFNSigmaALaPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
                            });
 
 // dynamics based on n-sigmas with use-only-if-tof-present logic
@@ -356,31 +356,30 @@ DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track 
 
 // dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
 // note: only single hypothesis check necessary; other hypotheses will always be valid
-DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid 
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid
                            [](float PosTOFDeltaTXiPr) -> bool {
-                                bool returnStatus = true;
-                                if(std::abs(PosTOFDeltaTXiPr - kNoTOFValue) < kEpsilon){ 
-                                  returnStatus = false; 
-                                }
-                                return returnStatus;
+                             bool returnStatus = true;
+                             if (std::abs(PosTOFDeltaTXiPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! positive daughter TOF calculation valid 
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! positive daughter TOF calculation valid
                            [](float NegTOFDeltaTXiPr) -> bool {
-                                bool returnStatus = true;
-                                if(std::abs(NegTOFDeltaTXiPr - kNoTOFValue) < kEpsilon){ 
-                                  returnStatus = false; 
-                                }
-                                return returnStatus;
+                             bool returnStatus = true;
+                             if (std::abs(NegTOFDeltaTXiPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(BachelorHasTOF, bachelorHasTOF, //! bachelor daughter TOF calculation valid 
+DECLARE_SOA_DYNAMIC_COLUMN(BachelorHasTOF, bachelorHasTOF, //! bachelor daughter TOF calculation valid
                            [](float BachTOFDeltaTXiPi) -> bool {
-                                bool returnStatus = true;
-                                if(std::abs(BachTOFDeltaTXiPi - kNoTOFValue) < kEpsilon){ 
-                                  returnStatus = false; 
-                                }
-                                return returnStatus;
+                             bool returnStatus = true;
+                             if (std::abs(BachTOFDeltaTXiPi - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
                            });
-                           
 
 // dynamics based on n-sigmas with use-only-if-tof-present logic
 DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
