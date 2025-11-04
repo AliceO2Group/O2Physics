@@ -200,7 +200,7 @@ class FemtoUniverseDetaDphiStar
 
     if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
       std::string dirName = static_cast<std::string>(DirNames[0]);
-      for (int j = 0; j < static_cast<int>(ktBins.size() - 1); j++) {
+      for (int j = 1; j < static_cast<int>(ktBins.size() - 1); j++) {
         std::string histSuffixkT1 = std::to_string(static_cast<int>(ktBins[j] * 100.0));
         std::string histSuffixkT2 = std::to_string(static_cast<int>(ktBins[j + 1] * 100.0));
         std::string histFolderkT = "kT_" + histSuffixkT1 + "_" + histSuffixkT2 + "/";
@@ -655,15 +655,15 @@ class FemtoUniverseDetaDphiStar
       return false;
     }
 
-    int ktbinval = -1;
-    if (ktval >= ktBins[0] && ktval < ktBins[1]) {
-      ktbinval = 0;
-    } else if (ktval >= ktBins[1] && ktval < ktBins[2]) {
+    int ktbinval = 1;
+    if (ktval >= ktBins[1] && ktval < ktBins[2]) {
       ktbinval = 1;
     } else if (ktval >= ktBins[2] && ktval < ktBins[3]) {
       ktbinval = 2;
     } else if (ktval >= ktBins[3] && ktval < ktBins[4]) {
       ktbinval = 3;
+    } else if (ktval >= ktBins[4] && ktval < ktBins[5]) {
+      ktbinval = 4;
     }
 
     auto deta = part1.eta() - part2.eta();
@@ -674,16 +674,6 @@ class FemtoUniverseDetaDphiStar
       histdetadphimixedbeforekT[ktbinval]->Fill(deta, dphiAvg);
     } else {
       LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
-    }
-
-    if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMaxVector[ktbinval], 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMaxVector[ktbinval], 2) > 1.) {
-      if (ChosenEventType == femto_universe_container::EventType::same) {
-        histdetadphisameafterkT[ktbinval]->Fill(deta, dphiAvg);
-      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
-        histdetadphimixedafterkT[ktbinval]->Fill(deta, dphiAvg);
-      } else {
-        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
-      }
     }
 
     if (CircCut && (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMaxVector[ktbinval], 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMaxVector[ktbinval], 2) < 1.)) {
