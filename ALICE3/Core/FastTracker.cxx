@@ -22,6 +22,7 @@
 #include <TObject.h>
 
 #include <fstream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -64,20 +65,6 @@ void FastTracker::addDeadPhiRegionInLayer(const std::string& layerName, float ph
     return;
   }
   layers[layerIdx].addDeadPhiRegion(phiStart, phiEnd);
-}
-
-DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers) const
-{
-  int layerIdx = layer;
-  if (ignoreBarrelLayers) {
-    for (int il = 0, trackingLayerIdx = 0; trackingLayerIdx <= layer; il++) {
-      if (layers[il].isInert())
-        continue;
-      trackingLayerIdx++;
-      layerIdx = il;
-    }
-  }
-  return layers[layerIdx];
 }
 
 int FastTracker::GetLayerIndex(const std::string& name) const
@@ -339,7 +326,7 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
           LOG(fatal) << "Cannot open dead phi regions file " << deadPhiRegions;
           return;
         }
-        TGraph* g = (TGraph*)infile.Get(infile.GetListOfKeys()->At(0)->GetName());
+        TGraph* g = reinterpret_cast<TGraph*>(infile.Get(infile.GetListOfKeys()->At(0)->GetName()));
         infile.Close();
         addedLayer->setDeadPhiRegions(g);
       }
