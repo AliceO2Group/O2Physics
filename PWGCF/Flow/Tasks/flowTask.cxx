@@ -226,6 +226,11 @@ struct FlowTask {
     kReco,
     kGen
   };
+  enum DptCut {
+    kNoDptCut = 0,
+    kLowDptCut = 1,
+    kHighDptCut = 2
+  };
   int mRunNumber{-1};
   uint64_t mSOR{0};
   double mMinSeconds{-1.};
@@ -686,7 +691,7 @@ struct FlowTask {
       }
       LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgFuncParas.hEvAvgMeanPt);
     }
-    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDisSelectionSwitch > 0) {
+    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDisSelectionSwitch > kNoDptCut) {
       if (cfgFuncParas.cfgDptDisCutLow.value.empty() == false) {
         cfgFuncParas.fDptDisCutLow = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutLow, timestamp);
         if (cfgFuncParas.fDptDisCutLow == nullptr) {
@@ -1104,10 +1109,10 @@ struct FlowTask {
       double meanPt = ptSum / weffEvent;
       double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(independent));
       registry.fill(HIST("hNormDeltaPt_X"), meanPt, independent, weffEvent);
-      if (cfgFuncParas.cfgDptDisSelectionSwitch == 1 && deltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
+      if (cfgFuncParas.cfgDptDisSelectionSwitch == kLowDptCut && deltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
         // only keep low 10% dpt event
         return;
-      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == 2 && deltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
+      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == kHighDptCut && deltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
         // only keep high 10% dpt event
         return;
       }
