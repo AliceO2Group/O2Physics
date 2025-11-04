@@ -58,14 +58,15 @@ namespace o2::aod
 namespace jetInfo
 {
 // DECLARE_SOA_INDEX_COLUMN(JetIndex, jetindex); //! The jet index
-DECLARE_SOA_COLUMN(JetpT, jetpt, float);       //! jet pT
-DECLARE_SOA_COLUMN(JetEta, jeteta, float);     //! jet eta
-DECLARE_SOA_COLUMN(JetPhi, jetphi, float);     //! jet phi
-DECLARE_SOA_COLUMN(NTracks, nTracks, int16_t); //! number of charged tracks inside the jet
-DECLARE_SOA_COLUMN(NSV, nSV, int16_t);         //! Number of secondary vertices in the jet
-DECLARE_SOA_COLUMN(JetMass, mass, float);      //! The jet mass
-DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t); //! The jet flavor (b, c, or lf)
-DECLARE_SOA_COLUMN(JetR, jetR, int16_t);       //! The jet radius
+DECLARE_SOA_COLUMN(JetpT, jetpt, float);                   //! jet pT
+DECLARE_SOA_COLUMN(JetEta, jeteta, float);                 //! jet eta
+DECLARE_SOA_COLUMN(JetPhi, jetphi, float);                 //! jet phi
+DECLARE_SOA_COLUMN(NTracks, nTracks, int16_t);             //! number of charged tracks inside the jet
+DECLARE_SOA_COLUMN(NSV, nSV, int16_t);                     //! Number of secondary vertices in the jet
+DECLARE_SOA_COLUMN(JetMass, mass, float);                  //! The jet mass
+DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t);             //! The jet flavor (b, c, or lf)
+DECLARE_SOA_COLUMN(JetR, jetR, int16_t);                   //! The jet radius
+DECLARE_SOA_COLUMN(JetEventWeight, jetEventWeight, float); //! The jet event weight for pTHat weighting
 } // namespace jetInfo
 
 DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAM",
@@ -80,6 +81,12 @@ DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAM",
                   jetInfo::JetR);
 
 using bjetParam = bjetParams::iterator;
+
+DECLARE_SOA_TABLE(bjetParamsExtra, "AOD", "BJETEXTRA",
+                  // o2::soa::Index<>,
+                  jetInfo::JetEventWeight);
+
+using bjetParamExtra = bjetParamsExtra::iterator;
 
 namespace trackInfo
 {
@@ -192,6 +199,7 @@ DECLARE_SOA_TABLE(bjetConstituents, "AOD", "BJETCONSTIT",
 struct BJetTreeCreator {
 
   Produces<aod::bjetParams> bjetParamsTable;
+  Produces<aod::bjetParamsExtra> bjetParamsExtraTable;
   Produces<aod::bjetTracksParams> bjetTracksParamsTable;
   Produces<aod::bjetTracksParamsExtra> bjetTracksExtraTable;
   Produces<aod::bjetSVParams> bjetSVParamsTable;
@@ -704,6 +712,7 @@ struct BJetTreeCreator {
       if (produceTree) {
         bjetConstituentsTable(bjetParamsTable.lastIndex() + 1, indicesTracks, indicesSVs);
         bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), indicesTracks.size(), nSVs, analysisJet.mass(), jetFlavor, analysisJet.r());
+        bjetParamsExtraTable(analysisJet.eventWeight());
       }
     }
   }
