@@ -112,7 +112,7 @@ struct FlowZdcTask {
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
   Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
 
-  using ColEvent = soa::Join<aod::Collisions, aod::EvSels>;
+  using ColEvents = soa::Join<aod::Collisions, aod::EvSels>;
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta));
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
@@ -865,7 +865,7 @@ struct FlowZdcTask {
   }
 
   void processZdc(
-    ColEvent const& cols,
+    ColEvents const& cols,
     BCsRun3 const& /*bcs*/,
     aod::Zdcs const& /*zdcs*/)
   {
