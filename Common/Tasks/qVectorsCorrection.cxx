@@ -760,7 +760,7 @@ struct qVectorsCorrection {
   {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
     if (cfgAddEvtSel) {
-      if (std::abs(qVec.posZ()) > 10. )
+      if (std::abs(qVec.posZ()) > 10.)
         return;
       switch (cfgEvtSel) {
         case 0: // Sel8
