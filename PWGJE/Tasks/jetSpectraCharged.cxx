@@ -83,6 +83,14 @@ struct JetSpectraCharged {
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
+  float configSwitchLow = -98.0;
+  float configSwitchHigh = 9998.0;
+  enum AcceptSplitCollisionsOptions {
+    NonSplitOnly = 0,
+    SplitOkCheckAnyAssocColl,      // 1
+    SplitOkCheckFirstAssocCollOnly // 2
+  };
+
   void init(o2::framework::InitContext&)
   {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
@@ -242,6 +250,10 @@ struct JetSpectraCharged {
       registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
       registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
     }
+
+    if (!(acceptSplitCollisions == NonSplitOnly || acceptSplitCollisions == SplitOkCheckAnyAssocColl || acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly)) {
+      LOGF(fatal, "Configurable acceptSplitCollisions has wrong input value; stopping workflow");
+    }
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
@@ -251,14 +263,14 @@ struct JetSpectraCharged {
   template <typename TTracks, typename TJets>
   bool isAcceptedJet(TJets const& jet, bool mcLevelIsParticleLevel = false)
   {
-    if (jetAreaFractionMin > -98.0) {
+    if (jetAreaFractionMin > -configSwitchLow) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -configSwitchLow);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < configSwitchHigh);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -308,7 +320,7 @@ struct JetSpectraCharged {
         registry.fill(HIST("h_mccollisions_weighted"), 1.5, eventWeight);
     }
 
-    if (acceptSplitCollisions == 0 && collisions.size() > 1) {
+    if (acceptSplitCollisions == NonSplitOnly && collisions.size() > 1) {
       return false;
     }
     if (fillHistograms) {
@@ -321,7 +333,7 @@ struct JetSpectraCharged {
     bool hasSel8Coll = false;
     bool centralityIsGood = false;
     bool occupancyIsGood = false;
-    if (acceptSplitCollisions == 2) {
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) {
         hasSel8Coll = true;
       }
@@ -975,7 +987,8 @@ struct JetSpectraCharged {
       }
       float jetweight = jet.eventWeight();
       double pTHat = 10. / (std::pow(jetweight, 1.0 / pTHatExponent));
-      for (int N = 1; N < 21; N++) {
+      int Nmax = 21;
+      for (int N = 1; N < Nmax; N++) {
         if (jet.pt() < N * 0.25 * pTHat && jet.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h2_jet_ptcut_part"), jet.pt(), N * 0.25, jetweight);
         }
