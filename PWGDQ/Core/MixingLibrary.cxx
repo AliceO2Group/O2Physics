@@ -177,7 +177,7 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     mh->AddMixingVariable(VarManager::kNTPCmedianTimeLongA, fMTLimsHashing.size(), fMTLimsHashing);
   }
   if (!nameStr.compare("MedianTimeA3")) {
-    std::vector<float> fMTLimsHashing = {-100.0f, -80.0f, -60.0f, -40.0f, -30,0f, -20.0f, -10.0f, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 60.0f, 80.0f, 100.0f};
+    std::vector<float> fMTLimsHashing = {-100.0f, -80.0f, -60.0f, -40.0f, -30.0f, -20.0f, -10.0f, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 60.0f, 80.0f, 100.0f};
     mh->AddMixingVariable(VarManager::kNTPCmedianTimeLongA, fMTLimsHashing.size(), fMTLimsHashing);
   }
   if (!nameStr.compare("PileUpA1")) {
