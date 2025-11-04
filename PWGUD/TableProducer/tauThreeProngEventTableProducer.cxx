@@ -459,15 +459,16 @@ struct TauThreeProngEventTableProducer {
       return -1;
     int nITSbits = 0;
     int firstThreeLayers = 0;
+    const int threeLayers = 3;
     uint32_t clusterSizes = track.itsClusterSizes();
     for (int layer = 0; layer < 7; layer++) {
       if ((clusterSizes >> (layer * 4)) & 0xf) {
         nITSbits++;
-        if (layer < 3)
+        if (layer < threeLayers) // 3
           firstThreeLayers++;
       }
     } // end of loop over ITS bits
-    if (firstThreeLayers == 3)
+    if (firstThreeLayers == threeLayers) // 3
       nITSbits += 10;
 
     return nITSbits;
@@ -1012,6 +1013,10 @@ struct TauThreeProngEventTableProducer {
                          FullMCUDTracks const& tracks)
   {
     // registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(0., 1.);
+
+    const int fourTracks = 4;
+    const int sixTracks = 6;
+
     if (verbose)
       LOGF(info, "0. <MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
 
@@ -1139,15 +1144,15 @@ struct TauThreeProngEventTableProducer {
 
       registrySkim.get<TH1>(HIST("skim/nChPartMC"))->Fill(nChargedDaughtersTau[0] + nChargedDaughtersTau[1]); // N charged particles from taus
       // check number of charged particles in MC event
-      if ((nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != 4) && (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != 6)) {
+      if ((nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != fourTracks) && (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != sixTracks)) {
         if (verbose)
           LOGF(info, "Different from 4/6 charged particles (%d) from both taus. Jump to the next MC event.", nChargedDaughtersTau[0] + nChargedDaughtersTau[1]);
         continue;
       }
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.); // 1+3 (3+3) topology
-      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == 4) {
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.);        // 1+3 (3+3) topology
+      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.);
-      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == 6) {
+      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
       }
 
@@ -1156,10 +1161,10 @@ struct TauThreeProngEventTableProducer {
           LOGF(info, "At least one daughter particle from taus out of pseudo-rapidity (|eta|<0.9). Jump to the next MC event.");
         continue;
       }
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.); // particles from tau in |eta|<0.9
-      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == 4) {
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);        // particles from tau in |eta|<0.9
+      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
-      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == 6) {
+      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
       }
 
@@ -1350,7 +1355,7 @@ struct TauThreeProngEventTableProducer {
               countPi0++;
 
             // check whether 1+3 or 3+3 topology is present
-            if (countDaughters > 6) {
+            if (countDaughters > sixTracks) { // 6
               if (verbose)
                 LOGF(info, "Truth collision has more than 6 charged daughters from 2 taus. Breaking the daughter loop.");
               //               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
@@ -1470,7 +1475,7 @@ struct TauThreeProngEventTableProducer {
               countPi0++;
 
             // check whether 1+3 or 3+3 topology is present
-            if (countDaughters > 6) {
+            if (countDaughters > sixTracks) { // 6
               if (verbose)
                 LOGF(info, "Truth collision has more than 6 charged daughters from taus. Breaking the daughter loop.");
               //              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(13);
