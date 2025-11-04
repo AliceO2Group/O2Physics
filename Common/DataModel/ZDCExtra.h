@@ -46,6 +46,7 @@ DECLARE_SOA_COLUMN(Vx, vx, float);                         //! Vertex X
 DECLARE_SOA_COLUMN(Vy, vy, float);                         //! Vertex Y
 DECLARE_SOA_COLUMN(Vz, vz, float);                         //! Vertex Z
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp
+DECLARE_SOA_COLUMN(RunNumber, runNumber, uint32_t);        //! Run Number
 DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
 } // namespace zdcextra
 
@@ -71,6 +72,7 @@ DECLARE_SOA_TABLE(ZdcExtras, "AOD", "ZDCEXTRA", o2::soa::Index<>,
                   zdcextra::Vy,
                   zdcextra::Vz,
                   zdcextra::Timestamp,
+                  zdcextra::RunNumber,
                   zdcextra::SelectionBits);
 } // namespace o2::aod
 
