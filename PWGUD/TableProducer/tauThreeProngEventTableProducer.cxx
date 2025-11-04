@@ -1016,6 +1016,8 @@ struct TauThreeProngEventTableProducer {
 
     const int fourTracks = 4;
     const int sixTracks = 6;
+    const int oneProng = 1;
+    const int threeProng = 3;
 
     if (verbose)
       LOGF(info, "0. <MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
@@ -1168,11 +1170,11 @@ struct TauThreeProngEventTableProducer {
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
       }
 
-      if (nChargedDaughtersTau[0] == 1)
+      if (nChargedDaughtersTau[0] == oneProng) // 1
         zerothTau = 0;
-      else if (nChargedDaughtersTau[1] == 1)
+      else if (nChargedDaughtersTau[1] == oneProng) // 1
         zerothTau = 1;
-      else if (nChargedDaughtersTau[0] == 3 && nChargedDaughtersTau[1] == 3)
+      else if (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng) // 3 and 3
         zerothTau = 0;
 
       // prepare local variables for output table
@@ -1244,13 +1246,13 @@ struct TauThreeProngEventTableProducer {
       // 3 = pi+3pi
       // 4 = 3pi+3pi
 
-      if (nElec == 1 && nPi == 3)
+      if (nElec == oneProng && nPi == threeProng) // 1 + 3
         trueChannel = 1;
-      else if (nMuon == 1 && nPi == 3)
+      else if (nMuon == oneProng && nPi == threeProng) // 1 + 3
         trueChannel = 2;
-      else if (nPi == 4)
+      else if (nPi == fourTracks) // 4
         trueChannel = 3;
-      else if (nPi == 6)
+      else if (nPi == sixTracks) // 6
         trueChannel = 4;
 
       // find reconstructed collisions associated to the generated collision
