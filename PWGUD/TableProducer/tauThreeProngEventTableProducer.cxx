@@ -460,8 +460,9 @@ struct TauThreeProngEventTableProducer {
     int nITSbits = 0;
     int firstThreeLayers = 0;
     const int threeLayers = 3;
+    const int maxITSlayers = 7;
     uint32_t clusterSizes = track.itsClusterSizes();
-    for (int layer = 0; layer < 7; layer++) {
+    for (int layer = 0; layer < maxITSlayers; layer++) {
       if ((clusterSizes >> (layer * 4)) & 0xf) {
         nITSbits++;
         if (layer < threeLayers) // 3
