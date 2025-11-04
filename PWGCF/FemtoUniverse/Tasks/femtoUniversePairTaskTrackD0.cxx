@@ -1346,8 +1346,8 @@ struct FemtoUniversePairTaskTrackD0 {
             mcRecoRegistry.fill(HIST("hMcRecD0PromptPhi"), part.phi());
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0NonPrompt"), part.pt(), part.eta());
-            mcRecoRegistry.fill(HIST("hMcRecD0PromptPt"), part.pt());
-            mcRecoRegistry.fill(HIST("hMcRecD0PromptPhi"), part.phi());
+            mcRecoRegistry.fill(HIST("hMcRecD0NonPromptPt"), part.pt());
+            mcRecoRegistry.fill(HIST("hMcRecD0NonPromptPhi"), part.phi());
           }
         } else if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0bar) {
           mcRecoRegistry.fill(HIST("hMcRecD0bar"), part.pt(), part.eta());
