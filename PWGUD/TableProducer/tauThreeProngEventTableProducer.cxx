@@ -581,9 +581,9 @@ struct TauThreeProngEventTableProducer {
 
   bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
   {
-    constexpr uint8_t kBit = 1;
+    constexpr uint8_t KBit = 1;
     for (const auto& kITSrequirement : cutMyRequiredITSHits) {
-      auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (kBit << requiredLayer); });
+      auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (KBit << requiredLayer); });
       if ((kITSrequirement.first == -1) && (hits > 0)) {
         return false; // no hits were required in specified layers
       } else if (hits < kITSrequirement.first) {
