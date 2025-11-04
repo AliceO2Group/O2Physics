@@ -506,7 +506,7 @@ struct HfCorrelatorLcHadrons {
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
           if (binNumOfDeltaPhi[index] == 1) {
-            registry.fill(HIST("hMassLcVsPtVsDeltaPhi"), hfHelper::invMassLcToPKPi(candidate), candidate.pt(), getDeltaPhi(track.phi(), candidate.phi()), efficiencyWeightLc);
+            registry.fill(HIST("hMassLcVsPtVsDeltaPhi"), HfHelper::invMassLcToPKPi(candidate), candidate.pt(), getDeltaPhi(track.phi(), candidate.phi()), efficiencyWeightLc);
           }
           if (fillTrkPID) {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
@@ -526,7 +526,7 @@ struct HfCorrelatorLcHadrons {
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
           if (binNumOfDeltaPhi[index] == 1) {
-            registry.fill(HIST("hMassLcVsPtVsDeltaPhi"), hfHelper::invMassLcToPiKP(candidate), candidate.pt(), getDeltaPhi(track.phi(), candidate.phi()), efficiencyWeightLc);
+            registry.fill(HIST("hMassLcVsPtVsDeltaPhi"), HfHelper::invMassLcToPiKP(candidate), candidate.pt(), getDeltaPhi(track.phi(), candidate.phi()), efficiencyWeightLc);
           }
           if (fillTrkPID) {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
