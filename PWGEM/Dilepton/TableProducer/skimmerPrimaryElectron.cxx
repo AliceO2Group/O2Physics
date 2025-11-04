@@ -19,8 +19,9 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"

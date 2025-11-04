@@ -14,29 +14,31 @@
 // This code is for bc counter.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <type_traits>
-#include <optional>
-
-#include "TString.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
-#include "MathUtils/Utils.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include "TString.h"
+
+#include <algorithm>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
