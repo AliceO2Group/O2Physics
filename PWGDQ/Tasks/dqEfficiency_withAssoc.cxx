@@ -4271,7 +4271,7 @@ struct AnalysisDileptonTrack {
     auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
     groupedMCTracks.bindInternalIndicesTo(&mcTracks);
     for (auto& t1 : groupedMCTracks) {
-      auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+      auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
       // apply kinematic cuts for signal
       if ((t1_raw.pt() < fConfigDileptonLowpTCut || t1_raw.pt() > fConfigDileptonHighpTCut))
         continue;
@@ -4304,6 +4304,10 @@ struct AnalysisDileptonTrack {
   void processMCGenEnergyCorrelators(soa::Filtered<MyEventsVtxCovSelected> const& events,
                                      ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -4318,6 +4322,10 @@ struct AnalysisDileptonTrack {
   void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEventsVtxCovSelected> const& events,
                                          ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
