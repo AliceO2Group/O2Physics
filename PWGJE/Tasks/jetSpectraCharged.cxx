@@ -112,13 +112,15 @@ struct JetSpectraCharged {
     if (doprocessCollisions || doprocessCollisionsWeighted) {
       registry.add("h_collisions", "number of events;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.get<TH1>(HIST("h_collisions"))->GetXaxis()->SetBinLabel(1, "allColl");
-      registry.get<TH1>(HIST("h_collisions"))->GetXaxis()->SetBinLabel(2, "centralitycut");
-      registry.get<TH1>(HIST("h_collisions"))->GetXaxis()->SetBinLabel(3, "occupancycut");
+      registry.get<TH1>(HIST("h_collisions"))->GetXaxis()->SetBinLabel(2, "qualitySel");
+      registry.get<TH1>(HIST("h_collisions"))->GetXaxis()->SetBinLabel(3, "centralitycut");
+      registry.get<TH1>(HIST("h_collisions"))->GetXaxis()->SetBinLabel(4, "occupancycut");
       if (doprocessCollisionsWeighted) {
         registry.add("h_collisions_weighted", "number of events;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
         registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(1, "allColl");
-        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(2, "centralitycut");
-        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(3, "occupancycut");
+        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(2, "qualitySel");
+        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(3, "centralitycut");
+        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(4, "occupancycut");
         if (doprocessSpectraMCDWeighted) {
           registry.add("h_coll_phat", "collision #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
           registry.add("h_coll_phat_weighted", "collision #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
@@ -263,13 +265,13 @@ struct JetSpectraCharged {
   template <typename TTracks, typename TJets>
   bool isAcceptedJet(TJets const& jet, bool mcLevelIsParticleLevel = false)
   {
-    if (jetAreaFractionMin > -configSwitchLow) {
+    if (jetAreaFractionMin > configSwitchLow) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -configSwitchLow);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > configSwitchLow);
     bool checkConstituentMaxPt = (leadingConstituentPtMax < configSwitchHigh);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
@@ -400,9 +402,6 @@ struct JetSpectraCharged {
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
-      return false;
-    }
     if (fillHistograms) {
       registry.fill(HIST("h_collisions"), 0.5);
       registry.fill(HIST("h2_centrality_collisions"), centrality, 0.5, eventWeight);
@@ -410,7 +409,7 @@ struct JetSpectraCharged {
         registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
     }
 
-    if (centrality < centralityMin || centralityMax < centrality) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
       return false;
     }
     if (fillHistograms) {
@@ -420,7 +419,7 @@ struct JetSpectraCharged {
         registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
     }
 
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+    if (centrality < centralityMin || centralityMax < centrality) {
       return false;
     }
     if (fillHistograms) {
@@ -428,6 +427,16 @@ struct JetSpectraCharged {
       registry.fill(HIST("h2_centrality_collisions"), centrality, 2.5, eventWeight);
       if (isWeighted)
         registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
+    }
+
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("h_collisions"), 3.5);
+      registry.fill(HIST("h2_centrality_collisions"), centrality, 3.5, eventWeight);
+      if (isWeighted)
+        registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
     }
 
     return true;
