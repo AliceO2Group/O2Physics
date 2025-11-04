@@ -527,7 +527,7 @@ struct HigherMassResonances {
   }
 
   template <typename T, typename V0s>
-  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0DaughterTPC, V0s const& /*candidate*/)
+  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0DaughterTPC, V0s const& v0candidate)
   {
     if (config.qAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
@@ -576,7 +576,13 @@ struct HigherMassResonances {
     }
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
-    // if (std::abs())
+    if (std::abs(v0candidate.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && track.hasTOF()) {
+      return false;
+    }
+
+    if (std::abs(v0candidate.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && track.hasTOF()) {
+      return false;
+    }
 
     if (config.qAPID) {
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -586,7 +592,8 @@ struct HigherMassResonances {
   }
 
   using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
-  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+  // using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
   using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   template <typename TV0>
@@ -618,7 +625,17 @@ struct HigherMassResonances {
       return false;
     }
 
+    // // check TOF PID if TOF exists
+
     if (config.isApplyDCAv0topv && (std::abs(v0.dcapostopv()) < config.cMaxV0DCA || std::abs(v0.dcanegtopv()) < config.cMaxV0DCA)) {
+      return false;
+    }
+
+    if (std::abs(v0.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && posTrackExtra.hasTOF()) {
+      return false;
+    }
+
+    if (std::abs(v0.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && negTrackExtra.hasTOF()) {
       return false;
     }
 
@@ -662,11 +679,11 @@ struct HigherMassResonances {
   // Defining the type of the daughter tracks
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  using V0TrackCandidate = aod::V0Datas;
+  using V0TrackCandidate = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
   // For Monte Carlo
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::PVMults>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
-  using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
+  using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::McV0Labels>>;
   // zBeam direction in lab frame
 
   template <typename T>
@@ -851,7 +868,7 @@ struct HigherMassResonances {
     // }
   }
 
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, V0TrackCandidate const& V0s)
   {
     multiplicity = 0.0;
 
@@ -921,16 +938,33 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (postrack1.hasTOF() && negtrack1.hasTOF() && postrack2.hasTOF() && negtrack2.hasTOF()) {
-        double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
-        double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
-        double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
-        double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
-        if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTPC) || (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTPC) ||
-            (std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTPC) || (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTPC)) {
-          continue;
-        }
-      }
+      // if (postrack1.hasTOF()) {
+      //   double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
+      //   if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTOF)) {
+      //     continue;
+      //   }
+      // }
+
+      // if (negtrack1.hasTOF()) {
+      //   double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
+      //   if (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTOF) {
+      //     continue;
+      //   }
+      // }
+
+      // if (postrack2.hasTOF()) {
+      //   double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
+      //   if ((std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTOF)) {
+      //     continue;
+      //   }
+      // }
+
+      // if (negtrack2.hasTOF()) {
+      //   double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
+      //   if (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTOF) {
+      //     continue;
+      //   }
+      // }
 
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
