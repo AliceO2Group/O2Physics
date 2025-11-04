@@ -231,6 +231,7 @@ struct StrangenessInJets {
 
       // Event counter
       registryMC.add("number_of_events_mc_gen", "number of gen events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       switch (particleOfInterest) {
@@ -268,6 +269,7 @@ struct StrangenessInJets {
 
       // Event counter
       registryMC.add("number_of_events_mc_rec", "number of rec events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
+      registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       switch (particleOfInterest) {
@@ -1249,6 +1251,7 @@ struct StrangenessInJets {
         if (jetMinusBkg.pt() < minJetPt)
           continue;
         registryMC.fill(HIST("number_of_events_mc_gen"), 4.5);
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -1534,6 +1537,7 @@ struct StrangenessInJets {
 
       // Fill event counter for events with at least one selected jet
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
