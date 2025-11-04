@@ -110,10 +110,11 @@ struct JetSpectraCharged {
         registry.add("h_collisions_weighted", "number of events;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
         registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(1, "allColl");
         registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(2, "centralitycut");
-        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(3, "occupancycut");      if (doprocessSpectraMCDWeighted) {
-        registry.add("h_coll_phat", "collision #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
-        registry.add("h_coll_phat_weighted", "collision #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
-      }
+        registry.get<TH1>(HIST("h_collisions_weighted"))->GetXaxis()->SetBinLabel(3, "occupancycut");
+        if (doprocessSpectraMCDWeighted) {
+          registry.add("h_coll_phat", "collision #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
+          registry.add("h_coll_phat_weighted", "collision #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
+        }
       }
       registry.add("h_collisions_zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}});
       registry.add("h_fakecollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}); // is not filled if running on data
@@ -871,14 +872,14 @@ struct JetSpectraCharged {
         continue;
       }
       float jetweight = jet.eventWeight();
-      fillJetHistograms(jet, centrality, jetweight); 
+      fillJetHistograms(jet, centrality, jetweight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCDWeighted, "jet finder QA mcd with weighted events", false);
 
   void processSpectraAreaSubMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
-                                soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets,
-                                aod::JetTracks const&)
+                                        soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets,
+                                        aod::JetTracks const&)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -985,9 +986,9 @@ struct JetSpectraCharged {
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCPWeighted, "jet spectra for MC particle level weighted", false);
 
   void processSpectraAreaSubMCPWeighted(soa::Filtered<JetBkgRhoMcCollisions>::iterator const& mccollision,
-                                soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                                soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
-                                aod::JetParticles const&)
+                                        soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+                                        soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
+                                        aod::JetParticles const&)
   {
     bool mcLevelIsParticleLevel = true;
 
@@ -1098,10 +1099,10 @@ struct JetSpectraCharged {
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedWeighted, "matched mcp and mcd jets with weighted events", false);
 
   void processJetsMatchedAreaSub(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
-                                    JetBkgRhoMcCollisions const&,
-                                    ChargedMCDMatchedJets const& mcdjets,
-                                    ChargedMCPMatchedJets const&,
-                                    aod::JetTracks const&, aod::JetParticles const&)
+                                 JetBkgRhoMcCollisions const&,
+                                 ChargedMCDMatchedJets const& mcdjets,
+                                 ChargedMCPMatchedJets const&,
+                                 aod::JetTracks const&, aod::JetParticles const&)
   {
     if (!applyCollisionCuts(collision)) {
       return;
@@ -1119,10 +1120,10 @@ struct JetSpectraCharged {
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedAreaSub, "matched mcp and mcd jets after area-based pt subtraction", false);
 
   void processJetsMatchedAreaSubWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
-                                    JetBkgRhoMcCollisions const&,
-                                    ChargedMCDMatchedJetsWeighted const& mcdjets,
-                                    ChargedMCPMatchedJetsWeighted const&,
-                                    aod::JetTracks const&, aod::JetParticles const&)
+                                         JetBkgRhoMcCollisions const&,
+                                         ChargedMCDMatchedJetsWeighted const& mcdjets,
+                                         ChargedMCPMatchedJetsWeighted const&,
+                                         aod::JetTracks const&, aod::JetParticles const&)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
