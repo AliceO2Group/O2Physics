@@ -45,9 +45,11 @@
 #include <TRandom3.h>
 
 #include <cmath>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -100,6 +102,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRunbyRun, bool, false, "NUA weights are filled run-by-run")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
@@ -152,6 +155,13 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
+    // for deltaPt/<pT> vs c22 vs centrality
+    O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs c22 vs centrality")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisCorrConfigIndex, int, 7, "Index in CorrConfig, this decide which correlation is filled")
+    TH1D* hEvAvgMeanPt = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDptDishEvAvgMeanPt, std::string, "", "CCDB path to hMeanPt object")
+    ConfigurableAxis cfgDptDisAxisCorr{"cfgDptDisAxisCorr", {50, 0., 0.005}, "pt axis for histograms"};
+    ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -198,6 +208,9 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  int lastRunNumber = -1;
+  std::vector<int> runNumbers;
+  std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
   enum CentEstimators {
     kCentFT0C = 0,
     kCentFT0CVariant1,
@@ -310,6 +323,9 @@ struct FlowTask {
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    if (cfgFuncParas.cfgDptDisEnable) {
+      registry.add("hNormDeltaPt_Corr_X", " #delta p_{T}/[p_{T}]; Corr; X", {HistType::kTH3D, {cfgFuncParas.cfgDptDisAxisNormal, cfgFuncParas.cfgDptDisAxisCorr, axisIndependent}});
+    }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
@@ -478,7 +494,7 @@ struct FlowTask {
     gfwConfigs.SetCorrs(cfgUserPtVnCorrConfig->GetCorrs());
     gfwConfigs.SetHeads(cfgUserPtVnCorrConfig->GetHeads());
     gfwConfigs.SetpTDifs(cfgUserPtVnCorrConfig->GetpTDifs());
-    // Mask 1: vn-[pT], 2: vn-[pT^2], 4: vn-[pT^3]
+    // Mask 1: vn-[pT], 3: vn-[pT^2], 7: vn-[pT^3], 15: vn-[pT^4]
     gfwConfigs.SetpTCorrMasks(cfgUserPtVnCorrConfig->GetpTCorrMasks());
     gfwConfigs.Print();
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
@@ -545,6 +561,13 @@ struct FlowTask {
     }
   }
 
+  void createOutputObjectsForRun(int runNumber)
+  {
+    const AxisSpec axisPhi{60, 0.0, constants::math::TwoPI, "#varphi"};
+    std::shared_ptr<TH3> histPhiEtaVtxz = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+    th3sPerRun.insert(std::make_pair(runNumber, histPhiEtaVtxz));
+  }
+
   template <char... chars>
   void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
@@ -574,6 +597,25 @@ struct FlowTask {
       if (std::fabs(val) < 1) {
         registry.fill(vnWeff, cent, val, dnx * WeffEvent);
         registry.fill(vnpT, cent, val * meanPt, dnx * WeffEvent);
+      }
+      return;
+    }
+    return;
+  }
+
+  template <char... chars>
+  void fillDeltaPtvsCorr(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& histo, const double& cent)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        double meanPt = sum_pt / WeffEvent;
+        double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(cent));
+        registry.fill(histo, deltaPt / meanPt, val, cent, dnx * WeffEvent);
       }
       return;
     }
@@ -627,7 +669,7 @@ struct FlowTask {
           continue;
         auto val = fGFW->Calculate(corrconfigsPtVn.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]);
+          (dt == kGen) ? fFCptgen->fillVnPtProfiles(l_ind, centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(l_ind, centmult, val, dnx, rndm, gfwConfigs.GetpTCorrMasks()[l_ind]);
         }
         continue;
       }
@@ -652,6 +694,13 @@ struct FlowTask {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDishEvAvgMeanPt.value.empty() == false) {
+      cfgFuncParas.hEvAvgMeanPt = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDishEvAvgMeanPt, timestamp);
+      if (cfgFuncParas.hEvAvgMeanPt == nullptr) {
+        LOGF(fatal, "Could not load mean pT histogram from %s", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str());
+      }
+      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgFuncParas.hEvAvgMeanPt);
     }
     correctionsLoaded = true;
   }
@@ -874,6 +923,20 @@ struct FlowTask {
         return;
       }
     }
+    if (cfgOutputNUAWeightsRunbyRun && currentRunNumber != lastRunNumber) {
+      lastRunNumber = currentRunNumber;
+      if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        createOutputObjectsForRun(currentRunNumber);
+        runNumbers.push_back(currentRunNumber);
+      }
+
+      if (th3sPerRun.find(currentRunNumber) == th3sPerRun.end()) {
+        LOGF(fatal, "RunNumber %d not found in th3sPerRun", currentRunNumber);
+        return;
+      }
+    }
+
     registry.fill(HIST("hEventCount"), 2.5);
     if (!cfgUseSmallMemory) {
       registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
@@ -975,10 +1038,15 @@ struct FlowTask {
       bool withinEtaGap08 = (std::abs(track.eta()) < cfgEtaPtPt);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
-          if (withinPtRef)
+          if (withinPtRef) {
             fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            if (cfgOutputNUAWeightsRunbyRun)
+              th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
+          }
         } else {
           fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          if (cfgOutputNUAWeightsRunbyRun)
+            th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
         }
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
@@ -1031,6 +1099,10 @@ struct FlowTask {
         fillPtSums<kReco>(track, weff);
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+
+    if (cfgFuncParas.cfgDptDisEnable) {
+      fillDeltaPtvsCorr(corrconfigs.at(cfgFuncParas.cfgDptDisCorrConfigIndex), ptSum, weffEvent, HIST("hNormDeltaPt_Corr_X"), independent);
+    }
 
     double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
     // MeanPt

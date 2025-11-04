@@ -52,6 +52,8 @@ constexpr std::array<int, nBeautyHadrons> PdgCodesBeauty = {Pdg::kB0, Pdg::kBPlu
 
 struct HfTaskMcGenPtRapShapes {
 
+  Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"};
+  Configurable<float> absRapidityMax{"absRapidityMax", 0.5, "Absolute maximum rapidity"};
   ConfigurableAxis axisPtCharm{"axisPtCharm", {1000, 0.f, 100.f}, "Binning for the pT axis of charm hadrons"};
   ConfigurableAxis axisPtBeauty{"axisPtBeauty", {3000, 0.f, 300.f}, "Binning for the pT axis of beauty hadrons"};
   ConfigurableAxis axisRapCharm{"axisRapCharm", {100, -1.f, 1.f}, "Binning for the y axis of charm hadrons"};
@@ -81,6 +83,9 @@ struct HfTaskMcGenPtRapShapes {
   void process(aod::McParticles const& mcParticles)
   {
     for (auto const& mcParticle : mcParticles) {
+      if (rejectBackground && mcParticle.fromBackgroundEvent()) {
+        continue;
+      }
       int const absPdgCode = std::abs(mcParticle.pdgCode());
       float const pt = mcParticle.pt();
       float const rap = mcParticle.y();
@@ -94,7 +99,7 @@ struct HfTaskMcGenPtRapShapes {
           histRapVsPtCharmPrompt[idxCharm]->Fill(pt, rap);
         } else if (origin == RecoDecay::OriginType::NonPrompt) {
           histRapVsPtCharmNonPrompt[idxCharm]->Fill(pt, rap);
-          if (std::abs(rap) < 0.5) {
+          if (std::abs(rap) < absRapidityMax) {
             auto bMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
             histPtCharmVsPtBeautyNonPrompt[idxCharm]->Fill(bMother.pt(), pt);
           }

@@ -13,15 +13,17 @@
 /// \author Alexander Kalweit <alexander.kalweit@cern.ch>, CERN
 
 // O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "TLorentzVector.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/RecoDecay.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include "TLorentzVector.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -468,7 +470,7 @@ struct Alice3CDeuteron {
 
           // fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
         } // End loop on pions
-      }   // End loop on kaons
+      } // End loop on kaons
       histos.fill(HIST("event/candperdeuteron"), ncand);
     } // End loop on deuterons
   }

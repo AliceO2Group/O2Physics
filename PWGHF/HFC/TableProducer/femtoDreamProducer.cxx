@@ -25,6 +25,7 @@
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -158,7 +159,6 @@ struct HfFemtoDreamProducer {
 
   FemtoDreamTrackSelection trackCuts;
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponseDplus;
   std::vector<float> outputMlDplus;
@@ -576,11 +576,7 @@ struct HfFemtoDreamProducer {
         fillTable(1, candidate.isSelLcToPiKP(), outputMlPiKP.at(0), outputMlPiKP.at(1), outputMlPiKP.at(2));
       }
     }
-
-    if (!isTrackFilled) { // FIXME: isTrackFilled is always false here
-      isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
-      // If track filling was successful, fill the collision table
-    }
+    isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
 
     aod::femtodreamcollision::BitMaskType bitTrack = 0;
     if (isTrackFilled) {

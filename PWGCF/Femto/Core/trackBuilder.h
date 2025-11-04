@@ -259,8 +259,8 @@ const std::unordered_map<TrackSels, std::string> trackSelsToString = {
 class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::TrackMaskType, kTrackSelsMax>
 {
  public:
-  TrackSelection() {}
-  virtual ~TrackSelection() = default;
+  TrackSelection() = default;
+  ~TrackSelection() = default;
 
   template <typename T1, typename T2>
   void configure(T1& config, T2& filter)
@@ -375,7 +375,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->evaluateObservable(kTpcKaon, Track.tpcNSigmaKa());
     this->evaluateObservable(kTpcProton, Track.tpcNSigmaPr());
     this->evaluateObservable(kTpcDeuteron, Track.tpcNSigmaDe());
-    this->evaluateObservable(kTpctofTriton, Track.tpcNSigmaTr());
+    this->evaluateObservable(kTpcTriton, Track.tpcNSigmaTr());
     this->evaluateObservable(kTpcHelium, Track.tpcNSigmaHe());
 
     // tof pid
@@ -451,7 +451,7 @@ class TrackBuilder
 {
  public:
   TrackBuilder() = default;
-  virtual ~TrackBuilder() = default;
+  ~TrackBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)
@@ -506,8 +506,8 @@ class TrackBuilder
                                    track.pt() * track.sign(),
                                    track.eta(),
                                    track.phi());
+      indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
     }
-
     if (mProduceTrackMasks) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
@@ -515,7 +515,6 @@ class TrackBuilder
         trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
       }
     }
-
     if (mProduceTrackDcas) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
@@ -533,7 +532,6 @@ class TrackBuilder
                                         track.beta(),
                                         track.mass());
     }
-
     if (mProduceElectronPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
@@ -583,7 +581,6 @@ class TrackBuilder
         trackProducts.producedHeliumPids(0, track.tpcNSigmaHe(), track.tofNSigmaHe());
       }
     }
-    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
@@ -672,7 +669,7 @@ class TrackBuilderDerivedToDerived
                                  track.signedPt(),
                                  track.eta(),
                                  track.phi());
-    trackProducts.producedTrackMasks(track.trackMask());
+    trackProducts.producedTrackMasks(track.mask());
     indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
   }
 

@@ -27,7 +27,6 @@
 #include <TMinuit.h>
 #include <TPaveText.h>
 #include <TString.h>
-#include <TText.h>
 #include <TVirtualFitter.h>
 #include <TVirtualPad.h>
 

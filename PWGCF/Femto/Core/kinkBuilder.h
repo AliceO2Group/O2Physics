@@ -37,6 +37,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -147,8 +148,8 @@ template <modes::Kink kinkType>
 class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkMaskType, kKinkSelsMax>
 {
  public:
-  KinkSelection() {}
-  virtual ~KinkSelection() = default;
+  KinkSelection() = default;
+  ~KinkSelection() = default;
 
   template <typename T1, typename T2>
   void configure(T1& config, T2& filter)
@@ -242,7 +243,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     float pt = std::hypot(px, py);
     float p = std::sqrt(px * px + py * py + pz * pz);
     float eta = (p > 0.f) ? 0.5f * std::log((p + pz) / (p - pz)) : 0.f;
-    float phi = std::atan2(py, px);
+    float phi = RecoDecay::constrainAngle(std::atan2(py, px));
 
     return ((pt > mPtMin && pt < mPtMax) &&
             (eta > mEtaMin && eta < mEtaMax) &&
@@ -303,8 +304,8 @@ template <modes::Kink kinkType>
 class KinkBuilder
 {
  public:
-  KinkBuilder() {}
-  virtual ~KinkBuilder() = default;
+  KinkBuilder() = default;
+  ~KinkBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)
@@ -371,7 +372,7 @@ class KinkBuilder
       float pt = std::hypot(px, py);
       float p = std::sqrt(px * px + py * py + pz * pz);
       float eta = (p > 0.f) ? 0.5f * std::log((p + pz) / (p - pz)) : 0.f;
-      float phi = std::atan2(py, px);
+      float phi = RecoDecay::constrainAngle(std::atan2(py, px));
 
       kinkProducts.producedSigmas(collisionProducts.producedCollision.lastIndex(),
                                   kink.mothSign() * pt,

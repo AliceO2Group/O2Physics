@@ -26,7 +26,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
@@ -1114,9 +1113,9 @@ struct statPromptPhoton {
 
     histos.fill(HIST("DATA_nEvents"), 2.5);
 
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
 
     histos.fill(HIST("DATA_nEvents"), 3.5);
 

@@ -13,14 +13,11 @@
 /// \brief Tasks that produces the femto tables from derived data
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include "PWGCF/Femto/Core/cascadeBuilder.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
-#include "PWGCF/Femto/Core/kinkBuilder.h"
-#include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
-#include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
+#include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisHelpers.h"

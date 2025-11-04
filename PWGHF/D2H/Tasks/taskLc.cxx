@@ -24,9 +24,12 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -36,14 +39,17 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
 #include <THnSparse.h>
 #include <TPDGCode.h>
 
@@ -51,6 +57,7 @@
 #include <cmath>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <vector> // std::vector
 
 using namespace o2;
@@ -77,7 +84,6 @@ struct HfTaskLc {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -257,7 +263,7 @@ struct HfTaskLc {
     addHistogramsRec("hDecLenErrVsPt", "decay length error (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 1.}, {vbins}}});
 
     if (isUpc) {
-      qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+      qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{1500, 0., 1500}, {1500, 0., 1500}}});
       qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
       qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
       qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
@@ -362,12 +368,12 @@ struct HfTaskLc {
     const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
     const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
     if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPKPi(candidate));
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPKPi(candidate), candidate.pt());
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::invMassLcToPKPi(candidate));
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::invMassLcToPKPi(candidate), candidate.pt());
     }
     if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPiKP(candidate));
-      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.invMassLcToPiKP(candidate), candidate.pt());
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::invMassLcToPiKP(candidate));
+      registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::invMassLcToPiKP(candidate), candidate.pt());
     }
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.pt());
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng0());
@@ -384,8 +390,8 @@ struct HfTaskLc {
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength(), candidate.pt());
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY());
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY(), candidate.pt());
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.ctLc(candidate));
-    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.ctLc(candidate), candidate.pt());
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::ctLc(candidate));
+    registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCtVsPtRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::ctLc(candidate), candidate.pt());
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPARecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa());
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa(), candidate.pt());
     registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY());
@@ -416,7 +422,7 @@ struct HfTaskLc {
         continue;
       }
       /// rapidity selection
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandRecoMax) {
         continue;
       }
 
@@ -458,10 +464,10 @@ struct HfTaskLc {
           }
           double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-          const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
+          const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
 
           auto fillTHnRecSig = [&](bool isPKPi) {
-            massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
+            massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
             if constexpr (FillMl) {
               if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
@@ -587,7 +593,7 @@ struct HfTaskLc {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > yCandRecoMax) {
         continue;
       }
       const auto pt = candidate.pt();
@@ -601,14 +607,14 @@ struct HfTaskLc {
       const auto cpaXY = candidate.cpaXY();
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-        registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassLcToPKPi(candidate), pt, numPvContributors);
-        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
+        registry.fill(HIST("Data/hMass"), HfHelper::invMassLcToPKPi(candidate));
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), HfHelper::invMassLcToPKPi(candidate), pt, numPvContributors);
+        registry.fill(HIST("Data/hMassVsPt"), HfHelper::invMassLcToPKPi(candidate), pt);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-        registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassLcToPiKP(candidate), pt, numPvContributors);
-        registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
+        registry.fill(HIST("Data/hMass"), HfHelper::invMassLcToPiKP(candidate));
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), HfHelper::invMassLcToPiKP(candidate), pt, numPvContributors);
+        registry.fill(HIST("Data/hMassVsPt"), HfHelper::invMassLcToPiKP(candidate), pt);
       }
       registry.fill(HIST("Data/hPt"), pt);
       registry.fill(HIST("Data/hPtProng0"), ptProng0);
@@ -624,8 +630,8 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLengthVsPt"), decayLength, pt);
       registry.fill(HIST("Data/hDecLengthxy"), decayLengthXY);
       registry.fill(HIST("Data/hDecLengthxyVsPt"), decayLengthXY, pt);
-      registry.fill(HIST("Data/hCt"), hfHelper.ctLc(candidate));
-      registry.fill(HIST("Data/hCtVsPt"), hfHelper.ctLc(candidate), pt);
+      registry.fill(HIST("Data/hCt"), HfHelper::ctLc(candidate));
+      registry.fill(HIST("Data/hCtVsPt"), HfHelper::ctLc(candidate), pt);
       registry.fill(HIST("Data/hCPA"), cpa);
       registry.fill(HIST("Data/hCPAVsPt"), cpa, pt);
       registry.fill(HIST("Data/hCPAxy"), cpaXY);
@@ -651,10 +657,10 @@ struct HfTaskLc {
         }
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-        const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
+        const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
 
         auto fillTHnData = [&](bool isPKPi) {
-          massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
+          massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
           if constexpr (FillMl) {
             if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {

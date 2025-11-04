@@ -22,15 +22,18 @@
 #define COMMON_TOOLS_PID_PIDTPCMODULE_H_
 
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/TableProducer/PID/pidTPCBase.h"
 #include "Tools/ML/model.h"
 
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -89,7 +92,8 @@ struct pidTPCConfigurables : o2::framework::ConfigurableGroup {
   // Parameters for loading network from a file / downloading the file
   o2::framework::Configurable<bool> useNetworkCorrection{"useNetworkCorrection", 0, "(bool) Wether or not to use the network correction for the TPC dE/dx signal"};
   o2::framework::Configurable<bool> autofetchNetworks{"autofetchNetworks", 1, "(bool) Automatically fetches networks from CCDB for the correct run number"};
-  o2::framework::Configurable<bool> skipTPCOnly{"skipTPCOnly", false, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks)"};
+  o2::framework::Configurable<int> skipTPCOnly{"skipTPCOnly", -1, "Flag to skip TPC only tracks (faster but affects the analyses that use TPC only tracks). 0: do not skip, 1: skip, -1: check if needed by specific tasks"};
+  o2::framework::Configurable<std::vector<std::string>> devicesRequiringTPCOnlyPID{"devicesRequiringTPCOnlyPID", std::vector<std::string>{"photon-conversion-builder"}, "List of device names of tasks requiring TPC-only tracks to have TPC PID calculated"};
   o2::framework::Configurable<std::string> networkPathLocally{"networkPathLocally", "network.onnx", "(std::string) Path to the local .onnx file. If autofetching is enabled, then this is where the files will be downloaded"};
   o2::framework::Configurable<std::string> networkPathCCDB{"networkPathCCDB", "Analysis/PID/TPC/ML", "Path on CCDB"};
   o2::framework::Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
@@ -127,13 +131,13 @@ struct pidTPCConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> useNetworkHe{"useNetworkHe", 1, {"Switch for applying neural network on the helium3 mass hypothesis (if network enabled) (set to 0 to disable)"}};
   o2::framework::Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
   o2::framework::Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
-  o2::framework::Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  o2::framework::Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 };
 
 // helper getter - FIXME should be separate
 int getPIDIndex(const int pdgCode) // Get O2 PID index corresponding to MC PDG code
 {
-  switch (abs(pdgCode)) {
+  switch (std::abs(pdgCode)) {
     case 11:
       return o2::track::PID::Electron;
     case 13:
@@ -214,6 +218,10 @@ class pidTPCModule
   std::vector<int> speciesNetworkFlags = std::vector<int>(9);
   std::string networkVersion;
 
+  // To get automatically the proper Hadronic Rate
+  std::string irSource = "";
+  o2::common::core::CollisionSystemType::collType collsys = o2::common::core::CollisionSystemType::kCollSysUndef;
+
   // Parametrization configuration
   bool useCCDBParam = false;
 
@@ -235,6 +243,61 @@ class pidTPCModule
       LOGF(info, " ONLY FOR EXPERTS at this time. Please switch ");
       LOGF(info, " this option off UNLESS you are absolutely SURE");
       LOGF(info, " of what you're doing! You've been warned!");
+      LOGF(info, "***************************************************");
+    }
+
+    if (pidTPCopts.skipTPCOnly.value == -1) {
+      LOGF(info, "***************************************************");
+      LOGF(info, " the skipTPConly flag has a value of -1! ");
+      LOGF(info, " ---> autodetecting TPC-only track necessity now ");
+      LOGF(info, "***************************************************");
+      // print list of devices that are being checked for
+      for (std::size_t devIdx{0}; devIdx < pidTPCopts.devicesRequiringTPCOnlyPID->size(); devIdx++) {
+        LOGF(info, "Will search for #%i device requiring TPC PID for TPC only: %s", devIdx, pidTPCopts.devicesRequiringTPCOnlyPID->at(devIdx));
+      }
+      LOGF(info, "***************************************************");
+
+      // assume that TPC tracks are not needed, but check if tasks
+      // requiring them are present in the chain
+      pidTPCopts.skipTPCOnly.value = 1;
+
+      // loop over devices in this execution
+      auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+      for (o2::framework::DeviceSpec const& device : workflows.devices) {
+        // Look for propagation service
+        if (device.name.compare("propagation-service") == 0) {
+          LOGF(info, " ---> propagation service detected, checking if photons enabled...");
+          for (auto const& option : device.options) {
+            // check for photon generation enabled or not
+            if (option.name.compare("v0BuilderOpts.generatePhotonCandidates") == 0) {
+              if (option.defaultValue.get<bool>()) {
+                LOGF(info, " ---> propagation service: photons enabled, will calculate TPC PID for TPC only tracks.");
+                pidTPCopts.skipTPCOnly.value = 0;
+              } else {
+                LOGF(info, " ---> propagation service: photons disabled, TPC PID not required for TPC-only tracks");
+              }
+            }
+          }
+        }
+
+        // Check 2: specific tasks that require TPC PID based on configurable
+        for (std::size_t devIdx{0}; devIdx < pidTPCopts.devicesRequiringTPCOnlyPID->size(); devIdx++) {
+          if (device.name.compare(pidTPCopts.devicesRequiringTPCOnlyPID->at(devIdx)) == 0) {
+            LOGF(info, " ---> %s detected! ", pidTPCopts.devicesRequiringTPCOnlyPID->at(devIdx));
+            LOGF(info, " ---> enabling TPC only track TPC PID calculations now.");
+            pidTPCopts.skipTPCOnly.value = 0;
+          }
+        }
+      }
+
+      if (pidTPCopts.skipTPCOnly.value == 1) {
+        LOGF(info, "***************************************************");
+        LOGF(info, "No need for TPC only information detected. Will not generate Nsigma for TPC only tracks");
+        LOGF(info, "If this is unexpected behaviour and a necessity was not identified, please add the");
+        LOGF(info, "corresponding task to the configurable 'devicesRequiringTPCOnlyPID' of this task");
+        LOGF(info, "To do that, please get in touch with core service wagon maintainers and ask:");
+        LOGF(info, "It is always best to use core service wagons instead of private copies");
+      }
       LOGF(info, "***************************************************");
     }
 
@@ -323,6 +386,18 @@ class pidTPCModule
         }
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << time << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
+        o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(pidTPCopts.cfgPathGrpLhcIf.value, time);
+        if (grpo) {
+          LOG(info) << " collision type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          if (collsys == CollisionSystemType::kCollSyspp) {
+            irSource = std::string("T0VTX");
+          } else {
+            irSource = std::string("ZNC hadronic");
+          }
+        } else {
+          LOGF(info, "No grpo object found. irSource will remain undefined.");
+        }
         response->PrintAll();
       }
     }
@@ -368,8 +443,8 @@ class pidTPCModule
   } // end init
 
   //__________________________________________________
-  template <typename TCCDB, typename TCCDBApi, typename C, typename M, typename T, typename B>
-  std::vector<float> createNetworkPrediction(TCCDB& ccdb, TCCDBApi& ccdbApi, C const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
+  template <typename TCCDB, typename TCCDBApi, typename M, typename T, typename B>
+  std::vector<float> createNetworkPrediction(TCCDB& ccdb, TCCDBApi& ccdbApi, soa::Join<aod::Collisions, aod::EvSels> const& collisions, M const& mults, T const& tracks, B const& bcs, const size_t size)
   {
 
     std::vector<float> network_prediction;
@@ -397,6 +472,18 @@ class pidTPCModule
         }
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
+        o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(pidTPCopts.cfgPathGrpLhcIf.value, bc.timestamp());
+        if (grpo) {
+          LOG(info) << "Collision type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          if (collsys == CollisionSystemType::kCollSyspp) {
+            irSource = std::string("T0VTX");
+          } else {
+            irSource = std::string("ZNC hadronic");
+          }
+        } else {
+          LOGF(info, "No grpo object found. irSource will remain undefined.");
+        }
         response->PrintAll();
       }
 
@@ -430,11 +517,34 @@ class pidTPCModule
     uint64_t counter_track_props = 0;
     int loop_counter = 0;
 
+    // To load the Hadronic rate once for each collision
+    float hadronicRateBegin = 0.;
+    std::vector<float> hadronicRateForCollision(collisions.size(), 0.0f);
+    size_t i = 0;
+    for (const auto& collision : collisions) {
+      const auto& bc = collision.template bc_as<B>();
+      if (irSource.compare("") != 0) {
+        hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+      } else {
+        hadronicRateForCollision[i] = 0.0f;
+      }
+      i++;
+    }
+    auto bc = bcs.begin();
+    if (irSource.compare("") != 0) {
+      hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
+    } else {
+      hadronicRateBegin = 0.0f;
+    }
+
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-    for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
-      float hadronicRate = 0.;
-      uint64_t timeStamp_bcOld = 0;
+    static constexpr int NParticleTypes = 9;
+    constexpr int ExpectedInputDimensionsNNV2 = 7;
+    constexpr int ExpectedInputDimensionsNNV3 = 8;
+    constexpr auto NetworkVersionV2 = "2";
+    constexpr auto NetworkVersionV3 = "3";
+    for (int i = 0; i < NParticleTypes; i++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
           continue;
@@ -450,20 +560,24 @@ class pidTPCModule
         track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
         track_properties[counter_track_props + 4] = trk.has_collision() ? mults[trk.collisionId()] / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-        if (input_dimensions == 7 && networkVersion == "2") {
+        if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
-        if (input_dimensions == 8 && networkVersion == "3") {
+        if (input_dimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision()) {
-            auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
-            if (trk_bc.timestamp() != timeStamp_bcOld) {
-              hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), pidTPCopts.irSource.value) * 1.e-3;
+            if (collsys == CollisionSystemType::kCollSyspp) {
+              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
+            } else {
+              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
             }
-            timeStamp_bcOld = trk_bc.timestamp();
-            track_properties[counter_track_props + 7] = hadronicRate / 50.;
           } else {
-            track_properties[counter_track_props + 7] = 1;
+            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
+            if (collsys == CollisionSystemType::kCollSyspp) {
+              track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
+            } else {
+              track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
+            }
           }
         }
         counter_track_props += input_dimensions;
@@ -493,7 +607,7 @@ class pidTPCModule
 
   //__________________________________________________
   template <typename T, typename NSF, typename NST>
-  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const long multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
+  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const int64_t multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
   {
     if (flagFull != 1 && flagTiny != 1) {
       return;
@@ -526,22 +640,24 @@ class pidTPCModule
 
     float nSigma = -999.f;
     float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
+    constexpr int NumOutputNodesSymmetricSigma = 2;
+    constexpr int NumOutputNodesAsymmetricSigma = 3;
     if (pidTPCopts.useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > pidTPCopts.networkBetaGammaCutoff) {
 
       // Here comes the application of the network. The output--dimensions of the network determine the application: 1: mean, 2: sigma, 3: sigma asymmetric
       // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
       if (network.getNumOutputNodes() == 1) { // Expected mean correction; no sigma correction
         nSigma = (tpcSignal - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma;
-      } else if (network.getNumOutputNodes() == 2) { // Symmetric sigma correction
-        expSigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-        nSigma = (tpcSignal / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]);
-      } else if (network.getNumOutputNodes() == 3) { // Asymmetric sigma corection
-        if (tpcSignal / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
-          expSigma = (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-          nSigma = (tpcSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]);
+      } else if (network.getNumOutputNodes() == NumOutputNodesSymmetricSigma) { // Symmetric sigma correction
+        expSigma = (network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+        nSigma = (tpcSignal / expSignal - network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesSymmetricSigma * (count_tracks + tracksForNet_size * pid)]);
+      } else if (network.getNumOutputNodes() == NumOutputNodesAsymmetricSigma) { // Asymmetric sigma corection
+        if (tpcSignal / expSignal >= network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) {
+          expSigma = (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+          nSigma = (tpcSignal / expSignal - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]);
         } else {
-          expSigma = (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal;
-          nSigma = (tpcSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]);
+          expSigma = (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal;
+          nSigma = (tpcSignal / expSignal - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid)] - network_prediction[NumOutputNodesAsymmetricSigma * (count_tracks + tracksForNet_size * pid) + 2]);
         }
       } else {
         LOGF(fatal, "Network output-dimensions incompatible!");
@@ -556,8 +672,8 @@ class pidTPCModule
   };
 
   //__________________________________________________
-  template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TCollisions, typename TTracks, typename TTracksQA, typename TProducts>
-  void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, TCollisions const& cols, TTracks const& tracks, TTracksQA const& tracksQA, TProducts& products)
+  template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TTracks, typename TTracksQA, typename TProducts>
+  void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, soa::Join<aod::Collisions, aod::EvSels> const& cols, TTracks const& tracks, TTracksQA const& tracksQA, TProducts& products)
   {
     if (tracks.size() == 0) {
       return; // empty protection
@@ -568,9 +684,9 @@ class pidTPCModule
     }
 
     // preparatory step: we need the multiplicities for each collision
-    std::vector<int> pidmults;
-    long totalTPCtracks = 0;
-    long totalTPCnotStandalone = 0;
+    std::vector<int64_t> pidmults;
+    int64_t totalTPCtracks = 0;
+    int64_t totalTPCnotStandalone = 0;
     pidmults.resize(cols.size(), 0);
 
     // faster counting
@@ -627,7 +743,7 @@ class pidTPCModule
 
     //_______________________________________
     // process tracksQA in case present
-    std::vector<int64_t> indexTrack2TrackQA;
+    std::vector<int64_t> indexTrack2TrackQA(outTable_size, -1);
     if constexpr (soa::is_table<TTracksQA>) {
       for (const auto& trackQA : tracksQA) {
         indexTrack2TrackQA[trackQA.trackId()] = trackQA.globalIndex();
@@ -635,11 +751,33 @@ class pidTPCModule
     }
     //_______________________________________
 
+    // Fill Hadronic rate per collision in case CorrectedDEdx is requested
+    std::vector<float> hadronicRateForCollision(cols.size(), 0.0f);
+    float hadronicRateBegin = 0.0f;
+    if (pidTPCopts.useCorrecteddEdx) {
+      size_t i = 0;
+      for (const auto& collision : cols) {
+        const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+        if (irSource.compare("") != 0) {
+          hadronicRateForCollision[i] = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+        } else {
+          hadronicRateForCollision[i] = 0.0f;
+        }
+        i++;
+      }
+      auto bc = bcs.begin();
+      if (irSource.compare("") != 0) {
+        hadronicRateBegin = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
+      } else {
+        hadronicRateBegin = 0.0f;
+      }
+    }
+
     for (auto const& trk : tracks) {
       // get the TPC signal to be used in the PID
       float tpcSignalToEvaluatePID = trk.tpcSignal();
 
-      int multTPC = 0;
+      int64_t multTPC = 0;
       if (trk.has_collision()) {
         multTPC = pidmults[trk.collisionId()];
       }
@@ -662,24 +800,25 @@ class pidTPCModule
         int occupancy;
         if (trk.has_collision()) {
           auto collision = cols.iteratorAt(trk.collisionId());
-          auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-          const int runnumber = bc.runNumber();
-          hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; // kHz
+          hadronicRate = hadronicRateForCollision[trk.collisionId()];
           occupancy = collision.trackOccupancyInTimeRange();
         } else {
-          auto bc = bcs.begin();
-          const int runnumber = bc.runNumber();
-          hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; // kHz
+          hadronicRate = hadronicRateBegin;
           occupancy = 0;
         }
+
+        constexpr float kExpectedTPCSignalMIP = 50.0f;
+        constexpr float kMaxAllowedRatio = 1.05f;
+        constexpr float kMinAllowedRatio = 0.05f;
+        constexpr float kMaxAllowedOcc = 12.0f;
 
         float fTPCSignal = tpcSignalToEvaluatePID;
         float fNormMultTPC = multTPC / 11000.;
 
         float fTrackOccN = occupancy / 1000.;
         float fOccTPCN = fNormMultTPC * 10; //(fNormMultTPC*10).clip(0,12)
-        if (fOccTPCN > 12)
-          fOccTPCN = 12;
+        if (fOccTPCN > kMaxAllowedOcc)
+          fOccTPCN = kMaxAllowedOcc;
         else if (fOccTPCN < 0)
           fOccTPCN = 0;
 
@@ -688,11 +827,11 @@ class pidTPCModule
         float a1pt = std::abs(trk.signed1Pt());
         float a1pt2 = a1pt * a1pt;
         float atgl = std::abs(trk.tgl());
-        float mbb0R = 50 / fTPCSignal;
-        if (mbb0R > 1.05)
-          mbb0R = 1.05;
-        else if (mbb0R < 0.05)
-          mbb0R = 0.05;
+        float mbb0R = kExpectedTPCSignalMIP / fTPCSignal;
+        if (mbb0R > kMaxAllowedRatio)
+          mbb0R = kMaxAllowedRatio;
+        else if (mbb0R < kMinAllowedRatio)
+          mbb0R = kMinAllowedRatio;
         // float mbb0R =  max(0.05,  min(50 / fTPCSignal, 1.05));
         float a1ptmbb0R = a1pt * mbb0R;
         float atglmbb0R = atgl * mbb0R;
@@ -702,11 +841,11 @@ class pidTPCModule
 
         float fTPCSignalN_CR0 = str_dedx_correction.fReal_fTPCSignalN(vec_occu, vec_track);
 
-        float mbb0R1 = 50 / (fTPCSignal / fTPCSignalN_CR0);
-        if (mbb0R1 > 1.05)
-          mbb0R1 = 1.05;
-        else if (mbb0R1 < 0.05)
-          mbb0R1 = 0.05;
+        float mbb0R1 = kExpectedTPCSignalMIP / (fTPCSignal / fTPCSignalN_CR0);
+        if (mbb0R1 > kMaxAllowedRatio)
+          mbb0R1 = kMaxAllowedRatio;
+        else if (mbb0R1 < kMinAllowedRatio)
+          mbb0R1 = kMinAllowedRatio;
 
         std::vector<float> vec_track1 = {mbb0R1, a1pt, atgl, atgl * mbb0R1, a1pt * mbb0R1, side, a1pt2};
         float fTPCSignalN_CR1 = str_dedx_correction.fReal_fTPCSignalN(vec_occu, vec_track1);
@@ -738,45 +877,62 @@ class pidTPCModule
           }
         }
         LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
+        o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(pidTPCopts.cfgPathGrpLhcIf.value, bc.timestamp());
+        if (grpo) {
+          LOG(info) << "Collisions type::" << CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          collsys = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+          if (collsys == CollisionSystemType::kCollSyspp) {
+            irSource = std::string("T0VTX");
+          } else {
+            irSource = std::string("ZNC hadronic");
+          }
+        } else {
+          LOGF(info, "No grpo object found. irSource will remain undefined.");
+        }
         response->PrintAll();
       }
 
       // if this is a MC process function, go for MC tune on data processing
       if constexpr (requires { trk.mcParticleId(); }) {
         // Perform TuneOnData sampling for MC dE/dx
-        float mcTunedTPCSignal = 0.;
-        if (!trk.hasTPC()) {
-          mcTunedTPCSignal = -999.f;
+        if (!trk.has_mcParticle()) {
+          products.tableTuneOnData(-999.f);
+          tpcSignalToEvaluatePID = -999.f; // pass this for further eval
         } else {
-          if (pidTPCopts.skipTPCOnly) {
-            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
-              mcTunedTPCSignal = -999.f;
-            }
-          }
-          int pid = getPIDIndex(trk.mcParticle().pdgCode());
-
-          auto expSignal = response->GetExpectedSignal(trk, pid);
-          auto expSigma = response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid);
-          if (expSignal < 0. || expSigma < 0.) { // if expectation invalid then give undefined signal
+          float mcTunedTPCSignal = 0.;
+          if (!trk.hasTPC()) {
             mcTunedTPCSignal = -999.f;
-          }
-          float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
-
-          if (pidTPCopts.useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > pidTPCopts.networkBetaGammaCutoff) {
-            auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
-            auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-            if (mean < 0.f || sigma < 0.f) {
-              mcTunedTPCSignal = -999.f;
-            } else {
-              mcTunedTPCSignal = gRandom->Gaus(mean, sigma);
-            }
           } else {
-            mcTunedTPCSignal = gRandom->Gaus(expSignal, expSigma);
+            if (pidTPCopts.skipTPCOnly) {
+              if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+                mcTunedTPCSignal = -999.f;
+              }
+            }
+            int pid = getPIDIndex(trk.mcParticle().pdgCode());
+
+            auto expSignal = response->GetExpectedSignal(trk, pid);
+            auto expSigma = response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid);
+            if (expSignal < 0. || expSigma < 0.) { // if expectation invalid then give undefined signal
+              mcTunedTPCSignal = -999.f;
+            }
+            float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
+
+            if (pidTPCopts.useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > pidTPCopts.networkBetaGammaCutoff) {
+              auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
+              auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+              if (mean < 0.f || sigma < 0.f) {
+                mcTunedTPCSignal = -999.f;
+              } else {
+                mcTunedTPCSignal = gRandom->Gaus(mean, sigma);
+              }
+            } else {
+              mcTunedTPCSignal = gRandom->Gaus(expSignal, expSigma);
+            }
           }
+          tpcSignalToEvaluatePID = mcTunedTPCSignal; // pass this for further eval
+          if (pidTPCopts.enableTuneOnDataTable)
+            products.tableTuneOnData(mcTunedTPCSignal);
         }
-        tpcSignalToEvaluatePID = mcTunedTPCSignal; // pass this for further eval
-        if (pidTPCopts.enableTuneOnDataTable)
-          products.tableTuneOnData(mcTunedTPCSignal);
       }
 
       auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &multTPC, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {

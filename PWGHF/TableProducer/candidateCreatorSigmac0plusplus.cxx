@@ -17,10 +17,13 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
@@ -95,7 +98,6 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
   /// Cut selection object for soft π-,+
   TrackSelection softPiCuts;
 
@@ -206,7 +208,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       }
       /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
       /// if not selected, skip it and go to the next one
-      if (yCandLcMax >= 0. && std::abs(hfHelper.yLc(candLc)) > yCandLcMax) {
+      if (yCandLcMax >= 0. && std::abs(HfHelper::yLc(candLc)) > yCandLcMax) {
         continue;
       }
 
@@ -223,10 +225,10 @@ struct HfCandidateCreatorSigmac0plusplus {
         mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
       }
 
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(hfHelper.invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
+      if (candLc.isSelLcToPKPi() >= 1 && std::abs(HfHelper::invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(hfHelper.invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
+      if (candLc.isSelLcToPiKP() >= 1 && std::abs(HfHelper::invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
         statusSpreadMinvPiKPFromPDG = 1;
       }
       if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

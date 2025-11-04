@@ -378,7 +378,7 @@ void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& BaseTable
   if constexpr (jethfutilities::isHFCandidate<T>()) {
     jethfutilities::fillHFCandidateTable<isMc>(candidate, collisionIndex, BaseTable, HFParTable, HFParETable, HFParDaughterTable, HFSelectionFlagTable, HFMlTable, HFMlDaughterTable, HFMCDTable);
   } else if constexpr (jetdqutilities::isDielectronCandidate<T>()) {
-    jetdqutilities::fillDielectronCandidateTable(candidate, collisionIndex, BaseTable);
+    jetdqutilities::fillDielectronCandidateTable(candidate, collisionIndex, BaseTable, HFParTable);
   }
 }
 
