@@ -16,8 +16,12 @@
 /// \since  2025-09-06
 //
 // to run it execute:
-// copts="--configuration json://tautauConfig.json -b"
-// o2-analysis-ud-tauthreeprongeventtableproducer $copts > output.log
+// copts="--configuration json://tautauMC_modified_new.json -b"
+// for MC
+// oopts="--aod-writer-json saveDerivedConfig.json"
+//  for data
+// oopts="--aod-writer-json saveDerivedConfigData.json"
+// o2-analysis-ud-tau-three-prong-event-table-producer $copts $oopts > output.log
 
 //// C++ headers
 #include "Math/Vector4D.h"
@@ -64,6 +68,14 @@ enum MyRecoProblem {
   MANY_RECO = 1,          // more than 1 reconstructed collision
   TOO_MANY_DAUGHTERS = 2, // more than 6 daughters from 2 taus
   TWO_TRACKS = 3          // more than 1 associated track to MC particle (tau daughter)
+};
+
+enum MyParticle {
+  MyOtherParticle = -1,
+  MyElectron = 1,
+  MyMuon = 2,
+  MyPion = 3,
+  MyKaon = 4
 };
 
 struct TauThreeProngEventTableProducer {
@@ -387,26 +399,27 @@ struct TauThreeProngEventTableProducer {
     return -1;
   }
 
-  // analysis track quality check
-  template <typename T>
-  bool isGoodTrackCheck(T track)
-  {
-    if (!track.hasTPC())
-      return false;
-    if (track.tpcChi2NCl() >= 4.)
-      return false;
-    if (track.itsChi2NCl() >= 36.)
-      return false;
-    // if (track.dcaZ() >= 2.) return false;
-    // if (track.dcaXY() >= 0.0105 * 0.035 / std::pow(track.pt(), 1.1)) return false;
-    if (track.tpcNClsCrossedRows() <= 50)
-      return false;
-    if (track.tpcNClsFindable() == 0)
-      return false;
-    if (track.tpcNClsCrossedRows() / track.tpcNClsFindable() <= 0.8)
-      return false;
-    return true;
-  }
+  // to be appied later
+  //  // analysis track quality check
+  //  template <typename T>
+  //  bool isGoodTrackCheck(T track)
+  //  {
+  //    if (!track.hasTPC())
+  //      return false;
+  //    if (track.tpcChi2NCl() >= 4.)
+  //      return false;
+  //    if (track.itsChi2NCl() >= 36.)
+  //      return false;
+  //    // if (track.dcaZ() >= 2.) return false;
+  //    // if (track.dcaXY() >= 0.0105 * 0.035 / std::pow(track.pt(), 1.1)) return false;
+  //    if (track.tpcNClsCrossedRows() <= 50)
+  //      return false;
+  //    if (track.tpcNClsFindable() == 0)
+  //      return false;
+  //    if (track.tpcNClsCrossedRows() / track.tpcNClsFindable() <= 0.8)
+  //      return false;
+  //    return true;
+  //  }
 
   //  // analysis track quality check
   //  template <typename T>
@@ -426,16 +439,16 @@ struct TauThreeProngEventTableProducer {
   //    return isGoodTrack;
   //  }
 
-  // analysis track quality check
-  template <typename T>
-  bool isGoodTOFTrackCheck(T track)
-  {
-    if (!track.hasTOF())
-      return false;
-    if (track.tofChi2() >= 3)
-      return false;
-    return true;
-  }
+  //  // analysis track quality check
+  //  template <typename T>
+  //  bool isGoodTOFTrackCheck(T track)
+  //  {
+  //    if (!track.hasTOF())
+  //      return false;
+  //    if (track.tofChi2() >= 3)
+  //      return false;
+  //    return true;
+  //  }
 
   // check ITS clusters, how many -1,0,1,7 + 10 if 0,1,2 layers were fired
   // analysis track quality check
@@ -478,20 +491,20 @@ struct TauThreeProngEventTableProducer {
 
   //////////////////////////////////////////
 
-  template <typename C>
-  bool isGoodFITtime(C const& coll, float maxFITtime)
-  {
-
-    // FTOA
-    if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
-      return false;
-
-    // FTOC
-    if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0C() > -998.)
-      return false;
-
-    return true;
-  }
+  //  template <typename C>
+  //  bool isGoodFITtime(C const& coll, float maxFITtime)
+  //  {
+  //
+  //    // FTOA
+  //    if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
+  //      return false;
+  //
+  //    // FTOC
+  //    if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0C() > -998.)
+  //      return false;
+  //
+  //    return true;
+  //  }
 
   //   template <typename C>
   //   bool isGoodROFtime(C const& coll)
@@ -663,18 +676,18 @@ struct TauThreeProngEventTableProducer {
   int enumMyParticle(int valuePDG)
   // reads pdg value and returns particle number as in enumMyParticle
   {
-    if (std::abs(valuePDG) == kElectron) { // 11 e+ or e-
-      return 1;
+    if (std::abs(valuePDG) == kElectron) {         // 11 e+ or e-
+      return MyElectron;                           // 1
     } else if (std::abs(valuePDG) == kMuonMinus) { // 13 mu+ or mu -
-      return 2;
-    } else if (std::abs(valuePDG) == kPiPlus) { // 211 pi+ (or pi-)
-      return 3;
-    } else if (std::abs(valuePDG) == 321) { // 321 K+ or K-
-      return 4;
+      return MyMuon;                               // 2
+    } else if (std::abs(valuePDG) == kPiPlus) {    // 211 pi+ (or pi-)
+      return MyPion;                               // 3
+    } else if (std::abs(valuePDG) == kKPlus) {     // 321 K+ (or K-)
+      return MyKaon;                               // 4
     } else {
       if (verbose)
         LOGF(info, "PDG value not found in enumMyParticle. Returning -1.");
-      return -1.;
+      return MyOtherParticle; // -1
     }
   }
 
@@ -1035,13 +1048,14 @@ struct TauThreeProngEventTableProducer {
       if (verbose)
         LOGF(info, "1. part from MC coll %d", tmpPartsFromMcColl.size());
       int countMothers = 0;
+      const int desiredNMothers = 2;
       for (const auto& particle : tmpPartsFromMcColl) {
         if (verbose)
           LOGF(info, "2. MC part pdg %d", particle.pdgCode());
         if (std::abs(particle.pdgCode()) != kTauMinus)
           continue; // 15 = tau_minus
         // if (std::abs(particle.pdgCode()) != 15) continue; // 15 = tau_minus
-        if (countMothers < 2) {
+        if (countMothers < desiredNMothers) { // < 2
           // fill info for each tau
           trueTauX[countMothers] = particle.px();
           trueTauY[countMothers] = particle.py();
@@ -1056,7 +1070,7 @@ struct TauThreeProngEventTableProducer {
           registrySkim.get<TH1>(HIST("skim/tauPhiMC"))->Fill(trueTauPhi[countMothers]);
           registrySkim.get<TH1>(HIST("skim/tauEtaMC"))->Fill(trueTauEta[countMothers]);
           registrySkim.get<TH1>(HIST("skim/tauPtMC"))->Fill(RecoDecay::pt(particle.px(), particle.py()));
-          if (std::abs(tmpRapidity) > 0.9) {
+          if (std::abs(tmpRapidity) > trkEtacut) { // 0.9
             tauInRapidity = false;
             if (verbose)
               LOGF(info, "tau y %f", tmpRapidity);
@@ -1065,7 +1079,7 @@ struct TauThreeProngEventTableProducer {
         countMothers++;
       } // end of loop over MC paricles
       registrySkim.get<TH1>(HIST("skim/nTauMC"))->Fill(countMothers);
-      if (countMothers != 2) {
+      if (countMothers != desiredNMothers) { // 2
         if (verbose)
           LOGF(info, "Truth collision has number of mother particles (taus) %d different than 2. Jump to the next MC event.", countMothers);
         continue;
@@ -1100,26 +1114,26 @@ struct TauThreeProngEventTableProducer {
         const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
         for (const auto& daughter : daughters) {
           particleType = enumMyParticle(daughter.pdgCode());
-          if (particleType == -1) {
+          if (particleType == MyOtherParticle) { // -1
             continue;
           } else {
             nChargedDaughtersTau[countMothers]++;
-            if (particleType == 1)
+            if (particleType == MyElectron) // 1
               nElec++;
-            else if (particleType == 2)
+            else if (particleType == MyMuon) // 2
               nMuon++;
-            else if (particleType == 3)
+            else if (particleType == MyPion) // 3
               nPi++;
           }
 
-          if (std::abs(RecoDecay::eta(std::array<double, 3>{daughter.px(), daughter.py(), daughter.pz()})) > 0.9)
+          if (std::abs(RecoDecay::eta(std::array<double, 3>{daughter.px(), daughter.py(), daughter.pz()})) > trkEtacut) // 0.9
             partFromTauInEta = false;
           registrySkim.get<TH1>(HIST("skim/daughterPhiMC"))->Fill(RecoDecay::phi(daughter.px(), daughter.py()));
           registrySkim.get<TH1>(HIST("skim/daughterEtaMC"))->Fill(RecoDecay::eta(std::array<double, 3>{daughter.px(), daughter.py(), daughter.pz()}));
           registrySkim.get<TH1>(HIST("skim/daughterPtMC"))->Fill(RecoDecay::pt(daughter.px(), daughter.py()));
         }
         countMothers++;
-        if (countMothers >= 2)
+        if (countMothers >= desiredNMothers) // 2
           break;
       } // end of loop over MC particles
 
@@ -1329,7 +1343,7 @@ struct TauThreeProngEventTableProducer {
             if (verbose)
               LOGF(info, "With Coll; daug pdg %d", daughter.pdgCode());
             // check if it is the charged particle (= no pi0 or neutrino)
-            if (enumMyParticle(daughter.pdgCode()) == -1)
+            if (enumMyParticle(daughter.pdgCode()) == MyOtherParticle) // -1
               continue;
             countDaughters++;
             if (daughter.pdgCode() == kPi0)
@@ -1424,7 +1438,7 @@ struct TauThreeProngEventTableProducer {
           // select only tauons with checking if particle has no mother
           // in UPC MC taus have mothers
           // if (particle.has_mothers())
-          if (std::abs(particle.pdgCode()) != 15)
+          if (std::abs(particle.pdgCode()) != kTauMinus) // 15
             continue;
           // countMothers++;
           // check the generated collision does not have more than 2 tauons

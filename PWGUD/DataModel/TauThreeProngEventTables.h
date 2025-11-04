@@ -16,8 +16,8 @@
 /// \brief  A table to store information about events preselected to be candidates for UPC gammagamma->tautau in 1+3 ot 3+3 topology
 ///
 
-#ifndef ALISW_TAUTHREEPRONGEVENTTABLES_H
-#define ALISW_TAUTHREEPRONGEVENTTABLES_H
+#ifndef PWGUD_DATAMODEL_TAUTHREEPRONGEVENTTABLES_H
+#define PWGUD_DATAMODEL_TAUTHREEPRONGEVENTTABLES_H
 
 #include "Framework/AnalysisDataModel.h"
 // derived tables for tautau->4 (=1+3) tracks
@@ -154,4 +154,4 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
 
 } // namespace o2::aod
 
-#endif // ALISW_TAUTHREEPRONGEVENTTABLES_H
+#endif // PWGUD_DATAMODEL_TAUTHREEPRONGEVENTTABLES_H
