@@ -95,8 +95,8 @@ struct ZdcExtraTableProducer {
     registry.add("ZNAsumq", "ZNAsumq; ZNA uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNCsumq", "ZNCsumq; ZNC uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
 
-    registry.add("ZNACentroid", "ZNACentroid; ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
-    registry.add("ZNCCentroid", "ZNCCentroid; ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
+    registry.add("ZNACentroid", "ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
+    registry.add("ZNCCentroid", "ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
 
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
