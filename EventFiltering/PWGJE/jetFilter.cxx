@@ -33,6 +33,7 @@
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "../filterTables.h"
 
@@ -189,7 +190,7 @@ struct jetFilter {
 
     // collision process loop
     bool keepEvent[kTriggerObjects]{false, false, false, false};
-    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>("NoTimeFrameBorder")))) {
       tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
       return;
     }
@@ -287,13 +288,13 @@ struct jetFilter {
     tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
   }
 
-  void processWithoutRho(soa::Join<aod::JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<aod::JetTracks> const& tracks)
+  void processWithoutRho(aod::JetCollision const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
     doTriggering<false>(collision, jets, tracks);
   }
   PROCESS_SWITCH(jetFilter, processWithoutRho, "Do charged jet triggering without background estimation for filling histograms", true);
 
-  void processWithRho(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<aod::JetTracks> const& tracks)
+  void processWithRho(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
     doTriggering<true>(collision, jets, tracks);
   }

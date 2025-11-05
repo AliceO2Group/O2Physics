@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
+DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFB, readCountsWithTVXAndNoTFB, std::vector<int>);
@@ -50,7 +51,8 @@ DECLARE_SOA_TABLE_STAGED(JBCs, "JBC",
                          jbc::GlobalBC,
                          jbc::Timestamp,
                          jbc::Alias,
-                         jbc::Selection);
+                         jbc::Selection,
+                         jbc::Rct);
 
 using JBC = JBCs::iterator;
 using StoredJBC = StoredJBCs::iterator;
@@ -91,6 +93,7 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
 DECLARE_SOA_COLUMN(TriggerSel, triggerSel, uint64_t);
 DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
@@ -133,8 +136,9 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
                          jcollision::CentFT0CVariant1,
                          jcollision::HadronicRate,
                          jcollision::TrackOccupancyInTimeRange,
-                         jcollision::EventSel,
                          jcollision::Alias,
+                         jcollision::EventSel,
+                         jcollision::Rct,
                          jcollision::TriggerSel);
 
 using JCollision = JCollisions::iterator;

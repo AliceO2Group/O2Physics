@@ -19,6 +19,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include <Rtypes.h>
 
@@ -53,9 +54,14 @@ enum JCollisionSubGeneratorId {
 };
 
 template <typename T>
-bool selectCollision(T const& collision, std::vector<int> eventSelectionMaskBits, bool skipMBGapEvents = true)
+bool selectCollision(T const& collision, std::vector<int> eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
 {
   if (skipMBGapEvents && collision.subGeneratorId() == JCollisionSubGeneratorId::mbGap) {
+    return false;
+  }
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  rctChecker.init(rctLabel, requireZDCRct, rejectLimitedAcceptanceRct);
+  if (rctSelection && !rctChecker.checkTable(collision)) { //CBT_hadronPID given as default so that TOF is included in RCT selection to benefit from better timing for tracks. Impact of this for inclusive jets should be studied
     return false;
   }
   if (eventSelectionMaskBits.size() == 0) {
