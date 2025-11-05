@@ -59,8 +59,8 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
