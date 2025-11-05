@@ -13,8 +13,8 @@
 /// \brief ZDC data model for O-O Ne-Ne and p-O collisions
 /// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>
 
-#ifndef PWGMM_DATAMODEL_ZDCLIGHTIONS_H_
-#define PWGMM_DATAMODEL_ZDCLIGHTIONS_H_
+#ifndef COMMON_DATAMODEL_ZDCLIGHTIONS_H_
+#define COMMON_DATAMODEL_ZDCLIGHTIONS_H_
 
 #include "Common/DataModel/Centrality.h"
 

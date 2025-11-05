@@ -230,7 +230,7 @@ struct ZdcTaskLightIons {
   /// note that it has to be declared after the function, so that the pointer is known
   PROCESS_SWITCH(ZdcTaskLightIons, processZDCBC, "Processing ZDC 4 auto-triggered events", true);
 
-  void processALICEcoll(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
+  void processALICEcoll(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0*/)
   {
     // collision-based event selection
     for (auto const& collision : cols) {
