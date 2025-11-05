@@ -3249,6 +3249,9 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
+  values[kCharge] = t1.sign() + t2.sign();
+  values[kCharge1] = t1.sign();
+  values[kCharge2] = t2.sign();
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -3258,6 +3261,9 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // values[kPhi] = v12.Phi();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2ME = v1.Phi() - v2.Phi();
@@ -3272,6 +3278,27 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 
   if (fgUsedVars[kDeltaEtaPair2]) {
     values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
+
+  if (fgUsedVars[kPsiPair]) {
+    values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
+    double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
+    values[kPsiPair] = (t1.sign() * fgMagField > 0.) ? TMath::ASin((v1.Theta() - v2.Theta()) / xipair) : TMath::ASin((v2.Theta() - v1.Theta()) / xipair);
+  }
+
+  if (fgUsedVars[kOpeningAngle]) {
+    double scalar = v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz();
+    double Ptot12 = Ptot1 * Ptot2;
+    if (Ptot12 <= 0) {
+      values[kOpeningAngle] = 0.;
+    } else {
+      double arg = scalar / Ptot12;
+      if (arg > 1.)
+        arg = 1.;
+      if (arg < -1)
+        arg = -1;
+      values[kOpeningAngle] = TMath::ACos(arg);
+    }
   }
 
   // polarization parameters

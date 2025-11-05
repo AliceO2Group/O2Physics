@@ -747,6 +747,10 @@ DECLARE_SOA_COLUMN(PairDCAxyz, pairDCAxyz, float);                              
 DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float);                                         //! Pair DCAxy to PV from KFParticle
 DECLARE_SOA_COLUMN(DeviationPairKF, deviationPairKF, float);                             //! Pair chi2 deviation to PV from KFParticle
 DECLARE_SOA_COLUMN(DeviationxyPairKF, deviationxyPairKF, float);                         //! Pair chi2 deviation to PV in XY from KFParticle
+DECLARE_SOA_COLUMN(TauzCov, tauzCov, float);                                             //! Longitudinal pseudo-proper time of lepton pair from covariance matrix
+DECLARE_SOA_COLUMN(TauxyCov, tauxyCov, float);                                           //! Transverse pseudo-proper time of lepton pair from covariance matrix
+DECLARE_SOA_COLUMN(LzCov, lzCov, float);                                                 //! Longitudinal projection of decay length from covariance matrix
+DECLARE_SOA_COLUMN(LxyCov, lxyCov, float);                                               //! Transverse projection of decay length from covariance matrix
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_COLUMN(CosThetaHE, costhetaHE, float);             //! Cosine in the helicity frame
 DECLARE_SOA_COLUMN(PhiHE, phiHe, float);                       //! Phi in the helicity frame
@@ -843,8 +847,10 @@ DECLARE_SOA_TABLE_STAGED(DielectronsAll, "RTDIELECTRONALL", //!
                          reducedpair::DeviationPairKF, reducedpair::DeviationxyPairKF,
                          reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop,
                          reducedpair::Tauz, reducedpair::Tauxy,
-                         reducedpair::Lz,
-                         reducedpair::Lxy);
+                         reducedpair::Lz, reducedpair::Lxy,
+                         reducedpair::TauzCov, reducedpair::TauxyCov,
+                         reducedpair::LzCov, reducedpair::LxyCov,
+                         reducedpair::Chi2pca, reducedpair::CosPointingAngle);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
