@@ -18,22 +18,20 @@
 // 3. https://github.com/AliceO2Group/O2Physics/blob/master/PWGMM/Mult/Tasks/puremc-dndeta.cxx
 // 4. O2 analysis tutorial: https://indico.cern.ch/event/1267433/
 
-#include <cmath>
-#include <cstdlib>
-#include <iostream>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <vector>
-
+#include "Index.h"
 #include "bestCollisionTable.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -43,9 +41,14 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Index.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
