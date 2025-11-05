@@ -215,7 +215,7 @@ struct LongrangeMaker {
 
   Produces<aod::CollLRTables> collisionLRTable;
   Produces<aod::TrkLRTables> tracksLRTable;
-  Produces<aod::Ft0aLRTable> ft0aLRTable;
+  Produces<aod::Ft0aLRTables> ft0aLRTable;
   Produces<aod::Ft0cLRTables> ft0cLRTable;
   Produces<aod::MftTrkLRTables> mftLRTable;
   Produces<aod::MftBestTrkLRTables> mftbestLRTable;
