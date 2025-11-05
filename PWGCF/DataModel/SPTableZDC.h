@@ -15,6 +15,7 @@
 #define PWGCF_DATAMODEL_SPTABLEZDC_H_
 
 #include <cmath>
+#include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
@@ -26,32 +27,28 @@ namespace o2::aod
 namespace sptablezdc
 {
 DECLARE_SOA_COLUMN(Runnumber, runnumber, int);
-DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(Vx, vx, float);
-DECLARE_SOA_COLUMN(Vy, vy, float);
-DECLARE_SOA_COLUMN(Vz, vz, float);
+DECLARE_SOA_COLUMN(Cents, cents, std::vector<float>);
+DECLARE_SOA_COLUMN(Vertex, vertex, std::vector<float>);
+DECLARE_SOA_COLUMN(Timestamp, timestamp, int64_t);
 DECLARE_SOA_COLUMN(QXA, qxA, float);
 DECLARE_SOA_COLUMN(QYA, qyA, float);
 DECLARE_SOA_COLUMN(QXC, qxC, float);
 DECLARE_SOA_COLUMN(QYC, qyC, float);
 DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);
-DECLARE_SOA_COLUMN(Iteration, iteration, int);
-DECLARE_SOA_COLUMN(Step, step, int);
+DECLARE_SOA_COLUMN(EventSelectionFlags, eventSelectionFlags, uint16_t);
 
 } // namespace sptablezdc
 
 DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPZDC",
                   sptablezdc::Runnumber,
-                  sptablezdc::Cent,
-                  sptablezdc::Vx,
-                  sptablezdc::Vy,
-                  sptablezdc::Vz,
+                  sptablezdc::Cents,
+                  sptablezdc::Vertex,
+                  sptablezdc::Timestamp,
                   sptablezdc::QXA,
                   sptablezdc::QYA,
                   sptablezdc::QXC,
                   sptablezdc::QYC,
                   sptablezdc::IsSelected,
-                  sptablezdc::Iteration,
-                  sptablezdc::Step);
+                  sptablezdc::EventSelectionFlags);
 } // namespace o2::aod
 #endif // PWGCF_DATAMODEL_SPTABLEZDC_H_
