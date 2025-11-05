@@ -805,7 +805,7 @@ struct strangenesstofpid {
     float velocityPositivePr, velocityPositivePi, lengthPositive;
     velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
 
-    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5 && pValidTOF) {
+    if (pTof.hasTOF && pTof.tofEvTime > -1e+5 && pValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
         velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
@@ -824,7 +824,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagPosV0, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagPosV0, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthPositive = pTof.length - ltIntegral.getL();
             v0tof.timePositivePr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -881,7 +883,7 @@ struct strangenesstofpid {
     }
     float velocityNegativePr, velocityNegativePi, lengthNegative;
     velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
-    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5 && nValidTOF) {
+    if (nTof.hasTOF && nTof.tofEvTime > -1e+5 && nValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
         velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
@@ -900,7 +902,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagNegV0, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagNegV0, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthNegative = nTof.length - ltIntegral.getL();
             v0tof.timeNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, lengthNegative, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -1073,7 +1077,7 @@ struct strangenesstofpid {
 
     //_____________________________________________________________________________________________
     // Actual calculation
-    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5 && pValidTOF) {
+    if (pTof.hasTOF && pTof.tofEvTime > -1e+5 && pValidTOF) {
       float velocityPositivePr, velocityPositivePi, lengthPositive;
       velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
       if (calculationMethod.value == 0) {
@@ -1093,7 +1097,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagPosCasc, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagPosCasc, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthPositive = pTof.length - ltIntegral.getL();
             casctof.posFlightPr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -1162,7 +1168,7 @@ struct strangenesstofpid {
       }
     } // end positive
 
-    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5 && nValidTOF) {
+    if (nTof.hasTOF && nTof.tofEvTime > -1e+5 && nValidTOF) {
       float velocityNegativePr, velocityNegativePi, lengthNegative;
       velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1183,7 +1189,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagNegCasc, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagNegCasc, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthNegative = nTof.length - ltIntegral.getL();
             casctof.negFlightPr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -1252,7 +1260,7 @@ struct strangenesstofpid {
       }
     } // end negative
 
-    if (bTof.hasTOF && bTof.hasITS && bTof.tofEvTime > -1e+5 && bValidTOF) {
+    if (bTof.hasTOF && bTof.tofEvTime > -1e+5 && bValidTOF) {
       float velocityBachelorKa, velocityBachelorPi, lengthBachelor;
       velocityBachelorKa = velocityBachelorPi = lengthBachelor = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1273,7 +1281,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, bachTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagBachCasc, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagBachCasc, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthBachelor = bTof.length - ltIntegral.getL();
             casctof.bachFlightPi = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length - ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
