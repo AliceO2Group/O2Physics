@@ -113,7 +113,7 @@ struct EseTableProducer {
   Configurable<float> cfgChi2PrTPCCls{"cfgChi2PrTPCCls", 2.5f, "max chi2 per TPC cluster"};
   Configurable<float> cfgDCAz{"cfgDCAz", 2.0f, "max DCAz cut"};
 
-  o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
+  // o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -300,11 +300,16 @@ struct EseTableProducer {
   }
   PROCESS_SWITCH(EseTableProducer, processESE, "process q vectors to calculate reduced q-vector", true);
 
-  void processMeanPt(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  void processMeanPt(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
 
     std::vector<float> meanPt{-1};
     std::vector<float> meanPtShape{-1};
+    if (collision.posZ() < -cfgVtxZ || collision.posZ() > cfgVtxZ) {
+      meanPts(meanPt);
+      meanPtShapes(meanPtShape);
+      return;
+    }
 
     registry.fill(HIST("hMeanPtStat"), 0.5);
     const auto centrality = collision.centFT0C();
