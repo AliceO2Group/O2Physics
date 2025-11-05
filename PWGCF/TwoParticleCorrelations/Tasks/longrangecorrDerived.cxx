@@ -223,6 +223,7 @@ struct LongrangecorrDerived {
   void processMixed(TCollision const& col, TrackTypes&&... tracks)
   {
     auto getMultiplicity = [this](auto& collision) {
+      (void)this;
       return collision.multiplicity();
     };
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::lrcorrcolltable::Zvtx, decltype(getMultiplicity)>;
@@ -268,6 +269,21 @@ struct LongrangecorrDerived {
     processSame(col, tracks, mfts);
   }
 
+  void processTpcmftbestSE(aod::CollLRTables::iterator const& col, aod::TrkLRTables const& tracks, aod::MftBestTrkLRTables const& mfts)
+  {
+    processSame(col, tracks, mfts);
+  }
+
+  void processMftbestft0aSE(aod::CollLRTables::iterator const& col, aod::MftBestTrkLRTables const& mfts, aod::Ft0aLRTables const& ft0as)
+  {
+    processSame(col, mfts, ft0as);
+  }
+
+  void processV0mftbestSE(aod::CollLRTables::iterator const& col, aod::V0TrkLRTables const& tracks, aod::MftBestTrkLRTables const& mfts)
+  {
+    processSame(col, tracks, mfts);
+  }
+
   void processTpcft0aME(aod::CollLRTables const& col, aod::TrkLRTables const& tracks, aod::Ft0aLRTables const& ft0as)
   {
     processMixed(col, tracks, ft0as);
@@ -298,6 +314,21 @@ struct LongrangecorrDerived {
     processMixed(col, tracks, mfts);
   }
 
+  void processTpcmftbestME(aod::CollLRTables const& col, aod::TrkLRTables const& tracks, aod::MftBestTrkLRTables const& mfts)
+  {
+    processMixed(col, tracks, mfts);
+  }
+
+  void processMftbestft0aME(aod::CollLRTables const& col, aod::MftBestTrkLRTables const& mfts, aod::Ft0aLRTables const& ft0as)
+  {
+    processMixed(col, mfts, ft0as);
+  }
+
+  void processV0mftbestME(aod::CollLRTables const& col, aod::V0TrkLRTables const& tracks, aod::MftBestTrkLRTables const& mfts)
+  {
+    processMixed(col, tracks, mfts);
+  }
+
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aME, "mixed event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cSE, "same event TPC vs FT0C", false);
@@ -310,6 +341,12 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processV0ft0aME, "mixed event V0 vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftSE, "same event V0 vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftME, "mixed event V0 vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftbestSE, "same event TPC vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftbestME, "mixed event TPC vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aSE, "same event best MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aME, "mixed event best MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestSE, "same event V0 vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestME, "mixed event V0 vs best MFT", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
