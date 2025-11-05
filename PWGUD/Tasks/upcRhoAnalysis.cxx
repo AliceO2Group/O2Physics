@@ -205,7 +205,7 @@ struct UpcRhoAnalysis {
     rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
     rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
 
-    std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "vertex selections", "#it{z} position", "number of contributors", "RCT selections", "reco flag selection"};
+    std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "#it{z} position", "number of contributors", "RCT selections", "reco flag selection"};
     rQC.add("QC/collisions/hSelectionCounter", ";;collisions passing selections", kTH1D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}});
     rQC.add("QC/collisions/hSelectionCounterPerRun", ";;run number;collisions passing selections", kTH2D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
     for (int i = 0; i < static_cast<int>(collisionSelectionCounterLabels.size()); ++i) {
@@ -447,28 +447,49 @@ struct UpcRhoAnalysis {
   template <typename C>
   bool collisionPassesCuts(const C& collision, int runIndex) // collision cuts
   {
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 0);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 0, runIndex);
+
+    if (!collision.vtxITSTPC())
+      return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 1);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 1, runIndex);
-    if (!collision.vtxITSTPC() || !collision.sbp() || !collision.itsROFb() || !collision.tfb()) // not applied automatically in 2023 Pb-Pb pass5
+
+    if (!collision.sbp())
       return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 2);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 2, runIndex);
-    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
+
+    if (!collision.itsROFb())
       return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 3);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 3, runIndex);
-    if (cutNumContribs && (collision.numContrib() > collisionsNumContribsMaxCut))
+
+    if (!collision.tfb())
       return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 4);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 4, runIndex);
-    if (useRctFlag && !isGoodRctFlag(collision)) // check RCT flags
+
+    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 5);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 5, runIndex);
-    if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
+
+    if (cutNumContribs && (collision.numContrib() > collisionsNumContribsMaxCut))
       return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 6);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 6, runIndex);
+
+    if (useRctFlag && !isGoodRctFlag(collision)) // check RCT flags
+      return false;
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 7);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 7, runIndex);
+
+    if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
+      return false;
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 8);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 8, runIndex);
+
     // if all selections passed
     return true;
   }
@@ -476,6 +497,9 @@ struct UpcRhoAnalysis {
   template <typename T>
   bool trackPassesCuts(const T& track, int runIndex) // track cuts (PID done separately)
   {
+    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 0);
+    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 0, runIndex);
+
     if (!track.isPVContributor())
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 1);
@@ -545,6 +569,7 @@ struct UpcRhoAnalysis {
       return false;
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 14, runIndex);
+
     // if all selections passed
     return true;
   }
@@ -699,8 +724,6 @@ struct UpcRhoAnalysis {
 
     std::vector<decltype(tracks.begin())> cutTracks; // store selected tracks
     for (const auto& track : tracks) {
-      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 0);
-      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 0, runIndex);
       fillTrackQcHistos<0>(track); // fill QC histograms before cuts
 
       if (!trackPassesCuts(track, runIndex)) // apply track cuts
