@@ -34,7 +34,6 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
