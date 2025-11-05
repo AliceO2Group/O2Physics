@@ -71,6 +71,127 @@ int hasFakeMatchMFTMCH(TTrack const& track)
   }
 }
 //_______________________________________________________________________
+template <typename T>
+bool isCharmonia(T const& track)
+{
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 3, 3));
+
+  if (pdg3 == 441 || pdg3 == 443 || pdg3 == 445 || pdg3 == 447) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isCharmMeson(T const& track)
+{
+  if (isCharmonia(track)) {
+    return false;
+  }
+
+  if (400 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 500) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isCharmBaryon(T const& track)
+{
+  if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isBottomonia(T const& track)
+{
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 3, 3));
+
+  if (pdg3 == 551 || pdg3 == 553 || pdg3 == 555 || pdg3 == 557) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isBeautyMeson(T const& track)
+{
+  if (isBottomonia(track)) {
+    return false;
+  }
+
+  if (500 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 600) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isBeautyBaryon(T const& track)
+{
+  if (5000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 6000) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T, typename U>
+bool isWeakDecayFromCharmHadron(T const& mcParticle, U const& mcParticles)
+{
+  // require that the direct mother is charm hadron via semileptonic. e.g. hc->e, not hc->X->pi0->eegamma
+  if (!mcParticle.has_mothers()) {
+    return false;
+  }
+  if (mcParticle.getProcess() != 4) { // weak decay
+    return false;
+  }
+  auto mp = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
+  if (isCharmMeson(mp) || isCharmBaryon(mp)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T, typename U>
+bool isWeakDecayFromBeautyHadron(T const& mcParticle, U const& mcParticles)
+{
+  // require that the direct mother is beauty hadron via semileptonice decay. e.g. hb->e, not hb->X->pi0->eegamma
+  if (!mcParticle.has_mothers()) {
+    return false;
+  }
+  if (mcParticle.getProcess() != 4) { // weak decay
+    return false;
+  }
+  auto mp = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
+  if (isBeautyMeson(mp) || isBeautyBaryon(mp)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+//_______________________________________________________________________
 template <typename TMCParticle1, typename TMCParticle2>
 int FindCommonMotherFrom2ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2)
 {
@@ -436,12 +557,12 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   bool isFOFound1 = findFlavorOscillationB(p1, mcparticles);
   bool isFOFound2 = findFlavorOscillationB(p2, mcparticles);
 
-  bool is_direct_from_b1 = IsFromBeauty(p1, mcparticles) > 0 && IsFromCharm(p1, mcparticles) < 0;
-  bool is_direct_from_b2 = IsFromBeauty(p2, mcparticles) > 0 && IsFromCharm(p2, mcparticles) < 0;
-  bool is_prompt_c1 = IsFromBeauty(p1, mcparticles) < 0 && IsFromCharm(p1, mcparticles) > 0;
-  bool is_prompt_c2 = IsFromBeauty(p2, mcparticles) < 0 && IsFromCharm(p2, mcparticles) > 0;
-  bool is_c_from_b1 = IsFromBeauty(p1, mcparticles) > 0 && IsFromCharm(p1, mcparticles) > 0;
-  bool is_c_from_b2 = IsFromBeauty(p2, mcparticles) > 0 && IsFromCharm(p2, mcparticles) > 0;
+  bool is_direct_from_b1 = isWeakDecayFromBeautyHadron(p1, mcparticles);
+  bool is_direct_from_b2 = isWeakDecayFromBeautyHadron(p2, mcparticles);
+  bool is_prompt_c1 = isWeakDecayFromCharmHadron(p1, mcparticles) && IsFromBeauty(p1, mcparticles) < 0;
+  bool is_prompt_c2 = isWeakDecayFromCharmHadron(p2, mcparticles) && IsFromBeauty(p2, mcparticles) < 0;
+  bool is_c_from_b1 = isWeakDecayFromCharmHadron(p1, mcparticles) && IsFromBeauty(p1, mcparticles) > 0;
+  bool is_c_from_b2 = isWeakDecayFromCharmHadron(p2, mcparticles) && IsFromBeauty(p2, mcparticles) > 0;
 
   if (is_prompt_c1 && is_prompt_c2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0) { // charmed mesons never oscillate. only ULS
     mothers_id1.clear();
@@ -640,45 +761,6 @@ bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg)
   return id1 == id2 && id1 > -1 && id2 > -1;
 }
 //_______________________________________________________________________
-template <typename T>
-bool isCharmMeson(T const& track)
-{
-  if (400 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 500) {
-    return true;
-  } else {
-    return false;
-  }
-}
-//_______________________________________________________________________
-template <typename T>
-bool isCharmBaryon(T const& track)
-{
-  if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
-    return true;
-  } else {
-    return false;
-  }
-}
-//_______________________________________________________________________
-template <typename T>
-bool isBeautyMeson(T const& track)
-{
-  if (500 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 600) {
-    return true;
-  } else {
-    return false;
-  }
-}
-//_______________________________________________________________________
-template <typename T>
-bool isBeautyBaryon(T const& track)
-{
-  if (5000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 6000) {
-    return true;
-  } else {
-    return false;
-  }
-}
 //_______________________________________________________________________
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::mcutil
