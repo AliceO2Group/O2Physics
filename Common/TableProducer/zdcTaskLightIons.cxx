@@ -215,7 +215,7 @@ struct ZdcTaskLightIons {
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                    tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                   tdcZPA, zpa, pmcZPA, 
+                   tdcZPA, zpa, pmcZPA,
                    tdcZPC, zpc, pmcZPC,
                    tdcZEM1, zem1, tdcZEM2, zem2,
                    -1, -1, -1,
@@ -322,7 +322,7 @@ struct ZdcTaskLightIons {
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                    tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                   tdcZPA, zpa, pmcZPA, 
+                   tdcZPA, zpa, pmcZPA,
                    tdcZPC, zpc, pmcZPC,
                    tdcZEM1, zem1, tdcZEM2, zem2,
                    multFT0A, multFT0C, multV0A,
@@ -330,7 +330,6 @@ struct ZdcTaskLightIons {
                    centralityFT0C, centralityFT0A, centralityFT0M,
                    foundBC.timestamp(),
                    evSelection);
-
       }
     }
   }
