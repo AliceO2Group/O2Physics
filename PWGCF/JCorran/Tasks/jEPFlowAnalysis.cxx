@@ -189,7 +189,6 @@ struct jEPFlowAnalysis {
     float qx_shifted[3] = {0.};
     float qy_shifted[3] = {0.};
 
-
     if (cfgShiftCorr) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
@@ -234,7 +233,6 @@ struct jEPFlowAnalysis {
           deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i + 2) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i + 2) * eps[0])));
           deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i + 2) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i + 2) * eps[1])));
           deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i + 2) * eps[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i + 2) * eps[2])));
-
         }
 
         eps[0] += deltapsiDet;
