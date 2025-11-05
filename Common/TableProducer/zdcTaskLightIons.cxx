@@ -173,6 +173,8 @@ struct ZdcTaskLightIons {
         //
         double pmcZNA = bc.zdc().energyCommonZNA();
         double pmcZNC = bc.zdc().energyCommonZNC();
+        double pmcZPA = bc.zdc().energyCommonZPA();
+        double pmcZPC = bc.zdc().energyCommonZPC();
         double pmqZNC[4] = {
           0,
           0,
@@ -213,7 +215,9 @@ struct ZdcTaskLightIons {
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                    tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                   tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
+                   tdcZPA, zpa, pmcZPA,
+                   tdcZPC, zpc, pmcZPC,
+                   tdcZEM1, zem1, tdcZEM2, zem2,
                    -1, -1, -1,
                    -1.,
                    -1, -1, -1,
@@ -276,6 +280,8 @@ struct ZdcTaskLightIons {
         //
         double pmcZNA = zdc.energyCommonZNA();
         double pmcZNC = zdc.energyCommonZNC();
+        double pmcZPA = zdc.energyCommonZPA();
+        double pmcZPC = zdc.energyCommonZPC();
         double pmqZNC[4] = {
           0,
           0,
@@ -316,7 +322,9 @@ struct ZdcTaskLightIons {
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                    tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                   tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
+                   tdcZPA, zpa, pmcZPA,
+                   tdcZPC, zpc, pmcZPC,
+                   tdcZEM1, zem1, tdcZEM2, zem2,
                    multFT0A, multFT0C, multV0A,
                    zv,
                    centralityFT0C, centralityFT0A, centralityFT0M,
