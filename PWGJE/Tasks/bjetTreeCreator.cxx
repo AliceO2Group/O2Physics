@@ -556,7 +556,7 @@ struct BJetTreeCreator {
 
       if (produceTree) {
         bjetTracksParamsTable(bjetParamsTable.lastIndex() + 1, constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.);
-      }if(std::fabs(constituent.dcaZ())>2.f)LOGF(info, "Track DCAz: %f", constituent.dcaZ());
+      }
       trackIndices.push_back(bjetTracksParamsTable.lastIndex());
     }
   }
