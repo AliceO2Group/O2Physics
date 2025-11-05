@@ -155,12 +155,15 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
-    // for deltaPt/<pT> vs c22 vs centrality
+    // for deltaPt/<pT> vs centrality
     O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs c22 vs centrality")
-    O2_DEFINE_CONFIGURABLE(cfgDptDisCorrConfigIndex, int, 7, "Index in CorrConfig, this decide which correlation is filled")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisSelectionSwitch, int, 0, "0: disable, 1: use low cut, 2:use high cut")
     TH1D* hEvAvgMeanPt = nullptr;
+    TH1D* fDptDisCutLow = nullptr;
+    TH1D* fDptDisCutHigh = nullptr;
     O2_DEFINE_CONFIGURABLE(cfgDptDishEvAvgMeanPt, std::string, "", "CCDB path to hMeanPt object")
-    ConfigurableAxis cfgDptDisAxisCorr{"cfgDptDisAxisCorr", {50, 0., 0.005}, "pt axis for histograms"};
+    O2_DEFINE_CONFIGURABLE(cfgDptDisCutLow, std::string, "", "CCDB path to dpt lower boundary")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisCutHigh, std::string, "", "CCDB path to dpt higher boundary")
     ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
   } cfgFuncParas;
 
@@ -222,6 +225,11 @@ struct FlowTask {
   enum DataType {
     kReco,
     kGen
+  };
+  enum DptCut {
+    kNoDptCut = 0,
+    kLowDptCut = 1,
+    kHighDptCut = 2
   };
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -324,7 +332,7 @@ struct FlowTask {
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     if (cfgFuncParas.cfgDptDisEnable) {
-      registry.add("hNormDeltaPt_Corr_X", " #delta p_{T}/[p_{T}]; Corr; X", {HistType::kTH3D, {cfgFuncParas.cfgDptDisAxisNormal, cfgFuncParas.cfgDptDisAxisCorr, axisIndependent}});
+      registry.add("hNormDeltaPt_X", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgFuncParas.cfgDptDisAxisNormal, axisIndependent}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -603,25 +611,6 @@ struct FlowTask {
     return;
   }
 
-  template <char... chars>
-  void fillDeltaPtvsCorr(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& histo, const double& cent)
-  {
-    double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1) {
-        double meanPt = sum_pt / WeffEvent;
-        double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(cent));
-        registry.fill(histo, deltaPt / meanPt, val, cent, dnx * WeffEvent);
-      }
-      return;
-    }
-    return;
-  }
-
   template <DataType dt>
   void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
@@ -701,6 +690,22 @@ struct FlowTask {
         LOGF(fatal, "Could not load mean pT histogram from %s", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str());
       }
       LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgFuncParas.hEvAvgMeanPt);
+    }
+    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDisSelectionSwitch > kNoDptCut) {
+      if (cfgFuncParas.cfgDptDisCutLow.value.empty() == false) {
+        cfgFuncParas.fDptDisCutLow = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutLow, timestamp);
+        if (cfgFuncParas.fDptDisCutLow == nullptr) {
+          LOGF(fatal, "Could not load dptDis low cut histogram from %s", cfgFuncParas.cfgDptDisCutLow.value.c_str());
+        }
+        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgFuncParas.cfgDptDisCutLow.value.c_str(), (void*)cfgFuncParas.fDptDisCutLow);
+      }
+      if (cfgFuncParas.cfgDptDisCutHigh.value.empty() == false) {
+        cfgFuncParas.fDptDisCutHigh = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutHigh, timestamp);
+        if (cfgFuncParas.fDptDisCutHigh == nullptr) {
+          LOGF(fatal, "Could not load dptDis high cut histogram from %s", cfgFuncParas.cfgDptDisCutHigh.value.c_str());
+        }
+        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgFuncParas.cfgDptDisCutHigh.value.c_str(), (void*)cfgFuncParas.fDptDisCutHigh);
+      }
     }
     correctionsLoaded = true;
   }
@@ -1101,7 +1106,16 @@ struct FlowTask {
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
 
     if (cfgFuncParas.cfgDptDisEnable) {
-      fillDeltaPtvsCorr(corrconfigs.at(cfgFuncParas.cfgDptDisCorrConfigIndex), ptSum, weffEvent, HIST("hNormDeltaPt_Corr_X"), independent);
+      double meanPt = ptSum / weffEvent;
+      double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(independent));
+      registry.fill(HIST("hNormDeltaPt_X"), meanPt, independent, weffEvent);
+      if (cfgFuncParas.cfgDptDisSelectionSwitch == kLowDptCut && deltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
+        // only keep low 10% dpt event
+        return;
+      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == kHighDptCut && deltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
+        // only keep high 10% dpt event
+        return;
+      }
     }
 
     double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
