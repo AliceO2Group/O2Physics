@@ -70,7 +70,7 @@ struct FlowSP {
   } rctFlags;
 
   // struct : ConfigurableGroup { // <-- change all to evsels.Selection
-   // event selection configurable group
+  // event selection configurable group
   O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
@@ -774,9 +774,9 @@ struct FlowSP {
     float eff = 1.;
     int sizeEff = cfg.mEfficiency.size();
     if (sizeEff > pID) {
-      if(cfguseNUE2D) {
-        int binx = cfg.mEfficiency2D[pID]->GetXaxis()->FindBin(eta); 
-        int biny = cfg.mEfficiency2D[pID]->GetYaxis()->FindBin(pt); 
+      if (cfguseNUE2D) {
+        int binx = cfg.mEfficiency2D[pID]->GetXaxis()->FindBin(eta);
+        int biny = cfg.mEfficiency2D[pID]->GetYaxis()->FindBin(pt);
         eff = cfg.mEfficiency2D[pID]->GetBinContent(binx, biny);
       } else {
         eff = cfg.mEfficiency[pID]->GetBinContent(cfg.mEfficiency[pID]->FindBin(pt));
@@ -1191,11 +1191,10 @@ struct FlowSP {
 
     if (!eventSelected(collision, tracks.size()))
       return;
-      
+
     if (!collision.isSelected()) // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
       return;
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
-
 
     spm.qxA = collision.qxA();
     spm.qyA = collision.qyA();
