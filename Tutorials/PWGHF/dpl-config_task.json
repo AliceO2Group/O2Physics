@@ -77,7 +77,7 @@
             "ccdbPath": "Analysis/PID/TPC/Response",
             "recoPass": "",
             "ccdb-timestamp": "0",
-            "useNetworkCorrection": "true",
+            "useNetworkCorrection": "false",
             "autofetchNetworks": "true",
             "skipTPCOnly": "-1",
             "devicesRequiringTPCOnlyPID": {
@@ -122,9 +122,9 @@
             "networkBetaGammaCutoff": "0.45",
             "ccdb-path-grplhcif": "GLO/Config/GRPLHCIF"
         },
-        "processTracksIU": "false",
+        "processTracksIU": "true",
         "processTracksIUWithTracksQA": "false",
-        "processTracksMCIU": "true"
+        "processTracksMCIU": "false"
     },
     "ft0-corrected-table": {
         "resoFT0A": "20",
@@ -541,13 +541,22 @@
         "processMonteCarloWithPID": "false"
     },
     "tof-signal": {
-        "ccdb-url": "http://alice-ccdb.cern.ch",
-        "ccdb-timestamp": "-1",
-        "timeShiftCCDBPath": "",
-        "distanceForGoodMatch": "999",
-        "distanceForGoodMatchLowMult": "999",
-        "multThreshold": "0",
         "enableQaHistograms": "false",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "ccdb-path-grplhcif": "GLO/Config/GRPLHCIF",
+        "ccdb-timestamp": "-1",
+        "timeShiftCCDBPathPos": "Analysis/PID/TOFOffsetPos",
+        "timeShiftCCDBPathNeg": "Analysis/PID/TOFOffsetPos",
+        "timeShiftCCDBPathPosMC": "",
+        "timeShiftCCDBPathNegMC": "",
+        "paramFileName": "",
+        "parametrizationPath": "TOF/Calib/Params",
+        "reconstructionPass": "metadata",
+        "reconstructionPassDefault": "unanchored",
+        "fatalOnPassNotAvailable": "false",
+        "enableTimeDependentResponse": "true",
+        "collisionSystem": "-1",
+        "autoSetProcessFunctions": "true",
         "processRun3": "true",
         "processRun2": "false"
     },
@@ -561,37 +570,20 @@
         "minRelChi2Change": "0.9"
     },
     "tof-event-time": {
-        "inheritFromBaseTask": "true",
-        "ccdb-url": "",
-        "ccdb-timestamp": "-1",
         "minMomentum": "0.5",
         "maxMomentum": "2",
         "maxEvTimeTOF": "100000",
         "sel8TOFEvTime": "false",
+        "computeEvTimeWithTOF": "1",
+        "computeEvTimeWithFT0": "1",
         "maxNtracksInSet": "10",
-        "paramFileName": "",
-        "parametrizationPath": "TOF/Calib/Params",
-        "passName": "",
-        "loadResponseFromCCDB": "false",
-        "enableTimeDependentResponse": "false",
-        "fatalOnPassNotAvailable": "true",
         "processRun2": "false",
-        "processNoFT0": "true",
-        "processFT0": "false",
-        "processOnlyFT0": "false"
+        "processRun3": "true"
     },
     "hf-task-mini-candidate-creator-2prong-expressions": "",
-    "tof-pid-full": {
-        "inheritFromBaseTask": "true",
-        "ccdb-url": "",
-        "ccdb-timestamp": "-1",
-        "paramFileName": "",
-        "parametrizationPath": "",
-        "passName": "",
-        "timeShiftCCDBPath": "",
-        "loadResponseFromCCDB": "false",
-        "enableTimeDependentResponse": "false",
-        "fatalOnPassNotAvailable": "true",
+    "tof-pid-merge": {
+        "enableQaHistograms": "false",
+        "enableTOFParamsForBetaMass": "false",
         "enableParticle": {
             "labels_rows": [
                 "El",
@@ -605,40 +597,52 @@
                 "Al"
             ],
             "labels_cols": [
-                "Enable"
+                "Enable",
+                "EnableFull"
             ],
             "values": [
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ],
                 [
+                    "-1",
                     "-1"
                 ]
             ]
         },
-        "processWSlice": "true",
-        "processWoSlice": "false"
+        "processRun3": "true",
+        "processRun2": "false",
+        "processRun2BetaM": "false",
+        "processRun3BetaM": "true"
     },
     "hf-task-mini-candidate-selector-d0": {
         "ptCandMin": "0",

@@ -136,10 +136,10 @@ struct HfSkimCreatorMini {
   void init(InitContext&)
   {
     // 2-prong histograms
-    registry.add("hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
-    registry.add("hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
-    registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -20., 20.}}});
-    registry.add("hMassD0", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+    registry.add("hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
+    registry.add("hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -2., 2.}}});
+    registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}});
+    registry.add("hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
 
     // Configure the vertexer
     fitter.setBz(magneticField);
@@ -195,9 +195,9 @@ struct HfSkimCreatorMini {
         registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
         const std::array arrayMomenta{pVec0, pVec1};
         const auto massPiK{RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus})};
-        const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
-        registry.fill(HIST("hMassD0"), massPiK);
-        registry.fill(HIST("hMassD0"), massKPi);
+        // const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
+        registry.fill(HIST("hMassD0ToPiK"), massPiK);
+        // registry.fill(HIST("hMassD0ToPiK"), massKPi);
       }
     }
   }

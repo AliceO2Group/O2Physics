@@ -45,6 +45,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! prong 1
 
 // Track index skim table
 DECLARE_SOA_TABLE(HfT2Prongs, "AOD", "HFT2PRONG", //! table with prong indices
+                  o2::soa::Index<>,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
@@ -90,6 +91,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Cpa, cpa, //! cosine of pointing angle of candidate
 
 // Candidate table
 DECLARE_SOA_TABLE(HfTCand2ProngBase, "AOD", "HFTCAND2PBASE", //! 2-prong candidate table
+                  o2::soa::Index<>,
                   hf_cand_prong2::CollisionId,
                   collision::PosX, collision::PosY, collision::PosZ,
                   hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex,

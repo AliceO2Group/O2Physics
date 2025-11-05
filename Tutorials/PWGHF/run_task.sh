@@ -27,25 +27,25 @@ DIR_THIS="$(dirname "$(realpath "$0")")"
 # O2 configuration file (in the same directory)
 JSON="$DIR_THIS/dpl-config_task.json"
 
-# command line options of O2 workflows (required per workflow)
+# local command line options of O2 workflows (required per workflow)
 OPTIONS_LOCAL=(
   -b
   --configuration json://"$JSON"
   )
 
-# command line options of O2 workflows (required only once)
+# global command line options of O2 workflows (required only once)
 OPTIONS_GLOBAL=(
   --aod-memory-rate-limit 2000000000
   --shm-segment-size 16000000000
   --resources-monitoring 2
   --aod-parent-base-path-replacement "old-path-to-parent;new-path-to-parent"
   --aod-parent-access-level 1
+  --aod-file "@input_task.txt"
 )
 
 # execute the mini task workflow and its dependencies
-o2-analysis-pid-tof-base "${OPTIONS_LOCAL[@]}" | \
-o2-analysis-pid-tof-full "${OPTIONS_LOCAL[@]}" | \
 o2-analysis-pid-tpc-service "${OPTIONS_LOCAL[@]}" | \
+o2-analysis-pid-tof-merge "${OPTIONS_LOCAL[@]}" | \
 o2-analysis-ft0-corrected-table "${OPTIONS_LOCAL[@]}" | \
 o2-analysis-mccollision-converter "${OPTIONS_LOCAL[@]}" | \
 o2-analysis-event-selection-service "${OPTIONS_LOCAL[@]}" | \

@@ -27,18 +27,19 @@ DIR_THIS="$(dirname "$(realpath "$0")")"
 # O2 configuration file (in the same directory)
 JSON="$DIR_THIS/dpl-config_skim.json"
 
-# command line options of O2 workflows (required per workflow)
+# local command line options of O2 workflows (required per workflow)
 OPTIONS_LOCAL=(
   -b
   --configuration json://"$JSON"
   --aod-writer-keep "AOD/HFT2PRONG/0"
 )
 
-# command line options of O2 workflows (required only once)
+# global command line options of O2 workflows (required only once)
 OPTIONS_GLOBAL=(
   --aod-memory-rate-limit 2000000000
   --shm-segment-size 16000000000
   --resources-monitoring 2
+  --aod-file "@input_skim.txt"
 )
 
 # execute the mini skim creator workflow and its dependencies
