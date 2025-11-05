@@ -15,6 +15,8 @@
 #ifndef PWGLF_DATAMODEL_V0QAANALYSIS_H_
 #define PWGLF_DATAMODEL_V0QAANALYSIS_H_
 
+#include <Framework/ASoA.h>
+
 namespace o2::aod
 {
 

@@ -14,33 +14,37 @@
 /// \author Lars Jörgensen (lars.christian.joergensen@cern.ch)
 /// \brief task for analysis of angular correlations in jets using Fastjet
 
-#include <vector>
-#include <utility>
-#include <map>
-#include <string>
-#include <random>
-#include <algorithm>
+#include "PWGJE/Core/JetBkgSubUtils.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "fastjet/PseudoJet.hh"
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "TPDGCode.h"
+#include "TVector3.h"
+
 #include "fastjet/AreaDefinition.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/GhostedAreaSpec.hh"
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "TVector3.h"
-#include "TPDGCode.h"
+#include "fastjet/PseudoJet.hh"
+
+#include <algorithm>
+#include <map>
+#include <random>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
