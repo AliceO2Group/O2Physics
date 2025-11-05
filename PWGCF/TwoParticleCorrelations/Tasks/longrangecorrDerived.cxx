@@ -60,6 +60,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -227,9 +228,9 @@ struct LongrangecorrDerived {
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::lrcorrcolltable::Zvtx, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
-    using tA = std::tuple_element<0, decltype(tracksTuple)>::type;
-    using tB = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
-    Pair<TCollision, tA, tB, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, col, tracksTuple, &cache};
+    using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
+    using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
+    Pair<TCollision, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, col, tracksTuple, &cache};
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [col1, tracks1, col2, tracks2] = *it;
       float eventweight = 1.0f / it.currentWindowNeighbours();
