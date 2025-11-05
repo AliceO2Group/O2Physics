@@ -176,8 +176,8 @@ struct kstarInOO {
       histos.add("hUSS_PiK", "hUSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hLSS_KPi", "hLSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hLSS_PiK", "hLSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_Mix_KPi", "hUSS_Mix_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_Mix_PiK", "hUSS_Mix_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_KPi_Mix", "hUSS_KPi_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_PiK_Mix", "hUSS_PiK_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
 
     if (cfgMcHistos) {

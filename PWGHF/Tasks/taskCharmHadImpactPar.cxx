@@ -125,8 +125,6 @@ struct HfTaskCharmHadImpactPar {
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to store only matched candidates"};
 
-  HfHelper hfHelper;
-
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -181,8 +179,8 @@ struct HfTaskCharmHadImpactPar {
           }
         }
       }
-      invMass = hfHelper.invMassDplusToPiKPi(candidate);
-      yCand = hfHelper.yDplus(candidate);
+      invMass = HfHelper::invMassDplusToPiKPi(candidate);
+      yCand = HfHelper::yDplus(candidate);
       if constexpr (WithMl) {
         for (auto iScore{0u}; iScore < candidate.mlProbDplusToPiKPi().size(); ++iScore) {
           outputMl[iScore] = candidate.mlProbDplusToPiKPi()[iScore];
@@ -200,8 +198,8 @@ struct HfTaskCharmHadImpactPar {
             }
           }
         }
-        invMass = hfHelper.invMassD0ToPiK(candidate);
-        yCand = hfHelper.yD0(candidate);
+        invMass = HfHelper::invMassD0ToPiK(candidate);
+        yCand = HfHelper::yD0(candidate);
         if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0()[iScore];
@@ -212,8 +210,8 @@ struct HfTaskCharmHadImpactPar {
         }
       }
       if (candidate.isSelD0bar()) {
-        invMass = hfHelper.invMassD0barToKPi(candidate);
-        yCand = hfHelper.yD0(candidate);
+        invMass = HfHelper::invMassD0barToKPi(candidate);
+        yCand = HfHelper::yD0(candidate);
         if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0bar().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0bar()[iScore];
@@ -239,8 +237,8 @@ struct HfTaskCharmHadImpactPar {
     std::array<double, 3> phiProngs = {RecoDecay::phi(std::array{candidate.pxProng0(), candidate.pyProng0()}), RecoDecay::phi(std::array{candidate.pxProng1(), candidate.pyProng1()}), 99.};
     std::array<double, 3> etaProngs = {RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()}), RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()}), 99.};
     if constexpr (Channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
-      invMass = hfHelper.invMassDplusToPiKPi(candidate);
-      yCand = hfHelper.yDplus(candidate);
+      invMass = HfHelper::invMassDplusToPiKPi(candidate);
+      yCand = HfHelper::yDplus(candidate);
       ptProngs[2] = candidate.ptProng2();
       phiProngs[2] = RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2());
       etaProngs[2] = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
@@ -251,8 +249,8 @@ struct HfTaskCharmHadImpactPar {
       }
     } else if constexpr (Channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
-        invMass = hfHelper.invMassD0ToPiK(candidate);
-        yCand = hfHelper.yD0(candidate);
+        invMass = HfHelper::invMassD0ToPiK(candidate);
+        yCand = HfHelper::yD0(candidate);
         if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0()[iScore];
@@ -260,8 +258,8 @@ struct HfTaskCharmHadImpactPar {
         }
       }
       if (candidate.isSelD0bar()) {
-        invMass = hfHelper.invMassD0barToKPi(candidate);
-        yCand = hfHelper.yD0(candidate);
+        invMass = HfHelper::invMassD0barToKPi(candidate);
+        yCand = HfHelper::yD0(candidate);
         if constexpr (WithMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0bar().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0bar()[iScore];

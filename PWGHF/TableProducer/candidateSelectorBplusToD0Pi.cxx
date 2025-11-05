@@ -19,6 +19,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseBplusToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
@@ -103,7 +104,6 @@ struct HfCandidateSelectorBplusToD0Pi {
   std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   using TracksPion = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
@@ -178,7 +178,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
 
       // topological cuts
-      if (!hfHelper.selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
+      if (!HfHelper::selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         if (applyBplusMl) {
           hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -198,7 +198,7 @@ struct HfCandidateSelectorBplusToD0Pi {
           std::copy(hfCandD.mlProbD0bar().begin(), hfCandD.mlProbD0bar().end(), std::back_inserter(mlScoresD));
         }
 
-        if (!hfHelper.selectionDmesMlScoresForB(hfCandD, cutsDmesMl, binsPtDmesMl, mlScoresD)) {
+        if (!HfHelper::selectionDmesMlScoresForB(hfCandD, cutsDmesMl, binsPtDmesMl, mlScoresD)) {
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
             hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -221,7 +221,7 @@ struct HfCandidateSelectorBplusToD0Pi {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
-        if (!hfHelper.selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {

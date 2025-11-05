@@ -16,16 +16,17 @@
 /// \author Daiki Sekihata (daiki.sekihata@cern.ch)
 ///
 
-#include <map>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -434,7 +435,7 @@ struct AssociateMCInfoPhoton {
         }
       }
 
-      emmcparticles(fEventIdx.find(oldLabel)->second, mcParticle.pdgCode(), mcParticle.flags(),
+      emmcparticles(fEventIdx.find(oldLabel)->second, mcParticle.pdgCode(), mcParticle.flags(), mcParticle.statusCode(),
                     mothers, daughters,
                     mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e(),
                     mcParticle.vx(), mcParticle.vy(), mcParticle.vz());
