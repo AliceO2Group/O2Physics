@@ -34,7 +34,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 //////////////
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/PID.h"

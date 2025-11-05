@@ -14,19 +14,20 @@
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
 /// \since 03/12/2025
 
-#include <Framework/Configurable.h>
-#include <TLorentzVector.h>
-#include "TVector2.h"
+#include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include <Framework/Configurable.h>
+
+#include "TVector2.h"
+#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -67,8 +68,8 @@ struct rho770analysis {
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // PID
-  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                          // TOF
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 2.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
   Configurable<int> selectType{"selectType", 0, "PID selection type"};
