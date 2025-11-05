@@ -30,10 +30,10 @@ DECLARE_SOA_COLUMN(Runnumber, runnumber, int);
 DECLARE_SOA_COLUMN(Cents, cents, std::vector<float>);
 DECLARE_SOA_COLUMN(Vertex, vertex, std::vector<float>);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, int64_t);
-DECLARE_SOA_COLUMN(QXA, qxA, float);
-DECLARE_SOA_COLUMN(QYA, qyA, float);
-DECLARE_SOA_COLUMN(QXC, qxC, float);
-DECLARE_SOA_COLUMN(QYC, qyC, float);
+DECLARE_SOA_COLUMN(QxA, qxA, float);
+DECLARE_SOA_COLUMN(QyA, qyA, float);
+DECLARE_SOA_COLUMN(QxC, qxC, float);
+DECLARE_SOA_COLUMN(QyC, qyC, float);
 DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);
 DECLARE_SOA_COLUMN(EventSelectionFlags, eventSelectionFlags, uint16_t);
 
