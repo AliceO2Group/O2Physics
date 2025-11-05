@@ -35,7 +35,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -684,7 +685,7 @@ struct Chk892pp {
 
     // Check bTrack first
     if (std::abs(motherbTrack.pdgCode()) != kKstarPlus) // Are you charged Kstar's daughter?
-      return false;                                // Apply first since it's more restrictive
+      return false;                                     // Apply first since it's more restrictive
 
     if (std::abs(motherkV0.pdgCode()) != kPDGK0s) // Is it K0s?
       return false;
@@ -1354,6 +1355,7 @@ struct Chk892pp {
   void processMCQA(MCEventCandidates::iterator const& collision,
                    MCTrackCandidates const& tracks,
                    MCV0Candidates const& v0s,
+                   soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const& mccolls,
                    aod::BCsWithTimestamps const&)
   {
     if (!colCuts.isSelected(collision))
@@ -1365,7 +1367,10 @@ struct Chk892pp {
 
     if (!collision.has_mcCollision())
       return;
-    auto mccoll = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+
+    auto id = collision.mcCollisionId();
+
+    auto mccoll = mccolls.iteratorAt(id);
     const float lCentrality = mccoll.centFT0M();
 
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)

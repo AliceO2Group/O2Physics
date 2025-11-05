@@ -17,12 +17,13 @@
 ///
 
 // O2 includes
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -19,8 +19,6 @@
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/DataModel/PIDResponse.h"
-
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -222,10 +220,10 @@ struct SginclusivePhiKstarSD {
       registry.add("os_pk_rot_pT_1", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
       registry.add("os_pk_rot_pT_2", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
 
-      registry.add("os_pk_lsMM_pT_0", "pion-kaon pair Negative like sign", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_pk_lsPP_pT_0", "pion-kaon pair Positive like sign", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_pk_lsMM_pT_1", "pion-kaon pair Negative like sign", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_pk_lsPP_pT_1", "pion-kaon pair Positive like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_pk_lsMM_pT_0", "pion-kaon pair Negative like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsPP_pT_0", "pion-kaon pair Positive like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsMM_pT_1", "pion-kaon pair Negative like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsPP_pT_1", "pion-kaon pair Positive like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
       registry.add("os_pk_ls_pT_2", "pion-kaon like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
     }
     // qa plots

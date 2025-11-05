@@ -10,44 +10,44 @@
 // or submit itself to any jurisdiction.
 // Analysis task for delta analysis
 
-#include <TH1F.h>
+#include "PWGLF/DataModel/LFLithium4Tables.h"
+
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <TDatabasePDG.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 
-#include <cmath>
 #include <array>
+#include <cmath>
 #include <cstdlib>
-
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGLF/DataModel/LFLithium4Tables.h"
 
 using namespace o2;
 using namespace o2::framework;

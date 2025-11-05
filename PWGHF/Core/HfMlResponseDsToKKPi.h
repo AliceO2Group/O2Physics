@@ -51,22 +51,22 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_DS_FULL(OBJECT, FEATURE, GETTER)
-// where GETTER is a method of hfHelper
+// where GETTER is a method of HfHelper
 #define CHECK_AND_FILL_VEC_DS_HFHELPER(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {  \
-    inputFeatures.emplace_back(hfHelper.GETTER(OBJECT));        \
+    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));       \
     break;                                                      \
   }
 
 // Variation of CHECK_AND_FILL_VEC_DS_HFHELPER(OBJECT, FEATURE, GETTER)
-// where GETTER1 and GETTER2 are methods of hfHelper, and the variable
+// where GETTER1 and GETTER2 are methods of HfHelper, and the variable
 // is filled depending on whether it is a DsToKKPi or a DsToPiKK
 #define CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
   case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {                   \
     if (caseDsToKKPi) {                                                          \
-      inputFeatures.emplace_back(hfHelper.GETTER1(OBJECT));                      \
+      inputFeatures.emplace_back(HfHelper::GETTER1(OBJECT));                     \
     } else {                                                                     \
-      inputFeatures.emplace_back(hfHelper.GETTER2(OBJECT));                      \
+      inputFeatures.emplace_back(HfHelper::GETTER2(OBJECT));                     \
     }                                                                            \
     break;                                                                       \
   }
@@ -153,8 +153,6 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
   HfMlResponseDsToKKPi() = default;
   /// Default destructor
   virtual ~HfMlResponseDsToKKPi() = default;
-
-  HfHelper hfHelper;
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the Ds candidate

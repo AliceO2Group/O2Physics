@@ -52,43 +52,43 @@ class HfHelper
   // D0(bar) → π± K∓
 
   template <typename T>
-  auto ctD0(const T& candidate)
+  static auto ctD0(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassD0);
   }
 
   template <typename T>
-  auto yD0(const T& candidate)
+  static auto yD0(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassD0);
   }
 
   template <typename T>
-  auto eD0(const T& candidate)
+  static auto eD0(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassD0);
   }
 
   template <typename T>
-  auto invMassD0ToPiK(const T& candidate)
+  static auto invMassD0ToPiK(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto invMassD0barToKPi(const T& candidate)
+  static auto invMassD0barToKPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto cosThetaStarD0(const T& candidate)
+  static auto cosThetaStarD0(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus}, o2::constants::physics::MassD0, 1);
   }
 
   template <typename T>
-  auto cosThetaStarD0bar(const T& candidate)
+  static auto cosThetaStarD0bar(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassD0, 0);
   }
@@ -96,33 +96,33 @@ class HfHelper
   // J/ψ
 
   template <typename T>
-  auto ctJpsi(const T& candidate)
+  static auto ctJpsi(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassJPsi);
   }
 
   template <typename T>
-  auto yJpsi(const T& candidate)
+  static auto yJpsi(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassJPsi);
   }
 
   template <typename T>
-  auto eJpsi(const T& candidate)
+  static auto eJpsi(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassJPsi);
   }
 
   // J/ψ → e+ e−
   template <typename T>
-  auto invMassJpsiToEE(const T& candidate)
+  static auto invMassJpsiToEE(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
   }
   // J/ψ → μ+ μ−
 
   template <typename T>
-  auto invMassJpsiToMuMu(const T& candidate)
+  static auto invMassJpsiToMuMu(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassMuonPlus, o2::constants::physics::MassMuonMinus});
   }
@@ -130,25 +130,25 @@ class HfHelper
   // hf_cand_casc
 
   template <typename T>
-  auto invMassLcToK0sP(const T& candidate)
+  static auto invMassLcToK0sP(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassK0Short}); // first daughter is bachelor
   }
 
   template <typename T>
-  auto invMassGammaToEE(const T& candidate)
+  static auto invMassGammaToEE(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
   }
 
   template <typename T>
-  auto ctV0K0s(const T& candidate)
+  static auto ctV0K0s(const T& candidate)
   {
     return candidate.ctV0(o2::constants::physics::MassK0Short);
   }
 
   template <typename T>
-  auto ctV0Lambda(const T& candidate)
+  static auto ctV0Lambda(const T& candidate)
   {
     return candidate.ctV0(o2::constants::physics::MassLambda0);
   }
@@ -156,37 +156,37 @@ class HfHelper
   // B± → D0bar(D0) π±
 
   template <typename T>
-  auto ctBplus(const T& candidate)
+  static auto ctBplus(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassBPlus);
   }
 
   template <typename T>
-  auto yBplus(const T& candidate)
+  static auto yBplus(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassBPlus);
   }
 
   template <typename T>
-  auto eBplus(const T& candidate)
+  static auto eBplus(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassBPlus);
   }
 
   template <typename T>
-  auto invMassBplusToD0Pi(const T& candidate)
+  static auto invMassBplusToD0Pi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassBplusToJpsiK(const T& candidate)
+  static auto invMassBplusToJpsiK(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto cosThetaStarBplus(const T& candidate)
+  static auto cosThetaStarBplus(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBPlus, 1);
   }
@@ -196,31 +196,31 @@ class HfHelper
   // D± → π± K∓ π±
 
   template <typename T>
-  auto ctDplus(const T& candidate)
+  static auto ctDplus(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassDPlus);
   }
 
   template <typename T>
-  auto yDplus(const T& candidate)
+  static auto yDplus(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassDPlus);
   }
 
   template <typename T>
-  auto eDplus(const T& candidate)
+  static auto eDplus(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassDPlus);
   }
 
   template <typename T>
-  auto invMassDplusToPiKPi(const T& candidate)
+  static auto invMassDplusToPiKPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
+  static auto invMassDplusToPiKPi(const T& pVec0, const T& pVec1, const T& pVec2)
   {
     return RecoDecay::m(std::array{pVec0, pVec1, pVec2},
                         std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
@@ -229,55 +229,55 @@ class HfHelper
   // Ds± → K± K∓ π±
 
   template <typename T>
-  auto ctDs(const T& candidate)
+  static auto ctDs(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassDS);
   }
 
   template <typename T>
-  auto yDs(const T& candidate)
+  static auto yDs(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassDS);
   }
 
   template <typename T>
-  auto eDs(const T& candidate)
+  static auto eDs(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassDS);
   }
 
   template <typename T>
-  auto invMassDsToKKPi(const T& candidate)
+  static auto invMassDsToKKPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassDsToPiKK(const T& candidate)
+  static auto invMassDsToPiKK(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto massKKPairDsToKKPi(const T& candidate)
+  static auto massKKPairDsToKKPi(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto massKKPairDsToPiKK(const T& candidate)
+  static auto massKKPairDsToPiKK(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto deltaMassPhiDsToKKPi(const T& candidate)
+  static auto deltaMassPhiDsToKKPi(const T& candidate)
   {
     return std::abs(massKKPairDsToKKPi(candidate) - o2::constants::physics::MassPhi);
   }
 
   template <typename T>
-  auto deltaMassPhiDsToPiKK(const T& candidate)
+  static auto deltaMassPhiDsToPiKK(const T& candidate)
   {
     return std::abs(massKKPairDsToPiKK(candidate) - o2::constants::physics::MassPhi);
   }
@@ -287,7 +287,7 @@ class HfHelper
   /// \param option mass hypothesis considered: 0 = KKPi, 1 = PiKK
   /// \return cosine of pion-kaon angle in the phi rest frame
   template <typename T>
-  auto cosPiKPhiRestFrame(const T& candidate, int option)
+  static auto cosPiKPhiRestFrame(const T& candidate, int option)
   {
     // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
     std::array<float, 3> momPi{};
@@ -317,27 +317,27 @@ class HfHelper
   }
 
   template <typename T>
-  auto cos3PiKDsToKKPi(const T& candidate)
+  static auto cos3PiKDsToKKPi(const T& candidate)
   {
     auto cosPiK = cosPiKPhiRestFrame(candidate, 0);
     return cosPiK * cosPiK * cosPiK;
   }
 
   template <typename T>
-  auto absCos3PiKDsToKKPi(const T& candidate)
+  static auto absCos3PiKDsToKKPi(const T& candidate)
   {
     return std::abs(cos3PiKDsToKKPi(candidate));
   }
 
   template <typename T>
-  auto cos3PiKDsToPiKK(const T& candidate)
+  static auto cos3PiKDsToPiKK(const T& candidate)
   {
     auto cosPiK = cosPiKPhiRestFrame(candidate, 1);
     return cosPiK * cosPiK * cosPiK;
   }
 
   template <typename T>
-  auto absCos3PiKDsToPiKK(const T& candidate)
+  static auto absCos3PiKDsToPiKK(const T& candidate)
   {
     return std::abs(cos3PiKDsToPiKK(candidate));
   }
@@ -345,67 +345,67 @@ class HfHelper
   // Λc± → p± K∓ π±
 
   template <typename T>
-  auto ctLc(const T& candidate)
+  static auto ctLc(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassLambdaCPlus);
   }
 
   template <typename T>
-  auto yLc(const T& candidate)
+  static auto yLc(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassLambdaCPlus);
   }
 
   template <typename T>
-  auto eLc(const T& candidate)
+  static auto eLc(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassLambdaCPlus);
   }
 
   template <typename T>
-  auto invMassLcToPKPi(const T& candidate)
+  static auto invMassLcToPKPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassLcToPiKP(const T& candidate)
+  static auto invMassLcToPiKP(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
   }
 
   template <typename T>
-  auto invMassKPiPairLcToPKPi(const T& candidate)
+  static auto invMassKPiPairLcToPKPi(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassKPiPairLcToPiKP(const T& candidate)
+  static auto invMassKPiPairLcToPiKP(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassPKPairLcToPKPi(const T& candidate)
+  static auto invMassPKPairLcToPKPi(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto invMassPKPairLcToPiKP(const T& candidate)
+  static auto invMassPKPairLcToPiKP(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto invMassPPiPairLcToPKPi(const T& candidate)
+  static auto invMassPPiPairLcToPKPi(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassPPiPairLcToPiKP(const T& candidate)
+  static auto invMassPPiPairLcToPiKP(const T& candidate)
   {
     return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
   }
@@ -413,13 +413,13 @@ class HfHelper
   // Cd± → De± K∓ π±
 
   template <typename T>
-  auto invMassCdToDeKPi(const T& candidate)
+  static auto invMassCdToDeKPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassCdToPiKDe(const T& candidate)
+  static auto invMassCdToPiKDe(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassDeuteron});
   }
@@ -427,31 +427,31 @@ class HfHelper
   // Ξc± → p± K∓ π±
 
   template <typename T>
-  auto ctXic(const T& candidate)
+  static auto ctXic(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassXiCPlus);
   }
 
   template <typename T>
-  auto yXic(const T& candidate)
+  static auto yXic(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassXiCPlus);
   }
 
   template <typename T>
-  auto eXic(const T& candidate)
+  static auto eXic(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassXiCPlus);
   }
 
   template <typename T>
-  auto invMassXicToPKPi(const T& candidate)
+  static auto invMassXicToPKPi(const T& candidate)
   {
     return invMassLcToPKPi(candidate);
   }
 
   template <typename T>
-  auto invMassXicToPiKP(const T& candidate)
+  static auto invMassXicToPiKP(const T& candidate)
   {
     return invMassLcToPiKP(candidate);
   }
@@ -459,13 +459,13 @@ class HfHelper
   // hf_cand_casc_lf_2prong
 
   template <typename T>
-  auto invMassXiczeroToXiPi(const T& candidate)
+  static auto invMassXiczeroToXiPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassOmegaczeroToOmegaPi(const T& candidate)
+  static auto invMassOmegaczeroToOmegaPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus});
   }
@@ -473,7 +473,7 @@ class HfHelper
   // hf_cand_casc_lf_3prong
 
   template <typename T>
-  auto invMassXicplusToXiPiPi(const T& candidate)
+  static auto invMassXicplusToXiPiPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
   }
@@ -482,32 +482,32 @@ class HfHelper
 
   // X → Jpsi π+ π-
   template <typename T>
-  auto ctX(const T& candidate)
+  static auto ctX(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassX3872);
   }
 
   template <typename T>
-  auto yX(const T& candidate)
+  static auto yX(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassX3872);
   }
 
   template <typename T>
-  auto eX(const T& candidate)
+  static auto eX(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassX3872);
   }
 
   template <typename T>
-  auto invMassXToJpsiPiPi(const T& candidate)
+  static auto invMassXToJpsiPiPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
   }
 
   /// Difference between the X mass and the sum of the J/psi and di-pion masses
   template <typename T>
-  auto qX(const T& candidate)
+  static auto qX(const T& candidate)
   {
     auto piVec1 = std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
     auto piVec2 = std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()};
@@ -521,7 +521,7 @@ class HfHelper
 
   /// Angular difference between the J/psi and the pion
   template <typename T>
-  auto dRX(const T& candidate, int numPi)
+  static auto dRX(const T& candidate, int numPi)
   {
     double etaJpsi = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
     double phiJpsi = RecoDecay::phi(candidate.pxProng0(), candidate.pyProng0());
@@ -544,7 +544,7 @@ class HfHelper
 
   /// Difference in pT between the two pions
   template <typename T>
-  auto balancePtPionsX(const T& candidate)
+  static auto balancePtPionsX(const T& candidate)
   {
     double ptPi1 = RecoDecay::pt(candidate.pxProng1(), candidate.pyProng1());
     double ptPi2 = RecoDecay::pt(candidate.pxProng2(), candidate.pyProng2());
@@ -554,25 +554,25 @@ class HfHelper
   // Ξcc±± → p± K∓ π± π±
 
   template <typename T>
-  auto ctXicc(const T& candidate)
+  static auto ctXicc(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassXiCCPlusPlus);
   }
 
   template <typename T>
-  auto yXicc(const T& candidate)
+  static auto yXicc(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassXiCCPlusPlus);
   }
 
   template <typename T>
-  auto eXicc(const T& candidate)
+  static auto eXicc(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassXiCCPlusPlus);
   }
 
   template <typename T>
-  auto invMassXiccToXicPi(const T& candidate)
+  static auto invMassXiccToXicPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassXiCPlus, o2::constants::physics::MassPiPlus});
   }
@@ -580,24 +580,24 @@ class HfHelper
   // chic → Jpsi gamma
 
   template <typename T>
-  auto ctChic(const T& candidate)
+  static auto ctChic(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassChiC1);
   }
 
   template <typename T>
-  auto yChic(const T& candidate)
+  static auto yChic(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassChiC1);
   }
 
   template <typename T>
-  auto eChic(const T& candidate)
+  static auto eChic(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassChiC1);
   }
   template <typename T>
-  auto invMassChicToJpsiGamma(const T& candidate)
+  static auto invMassChicToJpsiGamma(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassJPsi, 0.});
   }
@@ -605,24 +605,24 @@ class HfHelper
   // Λb → Λc+ π- → p K- π+ π-
 
   template <typename T>
-  auto ctLb(const T& candidate)
+  static auto ctLb(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassLambdaB0);
   }
 
   template <typename T>
-  auto yLb(const T& candidate)
+  static auto yLb(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassLambdaB0);
   }
 
   template <typename T>
-  auto eLb(const T& candidate)
+  static auto eLb(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassLambdaB0);
   }
   template <typename T>
-  auto invMassLbToLcPi(const T& candidate)
+  static auto invMassLbToLcPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassLambdaCPlus, o2::constants::physics::MassPiPlus});
   }
@@ -630,37 +630,37 @@ class HfHelper
   // B0(B0bar) → D∓ π±
 
   template <typename T>
-  auto ctB0(const T& candidate)
+  static auto ctB0(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassB0);
   }
 
   template <typename T>
-  auto yB0(const T& candidate)
+  static auto yB0(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassB0);
   }
 
   template <typename T>
-  auto eB0(const T& candidate)
+  static auto eB0(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassB0);
   }
 
   template <typename T>
-  auto invMassB0ToDPi(const T& candidate)
+  static auto invMassB0ToDPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassDMinus, o2::constants::physics::MassPiPlus});
   }
 
   template <IsB0ToDstarPiChannel T>
-  auto invMassB0ToDPi(const T& candidate)
+  static auto invMassB0ToDPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto cosThetaStarB0(const T& candidate)
+  static auto cosThetaStarB0(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassDMinus, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassB0, 1);
   }
@@ -668,37 +668,37 @@ class HfHelper
   // Bs(bar) → Ds∓ π±
 
   template <typename T>
-  auto ctBs(const T& candidate)
+  static auto ctBs(const T& candidate)
   {
     return candidate.ct(o2::constants::physics::MassBS);
   }
 
   template <typename T>
-  auto yBs(const T& candidate)
+  static auto yBs(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassBS);
   }
 
   template <typename T>
-  auto eBs(const T& candidate)
+  static auto eBs(const T& candidate)
   {
     return candidate.e(o2::constants::physics::MassBS);
   }
 
   template <typename T>
-  auto invMassBsToDsPi(const T& candidate)
+  static auto invMassBsToDsPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassDSBar, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto invMassBsToJpsiPhi(const T& candidate)
+  static auto invMassBsToJpsiPhi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
-  auto cosThetaStarBs(const T& candidate)
+  static auto cosThetaStarBs(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassDSBar, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBS, 1);
   }
@@ -707,26 +707,26 @@ class HfHelper
 
   /// @brief Sc inv. mass using reco mass for Lc in pKpi and PDG mass for pion
   template <typename T, typename U>
-  auto invMassScRecoLcToPKPi(const T& candidateSc, const U& candidateLc)
+  static auto invMassScRecoLcToPKPi(const T& candidateSc, const U& candidateLc)
   {
     return candidateSc.m(std::array{static_cast<double>(invMassLcToPKPi(candidateLc)), o2::constants::physics::MassPiPlus});
   }
 
   /// @brief Sc inv. mass using reco mass for Lc in piKp and PDG mass for pion
   template <typename T, typename U>
-  auto invMassScRecoLcToPiKP(const T& candidateSc, const U& candidateLc)
+  static auto invMassScRecoLcToPiKP(const T& candidateSc, const U& candidateLc)
   {
     return candidateSc.m(std::array{static_cast<double>(invMassLcToPiKP(candidateLc)), o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
-  auto ySc0(const T& candidate)
+  static auto ySc0(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassSigmaC0);
   }
 
   template <typename T>
-  auto yScPlusPlus(const T& candidate)
+  static auto yScPlusPlus(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassSigmaCPlusPlus);
   }
@@ -734,7 +734,7 @@ class HfHelper
   /// Σc0,++ → Λc+(→K0sP) π-,+
   /// @brief Sc inv. mass using reco mass for Lc in K0sP and PDG mass for pion
   template <typename T, typename U>
-  auto invMassScRecoLcToK0sP(const T& candidateSc, const U& candidateLc)
+  static auto invMassScRecoLcToK0sP(const T& candidateSc, const U& candidateLc)
   {
     return candidateSc.m(std::array{static_cast<double>(invMassLcToK0sP(candidateLc)), o2::constants::physics::MassPiMinus});
   }
@@ -745,7 +745,7 @@ class HfHelper
   /// \param binsPt pT bin limits
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionB0ToDPiTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
+  static bool selectionB0ToDPiTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
   {
     auto ptCandB0 = candB0.pt();
     auto ptD = RecoDecay::pt(candB0.pxProng0(), candB0.pyProng0());
@@ -822,7 +822,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of B0 candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B0 candidate passes all selections
-  bool selectionB0ToDPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
+  static bool selectionB0ToDPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -840,7 +840,7 @@ class HfHelper
   /// \param binsPt pT bin limits
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionBplusToD0PiTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+  static bool selectionBplusToD0PiTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
   {
     auto ptCandBp = candBp.pt();
     auto ptPi = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
@@ -897,7 +897,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B+ candidate passes all selections
-  bool selectionBplusToD0PiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
+  static bool selectionBplusToD0PiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -915,7 +915,7 @@ class HfHelper
   /// \param binsPt pT bin limits
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionBplusToJpsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+  static bool selectionBplusToJpsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
   {
     auto ptCandBp = candBp.pt();
     auto mCandBp = invMassBplusToJpsiK(candBp);
@@ -996,7 +996,7 @@ class HfHelper
   /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B+ candidate passes all selections
-  bool selectionBplusToJpsiKPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
+  static bool selectionBplusToJpsiKPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
       return false;
@@ -1014,7 +1014,7 @@ class HfHelper
   /// \param binsPt pT bin limits
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionBsToDsPiTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
+  static bool selectionBsToDsPiTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
   {
     auto ptCandBs = candBs.pt();
     auto ptDs = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
@@ -1082,7 +1082,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of Bs candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of Bs candidate passes all selections
-  bool selectionBsToDsPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
+  static bool selectionBsToDsPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -1102,7 +1102,7 @@ class HfHelper
   /// \param binsPt pT bin limits
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool selectionBsToJpsiPhiTopol(const T1& candBs, const T2& candKa0, const T3& candKa1, const T4& cuts, const T5& binsPt)
+  static bool selectionBsToJpsiPhiTopol(const T1& candBs, const T2& candKa0, const T3& candKa1, const T4& cuts, const T5& binsPt)
   {
     auto ptCandBs = candBs.pt();
     auto mCandBs = invMassBsToJpsiPhi(candBs);
@@ -1191,7 +1191,7 @@ class HfHelper
   /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B+ candidate passes all selections
-  bool selectionBsToJpsiPhiPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
+  static bool selectionBsToJpsiPhiPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
       return false;
@@ -1209,7 +1209,7 @@ class HfHelper
   /// \param binsPt pT bin limits
   /// \return true if candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionLbToLcPiTopol(const T1& candLb, const T2& cuts, const T3& binsPt)
+  static bool selectionLbToLcPiTopol(const T1& candLb, const T2& cuts, const T3& binsPt)
   {
     auto ptCandLb = candLb.pt();
     auto ptLc = candLb.ptProng0();
@@ -1271,7 +1271,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of Lb candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of Lb candidate passes all selections
-  bool selectionLbToLcPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
+  static bool selectionLbToLcPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -1289,7 +1289,7 @@ class HfHelper
   /// \param mlScores vector with ml scores of charm hadron (position 0:bkg 1:prompt 2:nonprompt)
   /// \return true if b-hadron candidate passes all selections
   template <typename T1, typename T2>
-  bool applySelectionDmesMlScoresForB(const T1& cuts, const T2& binsPtC, float ptC, const std::vector<float>& mlScores)
+  static bool applySelectionDmesMlScoresForB(const T1& cuts, const T2& binsPtC, float ptC, const std::vector<float>& mlScores)
   {
     int pTBin = o2::analysis::findBin(binsPtC, ptC);
     if (pTBin == -1) {
@@ -1317,7 +1317,7 @@ class HfHelper
   /// \param binsPtC pT bin limits of charm hadron
   /// \return true if b-hadron candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionDmesMlScoresForB(const T1& candD, const T2& cuts, const T3& binsPtC, const std::vector<float>& mlScores)
+  static bool selectionDmesMlScoresForB(const T1& candD, const T2& cuts, const T3& binsPtC, const std::vector<float>& mlScores)
   {
     return applySelectionDmesMlScoresForB(cuts, binsPtC, candD.pt(), mlScores);
   }
@@ -1328,7 +1328,7 @@ class HfHelper
   /// \param binsPtC pT bin limits of charm hadron
   /// \return true if b-hadron candidate passes all selections
   template <typename T1, typename T2, typename T3>
-  bool selectionDmesMlScoresForBReduced(const T1& candB, const T2& cuts, const T3& binsPtC)
+  static bool selectionDmesMlScoresForBReduced(const T1& candB, const T2& cuts, const T3& binsPtC)
   {
     std::vector<float> mlScores;
     mlScores.push_back(candB.prong0MlScoreBkg());
@@ -1336,8 +1336,6 @@ class HfHelper
     mlScores.push_back(candB.prong0MlScoreNonprompt()); // we want non-prompt for beauty
     return applySelectionDmesMlScoresForB(cuts, binsPtC, RecoDecay::pt(candB.pxProng0(), candB.pyProng0()), mlScores);
   }
-
- private:
 };
 
 #endif // PWGHF_CORE_HFHELPER_H_

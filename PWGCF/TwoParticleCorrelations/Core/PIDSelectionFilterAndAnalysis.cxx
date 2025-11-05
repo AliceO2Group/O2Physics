@@ -9,14 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <boost/regex.hpp>
+#include "PIDSelectionFilterAndAnalysis.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+
 #include <TObjArray.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PIDSelectionFilterAndAnalysis.h"
+#include <boost/regex.hpp>
 
 using namespace o2;
 using namespace o2::framework;

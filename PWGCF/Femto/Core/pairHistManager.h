@@ -114,6 +114,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter)"};
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter)"};
+  o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -254,6 +255,9 @@ class PairHistManager
     mPlotKstarVsMass2VsMult = ConfPairBinning.plotKstarVsMass2VsMult.value;
     mPlotKstarVsMass1VsMass2VsMult = ConfPairBinning.plotKstarVsMass1VsMass2VsMult.value;
 
+    // transverse mass type
+    mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
+
     // values for cuts
     mKstarMin = ConfPairCuts.kstarMin.value;
     mKstarMax = ConfPairCuts.kstarMax.value;
@@ -263,70 +267,7 @@ class PairHistManager
     mMtMax = ConfPairCuts.mtMax.value;
 
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
-      if (mPlot1d) {
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar, HistTable), getHistDesc(kKstar, HistTable), getHistType(kKstar, HistTable), {Specs.at(kKstar)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKt, HistTable), getHistDesc(kKt, HistTable), getHistType(kKt, HistTable), {Specs.at(kKt)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kMt, HistTable), getHistDesc(kMt, HistTable), getHistType(kMt, HistTable), {Specs.at(kMt)});
-      }
-      if (mPlot2d) {
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsPt2, HistTable), getHistDesc(kPt1VsPt2, HistTable), getHistType(kPt1VsPt2, HistTable), {Specs.at(kPt1VsPt2)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsKstar, HistTable), getHistDesc(kPt1VsKstar, HistTable), getHistType(kPt1VsKstar, HistTable), {Specs.at(kPt1VsKstar)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsKstar, HistTable), getHistDesc(kPt2VsKstar, HistTable), getHistType(kPt2VsKstar, HistTable), {Specs.at(kPt2VsKstar)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsKt, HistTable), getHistDesc(kPt1VsKt, HistTable), getHistType(kPt1VsKt, HistTable), {Specs.at(kPt1VsKt)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsKt, HistTable), getHistDesc(kPt2VsKt, HistTable), getHistType(kPt2VsKt, HistTable), {Specs.at(kPt2VsKt)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsMt, HistTable), getHistDesc(kPt1VsMt, HistTable), getHistType(kPt1VsMt, HistTable), {Specs.at(kPt1VsMt)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsMt, HistTable), getHistDesc(kPt2VsMt, HistTable), getHistType(kPt2VsMt, HistTable), {Specs.at(kPt2VsMt)});
-
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsKt, HistTable), getHistDesc(kKstarVsKt, HistTable), getHistType(kKstarVsKt, HistTable), {Specs.at(kKstarVsKt)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMt, HistTable), getHistDesc(kKstarVsMt, HistTable), getHistType(kKstarVsMt, HistTable), {Specs.at(kKstarVsMt)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMult, HistTable), getHistDesc(kKstarVsMult, HistTable), getHistType(kKstarVsMult, HistTable), {Specs.at(kKstarVsMult)});
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsCent, HistTable), getHistDesc(kKstarVsCent, HistTable), getHistType(kKstarVsCent, HistTable), {Specs.at(kKstarVsCent)});
-
-        // special care for mass plots since not all particles have "mass"
-        if constexpr (modes::hasMass(particleType1)) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1, HistTable), getHistDesc(kKstarVsMass1, HistTable), getHistType(kKstarVsMass1, HistTable), {Specs.at(kKstarVsMass1)});
-        }
-        if constexpr (modes::hasMass(particleType2)) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass2, HistTable), getHistDesc(kKstarVsMass2, HistTable), getHistType(kKstarVsMass2, HistTable), {Specs.at(kKstarVsMass2)});
-        }
-        if constexpr (modes::hasMass(particleType1) && modes::hasMass(particleType2)) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kMass1VsMass2, HistTable), getHistDesc(kMass1VsMass2, HistTable), getHistType(kMass1VsMass2, HistTable), {Specs.at(kMass1VsMass2)});
-        }
-      }
-
-      if (mPlotKstarVsMtVsMult) {
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMult, HistTable), getHistDesc(kKstarVsMtVsMult, HistTable), getHistType(kKstarVsMtVsMult, HistTable), {Specs.at(kKstarVsMtVsMult)});
-      }
-      if (mPlotKstarVsMtVsMultVsCent) {
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsMultVsCent, HistTable), getHistType(kKstarVsMtVsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsMultVsCent)});
-      }
-      if (mPlotKstarVsMtVsPt1VsP2VsMult) {
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsPt1VsPt2VsMult, HistTable), getHistDesc(kKstarVsMtVsPt1VsPt2VsMult, HistTable), getHistType(kKstarVsMtVsPt1VsPt2VsMult, HistTable), {Specs.at(kKstarVsMtVsPt1VsPt2VsMult)});
-      }
-      if (mPlotKstarVsMtVsPt1VsP2VsMultVsCent) {
-        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsPt1VsPt2VsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsPt1VsPt2VsMultVsCent, HistTable), getHistType(kKstarVsMtVsPt1VsPt2VsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsPt1VsPt2VsMultVsCent)});
-      }
-
-      // again special care for particles with "mass"
-      if constexpr (modes::hasMass(particleType1)) {
-        if (mPlotKstarVsMass1VsMult) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1VsMult, HistTable), getHistDesc(kKstarVsMass1VsMult, HistTable), getHistType(kKstarVsMass1VsMult, HistTable), {Specs.at(kKstarVsMass1VsMult)});
-        }
-      }
-      if constexpr (modes::hasMass(particleType2)) {
-        if (mPlotKstarVsMass2VsMult) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass2VsMult, HistTable), getHistDesc(kKstarVsMass2VsMult, HistTable), getHistType(kKstarVsMass2VsMult, HistTable), {Specs.at(kKstarVsMass2VsMult)});
-        }
-      }
-      if constexpr (modes::hasMass(particleType1) && modes::hasMass(particleType2)) {
-        if (mPlotKstarVsMass1VsMass2) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1VsMass2, HistTable), getHistDesc(kKstarVsMass1VsMass2, HistTable), getHistType(kKstarVsMass1VsMass2, HistTable), {Specs.at(kKstarVsMass1VsMass2)});
-        }
-        if (mPlotKstarVsMass1VsMass2VsMult) {
-          mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1VsMass2VsMult, HistTable), getHistDesc(kKstarVsMass1VsMass2VsMult, HistTable), getHistType(kKstarVsMass1VsMass2VsMult, HistTable), {Specs.at(kKstarVsMass1VsMass2VsMult)});
-        }
-      }
+      initAnalysis(Specs);
     }
 
     // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
@@ -338,7 +279,8 @@ class PairHistManager
   {
     mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
-    mPdgAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
+    mAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
+    mReducedMass = 2.f * (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
@@ -361,7 +303,7 @@ class PairHistManager
     mKt = partSum.Pt() / 2.f;
 
     // set mT
-    mMt = std::hypot(mKt, mPdgAverageMass);
+    computeMt(partSum);
 
     // Boost particle to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
     // make a copy of particle 1
@@ -409,34 +351,110 @@ class PairHistManager
   void fill()
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      if (mPlot1d) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar, HistTable)), mKstar);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMt, HistTable)), mMt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKt, HistTable)), mKt);
-      }
-      if (mPlot2d) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsPt2, HistTable)), mParticle1.Pt(), mParticle2.Pt());
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsKstar, HistTable)), mParticle1.Pt(), mKstar);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsMt, HistTable)), mParticle1.Pt(), mMt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsKt, HistTable)), mParticle1.Pt(), mKt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsKstar, HistTable)), mParticle2.Pt(), mKstar);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsMt, HistTable)), mParticle2.Pt(), mMt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsKt, HistTable)), mParticle2.Pt(), mKt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsKt, HistTable)), mKstar, mKt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMt, HistTable)), mKstar, mMt);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMult, HistTable)), mKstar, mMult);
-        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsCent, HistTable)), mKstar, mCent);
+      fillAnalysis();
+    }
+  }
 
-        // // special care for mass plots since not all particles have "mass"
-        if constexpr (modes::hasMass(particleType1)) {
-          mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMass1, HistTable)), mKstar, mMass1);
-        }
-        if constexpr (modes::hasMass(particleType2)) {
-          mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMass2, HistTable)), mKstar, mMass2);
-        }
-        if constexpr (modes::hasMass(particleType1) && modes::hasMass(particleType2)) {
-          mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass1VsMass2, HistTable)), mMass1, mMass2);
-        }
+  float getKstar() const { return mKstar; }
+
+ private:
+  void initAnalysis(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
+    if (mPlot1d) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar, HistTable), getHistDesc(kKstar, HistTable), getHistType(kKstar, HistTable), {Specs.at(kKstar)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKt, HistTable), getHistDesc(kKt, HistTable), getHistType(kKt, HistTable), {Specs.at(kKt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kMt, HistTable), getHistDesc(kMt, HistTable), getHistType(kMt, HistTable), {Specs.at(kMt)});
+    }
+    if (mPlot2d) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsPt2, HistTable), getHistDesc(kPt1VsPt2, HistTable), getHistType(kPt1VsPt2, HistTable), {Specs.at(kPt1VsPt2)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsKstar, HistTable), getHistDesc(kPt1VsKstar, HistTable), getHistType(kPt1VsKstar, HistTable), {Specs.at(kPt1VsKstar)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsKstar, HistTable), getHistDesc(kPt2VsKstar, HistTable), getHistType(kPt2VsKstar, HistTable), {Specs.at(kPt2VsKstar)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsKt, HistTable), getHistDesc(kPt1VsKt, HistTable), getHistType(kPt1VsKt, HistTable), {Specs.at(kPt1VsKt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsKt, HistTable), getHistDesc(kPt2VsKt, HistTable), getHistType(kPt2VsKt, HistTable), {Specs.at(kPt2VsKt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt1VsMt, HistTable), getHistDesc(kPt1VsMt, HistTable), getHistType(kPt1VsMt, HistTable), {Specs.at(kPt1VsMt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt2VsMt, HistTable), getHistDesc(kPt2VsMt, HistTable), getHistType(kPt2VsMt, HistTable), {Specs.at(kPt2VsMt)});
+
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsKt, HistTable), getHistDesc(kKstarVsKt, HistTable), getHistType(kKstarVsKt, HistTable), {Specs.at(kKstarVsKt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMt, HistTable), getHistDesc(kKstarVsMt, HistTable), getHistType(kKstarVsMt, HistTable), {Specs.at(kKstarVsMt)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMult, HistTable), getHistDesc(kKstarVsMult, HistTable), getHistType(kKstarVsMult, HistTable), {Specs.at(kKstarVsMult)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsCent, HistTable), getHistDesc(kKstarVsCent, HistTable), getHistType(kKstarVsCent, HistTable), {Specs.at(kKstarVsCent)});
+
+      // special care for mass plots since not all particles have "mass"
+      if constexpr (modes::hasMass(particleType1)) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1, HistTable), getHistDesc(kKstarVsMass1, HistTable), getHistType(kKstarVsMass1, HistTable), {Specs.at(kKstarVsMass1)});
+      }
+      if constexpr (modes::hasMass(particleType2)) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass2, HistTable), getHistDesc(kKstarVsMass2, HistTable), getHistType(kKstarVsMass2, HistTable), {Specs.at(kKstarVsMass2)});
+      }
+      if constexpr (modes::hasMass(particleType1) && modes::hasMass(particleType2)) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kMass1VsMass2, HistTable), getHistDesc(kMass1VsMass2, HistTable), getHistType(kMass1VsMass2, HistTable), {Specs.at(kMass1VsMass2)});
+      }
+    }
+
+    if (mPlotKstarVsMtVsMult) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMult, HistTable), getHistDesc(kKstarVsMtVsMult, HistTable), getHistType(kKstarVsMtVsMult, HistTable), {Specs.at(kKstarVsMtVsMult)});
+    }
+    if (mPlotKstarVsMtVsMultVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsMultVsCent, HistTable), getHistType(kKstarVsMtVsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsMultVsCent)});
+    }
+    if (mPlotKstarVsMtVsPt1VsP2VsMult) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsPt1VsPt2VsMult, HistTable), getHistDesc(kKstarVsMtVsPt1VsPt2VsMult, HistTable), getHistType(kKstarVsMtVsPt1VsPt2VsMult, HistTable), {Specs.at(kKstarVsMtVsPt1VsPt2VsMult)});
+    }
+    if (mPlotKstarVsMtVsPt1VsP2VsMultVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsPt1VsPt2VsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsPt1VsPt2VsMultVsCent, HistTable), getHistType(kKstarVsMtVsPt1VsPt2VsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsPt1VsPt2VsMultVsCent)});
+    }
+
+    // again special care for particles with "mass"
+    if constexpr (modes::hasMass(particleType1)) {
+      if (mPlotKstarVsMass1VsMult) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1VsMult, HistTable), getHistDesc(kKstarVsMass1VsMult, HistTable), getHistType(kKstarVsMass1VsMult, HistTable), {Specs.at(kKstarVsMass1VsMult)});
+      }
+    }
+    if constexpr (modes::hasMass(particleType2)) {
+      if (mPlotKstarVsMass2VsMult) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass2VsMult, HistTable), getHistDesc(kKstarVsMass2VsMult, HistTable), getHistType(kKstarVsMass2VsMult, HistTable), {Specs.at(kKstarVsMass2VsMult)});
+      }
+    }
+    if constexpr (modes::hasMass(particleType1) && modes::hasMass(particleType2)) {
+      if (mPlotKstarVsMass1VsMass2) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1VsMass2, HistTable), getHistDesc(kKstarVsMass1VsMass2, HistTable), getHistType(kKstarVsMass1VsMass2, HistTable), {Specs.at(kKstarVsMass1VsMass2)});
+      }
+      if (mPlotKstarVsMass1VsMass2VsMult) {
+        mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMass1VsMass2VsMult, HistTable), getHistDesc(kKstarVsMass1VsMass2VsMult, HistTable), getHistType(kKstarVsMass1VsMass2VsMult, HistTable), {Specs.at(kKstarVsMass1VsMass2VsMult)});
+      }
+    }
+  }
+
+  void fillAnalysis()
+  {
+    if (mPlot1d) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar, HistTable)), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMt, HistTable)), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKt, HistTable)), mKt);
+    }
+    if (mPlot2d) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsPt2, HistTable)), mParticle1.Pt(), mParticle2.Pt());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsKstar, HistTable)), mParticle1.Pt(), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsMt, HistTable)), mParticle1.Pt(), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt1VsKt, HistTable)), mParticle1.Pt(), mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsKstar, HistTable)), mParticle2.Pt(), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsMt, HistTable)), mParticle2.Pt(), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPt2VsKt, HistTable)), mParticle2.Pt(), mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsKt, HistTable)), mKstar, mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMt, HistTable)), mKstar, mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMult, HistTable)), mKstar, mMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsCent, HistTable)), mKstar, mCent);
+
+      // // special care for mass plots since not all particles have "mass"
+      if constexpr (modes::hasMass(particleType1)) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMass1, HistTable)), mKstar, mMass1);
+      }
+      if constexpr (modes::hasMass(particleType2)) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMass2, HistTable)), mKstar, mMass2);
+      }
+      if constexpr (modes::hasMass(particleType1) && modes::hasMass(particleType2)) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass1VsMass2, HistTable)), mMass1, mMass2);
       }
     }
 
@@ -475,15 +493,31 @@ class PairHistManager
     }
   }
 
-  // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
-  //  mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(getHistName(kPtVsDcaz, HistTable)), track.pt(), track.dcaZ());
-  // }
+  void computeMt(ROOT::Math::PtEtaPhiMVector const& PairMomentum)
+  {
+    switch (mMtType) {
+      case modes::TransverseMassType::kAveragePdgMass:
+        mMt = std::hypot(PairMomentum.Pt() / 2.f, mAverageMass);
+        break;
+      case modes::TransverseMassType::kReducedPdgMass:
+        mMt = std::hypot(PairMomentum.Pt() / 2.f, mReducedMass);
+        break;
+      case modes::TransverseMassType::kMt4Vector:
+        mMt = PairMomentum.Mt() / 2.f;
+        break;
+      default:
+        mMt = std::hypot(mKt, mAverageMass);
+    }
+  }
 
- private:
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   float mPdgMass1 = 0.f;
   float mPdgMass2 = 0.f;
-  float mPdgAverageMass = 0.f;
+
+  modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
+  float mAverageMass = 0.f;
+  float mReducedMass = 0.f;
+
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
   ROOT::Math::PtEtaPhiMVector mParticle1{};

@@ -16,8 +16,10 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/Utils/utilsSigmac.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -64,7 +66,6 @@ struct HfTaskSigmac {
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
   Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of sof-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
 
-  HfHelper hfHelper;
   bool isMc{};
   static constexpr std::size_t NDaughters{2u};
 
@@ -351,7 +352,7 @@ struct HfTaskSigmac {
 
       /// rapidity selection on Σc0,++
       /// NB: since in data we cannot tag Sc(2455) and Sc(2520), then we use only Sc(2455) for y selection on reconstructed signal
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.ySc0(candSc)) > yCandRecoMax && std::abs(hfHelper.yScPlusPlus(candSc)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::ySc0(candSc)) > yCandRecoMax && std::abs(HfHelper::yScPlusPlus(candSc)) > yCandRecoMax) {
         continue;
       }
 
@@ -372,8 +373,8 @@ struct HfTaskSigmac {
       double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
       if (TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) {
-        massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
-        massLc = hfHelper.invMassLcToPKPi(candidateLc);
+        massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
+        massLc = HfHelper::invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
         if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
@@ -455,8 +456,8 @@ struct HfTaskSigmac {
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
       if (TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) {
-        massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
-        massLc = hfHelper.invMassLcToPiKP(candidateLc);
+        massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
+        massLc = HfHelper::invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
         if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
@@ -549,7 +550,7 @@ struct HfTaskSigmac {
           double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
           double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
           if (candidateLc.isSelLcToPKPi() >= 1) {
-            massLc = hfHelper.invMassLcToPKPi(candidateLc);
+            massLc = HfHelper::invMassLcToPKPi(candidateLc);
             if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
@@ -565,7 +566,7 @@ struct HfTaskSigmac {
             }
           }
           if (candidateLc.isSelLcToPiKP() >= 1) {
-            massLc = hfHelper.invMassLcToPiKP(candidateLc);
+            massLc = HfHelper::invMassLcToPiKP(candidateLc);
             if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
@@ -784,7 +785,7 @@ struct HfTaskSigmac {
 
       /// rapidity selection on Σc0,++
       /// NB: since in data we cannot tag Sc(2455) and Sc(2520), then we use only Sc(2455) for y selection on reconstructed signal
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.ySc0(candSc)) > yCandRecoMax && std::abs(hfHelper.yScPlusPlus(candSc)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::ySc0(candSc)) > yCandRecoMax && std::abs(HfHelper::yScPlusPlus(candSc)) > yCandRecoMax) {
         continue;
       }
 
@@ -840,8 +841,8 @@ struct HfTaskSigmac {
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
-          massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
-          massLc = hfHelper.invMassLcToPKPi(candidateLc);
+          massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
+          massLc = HfHelper::invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc0 signal
@@ -925,8 +926,8 @@ struct HfTaskSigmac {
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
-          massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
-          massLc = hfHelper.invMassLcToPiKP(candidateLc);
+          massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
+          massLc = HfHelper::invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc0 signal
@@ -1046,8 +1047,8 @@ struct HfTaskSigmac {
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
-          massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
-          massLc = hfHelper.invMassLcToPKPi(candidateLc);
+          massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
+          massLc = HfHelper::invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc++ signal
@@ -1131,8 +1132,8 @@ struct HfTaskSigmac {
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
-          massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
-          massLc = hfHelper.invMassLcToPiKP(candidateLc);
+          massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
+          massLc = HfHelper::invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
 
           /// Fill the histograms for reconstructed Σc++ signal
@@ -1234,7 +1235,7 @@ struct HfTaskSigmac {
           pdgAbs = std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode());
         }
         if (candidateLc.isSelLcToPKPi() >= 1 && pdgAbs == kProton) {
-          massLc = hfHelper.invMassLcToPKPi(candidateLc);
+          massLc = HfHelper::invMassLcToPKPi(candidateLc);
           if constexpr (UseMl) {
             /// fill with ML information
             /// BDT index 0: bkg score; BDT index 2: non-prompt score
@@ -1250,7 +1251,7 @@ struct HfTaskSigmac {
           }
         }
         if (candidateLc.isSelLcToPiKP() >= 1 && pdgAbs == kPiPlus) {
-          massLc = hfHelper.invMassLcToPiKP(candidateLc);
+          massLc = HfHelper::invMassLcToPiKP(candidateLc);
           if constexpr (UseMl) {
             /// fill with ML information
             /// BDT index 0: bkg score; BDT index 2: non-prompt score

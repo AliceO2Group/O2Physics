@@ -99,6 +99,13 @@ enum Harmonics {
   kOctagonal = 8
 };
 
+enum class MapLevel {
+  kGood = 1,
+  kNoBad = 2,
+  kInEMC = 3,
+  kAll = 4
+};
+
 struct TaskPi0FlowEMC {
   static constexpr float MinEnergy = 0.7f;
 
@@ -220,14 +227,14 @@ struct TaskPi0FlowEMC {
   o2::emcal::Geometry* emcalGeom;
   o2::emcal::BadChannelMap* mBadChannels;
   TH1D* h1SPResolution = nullptr;
-  // Constants for eta and phi ranges
-  double etaMin = -0.75, etaMax = 0.75;
-  int nBinsEta = 150; // 150 bins for eta
+  // Constants for eta and phi ranges for the look up table
+  static constexpr double EtaMin = -0.75, etaMax = 0.75;
+  static constexpr int NBinsEta = 150; // 150 bins for eta
 
-  double phiMin = 1.35, phiMax = 5.75;
-  int nBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
+  static constexpr double PhiMin = 1.35, phiMax = 5.75;
+  static constexpr int NBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
 
-  std::vector<int8_t> lookupTable1D;
+  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D;
   float epsilon = 1.e-8;
 
   // static constexpr
@@ -239,19 +246,19 @@ struct TaskPi0FlowEMC {
   // To access the 1D array
   inline int getIndex(int iEta, int iPhi)
   {
-    return iEta * nBinsPhi + iPhi;
+    return iEta * NBinsPhi + iPhi;
   }
 
   // Function to access the lookup table
   inline int8_t checkEtaPhi1D(double eta, double phi)
   {
-    if (eta < etaMin || eta > etaMax || phi < phiMin || phi > phiMax) {
+    if (eta < EtaMin || eta > etaMax || phi < PhiMin || phi > phiMax) {
       return 3; // Out of bounds
     }
 
     // Compute indices directly
-    int iEta = static_cast<int>((eta - etaMin) / ((etaMax - etaMin) / nBinsEta));
-    int iPhi = static_cast<int>((phi - phiMin) / ((phiMax - phiMin) / nBinsPhi));
+    int iEta = static_cast<int>((eta - EtaMin) / ((etaMax - EtaMin) / NBinsEta));
+    int iPhi = static_cast<int>((phi - PhiMin) / ((phiMax - PhiMin) / NBinsPhi));
 
     return lookupTable1D[getIndex(iEta, iPhi)];
   }
@@ -437,7 +444,8 @@ struct TaskPi0FlowEMC {
     }
 
     if (cfgDoM02.value) {
-      registry.add("hSparseFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisM02, thnAxisPt, thnAxisCent});
+      registry.add("p3DM02Flow", "<v_n> vs M_{02} vs p_T vs cent", HistType::kTProfile3D, {thnAxisM02, thnAxisPt, thnAxisCent});
+      registry.add("h3DSparsePi0", "M_{02} vs p_T vs cent", HistType::kTH3D, {thnAxisM02, thnAxisPt, thnAxisCent});
     }
 
     ccdb->setURL(ccdbUrl);
@@ -663,28 +671,33 @@ struct TaskPi0FlowEMC {
     emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(collision.runNumber());
     // Load Bad Channel map
     mBadChannels = ccdb->getForTimeStamp<o2::emcal::BadChannelMap>("EMC/Calib/BadChannelMap", collision.timestamp());
-    lookupTable1D = std::vector<int8_t>(nBinsEta * nBinsPhi, -1);
-    double binWidthEta = (etaMax - etaMin) / nBinsEta;
-    double binWidthPhi = (phiMax - phiMin) / nBinsPhi;
+    lookupTable1D.fill(-1);
+    double binWidthEta = (etaMax - EtaMin) / NBinsEta;
+    double binWidthPhi = (phiMax - PhiMin) / NBinsPhi;
 
-    for (int iEta = 0; iEta < nBinsEta; ++iEta) {
-      double etaCenter = etaMin + (iEta + 0.5) * binWidthEta;
-      for (int iPhi = 0; iPhi < nBinsPhi; ++iPhi) {
-        double phiCenter = phiMin + (iPhi + 0.5) * binWidthPhi;
-        try {
-          // Get the cell ID
-          int cellID = emcalGeom->GetAbsCellIdFromEtaPhi(etaCenter, phiCenter);
+    if (cfgEMCalMapLevelBackground.value >= static_cast<int>(MapLevel::kAll) && cfgEMCalMapLevelSameEvent >= static_cast<int>(MapLevel::kAll)) {
+      // in this case we do not want to check the clusters, so just say thery are all good.
+      lookupTable1D.fill(0); // good
+    } else {
+      for (int iEta = 0; iEta < NBinsEta; ++iEta) {
+        double etaCenter = EtaMin + (iEta + 0.5) * binWidthEta;
+        for (int iPhi = 0; iPhi < NBinsPhi; ++iPhi) {
+          double phiCenter = PhiMin + (iPhi + 0.5) * binWidthPhi;
+          try {
+            // Get the cell ID
+            int cellID = emcalGeom->GetAbsCellIdFromEtaPhi(etaCenter, phiCenter);
 
-          // Check conditions for the cell
-          if (isTooCloseToEdge(cellID, 1)) {
-            lookupTable1D[getIndex(iEta, iPhi)] = 2; // Edge
-          } else if (isCellMasked(cellID)) {
-            lookupTable1D[getIndex(iEta, iPhi)] = 1; // Bad
-          } else {
-            lookupTable1D[getIndex(iEta, iPhi)] = 0; // Good
+            // Check conditions for the cell
+            if (isTooCloseToEdge(cellID, 1)) {
+              lookupTable1D[getIndex(iEta, iPhi)] = 2; // Edge
+            } else if (isCellMasked(cellID)) {
+              lookupTable1D[getIndex(iEta, iPhi)] = 1; // Bad
+            } else {
+              lookupTable1D[getIndex(iEta, iPhi)] = 0; // Good
+            }
+          } catch (o2::emcal::InvalidPositionException& e) {
+            lookupTable1D[getIndex(iEta, iPhi)] = 3; // Outside geometry
           }
-        } catch (o2::emcal::InvalidPositionException& e) {
-          lookupTable1D[getIndex(iEta, iPhi)] = 3; // Outside geometry
         }
       }
     }
@@ -1433,7 +1446,8 @@ struct TaskPi0FlowEMC {
           scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
         }
         if (cfgDoM02.value) {
-          registry.fill(HIST("hSparseFlow"), photon.m02(), photon.pt(), cent, scalprodCand);
+          registry.fill(HIST("p3DM02Flow"), photon.m02(), photon.pt(), cent, scalprodCand);
+          registry.fill(HIST("h3DSparsePi0"), photon.m02(), photon.pt(), cent);
         }
         return;
       } // end of loop over single cluster

@@ -15,22 +15,22 @@
 /// \author Sara Haidlova, sara.haidlova@cern.ch
 /// \since March 2024
 
-#include <vector>
 #include <utility>
+#include <vector>
 
 // O2 headers
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // O2Physics headers
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCJpsiCentralBarrelCorrHelper.h"
-#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/Core/RecoDecay.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
