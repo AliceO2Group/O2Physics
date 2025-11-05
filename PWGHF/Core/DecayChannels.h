@@ -259,6 +259,22 @@ enum DecayChannelMain : HfDecayChannel {
   NChannelsMain = DstarToD0Pi // last channel
 };
 } // namespace hf_cand_reso
+
+/// @brief Sigmac candidates: main channels
+namespace hf_cand_sigmac
+{
+enum DecayChannelMain : HfDecayChannel {
+  // 	Σc0(2455) → Λc+ π- → p K- π+ π-
+  Sc0ToPKPiPi = 0,
+  // 	Σc++(2455) → Λc+ π+ → p K- π+ π+
+  ScplusplusToPKPiPi,
+  // 	Σc0(2520) → Λc+ π- → p K- π+ π-
+  ScStar0ToPKPiPi,
+  // 	Σc++(2520) → Λc+ π+ → p K- π+ π+
+  ScStarPlusPlusToPKPiPi
+};
+} // namespace hf_cand_sigmac
+
 } // namespace o2::hf_decay
 
 #endif // PWGHF_CORE_DECAYCHANNELS_H_
