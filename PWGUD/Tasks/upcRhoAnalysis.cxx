@@ -202,9 +202,16 @@ struct UpcRhoAnalysis {
     rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
     rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
     // events with selected rho candidates
-    rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/"); // clone "all" histograms as "selected"
+    rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
     rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
 
+    std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "vertex selections", "#it{z} position", "number of contributors", "RCT selections", "reco flag selection"};
+    rQC.add("QC/collisions/hSelectionCounter", ";;collisions passing selections", kTH1D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}});
+    rQC.add("QC/collisions/hSelectionCounterPerRun", ";;run number;collisions passing selections", kTH2D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
+    for (int i = 0; i < static_cast<int>(collisionSelectionCounterLabels.size()); ++i) {
+      rQC.get<TH1>(HIST("QC/collisions/hSelectionCounter"))->GetXaxis()->SetBinLabel(i + 1, collisionSelectionCounterLabels[i].c_str());
+      rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetXaxis()->SetBinLabel(i + 1, collisionSelectionCounterLabels[i].c_str());
+    }
     // tracks
     rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
     rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
@@ -222,22 +229,22 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/all/hTpcSignalVsP", ";|#it{p}| (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     rQC.add("QC/tracks/all/hTpcSignalVsPt", ";#it{p}_{T} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (arb. units);counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     // tracks passing selections
-    rQC.addClone("QC/tracks/all/", "QC/tracks/trackSelections/"); // clone "raw" histograms as "cut"
+    rQC.addClone("QC/tracks/all/", "QC/tracks/trackSelections/");
     rQC.addClone("QC/tracks/all/", "QC/tracks/systemSelections/");
     rQC.add("QC/tracks/trackSelections/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaPi2D", ";TPC #it{n#sigma}(#pi)_{leading};TPC #it{n#sigma}(#pi)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaEl2D", ";TPC #it{n#sigma}(e)_{leading};TPC #it{n#sigma}(e)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaKa2D", ";TPC #it{n#sigma}(K)_{leading};TPC #it{n#sigma}(K)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     // selection counter
-    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
+    std::vector<std::string> trackSelectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
                                                        "TPC crossed rows/#it{N}_{cls}",
                                                        "TOF requirement",
                                                        "#it{p}_{T}", "#it{DCA}", "#it{#eta}", "exactly 2 tracks", "PID"};
-    rQC.add("QC/tracks/hSelectionCounter", ";;tracks passing selections", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<float>(selectionCounterLabels.size()) - 0.5}});
-    rQC.add("QC/tracks/hSelectionCounterPerRun", ";;run number;tracks passing selections", kTH2D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<float>(selectionCounterLabels.size()) - 0.5}, runNumberAxis});
-    for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i) {
-      rQC.get<TH1>(HIST("QC/tracks/hSelectionCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
-      rQC.get<TH2>(HIST("QC/tracks/hSelectionCounterPerRun"))->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
+    rQC.add("QC/tracks/hSelectionCounter", ";;tracks passing selections", kTH1D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}});
+    rQC.add("QC/tracks/hSelectionCounterPerRun", ";;run number;tracks passing selections", kTH2D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
+    for (int i = 0; i < static_cast<int>(trackSelectionCounterLabels.size()); ++i) {
+      rQC.get<TH1>(HIST("QC/tracks/hSelectionCounter"))->GetXaxis()->SetBinLabel(i + 1, trackSelectionCounterLabels[i].c_str());
+      rQC.get<TH2>(HIST("QC/tracks/hSelectionCounterPerRun"))->GetXaxis()->SetBinLabel(i + 1, trackSelectionCounterLabels[i].c_str());
     }
     for (int i = 0; i < static_cast<int>(runNumbers.size()); ++i) {
       rQC.get<TH2>(HIST("QC/tracks/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
@@ -438,21 +445,31 @@ struct UpcRhoAnalysis {
   }
 
   template <typename C>
-  bool collisionPassesCuts(const C& collision) // collision cuts
+  bool collisionPassesCuts(const C& collision, int runIndex) // collision cuts
   {
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 1);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 1, runIndex);
     if (!collision.vtxITSTPC() || !collision.sbp() || !collision.itsROFb() || !collision.tfb()) // not applied automatically in 2023 Pb-Pb pass5
       return false;
-
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 2);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 2, runIndex);
     if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 3);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 3, runIndex);
     if (cutNumContribs && (collision.numContrib() > collisionsNumContribsMaxCut))
       return false;
-
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 4);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 4, runIndex);
     if (useRctFlag && !isGoodRctFlag(collision)) // check RCT flags
       return false;
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 5);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 5, runIndex);
     if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
       return false;
-
+    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 6);
+    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 6, runIndex);
+    // if all selections passed
     return true;
   }
 
@@ -646,7 +663,7 @@ struct UpcRhoAnalysis {
     int runIndex = getRunIndex(collision.runNumber(), runNumbers);
 
     fillCollisionQcHistos<0>(collision); // fill QC histograms before cuts
-    if (!collisionPassesCuts(collision))
+    if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
       return;
 
     int neutronClass = -1;
