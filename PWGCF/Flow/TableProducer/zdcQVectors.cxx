@@ -433,68 +433,68 @@ struct ZdcQVectors {
 
     selected = std::fabs(collision.posZ()) < cfgVtxZ;
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_Zvtx);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_Zvtx);
       fillCutAnalysis(collision, bunchCrossing, evSel_Zvtx);
     }
 
     selected = collision.sel8();
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_sel8);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_sel8);
       fillCutAnalysis(collision, bunchCrossing, evSel_sel8);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
     selected = occupancy <= EvSel.cfgMaxOccupancy;
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_occupancy);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_occupancy);
       fillCutAnalysis(collision, bunchCrossing, evSel_occupancy);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kNoSameBunchPileup);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kNoSameBunchPileup);
       fillCutAnalysis(collision, bunchCrossing, evSel_kNoSameBunchPileup);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kIsGoodZvtxFT0vsPV);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsGoodZvtxFT0vsPV);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsGoodZvtxFT0vsPV);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kNoCollInTimeRangeStandard);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kNoCollInTimeRangeStandard);
       fillCutAnalysis(collision, bunchCrossing, evSel_kNoCollInTimeRangeStandard);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kNoCollInTimeRangeNarrow);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kNoCollInTimeRangeNarrow);
       fillCutAnalysis(collision, bunchCrossing, evSel_kNoCollInTimeRangeNarrow);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kIsVertexITSTPC);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsVertexITSTPC);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsVertexITSTPC);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kIsGoodITSLayersAll);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsGoodITSLayersAll);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsGoodITSLayersAll);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_kIsGoodITSLayer0123);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsGoodITSLayer0123);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsGoodITSLayer0123);
     }
 
     selected = rctChecker(collision);
     if (selected) {
-      selectionBits |= (uint16_t)(0x1u << evSel_RCTFlagsZDC);
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_RCTFlagsZDC);
       fillCutAnalysis(collision, bunchCrossing, evSel_RCTFlagsZDC);
     }
 
