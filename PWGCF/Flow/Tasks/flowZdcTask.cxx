@@ -112,14 +112,15 @@ struct FlowZdcTask {
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
   Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
 
+  using ColEvents = soa::Join<aod::Collisions, aod::EvSels>;
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta));
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  using TracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA>;
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
   using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using FilTrackDataTable = soa::Filtered<TrackDataTable>;
@@ -863,45 +864,77 @@ struct FlowZdcTask {
     histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
   }
 
-  void processZdc(aod::Zdc const& zdc)
+  void processZdc(
+    ColEvents const& cols,
+    BCsRun3 const& /*bcs*/,
+    aod::Zdcs const& /*zdcs*/)
   {
-    auto znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
-    auto znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
-    auto zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
-    auto zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
-    float sumZNC = ((zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3]) / cfgCollisionEnergy;
-    float sumZNA = ((zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3]) / cfgCollisionEnergy;
-    float sumZPC = ((zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3]) / cfgCollisionEnergy;
-    float sumZPA = ((zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3]) / cfgCollisionEnergy;
-    float commonSumZnc = zdc.energyCommonZNC() / cfgCollisionEnergy;
-    float commonSumZna = zdc.energyCommonZNA() / cfgCollisionEnergy;
-    float commonSumZpc = zdc.energyCommonZPC() / cfgCollisionEnergy;
-    float commonSumZpa = zdc.energyCommonZPA() / cfgCollisionEnergy;
-    float aZEM1 = zdc.amplitudeZEM1();
-    float aZEM2 = zdc.amplitudeZEM2();
-    float sumZEMs = aZEM1 + aZEM2;
-    if (sumZEMs > zemCut) {
-      histos.fill(HIST("ampZna"), znA);
-      histos.fill(HIST("ampZnc"), znC);
-      histos.fill(HIST("ampZpa"), zpA);
-      histos.fill(HIST("ampZpc"), zpC);
-      histos.fill(HIST("ampZEM1"), aZEM1);
-      histos.fill(HIST("ampZEM2"), aZEM2);
-      histos.fill(HIST("ZnVsZem"), sumZEMs, znC + znA);
-      histos.fill(HIST("ZnaVsZnc"), znA, znC);
-      histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
-      histos.fill(HIST("ZnaVsZpa"), znA, zpA);
-      histos.fill(HIST("ZncVsZpc"), znC, zpC);
-      histos.fill(HIST("ZnccVsZncSum"), sumZNC, commonSumZnc);
-      histos.fill(HIST("ZnacVsZnaSum"), sumZNA, commonSumZna);
-      histos.fill(HIST("ZpccVsZpcSum"), sumZPC, commonSumZpc);
-      histos.fill(HIST("ZpacVsZpaSum"), sumZPA, commonSumZpa);
-      histos.fill(HIST("ZncVsTdc"), zdc.timeZNC(), znC);
-      histos.fill(HIST("ZnaVsTdc"), zdc.timeZNA(), znA);
-      histos.fill(HIST("ZpcVsTdc"), zdc.timeZPC(), zpC);
-      histos.fill(HIST("ZpaVsTdc"), zdc.timeZPA(), zpA);
-      histos.fill(HIST("Zem1VsTdc"), zdc.timeZEM1(), aZEM1);
-      histos.fill(HIST("Zem2VsTdc"), zdc.timeZEM2(), aZEM2);
+    for (const auto& collision : cols) {
+      const auto& foundBC = collision.foundBC_as<BCsRun3>();
+      if (foundBC.has_zdc()) {
+        const auto& zdc = foundBC.zdc();
+        auto znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
+        auto znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
+        auto zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
+        auto zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
+        float sumZNC = ((zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3]) / cfgCollisionEnergy;
+        float sumZNA = ((zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3]) / cfgCollisionEnergy;
+        float sumZPC = ((zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3]) / cfgCollisionEnergy;
+        float sumZPA = ((zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3]) / cfgCollisionEnergy;
+        float commonSumZnc = zdc.energyCommonZNC() / cfgCollisionEnergy;
+        float commonSumZna = zdc.energyCommonZNA() / cfgCollisionEnergy;
+        float commonSumZpc = zdc.energyCommonZPC() / cfgCollisionEnergy;
+        float commonSumZpa = zdc.energyCommonZPA() / cfgCollisionEnergy;
+        float aZEM1 = zdc.amplitudeZEM1();
+        float aZEM2 = zdc.amplitudeZEM2();
+        float sumZEMs = aZEM1 + aZEM2;
+        auto tZNA = zdc.timeZNA();
+        auto tZNC = zdc.timeZNC();
+        auto tZPA = zdc.timeZPA();
+        auto tZPC = zdc.timeZPC();
+        if (isTDCcut) {
+          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
+            histos.fill(HIST("ampZna"), znA);
+          if ((tZNC >= minTdcZn) && (tZNC <= minTdcZn))
+            histos.fill(HIST("ampZnc"), znC);
+          if ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))
+            histos.fill(HIST("ampZpa"), zpA);
+          if ((tZPC >= minTdcZp) && (tZPC <= maxTdcZp))
+            histos.fill(HIST("ampZpc"), zpC);
+          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)))
+            histos.fill(HIST("ZnVsZem"), sumZEMs, znC + znA);
+          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)))
+            histos.fill(HIST("ZnaVsZnc"), znA, znC);
+          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+            histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
+          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
+            histos.fill(HIST("ZnaVsZpa"), znA, zpA);
+          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))
+            histos.fill(HIST("ZncVsZpc"), znC, zpC);
+        } else {
+          histos.fill(HIST("ampZna"), znA);
+          histos.fill(HIST("ampZnc"), znC);
+          histos.fill(HIST("ampZpa"), zpA);
+          histos.fill(HIST("ampZpc"), zpC);
+          histos.fill(HIST("ZnVsZem"), sumZEMs, znC + znA);
+          histos.fill(HIST("ZnaVsZnc"), znA, znC);
+          histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
+          histos.fill(HIST("ZnaVsZpa"), znA, zpA);
+          histos.fill(HIST("ZncVsZpc"), znC, zpC);
+        }
+        histos.fill(HIST("ampZEM1"), aZEM1);
+        histos.fill(HIST("ampZEM2"), aZEM2);
+        histos.fill(HIST("ZnccVsZncSum"), sumZNC, commonSumZnc);
+        histos.fill(HIST("ZnacVsZnaSum"), sumZNA, commonSumZna);
+        histos.fill(HIST("ZpccVsZpcSum"), sumZPC, commonSumZpc);
+        histos.fill(HIST("ZpacVsZpaSum"), sumZPA, commonSumZpa);
+        histos.fill(HIST("ZncVsTdc"), zdc.timeZNC(), znC);
+        histos.fill(HIST("ZnaVsTdc"), zdc.timeZNA(), znA);
+        histos.fill(HIST("ZpcVsTdc"), zdc.timeZPC(), zpC);
+        histos.fill(HIST("ZpaVsTdc"), zdc.timeZPA(), zpA);
+        histos.fill(HIST("Zem1VsTdc"), zdc.timeZEM1(), aZEM1);
+        histos.fill(HIST("Zem2VsTdc"), zdc.timeZEM2(), aZEM2);
+      }
     }
   }
 
