@@ -24,7 +24,7 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/StringUtils.h"
@@ -38,6 +38,8 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include <string>
 #include <utility>
 #include <vector>
+
+o2::framework::Service<o2::framework::O2DatabasePDG> pdgDB;
 
 // namespace to be used for pt plots and bins
 namespace pthistos
@@ -72,7 +74,6 @@ struct V0PtInvMassPlots {
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
   Configurable<int> nBinsArmenteros{"nBinsArmenteros", 500, "N bins in Armenteros histos"};
-  Configurable<int> nmaxHistograms{"nmaxHistograms", 20, "N Pt Histograms"};
 
   // Configurables for Cuts
   Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -175,24 +176,34 @@ struct V0PtInvMassPlots {
 
   void init(InitContext const&)
   {
-    pthistos::kaonPt.resize(nmaxHistograms);          // number of Kaon Pt histograms to expect
-    pthistos::lambdaPt.resize(nmaxHistograms);        // number of Lambda histograms to expect
-    pthistos::antilambdaPt.resize(nmaxHistograms);    // number of Antilambda histograms to expect
-    pthistos::kaonSplit.resize(nmaxHistograms);       // number of Kaon Split Pt histograms to expect
-    pthistos::lambdaSplit.resize(nmaxHistograms);     // number of Lambda Split Pt histograms to expect
-    pthistos::antilambdaSplit.resize(nmaxHistograms); // number of Antilambda Split Pt histograms to expect
     // tokenise strings into individual values
     pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
     pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingPtBinsString, ',');
     pthistos::antilambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingPtBinsString, ',');
 
+    // Calculate number of histograms for each particle type
+    int nKaonHistograms = pthistos::kaonPtBins.size() - 1;
+    int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
+    int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
+
+    pthistos::kaonPt.resize(nKaonHistograms);                // number of Kaon Pt histograms to expect
+    pthistos::lambdaPt.resize(nLambdaHistograms);            // number of Lambda histograms to expect
+    pthistos::antilambdaPt.resize(nAntilambdaHistograms);    // number of Antilambda histograms to expect
+    pthistos::kaonSplit.resize(nKaonHistograms);             // number of Kaon Split Pt histograms to expect
+    pthistos::lambdaSplit.resize(nLambdaHistograms);         // number of Lambda Split Pt histograms to expect
+    pthistos::antilambdaSplit.resize(nAntilambdaHistograms); // number of Antilambda Split Pt histograms to expect
+
     // initialize and convert tokenized strings into vector of doubles for AxisSpec
-    std::vector<double> kaonptedgevalues(nmaxHistograms + 1);
-    std::vector<double> lambdaptedgevalues(nmaxHistograms + 1);
-    std::vector<double> antilambdaPtedgevalues(nmaxHistograms + 1);
-    for (int i = 0; i < nmaxHistograms + 1; i++) {
+    std::vector<double> kaonptedgevalues(pthistos::kaonPtBins.size());
+    std::vector<double> lambdaptedgevalues(pthistos::lambdaPtBins.size());
+    std::vector<double> antilambdaPtedgevalues(pthistos::antilambdaPtBins.size());
+    for (size_t i = 0; i < pthistos::kaonPtBins.size(); i++) {
       kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
+    }
+    for (size_t i = 0; i < pthistos::lambdaPtBins.size(); i++) {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
+    }
+    for (size_t i = 0; i < pthistos::antilambdaPtBins.size(); i++) {
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
 
@@ -208,25 +219,25 @@ struct V0PtInvMassPlots {
     AxisSpec vertexZAxis = {nBins, -11.0f, 11.0f, "vrtx_{Z} [cm]"};
     AxisSpec partCutsAxis{10, 0.0f, 10.0f, "Cut index"};
 
-    std::vector<std::string> kaonhistvalue(nmaxHistograms + 1);
-    std::vector<std::string> lambdahistvalue(nmaxHistograms + 1);
-    std::vector<std::string> antilambdahistvalue(nmaxHistograms + 1);
+    std::vector<std::string> kaonhistvalue(nKaonHistograms + 1);
+    std::vector<std::string> lambdahistvalue(nLambdaHistograms + 1);
+    std::vector<std::string> antilambdahistvalue(nAntilambdaHistograms + 1);
     // K0short Histogram Pt Bin Edges (and Split)
-    for (int i = 0; i < nmaxHistograms + 1; i++) {     // Histos won't accept "." character so converting it to "_"
+    for (int i = 0; i < nKaonHistograms + 1; i++) {    // Histos won't accept "." character so converting it to "_"
       std::string kaonptbin = pthistos::kaonPtBins[i]; // getting the value of the bin edge
       size_t pos = kaonptbin.find(".");                // finding the "." character
       kaonptbin[pos] = '_';                            // changing the "." character of the string-value to a "_"
       kaonhistvalue[i] = kaonptbin;                    // filling bin edges list
     }
     // Lambda Histograms Pt Bin Edges (same as K0s above)
-    for (int i = 0; i < nmaxHistograms + 1; i++) {
+    for (int i = 0; i < nLambdaHistograms + 1; i++) {
       std::string lambdaptbin = pthistos::lambdaPtBins[i];
       size_t pos = lambdaptbin.find(".");
       lambdaptbin[pos] = '_';
       lambdahistvalue[i] = lambdaptbin;
     }
     // AntiLambda Histograms Pt Bin Edges (same as K0s above)
-    for (int i = 0; i < nmaxHistograms + 1; i++) {
+    for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
       std::string antilambdaPtbin = pthistos::antilambdaPtBins[i];
       size_t pos = antilambdaPtbin.find(".");
       antilambdaPtbin[pos] = '_';
@@ -234,7 +245,7 @@ struct V0PtInvMassPlots {
     }
 
     // General Plots
-    rPtAnalysis.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
+    rPtAnalysis.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
     rPtAnalysis.add("hNRecEvents_Data", "hNRecEvents_Data", {HistType::kTH1D, {{1, 0.f, 1.f}}});
     rPtAnalysis.add("hNV0s", "hNV0s", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     rPtAnalysis.add("hNK0sh", "hNK0sh", {HistType::kTH1D, {{11, 0.f, 11.f}}});
@@ -256,7 +267,7 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hK0shDCAV0Daughters", "hK0shDCAV0Daughters", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hK0shDCAPosDaughter", "hK0shDCAPosDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hK0shDCANegDaughter", "hK0shDCANegDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
-      for (int i = 0; i < nmaxHistograms; i++) {
+      for (int i = 0; i < nKaonHistograms; i++) {
         pthistos::kaonPt[i] = rKaonshMassPlotsPerPtBin.add<TH1>(fmt::format("hK0shPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hK0shPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
         pthistos::kaonSplit[i] = rKaonshSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hK0shSplitPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), fmt::format("hK0shSplitPt_from_{0}_to_{1}", kaonhistvalue[i], kaonhistvalue[i + 1]).c_str(), {HistType::kTH1D, {{k0ShortMassAxis}}});
       }
@@ -275,7 +286,7 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hLambdaDCAV0Daughters", "hLambdaDCAV0Daughters", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hLambdaDCAPosDaughter", "hLambdaDCAPosDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hLambdaDCANegDaughter", "hLambdaDCANegDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
-      for (int i = 0; i < nmaxHistograms; i++) {
+      for (int i = 0; i < nLambdaHistograms; i++) {
         pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hLambdaPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hLambdaPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
         pthistos::lambdaSplit[i] = rLambdaSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hLambdaSplitPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), fmt::format("hLambdaSplitPt_from_{0}_to_{1}", lambdahistvalue[i], lambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{lambdaMassAxis}}});
       }
@@ -297,7 +308,7 @@ struct V0PtInvMassPlots {
       rPtAnalysis.add("hAntilambdaDCAV0Daughters", "hAntilambdaDCAV0Daughters", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hAntilambdaDCAPosDaughter", "hAntilambdaDCAPosDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
       rPtAnalysis.add("hAntilambdaDCANegDaughter", "hAntilambdaDCANegDaughter", {HistType::kTH1F, {{nBins, 0.0f, 2.2f}}});
-      for (int i = 0; i < nmaxHistograms; i++) {
+      for (int i = 0; i < nAntilambdaHistograms; i++) {
         pthistos::antilambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hAntilambdaPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hAntilambdaPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
         pthistos::antilambdaSplit[i] = rAntilambdaSplitMassPlotsPerPtBin.add<TH1>(fmt::format("hAntilambdaSplitPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), fmt::format("hAntilambdaSplitPt_from_{0}_to_{1}", antilambdahistvalue[i], antilambdahistvalue[i + 1]).c_str(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
       }
@@ -366,26 +377,11 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNEvents"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "cutZVertex");
-    if (doIsVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
-      return false;
-    }
-    rPtAnalysis.fill(HIST("hNEvents"), 6.5);
-    rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "IsVertexTOFmatched");
-    if (doNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-      return false;
-    }
-    rPtAnalysis.fill(HIST("hNEvents"), 7.5);
-    rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "NoSameBunchPileup");
-    if (doIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
-      return false;
-    }
-    rPtAnalysis.fill(HIST("hNEvents"), 8.5);
-    rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "IsVertexITSTPC");
     if (doisInelGt0 && !collision.isInelGt0()) {
       return false;
     }
-    rPtAnalysis.fill(HIST("hNEvents"), 9.5);
-    rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(10, "isInelGt0");
+    rPtAnalysis.fill(HIST("hNEvents"), 6.5);
+    rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isInelGt0");
     // Cut Plots
     rPtAnalysis.fill(HIST("hVertexZRec"), collision.posZ());
     return true;
@@ -681,13 +677,18 @@ struct V0PtInvMassPlots {
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
 
   void genMCProcess(
-    aod::McCollisions::iterator const& /*mcCollisions*/,
+    aod::McCollisions::iterator const& mcCollisions,
     soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, /*aod::McCentFT0Ms,*/ aod::PVMults>> const& collisions,
     aod::McParticles const& mcParticles)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
     rMCCorrections.fill(HIST("hNEvents_Corrections"), 0.5); // Event Efficiency Denominator
-
+    if (std::abs(mcCollisions.posZ()) > cutZVertex) {
+      return;
+    }
+    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+      return;
+    }
     // Particles (of interest) Generated Pt Spectrum and Signal Loss Denominator Loop
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) < rapidityCut) {
@@ -778,14 +779,23 @@ struct V0PtInvMassPlots {
     pthistos::antilambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingPtBinsString, ',');
     pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
 
-    // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
-    std::vector<double> kaonptedgevalues(nmaxHistograms + 1);
-    std::vector<double> lambdaptedgevalues(nmaxHistograms + 1);
-    std::vector<double> antilambdaPtedgevalues(nmaxHistograms + 1);
+    // Calculate number of histograms for each particle type
+    int nKaonHistograms = pthistos::kaonPtBins.size() - 1;
+    int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
+    int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
 
-    for (int i = 0; i < nmaxHistograms + 1; i++) {
+    // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
+    std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
+    std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
+    std::vector<double> antilambdaPtedgevalues(nAntilambdaHistograms + 1);
+
+    for (int i = 0; i < nKaonHistograms + 1; i++) {
       kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
+    }
+    for (int i = 0; i < nLambdaHistograms + 1; i++) {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
+    }
+    for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
     if (!acceptEvent(collision)) { // Event Selection
@@ -802,7 +812,7 @@ struct V0PtInvMassPlots {
       if (kzeroAnalysis == true) {
         if (acceptK0sh(v0)) { // K0sh Selection
           // K0sh Signal Split Numerator Start
-          for (int i = 0; i < nmaxHistograms; i++) {
+          for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
               pthistos::kaonSplit[i]->Fill(v0.mK0Short());                             // filling the k0s namespace histograms for K0sh Splitting Numerator
             }
@@ -812,7 +822,7 @@ struct V0PtInvMassPlots {
             auto v0mcParticle = v0.mcParticle();
             if (dotruthk0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
               if (v0mcParticle.isPhysicalPrimary()) {
-                for (int i = 0; i < nmaxHistograms; i++) {
+                for (int i = 0; i < nKaonHistograms; i++) {
                   if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
                     pthistos::kaonPt[i]->Fill(v0.mK0Short());                                // filling the k0s namespace histograms
                   }
@@ -836,7 +846,7 @@ struct V0PtInvMassPlots {
       if (lambdaAnalysis == true) {
         if (acceptLambda(v0)) { // Lambda Selections
           // Lambda Signal Split Numerator Start
-          for (int i = 0; i < nmaxHistograms; i++) {
+          for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaSplit[i]->Fill(v0.mLambda());
             }
@@ -846,7 +856,7 @@ struct V0PtInvMassPlots {
             auto v0mcParticle = v0.mcParticle();
             if (dotruthLambda && (v0mcParticle.pdgCode() == kLambda0)) { // lambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
-                for (int i = 0; i < nmaxHistograms; i++) {
+                for (int i = 0; i < nLambdaHistograms; i++) {
                   if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
                     pthistos::lambdaPt[i]->Fill(v0.mLambda());
                   }
@@ -876,7 +886,7 @@ struct V0PtInvMassPlots {
       if (antiLambdaAnalysis == true) {
         if (acceptAntilambda(v0)) { // Antilambda Selections
           // Antilambda Signal Split Numerator End
-          for (int i = 0; i < nmaxHistograms; i++) {
+          for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
               pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda());
             }
@@ -886,7 +896,7 @@ struct V0PtInvMassPlots {
             auto v0mcParticle = v0.mcParticle();
             if (dotruthAntilambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
-                for (int i = 0; i < nmaxHistograms; i++) {
+                for (int i = 0; i < nAntilambdaHistograms; i++) {
                   if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
                     pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda());
                   }
@@ -923,16 +933,28 @@ struct V0PtInvMassPlots {
     pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
     pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingPtBinsString, ',');
     pthistos::antilambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingPtBinsString, ',');
+    pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
 
-    // initialize and convert tokenized strings into vector of doubles for pt bin edges
-    std::vector<double> kaonptedgevalues(nmaxHistograms + 1);
-    std::vector<double> lambdaptedgevalues(nmaxHistograms + 1);
-    std::vector<double> antilambdaPtedgevalues(nmaxHistograms + 1);
-    for (int i = 0; i < nmaxHistograms + 1; i++) {
+    // Calculate number of histograms for each particle type
+    int nKaonHistograms = pthistos::kaonPtBins.size() - 1;
+    int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
+    int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
+
+    // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
+    std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
+    std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
+    std::vector<double> antilambdaPtedgevalues(nAntilambdaHistograms + 1);
+
+    for (int i = 0; i < nKaonHistograms + 1; i++) {
       kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
+    }
+    for (int i = 0; i < nLambdaHistograms + 1; i++) {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
+    }
+    for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
+
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
@@ -946,7 +968,7 @@ struct V0PtInvMassPlots {
       // kzero analysis
       if (kzeroAnalysis == true) {
         if (acceptK0sh(v0)) { // K0sh Selection
-          for (int i = 0; i < nmaxHistograms; i++) {
+          for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
               pthistos::kaonPt[i]->Fill(v0.mK0Short());                                // filling the k0s namespace histograms
             }
@@ -956,7 +978,7 @@ struct V0PtInvMassPlots {
       // lambda analysis
       if (lambdaAnalysis == true) {
         if (acceptLambda(v0)) { // Lambda Selection
-          for (int i = 0; i < nmaxHistograms; i++) {
+          for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaPt[i]->Fill(v0.mLambda());
             }
@@ -966,7 +988,7 @@ struct V0PtInvMassPlots {
       // anti-lambda analysis
       if (antiLambdaAnalysis == true) {
         if (acceptAntilambda(v0)) { // Antilambda Selection
-          for (int i = 0; i < nmaxHistograms; i++) {
+          for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda());
             }
@@ -977,7 +999,10 @@ struct V0PtInvMassPlots {
   }
   PROCESS_SWITCH(V0PtInvMassPlots, genMCProcess, "Process Run 3 MC Generated", false);
   PROCESS_SWITCH(V0PtInvMassPlots, recMCProcess, "Process Run 3 MC Reconstructed", false);
-  PROCESS_SWITCH(V0PtInvMassPlots, dataProcess, "Process Run 3 Data,", true);
+  PROCESS_SWITCH(V0PtInvMassPlots, dataProcess, "Process Run 3 Data,", false);
+  // PROCESS_SWITCH(V0PtInvMassPlots, genMCProcessDerived, "Process Run 3 MC Generated", false);
+  // PROCESS_SWITCH(V0PtInvMassPlots, recMCProcessDerived, "Process Run 3 MC Reconstructed", false);
+  // PROCESS_SWITCH(V0PtInvMassPlots, dataProcessDerived, "Process Run 3 Data,", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
