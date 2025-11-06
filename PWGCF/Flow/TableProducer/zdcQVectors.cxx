@@ -359,7 +359,6 @@ struct ZdcQVectors {
       if (cfgFillCutAnalysis) {
         // Tower mean energies vs. centrality used for tower gain equalisation
         int totalTowers = 10;
-        int totalTowersPerSide = 5;
         for (int tower = 0; tower < totalTowers; tower++) {
           registry.add<TProfile2D>(Form("CutAnalysis/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {axisCent, {nEventSelections, 0, nEventSelections}});
         }
