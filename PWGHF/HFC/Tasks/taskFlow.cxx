@@ -18,8 +18,10 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
@@ -32,7 +34,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsCommonDataFormats/AlignParam.h>
 #include <FT0Base/Geometry.h>
@@ -41,6 +42,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
@@ -50,13 +52,11 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/StepTHn.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Utils.h>
 
 #include <THn.h>
 #include <TPDGCode.h>
-#include <TParticlePDG.h>
 #include <TString.h>
 
 #include <sys/types.h>
@@ -253,7 +253,6 @@ struct HfTaskFlow {
 
   TF1* fPtDepDCAxy = nullptr;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -899,7 +898,7 @@ struct HfTaskFlow {
       if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
         return false;
       }
-      if (configCandidates.yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > configCandidates.yCandRecoMax) {
+      if (configCandidates.yCandRecoMax >= 0. && std::abs(HfHelper::yLc(candidate)) > configCandidates.yCandRecoMax) {
         return false;
       }
       return true;
@@ -911,7 +910,7 @@ struct HfTaskFlow {
       if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
         return false;
       }
-      if (configCandidates.yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > configCandidates.yCandRecoMax) {
+      if (configCandidates.yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > configCandidates.yCandRecoMax) {
         return false;
       }
       return true;
@@ -1016,9 +1015,9 @@ struct HfTaskFlow {
         }
         fillingHFcontainer = true;
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // If D0
-          invmass = hfHelper.invMassD0ToPiK(track1);
+          invmass = HfHelper::invMassD0ToPiK(track1);
         } else { // If Lc
-          invmass = hfHelper.invMassLcToPKPi(track1);
+          invmass = HfHelper::invMassLcToPKPi(track1);
         }
       }
 
@@ -1216,9 +1215,9 @@ struct HfTaskFlow {
         }
         fillingHFcontainer = true;
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // If D0
-          invmass = hfHelper.invMassD0ToPiK(track1);
+          invmass = HfHelper::invMassD0ToPiK(track1);
         } else { // If Lc
-          invmass = hfHelper.invMassLcToPKPi(track1);
+          invmass = HfHelper::invMassLcToPKPi(track1);
         }
       }
 
@@ -1379,9 +1378,9 @@ struct HfTaskFlow {
         }
         fillingHFcontainer = true;
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // If D0
-          invmass = hfHelper.invMassD0ToPiK(track1);
+          invmass = HfHelper::invMassD0ToPiK(track1);
         } else { // If Lc
-          invmass = hfHelper.invMassLcToPKPi(track1);
+          invmass = HfHelper::invMassLcToPKPi(track1);
         }
       }
 

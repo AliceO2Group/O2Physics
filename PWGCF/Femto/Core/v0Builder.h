@@ -127,7 +127,7 @@ constexpr const char PrefixLambdaSelection2[] = "LambdaSelection2";
 using ConfLambdaSelection1 = ConfLambdaSelection<PrefixLambdaSelection1>;
 using ConfLambdaSelection2 = ConfLambdaSelection<PrefixLambdaSelection2>;
 constexpr const char PrefixK0shortSelection1[] = "K0shortSelection1";
-constexpr const char PrefixK0shortSelection2[] = "K0shortSelection1";
+constexpr const char PrefixK0shortSelection2[] = "K0shortSelection2";
 using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
 using ConfK0shortSelection2 = ConfK0shortSelection<PrefixK0shortSelection2>;
 
@@ -177,8 +177,8 @@ template <modes::V0 v0Type>
 class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskType, kV0SelsMax>
 {
  public:
-  V0Selection() {}
-  virtual ~V0Selection() = default;
+  V0Selection() = default;
+  ~V0Selection() = default;
 
   template <typename T1, typename T2>
   void configure(T1& config, T2& filter)
@@ -330,8 +330,8 @@ template <modes::V0 v0Type>
 class V0Builder
 {
  public:
-  V0Builder() {}
-  virtual ~V0Builder() = default;
+  V0Builder() = default;
+  ~V0Builder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)
@@ -395,7 +395,7 @@ class V0Builder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int posDaughterIndex, int negDaughterIndex)
+  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int32_t posDaughterIndex, int32_t negDaughterIndex)
   {
     float mass, massAnti;
     if (sign > 0.f) {

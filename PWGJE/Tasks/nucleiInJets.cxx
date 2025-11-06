@@ -115,6 +115,8 @@ struct nucleiInJets {
   Configurable<bool> isWithLeadingJet{"isWithLeadingJet", true, "Events with leading jet"};
   Configurable<bool> useLfTpcPid{"useLfTpcPid", true, "Events with custom TPC parameters"};
   Configurable<int> centralityType{"centralityType", 0, "0: FT0M, 1: FT0C, 2: FV0A"};
+  Configurable<std::vector<int>> cfgOccupancyRange{"cfgOccupancyRange", {0, 1000}, "Occupancy selection"};
+  Configurable<bool> useOccupancy{"useOccupancy", true, "Events with custom occupancy selection"};
 
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "set track min pT"};
   Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.8, "set track max Eta"};
@@ -171,6 +173,9 @@ struct nucleiInJets {
 
   Configurable<bool> applySkim{"applySkim", false, "Apply skimming"};
   Configurable<std::string> cfgSkim{"cfgSkim", "fHighFt0Mult", "Configurable for skimming"};
+  Configurable<bool> sel8Coll{"sel8Coll", true, "sel8Coll for collisions"};
+  Configurable<bool> selNoSameBunchPileup{"selNoSameBunchPileup", false, "selNoSameBunchPileup for collisions"};
+  Configurable<bool> selIsGoodZvtxFT0vsPV{"selIsGoodZvtxFT0vsPV", false, "selIsGoodZvtxFT0vsPV for collisions"};
 
   // using EventTable = soa::Join<aod::JetCollisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
   using EventTable = aod::JetCollisions;
@@ -235,10 +240,13 @@ struct nucleiInJets {
     jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Sel8+|Vz|<10");
     jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "nJets>0");
 
-    jetHist.add("hNEventsInc", "hNEventsInc", {HistType::kTH1D, {{4, 0.f, 4.f}}});
+    jetHist.add("hNEventsInc", "hNEventsInc", {HistType::kTH1D, {{6, 0.f, 6.f}}});
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(1, "All");
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(2, "Sel8");
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
+    jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(4, "noSameBunchPileup");
+    jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(5, "isGoodZvtxFT0vsPV");
+    jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(6, "OccupancySel");
 
     jetHist.add("hNEventsIncVsCent", "hNEventsIncVsCent", {HistType::kTH2D, {{vzAxis}, {CentAxis}}});
 
@@ -490,6 +498,9 @@ struct nucleiInJets {
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(1, "All");
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(2, "Sel8");
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
+      jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(4, "noSameBunchPileup");
+      jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(5, "isGoodZvtxFT0vsPV");
+      jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(6, "OccupancySel");
 
       jetHist.add<TH2>("recInc/vertexZ", "vertexZ (inclusive)", HistType::kTH2F, {{vzAxis}, {CentAxis}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPC", "Pt vs ParticleType vs Centrality (TPC)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
@@ -499,6 +510,10 @@ struct nucleiInJets {
 
       jetHist.add<TH3>("recInc/eff/tpcTrack3D", "Pt vs ParticleType vs Centrality (tpc)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("recInc/eff/tpcTofTrack3D", "Pt vs ParticleType vs Centrality (tpc-tof)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3D", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}});            // pt, parttype, cent, dcaxy, partOrigin
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
+
       // inside jet
       jetHist.add<TH3>("tracks/mc/proton/h3PtVsProtonNSigmaTPCVsPtJet_jet", "pT(p) vs NSigmaTPC (p) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
       jetHist.add<TH3>("tracks/mc/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet_jet", "pT(#bar{p}) vs NSigmaTPC (#bar{p}) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
@@ -660,7 +675,7 @@ struct nucleiInJets {
   }
 
   template <typename TrackType>
-  bool isTrackSelected(const TrackType track)
+  bool isTrackSelectedWithoutDcaxy(const TrackType track)
   {
     // standard track selection
     if (track.pt() < cfgtrkMinPt)
@@ -675,10 +690,6 @@ struct nucleiInJets {
     }
     if (std::fabs(track.eta()) > cfgtrkMaxEta)
       return false;
-    if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut && !useDcaxyPtDepCut)
-      return false;
-    if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
-      return false;
     if (std::fabs(track.dcaZ()) > cfgMaxDCAzToPVcut)
       return false;
     if (track.tpcNClsFindable() < cfgnFindableTPCClusters)
@@ -692,6 +703,29 @@ struct nucleiInJets {
     if (cfgConnectedToPV && !track.isPVContributor())
       return false;
     return true;
+  }
+
+  template <typename TrackType>
+  bool isTrackSelected(const TrackType track)
+  {
+    if (!isTrackSelectedWithoutDcaxy(track))
+      return false;
+    if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut && !useDcaxyPtDepCut)
+      return false;
+    if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
+      return false;
+
+    return true;
+  }
+
+  template <typename coll>
+  bool isOccupancyAccepted(const coll& collision)
+  {
+    auto occupancy{collision.trackOccupancyInTimeRange()};
+    if (occupancy < cfgOccupancyRange->at(0) || occupancy > cfgOccupancyRange->at(1))
+      return false;
+    else
+      return true;
   }
 
   int nEvents = 0;
@@ -1345,13 +1379,28 @@ struct nucleiInJets {
   {
     jetHist.fill(HIST("hNEventsInc"), 0.5);
 
-    if (!jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
-      return;
+    bool isSel8 = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8"));
+    bool isSelNoSameBunchPileup = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selNoSameBunchPileup"));
+    bool isSelIsGoodZvtxFT0vsPV = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selIsGoodZvtxFT0vsPV"));
 
+    if (sel8Coll && !isSel8)
+      return;
     jetHist.fill(HIST("hNEventsInc"), 1.5);
+
     if (std::abs(coll.posZ()) > 10) // bad vertex
       return;
     jetHist.fill(HIST("hNEventsInc"), 2.5);
+    if (selNoSameBunchPileup && !isSelNoSameBunchPileup)
+      return;
+    jetHist.fill(HIST("hNEventsInc"), 3.5);
+    if (selIsGoodZvtxFT0vsPV && !isSelIsGoodZvtxFT0vsPV)
+      return;
+    jetHist.fill(HIST("hNEventsInc"), 4.5);
+
+    if (useOccupancy && !isOccupancyAccepted(coll))
+      return;
+    jetHist.fill(HIST("hNEventsInc"), 5.5);
+
     float centrality = -999;
     switch (centralityType) {
       case 0: // FT0M
@@ -1963,12 +2012,31 @@ struct nucleiInJets {
   void processRecInc(EventTableMC::iterator const& coll, TrackCandidatesIncMC const& tracks, aod::JetParticles const& particleTracks, aod::JMcCollisions const&)
   {
     jetHist.fill(HIST("recInc/eventStat"), 0.5);
-    if (!jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
+
+    bool isSel8 = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8"));
+    bool isSelNoSameBunchPileup = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selNoSameBunchPileup"));
+    bool isSelIsGoodZvtxFT0vsPV = jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("selIsGoodZvtxFT0vsPV"));
+
+    if (sel8Coll && !isSel8)
       return;
     jetHist.fill(HIST("recInc/eventStat"), 1.5);
+
     if (std::abs(coll.posZ()) > 10) // bad vertex
       return;
     jetHist.fill(HIST("recInc/eventStat"), 2.5);
+    if (selNoSameBunchPileup && !isSelNoSameBunchPileup)
+      return;
+    jetHist.fill(HIST("recInc/eventStat"), 3.5);
+    if (selIsGoodZvtxFT0vsPV && !isSelIsGoodZvtxFT0vsPV)
+      return;
+    jetHist.fill(HIST("recInc/eventStat"), 4.5);
+
+    if (useOccupancy && !isOccupancyAccepted(coll))
+      return;
+    jetHist.fill(HIST("recInc/eventStat"), 5.5);
+
+    // if (!jetderiveddatautilities::selectCollision(coll, jetderiveddatautilities::initialiseEventSelectionBits("sel8")))
+    // return;
 
     float centrality = -999;
     switch (centralityType) {
@@ -1987,7 +2055,7 @@ struct nucleiInJets {
     jetHist.fill(HIST("recInc/vertexZ"), coll.posZ(), centrality);
 
     for (const auto& track : tracks) {
-      if (!isTrackSelected(track)) {
+      if (!isTrackSelectedWithoutDcaxy(track)) {
         continue;
       }
       if (!track.has_mcParticle())
@@ -1996,13 +2064,37 @@ struct nucleiInJets {
         continue;
 
       auto mcTrack = track.mcParticle_as<o2::aod::JMcParticles>();
-      if (!mcTrack.isPhysicalPrimary())
+
+      // require mc getProcess to get Decay and Material secondaries
+      int particleOriginType = 0;
+      auto isMcPrimary = false;
+      // auto isMcTransport = false; // auto isMcSecondaryFromMaterial = false; auto isMcSecondaryFromWeakDecay = false;
+      if (mcTrack.isPhysicalPrimary()) {
+        isMcPrimary = true;
+        particleOriginType = 1;
+      } else if (mcTrack.getGenStatusCode() == -1) {
+        // isMcTransport = true;
+        particleOriginType = 2;
+      }
+
+      // Fill DCAxy histograms
+      jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3D"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
+      if (std::abs(track.tpcNSigmaPr()) < cfgnTPCPIDPr)
+        jetHist.fill(HIST("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected"), mcTrack.pt(), mapPDGToValue(mcTrack.pdgCode()), centrality, track.dcaXY(), particleOriginType);
+
+      if (!isMcPrimary)
+        continue;
+
+      // DCAxy selection for rest of the analysis
+      if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut && !useDcaxyPtDepCut)
+        continue;
+      if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
         continue;
 
       auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
       auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
 
-      if (rapidity > cfgtrkMaxRap)
+      if (std::abs(rapidity) > cfgtrkMaxRap)
         continue;
       // Proton
       if (std::abs(mcTrack.pdgCode()) == 2212) { // Proton

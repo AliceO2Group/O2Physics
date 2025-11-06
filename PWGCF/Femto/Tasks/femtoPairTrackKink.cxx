@@ -28,10 +28,14 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/InitContext.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
 #include <string>
@@ -80,6 +84,7 @@ struct FemtoPairTrackKink {
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
+  pairhistmanager::ConfPairCuts confPairCuts;
 
   pairbuilder::PairTrackKinkBuilder<
     trackhistmanager::PrefixTrack1,
@@ -105,7 +110,7 @@ struct FemtoPairTrackKink {
   HistogramRegistry hRegistry{"FemtoTrackKink", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
-  closepairrejection::ConfCpr confCpr;
+  closepairrejection::ConfCprTrackKinkDaughter confCpr;
 
   void init(InitContext&)
   {
@@ -120,14 +125,14 @@ struct FemtoPairTrackKink {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
     auto chaDauSpec = trackhistmanager::makeTrackHistSpecMap(confChaDauBinning);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confSigmaBinning);
+    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
     // setup for sigma
     // if (doprocessSigmaSameEvent || doprocessSigmaMixedEvent) {
     if (doprocessSigmaSameEvent) {
       auto sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
-      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairHistSpec, cprHistSpec);
+      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairHistSpec, cprHistSpec);
     }
   };
 

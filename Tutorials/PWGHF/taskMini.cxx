@@ -150,7 +150,6 @@ struct HfTaskMiniCandidateSelectorD0 {
   Configurable<float> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
   Configurable<float> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
@@ -193,11 +192,11 @@ struct HfTaskMiniCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > massWindow) {
+      if (std::abs(HfHelper::invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > massWindow) {
+      if (std::abs(HfHelper::invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > massWindow) {
         return false;
       }
     }
@@ -286,8 +285,6 @@ struct HfTaskMiniD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection flag for D0 bar"};
 
-  HfHelper hfHelper;
-
   Partition<soa::Join<aod::HfTCand2Prong, aod::HfTSelD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   HistogramRegistry registry{
@@ -308,10 +305,10 @@ struct HfTaskMiniD0 {
   {
     for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate));
+        registry.fill(HIST("hMass"), HfHelper::invMassD0ToPiK(candidate));
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate));
+        registry.fill(HIST("hMass"), HfHelper::invMassD0barToKPi(candidate));
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hCpaVsPtCand"), candidate.cpa(), candidate.pt());

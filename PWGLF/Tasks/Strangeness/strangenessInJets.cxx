@@ -24,12 +24,14 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
@@ -74,7 +76,7 @@ using std::array;
 
 // Define convenient aliases for joined AOD tables
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -230,6 +232,7 @@ struct StrangenessInJets {
 
       // Event counter
       registryMC.add("number_of_events_mc_gen", "number of gen events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       switch (particleOfInterest) {
@@ -267,6 +270,7 @@ struct StrangenessInJets {
 
       // Event counter
       registryMC.add("number_of_events_mc_rec", "number of rec events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
+      registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       switch (particleOfInterest) {
@@ -307,6 +311,7 @@ struct StrangenessInJets {
     }
   }
 
+  /*
   // Calculation of perpendicular axes
   void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
   {
@@ -354,6 +359,7 @@ struct StrangenessInJets {
     u.SetXYZ(ux, uy, uz);
     return;
   }
+  */
 
   // Delta phi calculation
   double getDeltaPhi(double a1, double a2)
@@ -369,6 +375,95 @@ struct StrangenessInJets {
       deltaPhi = TwoPI - diff;
 
     return deltaPhi;
+  }
+
+  // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
+  bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
+  {
+    // Keep only pi, K, p, e, mu
+    int pdg = std::abs(particle.pdgCode());
+    if (!(pdg == PDG_t::kPiPlus || pdg == PDG_t::kKPlus || pdg == PDG_t::kProton || pdg == PDG_t::kElectron || pdg == PDG_t::kMuonMinus))
+      return false;
+
+    // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
+    static constexpr int kCharmQuark = 4;
+    static constexpr int kBottomQuark = 5;
+    static constexpr int hundreds = 100;
+    static constexpr int thousands = 1000;
+
+    // Check if particle is from heavy-flavor decay
+    bool fromHF = false;
+    if (particle.has_mothers()) {
+      auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
+      int motherPdg = std::abs(mother.pdgCode());
+      fromHF = (motherPdg / hundreds == kCharmQuark || motherPdg / hundreds == kBottomQuark || motherPdg / thousands == kCharmQuark || motherPdg / thousands == kBottomQuark);
+    }
+
+    // Select only physical primary particles or from heavy-flavor
+    return (particle.isPhysicalPrimary() || fromHF);
+  }
+
+  // Compute two transverse directions orthogonal to vector p
+  void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
+  {
+    // Get momentum components
+    double px = p.X();
+    double py = p.Y();
+    double pz = p.Z();
+
+    // Precompute squared terms
+    double px2 = px * px;
+    double py2 = py * py;
+    double pz2 = pz * pz;
+    double pz4 = pz2 * pz2;
+
+    // Case 1: vector along z-axis -> undefined perpendiculars
+    if (px == 0 && py == 0) {
+      u1.SetXYZ(0, 0, 0);
+      u2.SetXYZ(0, 0, 0);
+      return;
+    }
+
+    // Case 2: px = 0 -> avoid division by zero
+    if (px == 0 && py != 0) {
+      double ux = std::sqrt(py2 - pz4 / py2);
+      double uy = -pz2 / py;
+      u1.SetXYZ(ux, uy, pz);
+      u2.SetXYZ(-ux, uy, pz);
+      return;
+    }
+
+    // Case 3: py = 0 -> avoid division by zero
+    if (py == 0 && px != 0) {
+      double ux = -pz2 / px;
+      double uy = std::sqrt(px2 - pz4 / px2);
+      u1.SetXYZ(ux, uy, pz);
+      u2.SetXYZ(ux, -uy, pz);
+      return;
+    }
+
+    // General case: solve quadratic for perpendicular vectors
+    double a = px2 + py2;
+    double b = 2.0 * px * pz2;
+    double c = pz4 - py2 * py2 - px2 * py2;
+    double delta = b * b - 4.0 * a * c;
+
+    // Invalid or degenerate solutions
+    if (delta < 0 || a == 0) {
+      u1.SetXYZ(0, 0, 0);
+      u2.SetXYZ(0, 0, 0);
+      return;
+    }
+
+    // Solution 1
+    double u1x = (-b + std::sqrt(delta)) / (2.0 * a);
+    double u1y = (-pz2 - px * u1x) / py;
+    u1.SetXYZ(u1x, u1y, pz);
+
+    // Solution 2
+    double u2x = (-b - std::sqrt(delta)) / (2.0 * a);
+    double u2y = (-pz2 - px * u2x) / py;
+    u2.SetXYZ(u2x, u2y, pz);
   }
 
   // Find ITS hit
@@ -879,10 +974,11 @@ struct StrangenessInJets {
 
       // Calculation of perpendicular cones
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
-      TVector3 ueAxis1(0, 0, 0);
-      TVector3 ueAxis2(0, 0, 0);
-      getPerpendicularAxis(jetAxis, ueAxis1, +1);
-      getPerpendicularAxis(jetAxis, ueAxis2, -1);
+      TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
+      getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+      if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+        continue;
+      }
 
       // Store jet and UE axes
       selectedJet.emplace_back(jetAxis);
@@ -1058,16 +1154,31 @@ struct StrangenessInJets {
   }
   PROCESS_SWITCH(StrangenessInJets, processData, "Process data", true);
 
+  // Define per-collision preslices for V0s, cascades, MC particles, and daughter tracks
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<DaughterTracksMC> perCollisionTrk = o2::aod::track::collisionId;
 
   // Generated MC events
-  void processMCgenerated(aod::McCollisions const& collisions, aod::McParticles const& mcParticles)
+  void processMCgenerated(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& collisions, aod::McParticles const& mcParticles)
   {
+    // Define per-event particle containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> strHadronMomentum;
+    std::vector<int> pdg;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
     // Loop over all simulated collision events
     for (const auto& collision : collisions) {
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      strHadronMomentum.clear();
+      pdg.clear();
 
       // Fill event counter before any selection
       registryMC.fill(HIST("number_of_events_mc_gen"), 0.5);
@@ -1083,20 +1194,18 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
 
       // Multiplicity of generated event
-      double genMultiplicity = 0.0;
+      double genMultiplicity = collision.centFT0M();
 
       // MC particles per collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
 
-      // Store strange hadron pdg code and momentum
-      std::vector<int> pdg;
-      std::vector<TVector3> strHadronMomentum;
-
       // Loop over all MC particles and select physical primaries within acceptance
-      std::vector<fastjet::PseudoJet> fjParticles;
       for (const auto& particle : mcParticlesPerColl) {
-        if (!particle.isPhysicalPrimary())
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
           continue;
+
         double minPtParticle = 0.1;
         if (particle.eta() < etaMin || particle.eta() > etaMax || particle.pt() < minPtParticle)
           continue;
@@ -1122,8 +1231,6 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
 
       // Cluster MC particles into jets using anti-kt algorithm
-      fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
 
@@ -1145,13 +1252,16 @@ struct StrangenessInJets {
         if (jetMinusBkg.pt() < minJetPt)
           continue;
         registryMC.fill(HIST("number_of_events_mc_gen"), 4.5);
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
         double coneRadius = std::sqrt(jet.area() / PI);
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
-        getPerpendicularAxis(jetAxis, ueAxis1, +1);
-        getPerpendicularAxis(jetAxis, ueAxis2, -1);
+        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+          continue;
+        }
 
         // Loop over strange hadrons
         int index = -1;
@@ -1323,11 +1433,34 @@ struct StrangenessInJets {
   PROCESS_SWITCH(StrangenessInJets, processMCgenerated, "process generated events", false);
 
   // Reconstructed MC events
-  void processMCreconstructed(SimCollisions const& collisions, DaughterTracksMC const& mcTracks,
-                              aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades,
-                              const aod::McParticles&)
+  void processMCreconstructed(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                              DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
+                              aod::CascDataExt const& Cascades, const aod::McParticles&)
   {
+    // Define per-event containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> selectedJet;
+    std::vector<TVector3> ue1;
+    std::vector<TVector3> ue2;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over reconstructed collisions
     for (const auto& collision : collisions) {
+
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      selectedJet.clear();
+      ue1.clear();
+      ue2.clear();
 
       // Fill event counter before any selection
       registryMC.fill(HIST("number_of_events_mc_rec"), 0.5);
@@ -1343,7 +1476,7 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_rec"), 2.5);
 
       // Event multiplicity
-      const float multiplicity = collision.centFT0M();
+      const float multiplicity = mcCollision.centFT0M();
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
@@ -1351,7 +1484,6 @@ struct StrangenessInJets {
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
 
       // Loop over reconstructed tracks
-      std::vector<fastjet::PseudoJet> fjParticles;
       for (auto const& track : tracksPerColl) {
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
@@ -1367,17 +1499,12 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_rec"), 3.5);
 
       // Cluster particles using the anti-kt algorithm
-      fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
-      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
       auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
 
       // Jet selection
       bool isAtLeastOneJetSelected = false;
-      std::vector<TVector3> selectedJet;
-      std::vector<TVector3> ue1;
-      std::vector<TVector3> ue2;
 
       // Loop over clustered jets
       for (const auto& jet : jets) {
@@ -1396,8 +1523,10 @@ struct StrangenessInJets {
         // Perpendicular cones
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
         TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
-        getPerpendicularAxis(jetAxis, ueAxis1, +1);
-        getPerpendicularAxis(jetAxis, ueAxis2, -1);
+        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+          continue;
+        }
 
         // Store selected jet and UE cone axes
         selectedJet.emplace_back(jetAxis);
@@ -1409,6 +1538,7 @@ struct StrangenessInJets {
 
       // Fill event counter for events with at least one selected jet
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {

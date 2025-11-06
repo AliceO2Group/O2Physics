@@ -10,12 +10,17 @@
 # or submit itself to any jurisdiction.
 
 # HMPID
-o2physics_add_dpl_workflow(pid-hmpid-qa
-    SOURCES qaHMPID.cxx
+o2physics_add_dpl_workflow(hmpid-qa
+    SOURCES hmpidQa.cxx
+    PUBLIC_LINK_LIBRARIES O2::HMPIDBase O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hmpid-table-producer
+    SOURCES hmpidTableProducer.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-hmpid
-    SOURCES analysisHMPID.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(hmpid-deuteron
+    SOURCES hmpidDeuteron.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::ReconstructionDataFormats O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

@@ -19,8 +19,9 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 // #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -336,7 +337,10 @@ struct skimmerPrimaryElectronQC {
     trackParCov.setPID(o2::track::PID::Electron);
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
@@ -409,7 +413,10 @@ struct skimmerPrimaryElectronQC {
     trackParCov.setPID(o2::track::PID::Electron);
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
@@ -455,7 +462,10 @@ struct skimmerPrimaryElectronQC {
       trackParCov.setPID(o2::track::PID::Electron);
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
+        return;
+      }
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
@@ -596,12 +606,18 @@ struct skimmerPrimaryElectronQC {
 
     auto t1ParCov = getTrackParCov(t1);
     t1ParCov.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t1ParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t1ParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     getPxPyPz(t1ParCov, pVec1);
 
     auto t2ParCov = getTrackParCov(t2);
     t2ParCov.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t2ParCov, 2.f, matCorr, &mDcaInfoCov);
+    isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t2ParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     getPxPyPz(t2ParCov, pVec2);
 
     ROOT::Math::PtEtaPhiMVector v1(t1ParCov.getPt(), t1ParCov.getEta(), t1ParCov.getPhi(), o2::constants::physics::MassElectron);

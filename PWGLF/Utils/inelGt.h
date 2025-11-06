@@ -19,9 +19,10 @@
 #ifndef PWGLF_UTILS_INELGT_H_
 #define PWGLF_UTILS_INELGT_H_
 
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 
-#include "TParticlePDG.h"
+#include <TParticlePDG.h>
 
 #include <cmath>
 #include <vector>
@@ -97,7 +98,7 @@ struct ParticleCounter {
   bool mSelectPrimaries = true;
   pdgDatabase* mPdgDatabase;
 
-  float countMultInAcceptance(const aod::McParticles& mcParticles, const float etamin, const float etamax)
+  float countMultInAcceptance(const o2::aod::McParticles& mcParticles, const float etamin, const float etamax)
   {
     // static_assert(etamin < etamax, "etamin must be smaller than etamax");
     float counter = 0;
@@ -125,7 +126,7 @@ struct ParticleCounter {
     return counter;
   }
 
-  float countEnergyInAcceptance(const aod::McParticles& mcParticles, const float etamin, const float etamax, const bool requireNeutral = false)
+  float countEnergyInAcceptance(const o2::aod::McParticles& mcParticles, const float etamin, const float etamax, const bool requireNeutral = false)
   {
     // static_assert(etamin < etamax, "etamin must be smaller than etamax");
     float counter = 0.f;
@@ -156,20 +157,20 @@ struct ParticleCounter {
     return counter;
   }
 
-  float countFT0A(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 3.5f, 4.9f); }
-  float countFT0C(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -3.3f, -2.1f); }
-  float countFV0A(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 2.2f, 5.1f); }
-  float countV0A(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 2.8f, 5.1f); }
-  float countV0C(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -3.7f, -1.7f); }
-  float countFDDA(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 4.9f, 6.3f); }
-  float countFDDC(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -7.f, -4.9f); }
+  float countFT0A(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 3.5f, 4.9f); }
+  float countFT0C(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -3.3f, -2.1f); }
+  float countFV0A(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 2.2f, 5.1f); }
+  float countV0A(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 2.8f, 5.1f); }
+  float countV0C(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -3.7f, -1.7f); }
+  float countFDDA(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 4.9f, 6.3f); }
+  float countFDDC(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -7.f, -4.9f); }
 
-  float countZNA(const aod::McParticles& mcParticles) { return countEnergyInAcceptance(mcParticles, 8.8f, 100.f, true); }
-  float countZNC(const aod::McParticles& mcParticles) { return countEnergyInAcceptance(mcParticles, -100.f, -8.8f, true); }
+  float countZNA(const o2::aod::McParticles& mcParticles) { return countEnergyInAcceptance(mcParticles, 8.8f, 100.f, true); }
+  float countZNC(const o2::aod::McParticles& mcParticles) { return countEnergyInAcceptance(mcParticles, -100.f, -8.8f, true); }
 
-  float countITSIB(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -2.f, 2.f); }
-  float countEta05(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.5f, 0.5f); }
-  float countEta08(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.8f, 0.8f); }
+  float countITSIB(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -2.f, 2.f); }
+  float countEta05(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.5f, 0.5f); }
+  float countEta08(const o2::aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.8f, 0.8f); }
 };
 
 } // namespace pwglf

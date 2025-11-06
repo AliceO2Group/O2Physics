@@ -13,7 +13,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -214,8 +215,11 @@ using EMSWTriggerBit = EMSWTriggerBits::iterator;
 DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTINFO", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<1>); //! independent table. Don't join anything.
 using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerCounters, "AOD", "EMSWTCOUNTER", emevent::IsAnalyzed, emevent::IsAnalyzedToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
-using EMSWTriggerCounter = EMSWTriggerCounters::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerATCounters, "AOD", "EMSWTAT", emevent::IsAnalyzed, o2::soa::Marker<1>); //! independent table. Don't join anything.
+using EMSWTriggerATCounter = EMSWTriggerATCounters::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerTOICounters, "AOD", "EMSWTTOI", emevent::IsAnalyzedToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
+using EMSWTriggerTOICounter = EMSWTriggerTOICounters::iterator;
 
 DECLARE_SOA_TABLE(EMSWTriggerBitsTMP, "AOD", "EMSWTBITTMP", emevent::SWTAliasTmp, o2::soa::Marker<2>); //! joinable to aod::Collisions
 using EMSWTriggerBitTMP = EMSWTriggerBitsTMP::iterator;
@@ -223,8 +227,11 @@ using EMSWTriggerBitTMP = EMSWTriggerBitsTMP::iterator;
 DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTINFOTMP", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<2>);
 using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerCountersTMP, "AOD", "EMSWTCOUNTERTMP", emevent::IsAnalyzed, emevent::IsAnalyzedToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
-using EMSWTriggerCounterTMP = EMSWTriggerCountersTMP::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerATCountersTMP, "AOD", "EMSWTATTMP", emevent::IsAnalyzed, o2::soa::Marker<2>); //! independent table. Don't join anything.
+using EMSWTriggerATCounterTMP = EMSWTriggerATCountersTMP::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerTOICountersTMP, "AOD", "EMSWTTOITMP", emevent::IsAnalyzedToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
+using EMSWTriggerTOICounterTMP = EMSWTriggerTOICountersTMP::iterator;
 
 DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
@@ -295,7 +302,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 } // namespace emmcparticle
 
 // This table contains all MC truth tracks
-DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
+DECLARE_SOA_TABLE_FULL(EMMCParticles_000, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::Flags,
                        emmcparticle::MothersIds, emmcparticle::DaughtersIds,
@@ -306,13 +313,33 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
                        emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                        emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
-
                        emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                        emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
                        mcparticle::ProducedByGenerator<mcparticle::Flags>,
                        mcparticle::FromBackgroundEvent<mcparticle::Flags>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
+DECLARE_SOA_TABLE_VERSIONED(EMMCParticles_001, "AOD", "EMMCPARTICLE", 1, //!  MC track information (on disk)
+                            o2::soa::Index<>, emmcparticle::EMMCEventId,
+                            mcparticle::PdgCode, mcparticle::Flags, mcparticle::StatusCode,
+                            emmcparticle::MothersIds, emmcparticle::DaughtersIds,
+                            mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                            mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
+
+                            // dynamic column
+                            emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
+                            emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                            emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
+                            emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                            emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
+                            mcparticle::ProducedByGenerator<mcparticle::Flags>,
+                            mcparticle::FromBackgroundEvent<mcparticle::Flags>,
+                            mcparticle::IsPhysicalPrimary<mcparticle::Flags>,
+                            mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                            mcparticle::GetHepMCStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
+                            mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>);
+
+using EMMCParticles = EMMCParticles_001;
 using EMMCParticle = EMMCParticles::iterator;
 
 namespace emmcgenvectormeson

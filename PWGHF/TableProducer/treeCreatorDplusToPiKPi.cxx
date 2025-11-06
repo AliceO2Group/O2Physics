@@ -19,6 +19,7 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -268,8 +269,6 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<std::vector<int>> classMlIndexes{"classMlIndexes", {0, 2}, "Indexes of ML bkg and non-prompt scores."};
   Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
 
-  HfHelper hfHelper;
-
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
@@ -363,14 +362,14 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
-        hfHelper.invMassDplusToPiKPi(candidate),
+        HfHelper::invMassDplusToPiKPi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDplus(candidate),
+        HfHelper::yDplus(candidate),
         cent,
         coll.numContrib(),
         flagMc,
@@ -442,17 +441,17 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
-        hfHelper.invMassDplusToPiKPi(candidate),
+        HfHelper::invMassDplusToPiKPi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        hfHelper.ctDplus(candidate),
+        HfHelper::ctDplus(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDplus(candidate),
-        hfHelper.eDplus(candidate),
+        HfHelper::yDplus(candidate),
+        HfHelper::eDplus(candidate),
         cent,
         flagMc,
         originMc,

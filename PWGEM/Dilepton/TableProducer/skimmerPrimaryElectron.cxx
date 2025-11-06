@@ -19,8 +19,9 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -325,7 +326,10 @@ struct skimmerPrimaryElectron {
     trackParCov.setPID(o2::track::PID::Electron);
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
@@ -387,8 +391,10 @@ struct skimmerPrimaryElectron {
       trackParCov.setPID(o2::track::PID::Electron);
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
+        return false;
+      }
       std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
       float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
 
@@ -465,7 +471,10 @@ struct skimmerPrimaryElectron {
       trackParCov.setPID(o2::track::PID::Electron);
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
+        return;
+      }
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
@@ -983,7 +992,10 @@ struct prefilterPrimaryElectron {
     trackParCov.setPID(o2::track::PID::Electron);
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
@@ -1024,7 +1036,10 @@ struct prefilterPrimaryElectron {
     if constexpr (loose_track_sign > 0) { // positive track is loose track
       auto trackParCov = getTrackParCov(pos);
       trackParCov.setPID(o2::track::PID::Electron);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
+        return false;
+      }
       getPxPyPz(trackParCov, pVec_recalc);
 
       ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
@@ -1035,7 +1050,10 @@ struct prefilterPrimaryElectron {
     } else {
       auto trackParCov = getTrackParCov(ele);
       trackParCov.setPID(o2::track::PID::Electron);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
+        return false;
+      }
       getPxPyPz(trackParCov, pVec_recalc);
 
       ROOT::Math::PtEtaPhiMVector v1(trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), o2::constants::physics::MassElectron);
@@ -1109,7 +1127,10 @@ struct prefilterPrimaryElectron {
         trackParCov.setPID(o2::track::PID::Electron);
         mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
         mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (!isPropOK) {
+          continue;
+        }
         getPxPyPz(trackParCov, pVec_recalc);
 
         for (const auto& empos : positrons_per_coll) {
@@ -1154,7 +1175,10 @@ struct prefilterPrimaryElectron {
         trackParCov.setPID(o2::track::PID::Electron);
         mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
         mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (!isPropOK) {
+          continue;
+        }
         getPxPyPz(trackParCov, pVec_recalc);
         for (const auto& emele : electrons_per_coll) {
           if (emele.trackId() == pos.globalIndex()) {
@@ -1197,7 +1221,10 @@ struct prefilterPrimaryElectron {
         trackParCov.setPID(o2::track::PID::Electron);
         mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
         mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (!isPropOK) {
+          continue;
+        }
         getPxPyPz(trackParCov, pVec_recalc);
         for (const auto& empos : positrons_per_coll) {
           if (empos.trackId() == pos.globalIndex()) {
@@ -1226,7 +1253,10 @@ struct prefilterPrimaryElectron {
         trackParCov.setPID(o2::track::PID::Electron);
         mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
         mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (!isPropOK) {
+          continue;
+        }
         getPxPyPz(trackParCov, pVec_recalc);
 
         for (const auto& emele : electrons_per_coll) {
