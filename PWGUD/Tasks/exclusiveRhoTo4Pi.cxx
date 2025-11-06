@@ -18,8 +18,6 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/DataModel/PIDResponse.h"
-
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
@@ -76,13 +74,18 @@ struct ExclusiveRhoTo4Pi {
   HistogramRegistry histosKin{"Kinematics", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histos4piKin{"Four-Pion-Kinematics", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosMCtruth{"MC-Truth", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // Debugging
+  Configurable<bool> debugMode{"debugMode", false, "Enable Debug Mode"};
   // Configurable Event parameters
   Configurable<int> ifUPC{"ifUPC", 1, "Enable UPC reconstruction only"};
   Configurable<float> vZCut{"vZCut", 10., "Vertex Cut"};
   Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
   Configurable<float> ft0aCut{"ft0aCut", 50., "FT0A threshold"};
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
-  Configurable<float> zdcCut{"zdcCut", 0., "ZDC threshold"};
+  Configurable<float> zdcCut{"zdcCut", 1e6, "ZDC threshold"};
+  Configurable<float> zdcMaxAmp{"zdcMaxAmp", 0, "ZDC max amplitude to be 0n"};
+  Configurable<float> zdcMaxTime{"zdcMaxTime", 2, "ZDC max time in ns"};
+  Configurable<std::string> neutronClass{"neutronClass", "XnXn", "Neutron class for ZDCs"};
   Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
   Configurable<int> sbpCut{"sbpCut", 1, "Sbp"};
   Configurable<int> itsROFbCut{"itsROFbCut", 1, "itsROFbCut"};
@@ -128,8 +131,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/selected/FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/selected/FT0C", "T0C amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/selected/FV0A", "V0A amplitude", kTH1F, {{100, 0.0, 100}});
-    histosQA.add("Events/selected/ZDC_A", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
-    histosQA.add("Events/selected/ZDC_C", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
+    histosQA.add("Events/selected/ZDC", "; ZDC A; ZDC C; time ZDC A [ns]; time ZDC C [ns]", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
     histosQA.add("Events/selected/FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/selected/FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/selected/vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
@@ -147,8 +149,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/4pion/FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/4pion/FT0C", "T0C amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/4pion/FV0A", "V0A amplitude", kTH1F, {{100, 0.0, 100}});
-    histosQA.add("Events/4pion/ZDC_A", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
-    histosQA.add("Events/4pion/ZDC_C", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
+    histosQA.add("Events/4pion/ZDC", "; ZDC A; ZDC C; time ZDC A; time ZDC C", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
     histosQA.add("Events/4pion/FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/4pion/FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/4pion/vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
@@ -257,12 +258,14 @@ struct ExclusiveRhoTo4Pi {
     histosMCtruth.add("Four-pion", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}];Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
     //_______________________________________________________________________________________________________________________________________________
     setHistBinLabels();
-    histosDataCounter.print();
-    histosQA.print();
-    histosPID.print();
-    histosKin.print();
-    histos4piKin.print();
-    histosMCtruth.print();
+    if (debugMode) {
+      histosDataCounter.print();
+      histosQA.print();
+      histosPID.print();
+      histosKin.print();
+      histos4piKin.print();
+      histosMCtruth.print();
+    }
   } // End of init function
 
   //---------------------------------------------------------------------------------------------------------------------------------------------
@@ -304,8 +307,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.fill(HIST("Events/selected/FV0A"), collision.totalFV0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0A"), collision.totalFT0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0C"), collision.totalFT0AmplitudeC());
-    histosQA.fill(HIST("Events/selected/ZDC_A"), collision.energyCommonZNA());
-    histosQA.fill(HIST("Events/selected/ZDC_C"), collision.energyCommonZNC());
+    histosQA.fill(HIST("Events/selected/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
     histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
     histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
 
@@ -440,8 +442,7 @@ struct ExclusiveRhoTo4Pi {
       histosQA.fill(HIST("Events/4pion/FV0A"), collision.totalFV0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0A"), collision.totalFT0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0C"), collision.totalFT0AmplitudeC());
-      histosQA.fill(HIST("Events/4pion/ZDC_A"), collision.energyCommonZNA());
-      histosQA.fill(HIST("Events/4pion/ZDC_C"), collision.energyCommonZNC());
+      histosQA.fill(HIST("Events/4pion/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
       histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
 
@@ -585,7 +586,7 @@ struct ExclusiveRhoTo4Pi {
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
     // ZDC
-    if (collision.energyCommonZNA() > zdcCut || collision.energyCommonZNC() > zdcCut) {
+    if (!neutronClassSelection(collision)) {
       return;
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
@@ -746,8 +747,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.fill(HIST("Events/selected/FV0A"), collision.totalFV0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0A"), collision.totalFT0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0C"), collision.totalFT0AmplitudeC());
-    histosQA.fill(HIST("Events/selected/ZDC_A"), collision.energyCommonZNA());
-    histosQA.fill(HIST("Events/selected/ZDC_C"), collision.energyCommonZNC());
+    histosQA.fill(HIST("Events/selected/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
     histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
     histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
 
@@ -885,8 +885,7 @@ struct ExclusiveRhoTo4Pi {
       histosQA.fill(HIST("Events/4pion/FV0A"), collision.totalFV0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0A"), collision.totalFT0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0C"), collision.totalFT0AmplitudeC());
-      histosQA.fill(HIST("Events/4pion/ZDC_A"), collision.energyCommonZNA());
-      histosQA.fill(HIST("Events/4pion/ZDC_C"), collision.energyCommonZNC());
+      histosQA.fill(HIST("Events/4pion/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
       histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
 
@@ -1186,6 +1185,45 @@ struct ExclusiveRhoTo4Pi {
     return cosThetaCS;
   }
 
+  template <typename C>
+  bool neutronClassSelection(C const& coll)
+  {
+
+    bool aXn = coll.energyCommonZNA() > zdcMaxAmp && coll.timeZNA() < zdcMaxTime;
+    bool a0n = coll.energyCommonZNA() <= zdcMaxAmp;
+    bool cXn = coll.energyCommonZNC() > zdcMaxAmp && coll.timeZNC() < zdcMaxTime;
+    bool c0n = coll.energyCommonZNC() <= zdcMaxAmp;
+
+    if (this->neutronClass.value == "XnXn") {
+      if (aXn && cXn) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (this->neutronClass.value == "Xn0n") {
+      if (aXn && c0n) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (this->neutronClass.value == "0nXn") {
+      if (a0n && cXn) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (this->neutronClass.value == "0n0n") {
+      if (a0n && c0n) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      // "Any" class
+      return true;
+    }
+  } // End of Neutron class selection function
+
   template <typename T>
   bool isSelectedTrack(T const& track,
                        float ptcut,
@@ -1309,7 +1347,7 @@ struct ExclusiveRhoTo4Pi {
       "FT0A<=" + strFormat(fv0Cut),
       "FT0C<=" + strFormat(ft0cCut),
       "FV0A<=" + strFormat(ft0aCut),
-      "ZDC",
+      "Neutron Class: " + neutronClass.value,
       "n PV Contrib = 4",
       "V_{z} < " + strFormat(vZCut) + " cm"};
     int numEventCuts = 13;
