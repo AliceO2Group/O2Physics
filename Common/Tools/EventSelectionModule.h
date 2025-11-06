@@ -1554,6 +1554,7 @@ class LumiModule
     }
 
     histos.add("luminosity/hCounterTVX", "", framework::kTH1D, {{1, 0., 1.}});
+    histos.add("luminosity/hCounterTVXZDC", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterTCE", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZEM", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZNC", "", framework::kTH1D, {{1, 0., 1.}});
@@ -1803,6 +1804,9 @@ class LumiModule
       if (isTriggerTVX) {
         histos.template get<TH1>(HIST("luminosity/hCounterTVX"))->Fill(srun, 1);
         histos.template get<TH1>(HIST("luminosity/hLumiTVX"))->Fill(srun, lumiTVX);
+        if (isTriggerZNA && isTriggerZNC) {
+          histos.template get<TH1>(HIST("luminosity/hCounterTVXZDC"))->Fill(srun, 1);
+        }
         if (noBorder) {
           histos.template get<TH1>(HIST("luminosity/hCounterTVXafterBCcuts"))->Fill(srun, 1);
           histos.template get<TH1>(HIST("luminosity/hLumiTVXafterBCcuts"))->Fill(srun, lumiTVX);

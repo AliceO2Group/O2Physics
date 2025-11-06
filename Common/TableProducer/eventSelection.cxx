@@ -1198,6 +1198,7 @@ struct LumiTask {
   void init(InitContext&)
   {
     histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXZDC", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
@@ -1401,6 +1402,7 @@ struct LumiTask {
       bool isTriggerZNA = TESTBIT(selection, kIsBBZNA);
       bool isTriggerZNC = TESTBIT(selection, kIsBBZNC);
       bool isTriggerZEM = isTriggerZNA || isTriggerZNC;
+      bool isTriggerHAD = isTriggerTVX && isTriggerZNA && isTriggerZNC;
 
       // determine pileup correction
       int64_t orbit = bc.globalBC() / nBCsPerOrbit;
@@ -1428,6 +1430,9 @@ struct LumiTask {
       if (isTriggerTVX) {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, lumiTVX);
+        if (isTriggerZNA && isTriggerZNC) {
+          histos.get<TH1>(HIST("hCounterTVXZDC"))->Fill(srun, 1);
+        }
         if (noBorder) {
           histos.get<TH1>(HIST("hCounterTVXafterBCcuts"))->Fill(srun, 1);
           histos.get<TH1>(HIST("hLumiTVXafterBCcuts"))->Fill(srun, lumiTVX);
