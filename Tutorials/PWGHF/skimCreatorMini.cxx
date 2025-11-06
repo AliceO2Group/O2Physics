@@ -50,9 +50,9 @@ struct HfSkimCreatorMiniTagSelTracks {
   Produces<aod::HfTSelTrack> rowSelectedTrack;
 
   // 2-prong cuts
-  Configurable<float> ptTrackMin{"ptTrackMin", 0.3f, "min. track pT for 2 prong candidate [GeV/c]"};
-  Configurable<float> etaTrackMax{"etaTrackMax", 0.8f, "max. pseudorapidity for 2 prong candidate"};
-  Configurable<float> dcaTrackMin{"dcaTrackMin", 0.0025f, "min. DCA for 2 prong candidate [cm]"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.3f, "Min. track pT for 2-prong candidate [GeV/c]"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8f, "Max. pseudorapidity for 2-prong candidate"};
+  Configurable<float> dcaTrackMin{"dcaTrackMin", 0.0025f, "Min. DCA for 2-prong candidate [cm]"};
 
   using TracksWDcaSel = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>;
 
@@ -141,7 +141,7 @@ struct HfSkimCreatorMini {
     registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1F, {{1000, -20., 20.}}});
     registry.add("hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
 
-    // Configure the vertexer
+    // Configure the vertexer.
     fitter.setBz(magneticField);
     fitter.setPropagateToPCA(propagateToPCA);
     fitter.setMaxR(maxR);
@@ -177,11 +177,11 @@ struct HfSkimCreatorMini {
         if (nVtxFromFitter == 0) {
           continue;
         }
-        //  get secondary vertex
+        // get secondary vertex
         const auto& secondaryVertex = fitter.getPCACandidate();
         // get track momenta
-        std::array<float, 3> pVec0;
-        std::array<float, 3> pVec1;
+        std::array<float, 3> pVec0{};
+        std::array<float, 3> pVec1{};
         fitter.getTrack(0).getPxPyPzGlo(pVec0);
         fitter.getTrack(1).getPxPyPzGlo(pVec1);
 
@@ -195,8 +195,8 @@ struct HfSkimCreatorMini {
         registry.fill(HIST("hVtx2ProngZ"), secondaryVertex[2]);
         const std::array arrayMomenta{pVec0, pVec1};
         const auto massPiK{RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus})};
-        // const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
         registry.fill(HIST("hMassD0ToPiK"), massPiK);
+        // const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
         // registry.fill(HIST("hMassD0ToPiK"), massKPi);
       }
     }

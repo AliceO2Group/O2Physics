@@ -56,12 +56,12 @@ struct HfTaskMiniCandidateCreator2Prong {
 
   // vertexing parameters
   Configurable<float> magneticField{"magneticField", 5.f, "magnetic field [kG]"};
-  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
-  Configurable<float> maxR{"maxR", 200.f, "reject PCA's above this radius"};
-  Configurable<float> maxDZIni{"maxDZIni", 4.f, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<float> minParamChange{"minParamChange", 1.e-3f, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9f, "stop iterations if chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200.f, "Reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4.f, "Reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3f, "Stop iterations if largest change of any X is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9f, "Stop iterations if chi2/chi2old > this"};
 
   o2::vertexing::DCAFitterN<2> fitter{}; // 2-prong vertex fitter
 
@@ -71,9 +71,9 @@ struct HfTaskMiniCandidateCreator2Prong {
 
   void init(InitContext&)
   {
-    registry.add("hMass", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+    registry.add("hMass", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
 
-    // Configure the vertexer
+    // Configure the vertexer.
     fitter.setBz(magneticField);
     fitter.setPropagateToPCA(propagateToPCA);
     fitter.setMaxR(maxR);
@@ -99,17 +99,15 @@ struct HfTaskMiniCandidateCreator2Prong {
       if (fitter.process(trackParVarPos1, trackParVarNeg1) == 0) {
         continue;
       }
+      // get secondary vertex
       const auto& secondaryVertex = fitter.getPCACandidate();
-      auto& trackParVar0{fitter.getTrack(0)};
-      auto& trackParVar1{fitter.getTrack(1)};
-
       // get track momenta
       std::array<float, 3> pVec0{};
       std::array<float, 3> pVec1{};
-      trackParVar0.getPxPyPzGlo(pVec0);
-      trackParVar1.getPxPyPzGlo(pVec1);
+      fitter.getTrack(0).getPxPyPzGlo(pVec0);
+      fitter.getTrack(1).getPxPyPzGlo(pVec1);
 
-      // fill candidate table rows
+      // fill candidate table row
       rowCandidateBase(collision.globalIndex(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
@@ -121,8 +119,8 @@ struct HfTaskMiniCandidateCreator2Prong {
       // calculate invariant masses
       const std::array arrayMomenta{pVec0, pVec1};
       const auto massPiK{RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus})};
-      // const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
       registry.fill(HIST("hMass"), massPiK);
+      // const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
       // registry.fill(HIST("hMass"), massKPi);
     }
   }
@@ -141,15 +139,15 @@ struct HfTaskMiniCandidateCreator2ProngExpressions {
 struct HfTaskMiniCandidateSelectorD0 {
   Produces<aod::HfTSelD0> hfSelD0Candidate;
 
-  Configurable<float> ptCandMin{"ptCandMin", 0.f, "Lower bound of candidate pT"};
-  Configurable<float> ptCandMax{"ptCandMax", 50.f, "Upper bound of candidate pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 0.f, "Min. candidate pT [GeV/c] "};
+  Configurable<float> ptCandMax{"ptCandMax", 50.f, "Max. candidate pT [GeV/c]"};
   // TPC
-  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15f, "Lower bound of track pT for TPC PID"};
-  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 5.f, "Upper bound of track pT for TPC PID"};
-  Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 3.f, "Nsigma cut on TPC only"};
+  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15f, "Min. track pT for TPC PID [GeV/c]"};
+  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 5.f, "Max. track pT for TPC PID [GeV/c]"};
+  Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 3.f, "Max. TPC N_sigma"};
   // topological cuts
   Configurable<float> cpaMin{"cpaMin", 0.98f, "Min. cosine of pointing angle"};
-  Configurable<float> massWindow{"massWindow", 0.4f, "Half-width of the invariant-mass window"};
+  Configurable<float> massWindow{"massWindow", 0.4f, "Half-width of the invariant-mass window [Gev/c^2]"};
 
   TrackSelectorPi selectorPion{};
   TrackSelectorKa selectorKaon{};
@@ -214,18 +212,18 @@ struct HfTaskMiniCandidateSelectorD0 {
       int statusD0 = 0;
       int statusD0bar = 0;
 
-      const auto& trackPos = candidate.prong0_as<TracksWithPid>(); // positive daughter
-      const auto& trackNeg = candidate.prong1_as<TracksWithPid>(); // negative daughter
-
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar);
         continue;
       }
 
-      // conjugate-dependent topological selection for D0
+      // conjugate-dependent topological selection
+      const auto& trackPos = candidate.prong0_as<TracksWithPid>(); // positive daughter
+      const auto& trackNeg = candidate.prong1_as<TracksWithPid>(); // negative daughter
+      // D0 hypothesis
       const auto topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
-      // conjugate-dependent topological selection for D0bar
+      // D0bar hypothesis
       const auto topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
@@ -295,8 +293,8 @@ struct HfTaskMiniD0 {
     const TString strTitle = "D^{0} candidates";
     const TString strPt = "#it{p}_{T} (GeV/#it{c})";
     const TString strEntries = "entries";
-    registry.add("hPtCand", strTitle + ";" + strPt + ";" + strEntries, {HistType::kTH1D, {{100, 0., 10.}}});
-    registry.add("hMass", strTitle + ";" + "inv. mass (#pi K) (GeV/#it{c}^{2})" + ";" + strEntries, {HistType::kTH1D, {{500, 0., 5.}}});
+    registry.add("hPtCand", strTitle + ";" + strPt + ";" + strEntries, {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hMass", strTitle + ";" + "inv. mass (#pi K) (GeV/#it{c}^{2})" + ";" + strEntries, {HistType::kTH1F, {{500, 0., 5.}}});
     registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
 
