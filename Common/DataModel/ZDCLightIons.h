@@ -13,8 +13,8 @@
 /// \brief ZDC data model for O-O Ne-Ne and p-O collisions
 /// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>
 
-#ifndef PWGMM_DATAMODEL_ZDCLIGHTIONS_H_
-#define PWGMM_DATAMODEL_ZDCLIGHTIONS_H_
+#ifndef COMMON_DATAMODEL_ZDCLIGHTIONS_H_
+#define COMMON_DATAMODEL_ZDCLIGHTIONS_H_
 
 #include "Common/DataModel/Centrality.h"
 
@@ -77,8 +77,10 @@ DECLARE_SOA_TABLE(ZDCLightIons, "AOD", "ZDCTABLELIGHTIONS",
                   zdclightions::ZncPm4,
                   zdclightions::ZpaTdc,
                   zdclightions::ZpaAmpl,
+                  zdclightions::ZpaPmc,
                   zdclightions::ZpcTdc,
                   zdclightions::ZpcAmpl,
+                  zdclightions::ZpcPmc,
                   zdclightions::Zem1Tdc,
                   zdclightions::Zem1Ampl,
                   zdclightions::Zem2Tdc,

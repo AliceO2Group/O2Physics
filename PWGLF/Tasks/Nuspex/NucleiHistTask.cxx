@@ -12,37 +12,40 @@
 // Authors: Rafael Manhart,
 // Date: 30.11.2022
 
-#include <cmath>
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/DataModel/spectraTOF.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "TPDGCode.h"
+#include <TF1.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <vector>
-#include <TF1.h>
-#include <string>
 
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "TPDGCode.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/StaticFor.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "PWGLF/DataModel/spectraTOF.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "Common/Core/RecoDecay.h"
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::track;

@@ -15,22 +15,24 @@
 /// \author Yash Patley <yash.patley@cern.ch>
 /// \author Nasir Mehdi Malik
 
+#include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+
 #include <TLorentzVector.h>
 #include <TRandom.h>
-#include <fairlogger/Logger.h>
 
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include <fairlogger/Logger.h>
 
 using namespace o2;
 using namespace o2::framework;
