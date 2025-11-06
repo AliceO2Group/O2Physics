@@ -1216,10 +1216,6 @@ struct TableMakerMC {
     eventMC.reserve(mcCollisions.size());
     skimMCCollisions(mcCollisions);
 
-    // select MC particles to be written using the specified MC signals
-    // NOTE: tables are not written at this point, only label maps are being created
-    skimMCParticles(mcParticles, mcCollisions);
-
     // skim collisions
     event.reserve(collisions.size());
     eventExtended.reserve(collisions.size());
@@ -1230,6 +1226,12 @@ struct TableMakerMC {
     if (fCollIndexMap.size() == 0) {
       return;
     }
+
+    // select MC particles to be written using the specified MC signals
+    // NOTE: tables are not written at this point, only label maps are being created
+    //       Only skim MC particles when the MC collision is reconstructed
+    //       Because in the first five DFs of each run, the MC collisions are not reconstructed
+    skimMCParticles(mcParticles, mcCollisions);
 
     // Clear index map and reserve memory for barrel tables
     if constexpr (static_cast<bool>(TTrackFillMap)) {
