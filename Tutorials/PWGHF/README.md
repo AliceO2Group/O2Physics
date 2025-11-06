@@ -6,7 +6,7 @@ Welcome to the heavy-flavour analysis tutorial!
 
 This directory contains the code and configuration for running a minimalistic version of the D<sup>0</sup> analysis on Run 3 data.
 
-See the [official PWG-HF O<sup>2</sup> documentation](https://aliceo2group.github.io/analysis-framework/docs/advanced-specifics/pwghf.html) for the overview of the full heavy-flavour analysis framework.
+See the [PWG-HF O<sup>2</sup> documentation](https://aliceo2group.github.io/analysis-framework/docs/advanced-specifics/pwghf.html) for the overview of the full heavy-flavour analysis framework.
 
 ## Setup
 
@@ -30,10 +30,10 @@ This table contains paired track indices which point to tracks in the track tabl
 These derived skims are produced by executing the [`run_skim.sh`](run_skim.sh) bash script in the working directory:
 
 ```bash
-bash ~/alice/O2Physics/Tutorials/PWGHF/run_skim.sh
+~/alice/O2Physics/Tutorials/PWGHF/run_skim.sh
 ```
 
-It will use the configuration from [`dpl-config_skim.json`](dpl-config_skim.json) and produce the `AnalysisResults_trees.root` file with the derived table and the `AnalysisResults.root` file with control histograms in the working directory.
+It processes files specified in `./input_skim.txt`, uses the configuration from [`dpl-config_skim.json`](dpl-config_skim.json), and produces the `./AnalysisResults_trees.root` file with the derived table and the `./AnalysisResults.root` file with control histograms.
 
 ## Mini task
 
@@ -52,19 +52,21 @@ The absolute path to the parent file is stored in the derived file but it can be
 Run the mini task by executing the [`run_task.sh`](run_task.sh) bash script in the working directory:
 
 ```bash
-bash ~/alice/O2Physics/Tutorials/PWGHF/run_task.sh
+~/alice/O2Physics/Tutorials/PWGHF/run_task.sh
 ```
 
-It will use the configuration from [`dpl-config_task.json`](dpl-config_task.json) and produce the output file `AnalysisResults.root` with histograms in the working directory.
+It processes files specified in `./input_task.txt`, uses the configuration from [`dpl-config_task.json`](dpl-config_task.json), and produces the `./AnalysisResults.root` file with histograms.
 
 ## Exercise tips
 
 Organise your working environment so that you can easily switch between running the code in the working directory and modifying the code in the O2Physics repository.
 
-When you execute the bash script, the terminal output is saved in the `stdout.log` log file in the working directory.
+When you execute the bash script, the terminal output is saved in the `./stdout.log` log file.
 If an error occurs, the script will report the non-zero exit code and ask you to check the log file to find the problem.
+If you get errors that have to be tolerated, you need to remove the `--min-failure-level error` option from the command.
 
-The full O<sup>2</sup> configuration is dumped at the end of processing into the `dpl-config.json` file in the working directory.
+The full O<sup>2</sup> configuration is dumped at the end of processing into the `./dpl-config.json` file.
+It is useful to compare it with the input configuration file to spot mismatches.
 
 See the [rebuilding instructions](https://aliceo2group.github.io/analysis-framework/docs/gettingstarted/installing.html#building-partially-for-development-using-ninja) in the analysis framework documentation for advice on compiling your code changes.
 
