@@ -46,6 +46,7 @@ enum class Track_Type : uint8_t {
 namespace emmltrack
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                   //!
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);               //!
 DECLARE_SOA_COLUMN(PIDLabel, pidlabel, uint8_t);                     //!
 DECLARE_SOA_COLUMN(TrackType, tracktype, uint8_t);                   //!
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
@@ -89,7 +90,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 
 // reconstructed track information
 DECLARE_SOA_TABLE(EMTracksForMLPID, "AOD", "EMTRACKMLPID", //!
-                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
+                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate,
                   emmltrack::P, track::Tgl, emmltrack::Sign,
                   track::TPCNClsFindable, emmltrack::TPCNClsFound, emmltrack::TPCNClsCrossedRows, emmltrack::TPCNClsPID,
                   track::TPCChi2NCl, track::TPCInnerParam,
