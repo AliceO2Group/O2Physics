@@ -858,7 +858,7 @@ struct HStrangeCorrelation {
         //---] syst cuts [---
         if (doPPAnalysis && (std::abs(assoc.dcapostopv()) < systCuts.dcapostopv ||
                              std::abs(assoc.dcanegtopv()) < systCuts.dcanegtopv ||
-                             assoc.dcabachtopv() < systCuts.cascDcabachtopv ||
+                             std::abs(assoc.dcabachtopv()) < systCuts.cascDcabachtopv ||
                              assoc.dcaV0daughters() > systCuts.dcaV0dau ||
                              assoc.dcacascdaughters() > systCuts.cascDcacascdau ||
                              assoc.v0cosPA(pvx, pvy, pvz) < systCuts.v0cospa ||
@@ -1919,7 +1919,7 @@ struct HStrangeCorrelation {
       //---] syst cuts [---
       if (doPPAnalysis && (std::abs(cascData.dcapostopv()) < systCuts.dcapostopv ||
                            std::abs(cascData.dcanegtopv()) < systCuts.dcanegtopv ||
-                           cascData.dcabachtopv() < systCuts.cascDcabachtopv ||
+                           std::abs(cascData.dcabachtopv()) < systCuts.cascDcabachtopv ||
                            cascData.dcaV0daughters() > systCuts.dcaV0dau ||
                            cascData.dcacascdaughters() > systCuts.cascDcacascdau ||
                            cascData.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0cospa ||
