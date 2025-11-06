@@ -40,6 +40,7 @@ OPTIONS_GLOBAL=(
   --shm-segment-size 16000000000
   --resources-monitoring 2
   --aod-file "@input_skim.txt"
+  --min-failure-level error
 )
 
 # execute the mini skim creator workflow and its dependencies

@@ -41,6 +41,7 @@ OPTIONS_GLOBAL=(
   --aod-parent-base-path-replacement "old-path-to-parent;new-path-to-parent"
   --aod-parent-access-level 1
   --aod-file "@input_task.txt"
+  --min-failure-level error
 )
 
 # execute the mini task workflow and its dependencies
