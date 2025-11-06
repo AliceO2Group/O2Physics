@@ -152,7 +152,7 @@ static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/", "TpcFt0a/", "MftFt0a/", "TpcFt0c/", "Ft0aFt0c/"};
 static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
 static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
-auto static constexpr kMinFt0cCell = 96;
+auto static constexpr MinFt0cCell = 96;
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -783,7 +783,7 @@ struct HfTaskFlow {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= kMinFt0cCell) {
+    if (chno >= MinFt0cCell) {
       z = -z;
     }
     auto r = std::sqrt(x * x + y * y);
@@ -825,7 +825,7 @@ struct HfTaskFlow {
   void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, int fitType)
   {
     if (fitType == isFT0C) {
-      id = ft0.channelC()[iCh] + kMinFt0cCell;
+      id = ft0.channelC()[iCh] + MinFt0cCell;
     } else if (fitType == isFT0A) {
       id = ft0.channelA()[iCh];
     } else {
