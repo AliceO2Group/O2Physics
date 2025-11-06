@@ -851,7 +851,7 @@ struct PhosElId {
   }
   PROCESS_SWITCH(PhosElId, processMC, "process mc", false);
 
-  void processDummy(SelCollisions::iterator const&) {};
+  void processDummy(SelCollisions::iterator const&) {}
   PROCESS_SWITCH(PhosElId, processDummy, "Dummy process", true);
 
   bool isWithinNSigma(int16_t& mod, float p, float deltaZ, float deltaX, bool positiveCharge)
@@ -1176,6 +1176,8 @@ struct MassSpectra {
         mHistManager.fill(HIST("hEp_v_E_v_cent_cutEp"), epRatio, cluE, cent);
     }
   }
+  PROCESS_SWITCH(MassSpectra, process, "process", false);
+
   void processDummy(SelCollisions::iterator const&) {}
   PROCESS_SWITCH(MassSpectra, processDummy, "Dummy process", true);
 };
