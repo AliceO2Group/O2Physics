@@ -13,11 +13,12 @@
 /// \author chiara.oppedisano@cern.ch
 //
 
+#include "Common/DataModel/ZDCLightIons.h"
+
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
-#include "Common/DataModel/ZDCLightIons.h"
 
 #include <TH1F.h>
 #include <TH2F.h>
@@ -26,8 +27,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
-
-//using MyEvents = soa::Join<aod::ZDCLightIons>;
 
 struct ZDCLIAnalysis {
 
@@ -47,32 +46,32 @@ struct ZDCLIAnalysis {
 
   void init(InitContext const&)
   {
-      registry.add("hZNApmc", "ZNApmc; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
-      registry.add("hZPApmc", "ZPApmc; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
-      registry.add("hZNCpmc", "ZNCpmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
-      registry.add("hZPCpmc", "ZPCpmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
-      registry.add("hZEM", "ZEM; ZEM1+ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZEM}}});
-      registry.add("hZNAamplvsADC","ZNA amplitude vs. ADC; ZNA ADC; ZNA amplitude", {HistType::kTH2F, {{{nBinsAmp,  -0.5, MaxZN}, {nBinsAmp,  -0.5, MaxZN}}}});
-      registry.add("hZNCamplvsADC","ZNC amplitude vs. ADC; ZNC ADC; ZNC amplitude", {HistType::kTH2F, {{{nBinsAmp,  -0.5, MaxZN}, {nBinsAmp,  -0.5, MaxZN}}}});
-      registry.add("hZPAamplvsADC","ZPA amplitude vs. ADC; ZPA ADC; ZPA amplitude", {HistType::kTH2F, {{{nBinsAmp,  -0.5, MaxZP}, {nBinsAmp,  -0.5, MaxZP}}}});
-      registry.add("hZPCamplvsADC","ZPC amplitude vs. ADC; ZPC ADC; ZPC amplitude", {HistType::kTH2F, {{{nBinsAmp,  -0.5, MaxZP}, {nBinsAmp,  -0.5, MaxZP}}}});
-      registry.add("hZNvsZEM", "ZN vs ZEM; ZEM; ZNA+ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZEM}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
-      registry.add("hZNAvsZNC", "ZNA vs ZNC; ZNC; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
-      registry.add("hZPAvsZPC", "ZPA vs ZPC; ZPC; ZPA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
-      registry.add("hZNAvsZPA", "ZNA vs ZPA; ZPA; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
-      registry.add("hZNCvsZPC", "ZNC vs ZPC; ZPC; ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
-      //
-      registry.add("hZNCcvsZNCsum", "ZNCcvsZNCsum; ZNCC ADC; ZNCsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
-      registry.add("hZNAcvsZNAsum", "ZNAcvsZNAsum ZNAC ADC; ZNAsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
-      //
-      registry.add("hZNCvstdc", "ZNC vs tdc; ZNC amplitude; ZNC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
-      registry.add("hZNAvstdc", "ZNA vs tdc; ZNA amplitude; ZNA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
-      registry.add("hZPCvstdc", "ZPC vs tdc; ZPC amplitude; ZPC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
-      registry.add("hZPAvstdc", "ZPA vs tdc; ZPA amplitude; ZPA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
-      //
-      registry.add("hZNvsV0A", "ZN vs V0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
-      registry.add("hZNAvsFT0A", "ZNA vs FT0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
-      registry.add("hZNCvsFT0C", "ZNC vs FT0C", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+    registry.add("hZNApmc", "ZNApmc; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
+    registry.add("hZPApmc", "ZPApmc; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
+    registry.add("hZNCpmc", "ZNCpmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
+    registry.add("hZPCpmc", "ZPCpmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
+    registry.add("hZEM", "ZEM; ZEM1+ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZEM}}});
+    registry.add("hZNAamplvsADC", "ZNA amplitude vs. ADC; ZNA ADC; ZNA amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCamplvsADC", "ZNC amplitude vs. ADC; ZNC ADC; ZNC amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPAamplvsADC", "ZPA amplitude vs. ADC; ZPA ADC; ZPA amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPCamplvsADC", "ZPC amplitude vs. ADC; ZPC ADC; ZPC amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZNvsZEM", "ZN vs ZEM; ZEM; ZNA+ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZEM}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+    registry.add("hZNAvsZNC", "ZNA vs ZNC; ZNC; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPAvsZPC", "ZPA vs ZPC; ZPC; ZPA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZNAvsZPA", "ZNA vs ZPA; ZPA; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCvsZPC", "ZNC vs ZPC; ZPC; ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
+    //
+    registry.add("hZNCcvsZNCsum", "ZNCcvsZNCsum; ZNCC ADC; ZNCsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
+    registry.add("hZNAcvsZNAsum", "ZNAcvsZNAsum ZNAC ADC; ZNAsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
+    //
+    registry.add("hZNCvstdc", "ZNC vs tdc; ZNC amplitude; ZNC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNAvstdc", "ZNA vs tdc; ZNA amplitude; ZNA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPCvstdc", "ZPC vs tdc; ZPC amplitude; ZPC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPAvstdc", "ZPA vs tdc; ZPA amplitude; ZPA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
+    //
+    registry.add("hZNvsV0A", "ZN vs V0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+    registry.add("hZNAvsFT0A", "ZNA vs FT0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+    registry.add("hZNCvsFT0C", "ZNC vs FT0C", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
   }
 
   void process(aod::ZDCLightIons const& zdclightions)
@@ -114,7 +113,7 @@ struct ZDCLIAnalysis {
       registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
       registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
       registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
-      registry.get<TH1>(HIST("hZEM"))->Fill(zem1+zem2);
+      registry.get<TH1>(HIST("hZEM"))->Fill(zem1 + zem2);
       //
       registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
       registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
@@ -132,15 +131,14 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
       registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
       //
-      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(znapm1+znapm2+znapm3+znapm4, zna);
-      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(zncpm1+zncpm2+zncpm3+zncpm4, znc);
+      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(znapm1 + znapm2 + znapm3 + znapm4, zna);
+      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(zncpm1 + zncpm2 + zncpm3 + zncpm4, znc);
       //
       registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
       registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
       registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
     }
   }
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -149,4 +147,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<ZDCLIAnalysis>(cfgc) //
   };
 }
-
