@@ -1721,10 +1721,6 @@ struct HStrangeCorrelation {
     }
 
     // Do basic QA
-    for (auto const& hadron : assocHadrons) {
-      auto hadronTrack = hadron.track_as<TracksComplete>();
-      histos.fill(HIST("hHadronEtaVsPtVsPhi"), hadronTrack.pt(), hadronTrack.eta(), hadronTrack.phi());
-    }
     if (!doprocessSameEventHCascades && !doprocessSameEventHV0s && !doprocessSameEventHPions) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
