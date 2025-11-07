@@ -600,23 +600,39 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
           }
 
+          // Fill THnSparse with gap type using vectorized approach similar to taskDplus
           if constexpr (fillMl) {
+            auto fillTHnData = [&](float mass, int d0Type) {
+              std::vector<double> valuesToFill{candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2],
+                                               static_cast<double>(mass), static_cast<double>(ptCandidate),
+                                               static_cast<double>(HfHelper::yD0(candidate)), static_cast<double>(d0Type)};
+              valuesToFill.push_back(static_cast<double>(gapTypeInt));
+              registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
+            };
+
             if (candidate.isSelD0() >= selectionFlagD0) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, static_cast<float>(gapTypeInt));
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, static_cast<float>(gapTypeInt));
+              fillTHnData(massD0, SigD0);
+              fillTHnData(massD0, candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
             }
             if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, static_cast<float>(gapTypeInt));
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, static_cast<float>(gapTypeInt));
+              fillTHnData(massD0bar, SigD0bar);
+              fillTHnData(massD0bar, candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar);
             }
           } else {
+            auto fillTHnData = [&](float mass, int d0Type) {
+              std::vector<double> valuesToFill{static_cast<double>(mass), static_cast<double>(ptCandidate),
+                                               static_cast<double>(HfHelper::yD0(candidate)), static_cast<double>(d0Type)};
+              valuesToFill.push_back(static_cast<double>(gapTypeInt));
+              registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
+            };
+
             if (candidate.isSelD0() >= selectionFlagD0) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), SigD0, static_cast<float>(gapTypeInt));
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, static_cast<float>(gapTypeInt));
+              fillTHnData(massD0, SigD0);
+              fillTHnData(massD0, candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
             }
             if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), SigD0bar, static_cast<float>(gapTypeInt));
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, HfHelper::yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, static_cast<float>(gapTypeInt));
+              fillTHnData(massD0bar, SigD0bar);
+              fillTHnData(massD0bar, candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar);
             }
           }
         }

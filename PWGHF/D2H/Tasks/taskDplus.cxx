@@ -314,15 +314,13 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   /// \param numPvContributors contributors to the PV
-  /// \param gapType UPC gap type (-1 for non-UPC)
   template <bool IsMc, bool IsMatched, typename T1>
   void fillSparseML(const T1& candidate,
                     float ptbhad,
                     int flagBHad,
                     float centrality,
                     float occupancy,
-                    float numPvContributors,
-                    int gapType = -1)
+                    float numPvContributors)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -387,30 +385,16 @@ struct HfTaskDplus {
         }
       }
     } else { // Data
-      if (gapType >= 0) {
-        // UPC mode: always include gap type
-        if (storeCentrality && storeOccupancy) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy, static_cast<float>(gapType));
-        } else if (storeCentrality && !storeOccupancy) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, static_cast<float>(gapType));
-        } else if (!storeCentrality && storeOccupancy) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, static_cast<float>(gapType));
-        } else {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], static_cast<float>(gapType));
-        }
+      if (storeCentrality && storeOccupancy) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
+      } else if (storeCentrality && !storeOccupancy) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
+      } else if (!storeCentrality && storeOccupancy) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+      } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
       } else {
-        // Non-UPC mode: original behavior
-        if (storeCentrality && storeOccupancy) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
-        } else if (storeCentrality && !storeOccupancy) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
-        } else if (!storeCentrality && storeOccupancy) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
-        } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
-        } else {
-          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
-        }
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
       }
     }
   }
@@ -732,8 +716,6 @@ struct HfTaskDplus {
         float cent{-1.f};
         float occ{-1.f};
         float numPvContr{-1.f};
-        float ptBhad{-1.f};
-        int const flagBHad{-1};
         int const gapTypeInt = hf_upc::gapTypeToInt(gap);
 
         for (const auto& candidate : groupedDplusCandidates) {
@@ -742,7 +724,21 @@ struct HfTaskDplus {
           }
           fillHisto(candidate);
           if constexpr (fillMl) {
-            fillSparseML<false, false>(candidate, ptBhad, flagBHad, cent, occ, numPvContr, gapTypeInt);
+            // Fill THn with gap type using lambda function similar to taskLc
+            std::vector<float> outputMl = {-999., -999., -999.};
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+            }
+
+            std::vector<double> valuesToFill{HfHelper::invMassDplusToPiKPi(candidate), static_cast<double>(candidate.pt()), outputMl[0], outputMl[1], outputMl[2]};
+            if (storeCentrality) {
+              valuesToFill.push_back(cent);
+            }
+            if (storeOccupancy) {
+              valuesToFill.push_back(occ);
+            }
+            valuesToFill.push_back(static_cast<double>(gapTypeInt));
+            registry.get<THnSparse>(HIST("hSparseMass"))->Fill(valuesToFill.data());
           }
         }
       }
