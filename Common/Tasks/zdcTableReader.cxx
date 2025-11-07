@@ -31,6 +31,10 @@ using namespace o2::aod;
 struct ZDCLIAnalysis {
 
   // Configurable number of bins
+  Configurable<bool> useZvtx{"useZvtx", false, "If true uses Z_vertex"};
+  Configurable<float> zVval{"zVval", 10., "Z_vertex cut value"};
+  Configurable<float> tStamp{"tStamp", 100000., "maximum value for timestamp"};
+  //
   Configurable<int> nBinsADC{"nBinsADC", 1000, "n bins 4 ZDC ADCs"};
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "n bins 4 ZDC amplitudes"};
   Configurable<int> nBinsTDC{"nBinsTDC", 480, "n bins 4 TDCs"};
@@ -70,13 +74,31 @@ struct ZDCLIAnalysis {
     registry.add("hZPAvstdc", "ZPA vs tdc; ZPA amplitude; ZPA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
     //
     registry.add("hZNvsV0A", "ZN vs V0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
-    registry.add("hZNAvsFT0A", "ZNA vs FT0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
-    registry.add("hZNCvsFT0C", "ZNC vs FT0C", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+    registry.add("hZNAvsFT0A", "ZNA vs FT0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCvsFT0C", "ZNC vs FT0C", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, MaxZN}}}});
+    //
+    registry.add("hZNAvscentrFT0A", "ZNA vs centrality FT0A", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNAvscentrFT0C", "ZNA vs centrality FT0C", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNAvscentrFT0M", "ZNA vs centrality FT0M", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPAvscentrFT0A", "ZPA vs centrality FT0A", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPAvscentrFT0C", "ZPA vs centrality FT0C", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPAvscentrFT0M", "ZPA vs centrality FT0M", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZNCvscentrFT0A", "ZNC vs centrality FT0A", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCvscentrFT0C", "ZNC vs centrality FT0C", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCvscentrFT0M", "ZNC vs centrality FT0M", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPCvscentrFT0A", "ZPC vs centrality FT0A", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPCvscentrFT0C", "ZPC vs centrality FT0C", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPCvscentrFT0M", "ZPC vs centrality FT0M", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
+    //
+    registry.add("hZNAvstimestamp", "ZNA vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCvstimestamp", "ZNC vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPAvstimestamp", "ZPA vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPCvstimestamp", "ZPC vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZP}}}});
   }
 
   void process(aod::ZDCLightIons const& zdclightions)
   {
-    for (auto& zdc : zdclightions) {
+    for (auto const& zdc : zdclightions) {
       auto tdczna = zdc.znaTdc();
       auto tdcznc = zdc.zncTdc();
       auto tdczpa = zdc.zpaTdc();
@@ -109,34 +131,54 @@ struct ZDCLIAnalysis {
       auto timestamp = zdc.timestamp();
       auto selectionBits = zdc.selectionBits();
 
-      registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
-      registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
-      registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
-      registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
-      registry.get<TH1>(HIST("hZEM"))->Fill(zem1 + zem2);
-      //
-      registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
-      registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
-      registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
-      registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
-      //
-      registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
-      registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
-      registry.get<TH2>(HIST("hZPAvsZPC"))->Fill(zpc, zpa);
-      registry.get<TH2>(HIST("hZNAvsZPA"))->Fill(zpa, zna);
-      registry.get<TH2>(HIST("hZNCvsZPC"))->Fill(zpc, znc);
-      //
-      registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
-      registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
-      registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
-      registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
-      //
-      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(znapm1 + znapm2 + znapm3 + znapm4, zna);
-      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(zncpm1 + zncpm2 + zncpm3 + zncpm4, znc);
-      //
-      registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
-      registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
-      registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
+      if ((useZvtx && (zvtx < zVval)) || !useZvtx) {
+        registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
+        registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
+        registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
+        registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
+        registry.get<TH1>(HIST("hZEM"))->Fill(zem1 + zem2);
+        //
+        registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
+        registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
+        registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
+        registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
+        //
+        registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
+        registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
+        registry.get<TH2>(HIST("hZPAvsZPC"))->Fill(zpc, zpa);
+        registry.get<TH2>(HIST("hZNAvsZPA"))->Fill(zpa, zna);
+        registry.get<TH2>(HIST("hZNCvsZPC"))->Fill(zpc, znc);
+        //
+        registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
+        registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
+        registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
+        registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
+        //
+        registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(znapm1 + znapm2 + znapm3 + znapm4, zna);
+        registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(zncpm1 + zncpm2 + zncpm3 + zncpm4, znc);
+        //
+        registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
+        registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
+        registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
+        //
+        registry.get<TH2>(HIST("hZNAvscentrFT0A"))->Fill(centrFT0A, zna);
+        registry.get<TH2>(HIST("hZNAvscentrFT0C"))->Fill(centrFT0C, zna);
+        registry.get<TH2>(HIST("hZNAvscentrFT0M"))->Fill(centrFT0M, zna);
+        registry.get<TH2>(HIST("hZPAvscentrFT0A"))->Fill(centrFT0A, zpa);
+        registry.get<TH2>(HIST("hZPAvscentrFT0C"))->Fill(centrFT0C, zpa);
+        registry.get<TH2>(HIST("hZPAvscentrFT0M"))->Fill(centrFT0M, zpa);
+        registry.get<TH2>(HIST("hZNCvscentrFT0A"))->Fill(centrFT0A, znc);
+        registry.get<TH2>(HIST("hZNCvscentrFT0C"))->Fill(centrFT0C, znc);
+        registry.get<TH2>(HIST("hZNCvscentrFT0M"))->Fill(centrFT0M, znc);
+        registry.get<TH2>(HIST("hZPCvscentrFT0A"))->Fill(centrFT0A, zpc);
+        registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
+        registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
+        //
+        registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(timestamp, zna);
+        registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(timestamp, znc);
+        registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(timestamp, zpa);
+        registry.get<TH2>(HIST("hZPCvstimestamp"))->Fill(timestamp, zpc);
+      }
     }
   }
 };
