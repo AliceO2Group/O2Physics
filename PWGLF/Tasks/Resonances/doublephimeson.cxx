@@ -51,6 +51,8 @@ struct doublephimeson {
   Configurable<float> daughterDeltaR{"daughterDeltaR", 0.0, "delta R of daughter"};
   Configurable<float> minPhiMass1{"minPhiMass1", 1.01, "Minimum phi mass1"};
   Configurable<float> maxPhiMass1{"maxPhiMass1", 1.03, "Maximum phi mass1"};
+  Configurable<float> minPhiPt{"minPhiPt", 0, "Minimum phi Pt"};
+  Configurable<float> maxPhiPt{"maxPhiPt", 100, "Maximum phi Pt"};
   Configurable<float> minPhiMass2{"minPhiMass2", 1.01, "Minimum phi mass2"};
   Configurable<float> maxPhiMass2{"maxPhiMass2", 1.03, "Maximum phi mass2"};
   Configurable<float> minExoticMass{"minExoticMass", 2.0, "Minimum Exotic mass"};
@@ -68,6 +70,7 @@ struct doublephimeson {
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 20.0, 40.0, 60.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
 
   // THnsparse bining
+  ConfigurableAxis configThnAxisPtCorr{"configThnAxisPtCorr", {1000, 0.0, 100}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {1500, 2.0, 3.5}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisInvMassPhi{"configThnAxisInvMassPhi", {20, 1.01, 1.03}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisInvMassDeltaPhi{"configThnAxisInvMassDeltaPhi", {80, 0.0, 0.08}, "#it{M} (GeV/#it{c}^{2})"};
@@ -96,7 +99,7 @@ struct doublephimeson {
     histos.add("hkMinusDeltaetaDeltaPhi", "hkMinusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
     histos.add("hDeltaRkaonplus", "hDeltaRkaonplus", kTH1F, {{800, 0.0, 8.0}});
     histos.add("hDeltaRkaonminus", "hDeltaRkaonminus", kTH1F, {{800, 0.0, 8.0}});
-
+    histos.add("hPtCorrelation", "hPtCorrelation", kTH2F, {{400, 0.0, 40.0}, {5000, 0.0, 100.0}});
     const AxisSpec thnAxisdeltapt{configThnAxisDeltaPt, "Delta pt"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -105,8 +108,9 @@ struct doublephimeson {
     const AxisSpec thnAxisDeltaR{configThnAxisDeltaR, "#Delta R)"};
     const AxisSpec thnAxisCosTheta{configThnAxisCosTheta, "cos #theta"};
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
+    const AxisSpec thnAxisPtCorr{configThnAxisPtCorr, "Pt Corr var"};
 
-    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisNumPhi});
+    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisPtCorr});
     // histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
     histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi});
   }
@@ -831,7 +835,8 @@ struct doublephimeson {
       // φ mass windows
       if (t1.phiMass() < minPhiMass1 || t1.phiMass() > maxPhiMass1)
         continue;
-
+      if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt)
+        continue;
       // PID QA after
       histos.fill(HIST("hnsigmaTPCTOFKaon"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
       histos.fill(HIST("hnsigmaTPCKaonPlus"), t1.phid1TPC(), kplus1pt);
@@ -864,7 +869,8 @@ struct doublephimeson {
         k2m.SetXYZM(t2.phid2Px(), t2.phid2Py(), t2.phid2Pz(), 0.493);
         if (t2.phiMass() < minPhiMass2 || t2.phiMass() > maxPhiMass2)
           continue;
-
+        if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt)
+          continue;
         // Δm cut (configurable)
         const double dM = deltaMPhi(phi1.M(), phi2.M());
         if (dM > maxDeltaMPhi)
@@ -907,7 +913,8 @@ struct doublephimeson {
       const double M = pair.M();
       const double dR = deltaR(p1.Phi(), p1.Eta(), p2.Phi(), p2.Eta());
       const double minDR = minDRV[i];
-
+      double ptcorr = p1.Pt() / (pair.Pt() - p1.Pt());
+      histos.fill(HIST("hPtCorrelation"), pair.Pt(), ptcorr);
       // NOTE: second axis is now minΔR(all kaons), ΔpT/pT has been removed
       histos.fill(HIST("SEMassUnlike"),
                   M,
@@ -915,7 +922,7 @@ struct doublephimeson {
                   pair.Pt(),
                   dR,
                   dM,
-                  pairV.size());
+                  ptcorr);
     }
   }
   PROCESS_SWITCH(doublephimeson, processopti3, "Process Optimized same event", false);
