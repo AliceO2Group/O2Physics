@@ -61,8 +61,8 @@ struct ZDCLIAnalysis {
     registry.add("hZNAvsZPA", "ZNA vs ZPA; ZPA; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
     registry.add("hZNCvsZPC", "ZNC vs ZPC; ZPC; ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
     //
-    registry.add("hZNCcvsZNCsum", "ZNCcvsZNCsum; ZNCC ADC; ZNCsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
-    registry.add("hZNAcvsZNAsum", "ZNAcvsZNAsum ZNAC ADC; ZNAsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
+    registry.add("hZNCcvsZNCsum", "ZNC PMC vs PMsum; ZNCC ADC; ZNCsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
+    registry.add("hZNAcvsZNAsum", "ZNA PMC vs PMsum; ZNAsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
     //
     registry.add("hZNCvstdc", "ZNC vs tdc; ZNC amplitude; ZNC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
     registry.add("hZNAvstdc", "ZNA vs tdc; ZNA amplitude; ZNA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
