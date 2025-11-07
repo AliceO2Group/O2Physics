@@ -6625,7 +6625,6 @@ struct LFNucleiBATask {
   void processMCGenLosses(
     soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
     const soa::SmallGroups<soa::Join<EventCandidatesMC, o2::aod::PVMults>>& collisions,
-    soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const& tracks,
     o2::aod::McParticles const& mcParticles)
   {
     bool isINELgt0true = pwglf::isINELgtNmc(mcParticles, 0, pdgDB);
