@@ -407,9 +407,6 @@ struct LfTreeCreatorClusterStudies {
   uint8_t selectV0MotherHypothesis(float massK0sV0, float massLambdaV0, float massAntiLambdaV0, float alphaAP, const o2::aod::V0& v0)
   {
     uint8_t v0Bitmask(0);
-    // if (v0.isPhotonV0()) {
-    //   SETBIT(v0Bitmask, Photon);
-    // }
     if (std::abs(massK0sV0 - o2::constants::physics::MassK0Short) < v0setting_massWindowK0s) {
       SETBIT(v0Bitmask, K0s);
     }
@@ -675,8 +672,8 @@ struct LfTreeCreatorClusterStudies {
 
   // =========================================================================================================
 
-  template <typename T>
-  float computeNSigmaTPCHe3(const T& candidate)
+  template <typename Track>
+  float computeNSigmaTPCHe3(const Track& candidate)
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
@@ -685,8 +682,8 @@ struct LfTreeCreatorClusterStudies {
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }
 
-  template <bool isMC = false, typename T>
-  float computeTOFmassHe3(const T& candidate)
+  template <bool isMC = false, typename Track>
+  float computeTOFmassHe3(const Track& candidate)
   {
     float beta = o2::pid::tof::Beta::GetBeta(candidate);
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
@@ -875,7 +872,6 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    // mass hypothesis
     const float massLambdaV0 = std::sqrt(RecoDecay::m2(std::array<std::array<float, 3>, 2>{momPos, momNeg},
                                                        std::array<float, 2>{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
     const float massAntiLambdaV0 = std::sqrt(RecoDecay::m2(std::array<std::array<float, 3>, 2>{momPos, momNeg},
@@ -989,7 +985,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kAcceptedOmega);
     if (std::abs(massXi - o2::constants::physics::MassXiMinus) < cascsetting_massWindowXi) {
       return;
-    } // enhance purity by rejecting Xi background
+    }
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kRejectedXi);
     if (std::abs(bachelorTrack.tpcNSigmaKa()) > cascsetting_nsigmatpc) {
       return;
@@ -1259,8 +1255,8 @@ struct LfTreeCreatorClusterStudies {
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataV0Casc, "process Data V0 and cascade", false);
 
-  Partition<TracksFullIU> posTracks = o2::aod::track::signed1Pt > 0.f; // && o2::aod::track::pt > electronsetting_minPt && nabs(o2::aod::track::eta) < track_etaMax && electronsetting_minNsigmatpcEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < electronsetting_maxNsigmatpcEl;
-  Partition<TracksFullIU> negTracks = o2::aod::track::signed1Pt < 0.f; // && o2::aod::track::pt > electronsetting_minPt && nabs(o2::aod::track::eta) < track_etaMax && electronsetting_minNsigmatpcEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < electronsetting_maxNsigmatpcEl;
+  Partition<TracksFullIU> posTracks = o2::aod::track::signed1Pt > 0.f;
+  Partition<TracksFullIU> negTracks = o2::aod::track::signed1Pt < 0.f;
   void processDataElectrons(CollisionsCustom::iterator const& collision, TracksFullIU const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!collisionSelection(collision)) {
