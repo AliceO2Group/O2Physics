@@ -213,13 +213,13 @@ struct LongrangeMaker {
     tpcNsigmaCut = tpcNsigmaPidCut;
   }
 
-  Produces<aod::CollLRTable> collisionLRTable;
-  Produces<aod::TrkLRTable> tracksLRTable;
-  Produces<aod::Ft0aLRTable> ft0aLRTable;
-  Produces<aod::Ft0cLRTable> ft0cLRTable;
-  Produces<aod::MftTrkLRTable> mftLRTable;
-  Produces<aod::MftBestTrkLRTable> mftbestLRTable;
-  Produces<aod::V0TrkLRTable> v0LRTable;
+  Produces<aod::CollLRTables> collisionLRTable;
+  Produces<aod::TrkLRTables> tracksLRTable;
+  Produces<aod::Ft0aLRTables> ft0aLRTable;
+  Produces<aod::Ft0cLRTables> ft0cLRTable;
+  Produces<aod::MftTrkLRTables> mftLRTable;
+  Produces<aod::MftBestTrkLRTables> mftbestLRTable;
+  Produces<aod::V0TrkLRTables> v0LRTable;
 
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
