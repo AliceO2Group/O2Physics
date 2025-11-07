@@ -9,16 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#include <Framework/AnalysisDataModel.h>
-#include <fairlogger/Logger.h>
-#include <cstdint>
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "CommonConstants/LHCConstants.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "PWGUD/Core/SGSelector.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <fairlogger/Logger.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace std;
 
@@ -95,13 +100,13 @@ struct DQFilterPbPbTask {
     int issgevent = isSGEvent.value;
     // Translate SGSelector values to DQEventFilter values
     if (issgevent == 0) {
-      filter |= (uint64_t(1) << VarManager::kSingleGapA);
+      filter |= (static_cast<uint64_t>(1) << VarManager::kSingleGapA);
       fFilterOutcome->Fill(3, 1);
     } else if (issgevent == 1) {
-      filter |= (uint64_t(1) << VarManager::kSingleGapC);
+      filter |= (static_cast<uint64_t>(1) << VarManager::kSingleGapC);
       fFilterOutcome->Fill(4, 1);
     } else if (issgevent == 2) {
-      filter |= (uint64_t(1) << VarManager::kDoubleGap);
+      filter |= (static_cast<uint64_t>(1) << VarManager::kDoubleGap);
       fFilterOutcome->Fill(2, 1);
     } else if (issgevent == 3) {
       fFilterOutcome->Fill(5, 1);
@@ -118,7 +123,7 @@ struct DQFilterPbPbTask {
 
     // Record whether UPC settings were used for this event
     if (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) {
-      filter |= (uint64_t(1) << VarManager::kITSUPCMode);
+      filter |= (static_cast<uint64_t>(1) << VarManager::kITSUPCMode);
       fFilterOutcome->Fill(8, 1);
     }
 
