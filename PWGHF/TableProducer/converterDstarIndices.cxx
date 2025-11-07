@@ -14,7 +14,7 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>

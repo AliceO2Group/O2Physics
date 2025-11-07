@@ -13,12 +13,16 @@
 // finders. These are cross-check tasks that are not meant to do final analyses
 // as finding will be extremely slow and complex at the AO2D level.
 
-#ifndef O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
-#define O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFSTRANGENESSFINDERTABLES_H_
+#define PWGLF_DATAMODEL_LFSTRANGENESSFINDERTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+
 #include <cmath>
 
 // V0 auxiliary tables
@@ -84,4 +88,4 @@ DECLARE_SOA_TABLE(CascGoodAntiLambdas, "AOD", "CASCGOODALAM", o2::soa::Index<>, 
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
+#endif // PWGLF_DATAMODEL_LFSTRANGENESSFINDERTABLES_H_

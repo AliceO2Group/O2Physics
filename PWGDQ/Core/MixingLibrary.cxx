@@ -168,4 +168,32 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
     std::vector<float> fPsi2C = {-12 * TMath::Pi() / 24., -11 * TMath::Pi() / 24., -10 * TMath::Pi() / 24., -9 * TMath::Pi() / 24., -8 * TMath::Pi() / 24., -7 * TMath::Pi() / 24., -6 * TMath::Pi() / 24., -5 * TMath::Pi() / 24., -4 * TMath::Pi() / 24., -3 * TMath::Pi() / 24., -2 * TMath::Pi() / 24., -TMath::Pi() / 24., 0.0f, TMath::Pi() / 24., 2 * TMath::Pi() / 24., 3 * TMath::Pi() / 24., 4 * TMath::Pi() / 24., 5 * TMath::Pi() / 24., 6 * TMath::Pi() / 24., 7 * TMath::Pi() / 24., 8 * TMath::Pi() / 24., 9 * TMath::Pi() / 24., 10 * TMath::Pi() / 24., 11 * TMath::Pi() / 24., 12 * TMath::Pi() / 24.};
     mh->AddMixingVariable(VarManager::kPsi2C, fPsi2C.size(), fPsi2C);
   }
+  if (!nameStr.compare("MedianTimeA1")) {
+    std::vector<float> fMTLimsHashing = {-100.0f, -40.0f, -20.0f, 20.0f, 40.0f, 100.0f};
+    mh->AddMixingVariable(VarManager::kNTPCmedianTimeLongA, fMTLimsHashing.size(), fMTLimsHashing);
+  }
+  if (!nameStr.compare("MedianTimeA2")) {
+    std::vector<float> fMTLimsHashing = {-100.0f, -80.0f, -60.0f, -40.0f, -20.0f, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f};
+    mh->AddMixingVariable(VarManager::kNTPCmedianTimeLongA, fMTLimsHashing.size(), fMTLimsHashing);
+  }
+  if (!nameStr.compare("MedianTimeA3")) {
+    std::vector<float> fMTLimsHashing = {-100.0f, -80.0f, -60.0f, -40.0f, -30.0f, -20.0f, -10.0f, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 60.0f, 80.0f, 100.0f};
+    mh->AddMixingVariable(VarManager::kNTPCmedianTimeLongA, fMTLimsHashing.size(), fMTLimsHashing);
+  }
+  if (!nameStr.compare("PileUpA1")) {
+    std::vector<float> fPileUpLimsHashing = {0.0f, 1000.0f, 2000.0f, 6000.0f, 10000.0f, 20000.0f};
+    mh->AddMixingVariable(VarManager::kNTPCcontribLongA, fPileUpLimsHashing.size(), fPileUpLimsHashing);
+  }
+  if (!nameStr.compare("PileUpA2")) {
+    std::vector<float> fPileUpLimsHashing = {0.0f, 1000.0f, 2000.0f, 4000.0f, 6000.0f, 8000.0f, 10000.0f, 20000.0f};
+    mh->AddMixingVariable(VarManager::kNTPCcontribLongA, fPileUpLimsHashing.size(), fPileUpLimsHashing);
+  }
+  if (!nameStr.compare("PileUpA3")) {
+    std::vector<float> fPileUpLimsHashing = {0.0f, 1000.0f, 2000.0f, 3000.0f, 4000.0f, 5000.0f, 6000.0f, 8000.0f, 10000.0f, 20000.0f};
+    mh->AddMixingVariable(VarManager::kNTPCcontribLongA, fPileUpLimsHashing.size(), fPileUpLimsHashing);
+  }
+  if (!nameStr.compare("PileUpA4")) {
+    std::vector<float> fPileUpLimsHashing = {0.0f, 500.0f, 1000.0f, 1500.0f, 2000.0f, 2500.0f, 3000.0f, 3500.0f, 4000.0f, 4500.0f, 5000.0f, 5500.0f, 6000.0f, 8000.0f, 10000.0f, 20000.0f};
+    mh->AddMixingVariable(VarManager::kNTPCcontribLongA, fPileUpLimsHashing.size(), fPileUpLimsHashing);
+  }
 }

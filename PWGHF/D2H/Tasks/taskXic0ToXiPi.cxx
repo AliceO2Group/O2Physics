@@ -15,6 +15,7 @@
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -59,7 +60,6 @@ struct HfTaskXic0ToXiPi {
   Configurable<double> yCandGenMax{"yCandGenMax", 0.8, "max. gen particle rapidity"};
   Configurable<double> yCandRecMax{"yCandRecMax", 0.8, "max. cand. rapidity"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using TracksMc = soa::Join<aod::Tracks, aod::TracksIU, aod::McTrackLabels>;

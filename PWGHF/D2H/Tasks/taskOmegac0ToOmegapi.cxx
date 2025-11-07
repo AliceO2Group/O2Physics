@@ -15,9 +15,11 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -72,7 +74,6 @@ struct HfTaskOmegac0ToOmegapi {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "Max. cand. rapidity"};
   Configurable<bool> fillTree{"fillTree", false, "Fill tree for local analysis (enabled only with ML)"};
 
-  HfHelper hfHelper;
   SliceCache cache;
 
   using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>>;

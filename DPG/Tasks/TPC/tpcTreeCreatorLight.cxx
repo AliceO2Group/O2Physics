@@ -17,7 +17,9 @@
 /// \author Jeremy Wilkinson <jeremy.wilkinson@cern.ch>
 
 #include "tpcTreeCreatorLight.h"
+
 #include <CCDB/BasicCCDBManager.h>
+
 #include <cmath>
 /// ROOT
 #include "TRandom3.h"
@@ -27,10 +29,11 @@
 #include "Framework/runDataProcessing.h"
 /// O2Physics
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -197,8 +200,8 @@ struct TreeWriterTPCTOF {
       }
 
     } /// Loop tracks
-  }   /// process
-};    /// struct TreeWriterTPCTOF
+  } /// process
+}; /// struct TreeWriterTPCTOF
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
