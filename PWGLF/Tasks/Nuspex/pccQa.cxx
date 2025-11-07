@@ -101,7 +101,9 @@ void PccQa::processMC(CollisionTableMCTrue::iterator const&, TrackTableMC const&
 template <bool IS_MC, typename C, typename T>
 void PccQa::processMeas(const C& collision, const T& tracks)
 {
-  if ((std::abs(collision.posZ()) > MaxVtxZ) || !collision.sel8()) return;
+  if ((std::abs(collision.posZ()) > MaxVtxZ) || !collision.sel8()) {
+    return;
+  }
   histos.fill(HIST("eventCounter"), 1);
 
   for (const auto& track : tracks) {
