@@ -19,8 +19,10 @@
 
 #include <TAxis.h>
 #include <TCollection.h>
+#include <TH2.h>
 #include <TNamed.h>
 #include <TObjArray.h>
+#include <TProfile.h>
 #include <TString.h>
 
 #include <Rtypes.h>
@@ -69,6 +71,8 @@ class FFitWeights : public TNamed
 
  private:
   TObjArray* fW_data;
+  TProfile* ptProfCent; //!
+  TH2D* h2ptCent;       //!
 
   int centBin;
   TAxis* qAxis; //!
@@ -90,6 +94,8 @@ class FFitWeights : public TNamed
 
   static constexpr int NumberSp = 90;
   static constexpr float MaxTol = 100.05;
+
+  float internalEval(float centr, const float& val, const char* name);
 
   ClassDef(FFitWeights, 1); // calibration class
 };

@@ -325,7 +325,6 @@ struct EseTableProducer {
         const auto binval = (mean - avgpt) / avgpt;
         weightsFFit->fillPt(centrality, binval, false);
         meanPt[0] = binval;
-
         if (cfgMeanPt == Step1) {
           registry.fill(HIST("hMeanPtStat"), 2.5);
         } else if (cfgMeanPt == Step2) {
