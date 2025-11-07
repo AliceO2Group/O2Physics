@@ -173,6 +173,8 @@ struct ZdcTaskLightIons {
         //
         double pmcZNA = bc.zdc().energyCommonZNA();
         double pmcZNC = bc.zdc().energyCommonZNC();
+        double pmcZPA = bc.zdc().energyCommonZPA();
+        double pmcZPC = bc.zdc().energyCommonZPC();
         double pmqZNC[4] = {
           0,
           0,
@@ -213,7 +215,9 @@ struct ZdcTaskLightIons {
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                    tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                   tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
+                   tdcZPA, zpa, pmcZPA,
+                   tdcZPC, zpc, pmcZPC,
+                   tdcZEM1, zem1, tdcZEM2, zem2,
                    -1, -1, -1,
                    -1.,
                    -1, -1, -1,
@@ -226,7 +230,7 @@ struct ZdcTaskLightIons {
   /// note that it has to be declared after the function, so that the pointer is known
   PROCESS_SWITCH(ZdcTaskLightIons, processZDCBC, "Processing ZDC 4 auto-triggered events", true);
 
-  void processALICEcoll(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
+  void processALICEcoll(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0*/)
   {
     // collision-based event selection
     for (auto const& collision : cols) {
@@ -276,6 +280,8 @@ struct ZdcTaskLightIons {
         //
         double pmcZNA = zdc.energyCommonZNA();
         double pmcZNC = zdc.energyCommonZNC();
+        double pmcZPA = zdc.energyCommonZPA();
+        double pmcZPC = zdc.energyCommonZPC();
         double pmqZNC[4] = {
           0,
           0,
@@ -316,7 +322,9 @@ struct ZdcTaskLightIons {
 
         zdcTableLI(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                    tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                   tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
+                   tdcZPA, zpa, pmcZPA,
+                   tdcZPC, zpc, pmcZPC,
+                   tdcZEM1, zem1, tdcZEM2, zem2,
                    multFT0A, multFT0C, multV0A,
                    zv,
                    centralityFT0C, centralityFT0A, centralityFT0M,

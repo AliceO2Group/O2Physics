@@ -51,13 +51,10 @@ using PxPyPzMVector = ROOT::Math::PxPyPzMVector;
 
 struct ExclusiveRhoTo4Pi {
   SGSelector sgSelector;
-  // Defining constants
-  int numFourPionTracks = 4;
-  int numPiPlus = 2;
-  int numPiMinus = 2;
   // Numbers for background estimation
   int zero = 0;
   int one = 1;
+  int two = 2;
   int three = 3;
   int four = 4;
   // PDG Codes and rho mass
@@ -77,13 +74,18 @@ struct ExclusiveRhoTo4Pi {
   HistogramRegistry histosKin{"Kinematics", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histos4piKin{"Four-Pion-Kinematics", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosMCtruth{"MC-Truth", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // Debugging
+  Configurable<bool> debugMode{"debugMode", false, "Enable Debug Mode"};
   // Configurable Event parameters
   Configurable<int> ifUPC{"ifUPC", 1, "Enable UPC reconstruction only"};
   Configurable<float> vZCut{"vZCut", 10., "Vertex Cut"};
   Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
   Configurable<float> ft0aCut{"ft0aCut", 50., "FT0A threshold"};
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
-  Configurable<float> zdcCut{"zdcCut", 0., "ZDC threshold"};
+  Configurable<float> zdcCut{"zdcCut", 1e6, "ZDC threshold"};
+  Configurable<float> zdcMaxAmp{"zdcMaxAmp", 0, "ZDC max amplitude to be 0n"};
+  Configurable<float> zdcMaxTime{"zdcMaxTime", 2, "ZDC max time in ns"};
+  Configurable<std::string> neutronClass{"neutronClass", "XnXn", "Neutron class for ZDCs"};
   Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
   Configurable<int> sbpCut{"sbpCut", 1, "Sbp"};
   Configurable<int> itsROFbCut{"itsROFbCut", 1, "itsROFbCut"};
@@ -99,8 +101,9 @@ struct ExclusiveRhoTo4Pi {
   Configurable<bool> useTPCtracksOnly{"useTPCtracksOnly", true, "only use tracks with hit in TPC"};
   Configurable<float> itsChi2NClsCut{"itsChi2NClsCut", 36, "ITS Chi2NCls"};
   Configurable<float> tpcChi2NClsCut{"tpcChi2NClsCut", 4.0, "TPC Chi2NCls"};
-  Configurable<int> tpcNClsFindableCut{"tpcNClsFindableCut", 70, "Min TPC Findable Clusters"};
+  Configurable<int> tpcNClsCrossedRowsCut{"tpcNClsCrossedRowsCut", 70, "Min TPC Findable Clusters"};
   // Configurable PID parameters
+  Configurable<bool> ifCircularNSigmaCut{"ifCircularNSigmaCut", true, "Use circular nsigma cut for PID"};
   Configurable<bool> useTOF{"useTOF", true, "if track has TOF use TOF"};
   Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 5, "TPC cut"};
   Configurable<float> nSigmaTOFcut{"nSigmaTOFcut", 5, "TOF cut"};
@@ -116,8 +119,7 @@ struct ExclusiveRhoTo4Pi {
   {
     // QA plots: Event and Track Counter
     histosDataCounter.add("EventsCounts_vs_runNo", "Event Counter Run by Run; Run Number; Number of Events", kTH2F, {{113, 0, 113}, {14, 0, 14}});
-    histosDataCounter.add("TracksCounts_vs_runNo", "Track Counter Run by Run; Run Number; Number of Track", kTH2F, {{113, 0, 113}, {14, 0, 14}});
-    histosDataCounter.add("LostInTrackCut_vs_runNo", "Track Counter Run by Run; Run Number; Number of Tracks", kTH2F, {{113, 0, 113}, {14, 0, 14}});
+    histosDataCounter.add("TracksCounts_vs_runNo", "Track Counter Run by Run; Run Number; Number of Track", kTH2F, {{113, 0, 113}, {13, 0, 13}});
     // QA plots: event selection-selected events
     histosQA.add("Events/selected/UPCmode", "UPC mode; Events", kTH1F, {{5, 0, 5}});
     histosQA.add("Events/selected/GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
@@ -129,8 +131,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/selected/FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/selected/FT0C", "T0C amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/selected/FV0A", "V0A amplitude", kTH1F, {{100, 0.0, 100}});
-    histosQA.add("Events/selected/ZDC_A", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
-    histosQA.add("Events/selected/ZDC_C", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
+    histosQA.add("Events/selected/ZDC", "; ZDC A; ZDC C; time ZDC A [ns]; time ZDC C [ns]", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
     histosQA.add("Events/selected/FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/selected/FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/selected/vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
@@ -148,8 +149,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/4pion/FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/4pion/FT0C", "T0C amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosQA.add("Events/4pion/FV0A", "V0A amplitude", kTH1F, {{100, 0.0, 100}});
-    histosQA.add("Events/4pion/ZDC_A", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
-    histosQA.add("Events/4pion/ZDC_C", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
+    histosQA.add("Events/4pion/ZDC", "; ZDC A; ZDC C; time ZDC A; time ZDC C", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
     histosQA.add("Events/4pion/FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/4pion/FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosQA.add("Events/4pion/vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
@@ -157,80 +157,84 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/4pion/vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{2000, -15, 15}});
     histosQA.add("Events/4pion/occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{20000, 0, 20000}});
     // QA plots: All tracks in selected events
+    histosQA.add("Tracks/all/isPVcontributor", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{3, 0, 3}});
     histosQA.add("Tracks/all/dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/all/dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/all/itsChi2NCl", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
     histosQA.add("Tracks/all/itsChi2", "ITS Chi2; ITS Chi2; Counts", kTH1F, {{500, 0, 50}});
     histosQA.add("Tracks/all/tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 10}});
-    histosQA.add("Tracks/all/tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
+    histosQA.add("Tracks/all/tpcNClsCrossedRows", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
     // QA plots: Selected tracks in selected events
+    histosQA.add("Tracks/selected/isPVcontributor", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{3, 0, 3}});
     histosQA.add("Tracks/selected/dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/selected/dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/selected/itsChi2NCl", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
     histosQA.add("Tracks/selected/itsChi2", "ITS Chi2; ITS Chi2; Counts", kTH1F, {{500, 0, 50}});
     histosQA.add("Tracks/selected/tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
-    histosQA.add("Tracks/selected/tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
+    histosQA.add("Tracks/selected/tpcNClsCrossedRows", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
     // QA plots: Pion tracks in selected events
+    histosQA.add("Tracks/pions/isPVcontributor", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{3, 0, 3}});
     histosQA.add("Tracks/pions/dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/pions/dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/pions/itsChi2NCl", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
     histosQA.add("Tracks/pions/itsChi2", "ITS Chi2; ITS Chi2; Counts", kTH1F, {{500, 0, 50}});
     histosQA.add("Tracks/pions/tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
-    histosQA.add("Tracks/pions/tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
+    histosQA.add("Tracks/pions/tpcNClsCrossedRows", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
     // QA plots: Pion tracks from 4pi in selected events
+    histosQA.add("Tracks/pions-from-4pi/isPVcontributor", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{3, 0, 3}});
     histosQA.add("Tracks/pions-from-4pi/dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/pions-from-4pi/dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosQA.add("Tracks/pions-from-4pi/itsChi2NCl", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
     histosQA.add("Tracks/pions-from-4pi/itsChi2", "ITS Chi2; ITS Chi2; Counts", kTH1F, {{500, 0, 50}});
     histosQA.add("Tracks/pions-from-4pi/tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
-    histosQA.add("Tracks/pions-from-4pi/tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
+    histosQA.add("Tracks/pions-from-4pi/tpcNClsCrossedRows", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
     // QA plots: PID- All tracks
-    histosPID.add("all/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
+    histosPID.add("all/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 3}, {5000, 0.0, 600}});
     histosPID.add("all/tpcNSigmaPi", "TPC nSigma Pion for all tracks in selected events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tpcNSigmaKa", "TPC nSigma Kaon for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tpcNSigmaPr", "TPC nSigma Proton for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tpcNSigmaEl", "TPC nSigma Electron for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tpcNSigmaMu", "TPC nSigma Muon for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
-    histosPID.add("all/tofBeta", "TOF beta vs p ; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
+    histosPID.add("all/tofBeta", "TOF beta vs p ; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {1500, 0.0, 1.5}});
     histosPID.add("all/tofNSigmaPi", "TOF nSigma Pion for all tracks in selected events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tofNSigmaKa", "TOF nSigma Kaon for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tofNSigmaPr", "TOF nSigma Proton for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tofNSigmaEl", "TOF nSigma Electron for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("all/tofNSigmaMu", "TOF nSigma Muon for all tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     // QA plots: PID- Selected tracks
-    histosPID.add("selected/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
+    histosPID.add("selected/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 3}, {5000, 0.0, 600.0}});
     histosPID.add("selected/tpcNSigmaPi", "TPC nSigma Pion for all selected tracks in selected events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tpcNSigmaKa", "TPC nSigma Kaon for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tpcNSigmaPr", "TPC nSigma Proton for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tpcNSigmaEl", "TPC nSigma Electron for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tpcNSigmaMu", "TPC nSigma Muon for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
-    histosPID.add("selected/tofBeta", "TOF beta vs p; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
+    histosPID.add("selected/tofBeta", "TOF beta vs p; p [GeV/c]; #beta", kTH2F, {{500, 0, 2}, {1500, 0.0, 1.5}});
     histosPID.add("selected/tofNSigmaPi", "TOF nSigma Pion for all selected tracks in selected events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tofNSigmaKa", "TOF nSigma Kaon for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tofNSigmaPr", "TOF nSigma Proton for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tofNSigmaEl", "TOF nSigma Electron for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("selected/tofNSigmaMu", "TOF nSigma Muon for all selected tracks in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     // QA plots: PID- Pion tracks
-    histosPID.add("pions/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
+    histosPID.add("pions/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 3}, {5000, 0.0, 600.0}});
     histosPID.add("pions/tpcNSigmaPi", "TPC nSigma Pion for all selected pions in selected events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tpcNSigmaKa", "TPC nSigma Kaon for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tpcNSigmaPr", "TPC nSigma Proton for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tpcNSigmaEl", "TPC nSigma Electron for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tpcNSigmaMu", "TPC nSigma Muon for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
-    histosPID.add("pions/tofBeta", "TOF beta vs p; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
+    histosPID.add("pions/tofBeta", "TOF beta vs p; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {1500, 0.0, 1.5}});
     histosPID.add("pions/tofNSigmaPi", "TOF nSigma Pion for all selected pions in selected events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tofNSigmaKa", "TOF nSigma Kaon for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tofNSigmaPr", "TOF nSigma Proton for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tofNSigmaEl", "TOF nSigma Electron for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions/tofNSigmaMu", "TOF nSigma Muon for all selected pions in selected events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     // QA plots: PID- Pion tracks from 4pi events
-    histosPID.add("pions-from-4pi/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
+    histosPID.add("pions-from-4pi/tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 3}, {5000, 0.0, 600.0}});
     histosPID.add("pions-from-4pi/tpcNSigmaPi", "TPC nSigma Pion for all pions from 4-pi events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions-from-4pi/tpcNSigmaKa", "TPC nSigma Kaon for all pions from 4-pi events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions-from-4pi/tpcNSigmaPr", "TPC nSigma Proton for all pions from 4-pi events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions-from-4pi/tpcNSigmaEl", "TPC nSigma Electron for all pions from 4-pi events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions-from-4pi/tpcNSigmaMu", "TPC nSigma Muon for all pions from 4-pi events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
-    histosPID.add("pions-from-4pi/tofBeta", "TOF beta vs p; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
+    histosPID.add("pions-from-4pi/tofBeta", "TOF beta vs p; p [GeV/c]; #beta", kTH2F, {{500, 0, 10}, {1500, 0.0, 1.5}});
     histosPID.add("pions-from-4pi/tofNSigmaPi", "TOF nSigma Pion for all pions from 4-pi events; Events", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions-from-4pi/tofNSigmaKa", "TOF nSigma Kaon for all pions from 4-pi eventsn; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
     histosPID.add("pions-from-4pi/tofNSigmaPr", "TOF nSigma Proton for all pions from 4-pi events; Entries", kTH2F, {{1000, -15, 15}, {1000, 0, 10}});
@@ -254,6 +258,14 @@ struct ExclusiveRhoTo4Pi {
     histosMCtruth.add("Four-pion", ";pT [GeV/c]; #eta; #varphi [rad];y; m_{4#pi} [GeV/c^{2}];Run Number", kTHnSparseF, {pTAxis, etaAxis, phiAxis, rapidityAxis, invMassAxis, {113, 0, 113}});
     //_______________________________________________________________________________________________________________________________________________
     setHistBinLabels();
+    if (debugMode) {
+      histosDataCounter.print();
+      histosQA.print();
+      histosPID.print();
+      histosKin.print();
+      histos4piKin.print();
+      histosMCtruth.print();
+    }
   } // End of init function
 
   //---------------------------------------------------------------------------------------------------------------------------------------------
@@ -264,10 +276,8 @@ struct ExclusiveRhoTo4Pi {
   Filter zdcCuts = (o2::aod::udzdc::energyCommonZNA <= zdcCut) && (o2::aod::udzdc::energyCommonZNC <= zdcCut);
   Filter bcSelectionCuts = (o2::aod::udcollision::sbp == sbpCut) && (o2::aod::udcollision::itsROFb == itsROFbCut) && (o2::aod::udcollision::vtxITSTPC == vtxITSTPCcut) && (o2::aod::udcollision::tfb == tfbCut);
   // Track Cuts
-  Filter onlyPVtracks = o2::aod::udtrack::isPVContributor == useOnlyPVtracks;
   Filter tpcchi2nclsFilter = o2::aod::track::tpcChi2NCl <= tpcChi2NClsCut;
   Filter itschi2nclsFilter = o2::aod::track::itsChi2NCl <= itsChi2NClsCut;
-  Filter tpcCuts = (nabs(o2::aod::pidtpc::tpcNSigmaPi) <= nSigmaTPCcut);
   //---------------------------------------------------------------------------------------------------------------------------------------------
 
   using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -297,8 +307,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.fill(HIST("Events/selected/FV0A"), collision.totalFV0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0A"), collision.totalFT0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0C"), collision.totalFT0AmplitudeC());
-    histosQA.fill(HIST("Events/selected/ZDC_A"), collision.energyCommonZNA());
-    histosQA.fill(HIST("Events/selected/ZDC_C"), collision.energyCommonZNC());
+    histosQA.fill(HIST("Events/selected/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
     histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
     histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
 
@@ -311,12 +320,13 @@ struct ExclusiveRhoTo4Pi {
       PxPyPzMVector tVector(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
 
       // QA-Tracks before selection
+      histosQA.fill(HIST("Tracks/all/isPVcontributor"), t0.isPVContributor());
       histosQA.fill(HIST("Tracks/all/dcaXY"), t0.dcaXY());
       histosQA.fill(HIST("Tracks/all/dcaZ"), t0.dcaZ());
       histosQA.fill(HIST("Tracks/all/itsChi2NCl"), t0.itsChi2NCl());
       histosQA.fill(HIST("Tracks/all/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
       histosQA.fill(HIST("Tracks/all/tpcChi2NCl"), t0.tpcChi2NCl());
-      histosQA.fill(HIST("Tracks/all/tpcNClsFindable"), t0.tpcNClsFindable());
+      histosQA.fill(HIST("Tracks/all/tpcNClsCrossedRows"), t0.tpcNClsCrossedRows());
 
       // PID before track selection
       histosPID.fill(HIST("all/tpcSignal"), tVector.P(), t0.tpcSignal());
@@ -336,17 +346,18 @@ struct ExclusiveRhoTo4Pi {
       histosKin.fill(HIST("all"), tVector.Pt(), tVector.Eta(), tVector.Phi());
 
       // Selecting good tracks
-      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsFindableCut)) {
+      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsCrossedRowsCut)) {
         continue;
       }
 
       // QA-Tracks after selection
+      histosQA.fill(HIST("Tracks/selected/isPVcontributor"), t0.isPVContributor());
       histosQA.fill(HIST("Tracks/selected/dcaXY"), t0.dcaXY());
       histosQA.fill(HIST("Tracks/selected/dcaZ"), t0.dcaZ());
       histosQA.fill(HIST("Tracks/selected/itsChi2NCl"), t0.itsChi2NCl());
       histosQA.fill(HIST("Tracks/selected/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
       histosQA.fill(HIST("Tracks/selected/tpcChi2NCl"), t0.tpcChi2NCl());
-      histosQA.fill(HIST("Tracks/selected/tpcNClsFindable"), t0.tpcNClsFindable());
+      histosQA.fill(HIST("Tracks/selected/tpcNClsCrossedRows"), t0.tpcNClsCrossedRows());
 
       // PID after track selection before selecting pions
       histosPID.fill(HIST("selected/tpcSignal"), tVector.P(), t0.tpcSignal());
@@ -365,17 +376,18 @@ struct ExclusiveRhoTo4Pi {
       // Kinematics for all particles after track selection before selecting pions
       histosKin.fill(HIST("selected"), tVector.Pt(), tVector.Eta(), tVector.Phi());
 
-      if (ifPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
+      if (ifPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut, ifCircularNSigmaCut)) {
 
         selectedPionTracks.push_back(t0);
 
         // QA-Tracks after selecting pions
+        histosQA.fill(HIST("Tracks/pions/isPVcontributor"), t0.isPVContributor());
         histosQA.fill(HIST("Tracks/pions/dcaXY"), t0.dcaXY());
         histosQA.fill(HIST("Tracks/pions/dcaZ"), t0.dcaZ());
         histosQA.fill(HIST("Tracks/pions/itsChi2NCl"), t0.itsChi2NCl());
         histosQA.fill(HIST("Tracks/pions/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
         histosQA.fill(HIST("Tracks/pions/tpcChi2NCl"), t0.tpcChi2NCl());
-        histosQA.fill(HIST("Tracks/pions/tpcNClsFindable"), t0.tpcNClsFindable());
+        histosQA.fill(HIST("Tracks/pions/tpcNClsCrossedRows"), t0.tpcNClsCrossedRows());
 
         // PID after selecting pions
         histosPID.fill(HIST("pions/tpcSignal"), tVector.P(), t0.tpcSignal());
@@ -408,12 +420,12 @@ struct ExclusiveRhoTo4Pi {
     int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
 
     // event should have exactly 4 pions
-    if (numSelectedPionTracks != numFourPionTracks) {
+    if (numSelectedPionTracks != four) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
+    if (numPionMinusTracks == two && numPiPlusTracks == two) {
 
       // QA-Events-4pion
       histosQA.fill(HIST("Events/4pion/UPCmode"), collision.flags());
@@ -430,20 +442,20 @@ struct ExclusiveRhoTo4Pi {
       histosQA.fill(HIST("Events/4pion/FV0A"), collision.totalFV0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0A"), collision.totalFT0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0C"), collision.totalFT0AmplitudeC());
-      histosQA.fill(HIST("Events/4pion/ZDC_A"), collision.energyCommonZNA());
-      histosQA.fill(HIST("Events/4pion/ZDC_C"), collision.energyCommonZNC());
+      histosQA.fill(HIST("Events/4pion/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
       histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
 
-      for (int i = 0; i < numFourPionTracks; i++) {
+      for (int i = 0; i < four; i++) {
         PxPyPzMVector tVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
         // Tracks QA for all four pions
+        histosQA.fill(HIST("Tracks/pions-from-4pi/isPVcontributor"), selectedPionTracks[i].isPVContributor());
         histosQA.fill(HIST("Tracks/pions-from-4pi/dcaXY"), selectedPionTracks[i].dcaXY());
         histosQA.fill(HIST("Tracks/pions-from-4pi/dcaZ"), selectedPionTracks[i].dcaZ());
         histosQA.fill(HIST("Tracks/pions-from-4pi/itsChi2NCl"), selectedPionTracks[i].itsChi2NCl());
         histosQA.fill(HIST("Tracks/pions-from-4pi/itsChi2"), selectedPionTracks[i].itsChi2NCl() * selectedPionTracks[i].itsNCls());
         histosQA.fill(HIST("Tracks/pions-from-4pi/tpcChi2NCl"), selectedPionTracks[i].tpcChi2NCl());
-        histosQA.fill(HIST("Tracks/pions-from-4pi/tpcNClsFindable"), selectedPionTracks[i].tpcNClsFindable());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/tpcNClsCrossedRows"), selectedPionTracks[i].tpcNClsCrossedRows());
         // PID for all four pions
         histosPID.fill(HIST("pions-from-4pi/tpcSignal"), tVector.P(), selectedPionTracks[i].tpcSignal());
         histosPID.fill(HIST("pions-from-4pi/tpcNSigmaPi"), selectedPionTracks[i].tpcNSigmaPi(), tVector.Pt());
@@ -505,7 +517,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
+    if (numPionMinusTracks != two && numPiPlusTracks != two) {
       PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
       PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
       PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
@@ -574,7 +586,7 @@ struct ExclusiveRhoTo4Pi {
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
     // ZDC
-    if (collision.energyCommonZNA() > zdcCut || collision.energyCommonZNC() > zdcCut) {
+    if (!neutronClassSelection(collision)) {
       return;
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
@@ -592,129 +604,124 @@ struct ExclusiveRhoTo4Pi {
 
   void processTrackCounter(soa::Filtered<UDCollisions>::iterator const& collision, UDtracks const& tracks)
   {
+
     int runIndex = getRunNumberIndex(collision.runNumber());
+
     // Check if the Event is reconstructed in UPC mode
     if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronZdcOk(collision))) {
       return;
     }
 
-    bool ifRejectedEvent = false;
-
     for (const auto& track : tracks) {
 
-      if (ifRejectedEvent) {
-        break;
-      }
-
+      // total tracks
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 0);
+
       PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
-      // is PV contributor
-      if (track.isPVContributor() != useOnlyPVtracks) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 1);
-        ifRejectedEvent = true;
+
+      // pt cut
+      if (trackVector.Pt() < pTcut) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 1);
 
-      // pt cut
-      if (trackVector.Pt() < pTcut) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 2);
-        ifRejectedEvent = true;
+      // eta cut
+      if (std::abs(trackVector.Eta()) > etaCut) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 2);
 
-      // eta cut
-      if (std::abs(trackVector.Eta()) > etaCut) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 3);
-        ifRejectedEvent = true;
+      // DCA Z cut
+      if (std::abs(track.dcaZ()) > dcaZcut) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 3);
 
-      // DCA Z cut
-      if (std::abs(track.dcaZ()) > dcaZcut) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 4);
-        ifRejectedEvent = true;
+      // DCA XY cut
+      float maxDCAxy = 0.0105 + 0.035 / std::pow(trackVector.Pt(), 1.1);
+      if (dcaXYcut == 0 && (std::fabs(track.dcaXY()) > maxDCAxy)) {
+        continue;
+      } else if (dcaXYcut != 0 && (std::fabs(track.dcaXY()) > dcaXYcut)) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 4);
 
-      // DCA XY cut
-      float maxDCAxy = 0.0105 + 0.035 / std::pow(trackVector.Pt(), 1.1);
-      if (dcaXYcut == 0 && (std::fabs(track.dcaXY()) > maxDCAxy)) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 5);
-        ifRejectedEvent = true;
-        continue;
-      } else if (dcaXYcut != 0 && (std::fabs(track.dcaXY()) > dcaXYcut)) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 5);
-        ifRejectedEvent = true;
+      // ITS Track only
+      if (useITStracksOnly && !track.hasITS()) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 5);
 
-      // ITS Track only
-      if (useITStracksOnly && !track.hasITS()) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 6);
-        ifRejectedEvent = true;
+      // TPC Track only
+      if (useTPCtracksOnly && !track.hasTPC()) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 6);
 
-      // TPC Track only
-      if (useTPCtracksOnly && !track.hasTPC()) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 7);
-        ifRejectedEvent = true;
+      // ITS Chi2 N Clusters cut
+      if (track.hasITS() && track.itsChi2NCl() > itsChi2NClsCut) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 7);
 
-      // ITS Chi2 N Clusters cut
-      if (track.hasITS() && track.itsChi2NCl() > itsChi2NClsCut) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 8);
-        ifRejectedEvent = true;
+      // TPC Chi2 N Clusters cut
+      if (track.hasTPC() && track.tpcChi2NCl() > tpcChi2NClsCut) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 8);
 
-      // TPC Chi2 N Clusters cut
-      if (track.hasTPC() && track.tpcChi2NCl() > tpcChi2NClsCut) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 9);
-        ifRejectedEvent = true;
+      // TPC N Clusters Findable cut
+      if (track.hasTPC() && track.tpcNClsCrossedRows() < tpcNClsCrossedRowsCut) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 9);
 
-      // TPC N Clusters Findable cut
-      if (track.hasTPC() && track.tpcNClsFindable() < tpcNClsFindableCut) {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 10);
-        ifRejectedEvent = true;
+      // Selection PID Pion
+      if (ifPion(track, useTOF, nSigmaTPCcut, nSigmaTOFcut, ifCircularNSigmaCut)) {
         continue;
       }
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 10);
 
-      // Selection PID Pion
-      if (ifPion(track, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
-        histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 11);
-        if (track.sign() == 1) {
-          histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 12);
-        } else {
-          histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 12);
-        }
-        if (track.sign() == -1) {
-          histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 13);
-        } else {
-          histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 13);
-        }
-      } else {
-        histosDataCounter.fill(HIST("LostInTrackCut_vs_runNo"), runIndex, 11);
-        ifRejectedEvent = true;
-      } // End of Selection PID Pion
+      // is PV contributor
+      if (track.isPVContributor() != useOnlyPVtracks) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 11);
+
     } // End of loop over tracks
   } // End of processCounter function
 
   using MCtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
   using MCCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
+
+  void processMCgen(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParticles, aod::BCs const& bcs)
+  {
+
+    if (bcs.size() == 0) {
+      return;
+    }
+    auto bc = bcs.begin();
+    int runIndex = getRunNumberIndex(bc.runNumber());
+
+    for (const auto& particle : mcParticles) {
+      PxPyPzMVector p1234;
+      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != four)) {
+        continue;
+      }
+      for (const auto& daughter : particle.daughters_as<aod::UDMcParticles>()) {
+        PxPyPzMVector dVector(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
+        if (daughter.pdgCode() == PDG_t::kPiPlus) {
+          histosMCtruth.fill(HIST("4-pi-pions"), dVector.Pt(), dVector.Eta(), dVector.Phi(), dVector.Rapidity(), runIndex);
+          p1234 = p1234 + dVector;
+        }
+        if (daughter.pdgCode() == PDG_t::kPiMinus) {
+          histosMCtruth.fill(HIST("4-pi-pions"), dVector.Pt(), dVector.Eta(), dVector.Phi(), dVector.Rapidity(), runIndex);
+          p1234 = p1234 + dVector;
+        }
+      } // End of loop over daughters
+      histosMCtruth.fill(HIST("Four-pion"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+    } // End of loop over MC particles
+  } // End of processMCgen function
 
   void processMCrec(soa::Filtered<MCCollisions>::iterator const& collision, soa::Filtered<MCtracks> const& tracks)
   {
@@ -740,8 +747,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.fill(HIST("Events/selected/FV0A"), collision.totalFV0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0A"), collision.totalFT0AmplitudeA());
     histosQA.fill(HIST("Events/selected/FT0C"), collision.totalFT0AmplitudeC());
-    histosQA.fill(HIST("Events/selected/ZDC_A"), collision.energyCommonZNA());
-    histosQA.fill(HIST("Events/selected/ZDC_C"), collision.energyCommonZNC());
+    histosQA.fill(HIST("Events/selected/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
     histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
     histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
 
@@ -754,12 +760,13 @@ struct ExclusiveRhoTo4Pi {
       PxPyPzMVector tVector(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
 
       // QA-Tracks before selection
+      histosQA.fill(HIST("Tracks/all/isPVcontributor"), t0.isPVContributor());
       histosQA.fill(HIST("Tracks/all/dcaXY"), t0.tpcChi2NCl());
       histosQA.fill(HIST("Tracks/all/dcaZ"), t0.tpcChi2NCl());
       histosQA.fill(HIST("Tracks/all/itsChi2NCl"), t0.itsChi2NCl());
       histosQA.fill(HIST("Tracks/all/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
       histosQA.fill(HIST("Tracks/all/tpcChi2NCl"), t0.tpcChi2NCl());
-      histosQA.fill(HIST("Tracks/all/tpcNClsFindable"), t0.tpcNClsFindable());
+      histosQA.fill(HIST("Tracks/all/tpcNClsCrossedRows"), t0.tpcNClsCrossedRows());
 
       // PID before track selection
       histosPID.fill(HIST("all/tpcSignal"), tVector.P(), t0.tpcSignal());
@@ -779,7 +786,7 @@ struct ExclusiveRhoTo4Pi {
       histosKin.fill(HIST("all"), tVector.Pt(), tVector.Eta(), tVector.Phi());
 
       // Selecting good tracks
-      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsFindableCut)) {
+      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsCrossedRowsCut)) {
         continue;
       }
       if (!t0.has_udMcParticle()) {
@@ -787,12 +794,13 @@ struct ExclusiveRhoTo4Pi {
       }
 
       // QA-Tracks after selection
+      histosQA.fill(HIST("Tracks/selected/isPVcontributor"), t0.isPVContributor());
       histosQA.fill(HIST("Tracks/selected/dcaXY"), t0.dcaXY());
       histosQA.fill(HIST("Tracks/selected/dcaZ"), t0.dcaZ());
       histosQA.fill(HIST("Tracks/selected/itsChi2NCl"), t0.itsChi2NCl());
       histosQA.fill(HIST("Tracks/selected/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
       histosQA.fill(HIST("Tracks/selected/tpcChi2NCl"), t0.tpcChi2NCl());
-      histosQA.fill(HIST("Tracks/selected/tpcNClsFindable"), t0.tpcNClsFindable());
+      histosQA.fill(HIST("Tracks/selected/tpcNClsCrossedRows"), t0.tpcNClsCrossedRows());
 
       // PID after track selection before selecting pions
       histosPID.fill(HIST("selected/tpcSignal"), tVector.P(), t0.tpcSignal());
@@ -811,17 +819,18 @@ struct ExclusiveRhoTo4Pi {
       // Kinematics for all particles after track selection before selecting pions
       histosKin.fill(HIST("selected"), tVector.Pt(), tVector.Eta(), tVector.Phi());
 
-      if (ifPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
+      if (ifPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut, ifCircularNSigmaCut)) {
 
         selectedPionTracks.push_back(t0);
 
         // QA-Tracks after selecting pions
+        histosQA.fill(HIST("Tracks/pions/isPVcontributor"), t0.isPVContributor());
         histosQA.fill(HIST("Tracks/pions/dcaXY"), t0.dcaXY());
         histosQA.fill(HIST("Tracks/pions/dcaZ"), t0.dcaZ());
         histosQA.fill(HIST("Tracks/pions/itsChi2NCl"), t0.itsChi2NCl());
         histosQA.fill(HIST("Tracks/pions/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
         histosQA.fill(HIST("Tracks/pions/tpcChi2NCl"), t0.tpcChi2NCl());
-        histosQA.fill(HIST("Tracks/pions/tpcNClsFindable"), t0.tpcNClsFindable());
+        histosQA.fill(HIST("Tracks/pions/tpcNClsCrossedRows"), t0.tpcNClsCrossedRows());
 
         // PID after selecting pions
         histosPID.fill(HIST("pions/tpcSignal"), tVector.P(), t0.tpcSignal());
@@ -854,12 +863,12 @@ struct ExclusiveRhoTo4Pi {
     int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
 
     // event should have exactly 4 pions
-    if (numSelectedPionTracks != numFourPionTracks) {
+    if (numSelectedPionTracks != four) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
+    if (numPionMinusTracks == two && numPiPlusTracks == two) {
 
       // QA-Events-4pion
       histosQA.fill(HIST("Events/4pion/UPCmode"), collision.flags());
@@ -876,20 +885,20 @@ struct ExclusiveRhoTo4Pi {
       histosQA.fill(HIST("Events/4pion/FV0A"), collision.totalFV0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0A"), collision.totalFT0AmplitudeA());
       histosQA.fill(HIST("Events/4pion/FT0C"), collision.totalFT0AmplitudeC());
-      histosQA.fill(HIST("Events/4pion/ZDC_A"), collision.energyCommonZNA());
-      histosQA.fill(HIST("Events/4pion/ZDC_C"), collision.energyCommonZNC());
+      histosQA.fill(HIST("Events/4pion/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
       histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
 
-      for (int i = 0; i < numFourPionTracks; i++) {
+      for (int i = 0; i < four; i++) {
         PxPyPzMVector tVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
         // Tracks QA for all four pions
+        histosQA.fill(HIST("Tracks/pions-from-4pi/isPVcontributor"), selectedPionTracks[i].isPVContributor());
         histosQA.fill(HIST("Tracks/pions-from-4pi/dcaXY"), selectedPionTracks[i].dcaXY());
         histosQA.fill(HIST("Tracks/pions-from-4pi/dcaZ"), selectedPionTracks[i].dcaZ());
         histosQA.fill(HIST("Tracks/pions-from-4pi/itsChi2NCl"), selectedPionTracks[i].itsChi2NCl());
         histosQA.fill(HIST("Tracks/pions-from-4pi/itsChi2"), selectedPionTracks[i].itsChi2NCl() * selectedPionTracks[i].itsNCls());
         histosQA.fill(HIST("Tracks/pions-from-4pi/tpcChi2NCl"), selectedPionTracks[i].tpcChi2NCl());
-        histosQA.fill(HIST("Tracks/pions-from-4pi/tpcNClsFindable"), selectedPionTracks[i].tpcNClsFindable());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/tpcNClsCrossedRows"), selectedPionTracks[i].tpcNClsCrossedRows());
         // PID for all four pions
         histosPID.fill(HIST("pions-from-4pi/tpcSignal"), tVector.P(), selectedPionTracks[i].tpcSignal());
         histosPID.fill(HIST("pions-from-4pi/tpcNSigmaPi"), selectedPionTracks[i].tpcNSigmaPi(), tVector.Pt());
@@ -952,7 +961,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
+    if (numPionMinusTracks != two && numPiPlusTracks != two) {
       PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
       PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
       PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
@@ -972,40 +981,177 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for non 0 charge events
   } // End of 4 Pion Analysis Process function for Pass5 MC
 
-  void processMCgen(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParticles, aod::BCs const& bcs)
+  void processEventCounterMC(MCCollisions::iterator const& collision)
   {
 
-    if (bcs.size() == 0) {
+    // Check if the Event has MC labels
+    if (!collision.has_udMcCollision()) {
       return;
     }
-    auto bc = bcs.begin();
-    int runIndex = getRunNumberIndex(bc.runNumber());
 
-    for (const auto& particle : mcParticles) {
-      PxPyPzMVector p1234;
-      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != numFourPionTracks)) {
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 0);
+    // RCT flag
+    if (!sgSelector.isCBTHadronZdcOk(collision)) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 1);
+    // UPC mode
+    if (collision.flags() != ifUPC) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 2);
+    // vtxITSTPC
+    if (collision.vtxITSTPC() != vtxITSTPCcut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 3);
+    // sbp
+    if (collision.sbp() != sbpCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 4);
+    // itsROFb
+    if (collision.itsROFb() != itsROFbCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 5);
+    // tfb
+    if (collision.tfb() != tfbCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 6);
+    // FT0A
+    if (collision.totalFT0AmplitudeA() > ft0aCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 7);
+    // FT0C
+    if (collision.totalFT0AmplitudeC() > ft0cCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 8);
+    // FV0A
+    if (collision.totalFV0AmplitudeA() > fv0Cut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
+    // ZDC
+    if (collision.energyCommonZNA() > zdcCut || collision.energyCommonZNC() > zdcCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
+    // numContributors
+    if (collision.numContrib() != numPVContrib) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 11);
+    // vertexZ
+    if (std::abs(collision.posZ()) > vZCut) {
+      return;
+    }
+    histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 12);
+  } // End of processCounter function
+
+  void processTrackCounterMC(soa::Filtered<MCCollisions>::iterator const& collision, MCtracks const& tracks)
+  {
+
+    int runIndex = getRunNumberIndex(collision.runNumber());
+
+    // Check if the Event is reconstructed in UPC mode
+    if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronZdcOk(collision))) {
+      return;
+    }
+
+    for (const auto& track : tracks) {
+
+      if (!track.has_udMcParticle()) {
         continue;
       }
-      for (const auto& daughter : particle.daughters_as<aod::UDMcParticles>()) {
-        PxPyPzMVector dVector(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
-        if (daughter.pdgCode() == PDG_t::kPiPlus) {
-          histosMCtruth.fill(HIST("4-pi-pions"), dVector.Pt(), dVector.Eta(), dVector.Phi(), dVector.Rapidity(), runIndex);
-          p1234 = p1234 + dVector;
-        }
-        if (daughter.pdgCode() == PDG_t::kPiMinus) {
-          histosMCtruth.fill(HIST("4-pi-pions"), dVector.Pt(), dVector.Eta(), dVector.Phi(), dVector.Rapidity(), runIndex);
-          p1234 = p1234 + dVector;
-        }
-      } // End of loop over daughters
-      histosMCtruth.fill(HIST("Four-pion"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
-    } // End of loop over MC particles
-  } // End of processMCgen function
+
+      // total tracks
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 0);
+
+      PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
+
+      // pt cut
+      if (trackVector.Pt() < pTcut) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 1);
+
+      // eta cut
+      if (std::abs(trackVector.Eta()) > etaCut) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 2);
+
+      // DCA Z cut
+      if (std::abs(track.dcaZ()) > dcaZcut) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 3);
+
+      // DCA XY cut
+      float maxDCAxy = 0.0105 + 0.035 / std::pow(trackVector.Pt(), 1.1);
+      if (dcaXYcut == 0 && (std::fabs(track.dcaXY()) > maxDCAxy)) {
+        continue;
+      } else if (dcaXYcut != 0 && (std::fabs(track.dcaXY()) > dcaXYcut)) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 4);
+
+      // ITS Track only
+      if (useITStracksOnly && !track.hasITS()) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 5);
+
+      // TPC Track only
+      if (useTPCtracksOnly && !track.hasTPC()) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 6);
+
+      // ITS Chi2 N Clusters cut
+      if (track.hasITS() && track.itsChi2NCl() > itsChi2NClsCut) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 7);
+
+      // TPC Chi2 N Clusters cut
+      if (track.hasTPC() && track.tpcChi2NCl() > tpcChi2NClsCut) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 8);
+
+      // TPC N Clusters Findable cut
+      if (track.hasTPC() && track.tpcNClsCrossedRows() < tpcNClsCrossedRowsCut) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 9);
+
+      // Selection PID Pion
+      if (ifPion(track, useTOF, nSigmaTPCcut, nSigmaTOFcut, ifCircularNSigmaCut)) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 10);
+
+      // is PV contributor
+      if (track.isPVContributor() != useOnlyPVtracks) {
+        continue;
+      }
+      histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 11);
+
+    } // End of loop over tracks
+  } // End of processCounter function
 
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "Data Analysis Function", true);
-  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "MC generated Analysis Function", false);
-  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "MC reconstructed Analysis Function", false);
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processEventCounter, "Event Counter Function", true);
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processTrackCounter, "Track Counter Function", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "MC generated Analysis Function", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "MC reconstructed Analysis Function", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processEventCounterMC, "MC Event Counter Function", false);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processTrackCounterMC, "MC Track Counter Function", false);
 
   double collinSoperPhi(PxPyPzMVector twoPionVector, PxPyPzMVector fourPionVector)
   {
@@ -1039,6 +1185,45 @@ struct ExclusiveRhoTo4Pi {
     return cosThetaCS;
   }
 
+  template <typename C>
+  bool neutronClassSelection(C const& coll)
+  {
+
+    bool aXn = coll.energyCommonZNA() > zdcMaxAmp && coll.timeZNA() < zdcMaxTime;
+    bool a0n = coll.energyCommonZNA() <= zdcMaxAmp;
+    bool cXn = coll.energyCommonZNC() > zdcMaxAmp && coll.timeZNC() < zdcMaxTime;
+    bool c0n = coll.energyCommonZNC() <= zdcMaxAmp;
+
+    if (this->neutronClass.value == "XnXn") {
+      if (aXn && cXn) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (this->neutronClass.value == "Xn0n") {
+      if (aXn && c0n) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (this->neutronClass.value == "0nXn") {
+      if (a0n && cXn) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (this->neutronClass.value == "0n0n") {
+      if (a0n && c0n) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      // "Any" class
+      return true;
+    }
+  } // End of Neutron class selection function
+
   template <typename T>
   bool isSelectedTrack(T const& track,
                        float ptcut,
@@ -1049,7 +1234,7 @@ struct ExclusiveRhoTo4Pi {
                        bool ifTPC,
                        float itschi2nclscut,
                        float tpcchi2nclscut,
-                       float tpcnclsfindablecut)
+                       float tpcNClsCrossedRowscut)
   {
     PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
     // pt cut
@@ -1079,7 +1264,7 @@ struct ExclusiveRhoTo4Pi {
     if (ifTPC && !track.hasTPC()) {
       return false;
     }
-    // ITS Chi2 N Clusters cut
+    // ITS Chi2 per N Clusters cut
     if (track.hasITS() && track.itsChi2NCl() > itschi2nclscut) {
       return false;
     }
@@ -1088,7 +1273,10 @@ struct ExclusiveRhoTo4Pi {
       return false;
     }
     // TPC N Clusters Findable cut
-    if (track.hasTPC() && track.tpcNClsFindable() < tpcnclsfindablecut) {
+    if (track.hasTPC() && track.tpcNClsCrossedRows() < tpcNClsCrossedRowscut) {
+      return false;
+    }
+    if (useOnlyPVtracks && !track.isPVContributor()) {
       return false;
     }
     // All cuts passed
@@ -1096,21 +1284,35 @@ struct ExclusiveRhoTo4Pi {
   } // End of Track Selection function
 
   template <typename T>
-  bool ifPion(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
+  bool ifPion(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut, bool ifCircularNSigmaCut)
   {
+    if (ifCircularNSigmaCut) {
+      if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmatof_cut * nsigmatof_cut)) {
+        return true;
+      }
 
-    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmatof_cut * nsigmatof_cut)) {
-      return true;
-    }
+      if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+        return true;
+      }
 
-    if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
-      return true;
-    }
+      if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+        return true;
+      }
+      return false;
+    } else {
+      if (use_tof && candidate.hasTOF() && (std::abs(candidate.tofNSigmaPi()) < nsigmatpc_cut) && (std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut)) {
+        return true;
+      }
 
-    if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
-      return true;
+      if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+        return true;
+      }
+
+      if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+        return true;
+      }
+      return false;
     }
-    return false;
   }
 
   int getRunNumberIndex(int runNumber)
@@ -1133,6 +1335,7 @@ struct ExclusiveRhoTo4Pi {
   void setHistBinLabels()
   {
 
+    // Event cuts labels
     std::string eventLabels[13] = {
       "No Cuts",
       "isCBTHadronOk",
@@ -1144,34 +1347,29 @@ struct ExclusiveRhoTo4Pi {
       "FT0A<=" + strFormat(fv0Cut),
       "FT0C<=" + strFormat(ft0cCut),
       "FV0A<=" + strFormat(ft0aCut),
-      "ZDC",
+      "Neutron Class: " + neutronClass.value,
       "n PV Contrib = 4",
       "V_{z} < " + strFormat(vZCut) + " cm"};
-
     int numEventCuts = 13;
 
-    std::string trackLabels[14] = {
+    // Tracks cuts labels
+    std::string trackLabels[12] = {
       "No Cuts",
-      "isPVContributor",
       "pT>" + strFormat(pTcut) + " GeV/c",
       "|#eta|<" + strFormat(etaCut),
       "DCA Z<" + strFormat(dcaZcut) + " cm",
       "DCA XY cut",
-      "hasITS",
-      "hasTPC",
+      "hasITS = " + std::to_string(useITStracksOnly),
+      "hasTPC = " + std::to_string(useTPCtracksOnly),
       "itsChi2NCl<" + strFormat(itsChi2NClsCut),
       "tpcChi2NCl<" + strFormat(tpcChi2NClsCut),
-      "tpcNClsFindable>" + strFormat(tpcNClsFindableCut),
-      "#pi tracks",
-      "#pi^{+} tracks",
-      "#pi^{-} tracks"};
-
-    int numTrackCuts = 14;
+      "tpcNClsCrossedRows>" + strFormat(tpcNClsCrossedRowsCut),
+      "#pi tracks (TPC+TOF)",
+      "isPVContributor"};
+    int numTrackCuts = 12;
 
     auto h1 = histosDataCounter.get<TH2>(HIST("EventsCounts_vs_runNo"));
     auto h2 = histosDataCounter.get<TH2>(HIST("TracksCounts_vs_runNo"));
-    auto h21 = histosDataCounter.get<TH2>(HIST("LostInTrackCut_vs_runNo"));
-
     auto h3 = histos4piKin.get<THnSparse>(HIST("zero-charge"));
     auto h4 = histos4piKin.get<THnSparse>(HIST("non-zero-charge"));
     auto h5 = histosMCtruth.get<THnSparse>(HIST("Four-pion"));
@@ -1181,13 +1379,11 @@ struct ExclusiveRhoTo4Pi {
     }
     for (int i = 0; i < numTrackCuts; ++i) {
       h2->GetYaxis()->SetBinLabel(i + 1, trackLabels[i].c_str());
-      h21->GetYaxis()->SetBinLabel(i + 1, trackLabels[i].c_str());
     }
     for (int i = 0; i < numRunNums; ++i) {
       std::string runLabel = std::to_string(runNos[i]);
       h1->GetXaxis()->SetBinLabel(i + 1, runLabel.c_str());
       h2->GetXaxis()->SetBinLabel(i + 1, runLabel.c_str());
-      h21->GetXaxis()->SetBinLabel(i + 1, runLabel.c_str());
       h3->GetAxis(7)->SetBinLabel(i + 1, runLabel.c_str());
       h4->GetAxis(5)->SetBinLabel(i + 1, runLabel.c_str());
       h5->GetAxis(5)->SetBinLabel(i + 1, runLabel.c_str());

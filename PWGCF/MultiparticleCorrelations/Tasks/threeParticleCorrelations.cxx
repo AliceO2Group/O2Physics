@@ -48,11 +48,17 @@ struct ThreeParticleCorrelations {
   float trackPtMin = 0.2, trackPtMax = 3.0;
   float trackEtaMax = 0.8;
 
-  Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
-
   // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
   float nSigma0 = 0.0, nSigma1 = 1.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
+
+  // Event selection parameters
+  struct : ConfigurableGroup {
+    std::string prefix = "EventSelection";
+    Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
+    Configurable<int> occupMin{"occupMin", 0, "Minimum collision occupancy"};
+    Configurable<int> occupMax{"occupMax", 15000, "Maximum collision occupancy"};
+  } evSelGroup;
 
   // V0 filter parameters
   struct : ConfigurableGroup {
@@ -77,7 +83,7 @@ struct ThreeParticleCorrelations {
 
   // Lambda invariant mass fit
   Configurable<float> invMassNSigma{"invMassNSigma", 4.0, "Number of standard deviations from the mean of the Lambda invariant mass peak"};
-  double dGaussSigma = 0.0019;
+  double dGaussSigma = 0.002;
 
   // Histogram registry
   HistogramRegistry rMECorrRegistry{"MECorrRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -88,8 +94,8 @@ struct ThreeParticleCorrelations {
 
   // Collision & Event filters
   Filter collCent = aod::cent::centFT0C > centMin&& aod::cent::centFT0C < centMax;
-  Filter collZvtx = nabs(aod::collision::posZ) < zvtxMax;
-  Filter mcCollZvtx = nabs(aod::mccollision::posZ) < zvtxMax;
+  Filter collZvtx = nabs(aod::collision::posZ) < evSelGroup.zvtxMax;
+  Filter mcCollZvtx = nabs(aod::mccollision::posZ) < evSelGroup.zvtxMax;
   Filter evSelect = aod::evsel::sel8 == true;
 
   // Track filters
@@ -184,6 +190,7 @@ struct ThreeParticleCorrelations {
     const AxisSpec centralityAxis{confCentBins};
     const AxisSpec fineCentralityAxis{fineCentBins};
     const AxisSpec zvtxAxis{confZvtxBins};
+    const AxisSpec occupancyAxis{200, 0, 20000};
     const AxisSpec dPhiAxis{36, (-1. / 2) * constants::math::PI, (3. / 2) * constants::math::PI};
     const AxisSpec dEtaAxis{32, -1.52, 1.52};
     const AxisSpec v0PtAxis{114, 0.6, 12};
@@ -193,14 +200,17 @@ struct ThreeParticleCorrelations {
     const AxisSpec lambdaInvMassAxis{100, 1.08, 1.16};
 
     // QA & PID
-    rQARegistry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{3, 0, 3}}});
+    rQARegistry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{5, 0, 5}}});
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "kIsGoodZvtxFT0vsPV");
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "kNoSameBunchPileup");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Occupancy window");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "kNoCollInTimeRangeStandard");
 
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{fineCentralityAxis}}});
     rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1D, {{fineCentralityAxis}}});
     rQARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{zvtxAxis}}});
+    rQARegistry.add("hEventOccupancy", "hEventOccupancy", {HistType::kTH1D, {{occupancyAxis}}});
     rQARegistry.add("hEventBfield", "hEventBfield", {HistType::kTH1D, {{2, -1, 1}}});
     rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
     rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
@@ -215,6 +225,9 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hPtKaon_Corrected", "hPtKaon_Corrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtProton_Corrected", "hPtProton_Corrected", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtV0_Corrected", "hPtV0_Corrected", {HistType::kTH3D, {{v0PtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_Looped", "hPtPion_Looped", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_Looped", "hPtKaon_Looped", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_Looped", "hPtProton_Looped", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtPion_MC", "hPtPion_MC", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtKaon_MC", "hPtKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtProton_MC", "hPtProton_MC", {HistType::kTH3D, {{trackPtAxis}, {fineCentralityAxis}, {2, -2, 2}}});
@@ -364,6 +377,7 @@ struct ThreeParticleCorrelations {
   void processSame(MyFilteredCollision const& collision, aod::V0Datas const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
 
+    rQARegistry.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
     if (!acceptEvent(collision, true)) {
       return;
     }
@@ -443,6 +457,14 @@ struct ThreeParticleCorrelations {
               assocPID = trackPID(associate);
               deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
               deltaEta = trigger.eta() - associate.eta();
+
+              if (assocPID[0] == pionID) { // Pions
+                rQARegistry.fill(HIST("hPtPion_Looped"), associate.pt(), collision.centFT0C(), associate.sign(), ratioCorrection(hCorrectionPions, associate, collision.centFT0C()) / trackEff(hEffPions, associate, collision.centFT0C()));
+              } else if (assocPID[0] == kaonID) { // Kaons
+                rQARegistry.fill(HIST("hPtKaon_Looped"), associate.pt(), collision.centFT0C(), associate.sign(), ratioCorrection(hCorrectionKaons, associate, collision.centFT0C()) / trackEff(hEffKaons, associate, collision.centFT0C()));
+              } else if (assocPID[0] == protonID) { // Protons
+                rQARegistry.fill(HIST("hPtProton_Looped"), associate.pt(), collision.centFT0C(), associate.sign(), ratioCorrection(hCorrectionProtons, associate, collision.centFT0C()) / trackEff(hEffProtons, associate, collision.centFT0C()));
+              }
 
               if (candMass >= MassLambda0 - invMassNSigma * dGaussSigma && candMass <= MassLambda0 + invMassNSigma * dGaussSigma) {
                 if (assocPID[0] == pionID) { // Pions
@@ -1000,6 +1022,21 @@ struct ThreeParticleCorrelations {
     }
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 2.5);
+    }
+
+    int occupEstim = col.trackOccupancyInTimeRange();
+    if (occupEstim <= evSelGroup.occupMin || occupEstim >= evSelGroup.occupMax) { // Occupancy window
+      return false;
+    }
+    if (FillHist) {
+      rQARegistry.fill(HIST("hNEvents"), 3.5);
+    }
+
+    if (!col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // kNoCollInTimeRangeStandard
+      return false;
+    }
+    if (FillHist) {
+      rQARegistry.fill(HIST("hNEvents"), 4.5);
     }
 
     return true;
