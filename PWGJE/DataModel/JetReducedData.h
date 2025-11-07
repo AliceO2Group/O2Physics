@@ -196,9 +196,6 @@ DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
-DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
-DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
-DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
@@ -217,9 +214,6 @@ DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          jmccollision::MultFV0A,
                          jmccollision::MultFT0A,
                          jmccollision::MultFT0C,
-                         jmccollision::CentFV0A,
-                         jmccollision::CentFT0A,
-                         jmccollision::CentFT0C,
                          jmccollision::CentFT0M,
                          jmccollision::Weight,
                          jmccollision::SubGeneratorId,
