@@ -125,6 +125,8 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisMlScore1{"thnConfigAxisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis thnConfigAxisMlScore2{"thnConfigAxisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {3, -0.5, 2.5}, "axis for UPC gap type (0=GapA, 1=GapC, 2=DoubleGap)"};
+  ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
+  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
 
   HistogramRegistry registry{
     "registry",
@@ -159,6 +161,8 @@ struct HfTaskDplus {
     AxisSpec const thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
     AxisSpec const thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
     AxisSpec const thnAxisGapType{thnConfigAxisGapType, "Gap type"};
+    AxisSpec const thnAxisFT0A{thnConfigAxisFT0A, "FT0-A amplitude"};
+    AxisSpec const thnAxisFT0C{thnConfigAxisFT0C, "FT0-C amplitude"};
 
     registry.add("hMass", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -214,6 +218,8 @@ struct HfTaskDplus {
       }
       if (doprocessDataWithMlWithUpc) {
         axes.push_back(thnAxisGapType);
+        axes.push_back(thnAxisFT0A);
+        axes.push_back(thnAxisFT0C);
       }
 
       registry.add("hSparseMass", "THn for Dplus", HistType::kTHnSparseF, axes);
@@ -724,7 +730,7 @@ struct HfTaskDplus {
           }
           fillHisto(candidate);
           if constexpr (fillMl) {
-            // Fill THn with gap type using lambda function similar to taskLc
+            // Fill THn with gap type and FIT signals
             std::vector<float> outputMl = {-999., -999., -999.};
             for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
               outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
@@ -738,6 +744,8 @@ struct HfTaskDplus {
               valuesToFill.push_back(occ);
             }
             valuesToFill.push_back(static_cast<double>(gapTypeInt));
+            valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
+            valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
             registry.get<THnSparse>(HIST("hSparseMass"))->Fill(valuesToFill.data());
           }
         }
