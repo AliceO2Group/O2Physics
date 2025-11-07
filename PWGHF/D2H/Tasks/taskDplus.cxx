@@ -27,6 +27,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsUpcHf.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -63,12 +64,7 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
-
-enum class GapType {
-  GapA = 0,
-  GapC = 1,
-  DoubleGap = 2,
-};
+using namespace o2::analysis::hf_upc;
 
 /// D± analysis task
 struct HfTaskDplus {
@@ -128,6 +124,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis thnConfigAxisMlScore1{"thnConfigAxisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis thnConfigAxisMlScore2{"thnConfigAxisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
+  ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {3, -0.5, 2.5}, "axis for UPC gap type (0=GapA, 1=GapC, 2=DoubleGap)"};
 
   HistogramRegistry registry{
     "registry",
@@ -161,6 +158,7 @@ struct HfTaskDplus {
     AxisSpec const thnAxisCent{thnConfigAxisCent, "Centrality"};
     AxisSpec const thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
     AxisSpec const thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
+    AxisSpec const thnAxisGapType{thnConfigAxisGapType, "Gap type"};
 
     registry.add("hMass", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -200,10 +198,10 @@ struct HfTaskDplus {
     registry.add("hPtVsYGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
 
-    if (doprocessDataWithMl || doprocessData) {
+    if (doprocessDataWithMl || doprocessData || doprocessDataWithMlWithUpc) {
       std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt};
 
-      if (doprocessDataWithMl) {
+      if (doprocessDataWithMl || doprocessDataWithMlWithUpc) {
         axes.push_back(thnAxisMlScore0);
         axes.push_back(thnAxisMlScore1);
         axes.push_back(thnAxisMlScore2);
@@ -213,6 +211,9 @@ struct HfTaskDplus {
       }
       if (storeOccupancy) {
         axes.push_back(thnAxisOccupancy);
+      }
+      if (doprocessDataWithMlWithUpc) {
+        axes.push_back(thnAxisGapType);
       }
 
       registry.add("hSparseMass", "THn for Dplus", HistType::kTHnSparseF, axes);
@@ -313,13 +314,15 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   /// \param numPvContributors contributors to the PV
+  /// \param gapType UPC gap type (-1 for non-UPC)
   template <bool IsMc, bool IsMatched, typename T1>
   void fillSparseML(const T1& candidate,
                     float ptbhad,
                     int flagBHad,
                     float centrality,
                     float occupancy,
-                    float numPvContributors)
+                    float numPvContributors,
+                    int gapType = -1)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -384,16 +387,30 @@ struct HfTaskDplus {
         }
       }
     } else { // Data
-      if (storeCentrality && storeOccupancy) {
-        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
-      } else if (storeCentrality && !storeOccupancy) {
-        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
-      } else if (!storeCentrality && storeOccupancy) {
-        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
-      } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
+      if (gapType >= 0) {
+        // UPC mode: always include gap type
+        if (storeCentrality && storeOccupancy) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy, static_cast<float>(gapType));
+        } else if (storeCentrality && !storeOccupancy) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, static_cast<float>(gapType));
+        } else if (!storeCentrality && storeOccupancy) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, static_cast<float>(gapType));
+        } else {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], static_cast<float>(gapType));
+        }
       } else {
-        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+        // Non-UPC mode: original behavior
+        if (storeCentrality && storeOccupancy) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
+        } else if (storeCentrality && !storeOccupancy) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
+        } else if (!storeCentrality && storeOccupancy) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+        } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
+        } else {
+          registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+        }
       }
     }
   }
@@ -680,20 +697,6 @@ struct HfTaskDplus {
     }
   }
 
-  GapType determineGapType(float FT0A, float FT0C, float ZNA, float ZNC)
-  {
-    constexpr float FT0AThreshold = 100.0;
-    constexpr float FT0CThreshold = 50.0;
-    constexpr float ZDCThreshold = 1.0;
-    if (FT0A < FT0AThreshold && FT0C > FT0CThreshold && ZNA < ZDCThreshold && ZNC > ZDCThreshold) {
-      return GapType::GapA;
-    }
-    if (FT0A > FT0AThreshold && FT0C < FT0CThreshold && ZNA > ZDCThreshold && ZNC < ZDCThreshold) {
-      return GapType::GapC;
-    }
-    return GapType::DoubleGap;
-  }
-
   template <bool fillMl, typename CollType, typename CandType, typename BCsType>
   void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
                                           CandType const& candidates,
@@ -719,10 +722,10 @@ struct HfTaskDplus {
         auto zdc = bc.zdc();
         qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        gap = determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), static_cast<int>(gap));
+        gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
       }
-      if (gap == GapType::GapA || gap == GapType::GapC) {
+      if (hf_upc::isSingleSidedGap(gap)) {
         // Use the candidates from this collision
         const auto thisCollId = collision.globalIndex();
         const auto& groupedDplusCandidates = candidates.sliceBy(candDplusPerCollision, thisCollId);
@@ -731,6 +734,7 @@ struct HfTaskDplus {
         float numPvContr{-1.f};
         float ptBhad{-1.f};
         int const flagBHad{-1};
+        int const gapTypeInt = hf_upc::gapTypeToInt(gap);
 
         for (const auto& candidate : groupedDplusCandidates) {
           if ((yCandRecoMax >= 0. && std::abs(HfHelper::yDplus(candidate)) > yCandRecoMax)) {
@@ -738,7 +742,7 @@ struct HfTaskDplus {
           }
           fillHisto(candidate);
           if constexpr (fillMl) {
-            fillSparseML<false, false>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
+            fillSparseML<false, false>(candidate, ptBhad, flagBHad, cent, occ, numPvContr, gapTypeInt);
           }
         }
       }
