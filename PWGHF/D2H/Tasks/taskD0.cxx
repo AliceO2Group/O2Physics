@@ -154,6 +154,8 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisMinTpcNCrossedRows{"thnConfigAxisMinTpcNCrossedRows", {10, 70, 180}, "axis for minimum TPC NCls crossed rows of candidate prongs"};
   ConfigurableAxis thnConfigAxisIR{"thnConfigAxisIR", {5000, 0, 500}, "Interaction rate (kHz)"};
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {3, -0.5, 2.5}, "axis for UPC gap type (0=GapA, 1=GapC, 2=DoubleGap)"};
+  ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
+  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
 
   HistogramRegistry registry{
     "registry",
@@ -299,6 +301,8 @@ struct HfTaskD0 {
     const AxisSpec thnAxisMinTpcNCrossedRows{thnConfigAxisMinTpcNCrossedRows, "Minimum TPC crossed rows"};
     const AxisSpec thnAxisIR{thnConfigAxisIR, "Interaction rate"};
     const AxisSpec thnAxisGapType{thnConfigAxisGapType, "Gap type"};
+    const AxisSpec thnAxisFT0A{thnConfigAxisFT0A, "FT0-A amplitude"};
+    const AxisSpec thnAxisFT0C{thnConfigAxisFT0C, "FT0-C amplitude"};
 
     if (doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessMcWithKFParticle || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent || doprocessMcWithKFParticleMl) {
       std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
@@ -334,6 +338,8 @@ struct HfTaskD0 {
     }
     if (doprocessDataWithDCAFitterNMlWithUpc) {
       axes.push_back(thnAxisGapType);
+      axes.push_back(thnAxisFT0A);
+      axes.push_back(thnAxisFT0C);
     }
     if (applyMl) {
       const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT score bkg."};
@@ -600,13 +606,15 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
           }
 
-          // Fill THnSparse with gap type using vectorized approach similar to taskDplus
+          // Fill THnSparse with gap type and FIT signals using vectorized approach
           if constexpr (fillMl) {
             auto fillTHnData = [&](float mass, int d0Type) {
               std::vector<double> valuesToFill{candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2],
                                                static_cast<double>(mass), static_cast<double>(ptCandidate),
                                                static_cast<double>(HfHelper::yD0(candidate)), static_cast<double>(d0Type)};
               valuesToFill.push_back(static_cast<double>(gapTypeInt));
+              valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
+              valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
               registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
             };
 
@@ -623,6 +631,8 @@ struct HfTaskD0 {
               std::vector<double> valuesToFill{static_cast<double>(mass), static_cast<double>(ptCandidate),
                                                static_cast<double>(HfHelper::yD0(candidate)), static_cast<double>(d0Type)};
               valuesToFill.push_back(static_cast<double>(gapTypeInt));
+              valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
+              valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
               registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
             };
 
