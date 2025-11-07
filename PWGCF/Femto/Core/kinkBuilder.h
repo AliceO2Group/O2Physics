@@ -543,7 +543,7 @@ class KinkBuilder
         transRadius);
     }
   }
-  
+
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
