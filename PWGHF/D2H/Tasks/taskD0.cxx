@@ -336,20 +336,29 @@ struct HfTaskD0 {
       axes.push_back(thnAxisMinItsNCls);
       axes.push_back(thnAxisMinTpcNCrossedRows);
     }
-    if (doprocessDataWithDCAFitterNMlWithUpc) {
-      axes.push_back(thnAxisGapType);
-      axes.push_back(thnAxisFT0A);
-      axes.push_back(thnAxisFT0C);
-    }
     if (applyMl) {
       const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT score bkg."};
       const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT score non-prompt."};
       const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
 
-      axes.insert(axes.begin(), thnAxisPromptScore);
-      axes.insert(axes.begin(), thnAxisNonPromptScore);
-      axes.insert(axes.begin(), thnAxisBkgScore);
+      // Insert ML scores after pt (position 2) to match taskDplus structure: [mass, pt, mlScores, ...]
+      if (doprocessDataWithDCAFitterNMlWithUpc) {
+        axes.insert(axes.begin() + 2, thnAxisPromptScore);
+        axes.insert(axes.begin() + 2, thnAxisNonPromptScore);
+        axes.insert(axes.begin() + 2, thnAxisBkgScore);
+      } else {
+        axes.insert(axes.begin(), thnAxisPromptScore);
+        axes.insert(axes.begin(), thnAxisNonPromptScore);
+        axes.insert(axes.begin(), thnAxisBkgScore);
+      }
+    }
+    if (doprocessDataWithDCAFitterNMlWithUpc) {
+      axes.push_back(thnAxisGapType);
+      axes.push_back(thnAxisFT0A);
+      axes.push_back(thnAxisFT0C);
+    }
 
+    if (applyMl) {
       registry.add("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates", HistType::kTHnSparseD, axes);
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
     } else {
@@ -582,6 +591,8 @@ struct HfTaskD0 {
         int const gapTypeInt = hf_upc::gapTypeToInt(gap);
         const auto thisCollId = collision.globalIndex();
         const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
+        float cent{centrality};
+        float occ{-1.f};
 
         for (const auto& candidate : groupedD0Candidates) {
           if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -606,12 +617,18 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
           }
 
-          // Fill THnSparse with gap type and FIT signals using vectorized approach
+          // Fill THnSparse with structure matching taskDplus: [mass, pt, mlScores, cent, occ, gapType, FT0A, FT0C]
           if constexpr (fillMl) {
             auto fillTHnData = [&](float mass, int d0Type) {
-              std::vector<double> valuesToFill{candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2],
-                                               static_cast<double>(mass), static_cast<double>(ptCandidate),
+              std::vector<double> valuesToFill{static_cast<double>(mass), static_cast<double>(ptCandidate),
+                                               candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2],
                                                static_cast<double>(HfHelper::yD0(candidate)), static_cast<double>(d0Type)};
+              if (storeCentrality) {
+                valuesToFill.push_back(cent);
+              }
+              if (storeOccupancyAndIR) {
+                valuesToFill.push_back(occ);
+              }
               valuesToFill.push_back(static_cast<double>(gapTypeInt));
               valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
               valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
@@ -630,6 +647,12 @@ struct HfTaskD0 {
             auto fillTHnData = [&](float mass, int d0Type) {
               std::vector<double> valuesToFill{static_cast<double>(mass), static_cast<double>(ptCandidate),
                                                static_cast<double>(HfHelper::yD0(candidate)), static_cast<double>(d0Type)};
+              if (storeCentrality) {
+                valuesToFill.push_back(cent);
+              }
+              if (storeOccupancyAndIR) {
+                valuesToFill.push_back(occ);
+              }
               valuesToFill.push_back(static_cast<double>(gapTypeInt));
               valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
               valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
