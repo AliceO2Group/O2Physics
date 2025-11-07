@@ -55,10 +55,10 @@ struct ZDCLIAnalysis {
     registry.add("hZNCpmc", "ZNCpmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
     registry.add("hZPCpmc", "ZPCpmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
     registry.add("hZEM", "ZEM; ZEM1+ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZEM}}});
-    registry.add("hZNAamplvsADC", "ZNA amplitude vs. ADC; ZNA ADC; ZNA amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
-    registry.add("hZNCamplvsADC", "ZNC amplitude vs. ADC; ZNC ADC; ZNC amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
-    registry.add("hZPAamplvsADC", "ZPA amplitude vs. ADC; ZPA ADC; ZPA amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
-    registry.add("hZPCamplvsADC", "ZPC amplitude vs. ADC; ZPC ADC; ZPC amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZNAamplvsADC", "ZNA amplitude vs. ADC; ZNA ADC; ZNA amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, 3. * MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCamplvsADC", "ZNC amplitude vs. ADC; ZNC ADC; ZNC amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, 3. * MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPAamplvsADC", "ZPA amplitude vs. ADC; ZPA ADC; ZPA amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, 3. * MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPCamplvsADC", "ZPC amplitude vs. ADC; ZPC ADC; ZPC amplitude", {HistType::kTH2F, {{{nBinsAmp, -0.5, 3. * MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
     registry.add("hZNvsZEM", "ZN vs ZEM; ZEM; ZNA+ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZEM}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
     registry.add("hZNAvsZNC", "ZNA vs ZNC; ZNC; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
     registry.add("hZPAvsZPC", "ZPA vs ZPC; ZPC; ZPA", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
@@ -140,8 +140,8 @@ struct ZDCLIAnalysis {
         //
         registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
         registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
-        registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
-        registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
+        //registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
+        //registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
         //
         registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
         registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
