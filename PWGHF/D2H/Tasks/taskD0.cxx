@@ -170,6 +170,22 @@ struct HfTaskD0 {
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
+  using D0CandidatesMc = soa::Join<D0Candidates, aod::HfCand2ProngMcRec>;
+  using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
+  using D0CandidatesMcKF = soa::Join<D0CandidatesKF, aod::HfCand2ProngMcRec>;
+
+  using D0CandidatesMl = soa::Join<D0Candidates, aod::HfMlD0>;
+  using D0CandidatesMlMc = soa::Join<D0CandidatesMl, aod::HfCand2ProngMcRec>;
+  using D0CandidatesMlKF = soa::Join<D0CandidatesMl, aod::HfCand2ProngKF>;
+  using D0CandidatesMlMcKF = soa::Join<D0CandidatesMlKF, aod::HfCand2ProngMcRec>;
+
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
