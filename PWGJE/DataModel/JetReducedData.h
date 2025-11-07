@@ -340,11 +340,14 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
-DECLARE_SOA_COLUMN(GenStatusCode, getGenStatusCode, int); // TODO : We can look at combining this with the two below
-DECLARE_SOA_COLUMN(HepMCStatusCode, getHepMCStatusCode, int);
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
+DECLARE_SOA_COLUMN(StatusCode, statusCode, int);
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
+
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);
+
+DECLARE_SOA_DYNAMIC_COLUMN(PVector, pVector, //! Momentum vector in x,y,z-directions in GeV/c
+                           [](float px, float py, float pz) -> std::array<float, 3> { return std::array<float, 3>{px, py, pz}; });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
@@ -355,6 +358,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
                            [](float e) -> float { return e; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(ProducedByGenerator, producedByGenerator, //! True if particle produced by the generator (==TMCProcess::kPrimary); False if by the transport code
+                           [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0; });
+DECLARE_SOA_DYNAMIC_COLUMN(FromBackgroundEvent, fromBackgroundEvent, //! Particle from background event
+                           [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::FromBackgroundEvent) == o2::aod::mcparticle::enums::FromBackgroundEvent; });
+DECLARE_SOA_DYNAMIC_COLUMN(GetProcess, getProcess, //! The VMC physics code (as int) that generated this particle (see header TMCProcess.h in ROOT)
+                           [](uint8_t flags, int statusCode) -> int { if ((flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0) { return 0 /*TMCProcess::kPrimary*/; } else { return statusCode; } });
+DECLARE_SOA_DYNAMIC_COLUMN(GetGenStatusCode, getGenStatusCode, //! The native status code put by the generator, or -1 if a particle produced during transport
+                           [](uint8_t flags, int statusCode) -> int { if ((flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0) { return o2::mcgenstatus::getGenStatusCode(statusCode); } else { return -1; } });
+DECLARE_SOA_DYNAMIC_COLUMN(GetHepMCStatusCode, getHepMCStatusCode, //! The HepMC status code put by the generator, or -1 if a particle produced during transport
+                           [](uint8_t flags, int statusCode) -> int { if ((flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0) { return o2::mcgenstatus::getHepMCStatusCode(statusCode); } else { return -1; } });
+DECLARE_SOA_DYNAMIC_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, //! True if particle is considered a physical primary according to the ALICE definition
+                           [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::PhysicalPrimary) == o2::aod::mcparticle::enums::PhysicalPrimary; });
+
 } // namespace jmcparticle
 
 DECLARE_SOA_TABLE_STAGED(JMcParticles, "JMCPARTICLE",
@@ -366,16 +383,21 @@ DECLARE_SOA_TABLE_STAGED(JMcParticles, "JMCPARTICLE",
                          jmcparticle::Y,
                          jmcparticle::E,
                          jmcparticle::PdgCode,
-                         jmcparticle::GenStatusCode,
-                         jmcparticle::HepMCStatusCode,
-                         jmcparticle::IsPhysicalPrimary,
+                         jmcparticle::StatusCode,
+                         jmcparticle::Flags,
                          jmcparticle::MothersIds,
                          jmcparticle::DaughtersIdSlice,
                          jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                          jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                          jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                          jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                         jmcparticle::Energy<jmcparticle::E>);
+                         jmcparticle::Energy<jmcparticle::E>,
+                         jmcparticle::ProducedByGenerator<jmcparticle::Flags>,
+                         jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,
+                         jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,
+                         jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,
+                         jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,
+                         jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticle = JMcParticles::iterator;
 using StoredJMcParticle = StoredJMcParticles::iterator;

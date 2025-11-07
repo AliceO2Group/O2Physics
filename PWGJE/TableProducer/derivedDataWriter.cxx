@@ -682,7 +682,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersIds, daughtersIds);
+          products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersIds, daughtersIds);
           products.storedJParticlesParentIndexTable(particle.mcParticleId());
         }
       }

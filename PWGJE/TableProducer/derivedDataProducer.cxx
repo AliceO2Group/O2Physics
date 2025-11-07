@@ -429,7 +429,7 @@ struct JetDerivedDataProducerTask {
         i++;
       }
     }
-    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.flags(), particle.statusCode(), mothersId, daughtersId);
     products.jParticlesParentIndexTable(particle.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processParticles, "produces derived parrticle table", false);
