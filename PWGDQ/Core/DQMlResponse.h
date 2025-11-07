@@ -110,8 +110,7 @@ static const std::map<InputFeatures, std::string> gFeatureNameMap = {
   {InputFeatures::kLzCov, "kLzCov"},
   {InputFeatures::kLxyCov, "kLxyCov"},
   {InputFeatures::kChi2pca, "kChi2pca"},
-  {InputFeatures::kCosPointingAngle, "kCosPointingAngle"}
-};
+  {InputFeatures::kCosPointingAngle, "kCosPointingAngle"}};
 
 template <typename TypeOutputScore = float>
 class DQMlResponse : public MlResponse<TypeOutputScore>
@@ -223,9 +222,9 @@ class DQMlResponse : public MlResponse<TypeOutputScore>
       } else if (name == "kLxyCov") {
         dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingLxy"]]);
       } else if (name == "kChi2pca") {
-        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingChi2PCA"]]); 
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingChi2PCA"]]);
       } else if (name == "kCosPointingAngle") {
-        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kCosPointingAngle"]]);                   
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kCosPointingAngle"]]);
       } else {
         LOG(fatal) << "Missing accessor for feature: " << name;
       }
@@ -281,8 +280,7 @@ class DQMlResponse : public MlResponse<TypeOutputScore>
       {"kLzCov", static_cast<uint8_t>(InputFeatures::kLzCov)},
       {"kLxyCov", static_cast<uint8_t>(InputFeatures::kLxyCov)},
       {"kChi2pca", static_cast<uint8_t>(InputFeatures::kChi2pca)},
-      {"kCosPointingAngle", static_cast<uint8_t>(InputFeatures::kCosPointingAngle)}
-    };
+      {"kCosPointingAngle", static_cast<uint8_t>(InputFeatures::kCosPointingAngle)}};
   }
 };
 

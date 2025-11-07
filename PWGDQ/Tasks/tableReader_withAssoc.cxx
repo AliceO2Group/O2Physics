@@ -1811,7 +1811,7 @@ struct AnalysisSameEventPairing {
                   continue;
                 }
 
-                //LOG(info) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
+                // LOG(info) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
                 isSelectedBDT = fDQMlResponse.isSelectedMl(dqInputFeatures, modelIndex, fOutputMlPsi2ee);
                 VarManager::FillBdtScore(fOutputMlPsi2ee); // TODO: check if this is needed or not
               }

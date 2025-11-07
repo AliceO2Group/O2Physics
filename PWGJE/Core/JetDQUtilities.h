@@ -349,7 +349,7 @@ void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U&
     candidate.massKFGeoTop(), candidate.chi2overndfKFGeoTop(),
     candidate.tauz(), candidate.tauxy(), candidate.lz(), candidate.lxy(),
     candidate.tauzCov(), candidate.tauxyCov(), candidate.lzCov(), candidate.lxyCov(),
-    
+
     candidate.chi2pca(), candidate.cosPointingAngle());
 }
 
