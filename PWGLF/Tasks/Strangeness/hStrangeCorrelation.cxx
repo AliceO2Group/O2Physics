@@ -124,7 +124,7 @@ struct HStrangeCorrelation {
     Configurable<float> maxPeakNSigma{"maxPeakNSigma", 5, "Peak region edge definition (in sigma)"};
     Configurable<float> minBgNSigma{"minBgNSigma", 5, "Bg region edge closest to peak (in sigma)"};
     Configurable<float> maxBgNSigma{"maxBgNSigma", 10, "Bg region edge furthest to peak (in sigma)"};
-    Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 1, "for Oemga analysis only, to check if candidate mass is around Xi"};
+    Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 1.5, "for Oemga analysis only, to check if candidate mass is around Xi"};
   } massWindowConfigurations; // allows for gap between peak and bg in case someone wants to
 
   // Implementation of on-the-spot efficiency correction
