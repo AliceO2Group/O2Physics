@@ -156,13 +156,9 @@ class VarManager : public TObject
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kTripleCandidateToKPiPi,    // e.g. D+ -> K- pi+ pi+
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
-    kNMaxCandidateTypes
-  };
-
-  enum HadronMassCandidateType {
-    // The mass of the associated hadron
-    kRealHadronMass = 0, // using the real hadron mass
-    kTreatAsPion         // treat the hadron as pion
+    kNMaxCandidateTypes,
+    kJpsiHadronMass, // using the real hadron mass
+    kJpsiPionMass    // treat the hadron as pion
   };
 
   enum BarrelTrackFilteringBits {
@@ -1156,8 +1152,8 @@ class VarManager : public TObject
   static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
-  template <int massType, typename T, typename T1>
-  static void FillEnergyCorrelators(T const& track, T1 const& t1, float* values = nullptr);
+  template <int pairType, typename T, typename T1>
+  static void FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1176,8 +1172,8 @@ class VarManager : public TObject
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr);
-  template <int candidateType, typename T1, typename T2, typename T3>
-  static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr);
+  template <typename T1, typename T2, typename T3>
+  static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int candidateType, typename T1, typename T2>
   static void FillQuadMC(T1 const& t1, T2 const& t2, T2 const& t3, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -2825,16 +2821,16 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   FillTrackDerived(values);
 }
 
-template <int massType, typename T, typename T1>
-void VarManager::FillEnergyCorrelators(T const& track, T1 const& t1, float* values)
+template <int pairType, typename T, typename T1>
+void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values)
 {
   // energy correlators
   float MassHadron;
-  if constexpr (massType == kRealHadronMass) {
+  if constexpr (pairType == kJpsiHadronMass) {
     MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
     ;
   }
-  if constexpr (massType == kTreatAsPion) {
+  if constexpr (pairType == kJpsiPionMass) {
     MassHadron = o2::constants::physics::MassPionCharged;
   }
   ROOT::Math::PtEtaPhiMVector v1(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
@@ -3797,14 +3793,14 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
-template <int candidateType, typename T1, typename T2, typename T3>
-void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values)
+template <typename T1, typename T2, typename T3>
+void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values, PairCandidateType pairType)
 {
   if (!values) {
     values = fgValues;
   }
 
-  if constexpr (candidateType == kTripleCandidateToEEPhoton) {
+  if (pairType == kTripleCandidateToEEPhoton) {
     float m1 = o2::constants::physics::MassElectron;
     float m2 = o2::constants::physics::MassElectron;
     float m3 = o2::constants::physics::MassPhoton;
@@ -3833,7 +3829,7 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kPt2] = t2.pt();
   }
 
-  if constexpr (candidateType == kTripleCandidateToKPiPi) {
+  if (pairType == kTripleCandidateToKPiPi) {
     float m1 = o2::constants::physics::MassKaonCharged;
     float m2 = o2::constants::physics::MassPionCharged;
 
@@ -3850,35 +3846,6 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kS12] = (v1 + v2).M2();
     values[kS13] = (v1 + v3).M2();
     values[kS23] = (v2 + v3).M2();
-  }
-  if constexpr (candidateType == kBtoJpsiEEK) {
-    float m1 = o2::constants::physics::MassElectron;
-    float m2 = o2::constants::physics::MassElectron;
-    float m3 = o2::constants::physics::MassKaonCharged;
-    float m4 = o2::constants::physics::MassJPsi;
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
-    ROOT::Math::PtEtaPhiMVector v123 = v12 + v3;
-    values[kPairMass] = v123.M();
-    values[kPairPt] = v123.Pt();
-    values[kPairEta] = v123.Eta();
-    values[kPhi] = v123.Phi();
-    values[kMCY] = -v123.Rapidity();
-    values[kPairMassDau] = v12.M();
-    values[kPairPtDau] = v12.Pt();
-    values[kRap] = -v123.Rapidity();
-    values[kMassDau] = m3;
-    values[VarManager::kDeltaMass] = v123.M() - v12.M();
-    values[VarManager::kDeltaMass_jpsi] = v123.M() - v12.M() + m4;
-    values[kPt] = t3.pt();
-    values[kEta] = t3.eta();
-    values[kEta1] = t1.eta();
-    values[kEta2] = t2.eta();
-    values[kDeltaEta] = v12.Eta();
-    values[kPt1] = t1.pt();
-    values[kPt2] = t2.pt();
   }
 }
 
