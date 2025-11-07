@@ -162,6 +162,14 @@ struct HfTaskD0 {
   Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", hf_upc::defaults::FT0CThreshold, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
   Configurable<float> upcZDCThreshold{"upcZDCThreshold", hf_upc::defaults::ZDCThreshold, "ZDC energy threshold for UPC gap determination (a.u.)"};
 
+  HfEventSelection hfEvSel; // event selection and monitoring
+
+  HfHelper hfHelper;
+  ctpRateFetcher mRateFetcher;
+
+  SliceCache cache;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},

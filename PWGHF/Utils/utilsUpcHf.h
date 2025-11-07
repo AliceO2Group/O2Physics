@@ -101,7 +101,7 @@ inline int gapTypeToInt(GapType gap)
 }
 
 /// \brief Struct to hold UPC QA histogram configuration
-struct UpcQaHistoConfig {
+struct HfUpcQaHistoConfig {
   // FT0 histogram configuration
   int ft0Nbins = 1500;
   float ft0Min = 0.f;
