@@ -140,8 +140,8 @@ struct ZDCLIAnalysis {
         //
         registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
         registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
-        //registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
-        //registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
+        registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
+        registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
         //
         registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
         registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
