@@ -1668,20 +1668,11 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
-    if constexpr ((fillMap & RapidityGapFilter) > 0) {
-      // UPC: Use the FIT signals from the nearest BC with FIT amplitude above threshold
-      values[kMultFV0A] = event.newBcMultFV0A();
-      values[kMultFT0A] = event.newBcMultFT0A();
-      values[kMultFT0C] = event.newBcMultFT0C();
-      values[kMultFDDA] = event.newBcMultFDDA();
-      values[kMultFDDC] = event.newBcMultFDDC();
-    } else {
-      values[kMultFV0A] = event.multFV0A();
-      values[kMultFT0A] = event.multFT0A();
-      values[kMultFT0C] = event.multFT0C();
-      values[kMultFDDA] = event.multFDDA();
-      values[kMultFDDC] = event.multFDDC();
-    }
+    values[kMultFV0A] = event.multFV0A();
+    values[kMultFT0A] = event.multFT0A();
+    values[kMultFT0C] = event.multFT0C();
+    values[kMultFDDA] = event.multFDDA();
+    values[kMultFDDC] = event.multFDDC();
     values[kMultTPC] = event.multTPC();
     values[kMultFV0C] = event.multFV0C();
     values[kMultZNA] = event.multZNA();
