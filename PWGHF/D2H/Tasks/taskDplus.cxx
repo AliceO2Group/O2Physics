@@ -128,6 +128,11 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
 
+  // UPC gap determination thresholds
+  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", hf_upc::defaults::FT0AThreshold, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", hf_upc::defaults::FT0CThreshold, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcZDCThreshold{"upcZDCThreshold", hf_upc::defaults::ZDCThreshold, "ZDC energy threshold for UPC gap determination (a.u.)"};
+
   HistogramRegistry registry{
     "registry",
     {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -712,7 +717,8 @@ struct HfTaskDplus {
         auto zdc = bc.zdc();
         qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC(),
+                                       upcFT0AThreshold, upcFT0CThreshold, upcZDCThreshold);
         qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
       }
       if (hf_upc::isSingleSidedGap(gap)) {
@@ -721,6 +727,9 @@ struct HfTaskDplus {
         const auto& groupedDplusCandidates = candidates.sliceBy(candDplusPerCollision, thisCollId);
         float cent{-1.f};
         float occ{-1.f};
+        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+          occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+        }
         float numPvContr{-1.f};
         int const gapTypeInt = hf_upc::gapTypeToInt(gap);
 

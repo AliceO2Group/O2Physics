@@ -157,6 +157,11 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
 
+  // UPC gap determination thresholds
+  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", hf_upc::defaults::FT0AThreshold, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", hf_upc::defaults::FT0CThreshold, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcZDCThreshold{"upcZDCThreshold", hf_upc::defaults::ZDCThreshold, "ZDC energy threshold for UPC gap determination (a.u.)"};
+
   HistogramRegistry registry{
     "registry",
     {{"hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -244,8 +249,8 @@ struct HfTaskD0 {
     if ((doprocessDataWithDCAFitterN || doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMl || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle || doprocessDataWithKFParticleMl || doprocessMcWithKFParticleMl)) {
       LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
-    if ((storeCentrality || storeOccupancyAndIR) && !(doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMlCent)) {
-      LOGP(fatal, "Can't enable the storeCentrality and storeOccupancu without cent process");
+    if ((storeCentrality || storeOccupancyAndIR) && !(doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMlCent || doprocessDataWithDCAFitterNMlWithUpc)) {
+      LOGP(fatal, "Can't enable the storeCentrality and storeOccupancu without cent process or UPC process");
     }
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -584,7 +589,8 @@ struct HfTaskD0 {
         auto zdc = bc.zdc();
         qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC(),
+                                       upcFT0AThreshold, upcFT0CThreshold, upcZDCThreshold);
         qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
       }
       if (hf_upc::isSingleSidedGap(gap)) {
