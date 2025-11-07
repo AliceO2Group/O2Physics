@@ -84,6 +84,11 @@ o2physics_add_dpl_workflow(charged-particles
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pcc-qa
+    SOURCES pccQa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(id-raa
     SOURCES identifiedraa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
