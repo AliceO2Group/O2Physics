@@ -74,6 +74,10 @@ o2physics_add_dpl_workflow(long-range-dihadron-cor
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(two-particle-correlation-pp
+<<<<<<< HEAD
                            SOURCES twoParticleCorrelationPp.cxx
+=======
+                           SOURCES twoParticleCorrelationpp.cxx
+>>>>>>> 60963c422 (adding a basis task for two particle correlation for pp)
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
