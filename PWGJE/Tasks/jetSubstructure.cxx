@@ -119,6 +119,7 @@ struct JetSubstructureTask {
 
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
+    jetReclusterer.ghostRepeatN = 0;
   }
 
   Preslice<aod::JetTracks> TracksPerCollision = aod::jtrack::collisionId;
