@@ -162,9 +162,9 @@ bool isWeakDecayFromCharmHadron(T const& mcParticle, U const& mcParticles)
   if (!mcParticle.has_mothers()) {
     return false;
   }
-  if (mcParticle.getProcess() != 4) { // weak decay
-    return false;
-  }
+  // if (mcParticle.getProcess() != 4) { // weak decay
+  //   return false;
+  // }
   auto mp = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
   if (isCharmMeson(mp) || isCharmBaryon(mp)) {
     return true;
@@ -180,9 +180,9 @@ bool isWeakDecayFromBeautyHadron(T const& mcParticle, U const& mcParticles)
   if (!mcParticle.has_mothers()) {
     return false;
   }
-  if (mcParticle.getProcess() != 4) { // weak decay
-    return false;
-  }
+  // if (mcParticle.getProcess() != 4) { // weak decay
+  //   return false;
+  // }
   auto mp = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
   if (isBeautyMeson(mp) || isBeautyBaryon(mp)) {
     return true;
