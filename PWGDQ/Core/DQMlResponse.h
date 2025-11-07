@@ -27,7 +27,7 @@
 namespace o2::analysis
 {
 
-enum class InputFeatures : uint8_t { // refer to DielectronsAll, TODO: add more features if needed
+enum class InputFeatures : uint8_t { // refer to DielectronsAll
   kMass = 0,
   kPt,
   kEta,
@@ -57,7 +57,17 @@ enum class InputFeatures : uint8_t { // refer to DielectronsAll, TODO: add more 
   kTPCNSigmaPr2,
   kTOFNSigmaEl2,
   kTOFNSigmaPi2,
-  kTOFNSigmaPr2
+  kTOFNSigmaPr2,
+  kTauz,
+  kTauxy,
+  kLz,
+  kLxy,
+  kTauzCov,
+  kTauxyCov,
+  kLzCov,
+  kLxyCov,
+  kChi2pca,
+  kCosPointingAngle
 };
 
 static const std::map<InputFeatures, std::string> gFeatureNameMap = {
@@ -90,7 +100,18 @@ static const std::map<InputFeatures, std::string> gFeatureNameMap = {
   {InputFeatures::kTPCNSigmaPr2, "kTPCNSigmaPr2"},
   {InputFeatures::kTOFNSigmaEl2, "kTOFNSigmaEl2"},
   {InputFeatures::kTOFNSigmaPi2, "kTOFNSigmaPi2"},
-  {InputFeatures::kTOFNSigmaPr2, "kTOFNSigmaPr2"}};
+  {InputFeatures::kTOFNSigmaPr2, "kTOFNSigmaPr2"},
+  {InputFeatures::kTauz, "kTauz"},
+  {InputFeatures::kTauxy, "kTauxy"},
+  {InputFeatures::kLz, "kLz"},
+  {InputFeatures::kLxy, "kLxy"},
+  {InputFeatures::kTauzCov, "kTauzCov"},
+  {InputFeatures::kTauxyCov, "kTauxyCov"},
+  {InputFeatures::kLzCov, "kLzCov"},
+  {InputFeatures::kLxyCov, "kLxyCov"},
+  {InputFeatures::kChi2pca, "kChi2pca"},
+  {InputFeatures::kCosPointingAngle, "kCosPointingAngle"}
+};
 
 template <typename TypeOutputScore = float>
 class DQMlResponse : public MlResponse<TypeOutputScore>
@@ -185,6 +206,26 @@ class DQMlResponse : public MlResponse<TypeOutputScore>
         dqInputFeatures.push_back(t2.tofNSigmaPi());
       } else if (name == "kTOFNSigmaPr2") {
         dqInputFeatures.push_back(t2.tofNSigmaPr());
+      } else if (name == "kTauz") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingTauzProjected"]]);
+      } else if (name == "kTauxy") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingTauxyProjected"]]);
+      } else if (name == "kLz") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingLzProjected"]]);
+      } else if (name == "kLxy") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingLxyProjected"]]);
+      } else if (name == "kTauzCov") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingTauz"]]);
+      } else if (name == "kTauxyCov") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingTauxy"]]);
+      } else if (name == "kLzCov") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingLz"]]);
+      } else if (name == "kLxyCov") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingLxy"]]);
+      } else if (name == "kChi2pca") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kVertexingChi2PCA"]]); 
+      } else if (name == "kCosPointingAngle") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kCosPointingAngle"]]);                   
       } else {
         LOG(fatal) << "Missing accessor for feature: " << name;
       }
@@ -230,7 +271,18 @@ class DQMlResponse : public MlResponse<TypeOutputScore>
       {"kTPCNSigmaPr2", static_cast<uint8_t>(InputFeatures::kTPCNSigmaPr2)},
       {"kTOFNSigmaEl2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaEl2)},
       {"kTOFNSigmaPi2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPi2)},
-      {"kTOFNSigmaPr2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPr2)}};
+      {"kTOFNSigmaPr2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPr2)},
+      {"kTauz", static_cast<uint8_t>(InputFeatures::kTauz)},
+      {"kTauxy", static_cast<uint8_t>(InputFeatures::kTauxy)},
+      {"kLz", static_cast<uint8_t>(InputFeatures::kLz)},
+      {"kLxy", static_cast<uint8_t>(InputFeatures::kLxy)},
+      {"kTauzCov", static_cast<uint8_t>(InputFeatures::kTauzCov)},
+      {"kTauxyCov", static_cast<uint8_t>(InputFeatures::kTauxyCov)},
+      {"kLzCov", static_cast<uint8_t>(InputFeatures::kLzCov)},
+      {"kLxyCov", static_cast<uint8_t>(InputFeatures::kLxyCov)},
+      {"kChi2pca", static_cast<uint8_t>(InputFeatures::kChi2pca)},
+      {"kCosPointingAngle", static_cast<uint8_t>(InputFeatures::kCosPointingAngle)}
+    };
   }
 };
 
