@@ -18,7 +18,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -69,9 +68,6 @@ struct strangeness_tutorial {
   // Configurable parameters for PID selection
   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
   Configurable<float> NSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
-
-  // PDG data base
-  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(InitContext const&)
   {
@@ -161,10 +157,10 @@ struct strangeness_tutorial {
       if (v0.v0radius() < v0setting_radius)
         continue;
 
-      if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
+      if (std::abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
       }
-      if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
+      if (std::abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
       }
 
@@ -183,7 +179,7 @@ struct strangeness_tutorial {
       if (posDaughterTrack.has_mcParticle() && negDaughterTrack.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
         auto posParticle = posDaughterTrack.mcParticle();
         auto negParticle = negDaughterTrack.mcParticle();
-        if (posParticle.pdgCode() == 211 && negParticle.pdgCode() == -211) { // Checking that the daughter tracks are true pions
+        if (posParticle.pdgCode() == PDG_t::kPiPlus && negParticle.pdgCode() == PDG_t::kPiMinus) { // Checking that the daughter tracks are true pions
           rKzeroShort.fill(HIST("hMassK0ShortSelectedTruePions"), v0.mK0Short());
         }
       }
@@ -191,7 +187,7 @@ struct strangeness_tutorial {
       // Checking that the V0 is a true K0s
       if (v0.has_mcParticle()) {
         auto v0mcParticle = v0.mcParticle();
-        if (v0mcParticle.pdgCode() == 310) {
+        if (v0mcParticle.pdgCode() == PDG_t::kK0Short) {
           rKzeroShort.fill(HIST("hMassK0ShortTrueRec"), v0.mK0Short());
           rKzeroShort.fill(HIST("hPtK0ShortTrueRec"), v0.pt()); // To mimic distribution after the signal extraction
         }
@@ -209,7 +205,7 @@ struct strangeness_tutorial {
       // Cut on dynamic columns
       if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_cospa)
         continue;
-      if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
+      if (std::abs(casc.mLambda() - o2::constants::physics::MassLambda) > cascadesetting_v0masswindow)
         continue;
       if (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_mindcav0topv)
         continue;
@@ -217,21 +213,21 @@ struct strangeness_tutorial {
         continue;
 
       if (casc.sign() < 0) {
-        if (TMath::Abs(posDaughterTrackCasc.tpcNSigmaPr()) > NSigmaTPCProton) {
+        if (std::abs(posDaughterTrackCasc.tpcNSigmaPr()) > NSigmaTPCProton) {
           continue;
         }
-        if (TMath::Abs(negDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
+        if (std::abs(negDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
           continue;
         }
       } else {
-        if (TMath::Abs(negDaughterTrackCasc.tpcNSigmaPr()) > NSigmaTPCProton) {
+        if (std::abs(negDaughterTrackCasc.tpcNSigmaPr()) > NSigmaTPCProton) {
           continue;
         }
-        if (TMath::Abs(posDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
+        if (std::abs(posDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
           continue;
         }
       }
-      if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
+      if (std::abs(bachDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
       }
 
@@ -242,7 +238,7 @@ struct strangeness_tutorial {
       // Checking that the cascade is a true Xi
       if (casc.has_mcParticle()) {
         const auto cascmcParticle = casc.mcParticle();
-        if (TMath::Abs(cascmcParticle.pdgCode()) == 3312) {
+        if (std::abs(cascmcParticle.pdgCode()) == PDG_t::kXiMinus) {
           rXi.fill(HIST("hMassXiTrueRec"), casc.mXi());
         }
       }
@@ -257,10 +253,10 @@ struct strangeness_tutorial {
       return;
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == 310) {
+      if (mcParticle.pdgCode() == PDG_t::kK0Short) {
         rGenParticles.fill(HIST("hPtK0ShortGen"), mcParticle.pt());
       }
-      if (TMath::Abs(mcParticle.pdgCode()) == 3312) {
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kXiMinus) {
         rGenParticles.fill(HIST("hPtXiGen"), mcParticle.pt());
       }
     }

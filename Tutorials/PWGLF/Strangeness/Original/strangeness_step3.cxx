@@ -144,7 +144,7 @@ struct strangeness_tutorial {
       if (posDaughterTrack.has_mcParticle() && negDaughterTrack.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
         auto posParticle = posDaughterTrack.mcParticle();
         auto negParticle = negDaughterTrack.mcParticle();
-        if (posParticle.pdgCode() == 211 && negParticle.pdgCode() == -211) { // Checking that the daughter tracks are true pions
+        if (posParticle.pdgCode() == PDG_t::kPiPlus && negParticle.pdgCode() == PDG_t::kPiMinus) { // Checking that the daughter tracks are true pions
           rKzeroShort.fill(HIST("hMassK0ShortSelectedTruePions"), v0.mK0Short());
         }
       }
@@ -152,7 +152,7 @@ struct strangeness_tutorial {
       // Checking that the V0 is a true K0s
       if (v0.has_mcParticle()) {
         auto v0mcParticle = v0.mcParticle();
-        if (v0mcParticle.pdgCode() == 310) {
+        if (v0mcParticle.pdgCode() == PDG_t::kK0Short) {
           rKzeroShort.fill(HIST("hMassK0ShortTrueRec"), v0.mK0Short());
           rKzeroShort.fill(HIST("hPtK0ShortTrueRec"), v0.pt()); // To mimic distribution after the signal extraction
         }
@@ -168,7 +168,7 @@ struct strangeness_tutorial {
       return;
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == 310) {
+      if (mcParticle.pdgCode() == PDG_t::kK0Short) {
         rGenParticles.fill(HIST("hPtK0ShortGen"), mcParticle.pt());
       }
     }
