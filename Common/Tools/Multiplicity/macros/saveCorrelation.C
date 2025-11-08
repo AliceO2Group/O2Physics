@@ -8,10 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// This file provides a simple macro to convert TGlauberMC output tuples
-// into the 2D correlation histogram necessary for the ALICE machinery
-// that performs Glauber + NBD fits.
+// 
+/// \file saveCorrelation.C
+/// \brief This file provides a simple macro to convert TGlauberMC output tuples
+/// into the 2D correlation histogram necessary for the ALICE machinery
+/// that performs Glauber + NBD fits.
+/// \author ALICE
 
 #include <iostream>
 

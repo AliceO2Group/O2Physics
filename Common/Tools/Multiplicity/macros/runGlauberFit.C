@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file saveCorrelation.C
+/// \brief 
+/// \author ALICE
 
 #include "multCalibrator.h"
 #include "multGlauberNBDFitter.h"
@@ -134,16 +137,22 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
 
   // minimum fit range estimate (guess region that may be unfittable)
   // may need adjusting
-  Double_t lFitRange = 0.012 * GetBoundaryForPercentile(hV0Mfine, 0.01);
-  if (lFitRangeMax < 10000)
-    lFitRange = 0.02 * GetBoundaryForPercentile(hV0Mfine, 0.01);
+  Double_t maxPercent = 0.01;
+  Double_t fractionOfMax = 0.012;
+  Double_t lFitRange = fractionOfMax * GetBoundaryForPercentile(hV0Mfine, maxPercent);
+
+  // adjust if low mult (Ntracks, typically) 
+  Double_t maxRangeForTracks= 10000; 
+  Double_t fractionOfMaxBroader = 0.02;
+  if (lFitRangeMax < maxRangeForTracks)
+    lFitRange = fractionOfMaxBroader * GetBoundaryForPercentile(hV0Mfine, maxPercent);
 
   cout << "Fit range min estimated from histogram: " << lFitRange << endl;
 
   //____________________________________________
   // rebinning matters
   int rebinFactor = 20;
-  if (lFitRangeMax < 10000)
+  if (lFitRangeMax < maxRangeForTracks)
     rebinFactor = 1;
 
   cout << "Creating rebinned histogram with rebin factor: " << rebinFactor << endl;
