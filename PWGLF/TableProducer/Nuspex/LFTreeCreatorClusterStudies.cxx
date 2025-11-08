@@ -51,6 +51,7 @@
 #include <cstring>
 #include <numeric>
 #include <random>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -734,7 +735,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    auto timestamp = bc.timestamp();
+    const auto& timestamp = bc.timestamp();
     o2::parameters::GRPMagField* grpmag = 0x0;
 
     auto grpmagPath{"GLO/Config/GRPMagField"};
@@ -943,10 +944,10 @@ struct LfTreeCreatorClusterStudies {
   {
     m_hAnalysis.fill(HIST("casc_selections"), CascSelections::kCascNoCut);
 
-    auto v0Track = cascade.template v0_as<aod::V0s>();
-    auto bachelorTrack = cascade.template bachelor_as<Track>();
+    const auto& v0Track = cascade.template v0_as<aod::V0s>();
+    const auto& bachelorTrack = cascade.template bachelor_as<Track>();
 
-    auto itv0 = std::find_if(m_v0TrackParCovs.begin(), m_v0TrackParCovs.end(), [&](const V0TrackParCov& v0) { return v0.globalIndex == v0Track.globalIndex(); });
+    const auto& itv0 = std::find_if(m_v0TrackParCovs.begin(), m_v0TrackParCovs.end(), [&](const V0TrackParCov& v0) { return v0.globalIndex == v0Track.globalIndex(); });
     if (itv0 == m_v0TrackParCovs.end()) {
       return;
     }
@@ -1230,7 +1231,7 @@ struct LfTreeCreatorClusterStudies {
         return;
       }
 
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
@@ -1263,7 +1264,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
@@ -1271,7 +1272,7 @@ struct LfTreeCreatorClusterStudies {
     const auto& posTracks_thisCollision = posTracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), m_cache);
     const auto& negTracks_thisCollision = negTracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), m_cache);
 
-    for (auto& [posTrack, negTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_thisCollision, negTracks_thisCollision))) {
+    for (const auto& [posTrack, negTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_thisCollision, negTracks_thisCollision))) {
       fillElectronTable(posTrack, negTrack);
     }
   }
@@ -1283,12 +1284,12 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (!qualityTrackSelection(track)) {
         return;
       }
@@ -1308,12 +1309,12 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (!qualityTrackSelection(track)) {
         return;
       }
@@ -1330,7 +1331,7 @@ struct LfTreeCreatorClusterStudies {
         return;
       }
 
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
@@ -1345,11 +1346,11 @@ struct LfTreeCreatorClusterStudies {
       cascTable_thisCollision.bindExternalIndices(&v0s);
 
       m_v0TrackParCovs.clear();
-      for (auto& v0 : v0Table_thisCollision) {
+      for (const auto& v0 : v0Table_thisCollision) {
         fillV0Cand</*isMC*/ true>(PV, v0, tracks);
       }
 
-      for (auto& cascade : cascTable_thisCollision) {
+      for (const auto& cascade : cascTable_thisCollision) {
         fillKCand</*isMC*/ true>(PV, cascade, tracks);
       }
     }
@@ -1367,7 +1368,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
@@ -1391,11 +1392,11 @@ struct LfTreeCreatorClusterStudies {
     if (!collisionSelection(collision)) {
       return;
     }
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (!qualityTrackSelection(track)) {
         return;
       }
