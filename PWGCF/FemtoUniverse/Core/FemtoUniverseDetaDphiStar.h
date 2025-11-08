@@ -672,7 +672,7 @@ class FemtoUniverseDetaDphiStar
     auto DeltaPhiStarMin = static_cast<float>(cutDeltaPhiStarMinVector[ktbinval]);
     auto DeltaEtaMax = static_cast<float>(cutDeltaEtaMaxVector[ktbinval]);
     auto DeltaEtaMin = static_cast<float>(cutDeltaEtaMinVector[ktbinval]);
-    
+
     if (ChosenEventType == femto_universe_container::EventType::same) {
       histdetadphisamebeforekT[ktbinval]->Fill(deta, dphiAvg);
     } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
