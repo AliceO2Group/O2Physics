@@ -99,11 +99,11 @@ struct HfCorrelatorD0HadronsSelection {
   Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<float> centMin{"centMin", 0., "Minimum Centrality"};
   Configurable<float> centMax{"centMax", 100., "Maximum Centrality"};
-  Configurable<bool> useCentrality{"useCentality", false, "Flag for centrality dependent analyses"};
+  Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
 
   SliceCache cache;
 
-  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, Installation of another LAN connectionaod::CentFT0Ms>;
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
 
@@ -137,7 +137,7 @@ struct HfCorrelatorD0HadronsSelection {
     }
     float cent = 0.;
     if (useCentrality) {
-        cent = collision.centFT0M();
+      cent = collision.centFT0M();
     }
     if (useSel8) {
       isSel8 = collision.sel8();
@@ -145,7 +145,7 @@ struct HfCorrelatorD0HadronsSelection {
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
-    isCentInRange = (cent >= centMin && cent <=centMax);
+    isCentInRange = (cent >= centMin && cent <= centMax);
     isSelColl = isD0Found && isSel8 && isNosameBunchPileUp && isCentInRange;
     collisionsWithSelD0(isSelColl);
   }
@@ -266,7 +266,7 @@ struct HfCorrelatorD0Hadrons {
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {10000, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
-  ConfigurableAxis binsCentFt0m{"binsCentFT0m", {100, 0., 100.}, "centrality percentile (FT0M)"};
+  ConfigurableAxis binsCentFt0m{"binsCentFt0m", {100, 0., 100.}, "Centrality percentile (FT0M)"};
 
   BinningType corrBinning{{zPoolBins, multPoolBins}, true};
 
@@ -295,7 +295,7 @@ struct HfCorrelatorD0Hadrons {
     AxisSpec axisBdtScoreBkg = {100, 0., 1., "Bdt score background"};
     AxisSpec axisBdtScorePrompt = {100, 0., 1., "Bdt score prompt"};
     AxisSpec axisOrigin = {10, 0., 10., "Candidate origin"};
-    AxisSpec axisCent = {binsCentFt0m,"Centrality"};    
+    AxisSpec axisCent = {binsCentFt0m, "Centrality"};
 
     // Histograms for Data
     registry.add("hPtCand", "D0, D0bar candidates", {HistType::kTH1F, {axisPtD}});
@@ -305,9 +305,9 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hEta", "D0,D0bar candidates", {HistType::kTH1F, {axisEta}});
     registry.add("hPhi", "D0,D0bar candidates", {HistType::kTH1F, {axisPhi}});
     registry.add("hY", "D0,D0bar candidates", {HistType::kTH1F, {axisRapidity}});
-    registry.add("hCentFT0M","Centrality FT0M;centrality;entries", {HistType::kTH1F,{{100, 0., 100.}}});
+    registry.add("hCentFT0M", "Centrality FT0M;centrality;entries", {HistType::kTH1F, {{100, 0., 100.}}});
     registry.add("hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
-    registry.add("hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});    
+    registry.add("hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
     registry.add("hMass", "D0, D0bar candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMass1D", "D0, D0bar candidates mass", {HistType::kTH1F, {axisMassD}});
     registry.add("hMassD01D", "D0 candidates mass", {HistType::kTH1F, {axisMassD}});
@@ -370,7 +370,7 @@ struct HfCorrelatorD0Hadrons {
       leadingIndex = findLeadingParticle(tracks, etaTrackMax.value);
     }
     float cent = 0.;
-    if (useCentrality){
+    if (useCentrality) {
       cent = collision.centFT0M();
     }
 
@@ -511,7 +511,7 @@ struct HfCorrelatorD0Hadrons {
         entryD0HadronGenInfo(false, false, 0);
         entryD0HadronMlInfo(outputMlD0[0], outputMlD0[1], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2]);
         entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
-        registry.fill(HIST("hCentFT0M"),cent );
+        registry.fill(HIST("hCentFT0M"), cent);
 
       } // end inner loop (tracks)
 
@@ -637,7 +637,7 @@ struct HfCorrelatorD0Hadrons {
 
       flagD0 = candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;     // flagD0Signal 'true' if candidate matched to D0 (particle)
       flagD0bar = candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK; // flagD0Reflection 'true' if candidate, selected as D0 (particle), is matched to D0bar (antiparticle)
-      float cent = 100.0;  //Centrality Placeholder: will be updated later
+      float cent = 100.0;                                                                                 // Centrality Placeholder: will be updated later
       // ========== track loop starts here ========================
 
       for (const auto& track : tracks) {
@@ -753,7 +753,7 @@ struct HfCorrelatorD0Hadrons {
     bool isD0Prompt = false;
     bool isD0NonPrompt = false;
     int trackOrigin = -1;
-    float cent = 100.; //Centrality Placeholder: will be updated later
+    float cent = 100.; // Centrality Placeholder: will be updated later
 
     for (const auto& particleTrigg : mcParticles) {
       if (std::abs(particleTrigg.pdgCode()) != Pdg::kD0) {
@@ -879,7 +879,7 @@ struct HfCorrelatorD0Hadrons {
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
         std::vector<float> outputMlD0 = {-1., -1., -1.};
         std::vector<float> outputMlD0bar = {-1., -1., -1.};
-        float cent = 100.; //Centrality Placeholder: will be updated later
+        float cent = 100.; // Centrality Placeholder: will be updated later
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - HfHelper::invMassD0ToPiK(candidate)) - softPiMass) < ptSoftPionMax) {
@@ -945,7 +945,7 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hD0PoolBin"), poolBinD0);
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZvtx"), c1.posZ());
-      float cent = 100.; //Centrality Placeholder: will be updated later
+      float cent = 100.; // Centrality Placeholder: will be updated later
 
       for (const auto& [candidate, particleAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
@@ -1092,7 +1092,7 @@ struct HfCorrelatorD0Hadrons {
           if (std::abs(particleAssoc.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
             continue;
           }
-          float cent = 100.; //Centrality Placeholder: will be updated later
+          float cent = 100.; // Centrality Placeholder: will be updated later
           bool correlationStatus = false;
           int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
           bool isD0Prompt = particleTrigg.originMcGen() == RecoDecay::OriginType::Prompt;
