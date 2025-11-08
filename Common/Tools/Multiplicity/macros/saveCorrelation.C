@@ -13,6 +13,9 @@
 // into the 2D correlation histogram necessary for the ALICE machinery
 // that performs Glauber + NBD fits.
 
+/// @brief function to save Npart x Ncoll correlation to file for glauber fits 
+/// @param filename input TGlauberMC ntuple file
+/// @param outputFile output file for Npart x Ncoll correlation TH2D 
 void saveCorrelation(TString filename = "gmc-PbPb-snn68.21-md0.40-nd-1.0-rc1-smax99.0.root", TString outputFile = "basehistos.root")
 {
   TFile* fin = new TFile(filename.Data(), "READ");

@@ -1,3 +1,15 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+//
+
 #include "multCalibrator.h"
 #include "multGlauberNBDFitter.h"
 
@@ -61,16 +73,15 @@ Double_t GetBoundaryForPercentile(TH1* histo, Double_t lPercentileRequested)
   return lReturnValue;
 }
 
-// master fit function
-// parameters:
-// --- input file name (from the grid, typically centrality-studies task)
-// --- histogram name: histogram to use within the input file
-// --- ancestor mode: 0: truncation, 1: rounding, 2: effective / non-integer (default: 2)
-// --- free k: keep k value free (default Pb-Pb: fixed at 1.5)
-// --- use dMu/dNanc: allow for a varying production of Nch vs ancestor if Nancestor is large. Models detector saturation in effective manner.
-// --- free f: keep f value free (default Pb-Pb: fixed at 0.8)
-// --- f value: the value to use for fixed f
-
+/// @brief master glauber fit function
+/// @param lInputFileName input file name (from the grid, typically centrality-studies task)
+/// @param histogramName histogram name: histogram to use within the input file
+/// @param ancestorMode ancestor mode: 0: truncation, 1: rounding, 2: effective / non-integer (default: 2)
+/// @param lFreek free k: keep k value free (default Pb-Pb: fixed at 1.5)
+/// @param use_dMu_dNanc use dMu/dNanc: allow for a varying production of Nch vs ancestor if Nancestor is large. Models detector saturation in effective manner.
+/// @param lFreef free f: keep f value free (default Pb-Pb: fixed at 0.8)
+/// @param lfvalue f value: the value to use for fixed f
+/// @param outputFile name of output file
 int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TString histogramName = "hFT0C_BCs", int ancestorMode = 2, Bool_t lFreek = kFALSE, Bool_t use_dMu_dNanc = kFALSE, Bool_t lFreef = kFALSE, Float_t lfvalue = 0.800, TString outputFile = "output.root")
 {
   gStyle->SetLineScalePS(1);
