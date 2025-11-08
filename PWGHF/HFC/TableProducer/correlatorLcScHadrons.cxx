@@ -454,7 +454,7 @@ struct HfCorrelatorLcScHadrons {
     AxisSpec const axisRapidity = {100, -2, 2, "Rapidity"};
     AxisSpec axisSign = {5, -2.5, 2.5, "Sign"};
     AxisSpec axisPtV0 = {500, 0., 50.0, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisMassV0 = {200, 0.9f, 1.2f, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
+    AxisSpec axisMassV0 = {300, 1.05f, 1.2f, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
 
     registry.add("hPtCand", "Lc,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtLc}});
     registry.add("hPtProng0", "Lc,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtLc}});
