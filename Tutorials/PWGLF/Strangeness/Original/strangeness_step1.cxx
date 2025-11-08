@@ -9,15 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Step2 of the Strangeness tutorial
+/// \brief Step1 of the Strangeness tutorial
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/PIDResponse.h"
+
+#include "Common/DataModel/EventSelection.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -27,8 +28,6 @@ using namespace o2::framework::expressions;
 // Starting point: loop over all V0s and fill invariant mass histogram
 // STEP 1
 // Apply selections on topological variables of V0s
-// STEP 2
-// Apply PID selections on V0 daughter tracks
 
 struct strangeness_tutorial {
   // Histograms are defined with HistogramRegistry
@@ -48,15 +47,11 @@ struct strangeness_tutorial {
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5, "v0radius"};
 
-  // Configurable parameters for PID selection
-  Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
-
   void init(InitContext const&)
   {
     // Axes
     AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {nBins, -15., 15., "vrtx_{Z} [cm]"};
-    AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
     // Histograms
     // Event selection
@@ -70,8 +65,6 @@ struct strangeness_tutorial {
     // K0s topological/PID cuts
     rKzeroShort.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
     rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
-    rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
-    rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
   }
 
   // Defining filters for events (event selection)
@@ -85,21 +78,13 @@ struct strangeness_tutorial {
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
-  // Defining the type of the daughter tracks
-  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
-
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& V0s,
-               DaughterTracks const&)
+               soa::Filtered<aod::V0Datas> const& V0s)
   {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
 
     for (const auto& v0 : V0s) {
-
-      const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
-
       rKzeroShort.fill(HIST("hMassK0Short"), v0.mK0Short());
 
       // Cut on dynamic columns
@@ -108,22 +93,9 @@ struct strangeness_tutorial {
       if (v0.v0radius() < v0setting_radius)
         continue;
 
-      if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
-        continue;
-      }
-      if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
-        continue;
-      }
-
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), v0.mK0Short());
       rKzeroShort.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
       rKzeroShort.fill(HIST("hV0CosPA"), v0.v0cosPA());
-
-      // Filling the PID of the V0 daughters in the region of the K0 peak
-      if (0.45 < v0.mK0Short() && v0.mK0Short() < 0.55) {
-        rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
-        rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
-      }
     }
   }
 };

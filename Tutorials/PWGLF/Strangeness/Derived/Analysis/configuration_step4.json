@@ -1,0 +1,212 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "aod-file-private": "@input_data.txt",
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1"
+    },
+    "strangenesstofpid": {
+        "v0Calibration.qaMassWindow": "0.005",
+        "axisP": {
+            "values": [
+                0,
+                0,
+                0.10000000149011612,
+                0.20000000298023224,
+                0.30000001192092896,
+                0.4000000059604645,
+                0.5,
+                0.6000000238418579,
+                0.699999988079071,
+                0.800000011920929,
+                0.8999999761581421,
+                1,
+                1.100000023841858,
+                1.2000000476837158,
+                1.2999999523162842,
+                1.399999976158142,
+                1.5,
+                1.600000023841858,
+                1.7000000476837158,
+                1.7999999523162842,
+                1.899999976158142,
+                2,
+                2.200000047683716,
+                2.4000000953674316,
+                2.5999999046325684,
+                2.799999952316284,
+                3,
+                3.200000047683716,
+                3.4000000953674316,
+                3.5999999046325684,
+                3.799999952316284,
+                4,
+                4.400000095367432,
+                4.800000190734863,
+                5.199999809265137,
+                5.599999904632568,
+                6,
+                6.5,
+                7,
+                7.5,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                17,
+                19,
+                21,
+                23,
+                25,
+                30,
+                35,
+                40,
+                50
+            ]
+        },
+        "axisRatioMethods": {
+            "values": [
+                400,
+                0.8999999761581421,
+                1.899999976158142
+            ]
+        },
+        "v0Calibration.qaCosPA": "0.999",
+        "rejectUndefinedTof": "1",
+        "v0Calibration.qaDCADau": "0.5",
+        "axisDeltaTime": {
+            "values": [
+                2000,
+                -1000,
+                1000
+            ]
+        },
+        "ccdb.ccdb-url": "http://alice-ccdb.cern.ch",
+        "v0Calibration.qaTPCNSigma": "5",
+        "ccdb.lutPath": "GLO/Param/MatLUT",
+        "axisDeltaTimeVsPrimaryCalculation": {
+            "values": [
+                500,
+                -500,
+                500
+            ]
+        },
+        "axisEta": {
+            "values": [
+                20,
+                -1,
+                1
+            ]
+        },
+        "axisTimeLong": {
+            "values": [
+                3000,
+                -1500000,
+                1500000
+            ]
+        },
+        "calculationMethod": "0",
+        "calculateCascades": "-1",
+        "cascadeCalibration.qaV0DCADau": "0.5",
+        "axisNSigma": {
+            "values": [
+                200,
+                -10,
+                10
+            ]
+        },
+        "axisSmallP": {
+            "values": [
+                250,
+                0,
+                2.5
+            ]
+        },
+        "manualRunNumber": "544122",
+        "calculateV0TOFPIDs": "-1",
+        "cascadeCalibration.qaCascCosPA": "0.995",
+        "processDerivedData": "1",
+        "calculateV0s": "-1",
+        "cascadeCalibration.qaCascDCADau": "0.5",
+        "cascadeCalibration.qaMassWindow": "0.005",
+        "axisBCshift": {
+            "values": [
+                130,
+                -3006569.541579235,
+                237032.45348549983
+            ]
+        },
+        "doBCshift": "1",
+        "useCustomRunNumber": "1",
+        "axisPosition": {
+            "values": [
+                400,
+                -400,
+                400
+            ]
+        },
+        "processStandardData": "0",
+        "axisTime": {
+            "values": [
+                400,
+                10000,
+                50000
+            ]
+        },
+        "calculateCascTOFPIDs": "-1",
+        "ccdb.mVtxPath": "GLO/Calib/MeanVertex",
+        "calculateV0TOFDebugs": "-1",
+        "axisSnp": {
+            "values": [
+                220,
+                -1.100000023841858,
+                1.100000023841858
+            ]
+        },
+        "ccdb.grpmagPath": "GLO/Config/GRPMagField",
+        "ccdb.grpPath": "GLO/GRP/GRP",
+        "doNSigmas": "1",
+        "calculateV0TOFBetas": "-1",
+        "reassociateTracks": "1",
+        "ccdb.nSigmaPath": "Users/d/ddobrigk/stratof",
+        "doQA": "0",
+        "cascadeCalibration.qaV0CosPA": "0.995",
+        "cascadeCalibration.qaTPCNSigma": "5",
+        "d_bz": "-999",
+        "tofPosition": "377.934",
+        "doQANSigma": "0"
+    },
+    "strangeness_derived_tutorial": {
+        "nBins": "100",
+        "cutzvertex": "10",
+        "cascadesetting_cospa": "0.998",
+        "cascadesetting_v0cospa": "0.96999999999999997",
+        "cascadesetting_dcacascdau": "1",
+        "cascadesetting_dcav0dau": "1",
+        "cascadesetting_dcabachtopv": "0.0599999987",
+        "cascadesetting_dcapostopv": "0.0599999987",
+        "cascadesetting_dcanegtopv": "0.0599999987",
+        "cascadesetting_mindcav0topv": "0.00999999978",
+        "cascadesetting_cascradius": "0.5",
+        "cascadesetting_v0radius": "1.20000005",
+        "cascadesetting_v0masswindow": "0.00800000038",
+        "cascadesetting_competingmassrej": "0.00800000038",
+        "NSigmaTPCPion": "3",
+        "NSigmaTPCKaon": "3",
+        "NSigmaTPCProton": "3",
+        "NSigmaTOFPion": "3",
+        "NSigmaTOFKaon": "3",
+        "NSigmaTOFProton": "3"
+    },
+    "internal-dpl-aod-writer": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-injected-dummy-sink": ""
+}

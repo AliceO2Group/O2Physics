@@ -9,16 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Step4 of the Strangeness tutorial
+/// \brief Step3 of the Strangeness tutorial
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,14 +33,11 @@ using namespace o2::framework::expressions;
 // Apply PID selections on V0 daughter tracks
 // STEP 3
 // Check the MC information of the V0s
-// STEP 4
-// Apply selections on topological variables of Cascades
 
 struct strangeness_tutorial {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rXi{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rGenParticles{"genParticles", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for histograms
@@ -55,29 +53,13 @@ struct strangeness_tutorial {
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5, "v0radius"};
 
-  // Configurable parameters for cascade selection
-  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.98, "Casc CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
-  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "DCA cascade daughters"};
-  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "DCA bachelor to PV"};
-  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "minimum V0 DCA to PV"};
-  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascradius"};
-  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "v0 mass window"};
-
-  Configurable<float> cascade_dcanegtopv{"dcanegtopv", 0.06, "DCA Neg To PV"};
-  Configurable<float> cascade_dcapostopv{"dcapostopv", 0.06, "DCA Pos To PV"};
-
   // Configurable parameters for PID selection
   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
-  Configurable<float> NSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
-
-  // PDG data base
-  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(InitContext const&)
   {
     // Axes
     AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec XiMassAxis = {200, 1.28f, 1.36f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {nBins, -15., 15., "vrtx_{Z} [cm]"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
@@ -95,25 +77,15 @@ struct strangeness_tutorial {
     rKzeroShort.add("hPtK0ShortSelected", "hPtK0ShortSelected", {HistType::kTH1F, {{ptAxis}}});
     rKzeroShort.add("hPtK0ShortTrueRec", "hPtK0ShortTrueRec", {HistType::kTH1F, {{ptAxis}}});
 
-    // Xi reconstruction
-    rXi.add("hMassXi", "hMassXi", {HistType::kTH1F, {XiMassAxis}});
-    rXi.add("hMassXiSelected", "hMassXiSelected", {HistType::kTH1F, {XiMassAxis}});
-    rXi.add("hMassXiTrueRec", "hMassXiTrueRec", {HistType::kTH1F, {XiMassAxis}});
-
     // K0s topological/PID cuts
     rKzeroShort.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
     rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
     rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
 
-    // Xi topological cuts
-    rXi.add("hCascDCAV0Daughters", "hCascDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
-    rXi.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
-
     // Generated level histograms
     rEventSelection.add("hVertexZGen", "hVertexZGen", {HistType::kTH1F, {vertexZAxis}});
     rGenParticles.add("hPtK0ShortGen", "hPtK0ShortGen", {HistType::kTH1F, {{ptAxis}}});
-    rGenParticles.add("hPtXiGen", "hPtXiGen", {HistType::kTH1F, {{ptAxis}}});
   }
 
   // Defining filters for events (event selection)
@@ -128,21 +100,12 @@ struct strangeness_tutorial {
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
-  // Filters on Cascades
-  Filter preFilterCascades = (nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv &&
-                              aod::cascdata::dcaV0daughters < v0setting_dcav0dau &&
-                              nabs(aod::cascdata::dcapostopv) > cascade_dcapostopv &&
-                              nabs(aod::cascdata::dcanegtopv) > cascade_dcanegtopv &&
-                              nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv &&
-                              aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau);
-
   // Defining the type of the daughter tracks
-  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr, aod::McTrackLabels>;
+  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::McTrackLabels>;
 
   void processRecMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-                    soa::Filtered<soa::Join<aod::CascDatas, aod::McCascLabels>> const& Cascades,
                     soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s,
-                    DaughterTracks const&,
+                    DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
                     aod::McParticles const&)
   {
     // Fill the event counter
@@ -183,7 +146,7 @@ struct strangeness_tutorial {
       if (posDaughterTrack.has_mcParticle() && negDaughterTrack.has_mcParticle()) { // Checking that the daughter tracks come from particles and are not fake
         auto posParticle = posDaughterTrack.mcParticle();
         auto negParticle = negDaughterTrack.mcParticle();
-        if (posParticle.pdgCode() == 211 && negParticle.pdgCode() == -211) { // Checking that the daughter tracks are true pions
+        if (posParticle.pdgCode() == PDG_t::kPiPlus && negParticle.pdgCode() == PDG_t::kPiMinus) { // Checking that the daughter tracks are true pions
           rKzeroShort.fill(HIST("hMassK0ShortSelectedTruePions"), v0.mK0Short());
         }
       }
@@ -191,59 +154,9 @@ struct strangeness_tutorial {
       // Checking that the V0 is a true K0s
       if (v0.has_mcParticle()) {
         auto v0mcParticle = v0.mcParticle();
-        if (v0mcParticle.pdgCode() == 310) {
+        if (v0mcParticle.pdgCode() == PDG_t::kK0Short) {
           rKzeroShort.fill(HIST("hMassK0ShortTrueRec"), v0.mK0Short());
           rKzeroShort.fill(HIST("hPtK0ShortTrueRec"), v0.pt()); // To mimic distribution after the signal extraction
-        }
-      }
-    }
-
-    // Cascades
-    for (const auto& casc : Cascades) {
-      const auto& bachDaughterTrackCasc = casc.bachelor_as<DaughterTracks>();
-      const auto& posDaughterTrackCasc = casc.posTrack_as<DaughterTracks>();
-      const auto& negDaughterTrackCasc = casc.negTrack_as<DaughterTracks>();
-
-      rXi.fill(HIST("hMassXi"), casc.mXi());
-
-      // Cut on dynamic columns
-      if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_cospa)
-        continue;
-      if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascadesetting_v0masswindow)
-        continue;
-      if (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadesetting_mindcav0topv)
-        continue;
-      if (casc.cascradius() < cascadesetting_cascradius)
-        continue;
-
-      if (casc.sign() < 0) {
-        if (TMath::Abs(posDaughterTrackCasc.tpcNSigmaPr()) > NSigmaTPCProton) {
-          continue;
-        }
-        if (TMath::Abs(negDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
-          continue;
-        }
-      } else {
-        if (TMath::Abs(negDaughterTrackCasc.tpcNSigmaPr()) > NSigmaTPCProton) {
-          continue;
-        }
-        if (TMath::Abs(posDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
-          continue;
-        }
-      }
-      if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaPi()) > NSigmaTPCPion) {
-        continue;
-      }
-
-      rXi.fill(HIST("hMassXiSelected"), casc.mXi());
-      rXi.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());
-      rXi.fill(HIST("hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
-
-      // Checking that the cascade is a true Xi
-      if (casc.has_mcParticle()) {
-        const auto cascmcParticle = casc.mcParticle();
-        if (TMath::Abs(cascmcParticle.pdgCode()) == 3312) {
-          rXi.fill(HIST("hMassXiTrueRec"), casc.mXi());
         }
       }
     }
@@ -257,11 +170,8 @@ struct strangeness_tutorial {
       return;
     rEventSelection.fill(HIST("hVertexZGen"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == 310) {
+      if (mcParticle.pdgCode() == PDG_t::kK0Short) {
         rGenParticles.fill(HIST("hPtK0ShortGen"), mcParticle.pt());
-      }
-      if (TMath::Abs(mcParticle.pdgCode()) == 3312) {
-        rGenParticles.fill(HIST("hPtXiGen"), mcParticle.pt());
       }
     }
   }
