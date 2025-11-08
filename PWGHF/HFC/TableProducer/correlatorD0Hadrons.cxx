@@ -103,7 +103,7 @@ struct HfCorrelatorD0HadronsSelection {
 
   SliceCache cache;
 
-  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, Installation of another LAN connectionaod::CentFT0Ms>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
 
