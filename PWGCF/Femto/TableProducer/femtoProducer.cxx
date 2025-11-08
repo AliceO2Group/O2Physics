@@ -121,6 +121,8 @@ struct FemtoProducer {
   kinkbuilder::ConfKinkFilters confKinkFilters;
   kinkbuilder::ConfSigmaBits confSigmaBits;
   kinkbuilder::KinkBuilder<modes::Kink::kSigma> sigmaBuilder;
+  kinkbuilder::ConfSigmaPlusBits confSigmaPlusBits;
+  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus> sigmaPlusBuilder;
 
   // resonance daughter filters and partitions
   twotrackresonancebuilder::ConfTwoTrackResonanceDaughterFilters confResonanceDaughterFilters;
@@ -182,6 +184,7 @@ struct FemtoProducer {
 
     // configure kink builder
     sigmaBuilder.init(confSigmaBits, confKinkFilters, confKinkTables, context);
+    sigmaPlusBuilder.init(confSigmaPlusBits, confKinkFilters, confKinkTables, context);
 
     // cascade selections
     xiBuilder.init(confXiBits, confCascadeFilters, confCascadeTables, context);
@@ -199,7 +202,7 @@ struct FemtoProducer {
     if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) && (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (sigmaBuilder.fillAnyTable() && (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
+    if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) && (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
       LOG(fatal) << "At least one kink table is enabled, but wrong process function is enabled. Breaking...";
     }
   }
@@ -248,6 +251,7 @@ struct FemtoProducer {
   void processKinks(T1 const& tracks, T2 const& kinks)
   {
     sigmaBuilder.fillKinks(collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
+    sigmaPlusBuilder.fillKinks(collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
   }
 
   // add cascades

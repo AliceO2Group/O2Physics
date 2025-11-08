@@ -126,4 +126,17 @@
     (femtobase::stored::mass < selection.massMax) &&                                                                       \
     ncheckbit(femtokinks::mask, selection.mask)
 
+#define MAKE_SIGMAPLUS_PARTITION(selection)                                                                                \
+  ifnode(selection.sign.node() != 0,                                                                                       \
+         ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f), true) && \
+    (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                               \
+    (nabs(femtobase::stored::signedPt) < selection.ptMax) &&                                                               \
+    (femtobase::stored::eta > selection.etaMin) &&                                                                         \
+    (femtobase::stored::eta < selection.etaMax) &&                                                                         \
+    (femtobase::stored::phi > selection.phiMin) &&                                                                         \
+    (femtobase::stored::phi < selection.phiMax) &&                                                                         \
+    (femtobase::stored::mass > selection.massMin) &&                                                                       \
+    (femtobase::stored::mass < selection.massMax) &&                                                                       \
+    ncheckbit(femtokinks::mask, selection.mask)
+
 #endif // PWGCF_FEMTO_CORE_PARTITIONS_H_
