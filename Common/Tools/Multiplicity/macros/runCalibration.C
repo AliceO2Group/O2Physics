@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 //
 
+#include <iostream>
+
 /// @brief function to calibrate centrality
 /// @param lInputFileName name of input file.
 /// @param anchorPointPercentage anchor point percentage to use

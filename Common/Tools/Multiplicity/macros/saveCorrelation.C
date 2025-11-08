@@ -13,6 +13,8 @@
 // into the 2D correlation histogram necessary for the ALICE machinery
 // that performs Glauber + NBD fits.
 
+#include <iostream>
+
 /// @brief function to save Npart x Ncoll correlation to file for glauber fits
 /// @param filename input TGlauberMC ntuple file
 /// @param outputFile output file for Npart x Ncoll correlation TH2D

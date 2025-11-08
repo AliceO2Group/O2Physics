@@ -28,6 +28,8 @@
 #include "TSystem.h"
 #include "TTree.h"
 
+#include <iostream>
+
 //________________________________________________________________
 Double_t FastIntegrate(TF1* f1, Double_t a, Double_t b, Int_t n = 5)
 {
