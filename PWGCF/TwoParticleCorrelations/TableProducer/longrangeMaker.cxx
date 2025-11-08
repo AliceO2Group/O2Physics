@@ -30,8 +30,9 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -212,13 +213,13 @@ struct LongrangeMaker {
     tpcNsigmaCut = tpcNsigmaPidCut;
   }
 
-  Produces<aod::CollLRTable> collisionLRTable;
-  Produces<aod::TrkLRTable> tracksLRTable;
-  Produces<aod::Ft0aLRTable> ft0aLRTable;
-  Produces<aod::Ft0cLRTable> ft0cLRTable;
-  Produces<aod::MftTrkLRTable> mftLRTable;
-  Produces<aod::MftBestTrkLRTable> mftbestLRTable;
-  Produces<aod::V0TrkLRTable> v0LRTable;
+  Produces<aod::CollLRTables> collisionLRTable;
+  Produces<aod::TrkLRTables> tracksLRTable;
+  Produces<aod::Ft0aLRTables> ft0aLRTable;
+  Produces<aod::Ft0cLRTables> ft0cLRTable;
+  Produces<aod::MftTrkLRTables> mftLRTable;
+  Produces<aod::MftBestTrkLRTables> mftbestLRTable;
+  Produces<aod::V0TrkLRTables> v0LRTable;
 
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);

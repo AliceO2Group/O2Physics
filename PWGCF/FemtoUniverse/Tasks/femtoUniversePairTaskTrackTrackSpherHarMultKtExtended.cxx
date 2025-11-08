@@ -25,8 +25,6 @@
 #include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Common/DataModel/PIDResponse.h"
-
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -526,7 +524,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-        if (kT > ConfKtKstarBins.value.back() || kT < ConfKtKstarBins.value.front())
+        float lastElement = ConfKtKstarBins.value.back();
+        float firstRealElement = ConfKtKstarBins.value[1];
+
+        if (kT < firstRealElement || kT > lastElement)
           continue;
 
         if (twotracksconfigs.ConfIsCPR.value) {
@@ -565,7 +566,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-        if (kT > ConfKtKstarBins.value.back() || kT < ConfKtKstarBins.value.front())
+        float lastElement = ConfKtKstarBins.value.back();
+        float firstRealElement = ConfKtKstarBins.value[1];
+
+        if (kT < firstRealElement || kT > lastElement)
           continue;
 
         if (twotracksconfigs.ConfIsCPR.value) {
@@ -944,7 +948,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-      if (kT > ConfKtKstarBins.value.back() || kT < ConfKtKstarBins.value.front())
+      float lastElement = ConfKtKstarBins.value.back();
+      float firstRealElement = ConfKtKstarBins.value[1];
+
+      if (kT < firstRealElement || kT > lastElement)
         continue;
 
       if (twotracksconfigs.ConfIsCPR.value) {

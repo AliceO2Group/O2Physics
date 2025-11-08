@@ -30,7 +30,8 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
@@ -231,6 +232,7 @@ struct StrangenessInJets {
 
       // Event counter
       registryMC.add("number_of_events_mc_gen", "number of gen events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
+      registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       switch (particleOfInterest) {
@@ -268,6 +270,7 @@ struct StrangenessInJets {
 
       // Event counter
       registryMC.add("number_of_events_mc_rec", "number of rec events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
+      registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       switch (particleOfInterest) {
@@ -1199,6 +1202,13 @@ struct StrangenessInJets {
       // Loop over all MC particles and select physical primaries within acceptance
       for (const auto& particle : mcParticlesPerColl) {
 
+        // Store properties of strange hadrons
+        int pdgAbs = std::abs(particle.pdgCode());
+        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) {
+          pdg.emplace_back(particle.pdgCode());
+          strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
+        }
+
         // Select physical primary particles or HF decay products
         if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
           continue;
@@ -1213,13 +1223,6 @@ struct StrangenessInJets {
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
-
-        // Store properties of strange hadrons
-        int pdgAbs = std::abs(particle.pdgCode());
-        if (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus) {
-          pdg.emplace_back(particle.pdgCode());
-          strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
-        }
       }
 
       // Skip events with no particles
@@ -1249,6 +1252,7 @@ struct StrangenessInJets {
         if (jetMinusBkg.pt() < minJetPt)
           continue;
         registryMC.fill(HIST("number_of_events_mc_gen"), 4.5);
+        registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -1534,6 +1538,7 @@ struct StrangenessInJets {
 
       // Fill event counter for events with at least one selected jet
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
+      registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
