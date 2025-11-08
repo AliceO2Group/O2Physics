@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 /// \file saveCorrelation.C
-/// \brief 
+/// \brief
 /// \author ALICE
 
 #include "multCalibrator.h"
@@ -141,8 +141,8 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   Double_t fractionOfMax = 0.012;
   Double_t lFitRange = fractionOfMax * GetBoundaryForPercentile(hV0Mfine, maxPercent);
 
-  // adjust if low mult (Ntracks, typically) 
-  Double_t maxRangeForTracks= 10000; 
+  // adjust if low mult (Ntracks, typically)
+  Double_t maxRangeForTracks = 10000;
   Double_t fractionOfMaxBroader = 0.02;
   if (lFitRangeMax < maxRangeForTracks)
     lFitRange = fractionOfMaxBroader * GetBoundaryForPercentile(hV0Mfine, maxPercent);
