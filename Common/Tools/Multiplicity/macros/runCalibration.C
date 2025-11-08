@@ -10,13 +10,14 @@
 // or submit itself to any jurisdiction.
 //
 
-/// @brief function to calibrate centrality 
-/// @param lInputFileName name of input file. 
-/// @param anchorPointPercentage anchor point percentage to use 
+/// @brief function to calibrate centrality
+/// @param lInputFileName name of input file.
+/// @param anchorPointPercentage anchor point percentage to use
 /// @param matchRange width of region in which data/glauber matching is to be done in rolling anchoring test
 /// @param doNpartNcoll wether or not to attempt calculating Npart, Ncoll in centrality bins
-void runCalibration( TString lInputFileName = "results/AR_544122_glauberNBD_ancestorMode2_hFT0C_BCs.root", double anchorPointPercentage = 90.0, double matchRange = 200.0, bool doNpartNcoll = false){
-  TFile *file = new TFile(lInputFileName.Data(), "READ");
+void runCalibration(TString lInputFileName = "results/AR_544122_glauberNBD_ancestorMode2_hFT0C_BCs.root", double anchorPointPercentage = 90.0, double matchRange = 200.0, bool doNpartNcoll = false)
+{
+  TFile* file = new TFile(lInputFileName.Data(), "READ");
   file->ls();
 
   TH1F* hData = (TH1F*)file->Get("hV0MUltraFine");
