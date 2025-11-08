@@ -281,7 +281,8 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   Int_t lFitStatus = 0;
   lFitStatus = g->DoFit();
   Int_t lAttempts = 1;
-  while (lAttempts < 10 && lFitStatus == 0) {
+  Int_t lMaxAttempts = 10;
+  while (lAttempts < lMaxAttempts && lFitStatus == 0) {
     // insist on fitting until it works
     cout << "Attempting fit again (" << lAttempts << " attempt)..." << endl;
     lFitStatus = g->DoFit();
@@ -303,7 +304,8 @@ int runGlauberFit(TString lInputFileName = "AnalysisResultsLHC24ar.root", TStrin
   for (Int_t ii = 1; ii < hGlauber->GetNbinsX() + 1; ii++) {
     Double_t lFuncVal = FastIntegrate(fitfunc, hGlauber->GetBinLowEdge(ii), hGlauber->GetBinLowEdge(ii + 1), 4);
     hGlauber->SetBinContent(ii, lFuncVal);
-    if (ii % 500 == 0) {
+    Int_t printEveryThisManyBins = 500;
+    if (ii % printEveryThisManyBins == 0) {
       cout << "At integration #" << ii << "/" << hGlauber->GetNbinsX() + 1 << "..." << endl;
     }
   }
