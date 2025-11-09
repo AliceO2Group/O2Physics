@@ -578,44 +578,49 @@ struct HfCorrelatorDplusHadrons {
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() != NDaughters) continue;
-        bool isDaughtersOk = true;
-        for (const auto& dauIdx : listDaughters) {
-          auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
-          if (std::abs(daughI.eta()) >= kEtaDaughtersMax) { isDaughtersOk = false; break; }
-          counterDaughters += 1;
-          prongsId[counterDaughters - 1] = daughI.globalIndex();
+      if (listDaughters.size() != NDaughters)
+        continue;
+      bool isDaughtersOk = true;
+      for (const auto& dauIdx : listDaughters) {
+        auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
+        if (std::abs(daughI.eta()) >= kEtaDaughtersMax) {
+          isDaughtersOk = false;
+          break;
         }
-      if (!isDaughtersOk) continue; // Skip this D+ candidate if any daughter fails eta cut
-      counterDplusHadron++;
-      // Dplus Hadron correlation dedicated section
-      // if it's a Dplus particle, search for Hadron and evaluate correlations
-      registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
-      for (const auto& particleAssoc : mcParticles) {
-        if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
-          continue;
+        counterDaughters += 1;
+        prongsId[counterDaughters - 1] = daughI.globalIndex();
         }
-        if (removeDaughters) {
-          if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
+        if (!isDaughtersOk)
+          continue; // Skip this D+ candidate if any daughter fails eta cut
+        counterDplusHadron++;
+        // Dplus Hadron correlation dedicated section
+        // if it's a Dplus particle, search for Hadron and evaluate correlations
+        registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
+        for (const auto& particleAssoc : mcParticles) {
+          if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
             continue;
           }
-        }
-        if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
-          continue;
-        }
-        if (!particleAssoc.isPhysicalPrimary()) {
-          continue;
-        }
+          if (removeDaughters) {
+            if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
+              continue;
+            }
+          }
+          if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
+            continue;
+          }
+          if (!particleAssoc.isPhysicalPrimary()) {
+            continue;
+          }
 
-        int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
-        registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
-        entryDplusHadronPair(getDeltaPhi(particleAssoc.phi(), particle1.phi()),
-                             particleAssoc.eta() - particle1.eta(),
-                             particle1.pt(),
-                             particleAssoc.pt(),
-                             poolBin);
-        entryDplusHadronRecoInfo(MassDPlus, true);
-        entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
+          int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
+          registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
+          entryDplusHadronPair(getDeltaPhi(particleAssoc.phi(), particle1.phi()),
+                               particleAssoc.eta() - particle1.eta(),
+                               particle1.pt(),
+                               particleAssoc.pt(),
+                               poolBin);
+          entryDplusHadronRecoInfo(MassDPlus, true);
+          entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
       } // end associated loop
     } // end trigger
     registry.fill(HIST("hcountDplusHadronPerEvent"), counterDplusHadron);
