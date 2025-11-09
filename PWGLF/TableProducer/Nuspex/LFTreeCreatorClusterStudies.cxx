@@ -405,7 +405,7 @@ struct LfTreeCreatorClusterStudies {
     return true;
   }
 
-  uint8_t selectV0MotherHypothesis(float massK0sV0, float massLambdaV0, float massAntiLambdaV0, float alphaAP, const o2::aod::V0& v0)
+  uint8_t selectV0MotherHypothesis(float massK0sV0, float massLambdaV0, float massAntiLambdaV0, float alphaAP)
   {
     uint8_t v0Bitmask(0);
     if (std::abs(massK0sV0 - o2::constants::physics::MassK0Short) < v0setting_massWindowK0s) {
@@ -422,8 +422,8 @@ struct LfTreeCreatorClusterStudies {
 
   template <typename Track>
   bool selectPidV0Daughters(Candidate& candidatePos, Candidate& candidateNeg, const Track& posTrack,
-                            const Track& negTrack, const std::array<float, 3>& momMother, const std::array<float, 3>& decayVtx,
-                            float qtAP, float radiusV0, uint8_t v0Bitmask)
+                            const Track& negTrack, const std::array<float, 3>& momMother, const std::array<float, 3>& /*decayVtx*/,
+                            float qtAP, float /*radiusV0*/, uint8_t v0Bitmask)
   {
     if (TESTBIT(v0Bitmask, Lambda)) {
       if (qtAP < lambdasetting_qtAPcut)
@@ -571,7 +571,7 @@ struct LfTreeCreatorClusterStudies {
 
     float correctedTpcInnerParam = track.tpcInnerParam();
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
-    correctedTpcInnerParam = (partID == PartID::he && he3setting_compensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
+    correctedTpcInnerParam = (partID == PartID::he && he3setting_compensatePIDinTracking && heliumPID) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
 
     m_hAnalysis.fill(HIST(cNames[partID]) + HIST("/nSigmaTPC"), track.p() * track.sign(), nsigmaTpc);
     m_hAnalysis.fill(HIST(cNames[partID]) + HIST("/nSigmaITS"), track.p() * track.sign(), nsigmaIts);
@@ -881,7 +881,7 @@ struct LfTreeCreatorClusterStudies {
                                                     std::array<float, 2>{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged}));
     m_hAnalysis.fill(HIST("Lambda_vs_K0s"), massK0sV0, massLambdaV0);
 
-    uint8_t v0Bitmask = selectV0MotherHypothesis(massK0sV0, massLambdaV0, massAntiLambdaV0, alphaAP, v0);
+    uint8_t v0Bitmask = selectV0MotherHypothesis(massK0sV0, massLambdaV0, massAntiLambdaV0, alphaAP);
     if (v0Bitmask == 0 || (v0Bitmask & (v0Bitmask - 1)) != 0) {
       return;
     }
@@ -1065,9 +1065,6 @@ struct LfTreeCreatorClusterStudies {
       correctedTPCinnerParam = (heliumPID && he3setting_compensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
     }
     m_hAnalysis.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiPIDtof);
-
-    const float itsNsigma = kPartID == static_cast<int>(PartID::de) ? m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track)
-                                                                    : m_responseITS.nSigmaITS<o2::track::PID::Helium3>(track);
 
     fillHistogramsParticle<kPartID, isMC>(track);
 
@@ -1258,7 +1255,7 @@ struct LfTreeCreatorClusterStudies {
 
   Partition<TracksFullIU> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<TracksFullIU> negTracks = o2::aod::track::signed1Pt < 0.f;
-  void processDataElectrons(CollisionsCustom::iterator const& collision, TracksFullIU const& tracks, aod::BCsWithTimestamps const&)
+  void processDataElectrons(CollisionsCustom::iterator const& collision, TracksFullIU const& /*tracks*/, aod::BCsWithTimestamps const&)
   {
     if (!collisionSelection(collision)) {
       return;
@@ -1359,7 +1356,7 @@ struct LfTreeCreatorClusterStudies {
 
   Partition<TracksFullIUMc> posTracksMc = o2::aod::track::signed1Pt > 0.f;
   Partition<TracksFullIUMc> negTracksMc = o2::aod::track::signed1Pt < 0.f;
-  void processMcElectrons(CollisionsCustomMc::iterator const& collision, TracksFullIUMc const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
+  void processMcElectrons(CollisionsCustomMc::iterator const& collision, TracksFullIUMc const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
   {
     if (!collision.has_mcCollision()) {
       return;
