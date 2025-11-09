@@ -36,16 +36,16 @@
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -82,22 +82,6 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
 
-static constexpr int nSpecies = 5;
-static const std::vector<std::string> particleNames{"V0s", "Cascades", "Pi", "Ka", "Pr"};
-enum ParticleOfInterest { kV0Particles = 0,
-                          kCascades,
-                          kPions,
-                          kKaons,
-                          kProtons,
-                          kParticles };
-static constexpr int nOptions = 1;
-static const std::vector<std::string> optionNames{"Enabled"};
-const int defaultOptions[nSpecies][nOptions]{{0},
-                                             {0},
-                                             {0},
-                                             {0},
-                                             {0}};
-
 struct StrangenessInJets {
 
   // Instantiate the CCDB service and API interface
@@ -114,9 +98,13 @@ struct StrangenessInJets {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Global analysis parameters
-  Configurable<LabeledArray<int>> enabledParticles{"enabledParticles",
-                                                   {defaultOptions[0], nSpecies, nOptions, particleNames, optionNames},
-                                                   "Enabled particles"};
+  enum ParticleOfInterest { kV0Particles = 0,
+                            kCascades,
+                            kPions,
+                            kKaons,
+                            kProtons,
+                            kParticles };
+  Configurable<std::array<int, kParticles>> enabledSignals{"enabledSignals", {1, 0, 0, 0, 0}, "Enable particles"};
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum reconstructed pt of the jet (GeV/c)"};
   Configurable<double> rJet{"rJet", 0.3, "Jet resolution parameter (R)"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum z-vertex position"};
@@ -187,18 +175,19 @@ struct StrangenessInJets {
     }
 
     int enabled = 0;
-    auto checkEnabled = [&](const std::string& particle) {
-      if (enabledParticles->get(particle.c_str(), "Enabled")) {
+    auto checkEnabled = [&](const ParticleOfInterest particle) {
+      LOG(info) << "Checking if " << particle << " are enabled";
+      if (enabledSignals.value[particle]) {
         LOG(info) << particle << " are enabled";
         return 1;
       }
       return 0;
     };
-    enabled += checkEnabled("V0s");
-    enabled += checkEnabled("Cascades");
-    enabled += checkEnabled("Pions");
-    enabled += checkEnabled("Kaons");
-    enabled += checkEnabled("Protons");
+    enabled += checkEnabled(ParticleOfInterest::kV0Particles);
+    enabled += checkEnabled(ParticleOfInterest::kCascades);
+    enabled += checkEnabled(ParticleOfInterest::kPions);
+    enabled += checkEnabled(ParticleOfInterest::kKaons);
+    enabled += checkEnabled(ParticleOfInterest::kProtons);
     if (enabled == 0) {
       LOG(fatal) << "At least one particle species must be enabled for the analysis. Please check the configuration of the task." << endl;
     }
@@ -224,7 +213,7 @@ struct StrangenessInJets {
       registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis of strange hadrons
-      if (enabledParticles->get("V0s", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
         registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
         registryData.add("AntiLambda_in_jet", "AntiLambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
         registryData.add("Lambda_in_ue", "Lambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
@@ -232,7 +221,7 @@ struct StrangenessInJets {
         registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
         registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
       }
-      if (enabledParticles->get("Cascades", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
         registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
         registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
@@ -242,15 +231,15 @@ struct StrangenessInJets {
         registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
         registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
       }
-      if (enabledParticles->get("Pions", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kPions]) {
         registryData.add("Pion_in_jet", "Pion_in_jet", HistType::kTHnSparseF, {multBinning, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
         registryData.add("Pion_in_ue", "Pion_in_ue", HistType::kTHnSparseF, {multBinning, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
       }
-      if (enabledParticles->get("Kaons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kKaons]) {
         registryData.add("Kaon_in_jet", "Kaon_in_jet", HistType::kTHnSparseF, {multBinning, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
         registryData.add("Kaon_in_ue", "Kaon_in_ue", HistType::kTHnSparseF, {multBinning, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
       }
-      if (enabledParticles->get("Protons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kProtons]) {
         registryData.add("Proton_in_jet", "Proton_in_jet", HistType::kTHnSparseF, {multBinning, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
         registryData.add("Proton_in_ue", "Proton_in_ue", HistType::kTHnSparseF, {multBinning, ptAxisLongLived, nsigmaTPCAxis, nsigmaTOFAxis, dcaAxis});
       }
@@ -264,7 +253,7 @@ struct StrangenessInJets {
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
-      if (enabledParticles->get("V0s", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
         registryMC.add("K0s_generated_jet", "K0s_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("K0s_generated_ue", "K0s_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("Lambda_generated_jet", "Lambda_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
@@ -272,7 +261,7 @@ struct StrangenessInJets {
         registryMC.add("AntiLambda_generated_jet", "AntiLambda_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("AntiLambda_generated_ue", "AntiLambda_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
       }
-      if (enabledParticles->get("Cascades", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("XiPos_generated_ue", "XiPos_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("XiNeg_generated_jet", "XiNeg_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
@@ -282,15 +271,15 @@ struct StrangenessInJets {
         registryMC.add("OmegaNeg_generated_jet", "OmegaNeg_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("OmegaNeg_generated_ue", "OmegaNeg_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
       }
-      if (enabledParticles->get("Pions", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kPions]) {
         registryMC.add("Pion_generated_in_jet", "Pion_generated_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Pion_generated_in_ue", "Pion_generated_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
-      if (enabledParticles->get("Kaons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kKaons]) {
         registryMC.add("Kaon_generated_in_jet", "Kaon_generated_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Kaon_generated_in_ue", "Kaon_generated_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
-      if (enabledParticles->get("Protons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kProtons]) {
         registryMC.add("Proton_generated_in_jet", "Proton_generated_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Proton_generated_in_ue", "Proton_generated_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
@@ -304,7 +293,7 @@ struct StrangenessInJets {
       registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
-      if (enabledParticles->get("V0s", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
         registryMC.add("K0s_reconstructed_jet", "K0s_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("K0s_reconstructed_ue", "K0s_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("Lambda_reconstructed_jet", "Lambda_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
@@ -320,7 +309,7 @@ struct StrangenessInJets {
         registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multBinning, ptAxis});
       }
 
-      if (enabledParticles->get("Cascades", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_reconstructed_jet", "XiPos_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("XiPos_reconstructed_ue", "XiPos_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("XiNeg_reconstructed_jet", "XiNeg_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
@@ -330,15 +319,15 @@ struct StrangenessInJets {
         registryMC.add("OmegaNeg_reconstructed_jet", "OmegaNeg_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_ue", "OmegaNeg_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
       }
-      if (enabledParticles->get("Pions", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kPions]) {
         registryMC.add("Pion_reconstructed_in_jet", "Pion_reconstructed_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Pion_reconstructed_in_ue", "Pion_reconstructed_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
-      if (enabledParticles->get("Kaons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kKaons]) {
         registryMC.add("Kaon_reconstructed_in_jet", "Kaon_reconstructed_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Kaon_reconstructed_in_ue", "Kaon_reconstructed_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
-      if (enabledParticles->get("Protons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kProtons]) {
         registryMC.add("Proton_reconstructed_in_jet", "Proton_reconstructed_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Proton_reconstructed_in_ue", "Proton_reconstructed_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
@@ -1033,7 +1022,7 @@ struct StrangenessInJets {
 
     // Loop over selected jets
     for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
-      if (enabledParticles->get("V0s", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
         for (const auto& v0 : fullV0s) {
           // Get V0 daughters
           const auto& pos = v0.posTrack_as<DaughterTracks>();
@@ -1081,7 +1070,7 @@ struct StrangenessInJets {
         }
       }
 
-      if (enabledParticles->get("Cascades", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         for (const auto& casc : Cascades) {
           // Get cascade daughters
           const auto& bach = casc.bachelor_as<DaughterTracks>();
@@ -1138,7 +1127,7 @@ struct StrangenessInJets {
           }
         }
       }
-      if (enabledParticles->get("Pions", "Enabled") || enabledParticles->get("Kaons", "Enabled") || enabledParticles->get("Protons", "Enabled")) {
+      if (enabledSignals.value[ParticleOfInterest::kPions] || enabledSignals.value[ParticleOfInterest::kKaons] || enabledSignals.value[ParticleOfInterest::kProtons]) {
         for (const auto& trk : tracks) {
 
           if (!passedSingleTrackSelection(trk)) {
@@ -1156,24 +1145,24 @@ struct StrangenessInJets {
           const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
           if (deltaRjet < rJet) {
-            if (enabledParticles->get("Pions", "Enabled")) {
+            if (enabledSignals.value[ParticleOfInterest::kPions]) {
               registryData.fill(HIST("Pion_in_jet"), multiplicity, trk.pt() * trk.sign(), trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.dcaXY());
             }
-            if (enabledParticles->get("Kaons", "Enabled")) {
+            if (enabledSignals.value[ParticleOfInterest::kKaons]) {
               registryData.fill(HIST("Kaon_in_jet"), multiplicity, trk.pt() * trk.sign(), trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.dcaXY());
             }
-            if (enabledParticles->get("Protons", "Enabled")) {
+            if (enabledSignals.value[ParticleOfInterest::kProtons]) {
               registryData.fill(HIST("Proton_in_jet"), multiplicity, trk.pt() * trk.sign(), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.dcaXY());
             }
           }
           if (deltaRue1 < rJet || deltaRue2 < rJet) {
-            if (enabledParticles->get("Pions", "Enabled")) {
+            if (enabledSignals.value[ParticleOfInterest::kPions]) {
               registryData.fill(HIST("Pion_in_ue"), multiplicity, trk.pt() * trk.sign(), trk.tpcNSigmaPi(), trk.tofNSigmaPi(), trk.dcaXY());
             }
-            if (enabledParticles->get("Kaons", "Enabled")) {
+            if (enabledSignals.value[ParticleOfInterest::kKaons]) {
               registryData.fill(HIST("Kaon_in_ue"), multiplicity, trk.pt() * trk.sign(), trk.tpcNSigmaKa(), trk.tofNSigmaKa(), trk.dcaXY());
             }
-            if (enabledParticles->get("Protons", "Enabled")) {
+            if (enabledSignals.value[ParticleOfInterest::kProtons]) {
               registryData.fill(HIST("Proton_in_ue"), multiplicity, trk.pt() * trk.sign(), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.dcaXY());
             }
           }
@@ -1314,67 +1303,67 @@ struct StrangenessInJets {
           if (deltaRJet < coneRadius) {
             switch (pdg[index]) {
               case kK0Short:
-                if (enabledParticles->get("V0s", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kLambda0:
-                if (enabledParticles->get("V0s", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kLambda0Bar:
-                if (enabledParticles->get("V0s", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kXiMinus:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kXiPlusBar:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kOmegaMinus:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kOmegaPlusBar:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiPlus:
-                if (enabledParticles->get("Pions", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kPions]) {
                   registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKPlus:
-                if (enabledParticles->get("Kaons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
                   registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProton:
-                if (enabledParticles->get("Protons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
                   registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiMinus:
-                if (enabledParticles->get("Pions", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kPions]) {
                   registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
               case kKMinus:
-                if (enabledParticles->get("Kaons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
                   registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
               case kProtonBar:
-                if (enabledParticles->get("Protons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
                   registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
@@ -1387,67 +1376,67 @@ struct StrangenessInJets {
           if (deltaRUe1 < coneRadius || deltaRUe2 < coneRadius) {
             switch (pdg[index]) {
               case kK0Short:
-                if (enabledParticles->get("V0s", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kLambda0:
-                if (enabledParticles->get("V0s", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kLambda0Bar:
-                if (enabledParticles->get("V0s", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
                   registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kXiMinus:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kXiPlusBar:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kOmegaMinus:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kOmegaPlusBar:
-                if (enabledParticles->get("Cascades", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kCascades]) {
                   registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiPlus:
-                if (enabledParticles->get("Pions", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kPions]) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKPlus:
-                if (enabledParticles->get("Kaons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProton:
-                if (enabledParticles->get("Protons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiMinus:
-                if (enabledParticles->get("Pions", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kPions]) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
               case kKMinus:
-                if (enabledParticles->get("Kaons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
               case kProtonBar:
-                if (enabledParticles->get("Protons", "Enabled")) {
+                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
@@ -1573,7 +1562,7 @@ struct StrangenessInJets {
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
 
         // V0 particles
-        if (enabledParticles->get("V0s", "Enabled")) {
+        if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
           for (const auto& v0 : v0sPerColl) {
             const auto& pos = v0.posTrack_as<DaughterTracksMC>();
             const auto& neg = v0.negTrack_as<DaughterTracksMC>();
@@ -1672,7 +1661,7 @@ struct StrangenessInJets {
         }
 
         // Cascades
-        if (enabledParticles->get("Cascades", "Enabled")) {
+        if (enabledSignals.value[ParticleOfInterest::kCascades]) {
           for (const auto& casc : cascPerColl) {
             auto bach = casc.bachelor_as<DaughterTracksMC>();
             auto pos = casc.posTrack_as<DaughterTracksMC>();
