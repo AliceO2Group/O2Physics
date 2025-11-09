@@ -186,6 +186,23 @@ struct StrangenessInJets {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
+    int enabled = 0;
+    auto checkEnabled = [&](const std::string& particle) {
+      if (enabledParticles->get(particle, "Enabled")) {
+        LOG(info) << particle << " are enabled";
+        return 1;
+      }
+      return 0;
+    };
+    enabled += checkEnabled("V0s");
+    enabled += checkEnabled("Cascades");
+    enabled += checkEnabled("Pions");
+    enabled += checkEnabled("Kaons");
+    enabled += checkEnabled("Protons");
+    if (enabled == 0) {
+      LOG(fatal) << "At least one particle species must be enabled for the analysis. Please check the configuration of the task." << endl;
+    }
+
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     AxisSpec multAxis = {multBinning, "FT0C percentile"};
