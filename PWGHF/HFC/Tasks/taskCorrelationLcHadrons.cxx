@@ -124,7 +124,7 @@ struct HfTaskCorrelationLcHadrons {
   Configurable<std::vector<float>> efficiencyLc{"efficiencyLc", {1., 1., 1., 1., 1., 1.}, "efficiency values for prompt Lc"};
   Configurable<std::vector<float>> efficiencyFdLc{"efficiencyFdLc", {1., 1., 1., 1., 1., 1.}, "efficiency values for beauty feed-down Lc"};
   Configurable<std::vector<float>> efficiencyHad{"efficiencyHad", {1., 1., 1., 1., 1., 1.}, "efficiency values for associated particles"};
-  // signal and sideband region edges, to be defined via json file (initialised to empty)
+  // Signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{vecSignalRegionInner}, "Inner values of signal region vs Pt"};
   Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{vecSignalRegionOuter}, "Outer values of signal region vs Pt"};
   Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{vecSidebandLeftInner}, "Inner values of left sideband vs Pt"};
