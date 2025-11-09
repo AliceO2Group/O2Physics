@@ -188,7 +188,7 @@ struct StrangenessInJets {
 
     int enabled = 0;
     auto checkEnabled = [&](const std::string& particle) {
-      if (enabledParticles->get(particle, "Enabled")) {
+      if (enabledParticles->get(particle.c_str(), "Enabled")) {
         LOG(info) << particle << " are enabled";
         return 1;
       }
