@@ -74,10 +74,18 @@ struct ConfSigmaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
+template <const char* Prefix>
+struct ConfSigmaPlusBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  KINK_DEFAULT_BINNING(1.1, 1.3)
+};
 #undef KINK_DEFAULT_BINNING
 
 constexpr const char PrefixSigmaBinning1[] = "SigmaBinning1";
 using ConfSigmaBinning1 = ConfSigmaBinning<PrefixSigmaBinning1>;
+
+constexpr const char PrefixSigmaPlusBinning1[] = "SigmaPlusBinning1";
+using ConfSigmaPlusBinning1 = ConfSigmaPlusBinning<PrefixSigmaPlusBinning1>;
 
 template <const char* Prefix>
 struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
@@ -92,6 +100,9 @@ struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixSigmaQaBinning1[] = "SigmaQaBinning1";
 using ConfSigmaQaBinning1 = ConfKinkQaBinning<PrefixSigmaQaBinning1>;
+
+constexpr const char PrefixSigmaPlusQaBinning1[] = "SigmaPlusQaBinning1";
+using ConfSigmaPlusQaBinning1 = ConfKinkQaBinning<PrefixSigmaPlusQaBinning1>;
 
 // must be in sync with enum KinkHist
 // the enum gives the correct index in the array
@@ -153,6 +164,9 @@ std::map<KinkHist, std::vector<framework::AxisSpec>> makeKinkQaHistSpecMap(T1 co
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
 constexpr char PrefixSigma1[] = "Sigma1/";
 constexpr char PrefixSigma2[] = "Sigma2/";
+constexpr char PrefixSigmaPlusQa[] = "SigmaPlusQA/";
+constexpr char PrefixSigmaPlus1[] = "SigmaPlus1/";
+constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
 
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
@@ -259,7 +273,7 @@ class KinkHistManager
     mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), kinkcandidate.phi());
     mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), kinkcandidate.mass());
 
-    if constexpr (isEqual(kink, modes::Kink::kSigma)) {
+    if constexpr (isEqual(kink, modes::Kink::kSigma) || isEqual(kink, modes::Kink::kSigmaPlus)) {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), kinkcandidate.sign());
     }
   }
