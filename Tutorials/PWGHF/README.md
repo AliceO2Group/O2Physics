@@ -59,7 +59,8 @@ It processes files specified in `./input_task.txt`, uses the configuration from 
 
 ## Exercise tips
 
-Organise your working environment so that you can easily switch between running the code in the working directory and modifying the code in the O2Physics repository.
+Organise your working environment so that you can easily switch between running the code in the working directory,
+modifying the code in the O2Physics repository, and recompiling the modified code in the build directory.
 
 When you execute the bash script, the terminal output is saved in the `./stdout.log` log file.
 If an error occurs, the script will report the non-zero exit code and ask you to check the log file to find the problem.
