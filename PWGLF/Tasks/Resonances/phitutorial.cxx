@@ -57,7 +57,7 @@ struct phitutorial {
     histos.add("Nch_pT", "Nch_pT", kTH1F, {ptAxis});
     histos.add("Nch_USS_Minv", "Nch_USS_Minv", kTH1F, {MinvAxis});
     histos.add("Nch_LSS_Minv", "Nch_LSS_Minv", kTH1F, {MinvAxis});
-    
+
     histos.add("Nch_ME_Minv", "Nch_ME_Minv", kTH1F, {MinvAxis});
 
   }; // end of init
