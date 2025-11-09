@@ -1,0 +1,34 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "aod-file-private": "@input_data.txt",
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1"
+    },
+    "strangeness_derived_tutorial": {
+        "nBins": "100",
+        "cutzvertex": "10",
+        "cascadesetting_cospa": "0.998",
+        "cascadesetting_v0cospa": "0.96999999999999997",
+        "cascadesetting_dcacascdau": "1",
+        "cascadesetting_dcav0dau": "1",
+        "cascadesetting_dcabachtopv": "0.0599999987",
+        "cascadesetting_dcapostopv": "0.0599999987",
+        "cascadesetting_dcanegtopv": "0.0599999987",
+        "cascadesetting_mindcav0topv": "0.00999999978",
+        "cascadesetting_cascradius": "0.5",
+        "cascadesetting_v0radius": "1.20000005",
+        "cascadesetting_v0masswindow": "0.00800000038",
+        "cascadesetting_competingmassrej": "0.00800000038",
+        "NSigmaTPCPion": "3",
+        "NSigmaTPCKaon": "3",
+        "NSigmaTPCProton": "3"
+    },
+    "internal-dpl-aod-writer": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-injected-dummy-sink": ""
+}
