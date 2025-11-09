@@ -72,9 +72,9 @@ struct phitutorial_step2 {
   template <typename EventType>
   bool eventSelection(const EventType event)
   {
-    if (!event.sel8()) //This is required to extract good events
+    if (!event.sel8()) // This is required to extract good events
       return false;
-    
+
     return true;
   };
   //********************************************//
@@ -89,9 +89,9 @@ struct phitutorial_step2 {
       return false;
 
     return true;
-  };  
-  //Space for more helper functions!
-  //********************************************// 
+  };
+  // Space for more helper functions!
+  //********************************************//
 
   //********************************************//
   // HELPER FCNS COMPLETE, NOW WE DO PROCESS FCNS
@@ -112,20 +112,19 @@ struct phitutorial_step2 {
     // Now, we want to add some PID to ensure that we are with a higher likelhood pairing Kaons.
     // Three ways to do this:
     // 1.) Directly cut on the tracks in the looping functions (not recommended)
-    
+
     // 2.) Create a helper function above similar to trackSelection
-    
+
     // 3.) Partition your tracks with a preselection by adding this outside of your process function:
     // Partition<TrackCandidates> kaon (nabs(aod::pidtpc::tpcNSigmaKa) <= X); // X is a cfg value or a hardcoded integer.
     // Then inside the function: auto tracks1 = kaon->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache); Do the same for tracks2.
 
+    // Getters for PID:
+    //  tracks.tpcNSigmaKa()
+    //  tracks.tofNSigmaKa()
+    //  Good starting value for the selected nsigma value is "3".
+    //  You might not want to have a STRICT TOF cut, a lot of tracks with good TPC PID does not have TOF information. You can make a conditional cut on TOF by only implementing the TOF cut if track.hasTOF() returns TRUE.
 
-    //Getters for PID:
-    // tracks.tpcNSigmaKa()
-    // tracks.tofNSigmaKa()
-    // Good starting value for the selected nsigma value is "3".
-    // You might not want to have a STRICT TOF cut, a lot of tracks with good TPC PID does not have TOF information. You can make a conditional cut on TOF by only implementing the TOF cut if track.hasTOF() returns TRUE.
-    
     for (const auto& track : tracks) {
       if (!trackSelection(track)) {
         continue;
@@ -151,10 +150,9 @@ struct phitutorial_step2 {
   } // proccessSameEvent
   PROCESS_SWITCH(phitutorial_step2, processDataSameEvent, "process Data Same Event", false);
 
-//***************************************//
-// TASK COMPLETE!
-//**************************************//
-
+  //***************************************//
+  // TASK COMPLETE!
+  //**************************************//
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

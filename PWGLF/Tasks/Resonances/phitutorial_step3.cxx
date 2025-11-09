@@ -58,9 +58,8 @@ struct phitutorial_step3 {
     histos.add("Nch_USS_Minv", "Nch_USS_Minv", kTH1F, {MinvAxis});
 
     histos.add("Nch_LSS_Minv", "Nch_LSS_Minv", kTH1F, {MinvAxis});
-    
-    histos.add("Nch_ME_Minv", "Nch_ME_Minv", kTH1F, {MinvAxis});
 
+    histos.add("Nch_ME_Minv", "Nch_ME_Minv", kTH1F, {MinvAxis});
 
   }; // end of init
 
@@ -77,9 +76,9 @@ struct phitutorial_step3 {
   template <typename EventType>
   bool eventSelection(const EventType event)
   {
-    if (!event.sel8()) //This is required to extract good events
+    if (!event.sel8()) // This is required to extract good events
       return false;
-    
+
     return true;
   };
   //********************************************//
@@ -96,7 +95,7 @@ struct phitutorial_step3 {
     return true;
   };
 
-  //********************************************// 
+  //********************************************//
 
   template <typename TrackPID>
   bool trackPIDKaon(const TrackPID& candidate)
@@ -136,11 +135,11 @@ struct phitutorial_step3 {
     if (!eventSelection(collision))
       return;
 
-    //Last step, we want to remove the cominbatorial background to get a clean peak. We want to fill our new two booked historams, Nch_LSS_Minv and Nch_ME_Minv
+    // Last step, we want to remove the cominbatorial background to get a clean peak. We want to fill our new two booked historams, Nch_LSS_Minv and Nch_ME_Minv
 
-    //LSS is easy, you simply need to fill the histogram if the conjugate argument below is NOT true.
-    // For event mixing, we have to now copy our logic into a new process function below, and iterate over track pairs between different events!
-    
+    // LSS is easy, you simply need to fill the histogram if the conjugate argument below is NOT true.
+    //  For event mixing, we have to now copy our logic into a new process function below, and iterate over track pairs between different events!
+
     for (const auto& track : tracks) {
       if (!trackSelection(track)) {
         continue;
@@ -178,32 +177,31 @@ struct phitutorial_step3 {
   // DEFINITION OF SLICE CACHE, BINNING AND MIXING STRUCTURE
   //*********************************************************//
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  //We ensure here that we mix events that have relatively similar characteristics.
+  // We ensure here that we mix events that have relatively similar characteristics.
   std::vector<double> zBins{10, -10, 10};
   std::vector<double> multBins{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningType binning{{zBins, multBins}, true};
   SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binning, 5, -1, &cache};
 
-  void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)//notice the collisions subscrition, it is not an iterator here!
+  void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks) // notice the collisions subscrition, it is not an iterator here!
   {
-    
+
     for (const auto& [c1, tracks1, c2, tracks2] : pair) {
 
       if (!eventSelection(c1) || !eventSelection(c2))
         continue;
-      //Fill your event mixing logic here.
+      // Fill your event mixing logic here.
       //..
       //..
       //..
-    } //pairs
+    } // pairs
   } // processMixedEvent
   PROCESS_SWITCH(phitutorial_step3, processDataMixedEvent, "process Data Mixed Event", false);
-  
-//***************************************//
-// TASK COMPLETE!
-//**************************************//
 
+  //***************************************//
+  // TASK COMPLETE!
+  //**************************************//
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

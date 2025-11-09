@@ -71,14 +71,13 @@ struct phitutorial_step0 {
   template <typename EventType>
   bool eventSelection(const EventType event)
   {
-    if (!event.sel8()) //This is required to extract good events
+    if (!event.sel8()) // This is required to extract good events
       return false;
-    
+
     return true;
   };
   //********************************************//
-  //Space for more helper functions!
- 
+  // Space for more helper functions!
 
   //********************************************//
   // HELPER FCNS COMPLETE, NOW WE DO PROCESS FCNS
@@ -86,7 +85,8 @@ struct phitutorial_step0 {
 
   // SAME EVENT
   int nEvents = 0;
-  void processDataSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks){
+  void processDataSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
+  {
     nEvents++;
     if ((nEvents + 1) % 10000 == 0) {
       std::cout << "Processed Data Events: " << nEvents << std::endl;
@@ -99,16 +99,16 @@ struct phitutorial_step0 {
     // Keep in mind that:
     // M_inv = sqrt( (E1+E2)^2 - |P1 + P2|^2 )
     // Where you use the energies and momenta of the individual Kaons.
-    
+
     // You should fill: histos.fill(HIST("Minv"), M_inv), calculated as above.
-    
-    //Usefull tips:
-    // E = sqrt(p^2 + m^2). The Kaon mass is found above in the constant massKa
-    // pz = pT*sinh(eta)
-    // track.pt()
-    // track.eta();
-    // std::sinh(x)
-    
+
+    // Usefull tips:
+    //  E = sqrt(p^2 + m^2). The Kaon mass is found above in the constant massKa
+    //  pz = pT*sinh(eta)
+    //  track.pt()
+    //  track.eta();
+    //  std::sinh(x)
+
     // For more concise techinques, check out:
     // ROOT::Math::PxPyPzMVector //Check google
     // combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy....   //check ALICE O2 documentation
@@ -120,14 +120,12 @@ struct phitutorial_step0 {
       //..
     }
 
-    
   } // proccessSameEvent
   PROCESS_SWITCH(phitutorial_step0, processDataSameEvent, "process Data Same Event", false);
 
-//***************************************//
-// TASK COMPLETE!
-//**************************************//
-
+  //***************************************//
+  // TASK COMPLETE!
+  //**************************************//
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

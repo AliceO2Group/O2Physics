@@ -72,14 +72,13 @@ struct phitutorial_step1 {
   template <typename EventType>
   bool eventSelection(const EventType event)
   {
-    if (!event.sel8()) //This is required to extract good events
+    if (!event.sel8()) // This is required to extract good events
       return false;
-    
+
     return true;
   };
   //********************************************//
-  //Space for more helper functions!
- 
+  // Space for more helper functions!
 
   //********************************************//
   // HELPER FCNS COMPLETE, NOW WE DO PROCESS FCNS
@@ -102,14 +101,14 @@ struct phitutorial_step1 {
     // track.isGlobalTrack()  <.... this menas that it is a good track
     // track.pt() >0.15       <.... we want to remove really low momentum tracks
     // -0.8<track.eta()<0.8   <.... the TPC efficiency drops really hard at the edges
-    
+
     // We can either create a template function (see eventSelection above for reference) that accepts tracks instead of collisions.
     // We can also directly implement the track cuts on the track iterators (track, trk1, trk2) themselves.
     // We can also set a filter around the subscribed table. Then before the process function, you would have to modify:
     // Filter pT Filter = track::pt > 0.15f;
     // then you have to modify the subscription
     // soa::Filtered<TrackCandidates> const& tracks
-    
+
     for (const auto& track : tracks) {
       histos.fill(HIST("Nch_pT"), track.pt());
     }
@@ -130,10 +129,9 @@ struct phitutorial_step1 {
   } // proccessSameEvent
   PROCESS_SWITCH(phitutorial_step1, processDataSameEvent, "process Data Same Event", false);
 
-//***************************************//
-// TASK COMPLETE!
-//**************************************//
-
+  //***************************************//
+  // TASK COMPLETE!
+  //**************************************//
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
