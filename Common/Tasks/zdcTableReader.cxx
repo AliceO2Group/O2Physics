@@ -33,7 +33,8 @@ struct ZDCLIAnalysis {
   // Configurable number of bins
   Configurable<bool> useZvtx{"useZvtx", false, "If true uses Z_vertex"};
   Configurable<float> zVval{"zVval", 10., "Z_vertex cut value"};
-  Configurable<float> tStamp{"tStamp", 100000., "maximum value for timestamp"};
+  Configurable<float> tStampMin{"tStampMin", 100000., "minimum value for timestamp"};
+  Configurable<float> tStampMax{"tStampMax", 100000., ",maximum value for timestamp"};
   //
   Configurable<int> nBinsADC{"nBinsADC", 1000, "n bins 4 ZDC ADCs"};
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "n bins 4 ZDC amplitudes"};
@@ -90,10 +91,10 @@ struct ZDCLIAnalysis {
     registry.add("hZPCvscentrFT0C", "ZPC vs centrality FT0C", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
     registry.add("hZPCvscentrFT0M", "ZPC vs centrality FT0M", {HistType::kTH2F, {{{100, 0., 100.}, {nBinsAmp, -0.5, MaxZP}}}});
     //
-    registry.add("hZNAvstimestamp", "ZNA vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZN}}}});
-    registry.add("hZNCvstimestamp", "ZNC vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZN}}}});
-    registry.add("hZPAvstimestamp", "ZPA vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZP}}}});
-    registry.add("hZPCvstimestamp", "ZPC vs timestamp", {HistType::kTH2F, {{{100, 0., tStamp}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZNAvstimestamp", "ZNA vs timestamp", {HistType::kTH2F, {{{100, tStampMin, tStampMax}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZNCvstimestamp", "ZNC vs timestamp", {HistType::kTH2F, {{{100, tStampMin, tStampMax}, {nBinsAmp, -0.5, MaxZN}}}});
+    registry.add("hZPAvstimestamp", "ZPA vs timestamp", {HistType::kTH2F, {{{100, tStampMin, tStampMax}, {nBinsAmp, -0.5, MaxZP}}}});
+    registry.add("hZPCvstimestamp", "ZPC vs timestamp", {HistType::kTH2F, {{{100, tStampMin, tStampMax}, {nBinsAmp, -0.5, MaxZP}}}});
   }
 
   void process(aod::ZDCLightIons const& zdclightions)
