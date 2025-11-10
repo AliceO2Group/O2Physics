@@ -498,8 +498,8 @@ struct HfCorrelatorDplusHadrons {
           double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
           double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
           double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
-            if (std::abs(etaDaugh1) >= kEtaDaughtersMax || std::abs(etaDaugh2) >= kEtaDaughtersMax || std::abs(etaDaugh3) >= kEtaDaughtersMax) {
-              continue; 
+          if (std::abs(etaDaugh1) >= kEtaDaughtersMax || std::abs(etaDaugh2) >= kEtaDaughtersMax || std::abs(etaDaugh3) >= kEtaDaughtersMax) {
+            continue;
           }
           // Removing Dplus daughters by checking track indices
           if (removeDaughters) {
