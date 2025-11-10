@@ -988,7 +988,7 @@ struct Chk892pp {
         }
       }
     }
-  } //effKstarProcessReco
+  } // effKstarProcessReco
 
   void fillSigLossNum(MCTrueTrackCandidates const& mcparts)
   {
