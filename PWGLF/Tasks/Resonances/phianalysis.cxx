@@ -15,17 +15,18 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#include <TLorentzVector.h>
+#include "PWGLF/DataModel/LFResonanceTables.h"
 
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "DataFormatsParameters/GRPObject.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;

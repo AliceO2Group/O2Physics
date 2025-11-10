@@ -13,6 +13,30 @@
 /// \brief higher mass resonance search in non-identical V0 pairs (K0s-L)
 /// \author  dukhishyam Mallick (dukhishyam.mallick@cern.ch)
 
+#include "PWGLF/DataModel/LFStrangenessTables.h" //
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h" //
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h" //
+#include "Common/DataModel/PIDResponseTPC.h" //
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h" //
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h" //
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TH1F.h>
@@ -22,32 +46,11 @@
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
+
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <vector>
-#include "TF1.h"
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h" //
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" //
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"              //
-#include "Framework/runDataProcessing.h"         //
-#include "PWGLF/DataModel/LFStrangenessTables.h" //
 
 using namespace o2;
 using namespace o2::framework;
@@ -795,11 +798,11 @@ struct Kshortlambda {
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
           lvLambda.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi(), massLambda);
           lv3 = lv1 + lvLambda;
-          fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s);                           // Kshort
-          fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                                          // mass of KshortKshort pair
-          ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                                        // boost mother to center of mass frame
-          fourVecDauCM = boost(fourVecDau);                                                                                          // boost the frame of daughter same as mother
-          threeVecDauCM = fourVecDauCM.Vect();                                                                                       // get the 3 vector of daughter in the frame of mother
+          fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
+          fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                // mass of KshortKshort pair
+          ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                              // boost mother to center of mass frame
+          fourVecDauCM = boost(fourVecDau);                                                                // boost the frame of daughter same as mother
+          threeVecDauCM = fourVecDauCM.Vect();                                                             // get the 3 vector of daughter in the frame of mother
 
           if (std::abs(lv3.Rapidity()) < 0.5) {
             if (activateTHnSparseCosThStarHelicity) {
@@ -901,11 +904,11 @@ struct Kshortlambda {
           lvLambda.SetPtEtaPhiM(lambdaVec.pt(), lambdaVec.eta(), lambdaVec.phi(), massLambda);
           lv3 = lv1 + lvLambda;
 
-          fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s);            // Kshort
-          fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                           // mass of KshortKshort pair
-          ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
-          fourVecDauCM = boost(fourVecDau);                                                                           // boost the frame of daughter same as mother
-          threeVecDauCM = fourVecDauCM.Vect();                                                                        // get the 3 vector of daughter in the frame of mother
+          fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
+          fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M());                // mass of KshortKshort pair
+          ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                              // boost mother to center of mass frame
+          fourVecDauCM = boost(fourVecDau);                                                                // boost the frame of daughter same as mother
+          threeVecDauCM = fourVecDauCM.Vect();                                                             // get the 3 vector of daughter in the frame of mother
 
           if (std::abs(lv3.Rapidity()) < 0.5) {
 

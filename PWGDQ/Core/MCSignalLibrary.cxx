@@ -15,10 +15,12 @@
 #include <vector>
 // #include <iostream>
 
-#include <TPDGCode.h>
-#include "CommonConstants/PhysicsConstants.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/Logger.h"
+
+#include <TPDGCode.h>
 
 using namespace o2::constants::physics;
 // using std::cout;
@@ -152,6 +154,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from prompt jpsi decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("ePrimaryFromNonpromptJpsi")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from non-prompt jpsi decays with beauty in decay chain", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("Jpsi")) {
     MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
@@ -174,14 +182,30 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Helium3FromTransport", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("nonPromptJpsi")) {
-    MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    signal = new MCSignal(name, "Non-prompt jpsi", {prong}, {-1});
-    return signal;
-  }
   if (!nameStr.compare("promptJpsi")) {
     MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {503}, {true});
     signal = new MCSignal(name, "Prompt jpsi (not from beauty)", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("nonPromptJpsi")) {
+    MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {503}, {false});
+    signal = new MCSignal(name, "Non-prompt jpsi (from beauty)", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("nonPromptJpsiFromBeauty")) {
+    MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Non-prompt jpsi directly from beauty", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("nonPromptJpsiNotDirectlyFromBeauty")) {
+    MCProng prong(2, {443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false}, false, {503}, {false});
+    signal = new MCSignal(name, "Non-prompt jpsi from other but with beauty in decay chain", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("AnythingDecayToJpsi")) {
+    MCProng prong(2, {MCProng::kPDGCodeNotAssigned, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSignalInTime(true);
+    signal = new MCSignal(name, "Decay of anything into J/psi", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eeFromNonpromptPsi2S")) {

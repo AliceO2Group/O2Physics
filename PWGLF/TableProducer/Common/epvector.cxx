@@ -18,17 +18,6 @@
 ///         (with or without corrections) and save the results in a dedicated table.
 ///
 
-// C++/ROOT includes.
-#include <TComplex.h>
-#include <TH1F.h>
-#include <TMath.h>
-
-#include <chrono>
-#include <cstdio>
-#include <string>
-#include <vector>
-
-// o2Physics includes.
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 
 #include "Common/Core/TrackSelection.h"
@@ -37,29 +26,31 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <FT0Base/Geometry.h>
+#include <FV0Base/Geometry.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "TF1.h"
+#include <TComplex.h>
+#include <TF1.h>
+#include <TH1F.h>
+#include <TMath.h>
 
-// #include "Common/Core/EventPlaneHelper.h"
-// #include "Common/DataModel/Qvectors.h"
-
-// o2 includes.
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
+#include <chrono>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

@@ -17,7 +17,7 @@ o2physics_add_dpl_workflow(tree-creator-electron-ml
 
 o2physics_add_dpl_workflow(tree-creator-electron-ml-dda
                     SOURCES treeCreatorElectronMLDDA.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-primary-electron

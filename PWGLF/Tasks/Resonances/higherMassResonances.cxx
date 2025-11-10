@@ -22,7 +22,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h" //
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" //
+#include "Common/DataModel/PIDResponseTOF.h" //
+#include "Common/DataModel/PIDResponseTPC.h" //
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -576,11 +577,11 @@ struct HigherMassResonances {
     }
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
-    if (std::abs(v0candidate.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && track.hasTOF()) {
+    if (std::abs(v0candidate.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && v0candidate.positiveHasTOF()) {
       return false;
     }
 
-    if (std::abs(v0candidate.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && track.hasTOF()) {
+    if (std::abs(v0candidate.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0candidate.negativeHasTOF()) {
       return false;
     }
 
@@ -631,11 +632,11 @@ struct HigherMassResonances {
       return false;
     }
 
-    if (std::abs(v0.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && posTrackExtra.hasTOF()) {
+    if (std::abs(v0.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && v0.positiveHasTOF()) {
       return false;
     }
 
-    if (std::abs(v0.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && negTrackExtra.hasTOF()) {
+    if (std::abs(v0.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0.negativeHasTOF()) {
       return false;
     }
 

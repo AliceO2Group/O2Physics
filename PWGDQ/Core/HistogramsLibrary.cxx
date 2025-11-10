@@ -11,11 +11,14 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <vector>
-#include <algorithm>
 #include "PWGDQ/Core/HistogramsLibrary.h"
+
 #include "VarManager.h"
+
 #include "CommonConstants/MathConstants.h"
+
+#include <algorithm>
+#include <vector>
 
 void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* histClass, const char* groupName, const char* subGroupName)
 {
@@ -923,23 +926,22 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Rapidity", "", false, 400, -5.0, 5.0, VarManager::kRap);
   }
   if (!groupStr.CompareTo("mctruth_pair")) {
-    hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 15.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt);
-    hm->AddHistogram(histClass, "Pt", "", false, 200, 0.0, 20.0, VarManager::kPt);
+    hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 15.0, VarManager::kMCMass, 40, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "Pt", "", false, 200, 0.0, 20.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "Pt_Dilepton", "", false, 200, 0.0, 20.0, VarManager::kPairPtDau);
-    hm->AddHistogram(histClass, "Eta_Pt_lepton1", "", false, 100, -2.0, 2.0, VarManager::kEta1, 200, 0.0, 20.0, VarManager::kPt1);
-    hm->AddHistogram(histClass, "Eta_Pt_lepton2", "", false, 100, -2.0, 2.0, VarManager::kEta2, 200, 0.0, 20.0, VarManager::kPt2);
-    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 15.0, VarManager::kMass);
-    hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 200, 0.0, 20.0, VarManager::kPt);
-    hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kPhi);
-    int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE};
-    int varspTCS[3] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS};
-    int varspTPP[3] = {VarManager::kMCPt, VarManager::kMCCosThetaPP, VarManager::kMCPhiPP};
-    int binspT[3] = {40, 20, 20};
-    double xminpT[3] = {0., -1., -3.14};
-    double xmaxpT[3] = {20., 1., +3.14};
-    hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE", "", 3, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-    hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS", "", 3, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-    hm->AddHistogram(histClass, "Pt_cosThetaPP_phiPP", "", 3, varspTPP, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 15.0, VarManager::kMCMass);
+    hm->AddHistogram(histClass, "Rapidity", "", false, 100, -5.0, 5.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kMCEta, 200, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kMCPhi);
+    if (subGroupStr.Contains("polarization")) {
+      int varspTHE[4] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE, VarManager::kMCPhiTildeHE};
+      int varspTCS[4] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS, VarManager::kMCPhiTildeCS};
+      int bins[4] = {20, 20, 20, 20};
+      double xmin[4] = {0., -1., 0., 0.};
+      double xmax[4] = {20., 1., 2. * o2::constants::math::PI, 2. * o2::constants::math::PI};
+      hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE_phiTildeHE", "", 4, varspTHE, bins, xmin, xmax, 0, -1, kFALSE);
+      hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS_phiTildeCS", "", 4, varspTCS, bins, xmin, xmax, 0, -1, kFALSE);
+    }
   }
   if (!groupStr.CompareTo("mctruth_quad")) {
     hm->AddHistogram(histClass, "hMass_defaultDileptonMass", "", false, 1000, 3.0, 5.0, VarManager::kQuadDefaultDileptonMass);
@@ -1034,31 +1036,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("polarization")) {
         if (subGroupStr.Contains("helicity")) {
-          hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
-          hm->AddHistogram(histClass, "phiHE", "", false, 100, 0, 2 * o2::constants::math::PI, VarManager::kPhiHE);
-          hm->AddHistogram(histClass, "phitildeHE", "", false, 100, 0, 2 * o2::constants::math::PI, VarManager::kPhiTildeHE);
           hm->AddHistogram(histClass, "Mass_Pt_CosThetaHE", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, -1., 1., VarManager::kCosThetaHE);
           hm->AddHistogram(histClass, "Mass_Pt_PhiHE", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiHE);
           hm->AddHistogram(histClass, "Mass_Pt_PhiTildeHE", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiTildeHE);
         }
         if (subGroupStr.Contains("collins-soper")) {
-          hm->AddHistogram(histClass, "cosThetaCS", "", false, 100, -1., 1., VarManager::kCosThetaCS);
-          hm->AddHistogram(histClass, "phiCS", "", false, 100, 0, 2 * o2::constants::math::PI, VarManager::kPhiCS);
-          hm->AddHistogram(histClass, "phitildeCS", "", false, 100, 0, 2 * o2::constants::math::PI, VarManager::kPhiTildeCS);
           hm->AddHistogram(histClass, "Mass_Pt_CosThetaCS", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, -1., 1., VarManager::kCosThetaCS);
           hm->AddHistogram(histClass, "Mass_Pt_PhiCS", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiCS);
           hm->AddHistogram(histClass, "Mass_Pt_PhiTildeCS", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiTildeCS);
         }
         if (subGroupStr.Contains("production")) {
-          hm->AddHistogram(histClass, "cosThetaPP", "", false, 100, -1., 1., VarManager::kCosThetaPP);
-          hm->AddHistogram(histClass, "phiPP", "", false, 100, 0, 2 * o2::constants::math::PI, VarManager::kPhiPP);
-          hm->AddHistogram(histClass, "phitildePP", "", false, 100, 0, 2 * o2::constants::math::PI, VarManager::kPhiTildePP);
           hm->AddHistogram(histClass, "Mass_Pt_CosThetaPP", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, -1., 1., VarManager::kCosThetaPP);
           hm->AddHistogram(histClass, "Mass_Pt_PhiPP", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiPP);
           hm->AddHistogram(histClass, "Mass_Pt_PhiTildePP", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiTildePP);
         }
         if (subGroupStr.Contains("random")) {
-          hm->AddHistogram(histClass, "cosThetaRM", "", false, 100, -1., 1., VarManager::kCosThetaRM);
           hm->AddHistogram(histClass, "Mass_Pt_CosThetaRM", "", false, 200, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, -1., 1., VarManager::kCosThetaRM);
         }
       }
