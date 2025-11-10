@@ -22,6 +22,8 @@
 #include <cstdlib>
 // #include <iostream>
 #include <string>
+#include <vector>
+#include <memory>
 
 // #include "TLorentzVector.h"
 #include "Common/Core/TrackSelection.h"
