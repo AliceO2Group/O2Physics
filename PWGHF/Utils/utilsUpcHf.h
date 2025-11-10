@@ -32,9 +32,9 @@ enum class GapType : uint8_t {
 /// \brief Default thresholds for gap determination
 namespace defaults
 {
-constexpr float FT0AThreshold = 100.0f; ///< FT0-A amplitude threshold (a.u.)
-constexpr float FT0CThreshold = 50.0f;  ///< FT0-C amplitude threshold (a.u.)
-constexpr float ZDCThreshold = 1.0f;    ///< ZDC energy threshold (a.u.)
+constexpr float AmplitudeThresholdFT0A = 100.0f; ///< Amplitude threshold for FT0-A (a.u.)
+constexpr float AmplitudeThresholdFT0C = 50.0f;  ///< Amplitude threshold for FT0-C (a.u.)
+constexpr float EnergyThresholdZDC = 1.0f;       ///< Energy threshold for ZDC (a.u.)
 } // namespace defaults
 
 /// \brief Determine gap type based on FIT and ZDC signals
@@ -42,24 +42,24 @@ constexpr float ZDCThreshold = 1.0f;    ///< ZDC energy threshold (a.u.)
 /// \param ft0C FT0-C amplitude
 /// \param zdcA ZDC-A (ZNA) common energy
 /// \param zdcC ZDC-C (ZNC) common energy
-/// \param ft0AThreshold Threshold for FT0-A (default: 100.0)
-/// \param ft0CThreshold Threshold for FT0-C (default: 50.0)
-/// \param zdcThreshold Threshold for ZDC (default: 1.0)
+/// \param amplitudeThresholdFT0A Threshold for FT0-A (default: 100.0)
+/// \param amplitudeThresholdFT0C Threshold for FT0-C (default: 50.0)
+/// \param energyThresholdZDC Threshold for ZDC (default: 1.0)
 /// \return Gap type classification
 inline GapType determineGapType(float ft0A, float ft0C, float zdcA, float zdcC,
-                                float ft0AThreshold = defaults::FT0AThreshold,
-                                float ft0CThreshold = defaults::FT0CThreshold,
-                                float zdcThreshold = defaults::ZDCThreshold)
+                                float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
+                                float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C,
+                                float energyThresholdZDC = defaults::EnergyThresholdZDC)
 {
   // Gap on A-side: FT0-A empty, FT0-C active, ZNA empty, ZNC active
-  if (ft0A < ft0AThreshold && ft0C > ft0CThreshold &&
-      zdcA < zdcThreshold && zdcC > zdcThreshold) {
+  if (ft0A < amplitudeThresholdFT0A && ft0C > amplitudeThresholdFT0C &&
+      zdcA < energyThresholdZDC && zdcC > energyThresholdZDC) {
     return GapType::GapA;
   }
 
   // Gap on C-side: FT0-A active, FT0-C empty, ZNA active, ZNC empty
-  if (ft0A > ft0AThreshold && ft0C < ft0CThreshold &&
-      zdcA > zdcThreshold && zdcC < zdcThreshold) {
+  if (ft0A > amplitudeThresholdFT0A && ft0C < amplitudeThresholdFT0C &&
+      zdcA > energyThresholdZDC && zdcC < energyThresholdZDC) {
     return GapType::GapC;
   }
 
