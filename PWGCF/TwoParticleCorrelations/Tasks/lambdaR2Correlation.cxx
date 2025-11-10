@@ -1630,6 +1630,10 @@ struct LambdaSpinCorrelation {
   Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
   Partition<LambdaTracks> partAntiLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kAntiLambda) && (aod::lambdatrackext::trueLambdaFlag == true) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
 
+  void processDummy(LambdaCollisions::iterator const&) {}
+
+  PROCESS_SWITCH(LambdaSpinCorrelation, processDummy, "Dummy process", true);
+
   void processDataReco(LambdaCollisions::iterator const& collision, LambdaTracks const&)
   {
     // assign centrality
@@ -1648,7 +1652,7 @@ struct LambdaSpinCorrelation {
     }
   }
 
-  PROCESS_SWITCH(LambdaSpinCorrelation, processDataReco, "Process for Data and MCReco", true);
+  PROCESS_SWITCH(LambdaSpinCorrelation, processDataReco, "Process for Data and MCReco", false);
 };
 
 struct LambdaR2Correlation {
