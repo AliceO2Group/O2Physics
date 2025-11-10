@@ -80,6 +80,6 @@ o2physics_add_dpl_workflow(part-num-fluc
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(radial-flow-decorr
-                    SOURCES RadFlowDecorr.cxx
+                    SOURCES radFlowDecorr.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)

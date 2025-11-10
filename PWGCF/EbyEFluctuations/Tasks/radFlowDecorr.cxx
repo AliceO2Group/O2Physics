@@ -111,10 +111,11 @@ struct RadFlowDecorr {
   static constexpr int kNbinsDca = 400;
   static constexpr float kDcaMax = 0.2f;
   static constexpr int kNbinsPtCoarse = 50;
-
-  enum PID { kInclusive = 0,
-             kCombinedPID,
-             kNumPID };
+  static constexpr float kPtMinDefault = 0.2f;
+  static constexpr float kPtMidMax = 3.0f;
+  static constexpr float kPtHighMax = 5.0f;
+  static constexpr float kPtFullMax = 10.0f;
+  enum PID { kInclusive = 0, kCombinedPID, kNumPID };
   const std::vector<std::string> pidSuffix = {"", "_PID"};
 
   const std::vector<float> etaLw = {
@@ -124,20 +125,20 @@ struct RadFlowDecorr {
     0.8,
     -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
 
-  const std::vector<float> pTLw = {0.2, 0.2, 0.2};
-  const std::vector<float> pTUp = {3, 5.0, 10.0};
-  //==============================
-  //  Configurables
-  //==============================
-  Configurable<float> cfgVtxZCut{"cfgVtxZCut", 10.f, "z-vertex range"};
-  Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "min pT"};
-  Configurable<float> cfgPtMax{"cfgPtMax", 10.0f, "max pT"};
-  Configurable<float> cfgEtaCut{"cfgEtaCut", 0.8f, "|η| cut"};
-  Configurable<float> cfgDCAXY{"cfgDCAXY", 2.4f, "DCAxy cut"};
-  Configurable<float> cfgDCAZ{"cfgDCAZ", 3.2f, "DCAz cut"};
-  Configurable<float> cfgTPCClsMin{"cfgTPCClsMin", 70.f, "min TPC clusters"};
-  Configurable<float> cfgChi2TPCMax{"cfgChi2TPCMax", 4.0f, "max TPC χ²"};
-  Configurable<float> cfgPIDnSigmaCut{"cfgPIDnSigmaCut", 3.f, "TPC PID |nσ| cut"};
+      const std::vector<float> pTLw = {kPtMinDefault, kPtMinDefault, kPtMinDefault};
+      const std::vector<float> pTUp = {kPtMidMax, kPtHighMax, kPtFullMax};
+      //==============================
+      // Configurables
+      //==============================
+      Configurable<float> cfgVtxZCut{"cfgVtxZCut", 10.f, "z-vertex range"};
+      Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "min pT"};
+      Configurable<float> cfgPtMax{"cfgPtMax", 10.0f, "max pT"};
+      Configurable<float> cfgEtaCut{"cfgEtaCut", 0.8f, "|η| cut"};
+      Configurable<float> cfgDCAXY{"cfgDCAXY", 2.4f, "DCAxy cut"};
+      Configurable<float> cfgDCAZ{"cfgDCAZ", 3.2f, "DCAz cut"};
+      Configurable<float> cfgTPCClsMin{"cfgTPCClsMin", 70.f, "min TPC clusters"};
+      Configurable<float> cfgChi2TPCMax{"cfgChi2TPCMax", 4.0f, "max TPC χ²"};
+      Configurable<float> cfgPIDnSigmaCut{"cfgPIDnSigmaCut", 3.f, "TPC PID |nσ| cut"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
@@ -413,80 +414,6 @@ struct RadFlowDecorr {
     return val;
   }
 
-  /*
-  float getEfficiency(float mult, float pt, float eta, PID pidType, int effidx) const {
-  TH3F* h;
-  if(effidx==0) h = hEff[pidType];  // Efficiency map
-  if(effidx==1) h = hFake[pidType]; // Fake map
-
-  if (!h) {
-  LOGF(error, "getEfficiency: Histogram is null for pidType %d, effidx %d", pidType, effidx);
-  return -1.0;
-}
-
-const int ibx = h->GetXaxis()->FindBin(mult);
-const int iby = h->GetYaxis()->FindBin(pt);
-const int ibz = h->GetZaxis()->FindBin(eta);
-float val = h->GetBinContent(ibx, iby, ibz);
-
-if (effidx == 1) { // This is a FAKE map
-// For fakes, "it's ok if it is zero"
-// But it's not ok if it's < 0 or >= 1. Set those to 0.
-if (val < 0.f || val >= 1.0) {
-return -1;
-}
-return val; // Return the valid fake value (which can be 0)
-}
-
-// If we are here, this is an EFFICIENCY map (effidx == 0)
-// For efficiency, "it's ok if it is 1"
-// "but not vice versa" (i.e., val <= 0 is the problem)
-
-if (val > 0.f || val<1.1) {
-// val > 0 is valid (including 1.0).
-return val;
-}
-
-// --- PROBLEM CASE: val <= 0. We must interpolate. ---
-// We will scan along the pT axis (iby) to find neighbors
-
-// 1. Find bin "before" (lower pT)
-int yBinBefore = iby - 1;
-float valBefore = 0.f;
-while (yBinBefore >= 1) {
-valBefore = h->GetBinContent(ibx, yBinBefore, ibz);
-if (valBefore > 0.f) break; // Found a valid bin
-yBinBefore--;
-}
-
-// 2. Find bin "after" (higher pT)
-int yBinAfter = iby + 1;
-float valAfter = 0.f;
-int nBinsY = h->GetNbinsY();
-while (yBinAfter <= nBinsY) {
-valAfter = h->GetBinContent(ibx, yBinAfter, ibz);
-if (valAfter > 0.f) break; // Found a valid bin
-yBinAfter++;
-}
-
-// 3. Interpolate/Extrapolate
-if (valBefore > 0.f && valAfter > 0.f) {
-// We found valid bins on both sides. Do linear interpolation.
-float m = (valAfter - valBefore) / (yBinAfter - yBinBefore);
-float interpolatedVal = valBefore + m * (iby - yBinBefore);
-return interpolatedVal;
-} else if (valBefore > 0.f) {
-// Only found a bin before. Extrapolate using that value.
-return valBefore;
-} else if (valAfter > 0.f) {
-// Only found a bin after. Extrapolate using that value.
-return valAfter;
-} else {
-return -1;
-}
-}
-*/
-  // Getter for (Cent, eta, phi) maps (Flattening)
   float getFlatteningWeight(float cent, float eta, float phi, PID pidType) const
   {
     TH3F* h = hWeightMap3D[pidType];
@@ -900,7 +827,7 @@ return -1;
 
               // --- Efficiency ---
               if (auto* hNum = dynamic_cast<TH3F*>(dir->Get(hEff_NumName.c_str()))) {
-                hEff[pidType] = (TH3F*)hNum->Clone(Form("hEff%s", suffix.c_str()));
+                hEff[pidType] = reinterpret_cast<TH3F*>(hNum->Clone(Form("hEff%s", suffix.c_str())));
                 hEff[pidType]->SetDirectory(nullptr);
                 if (auto* hDen = dynamic_cast<TH3F*>(dir->Get(hEff_DenName.c_str()))) {
                   hDen->SetDirectory(nullptr);
@@ -916,7 +843,7 @@ return -1;
               if (auto* hNumS = dynamic_cast<TH3F*>(dir->Get(hFake_NumSecName.c_str()))) {
                 auto* hNumF = dynamic_cast<TH3F*>(dir->Get(hFake_NumFakName.c_str()));
                 if (hNumS && hNumF) {
-                  hFake[pidType] = (TH3F*)hNumS->Clone(Form("hFake%s", suffix.c_str()));
+                  hFake[pidType] = reinterpret_cast<TH3F*>(hNumS->Clone(Form("hFake%s", suffix.c_str())));
                   hFake[pidType]->Add(hNumF);
                   hFake[pidType]->SetDirectory(nullptr);
                   if (auto* hDenF = dynamic_cast<TH3F*>(dir->Get(hFake_DenName.c_str()))) {
@@ -1017,7 +944,7 @@ return -1;
         if (!f->IsZombie()) {
           if (auto* dir = dynamic_cast<TDirectory*>(f->Get("rad-flow-decorr"))) {
             if (auto* tp = dynamic_cast<TProfile3D*>(dir->Get(histname))) {
-              target = (TProfile3D*)tp->Clone();
+              target = reinterpret_cast<TProfile3D*>(tp->Clone());
               target->SetDirectory(nullptr);
             } else {
               LOGF(error, "Histogram %s missing in %s", histname, filename);
