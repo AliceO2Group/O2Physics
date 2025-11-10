@@ -1311,16 +1311,6 @@ class VarManager : public TObject
   static float calculatePhiV(const T1& t1, const T2& t2);
   template <typename T1, typename T2>
   static float LorentzTransformJpsihadroncosChi(TString Option, const T1& v1, const T2& v2);
-  static float RotationDeltaPhi(float deltaphi) // rotate deltaphi to the range -0.5*pi < deltaphi < 1.5*pi
-  {
-    if (deltaphi > 3.0 / 2.0 * TMath::Pi()) {
-      deltaphi -= 2.0 * TMath::Pi();
-    }
-    if (deltaphi < -0.5 * TMath::Pi()) {
-      deltaphi += 2.0 * TMath::Pi();
-    }
-    return deltaphi;
-  }
 
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProngBarrel;
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProngBarrel;
@@ -2836,7 +2826,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     MassHadron = o2::constants::physics::MassPionCharged;
   }
   ROOT::Math::PtEtaPhiMVector v1(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
-  float deltaphi = RotationDeltaPhi(track.phi() - t1.phi());
+  float deltaphi = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PIHalf);
   float deltaeta = t1.eta() - track.eta();
   ROOT::Math::PtEtaPhiMVector v2(t1.pt(), t1.eta(), t1.phi(), MassHadron);
   float E_boost = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2);
@@ -2886,9 +2876,9 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     values[kMCWeight_trans_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_trans_minus) / o2::constants::physics::MassJPsi;
 
     values[kMCdeltaphi_minus] = deltaphi;
-    values[kMCdeltaphi_toward_minus] = RotationDeltaPhi(track.phi() - (t1.phi() - 0.5 * TMath::Pi()));
-    values[kMCdeltaphi_away_minus] = RotationDeltaPhi(track.phi() - (t1.phi() + 0.5 * TMath::Pi()));
-    values[kMCdeltaphi_trans_minus] = RotationDeltaPhi(track.phi() - t1.phi() + TMath::Pi());
+    values[kMCdeltaphi_toward_minus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() - 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_away_minus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() + 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_trans_minus] = RecoDecay::constrainAngle(track.phi() - t1.phi() + TMath::Pi(), -o2::constants::math::PIHalf);
   }
 
   values[kMCCosChi_plus] = -999.9f;
@@ -2925,9 +2915,9 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     values[kMCWeight_trans_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_trans_plus) / o2::constants::physics::MassJPsi;
 
     values[kMCdeltaphi_plus] = deltaphi;
-    values[kMCdeltaphi_toward_plus] = RotationDeltaPhi(track.phi() - (t1.phi() + 0.5 * TMath::Pi()));
-    values[kMCdeltaphi_away_plus] = RotationDeltaPhi(track.phi() - (t1.phi() - 0.5 * TMath::Pi()));
-    values[kMCdeltaphi_trans_plus] = RotationDeltaPhi(track.phi() - t1.phi() + TMath::Pi());
+    values[kMCdeltaphi_toward_plus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() + 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_away_plus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() - 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_trans_plus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() - 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
   }
 }
 
