@@ -171,7 +171,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
 };
 
 /// Dplus-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-struct HfCorrelatorDplusHadrons {
+struct CorrelatorDplusHadrons {
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
   Produces<aod::DplusHadronMlInfo> entryDplusHadronMlInfo;
@@ -397,7 +397,7 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
     }
   }
-  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processData, "Process data", false);
+  PROCESS_SWITCH(CorrelatorDplusHadrons, processData, "Process data", false);
 
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(SelCollisionsWithDplus::iterator const& collision,
@@ -535,7 +535,7 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
     }
   }
-  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRec, "Process MC Reco mode", true);
+  PROCESS_SWITCH(CorrelatorDplusHadrons, processMcRec, "Process MC Reco mode", true);
 
   /// Dplus-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(SelCollisionsWithDplusMc::iterator const& mcCollision,
@@ -634,7 +634,7 @@ struct HfCorrelatorDplusHadrons {
     registry.fill(HIST("hZvtx"), mcCollision.posZ());
     // registry.fill(HIST("hMultiplicity"), getTracksSize(mcCollision));
   }
-  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcGen, "Process MC Gen mode", false);
+  PROCESS_SWITCH(CorrelatorDplusHadrons, processMcGen, "Process MC Gen mode", false);
 
   void processDataMixedEvent(SelCollisionsWithDplus const& collisions,
                              CandidatesDplusData const& candidates,
@@ -656,7 +656,7 @@ struct HfCorrelatorDplusHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processDataMixedEvent, "Process Mixed Event Data", false);
+  PROCESS_SWITCH(CorrelatorDplusHadrons, processDataMixedEvent, "Process Mixed Event Data", false);
 
   void processMcRecMixedEvent(SelCollisionsWithDplus const& collisions,
                               CandidatesDplusMcRec const& candidates,
@@ -732,7 +732,7 @@ struct HfCorrelatorDplusHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRecMixedEvent, "Process Mixed Event MCRec", false);
+  PROCESS_SWITCH(CorrelatorDplusHadrons, processMcRecMixedEvent, "Process Mixed Event MCRec", false);
 
   void processMcGenMixedEvent(SelCollisionsWithDplusMc const& collisions,
                               CandDplusMcGen const& mcParticles)
@@ -771,11 +771,11 @@ struct HfCorrelatorDplusHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcGenMixedEvent, "Process Mixed Event MCGen", false);
+  PROCESS_SWITCH(CorrelatorDplusHadrons, processMcGenMixedEvent, "Process Mixed Event MCGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfCorrelatorDplusHadronsDplusSelection>(cfgc),
-                      adaptAnalysisTask<HfCorrelatorDplusHadrons>(cfgc)};
+                      adaptAnalysisTask<CorrelatorDplusHadrons>(cfgc)};
 }
