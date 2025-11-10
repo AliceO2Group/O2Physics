@@ -25,7 +25,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "EventFiltering/Zorro.h"
+#include "Common/Core/Zorro.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/AnalysisHelpers.h"
@@ -87,7 +87,7 @@ struct ConfCcdb : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("ConfCcdb");
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
   o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField/Run2 -> GLO/GRP/GRP"};
-  o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
+  o2::framework::Configurable<std::string> triggerPath{"triggerPath", "Common/Core/Zorro/", "CCDB path for trigger information"};
 };
 
 struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {

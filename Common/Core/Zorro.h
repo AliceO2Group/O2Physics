@@ -75,7 +75,7 @@ class Zorro
 
   ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
 
-  std::string mBaseCCDBPath = "EventFiltering/Zorro/";
+  std::string mBaseCCDBPath = "Common/Core/Zorro/";
   int mRunNumber = 0;
   std::pair<int64_t, int64_t> mRunDuration;
   int64_t mOrbitResetTimestamp = 0;
