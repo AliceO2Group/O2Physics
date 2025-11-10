@@ -147,10 +147,10 @@ struct HfTreeCreatorSigmacCorrBkg {
 
       /// tag immediately the Σc0,++(2455) and Σc0,++(2520) signal
       auto flagMcDecayChanScAbs = std::abs(candidateSc.flagMcMatchRec());
-      bool const isTrueSigmac0 = (flagMcDecayChanScAbs == aod::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi);
-      bool const isTrueSigmacPlusPlus = (flagMcDecayChanScAbs == aod::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi);
-      bool const isTrueSigmacStar0 = (flagMcDecayChanScAbs == aod::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi);
-      bool const isTrueSigmacStarPlusPlus = (flagMcDecayChanScAbs == aod::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi);
+      bool const isTrueSigmac0 = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi);
+      bool const isTrueSigmacPlusPlus = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi);
+      bool const isTrueSigmacStar0 = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi);
+      bool const isTrueSigmacStarPlusPlus = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi);
       if (isTrueSigmac0) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaC0);
