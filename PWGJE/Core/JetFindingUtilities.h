@@ -83,6 +83,39 @@ constexpr bool isEMCALClusterTable()
 }
 
 /**
+ * performs all track selections
+ *
+ * @param track track to be checked
+ * @param trackSelection track selection to be applied to tracks
+ * @param candidate optional HF candidiate
+ */
+
+template <typename T, typename U>
+bool isTrackSelected(T const& track, int trackSelection, bool applyTrackingEfficiency, const std::vector<double>& trackingEfficiency, const std::vector<double>& trackingEfficiencyPtBinning, const U* candidate = nullptr)
+{
+
+  if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+    return false;
+  }
+    if (candidate != nullptr) {
+      if (jetcandidateutilities::isDaughterTrack(track, *candidate)) {
+        return false;
+      }
+    }
+    if (applyTrackingEfficiency) {
+      auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
+        std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
+        TRandom3 randomNumber(0);
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
+          return false;
+        }
+      }
+    }
+    return true;
+}
+
+/**
  * Adds tracks to a fastjet inputParticles list
  *
  * @param inputParticles fastjet container
@@ -92,28 +125,12 @@ constexpr bool isEMCALClusterTable()
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, std::vector<double> trackingEfficiency, std::vector<double> trackingEfficiencyPtBinning, const U* candidate = nullptr)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, const std::vector<double>& trackingEfficiency, const std::vector<double>& trackingEfficiencyPtBinning, const U* candidate = nullptr)
 {
   for (auto& track : tracks) {
-    if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-      continue;
+    if (isTrackSelected(track, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning, candidate)) {
+      fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
     }
-    if (candidate != nullptr) {
-      if (jetcandidateutilities::isDaughterTrack(track, *candidate, tracks)) {
-        continue;
-      }
-    }
-    if (applyTrackingEfficiency) {
-      auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
-      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
-        std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
-        TRandom3 randomNumber(0);
-        if (randomNumber.Rndm() > trackingEfficiency[index]) {
-          continue;
-        }
-      }
-    }
-    fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
   }
 }
 
@@ -134,7 +151,7 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
       continue;
     }
     for (auto& candidate : candidates) {
-      if (jetcandidateutilities::isDaughterTrack(track, candidate, tracks)) {
+      if (jetcandidateutilities::isDaughterTrack(track, candidate)) {
         continue;
       }
     }

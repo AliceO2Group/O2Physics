@@ -94,10 +94,9 @@ constexpr bool isMatchedDielectronCandidate(T const& /*candidate*/)
  *
  * @param track track that is being checked
  * @param candidate Dielectron candidate that is being checked
- * @param tracks the track table
  */
-template <typename T, typename U, typename V>
-bool isDielectronDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
+template <typename T, typename U>
+bool isDielectronDaughterTrack(T& track, U& candidate)
 {
   if constexpr (isDielectronCandidate<U>()) {
     if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
