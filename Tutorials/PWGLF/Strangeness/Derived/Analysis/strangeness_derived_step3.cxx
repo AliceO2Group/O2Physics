@@ -15,11 +15,13 @@
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -218,7 +220,7 @@ struct strangeness_derived_tutorial {
         rXi.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());
         rXi.fill(HIST("hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       }
-      if (std::abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                // Omega case
+      if (std::abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                                  // Omega case
         if (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) > cascadesetting_competingmassrej) { // competing mass rejection, only in case of Omega
           rOmega.fill(HIST("hMassOmegaSelected"), casc.mOmega());
           if (omegaPassTOFSelection) {
