@@ -66,6 +66,9 @@ using FilteredMatchedJetsPartLevel = soa::Filtered<soa::Join<aod::ChargedMCParti
 using FilteredTracks = soa::Filtered<aod::JetTracks>;
 using FilteredParticles = soa::Filtered<aod::JetParticles>;
 
+using ColEvSelEA = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FT0MultZeqs, aod::MultsExtra, aod::PVMults>>::iterator;
+using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>; // aod::Run3MatchedToBCExclusive
+
 struct RecoilJets {
 
   // List of configurable parameters
@@ -90,6 +93,9 @@ struct RecoilJets {
   Configurable<float> meanFT0A{"meanFT0A", -1., "Mean value of FT0A signal"};
   Configurable<float> meanFT0C{"meanFT0C", -1., "Mean value of FT0C signal"};
 
+  Configurable<float> meanZeqFT0A{"meanZeqFT0A", -1., "Mean value of equalized FT0A signal"};
+  Configurable<float> meanZeqFT0C{"meanZeqFT0C", -1., "Mean value of equalized FT0C signal"};
+
   Configurable<float> meanFT0APartLevel{"meanFT0APartLevel", -1., "Mean number of charged part. within FT0A acceptance"};
   Configurable<float> meanFT0CPartLevel{"meanFT0CPartLevel", -1., "Mean number of charged part. within FT0C acceptance"};
 
@@ -102,9 +108,14 @@ struct RecoilJets {
   Configurable<float> minPhiForTTSelection{"minPhiForTTSelection", 0.0, "Min rectriction of phi angle for TT if phi is non-uniform"};
   Configurable<float> maxPhiForTTSelection{"maxPhiForTTSelection", 6.3, "Max rectriction of phi angle for TT if phi is non-uniform"};
 
+  // Leading track and associated track
+  Configurable<std::vector<float>> pTLeadTrack{"pTLeadTrack", {1., 3.}, "Transverse momenturm range for leading tracks"};
+  Configurable<std::vector<float>> pTAssociatTrack{"pTAssociatTrack", {1., 3.}, "Transverse momenturm range for associated tracks"};
+
   // List of configurable parameters for histograms
   Configurable<uint16_t> histJetPt{"histJetPt", 100, "Maximum value of jet pT shown in histograms"};
   Configurable<uint16_t> histMultBins{"histMultBins", 1000, "Number of bins for scaled FT0M multiplicity"};
+  Configurable<uint16_t> histZDCTimeBins{"histZDCTimeBins", 240, "Number of bins for ZDC timing histograms"};
 
   // Axes specification
   AxisSpec phiAngle{40, 0.0, constants::math::TwoPI, "#it{#varphi} (rad)"};
@@ -124,8 +135,9 @@ struct RecoilJets {
   TRandom3* rand = new TRandom3(0);
 
   // Declare filter on collision Z vertex
-  Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
-  Filter collisionFilterMC = nabs(aod::jmccollision::posZ) < vertexZCut;
+  Filter jCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
+  Filter jCollisionFilterMC = nabs(aod::jmccollision::posZ) < vertexZCut;
+  Filter collisionFilter = nabs(aod::collision::posZ) < vertexZCut;
 
   // Declare filters on accepted tracks and MC particles (settings for jet reco are provided in the jet finder wagon)
   Filter trackFilter = aod::jtrack::pt > trkPtMin&& aod::jtrack::pt < trkPtMax&& nabs(aod::jtrack::eta) < trkEtaCut;
@@ -151,6 +163,8 @@ struct RecoilJets {
     AxisSpec scaledFT0A{histMultBins, 0.0, 20., "FT0A / #LT FT0A #GT"};
     AxisSpec scaledFT0C{histMultBins, 0.0, 20., "FT0C / #LT FT0C #GT"};
     AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
+    AxisSpec zdcTiming{histZDCTimeBins, -30., 30., ""};
+
     std::string nameFT0Caxis = "FT0C / #LT FT0C #GT";
     std::string nameFT0Maxis = "FT0M^{*}";
 
@@ -405,6 +419,86 @@ struct RecoilJets {
       spectra.add("hScaleMultFT0CPartLevel", "Scaled # of primary particles within FTOC acceptance", kTH1F, {scaledFT0C});
       spectra.add("hScaleMultFT0MPartLevel", "Scaled total # of primary particles from FT0A & FTOC", kTH1F, {scaledFT0M});
     }
+
+    if (doprocessMultiplicityQA) {
+
+      // ZNC timing QA
+      spectra.add("hTimeCorrZnaZnc", "Correlat. #it{t}_{ZNA} - #it{t}_{ZNC} vs. #it{t}_{ZNA} + #it{t}_{ZNC}", kTH2F, {{1000, -10., 10., "#it{t}_{ZNA} - #it{t}_{ZNC} (ns)"}, {1000, -10., 10., "#it{t}_{ZNA} + #it{t}_{ZNC} (ns)"}});
+      spectra.add("hTimeZnaVsZncVsFT0C", "Correlat. #it{t}_{ZNA} (ns) vs. #it{t}_{ZNC} (ns) vs. FT0C/meanFT0C", kTH3F, {{zdcTiming}, {zdcTiming}, {scaledFT0C}});
+      spectra.add("hTimeZnaVsZncVsFT0M", "Correlat. #it{t}_{ZNA} (ns) vs. #it{t}_{ZNC} (ns) vs. FT0M^{*}", kTH3F, {{zdcTiming}, {zdcTiming}, {scaledFT0M}});
+
+      // Number of tracks from PV within acceptance |eta| < 0.8
+      spectra.add("hScaledFT0C_TracksPV", "Correlat. FT0C/meanFT0C vs. PV tracks", kTH2F, {{scaledFT0C}, {5000, 0., 5000.}});
+      spectra.add("hScaledFT0M_TracksPV", "Correlat. FT0M^{*} vs. PV tracks", kTH2F, {{scaledFT0M}, {5000, 0., 5000.}});
+
+      // ITS-only tracks
+      spectra.add("hScaledFT0C_ITStracks", "Correlat. FT0C/meanFT0C vs. number of ITS tracks", kTH2F, {{scaledFT0C}, {5000, 0., 5000.}});
+      spectra.add("hScaledFT0M_ITStracks", "Correlat. FT0M^{*} vs. number of ITS tracks", kTH2F, {{scaledFT0M}, {5000, 0., 5000.}});
+
+      // Multiplicity equalized for the vertex position with FT0 detector
+      spectra.add("hMultZeqFT0A", "Equalized mult. FT0A", kTH1F, {{{2000, 0.0, 40000., "FT0A"}}});
+      spectra.add("hMultZeqFT0C", "Equalized mult. FT0C", kTH1F, {{{2000, 0.0, 40000., "FT0C"}}});
+      spectra.add("hMultZeqFT0M", "Equalized mult. FT0M", kTH1F, {{{3000, 0.0, 60000., "FT0M"}}});
+
+      spectra.add("hScaledZeqFT0A", "Equalized FT0A/meanFT0A", kTH1F, {{scaledFT0A}});
+      spectra.add("hScaledZeqFT0C", "Equalized FT0C/meanFT0C", kTH1F, {{scaledFT0C}});
+      spectra.add("hScaledZeqFT0M", "Equalized FT0M^{*}", kTH1F, {{scaledFT0M}});
+
+      // Run-by-run study of EA
+      std::vector<const char*> runNumbersOO = {
+        "564356", "564359", "564373", "564374", "564387", "564400", "564414", "564430", "564445"};
+      const int nRunsOO = runNumbersOO.size();
+
+      std::vector<const char*> evSelFlags = {
+        "sel8", "sel8 + IsGoodZvtxFT0vsPV", "sel8 + NoSameBunchPileup", "sel8 + IsGoodZvtxFT0vsPV + NoSameBunchPileup"};
+      const int nEvSelFlags = evSelFlags.size();
+
+      // Scaled FT0 signal
+      spectra.add("hScaledFT0APerRunPerSetOfFlags", "FT0A/meanFT0A signal per run per set of ev. sel. flags", kTH3F, {{scaledFT0A}, {nRunsOO, 0., nRunsOO * 1.}, {nEvSelFlags, 0., nEvSelFlags * 1.}});
+      spectra.add("hScaledFT0CPerRunPerSetOfFlags", "FT0C/meanFT0C signal per run per set of ev. sel. flags", kTH3F, {{scaledFT0C}, {nRunsOO, 0., nRunsOO * 1.}, {nEvSelFlags, 0., nEvSelFlags * 1.}});
+      spectra.add("hScaledFT0MPerRunPerSetOfFlags", "FT0M^{*} signal per run per set of ev. sel. flags", kTH3F, {{scaledFT0M}, {nRunsOO, 0., nRunsOO * 1.}, {nEvSelFlags, 0., nEvSelFlags * 1.}});
+
+      // Unscaled FT0 signal; check whether mean value is the same for all runs
+      spectra.add("hFT0APerRunPerSetOfFlags", "FT0A signal per run per set of ev. sel. flags", kTH3F, {{2000, 0.0, 40000., "FT0A"}, {nRunsOO, 0., nRunsOO * 1.}, {nEvSelFlags, 0., nEvSelFlags * 1.}});
+      spectra.add("hFT0CPerRunPerSetOfFlags", "FT0C signal per run per set of ev. sel. flags", kTH3F, {{2000, 0.0, 40000., "FT0C"}, {nRunsOO, 0., nRunsOO * 1.}, {nEvSelFlags, 0., nEvSelFlags * 1.}});
+      spectra.add("hFT0MPerRunPerSetOfFlags", "FT0M signal per run per set of ev. sel. flags", kTH3F, {{3000, 0.0, 60000., "FT0M"}, {nRunsOO, 0., nRunsOO * 1.}, {nEvSelFlags, 0., nEvSelFlags * 1.}});
+
+      // Check whether each BC has FT0 signal
+      spectra.add("hIsFT0SignalComeFromCollPerRun", "", kTH2F, {{4, 0., 4.}, {nRunsOO, 0., nRunsOO * 1.}});
+      spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetXaxis()->SetBinLabel(1, "BC has FT0");
+      spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetXaxis()->SetBinLabel(2, "BC has not FT0");
+      spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetXaxis()->SetBinLabel(3, "Coll. w. BC");
+      spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetXaxis()->SetBinLabel(4, "Coll. w/o BC");
+
+      // Rename Y axis with Run numbers
+      for (int iRun = 0; iRun < nRunsOO; ++iRun) {
+        spectra.get<TH3>(HIST("hScaledFT0APerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+        spectra.get<TH3>(HIST("hScaledFT0CPerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+        spectra.get<TH3>(HIST("hScaledFT0MPerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+
+        spectra.get<TH3>(HIST("hFT0APerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+        spectra.get<TH3>(HIST("hFT0CPerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+        spectra.get<TH3>(HIST("hFT0MPerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+
+        spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+      }
+
+      // Rename Z axis with event selection flags
+      for (int iFlag = 0; iFlag < nEvSelFlags; ++iFlag) {
+        spectra.get<TH3>(HIST("hScaledFT0APerRunPerSetOfFlags"))->GetZaxis()->SetBinLabel(iFlag + 1, evSelFlags[iFlag]);
+        spectra.get<TH3>(HIST("hScaledFT0CPerRunPerSetOfFlags"))->GetZaxis()->SetBinLabel(iFlag + 1, evSelFlags[iFlag]);
+        spectra.get<TH3>(HIST("hScaledFT0MPerRunPerSetOfFlags"))->GetZaxis()->SetBinLabel(iFlag + 1, evSelFlags[iFlag]);
+
+        spectra.get<TH3>(HIST("hFT0APerRunPerSetOfFlags"))->GetZaxis()->SetBinLabel(iFlag + 1, evSelFlags[iFlag]);
+        spectra.get<TH3>(HIST("hFT0CPerRunPerSetOfFlags"))->GetZaxis()->SetBinLabel(iFlag + 1, evSelFlags[iFlag]);
+        spectra.get<TH3>(HIST("hFT0MPerRunPerSetOfFlags"))->GetZaxis()->SetBinLabel(iFlag + 1, evSelFlags[iFlag]);
+      }
+    }
+
+    if (doprocessLeadingAndAssociatedTracksTask) {
+      spectra.add("hScaledFT0C_Correlation_LeadTrack_AssociatTracks", Form("Leading track #it{p}_{T} #in (%.2f, %.2f); Associated track #it{p}_{T} #in (%.2f, %.2f)", pTLeadTrack->at(0), pTLeadTrack->at(1), pTAssociatTrack->at(0), pTAssociatTrack->at(1)), kTH2F, {{multFT0CThresh, nameFT0Caxis}, {120, -1.28, 5.0, "#it{#varphi} (rad)"}});
+      spectra.add("hScaledFT0M_Correlation_LeadTrack_AssociatTracks", Form("Leading track #it{p}_{T} #in (%.2f, %.2f); Associated track #it{p}_{T} #in (%.2f, %.2f)", pTLeadTrack->at(0), pTLeadTrack->at(1), pTAssociatTrack->at(0), pTAssociatTrack->at(1)), kTH2F, {{multFT0MThresh, nameFT0Maxis}, {120, -1.28, 5.0, "#it{#varphi} (rad)"}});
+    }
   }
 
   // Fill histograms with raw or MC det. level data
@@ -417,10 +511,8 @@ struct RecoilJets {
     double phiTT = 0.;
     int nTT = 0;
     float rho = collision.rho();
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0C = getScaledFT0C(multFT0C);
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
+    float scaledFT0C = getScaledFT0(collision.multFT0C(), meanFT0C);
+    float scaledFT0M = getScaledFT0M(getScaledFT0(collision.multFT0A(), meanFT0A), scaledFT0C);
 
     auto dice = rand->Rndm();
     if (dice < fracSig)
@@ -555,10 +647,8 @@ struct RecoilJets {
     double phiTT = 0.;
     int nTT = 0;
     float rho = collision.rho();
-
-    float scaledFT0A = collision.multFT0A() / meanFT0APartLevel;
-    float scaledFT0C = collision.multFT0C() / meanFT0CPartLevel;
-    float scaledFT0M = 0.5 * (scaledFT0A + scaledFT0C);
+    float scaledFT0C = getScaledFT0(collision.multFT0C(), meanFT0CPartLevel);
+    float scaledFT0M = getScaledFT0M(getScaledFT0(collision.multFT0A(), meanFT0APartLevel), scaledFT0C);
 
     auto dice = rand->Rndm();
     if (dice < fracSig)
@@ -722,17 +812,17 @@ struct RecoilJets {
     float multFT0A = collision.multFT0A();
     float multFT0C = collision.multFT0C();
     float multFT0M = collision.multFT0M();
-    float scaledFT0A = getScaledFT0A(multFT0A);
-    float scaledFT0C = getScaledFT0C(multFT0C);
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
+    float scaledFT0A = getScaledFT0(multFT0A, meanFT0A);
+    float scaledFT0C = getScaledFT0(multFT0C, meanFT0C);
+    float scaledFT0M = getScaledFT0M(scaledFT0A, scaledFT0C);
 
     float multZNA = collision.multZNA();
     float multZNC = collision.multZNC();
-    float multZNM = collision.multZNA() + collision.multZNC();
+    float multZNM = multZNA + multZNC;
 
     float multZPA = collision.multZPA();
     float multZPC = collision.multZPC();
-    float multZPM = collision.multZPA() + collision.multZPC();
+    float multZPM = multZPA + multZPC;
 
     // Individual distributions
     spectra.fill(HIST("hMultFT0A"), multFT0A, weight);
@@ -779,9 +869,161 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0CPartLevel"), collision.multFT0C(), weight);
     spectra.fill(HIST("hMultFT0MPartLevel"), collision.multFT0A() + collision.multFT0C(), weight);
 
-    spectra.fill(HIST("hScaleMultFT0APartLevel"), collision.multFT0A() / meanFT0APartLevel, weight);
-    spectra.fill(HIST("hScaleMultFT0CPartLevel"), collision.multFT0C() / meanFT0CPartLevel, weight);
-    spectra.fill(HIST("hScaleMultFT0MPartLevel"), 0.5 * ((collision.multFT0A() / meanFT0APartLevel) + (collision.multFT0C() / meanFT0CPartLevel)), weight);
+    auto scaledFT0A = getScaledFT0(collision.multFT0A(), meanFT0APartLevel);
+    auto scaledFT0C = getScaledFT0(collision.multFT0C(), meanFT0CPartLevel);
+    spectra.fill(HIST("hScaleMultFT0APartLevel"), scaledFT0A, weight);
+    spectra.fill(HIST("hScaleMultFT0CPartLevel"), scaledFT0C, weight);
+    spectra.fill(HIST("hScaleMultFT0MPartLevel"), getScaledFT0M(scaledFT0A, scaledFT0C), weight);
+  }
+
+  template <typename BC, typename Collision, typename ZDC>
+  void fillMultiplicityQA(Collision const& collision, BC const&,
+                          ZDC const&, float weight = 1.)
+  {
+    int runNumber = collision.multRunNumber();
+    int fillNumber = getBinNumberOnYaxisForGivenRun(spectra.get<TH3>(HIST("hScaledFT0CPerRunPerSetOfFlags")), runNumber) - 0.5; // Same for FT0M distrib.
+
+    // FT0 Signal
+    float multFT0A = collision.multFT0A();
+    float multFT0C = collision.multFT0C();
+    float multFT0M = collision.multFT0M();
+    float scaledFT0A = getScaledFT0(multFT0A, meanFT0A);
+    float scaledFT0C = getScaledFT0(multFT0C, meanFT0C);
+    float scaledFT0M = getScaledFT0M(scaledFT0A, scaledFT0C);
+
+    // Event with flag Sel8
+    spectra.fill(HIST("hFT0APerRunPerSetOfFlags"), multFT0A, fillNumber, 0.5, weight);
+    spectra.fill(HIST("hFT0CPerRunPerSetOfFlags"), multFT0C, fillNumber, 0.5, weight);
+    spectra.fill(HIST("hFT0MPerRunPerSetOfFlags"), multFT0M, fillNumber, 0.5, weight);
+
+    spectra.fill(HIST("hScaledFT0APerRunPerSetOfFlags"), scaledFT0A, fillNumber, 0.5, weight);
+    spectra.fill(HIST("hScaledFT0CPerRunPerSetOfFlags"), scaledFT0C, fillNumber, 0.5, weight);
+    spectra.fill(HIST("hScaledFT0MPerRunPerSetOfFlags"), scaledFT0M, fillNumber, 0.5, weight);
+
+    bool isGoodZvtxFT0vsPV = collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+    if (isGoodZvtxFT0vsPV) {
+      spectra.fill(HIST("hFT0APerRunPerSetOfFlags"), multFT0A, fillNumber, 1.5, weight);
+      spectra.fill(HIST("hFT0CPerRunPerSetOfFlags"), multFT0C, fillNumber, 1.5, weight);
+      spectra.fill(HIST("hFT0MPerRunPerSetOfFlags"), multFT0M, fillNumber, 1.5, weight);
+
+      spectra.fill(HIST("hScaledFT0APerRunPerSetOfFlags"), scaledFT0A, fillNumber, 1.5, weight);
+      spectra.fill(HIST("hScaledFT0CPerRunPerSetOfFlags"), scaledFT0C, fillNumber, 1.5, weight);
+      spectra.fill(HIST("hScaledFT0MPerRunPerSetOfFlags"), scaledFT0M, fillNumber, 1.5, weight);
+    }
+
+    bool isNoSameBunchPileup = collision.selection_bit(aod::evsel::kNoSameBunchPileup);
+    if (isNoSameBunchPileup) {
+      spectra.fill(HIST("hFT0APerRunPerSetOfFlags"), multFT0A, fillNumber, 2.5, weight);
+      spectra.fill(HIST("hFT0CPerRunPerSetOfFlags"), multFT0C, fillNumber, 2.5, weight);
+      spectra.fill(HIST("hFT0MPerRunPerSetOfFlags"), multFT0M, fillNumber, 2.5, weight);
+
+      spectra.fill(HIST("hScaledFT0APerRunPerSetOfFlags"), scaledFT0A, fillNumber, 2.5, weight);
+      spectra.fill(HIST("hScaledFT0CPerRunPerSetOfFlags"), scaledFT0C, fillNumber, 2.5, weight);
+      spectra.fill(HIST("hScaledFT0MPerRunPerSetOfFlags"), scaledFT0M, fillNumber, 2.5, weight);
+    }
+
+    if (isGoodZvtxFT0vsPV && isNoSameBunchPileup) {
+      spectra.fill(HIST("hFT0APerRunPerSetOfFlags"), multFT0A, fillNumber, 3.5, weight);
+      spectra.fill(HIST("hFT0CPerRunPerSetOfFlags"), multFT0C, fillNumber, 3.5, weight);
+      spectra.fill(HIST("hFT0MPerRunPerSetOfFlags"), multFT0M, fillNumber, 3.5, weight);
+
+      spectra.fill(HIST("hScaledFT0APerRunPerSetOfFlags"), scaledFT0A, fillNumber, 3.5, weight);
+      spectra.fill(HIST("hScaledFT0CPerRunPerSetOfFlags"), scaledFT0C, fillNumber, 3.5, weight);
+      spectra.fill(HIST("hScaledFT0MPerRunPerSetOfFlags"), scaledFT0M, fillNumber, 3.5, weight);
+    } else {
+      return;
+    }
+
+    // Investigate other EA variables
+    //____________________________________________________________________________________
+
+    // Multiplicity equalized for the vertex position with FT0 detector
+    float multZeqFT0A = collision.multZeqFT0A();
+    float multZeqFT0C = collision.multZeqFT0C();
+    float multZeqFT0M = multZeqFT0A + multZeqFT0C;
+    float scaledZeqFT0A = getScaledFT0(multZeqFT0A, meanZeqFT0A);
+    float scaledZeqFT0C = getScaledFT0(multZeqFT0C, meanZeqFT0C);
+    float scaledZeqFT0M = getScaledFT0M(scaledZeqFT0A, scaledZeqFT0C);
+
+    spectra.fill(HIST("hMultZeqFT0A"), multZeqFT0A, weight);
+    spectra.fill(HIST("hMultZeqFT0C"), multZeqFT0C, weight);
+    spectra.fill(HIST("hMultZeqFT0M"), multZeqFT0M, weight);
+    spectra.fill(HIST("hScaledZeqFT0A"), scaledZeqFT0A, weight);
+    spectra.fill(HIST("hScaledZeqFT0C"), scaledZeqFT0C, weight);
+    spectra.fill(HIST("hScaledZeqFT0M"), scaledZeqFT0M, weight);
+
+    // ZDC timing info
+    auto const& foundBC = collision.template foundBC_as<BC>();
+    float timeZNA = foundBC.has_zdc() ? foundBC.zdc().timeZNA() : -999.f;
+    float timeZNC = foundBC.has_zdc() ? foundBC.zdc().timeZNC() : -999.f;
+    float timeDiffZDC = timeZNA - timeZNC;
+    float timeSumZDC = timeZNA + timeZNC;
+
+    spectra.fill(HIST("hTimeCorrZnaZnc"), timeDiffZDC, timeSumZDC, weight);
+    spectra.fill(HIST("hTimeZnaVsZncVsFT0C"), timeZNA, timeZNC, scaledFT0C, weight);
+    spectra.fill(HIST("hTimeZnaVsZncVsFT0M"), timeZNA, timeZNC, scaledFT0M, weight);
+
+    // ITS only tracks
+    int nITSonly = collision.multNTracksITSOnly();
+
+    spectra.fill(HIST("hScaledFT0C_ITStracks"), scaledFT0C, nITSonly, weight);
+    spectra.fill(HIST("hScaledFT0M_ITStracks"), scaledFT0M, nITSonly, weight);
+
+    // Global tracks from PV within |eta| < 0.8
+    int multNContribs = collision.multNTracksPV();
+
+    spectra.fill(HIST("hScaledFT0C_TracksPV"), scaledFT0C, multNContribs, weight);
+    spectra.fill(HIST("hScaledFT0M_TracksPV"), scaledFT0M, multNContribs, weight);
+
+    if (foundBC.foundFT0Id() > 0) // -1 if does not
+      spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 0.5, fillNumber, weight);
+    else
+      spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 1.5, fillNumber, weight);
+
+    if (collision.foundBCId() > 0)
+      spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 2.5, fillNumber, weight);
+    else
+      spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 3.5, fillNumber, weight);
+  }
+
+  template <typename JCollision, typename JTracks>
+  void fillLeadingAndAssociatedTracksTask(JCollision const& collision, JTracks const& tracks, float weight = 1.)
+  {
+    std::vector<double> vPhiOfLeadingTracks;
+    std::vector<double> vPhiOfAssociatedTracks;
+
+    float scaledFT0C = getScaledFT0(collision.multFT0C(), meanFT0C);
+    float scaledFT0M = getScaledFT0M(getScaledFT0(collision.multFT0A(), meanFT0A), scaledFT0C);
+
+    for (const auto& track : tracks) {
+      if (skipTrack(track))
+        continue;
+
+      float trackPt = track.pt();
+      float trackPhi = track.phi();
+
+      // Search for leading tracks
+      if (trackPt > pTLeadTrack->at(0) && trackPt < pTLeadTrack->at(1)) {
+        vPhiOfLeadingTracks.push_back(trackPhi);
+      }
+
+      // Search for associated tracks
+      if (trackPt > pTAssociatTrack->at(0) && trackPt < pTAssociatTrack->at(1)) {
+        vPhiOfAssociatedTracks.push_back(trackPhi);
+      }
+    }
+
+    int nLeadingTracks = vPhiOfLeadingTracks.size();
+
+    if (nLeadingTracks > 0) {
+      double phiLeadingTrack = getPhiTT(vPhiOfLeadingTracks);
+
+      for (const auto& phiAssociatTrack : vPhiOfAssociatedTracks) {
+        double dphi = RecoDecay::constrainAngle(phiLeadingTrack - phiAssociatTrack, -1.3);
+        spectra.fill(HIST("hScaledFT0C_Correlation_LeadTrack_AssociatTracks"), scaledFT0C, dphi, weight);
+        spectra.fill(HIST("hScaledFT0M_Correlation_LeadTrack_AssociatTracks"), scaledFT0M, dphi, weight);
+      }
+    }
   }
 
   //------------------------------------------------------------------------------
@@ -796,7 +1038,6 @@ struct RecoilJets {
 
     spectra.fill(HIST("hEventSelectionCount"), 1.5); // number of events selected for analysis
 
-    // spectra.fill(HIST("vertexZ"), collision.posZ());
     fillHistograms(collision, jets, tracks);
   }
   PROCESS_SWITCH(RecoilJets, processData, "process raw data", true);
@@ -867,8 +1108,7 @@ struct RecoilJets {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 3.5); // number of events selected for analysis
     fillMCPHistograms(collision, jets, particles);
   }
-  PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level data (no weight)",
-                 false);
+  PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level data (no weight)", false);
 
   void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
                                   FilteredParticles const& particles,
@@ -925,7 +1165,6 @@ struct RecoilJets {
   }
   PROCESS_SWITCH(RecoilJets, processJetsMatchedWeighted, "process matching of MC jets (weighted)", false);
 
-  //------------------------------------------------------------------------------
   void processMultiplicityOO(FilteredEventMultiplicity const& collision)
   {
     if (skipEvent(collision))
@@ -964,6 +1203,27 @@ struct RecoilJets {
   }
   PROCESS_SWITCH(RecoilJets, processMultiplicityPartLevelMCWeighted, "process multiplicity for MC particle level events (weighted)", false);
 
+  void processMultiplicityQA(ColEvSelEA const& collision,
+                             BCsRun3 const& BCs,
+                             aod::Zdcs const& ZDCs)
+  {
+    // Base flag for event selection
+    if (!collision.sel8())
+      return;
+
+    fillMultiplicityQA(collision, BCs, ZDCs);
+  }
+  PROCESS_SWITCH(RecoilJets, processMultiplicityQA, "process function for EA QA purposes", false);
+
+  void processLeadingAndAssociatedTracksTask(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                                             soa::Filtered<aod::JetTracks> const& tracks)
+  {
+    if (skipEvent(collision))
+      return;
+    fillLeadingAndAssociatedTracksTask(collision, tracks);
+  }
+  PROCESS_SWITCH(RecoilJets, processLeadingAndAssociatedTracksTask, "process function for correlation between leading and associated tracks", false);
+
   //------------------------------------------------------------------------------
   // Auxiliary functions
   template <typename Collision>
@@ -998,19 +1258,14 @@ struct RecoilJets {
     return vPhiOfTT[iTrig];
   }
 
-  float getScaledFT0A(const float multFT0A)
+  float getScaledFT0(const float& multFT0, const float& meanFT0)
   {
-    return multFT0A / meanFT0A;
+    return multFT0 / meanFT0;
   }
 
-  float getScaledFT0C(const float multFT0C)
+  float getScaledFT0M(const float& scaledMultFT0A, const float& scaledMultFT0C)
   {
-    return multFT0C / meanFT0C;
-  }
-
-  float getScaledFT0M(const float multFT0A, const float multFT0C)
-  {
-    return 0.5 * (getScaledFT0A(multFT0A) + getScaledFT0C(multFT0C));
+    return 0.5 * (scaledMultFT0A + scaledMultFT0C);
   }
 
   template <typename Jet, typename Tracks>
@@ -1024,6 +1279,26 @@ struct RecoilJets {
       }
     }
     return bIsJetWithHighPtConstituent;
+  }
+
+  template <typename histo>
+  int getBinNumberOnYaxisForGivenRun(std::shared_ptr<histo> histogram, int runNumber)
+  {
+    int nBins = histogram->GetYaxis()->GetNbins();
+    int binNumber = -1;
+
+    for (int iBin = 1; iBin <= nBins; ++iBin) {
+      const char* binLabel = histogram->GetYaxis()->GetBinLabel(iBin);
+      if (std::stoi(binLabel) == runNumber) {
+        binNumber = iBin;
+        break;
+      }
+    }
+
+    if (binNumber == -1) // No bin found
+      return 0;
+
+    return binNumber;
   }
 
   template <typename PartJet, typename DetJet, typename TracksTable>
