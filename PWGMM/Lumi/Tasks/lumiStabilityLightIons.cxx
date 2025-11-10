@@ -39,7 +39,6 @@ o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
 struct LumiStabilityLightIons {
-  Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of FT0 in RCT"};
   Configurable<bool> cfgDoFT0Vtx{"cfgDoFT0Vtx", true, "Create and fill histograms for the FT0 vertex trigger"};
   Configurable<bool> cfgDoFT0CE{"cfgDoFT0CE", true, "Create and fill histograms for the FT0 centrality trigger"};
   Configurable<bool> cfgDoFDD{"cfgDoFDD", true, "Create and fill histograms for the FDD trigger"};
@@ -54,13 +53,12 @@ struct LumiStabilityLightIons {
   Configurable<int> cfgEmptyBCsBeforeLeadingBC{"cfgEmptyBCsBeforeLeadingBC", 5, "Minimum number of empty BCs before a leading BC to identify it as such"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
-  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL;
 
   std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
 
   const int nBCsPerOrbit = 3564;
 
-  aod::rctsel::RCTFlagsChecker isFT0GoodRCTChecker{aod::rctsel::kFT0Bad};
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
   int mRunNumber = -1;
   ctpRateFetcher mRateFetcher;
@@ -101,8 +99,6 @@ struct LumiStabilityLightIons {
 
   void init(InitContext&)
   {
-    mHistManager.add("hMu", "hMu", HistType::kTH1F, {{2000, 0., 0.2}});
-
     strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
 
     LOG(info) << "strLPMProductionTag: " << strLPMProductionTag;
@@ -122,11 +118,7 @@ struct LumiStabilityLightIons {
 
     mHistManager.add("FT0Vtx_EvSel/nBCsVsTime", "Time of TVX triggered BCs since the start of fill;;#bf{#it{N}_{BC}}", HistType::kTH1F, {timeAxis});
     mHistManager.add("nBCsVsBCID", "Time of TVX triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {bcIDAxis});
-    mHistManager.add("InteractionRateVsTime", "IR from CTP vs time since SOF;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {timeAxis});
     mHistManager.add("TFsPerMinute", "TFs seen in this minute (to account for failed jobs);#bf{t-t_{SOF} (min)};#bf{#it{N}_{TFs}}", HistType::kTH1F, {timeAxis});
-
-    if (cfgRequireGoodRCTQuality)
-      isFT0GoodRCTChecker.init({aod::rctsel::kFT0Bad});
   }
 
   void setLHCIFData(const auto& bc)
@@ -151,31 +143,37 @@ struct LumiStabilityLightIons {
     bcPatternB = beamPatternA & beamPatternC;
     bcPatternE = ~beamPatternA & ~beamPatternC;
 
+    // Create bcPatternL: leading BCs of type B that follow at least "cfgEmptyBCsBeforeLeadingBC" empty BCs
+    bcPatternL.reset(); // Initialize all bits to false
+    LOG(info) << "Starting to create bcPatternL from bcPatternB";
+    LOG(info) << "Total number of BCs to check: " << o2::constants::lhc::LHCMaxBunches;
+
+    int totalLeadingBCs = 0;
+    for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
+      if (bcPatternB[iBC]) {    // Check if current BC is of type B
+        int emptyBCsBefore = 0; // Count how many consecutive BCs before this one are NOT type B
+        for (int j = 1; j <= cfgEmptyBCsBeforeLeadingBC; j++) {
+          int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
+          if (!bcPatternB[prevBC]) {
+            emptyBCsBefore++;
+          } else {
+            break; // Stop counting if we hit a type B BC
+          }
+        }
+        if (emptyBCsBefore >= cfgEmptyBCsBeforeLeadingBC) { // If we found at least cfgEmptyBCsBeforeLeadingBC empty BCs before this one, mark it as leading
+          bcPatternL[iBC] = true;
+          totalLeadingBCs++;
+        }
+      }
+    }
+    LOG(info) << "bcPatternL creation complete. Total leading BCs found: " << totalLeadingBCs;
+
     auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), mRunNumber, strLPMProductionTag);
     bcSOR = runInfo.orbitSOR * nBCsPerOrbit; // first bc of the first orbit
     LOG(info) << "BC SOR: " << bcSOR << " (orbit SOR: " << runInfo.orbitSOR << ") NBCs per orbit: " << nBCsPerOrbit;
     nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit; // duration of TF in bcs
 
     return;
-  }
-
-  double getTVXRate(const auto& bc)
-  {
-    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
-    double tvxRate = mRateFetcher.fetch(&ccdbMgr, bc.timestamp(), bc.runNumber(), "T0VTX");
-
-    return tvxRate;
-  }
-
-  double calculateMu(const auto& bc)
-  {
-
-    auto bfilling = mLHCIFdata->getBunchFilling();
-    double nbc = bfilling.getFilledBCs().size();
-    double nTriggersPerFilledBC = getTVXRate(bc) / nbc / o2::constants::lhc::LHCRevFreq;
-    double mu = -std::log(1 - nTriggersPerFilledBC);
-
-    return mu;
   }
 
   float getTimeSinceSOF(const auto& bc)
@@ -192,7 +190,6 @@ struct LumiStabilityLightIons {
 
   void process(MyBCs const& bcs, aod::FT0s const&)
   {
-    int nEmptyBCs = 0;
     for (const auto& bc : bcs) {
 
       if (bc.timestamp() == 0)
@@ -200,12 +197,7 @@ struct LumiStabilityLightIons {
 
       setLHCIFData(bc);
 
-      mHistManager.fill(HIST("hMu"), calculateMu(bc));
-
       float timeSinceSOF = getTimeSinceSOF(bc);
-
-      auto hRateHist = mHistManager.get<TH1>(HIST("InteractionRateVsTime"));
-      hRateHist->SetBinContent(hRateHist->FindBin(timeSinceSOF), getTVXRate(bc));
 
       if (bc.selection_bit(aod::evsel::kIsTriggerTVX))
         mHistManager.fill(HIST("FT0Vtx_EvSel/nBCsVsTime"), timeSinceSOF);
@@ -218,14 +210,6 @@ struct LumiStabilityLightIons {
       if (thisTFid != currentTFid) {
         currentTFid = thisTFid;
         mHistManager.fill(HIST("TFsPerMinute"), timeSinceSOF);
-      }
-
-      if (bcPatternB[localBC] && nEmptyBCs >= cfgEmptyBCsBeforeLeadingBC) {
-        isLeadingBC = true;
-        nEmptyBCs = 0;
-      } else {
-        isLeadingBC = false;
-        nEmptyBCs++;
       }
 
       std::bitset<64> ctpInputMask(bc.inputMask());
@@ -243,7 +227,7 @@ struct LumiStabilityLightIons {
                   fillHistograms<kAllBCs, kBCC>(timeSinceSOF, localBC);
                 if (iBCCategory == kBCE && bcPatternE[localBC])
                   fillHistograms<kAllBCs, kBCE>(timeSinceSOF, localBC);
-                if (iBCCategory == kBCL && isLeadingBC)
+                if (iBCCategory == kBCL && bcPatternL[localBC])
                   fillHistograms<kAllBCs, kBCL>(timeSinceSOF, localBC);
               }
               if (iTrigger == kFT0Vtx && ctpInputMask.test(2)) {
@@ -255,7 +239,7 @@ struct LumiStabilityLightIons {
                   fillHistograms<kFT0Vtx, kBCC>(timeSinceSOF, localBC);
                 if (iBCCategory == kBCE && bcPatternE[localBC])
                   fillHistograms<kFT0Vtx, kBCE>(timeSinceSOF, localBC);
-                if (iBCCategory == kBCL && isLeadingBC)
+                if (iBCCategory == kBCL && bcPatternL[localBC])
                   fillHistograms<kFT0Vtx, kBCL>(timeSinceSOF, localBC);
               }
               if (iTrigger == kFT0CE && ctpInputMask.test(4)) {
@@ -267,7 +251,7 @@ struct LumiStabilityLightIons {
                   fillHistograms<kFT0CE, kBCC>(timeSinceSOF, localBC);
                 if (iBCCategory == kBCE && bcPatternE[localBC])
                   fillHistograms<kFT0CE, kBCE>(timeSinceSOF, localBC);
-                if (iBCCategory == kBCL && isLeadingBC)
+                if (iBCCategory == kBCL && bcPatternL[localBC])
                   fillHistograms<kFT0CE, kBCL>(timeSinceSOF, localBC);
               }
               if (iTrigger == kFDD && ctpInputMask.test(15)) {
@@ -279,7 +263,7 @@ struct LumiStabilityLightIons {
                   fillHistograms<kFDD, kBCC>(timeSinceSOF, localBC);
                 if (iBCCategory == kBCE && bcPatternE[localBC])
                   fillHistograms<kFDD, kBCE>(timeSinceSOF, localBC);
-                if (iBCCategory == kBCL && isLeadingBC)
+                if (iBCCategory == kBCL && bcPatternL[localBC])
                   fillHistograms<kFDD, kBCL>(timeSinceSOF, localBC);
               }
               if (iTrigger == k1ZNC && ctpInputMask.test(25)) {
@@ -291,7 +275,7 @@ struct LumiStabilityLightIons {
                   fillHistograms<k1ZNC, kBCC>(timeSinceSOF, localBC);
                 if (iBCCategory == kBCE && bcPatternE[localBC])
                   fillHistograms<k1ZNC, kBCE>(timeSinceSOF, localBC);
-                if (iBCCategory == kBCL && isLeadingBC)
+                if (iBCCategory == kBCL && bcPatternL[localBC])
                   fillHistograms<k1ZNC, kBCL>(timeSinceSOF, localBC);
               }
             }
