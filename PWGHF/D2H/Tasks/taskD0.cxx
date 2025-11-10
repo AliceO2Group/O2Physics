@@ -105,21 +105,23 @@ struct HfTaskD0 {
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
-  using D0CandidatesMc = soa::Join<D0Candidates, aod::HfCand2ProngMcRec>;
-  using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
-  using D0CandidatesMcKF = soa::Join<D0CandidatesKF, aod::HfCand2ProngMcRec>;
+  using D0Candidates = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+  using D0CandidatesMc = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
+  using D0CandidatesKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngKF>>;
+  using D0CandidatesMcKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec>>;
 
-  using D0CandidatesMl = soa::Join<D0Candidates, aod::HfMlD0>;
-  using D0CandidatesMlMc = soa::Join<D0CandidatesMl, aod::HfCand2ProngMcRec>;
-  using D0CandidatesMlKF = soa::Join<D0CandidatesMl, aod::HfCand2ProngKF>;
-  using D0CandidatesMlMcKF = soa::Join<D0CandidatesMlKF, aod::HfCand2ProngMcRec>;
+  using D0CandidatesMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
+  using D0CandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngMcRec>>;
+  using D0CandidatesMlKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngKF>>;
+  using D0CandidatesMlMcKF = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec>>;
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
+
+  Filter filterD0Flag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) != static_cast<uint8_t>(0);
 
   Preslice<aod::HfCand2Prong> candD0PerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
@@ -625,9 +627,6 @@ struct HfTaskD0 {
         float occ{-1.f};
 
         for (const auto& candidate : groupedD0Candidates) {
-          if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-            continue;
-          }
           if (yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > yCandRecoMax) {
             continue;
           }
