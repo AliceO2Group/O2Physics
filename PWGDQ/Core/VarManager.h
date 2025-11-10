@@ -156,9 +156,9 @@ class VarManager : public TObject
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kTripleCandidateToKPiPi,    // e.g. D+ -> K- pi+ pi+
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
-    kNMaxCandidateTypes,
-    kJpsiHadronMass, // using the real hadron mass
-    kJpsiPionMass    // treat the hadron as pion
+    kJpsiHadronMass,            // using the real hadron mass
+    kJpsiPionMass,              // treat the hadron as pion
+    kNMaxCandidateTypes
   };
 
   enum BarrelTrackFilteringBits {
@@ -1311,7 +1311,7 @@ class VarManager : public TObject
   static float calculatePhiV(const T1& t1, const T2& t2);
   template <typename T1, typename T2>
   static float LorentzTransformJpsihadroncosChi(TString Option, const T1& v1, const T2& v2);
-  static float RotationDeltaPhi(float deltaphi)
+  static float RotationDeltaPhi(float deltaphi) // rotate deltaphi to the range -0.5*pi < deltaphi < 1.5*pi
   {
     if (deltaphi > 3.0 / 2.0 * TMath::Pi()) {
       deltaphi -= 2.0 * TMath::Pi();
