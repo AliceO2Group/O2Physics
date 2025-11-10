@@ -641,7 +641,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
       } // end of motherid2
     } // end of motherid1
 
-    bool b2c2l_b2l_diffb_case0 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                   // bbbar -> ll LS
+    bool b2c2l_b2l_diffb_case0 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll LS
     bool b2c2l_b2l_diffb_case1 = mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll ULS
     bool b2c2l_b2l_diffb_case2 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll LS
 
