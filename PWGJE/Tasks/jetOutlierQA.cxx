@@ -689,7 +689,7 @@ struct JetOutlierQATask {
           registry.fill(HIST("h_track_pt_phi_no_JJ_different"), track.pt(), track.phi(), weight);
           registry.fill(HIST("h2_collision_ID_difference_no_JJ_different"), pTHat, float(outlierCollisionIDDifference));
         }
-        // collisions of all
+        // collision checks for all tracks
         for (auto const& collisionOutlier : collisions) { // find collisions closeby
           float eventWeightOutlier = collisionOutlier.mcCollision().weight();
           double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
