@@ -494,7 +494,7 @@ struct HfCorrelatorDplusHadrons {
           if (!track.isGlobalTrackWoDCA()) {
             continue;
           }
-          // Removing Dplus daughters for which |eta|>0.8
+          // Remove D+ candidates for which at least one daughter has |eta| > 0.8
           double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
           double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
           double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
