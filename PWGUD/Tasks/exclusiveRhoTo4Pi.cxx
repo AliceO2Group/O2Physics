@@ -84,7 +84,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
   Configurable<float> zdcMaxAmp{"zdcMaxAmp", 0, "ZDC max amplitude to be 0n"};
   Configurable<float> zdcMaxTime{"zdcMaxTime", 2, "ZDC max time in ns"};
-  Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
+  Configurable<int> maxNpvContrib{"maxNpvContrib", 4, "Max Number of PV Contributors (Must be > 4)"};
   Configurable<int> sbpCut{"sbpCut", 1, "Sbp"};
   Configurable<int> itsROFbCut{"itsROFbCut", 1, "itsROFbCut"};
   Configurable<int> vtxITSTPCcut{"vtxITSTPCcut", 1, "vtxITSTPCcut"};
@@ -112,18 +112,39 @@ struct ExclusiveRhoTo4Pi {
   ConfigurableAxis invMassAxis{"invMassAxis", {1000, 1, 2.5}, "Axis for Phi histograms"};
   ConfigurableAxis phiAxis{"phiAxis", {360, -1 * o2::constants::math::PI, o2::constants::math::PI}, "Axis for Phi histograms"};
   ConfigurableAxis cosThetaAxis{"cosThetaAxis", {360, -1, 1}, "Axis for cos Theta histograms"};
+  // Fine Axis Specs
   AxisSpec neutronClassAxis = {5, 0, 5};
   AxisSpec runNumberAxis = {113, 0, 113};
   AxisSpec fitAxis = {500, -10, 200};
   AxisSpec dcaAxis = {2000, -0.15, 0.15};
   AxisSpec nSigmaAxis = {1000, -15, 12};
   AxisSpec piPtAxis = {1000, 0, 10};
+  AxisSpec pvContributorAxis = {50, 0, 50};
 
   void init(InitContext const&)
   {
     // QA plots: Event and Track Counter
     histosDataCounter.add("EventsCounts_vs_runNo", "Event Counter Run by Run; Run Number; Number of Events", kTH2F, {runNumberAxis, {14, 0, 14}});
     histosDataCounter.add("TracksCounts_vs_runNo", "Track Counter Run by Run; Run Number; Number of Track", kTH2F, {runNumberAxis, {13, 0, 13}});
+    // QA plots: all events
+    histosQA.add("Events/all/UPCmode", "UPC mode; Events", kTH1F, {{5, 0, 5}});
+    histosQA.add("Events/all/GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
+    histosQA.add("Events/all/TrueGapSide", "True Gap Side; True Gap Side; Events", kTH1F, {{4, 0, 4}});
+    histosQA.add("Events/all/isCBTOk", "isCBTOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosQA.add("Events/all/isCBTHadronOk", "isCBTHadronOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosQA.add("Events/all/isCBTZdcOk", "isCBTZdcOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosQA.add("Events/all/isCBTHadronZdcOk", "isCBTHadronZdcOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosQA.add("Events/all/FT0A", "T0A amplitude", kTH1F, {fitAxis});
+    histosQA.add("Events/all/FT0C", "T0C amplitude", kTH1F, {fitAxis});
+    histosQA.add("Events/all/FV0A", "V0A amplitude", kTH1F, {fitAxis});
+    histosQA.add("Events/all/ZDC", ";ZDC A;ZDC C;time ZDC A [ns];time ZDC C [ns]", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
+    histosQA.add("Events/all/FDDA", "FDD A signal; FDD A signal; Events", kTH1F, {{500, 0.0, 2000}});
+    histosQA.add("Events/all/FDDC", "FDD C signal; FDD C signal; Events", kTH1F, {{500, 0.0, 2000}});
+    histosQA.add("Events/all/vertexX", "Vertex X; Vertex X [cm]; Events", kTH1F, {{1000, -0.04, -0.015}});
+    histosQA.add("Events/all/vertexY", "Vertex Y; Vertex Y [cm]; Events", kTH1F, {{1000, -0.02, 0.02}});
+    histosQA.add("Events/all/vertexZ", "Vertex Z; Vertex Z [cm]; Events", kTH1F, {{1000, -11, 11}});
+    histosQA.add("Events/all/occupancy", "Occupancy; Occupancy; Events", kTH1F, {{20000, 0, 20000}});
+    histosQA.add("Events/all/nPVContributors", "Number of PV Contributors; Number of PV Contributors; Events", kTH1F, {pvContributorAxis});
     // QA plots: event selection-selected events
     histosQA.add("Events/selected/UPCmode", "UPC mode; Events", kTH1F, {{5, 0, 5}});
     histosQA.add("Events/selected/GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
@@ -136,12 +157,13 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/selected/FT0C", "T0C amplitude", kTH1F, {fitAxis});
     histosQA.add("Events/selected/FV0A", "V0A amplitude", kTH1F, {fitAxis});
     histosQA.add("Events/selected/ZDC", ";ZDC A;ZDC C;time ZDC A [ns];time ZDC C [ns]", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
-    histosQA.add("Events/selected/FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
-    histosQA.add("Events/selected/FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
-    histosQA.add("Events/selected/vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{1000, -0.04, -0.015}});
-    histosQA.add("Events/selected/vertexY", "Vertex Y; Vertex Y [cm]; Counts", kTH1F, {{1000, -0.02, 0.02}});
-    histosQA.add("Events/selected/vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{1000, -11, 11}});
-    histosQA.add("Events/selected/occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{20000, 0, 20000}});
+    histosQA.add("Events/selected/FDDA", "FDD A signal; FDD A signal; Events", kTH1F, {{500, 0.0, 2000}});
+    histosQA.add("Events/selected/FDDC", "FDD C signal; FDD C signal; Events", kTH1F, {{500, 0.0, 2000}});
+    histosQA.add("Events/selected/vertexX", "Vertex X; Vertex X [cm]; Events", kTH1F, {{1000, -0.04, -0.015}});
+    histosQA.add("Events/selected/vertexY", "Vertex Y; Vertex Y [cm]; Events", kTH1F, {{1000, -0.02, 0.02}});
+    histosQA.add("Events/selected/vertexZ", "Vertex Z; Vertex Z [cm]; Events", kTH1F, {{1000, -11, 11}});
+    histosQA.add("Events/selected/occupancy", "Occupancy; Occupancy; Events", kTH1F, {{20000, 0, 20000}});
+    histosQA.add("Events/selected/nPVContributors", "Number of PV Contributors; Number of PV Contributors; Events", kTH1F, {pvContributorAxis});
     // QA plots: event selection-4 pion events
     histosQA.add("Events/4pion/UPCmode", "UPC mode; Events", kTH1F, {{5, 0, 5}});
     histosQA.add("Events/4pion/GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
@@ -154,12 +176,13 @@ struct ExclusiveRhoTo4Pi {
     histosQA.add("Events/4pion/FT0C", "T0C amplitude", kTH1F, {fitAxis});
     histosQA.add("Events/4pion/FV0A", "V0A amplitude", kTH1F, {fitAxis});
     histosQA.add("Events/4pion/ZDC", "; ZDC A; ZDC C; time ZDC A; time ZDC C", kTHnSparseF, {{200, -10, 1000}, {200, -10, 1000}, {400, -10, 50}, {400, -10, 10}});
-    histosQA.add("Events/4pion/FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
-    histosQA.add("Events/4pion/FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
-    histosQA.add("Events/4pion/vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.04, -0.015}});
-    histosQA.add("Events/4pion/vertexY", "Vertex Y; Vertex Y [cm]; Counts", kTH1F, {{2000, -0.02, 0.02}});
-    histosQA.add("Events/4pion/vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{1000, -11, 11}});
-    histosQA.add("Events/4pion/occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{20000, 0, 20000}});
+    histosQA.add("Events/4pion/FDDA", "FDD A signal; FDD A signal; Events", kTH1F, {{500, 0.0, 2000}});
+    histosQA.add("Events/4pion/FDDC", "FDD C signal; FDD C signal; Events", kTH1F, {{500, 0.0, 2000}});
+    histosQA.add("Events/4pion/vertexX", "Vertex X; Vertex X [cm]; Events", kTH1F, {{2000, -0.04, -0.015}});
+    histosQA.add("Events/4pion/vertexY", "Vertex Y; Vertex Y [cm]; Events", kTH1F, {{2000, -0.02, 0.02}});
+    histosQA.add("Events/4pion/vertexZ", "Vertex Z; Vertex Z [cm]; Events", kTH1F, {{1000, -11, 11}});
+    histosQA.add("Events/4pion/occupancy", "Occupancy; Occupancy; Events", kTH1F, {{20000, 0, 20000}});
+    histosQA.add("Events/4pion/nPVContributors", "Number of PV Contributors; Number of PV Contributors; Events", kTH1F, {pvContributorAxis});
     // QA plots: All tracks in selected events
     histosQA.add("Tracks/all/isPVcontributor", "isPVcontributor; True or not; Counts", kTH1F, {{3, 0, 3}});
     histosQA.add("Tracks/all/dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {dcaAxis});
@@ -272,30 +295,37 @@ struct ExclusiveRhoTo4Pi {
     }
   } // End of init function
 
-  //---------------------------------------------------------------------------------------------------------------------------------------------
-  // Event Cuts
-  Filter vertexZcut = (nabs(o2::aod::collision::posZ) <= vZCut);
-  Filter numPVcontributorsCut = (o2::aod::collision::numContrib == numPVContrib);
-  Filter fitcuts = (o2::aod::udcollision::totalFV0AmplitudeA <= fv0Cut) && (o2::aod::udcollision::totalFT0AmplitudeA <= ft0aCut) && (o2::aod::udcollision::totalFT0AmplitudeC <= ft0cCut);
-  Filter bcSelectionCuts = (o2::aod::udcollision::sbp == sbpCut) && (o2::aod::udcollision::itsROFb == itsROFbCut) && (o2::aod::udcollision::vtxITSTPC == vtxITSTPCcut) && (o2::aod::udcollision::tfb == tfbCut);
-  // Track Cuts
-  Filter tpcchi2nclsFilter = o2::aod::track::tpcChi2NCl <= tpcChi2NClsCut;
-  Filter itschi2nclsFilter = o2::aod::track::itsChi2NCl <= itsChi2NClsCut;
-  //---------------------------------------------------------------------------------------------------------------------------------------------
-
   using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced>;
 
-  void processData(soa::Filtered<UDCollisions>::iterator const& collision, soa::Filtered<UDtracks> const& tracks)
+  void processData(UDCollisions::iterator const& collision, UDtracks const& tracks)
   {
-
-    // Check if the Event is reconstructed in UPC mode and RCT flag
-    if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronOk(collision))) {
-      return;
-    }
 
     int runIndex = getRunNumberIndex(collision.runNumber());
     int neutClass = getNeutronClass(collision);
+
+    histosQA.fill(HIST("Events/all/UPCmode"), collision.flags());
+    histosQA.fill(HIST("Events/all/GapSide"), collision.gapSide());
+    histosQA.fill(HIST("Events/all/TrueGapSide"), sgSelector.trueGap(collision, fv0Cut, ft0aCut, ft0cCut, 1e6));
+    histosQA.fill(HIST("Events/all/isCBTOk"), sgSelector.isCBTOk(collision));
+    histosQA.fill(HIST("Events/all/isCBTHadronOk"), sgSelector.isCBTHadronOk(collision));
+    histosQA.fill(HIST("Events/all/isCBTZdcOk"), sgSelector.isCBTZdcOk(collision));
+    histosQA.fill(HIST("Events/all/isCBTHadronZdcOk"), sgSelector.isCBTHadronZdcOk(collision));
+    histosQA.fill(HIST("Events/all/vertexX"), collision.posX());
+    histosQA.fill(HIST("Events/all/vertexY"), collision.posY());
+    histosQA.fill(HIST("Events/all/vertexZ"), collision.posZ());
+    histosQA.fill(HIST("Events/all/occupancy"), collision.occupancyInTime());
+    histosQA.fill(HIST("Events/all/FV0A"), collision.totalFV0AmplitudeA());
+    histosQA.fill(HIST("Events/all/FT0A"), collision.totalFT0AmplitudeA());
+    histosQA.fill(HIST("Events/all/FT0C"), collision.totalFT0AmplitudeC());
+    histosQA.fill(HIST("Events/all/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
+    histosQA.fill(HIST("Events/all/FDDA"), collision.totalFDDAmplitudeA());
+    histosQA.fill(HIST("Events/all/FDDC"), collision.totalFDDAmplitudeC());
+    histosQA.fill(HIST("Events/all/nPVContributors"), collision.numContrib());
+
+    if (!isGoodEvent(collision)) {
+      return;
+    }
 
     histosQA.fill(HIST("Events/selected/UPCmode"), collision.flags());
     histosQA.fill(HIST("Events/selected/GapSide"), collision.gapSide());
@@ -314,6 +344,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.fill(HIST("Events/selected/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
     histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
     histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
+    histosQA.fill(HIST("Events/selected/nPVContributors"), collision.numContrib());
 
     std::vector<decltype(tracks.begin())> selectedPionTracks;
     std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
@@ -350,7 +381,7 @@ struct ExclusiveRhoTo4Pi {
       histosKin.fill(HIST("all"), tVector.Pt(), tVector.Eta(), tVector.Phi());
 
       // Selecting good tracks
-      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsCrossedRowsCut)) {
+      if (!isGoodTrack(t0)) {
         continue;
       }
 
@@ -449,6 +480,7 @@ struct ExclusiveRhoTo4Pi {
       histosQA.fill(HIST("Events/4pion/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
       histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
+      histosQA.fill(HIST("Events/4pion/nPVContributors"), collision.numContrib());
 
       for (int i = 0; i < four; i++) {
         PxPyPzMVector tVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
@@ -590,7 +622,7 @@ struct ExclusiveRhoTo4Pi {
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
     // numContributors
-    if (collision.numContrib() != numPVContrib) {
+    if (collision.numContrib() > maxNpvContrib) {
       return;
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
@@ -601,13 +633,12 @@ struct ExclusiveRhoTo4Pi {
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 11);
   } // End of processCounter function
 
-  void processTrackCounter(soa::Filtered<UDCollisions>::iterator const& collision, UDtracks const& tracks)
+  void processTrackCounter(UDCollisions::iterator const& collision, UDtracks const& tracks)
   {
 
     int runIndex = getRunNumberIndex(collision.runNumber());
 
-    // Check if the Event is reconstructed in UPC mode
-    if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronZdcOk(collision))) {
+    if (!isGoodEvent(collision)) {
       return;
     }
 
@@ -722,16 +753,34 @@ struct ExclusiveRhoTo4Pi {
     } // End of loop over MC particles
   } // End of processMCgen function
 
-  void processMCrec(soa::Filtered<MCCollisions>::iterator const& collision, soa::Filtered<MCtracks> const& tracks)
+  void processMCrec(MCCollisions::iterator const& collision, MCtracks const& tracks)
   {
-
-    // Check if the Event is reconstructed in UPC mode and RCT flag
-    if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronOk(collision)) || (!collision.has_udMcCollision())) {
-      return;
-    }
 
     int runIndex = getRunNumberIndex(collision.runNumber());
     int neutClass = getNeutronClass(collision);
+
+    histosQA.fill(HIST("Events/all/UPCmode"), collision.flags());
+    histosQA.fill(HIST("Events/all/GapSide"), collision.gapSide());
+    histosQA.fill(HIST("Events/all/TrueGapSide"), sgSelector.trueGap(collision, fv0Cut, ft0aCut, ft0cCut, 1e6));
+    histosQA.fill(HIST("Events/all/isCBTOk"), sgSelector.isCBTOk(collision));
+    histosQA.fill(HIST("Events/all/isCBTHadronOk"), sgSelector.isCBTHadronOk(collision));
+    histosQA.fill(HIST("Events/all/isCBTZdcOk"), sgSelector.isCBTZdcOk(collision));
+    histosQA.fill(HIST("Events/all/isCBTHadronZdcOk"), sgSelector.isCBTHadronZdcOk(collision));
+    histosQA.fill(HIST("Events/all/vertexX"), collision.posX());
+    histosQA.fill(HIST("Events/all/vertexY"), collision.posY());
+    histosQA.fill(HIST("Events/all/vertexZ"), collision.posZ());
+    histosQA.fill(HIST("Events/all/occupancy"), collision.occupancyInTime());
+    histosQA.fill(HIST("Events/all/FV0A"), collision.totalFV0AmplitudeA());
+    histosQA.fill(HIST("Events/all/FT0A"), collision.totalFT0AmplitudeA());
+    histosQA.fill(HIST("Events/all/FT0C"), collision.totalFT0AmplitudeC());
+    histosQA.fill(HIST("Events/all/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
+    histosQA.fill(HIST("Events/all/FDDA"), collision.totalFDDAmplitudeA());
+    histosQA.fill(HIST("Events/all/FDDC"), collision.totalFDDAmplitudeC());
+    histosQA.fill(HIST("Events/all/nPVContributors"), collision.numContrib());
+
+    if ((!isGoodEvent(collision)) || (!collision.has_udMcCollision())) {
+      return;
+    }
 
     histosQA.fill(HIST("Events/selected/UPCmode"), collision.flags());
     histosQA.fill(HIST("Events/selected/GapSide"), collision.gapSide());
@@ -750,6 +799,7 @@ struct ExclusiveRhoTo4Pi {
     histosQA.fill(HIST("Events/selected/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
     histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
     histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
+    histosQA.fill(HIST("Events/selected/nPVContributors"), collision.numContrib());
 
     std::vector<decltype(tracks.begin())> selectedPionTracks;
     std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
@@ -761,8 +811,8 @@ struct ExclusiveRhoTo4Pi {
 
       // QA-Tracks before selection
       histosQA.fill(HIST("Tracks/all/isPVcontributor"), t0.isPVContributor());
-      histosQA.fill(HIST("Tracks/all/dcaXY"), t0.tpcChi2NCl());
-      histosQA.fill(HIST("Tracks/all/dcaZ"), t0.tpcChi2NCl());
+      histosQA.fill(HIST("Tracks/all/dcaXY"), t0.dcaXY());
+      histosQA.fill(HIST("Tracks/all/dcaZ"), t0.dcaZ());
       histosQA.fill(HIST("Tracks/all/itsChi2NCl"), t0.itsChi2NCl());
       histosQA.fill(HIST("Tracks/all/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
       histosQA.fill(HIST("Tracks/all/tpcChi2NCl"), t0.tpcChi2NCl());
@@ -786,10 +836,7 @@ struct ExclusiveRhoTo4Pi {
       histosKin.fill(HIST("all"), tVector.Pt(), tVector.Eta(), tVector.Phi());
 
       // Selecting good tracks
-      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsCrossedRowsCut)) {
-        continue;
-      }
-      if (!t0.has_udMcParticle()) {
+      if ((!isGoodTrack(t0)) || (!t0.has_udMcParticle())) {
         continue;
       }
 
@@ -888,6 +935,7 @@ struct ExclusiveRhoTo4Pi {
       histosQA.fill(HIST("Events/4pion/ZDC"), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC());
       histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
       histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
+      histosQA.fill(HIST("Events/4pion/nPVContributors"), collision.numContrib());
 
       for (int i = 0; i < four; i++) {
         PxPyPzMVector tVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
@@ -932,7 +980,7 @@ struct ExclusiveRhoTo4Pi {
       PxPyPzMVector p24 = p2 + p4;
 
       // Two Pion Mass combinations
-      histos4piKin.fill(HIST("two-pion"), p13.M(), p14.M(), p23.M(), p24.M(), p1234.M());
+      histos4piKin.fill(HIST("two-pion"), p1234.Pt(), p13.M(), p14.M(), p23.M(), p24.M(), p1234.M());
 
       double fourPiPhiPair1 = collinSoperPhi(p13, p1234);
       double fourPiPhiPair2 = collinSoperPhi(p14, p1234);
@@ -948,7 +996,6 @@ struct ExclusiveRhoTo4Pi {
       double mDiff14 = std::abs((p14.M() - mRho0));
       double mDiff23 = std::abs((p23.M() - mRho0));
       double mDiff24 = std::abs((p24.M() - mRho0));
-
       if ((mDiff13 < mDiff14) && (mDiff13 < mDiff23) && (mDiff13 < mDiff24)) {
         histos4piKin.fill(HIST("zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), fourPiCosThetaPair1, fourPiPhiPair1, runIndex, neutClass);
       } else if ((mDiff14 < mDiff13) && (mDiff14 < mDiff23) && (mDiff14 < mDiff24)) {
@@ -979,12 +1026,11 @@ struct ExclusiveRhoTo4Pi {
       }
       histos4piKin.fill(HIST("non-zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex, neutClass);
     } // End of Analysis for non 0 charge events
-  } // End of 4 Pion Analysis Process function for Pass5 MC
+  } // End of 4 Pion Analysis Process function for Pass5 Data
 
   void processEventCounterMC(MCCollisions::iterator const& collision)
   {
 
-    // Check if the Event has MC labels
     if (!collision.has_udMcCollision()) {
       return;
     }
@@ -1036,7 +1082,7 @@ struct ExclusiveRhoTo4Pi {
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
     // numContributors
-    if (collision.numContrib() != numPVContrib) {
+    if (collision.numContrib() > maxNpvContrib) {
       return;
     }
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
@@ -1047,22 +1093,23 @@ struct ExclusiveRhoTo4Pi {
     histosDataCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 11);
   } // End of processCounter function
 
-  void processTrackCounterMC(soa::Filtered<MCCollisions>::iterator const& collision, MCtracks const& tracks)
+  void processTrackCounterMC(MCCollisions::iterator const& collision, MCtracks const& tracks)
   {
 
     int runIndex = getRunNumberIndex(collision.runNumber());
 
-    // Check if the Event is reconstructed in UPC mode
-    if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronZdcOk(collision))) {
+    if (!collision.has_udMcCollision()) {
+      return;
+    }
+
+    if (!isGoodEvent(collision)) {
       return;
     }
 
     for (const auto& track : tracks) {
-
       if (!track.has_udMcParticle()) {
         continue;
       }
-
       // total tracks
       histosDataCounter.fill(HIST("TracksCounts_vs_runNo"), runIndex, 0);
 
@@ -1181,42 +1228,43 @@ struct ExclusiveRhoTo4Pi {
   }
 
   template <typename C>
-  int getNeutronClass(C const& coll)
+  bool isGoodEvent(C const& coll)
   {
 
-    bool aXn = coll.energyCommonZNA() > zdcMaxAmp && coll.timeZNA() < zdcMaxTime;
-    bool a0n = coll.energyCommonZNA() <= zdcMaxAmp;
-    bool cXn = coll.energyCommonZNC() > zdcMaxAmp && coll.timeZNC() < zdcMaxTime;
-    bool c0n = coll.energyCommonZNC() <= zdcMaxAmp;
-
-    if (aXn && cXn) {
-      return 1; // XnXn
-    } else if (aXn && c0n) {
-      return 2; // Xn0n
-    } else if (a0n && cXn) {
-      return 3; // 0nXn
-    } else if (a0n && c0n) {
-      return 4; // 0n0n
-    } else {
-      return 0; // undefined
+    // Check if the Event is reconstructed in UPC mode and passes RCT
+    if ((coll.flags() != ifUPC) || (!sgSelector.isCBTHadronZdcOk(coll))) {
+      return false;
     }
-  } // End of getting neutron class
+
+    // Vertex Z cut
+    if (std::abs(coll.posZ()) > vZCut) {
+      return false;
+    }
+
+    // FIT cuts
+    if ((coll.totalFV0AmplitudeA() > fv0Cut) || (coll.totalFT0AmplitudeA() > ft0aCut) || (coll.totalFT0AmplitudeC() > ft0cCut)) {
+      return false;
+    }
+
+    // BC selection
+    if ((coll.sbp() != sbpCut) || (coll.itsROFb() != itsROFbCut) || (coll.tfb() != tfbCut) || (coll.vtxITSTPC() != vtxITSTPCcut)) {
+      return false;
+    }
+
+    // Number of contributors to primary vertex
+    if (coll.numContrib() > maxNpvContrib) {
+      return false;
+    }
+
+    return true;
+  } // End of Good Event function
 
   template <typename T>
-  bool isSelectedTrack(T const& track,
-                       float ptcut,
-                       float etaCut,
-                       float dcaxycut,
-                       float dcazcut,
-                       bool ifITS,
-                       bool ifTPC,
-                       float itschi2nclscut,
-                       float tpcchi2nclscut,
-                       float tpcNClsCrossedRowscut)
+  bool isGoodTrack(T const& track)
   {
     PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
     // pt cut
-    if (trackVector.Pt() < ptcut) {
+    if (trackVector.Pt() < pTcut) {
       return false;
     }
     // eta cut
@@ -1224,34 +1272,34 @@ struct ExclusiveRhoTo4Pi {
       return false;
     }
     // DCA Z cut
-    if (std::fabs(track.dcaZ()) > dcazcut) {
+    if (std::fabs(track.dcaZ()) > dcaZcut) {
       return false;
     }
     // DCA XY cut
     float maxDCAxy = 0.0105 + 0.035 / std::pow(trackVector.Pt(), 1.1);
-    if (dcaxycut == 0 && (std::fabs(track.dcaXY()) > maxDCAxy)) {
+    if (dcaXYcut == 0 && (std::fabs(track.dcaXY()) > maxDCAxy)) {
       return false;
-    } else if (dcaxycut != 0 && (std::fabs(track.dcaXY()) > dcaxycut)) {
+    } else if (dcaXYcut != 0 && (std::fabs(track.dcaXY()) > dcaXYcut)) {
       return false;
     }
     // ITS Track only
-    if (ifITS && !track.hasITS()) {
+    if (useITStracksOnly && !track.hasITS()) {
       return false;
     }
     // TPC Track only
-    if (ifTPC && !track.hasTPC()) {
+    if (useTPCtracksOnly && !track.hasTPC()) {
       return false;
     }
     // ITS Chi2 per N Clusters cut
-    if (track.hasITS() && track.itsChi2NCl() > itschi2nclscut) {
+    if (track.hasITS() && track.itsChi2NCl() > itsChi2NClsCut) {
       return false;
     }
     // TPC Chi2 N Clusters cut
-    if (track.hasTPC() && track.tpcChi2NCl() > tpcchi2nclscut) {
+    if (track.hasTPC() && track.tpcChi2NCl() > tpcChi2NClsCut) {
       return false;
     }
     // TPC N Clusters Findable cut
-    if (track.hasTPC() && track.tpcNClsCrossedRows() < tpcNClsCrossedRowscut) {
+    if (track.hasTPC() && track.tpcNClsCrossedRows() < tpcNClsCrossedRowsCut) {
       return false;
     }
     if (useOnlyPVtracks && !track.isPVContributor()) {
@@ -1293,6 +1341,28 @@ struct ExclusiveRhoTo4Pi {
     }
   }
 
+  template <typename C>
+  int getNeutronClass(C const& coll)
+  {
+
+    bool aXn = coll.energyCommonZNA() > zdcMaxAmp && coll.timeZNA() < zdcMaxTime;
+    bool a0n = coll.energyCommonZNA() <= zdcMaxAmp;
+    bool cXn = coll.energyCommonZNC() > zdcMaxAmp && coll.timeZNC() < zdcMaxTime;
+    bool c0n = coll.energyCommonZNC() <= zdcMaxAmp;
+
+    if (aXn && cXn) {
+      return 1; // XnXn
+    } else if (aXn && c0n) {
+      return 2; // Xn0n
+    } else if (a0n && cXn) {
+      return 3; // 0nXn
+    } else if (a0n && c0n) {
+      return 4; // 0n0n
+    } else {
+      return 0; // undefined
+    }
+  } // End of getting neutron class
+
   int getRunNumberIndex(int runNumber)
   {
     for (int i = 0; i < numRunNums; ++i) {
@@ -1325,7 +1395,7 @@ struct ExclusiveRhoTo4Pi {
       "FT0A<=" + strFormat(fv0Cut),
       "FT0C<=" + strFormat(ft0cCut),
       "FV0A<=" + strFormat(ft0aCut),
-      "n PV Contrib = 4",
+      "n PV Contrib < " + std::to_string(maxNpvContrib),
       "V_{z} < " + strFormat(vZCut) + " cm"};
     int numEventCuts = 12;
 
@@ -1366,15 +1436,15 @@ struct ExclusiveRhoTo4Pi {
       h5->GetAxis(5)->SetBinLabel(i + 1, runLabel.c_str());
     }
 
-    h3->GetAxis(8)->SetBinLabel(1, "XnXn");
-    h3->GetAxis(8)->SetBinLabel(2, "Xn0n");
-    h3->GetAxis(8)->SetBinLabel(3, "0nXn");
-    h3->GetAxis(8)->SetBinLabel(4, "0n0n");
+    h3->GetAxis(8)->SetBinLabel(2, "XnXn");
+    h3->GetAxis(8)->SetBinLabel(3, "Xn0n");
+    h3->GetAxis(8)->SetBinLabel(4, "0nXn");
+    h3->GetAxis(8)->SetBinLabel(5, "0n0n");
 
-    h4->GetAxis(6)->SetBinLabel(1, "XnXn");
-    h4->GetAxis(6)->SetBinLabel(2, "Xn0n");
-    h4->GetAxis(6)->SetBinLabel(3, "0nXn");
-    h4->GetAxis(6)->SetBinLabel(4, "0n0n");
+    h4->GetAxis(6)->SetBinLabel(2, "XnXn");
+    h4->GetAxis(6)->SetBinLabel(3, "Xn0n");
+    h4->GetAxis(6)->SetBinLabel(4, "0nXn");
+    h4->GetAxis(6)->SetBinLabel(5, "0n0n");
 
   } // end of setHistBinLabels function
 
