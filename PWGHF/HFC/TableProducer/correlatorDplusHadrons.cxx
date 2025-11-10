@@ -433,12 +433,12 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(HfHelper::yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
           continue;
         }
-       // Remove D+ candidates for which at least one daughter has |eta| > 0.8
-          double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
-          double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
-          double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
-          if (std::abs(etaDaugh1) >= kEtaDaughtersMax || std::abs(etaDaugh2) >= kEtaDaughtersMax || std::abs(etaDaugh3) >= kEtaDaughtersMax) {
-            continue;
+        // Remove D+ candidates for which at least one daughter has |eta| > 0.8
+        double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
+        double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
+        double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
+        if (std::abs(etaDaugh1) >= kEtaDaughtersMax || std::abs(etaDaugh2) >= kEtaDaughtersMax || std::abs(etaDaugh3) >= kEtaDaughtersMax) {
+          continue;
         }
         // efficiency weight determination
         int const effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
@@ -501,7 +501,7 @@ struct HfCorrelatorDplusHadrons {
           if (!track.isGlobalTrackWoDCA()) {
             continue;
           }
-         // Removing Dplus daughters by checking track indices
+          // Removing Dplus daughters by checking track indices
           if (removeDaughters) {
             if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
               continue;
