@@ -85,9 +85,9 @@ struct HfTaskDplus {
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   // UPC gap determination thresholds
-  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", hf_upc::defaults::FT0AThreshold, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", hf_upc::defaults::FT0CThreshold, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcZDCThreshold{"upcZDCThreshold", hf_upc::defaults::ZDCThreshold, "ZDC energy threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcZDCThreshold{"upcZDCThreshold", 1.0f, "ZDC energy threshold for UPC gap determination (a.u.)"};
 
   HfEventSelection hfEvSel; // event selection and monitoring
 
