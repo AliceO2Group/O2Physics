@@ -755,9 +755,9 @@ struct doublephimeson {
       const double kpluspt = std::hypot(t.phid1Px(), t.phid1Py());
       const double kminuspt = std::hypot(t.phid2Px(), t.phid2Py());
       // PID QA before
-      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), t.phid1TPC(), t.phid1TOF(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t.phid1TPC(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t.phid2TPC(), kminus1pt);
+      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), t.phid1TPC(), t.phid1TOF(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t.phid1TPC(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t.phid2TPC(), kminuspt);
       if (t.phiMass() < minPhiMass1 || t.phiMass() > maxPhiMass1)
         continue;
       if (kpluspt > maxKaonPt || kminuspt > maxKaonPt)
@@ -767,10 +767,10 @@ struct doublephimeson {
       if (!selectionPID(t.phid2TPC(), t.phid2TOF(), t.phid2TOFHit(), strategyPID2, kminuspt))
         continue;
       // PID QA after
-      histos.fill(HIST("hnsigmaTPCTOFKaon"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonPlus"), t1.phid1TPC(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonMinus"), t1.phid2TPC(), kminus1pt);
-      histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());      
+      histos.fill(HIST("hnsigmaTPCTOFKaon"), t.phid1TPC(), t.phid1TOF(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonPlus"), t.phid1TPC(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonMinus"), t.phid2TPC(), kminuspt);
+
       ++phimult;
     }
     if (phimult < 2)
@@ -845,7 +845,7 @@ struct doublephimeson {
         continue;
 
       const auto id1 = t1.index();
-
+      histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
       for (auto const& t2 : phitracks) {
         const auto id2 = t2.index();
         if (id2 <= id1)
