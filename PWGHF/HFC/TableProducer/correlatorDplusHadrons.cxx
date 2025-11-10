@@ -182,7 +182,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
   static constexpr std::size_t NDaughters{3u};
-  static const float kEtaDaughtersMax{0.8f}; // Eta cut on daughters of D+ meson as Run2
+  static constexpr float kEtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
