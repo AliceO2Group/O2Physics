@@ -19,8 +19,8 @@
 #ifndef EVENTFILTERING_ZORRO_H_
 #define EVENTFILTERING_ZORRO_H_
 
-#include "ZorroHelper.h"
-#include "ZorroSummary.h"
+#include "EventFiltering/ZorroHelper.h"
+#include "EventFiltering/ZorroSummary.h"
 
 #include <CommonDataFormat/IRFrame.h>
 #include <Framework/HistogramRegistry.h>

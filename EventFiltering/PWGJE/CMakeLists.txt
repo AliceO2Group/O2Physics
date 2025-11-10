@@ -9,23 +9,17 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# Core event filtering workflows
-o2physics_add_dpl_workflow(central-event-filter-task
-    SOURCES cefpTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DataFormatsCTP
+o2physics_add_dpl_workflow(je-filter
+    SOURCES jetFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(selected-bc-range-task
-    SOURCES selectBCRange.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(je-hf-filter
+    SOURCES jetHFFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
-add_subdirectory(Core)
-# Add PWG-specific subdirectories
-add_subdirectory(PWGCF)
-add_subdirectory(PWGEM)
-add_subdirectory(PWGHF)
-add_subdirectory(PWGJE)
-add_subdirectory(PWGLF)
-add_subdirectory(PWGMM)
-add_subdirectory(PWGUD)
+o2physics_add_dpl_workflow(fje-filter
+    SOURCES fullJetFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib Boost::system
+    COMPONENT_NAME Analysis)

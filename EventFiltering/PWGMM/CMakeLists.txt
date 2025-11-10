@@ -9,23 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# Core event filtering workflows
-o2physics_add_dpl_workflow(central-event-filter-task
-    SOURCES cefpTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DataFormatsCTP
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(selected-bc-range-task
-    SOURCES selectBCRange.cxx
+o2physics_add_dpl_workflow(mult-filter
+    SOURCES multFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-
-add_subdirectory(Core)
-# Add PWG-specific subdirectories
-add_subdirectory(PWGCF)
-add_subdirectory(PWGEM)
-add_subdirectory(PWGHF)
-add_subdirectory(PWGJE)
-add_subdirectory(PWGLF)
-add_subdirectory(PWGMM)
-add_subdirectory(PWGUD)
