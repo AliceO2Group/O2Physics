@@ -160,7 +160,7 @@ bool selectV0ParticleDecay(T const& v0Particle, int v0ParticleDecaySelection = -
   return (v0Particle.decayFlag() & (1 << v0ParticleDecaySelection));
 }
 
-int initialiseV0ParticleDecaySelection(std::string v0ParticleDecaySelection)
+int initialiseV0ParticleDecaySelection(const std::string& v0ParticleDecaySelection)
 {
   if (v0ParticleDecaySelection == "K0sToPiPi") {
     return JV0ParticleDecays::K0sToPiPi;

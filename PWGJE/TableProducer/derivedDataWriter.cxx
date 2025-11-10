@@ -433,7 +433,7 @@ struct JetDerivedDataWriter {
   std::vector<int32_t> lcMcCollisionMapping;
   std::vector<int32_t> b0McCollisionMapping;
   std::vector<int32_t> bplusMcCollisionMapping;
-  std::vector<int32_t> dielectronMcCollisionMapping;
+  // std::vector<int32_t> dielectronMcCollisionMapping;
 
   void processBCs(soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionSelections> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs)
   {
@@ -672,8 +672,8 @@ struct JetDerivedDataWriter {
             }
           }
           int daughtersIds[2] = {-1, -1};
-          auto i = 0;
           if (particle.has_daughters()) {
+            auto i = 0;
             for (auto daughterId : particle.daughtersIds()) {
               if (i > 1) {
                 break;
@@ -885,8 +885,8 @@ struct JetDerivedDataWriter {
             DielectronMothersIds.push_back(particleMapping[DielectronMother.globalIndex()]);
           }
         }
-        auto i = 0;
         if (DielectronParticle.has_daughters()) {
+          auto i = 0;
           for (auto const& DielectronDaughter : DielectronParticle.template daughters_as<aod::JMcParticles>()) {
             if (i > 1) {
               break;

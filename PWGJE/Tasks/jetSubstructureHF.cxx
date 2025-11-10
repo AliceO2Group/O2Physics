@@ -200,8 +200,6 @@ struct JetSubstructureHFTask {
     fastjet::PseudoJet parentSubJet2;
     bool softDropped = false;
     auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
 
       bool isHFInSubjet1 = false;
@@ -234,8 +232,8 @@ struct JetSubstructureHFTask {
       thetaVec.push_back(theta);
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (!softDropped) {
-          zg = z;
-          rg = theta;
+          auto zg = z;
+          auto rg = theta;
           if constexpr (!isSubtracted && !isMCP) {
             registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
             registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);

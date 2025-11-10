@@ -82,7 +82,6 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<bool> doRhoMassSub{"doRhoMassSub", true, "perfom mass subtraction as well"};
 
   JetBkgSubUtils eventWiseConstituentSubtractor;
-  float bkgPhiMax_;
   std::vector<fastjet::PseudoJet> inputParticles;
   std::vector<fastjet::PseudoJet> tracksSubtracted;
   int trackSelection = -1;

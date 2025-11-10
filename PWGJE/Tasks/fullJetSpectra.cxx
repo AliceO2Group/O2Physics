@@ -121,7 +121,7 @@ struct FullJetSpectra {
   Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0, "minimum value of pTHat"};
 
   int trackSelection = -1;
-  const float kJetAreaFractionMinThreshold = -98.0f;
+  // const float kJetAreaFractionMinThreshold = -98.0f;
   const float kLeadingTrackPtMinThreshold = -98.0f;
   const float kLeadingTrackPtMaxThreshold = 9998.0f;
   const float kLeadingClusterPtMinThreshold = -98.0f;
@@ -775,7 +775,6 @@ struct FullJetSpectra {
   void fillJetHistograms(T const& jet, float weight = 1.0)
   {
     // float neutralEnergy = 0.0;
-    double sumtrackE = 0.0;
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_full_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_full_jet_eta"), jet.eta(), weight);
@@ -847,7 +846,7 @@ struct FullJetSpectra {
       registry.fill(HIST("h2_full_jet_nef_corr_oneTrack70"), jet.pt(), nef_corr_oneTrack70, weight);
       registry.fill(HIST("h2_full_jet_nef_corr_allTracks100"), jet.pt(), nef_corr_allTracks100, weight);
       registry.fill(HIST("h2_full_jet_nef_corr_allTracks70"), jet.pt(), nef_corr_allTracks70, weight);
-
+      double sumtrackE = 0;
       for (const auto& jettrack : jet.template tracks_as<aod::JetTracks>()) {
         sumtrackE += jettrack.energy();
 
@@ -871,8 +870,8 @@ struct FullJetSpectra {
   template <typename T>
   void fillRejectedJetHistograms(T const& jet, float weight = 1.0)
   {
-    float neutralEnergy = 0.0;
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
+      float neutralEnergy = 0.0;
       for (const auto& cluster : jet.template clusters_as<ClusterWithCorrections>()) {
         neutralEnergy += cluster.energy();
       }
@@ -884,12 +883,6 @@ struct FullJetSpectra {
   template <typename T>
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
-    float neutralEnergy = 0.0;
-    int neutralconsts = 0;
-    int chargedconsts = 0;
-    int mcpjetOutsideFid = 0;
-    int mcpjetInsideFid = 0;
-
     auto isInFiducial = [&](auto const& jet) {
       return jet.eta() >= jetEtaMin && jet.eta() <= jetEtaMax &&
              jet.phi() >= jetPhiMin && jet.phi() <= jetPhiMax;
@@ -905,18 +898,19 @@ struct FullJetSpectra {
 
       if (!isInFiducial(jet)) {
         // jet is outside
-        mcpjetOutsideFid++;
-        registry.fill(HIST("h2_full_mcpjetOutsideFiducial_pt"), jet.pt(), mcpjetOutsideFid, weight);
+        registry.fill(HIST("h2_full_mcpjetOutsideFiducial_pt"), jet.pt(), 1, weight);
         registry.fill(HIST("h_full_mcpjetOutside_eta_part"), jet.eta(), weight);
         registry.fill(HIST("h_full_mcpjetOutside_phi_part"), jet.phi(), weight);
       } else {
         // jet is inside
-        mcpjetInsideFid++;
-        registry.fill(HIST("h2_full_mcpjetInsideFiducial_pt"), jet.pt(), mcpjetInsideFid, weight);
+        registry.fill(HIST("h2_full_mcpjetInsideFiducial_pt"), jet.pt(), 1, weight);
         registry.fill(HIST("h_full_mcpjetInside_eta_part"), jet.eta(), weight);
         registry.fill(HIST("h_full_mcpjetInside_phi_part"), jet.phi(), weight);
       }
 
+      float neutralEnergy = 0.0;
+      int neutralconsts = 0;
+      int chargedconsts = 0;
       for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
         auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
         if (pdgParticle->Charge() == 0) {
@@ -2177,9 +2171,7 @@ struct FullJetSpectra {
     // std::cout << "******************************************** " << std::endl;
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets"), selectedJets.size(), 1.0);
 
@@ -2346,9 +2338,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets"), selectedJets.size(), 1.0);
 
@@ -2506,8 +2496,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets"), selectedJets.size(), eventWeight);
 
@@ -2669,9 +2658,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets_part"), selectedJets.size(), 1.0);
 
@@ -2833,9 +2820,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets_part"), selectedJets.size(), mccollision.weight());
 

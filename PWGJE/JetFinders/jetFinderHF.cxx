@@ -157,7 +157,6 @@ struct JetFinderHFTask {
     } else {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
     }
-    std::vector<double> jetPtBins;
     int jetPtMaxInt = static_cast<int>(jetPtMax);
     int jetPtMinInt = static_cast<int>(jetPtMin);
     jetPtMinInt = (jetPtMinInt / jetPtBinWidth) * jetPtBinWidth;

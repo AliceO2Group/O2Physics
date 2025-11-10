@@ -144,7 +144,7 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
  */
 
 template <typename T, typename U>
-void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, std::vector<double> trackingEfficiency, std::vector<double> trackingEfficiencyPtBinning, U const& candidates)
+void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, const std::vector<double>& trackingEfficiency, const std::vector<double>& trackingEfficiencyPtBinning, U const& candidates)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -312,8 +312,8 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       if (fillThnSparse) {
         thnSparseJet->Fill(R, jet.pt(), jet.eta(), jet.phi()); // important for normalisation in V0Jet analyses to store all jets, including those that aren't V0s
       }
-      bool isCandidateJet = false;
       if (doCandidateJetFinding) {
+        bool isCandidateJet = false;
         for (const auto& constituent : jet.constituents()) {
           auto constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
           if (constituentStatus == static_cast<int>(JetConstituentStatus::candidate)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
@@ -357,7 +357,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
  * @param candidate optional hf candidiate
  */
 template <bool checkIsDaughter, typename T, typename U>
-void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std::string& particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
 {
   for (auto& particle : particles) {
     if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?

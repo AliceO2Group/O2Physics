@@ -419,8 +419,8 @@ struct JetDerivedDataProducerTask {
       }
     }
     int daughtersId[2] = {-1, -1};
-    auto i = 0;
     if (particle.has_daughters()) {
+      auto i = 0;
       for (auto daughterId : particle.daughtersIds()) {
         if (i > 1) {
           break;
@@ -443,13 +443,11 @@ struct JetDerivedDataProducerTask {
 
       float leadingCellEnergy = -1.0;
       float subleadingCellEnergy = -1.0;
-      float cellAmplitude = -1.0;
       int leadingCellNumber = -1;
       int subleadingCellNumber = -1;
-      int cellNumber = -1;
       for (auto const& clutserCell : clusterCells) {
-        cellAmplitude = clutserCell.calo().amplitude();
-        cellNumber = clutserCell.calo().cellNumber();
+        float cellAmplitude = clutserCell.calo().amplitude();
+        int cellNumber = clutserCell.calo().cellNumber();
         if (cellAmplitude > subleadingCellEnergy) {
           subleadingCellEnergy = cellAmplitude;
           subleadingCellNumber = cellNumber;
@@ -779,8 +777,8 @@ struct JetDerivedDataProducerTask {
           }
         }
         int daughtersId[2] = {-1, -1};
-        auto i = 0;
         if (particle.has_daughters()) {
+          auto i = 0;
           for (auto daughterId : particle.daughtersIds()) {
             if (i > 1) {
               break;
@@ -833,8 +831,8 @@ struct JetDerivedDataProducerTask {
           }
         }
         int daughtersId[2] = {-1, -1};
-        auto i = 0;
         if (particle.has_daughters()) {
+          auto i = 0;
           for (auto daughterId : particle.daughtersIds()) {
             if (i > 1) {
               break;

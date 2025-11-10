@@ -282,7 +282,7 @@ bool selectDielectronParticleDecay(T const& dielectronParticle, int dielectronPa
   return (dielectronParticle.decayFlag() & (1 << dielectronParticleDecaySelection));
 }
 
-int initialiseDielectronParticleDecaySelection(std::string dielectronParticleDecaySelection)
+int initialiseDielectronParticleDecaySelection(const std::string& dielectronParticleDecaySelection)
 {
   if (dielectronParticleDecaySelection == "JPsiToEE") {
     return JDielectronParticleDecays::JPsiToEE;

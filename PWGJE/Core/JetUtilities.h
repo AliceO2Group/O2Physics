@@ -172,9 +172,6 @@ std::tuple<double, double> estimateRhoPerpCone(const T& inputParticles, const U&
   double perpMdDensity1 = 0;
   double perpMdDensity2 = 0;
 
-  double dPhi1 = 999.;
-  double dPhi2 = 999.;
-  double dEta = 999.;
   double PerpendicularConeAxisPhi1 = 999., PerpendicularConeAxisPhi2 = 999.;
 
   // build 2 perp cones in phi around the leading jet (right and left of the jet)
@@ -183,11 +180,11 @@ std::tuple<double, double> estimateRhoPerpCone(const T& inputParticles, const U&
 
   for (auto& particle : inputParticles) {
     // sum the momentum of all paricles that fill the two cones
-    dPhi1 = particle.phi() - PerpendicularConeAxisPhi1;
+    double dPhi1 = particle.phi() - PerpendicularConeAxisPhi1;
     dPhi1 = RecoDecay::constrainAngle<double, double>(dPhi1, -M_PI); // This will contrain the angel between -pi & Pi
-    dPhi2 = particle.phi() - PerpendicularConeAxisPhi2;
+    double dPhi2 = particle.phi() - PerpendicularConeAxisPhi2;
     dPhi2 = RecoDecay::constrainAngle<double, double>(dPhi2, -M_PI); // This will contrain the angel between -pi & Pi
-    dEta = jet.eta() - particle.eta();                               // The perp cone eta is the same as the leading jet since the cones are perpendicular only in phi
+    double dEta = jet.eta() - particle.eta();                        // The perp cone eta is the same as the leading jet since the cones are perpendicular only in phi
     if (TMath::Sqrt(dPhi1 * dPhi1 + dEta * dEta) <= static_cast<double>(perpConeR)) {
       perpPtDensity1 += particle.perp();
       perpMdDensity1 += TMath::Sqrt(particle.m() * particle.m() + particle.pt() * particle.pt()) - particle.pt();
