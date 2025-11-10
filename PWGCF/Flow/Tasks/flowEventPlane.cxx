@@ -18,7 +18,8 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -140,11 +141,11 @@ struct FlowEventPlane {
   std::map<CorrectionType, std::vector<std::vector<std::string>>> corrTypeHistNameMap = {{kFineCorr, vFineCorrHistNames}, {kCoarseCorr, vCoarseCorrHistNames}};
 
   // Container for histograms
-  struct CorrHistContainer {
+  struct CorrectionHistContainer {
     TH2F* hGainCalib;
     std::array<std::array<THnSparseF*, 1>, 4> vCoarseCorrHist;
     std::array<std::array<TProfile*, 4>, 4> vFineCorrHist;
-  } CorrHistContainer;
+  } CorrectionHistContainer;
 
   // Run number
   int cRunNum = 0, lRunNum = 0;
@@ -336,12 +337,12 @@ struct FlowEventPlane {
       auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
 
       // Store histogram in container
-      CorrHistContainer.hGainCalib = reinterpret_cast<TH2F*>(ccdbObj->FindObject(histName));
+      CorrectionHistContainer.hGainCalib = reinterpret_cast<TH2F*>(ccdbObj->FindObject(histName));
     }
 
     float v = 0.;
     for (int i = 0; i < static_cast<int>(energy.size()); ++i) {
-      v = CorrHistContainer.hGainCalib->GetBinContent(CorrHistContainer.hGainCalib->FindBin(i + 0.5, vz + 0.00001));
+      v = CorrectionHistContainer.hGainCalib->GetBinContent(CorrectionHistContainer.hGainCalib->FindBin(i + 0.5, vz + 0.00001));
       energy[i] *= v;
     }
   }
@@ -352,7 +353,7 @@ struct FlowEventPlane {
     int binarray[4];
     if (corrType == kCoarseCorr) {
       int cntrx = 0;
-      for (auto const& v : CorrHistContainer.vCoarseCorrHist) {
+      for (auto const& v : CorrectionHistContainer.vCoarseCorrHist) {
         for (auto const& h : v) {
           binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent] + 0.0001);
           binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx] + 0.0001);
@@ -364,7 +365,7 @@ struct FlowEventPlane {
       }
     } else {
       int cntrx = 0;
-      for (auto const& v : CorrHistContainer.vFineCorrHist) {
+      for (auto const& v : CorrectionHistContainer.vFineCorrHist) {
         int cntry = 0;
         for (auto const& h : v) {
           vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry] + 0.0001));
@@ -418,9 +419,9 @@ struct FlowEventPlane {
           int cntry = 0;
           for (auto const& y : x) {
             if (corrType == kFineCorr) {
-              CorrHistContainer.vFineCorrHist[cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+              CorrectionHistContainer.vFineCorrHist[cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
             } else {
-              CorrHistContainer.vCoarseCorrHist[cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
+              CorrectionHistContainer.vCoarseCorrHist[cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
             }
             ++cntry;
           }
