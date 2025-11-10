@@ -108,6 +108,7 @@ class VarManager : public TObject
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
     RapidityGapFilter = BIT(21),
+    ReducedFit = BIT(22),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -418,6 +419,39 @@ class VarManager : public TObject
     kTimeZNC,
     kTimeZPA,
     kTimeZPC,
+    kAmplitudeFT0A,
+    kAmplitudeFT0C,
+    kTimeFT0A,
+    kTimeFT0C,
+    kTriggerMaskFT0,
+    kNFiredChannelsFT0A,
+    kNFiredChannelsFT0C,
+    kAmplitudeFDDA,
+    kAmplitudeFDDC,
+    kTimeFDDA,
+    kTimeFDDC,
+    kTriggerMaskFDD,
+    kNFiredChannelsFDDA,
+    kNFiredChannelsFDDC,
+    kAmplitudeFV0A,
+    kTimeFV0A,
+    kTriggerMaskFV0A,
+    kNFiredChannelsFV0A,
+    kBBFT0Apf,
+    kBGFT0Apf,
+    kBBFT0Cpf,
+    kBGFT0Cpf,
+    kBBFV0Apf,
+    kBGFV0Apf,
+    kBBFDDApf,
+    kBGFDDApf,
+    kBBFDDCpf,
+    kBGFDDCpf,
+    kDistClosestBcTOR,
+    kDistClosestBcTSC,
+    kDistClosestBcTVX,
+    kDistClosestBcV0A,
+    kDistClosestBcT0A,
     kQ2X0A1,
     kQ2X0A2,
     kQ2Y0A1,
@@ -1208,6 +1242,8 @@ class VarManager : public TObject
   static void FillDileptonTrackTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track1, T1 const& track2, float* values);
   template <typename T>
   static void FillZDC(const T& zdc, float* values = nullptr);
+  template <typename TBCs, typename TFT0s, typename TFDDs, typename TFV0As>
+  static void FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t>>& bcMap, TBCs const& bcs, TFT0s const& ft0s, TFDDs const& fdds, TFV0As const& fv0as, float* values = nullptr);
   template <typename T>
   static void FillBdtScore(const T& bdtScore, float* values = nullptr);
 
@@ -5213,6 +5249,107 @@ void VarManager::FillZDC(T const& zdc, float* values)
   values[kTimeZNC] = zdc.timeZNC();
   values[kTimeZPA] = zdc.timeZPA();
   values[kTimeZPC] = zdc.timeZPC();
+}
+
+template <typename TBCs, typename TFT0s, typename TFDDs, typename TFV0As>
+void VarManager::FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t>>& bcMap, TBCs const& bcs, TFT0s const& /*ft0s*/, TFDDs const& /*fdds*/, TFV0As const& /*fv0as*/, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // Initialize all FIT variables to default values
+  values[kAmplitudeFT0A] = -1.f;
+  values[kAmplitudeFT0C] = -1.f;
+  values[kTimeFT0A] = -999.f;
+  values[kTimeFT0C] = -999.f;
+  values[kTriggerMaskFT0] = 0;
+  values[kNFiredChannelsFT0A] = 0;
+  values[kNFiredChannelsFT0C] = 0;
+  values[kAmplitudeFDDA] = -1.f;
+  values[kAmplitudeFDDC] = -1.f;
+  values[kTimeFDDA] = -999.f;
+  values[kTimeFDDC] = -999.f;
+  values[kTriggerMaskFDD] = 0;
+  values[kNFiredChannelsFDDA] = 0;
+  values[kNFiredChannelsFDDC] = 0;
+  values[kAmplitudeFV0A] = -1.f;
+  values[kTimeFV0A] = -999.f;
+  values[kTriggerMaskFV0A] = 0;
+  values[kNFiredChannelsFV0A] = 0;
+  values[kBBFT0Apf] = 0;
+  values[kBGFT0Apf] = 0;
+  values[kBBFT0Cpf] = 0;
+  values[kBGFT0Cpf] = 0;
+  values[kBBFV0Apf] = 0;
+  values[kBGFV0Apf] = 0;
+  values[kBBFDDApf] = 0;
+  values[kBGFDDApf] = 0;
+  values[kBBFDDCpf] = 0;
+  values[kBGFDDCpf] = 0;
+  values[kDistClosestBcTOR] = 999;
+  values[kDistClosestBcTSC] = 999;
+  values[kDistClosestBcTVX] = 999;
+  values[kDistClosestBcV0A] = 999;
+  values[kDistClosestBcT0A] = 999;
+
+  // Find the BC entry for midbc
+  auto it = std::find_if(bcMap.begin(), bcMap.end(),
+                         [midbc](const std::pair<uint64_t, int64_t>& p) { return p.first == midbc; });
+
+  if (it != bcMap.end()) {
+    auto bcId = it->second;
+    auto bcEntry = bcs.iteratorAt(bcId);
+
+    // Fill FT0 information
+    if (bcEntry.has_foundFT0()) {
+      auto ft0 = bcEntry.foundFT0();
+      values[kTimeFT0A] = ft0.timeA();
+      values[kTimeFT0C] = ft0.timeC();
+      const auto& ampsA = ft0.amplitudeA();
+      const auto& ampsC = ft0.amplitudeC();
+      values[kAmplitudeFT0A] = 0.f;
+      for (auto amp : ampsA)
+        values[kAmplitudeFT0A] += amp;
+      values[kAmplitudeFT0C] = 0.f;
+      for (auto amp : ampsC)
+        values[kAmplitudeFT0C] += amp;
+      values[kNFiredChannelsFT0A] = ft0.channelA().size();
+      values[kNFiredChannelsFT0C] = ft0.channelC().size();
+      values[kTriggerMaskFT0] = ft0.triggerMask();
+    }
+
+    // Fill FV0A information
+    if (bcEntry.has_foundFV0()) {
+      auto fv0a = bcEntry.foundFV0();
+      values[kTimeFV0A] = fv0a.time();
+      const auto& amps = fv0a.amplitude();
+      values[kAmplitudeFV0A] = 0.f;
+      for (auto amp : amps)
+        values[kAmplitudeFV0A] += amp;
+      values[kTriggerMaskFV0A] = fv0a.triggerMask();
+    }
+
+    // Fill FDD information
+    if (bcEntry.has_foundFDD()) {
+      auto fdd = bcEntry.foundFDD();
+      values[kTimeFDDA] = fdd.timeA();
+      values[kTimeFDDC] = fdd.timeC();
+      const auto& ampsA = fdd.chargeA();
+      const auto& ampsC = fdd.chargeC();
+      values[kAmplitudeFDDA] = 0.f;
+      for (auto amp : ampsA)
+        values[kAmplitudeFDDA] += amp;
+      values[kAmplitudeFDDC] = 0.f;
+      for (auto amp : ampsC)
+        values[kAmplitudeFDDC] += amp;
+      values[kTriggerMaskFDD] = fdd.triggerMask();
+    }
+  }
+
+  // Fill pileup flags and distances to closest BCs
+  // This requires scanning nearby BCs - simplified version for now
+  // Full implementation would need the complete BC range similar to PWGUD processFITInfo
 }
 
 template <typename T1, typename T2>

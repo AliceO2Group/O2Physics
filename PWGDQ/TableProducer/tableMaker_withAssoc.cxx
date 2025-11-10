@@ -131,6 +131,7 @@ constexpr static uint32_t gkEventFillMapWithMultsZdc = VarManager::ObjTypes::BC 
 constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter;
 constexpr static uint32_t gkEventFillMapWithMultsEventFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter | VarManager::ObjTypes::Zdc;
 constexpr static uint32_t gkEventFillMapWithMultsRapidityGapFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::RapidityGapFilter | VarManager::ObjTypes::Zdc;
+constexpr static uint32_t gkEventFillMapWithMultsRapidityGapFilterZdcFit = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::RapidityGapFilter | VarManager::ObjTypes::Zdc | VarManager::ObjTypes::ReducedFit;
 // constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
@@ -167,6 +168,7 @@ struct TableMaker {
   Produces<ReducedEventsVtxCov> eventVtxCov;
   Produces<ReducedEventsInfo> eventInfo;
   Produces<ReducedZdcs> zdc;
+  Produces<ReducedFITs> fit;
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
@@ -861,6 +863,56 @@ struct TableMaker {
           VarManager::FillZDC(bc_zdc);
         }
       }
+      // Fill FIT info using newbc pattern for UPC events (similar to ZDC)
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedFit) > 0) {
+        if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
+          // The DQRapidityGapFilter contains the index of the bc we want to get FIT info from
+          auto newbc = bcs.rawIteratorAt(collision.newBcIndex());
+          // Fill FIT information from newbc
+          if (newbc.has_foundFT0()) {
+            auto ft0 = newbc.foundFT0();
+            VarManager::fgValues[VarManager::kTimeFT0A] = ft0.timeA();
+            VarManager::fgValues[VarManager::kTimeFT0C] = ft0.timeC();
+            const auto& ampsA = ft0.amplitudeA();
+            const auto& ampsC = ft0.amplitudeC();
+            VarManager::fgValues[VarManager::kAmplitudeFT0A] = 0.f;
+            for (auto amp : ampsA)
+              VarManager::fgValues[VarManager::kAmplitudeFT0A] += amp;
+            VarManager::fgValues[VarManager::kAmplitudeFT0C] = 0.f;
+            for (auto amp : ampsC)
+              VarManager::fgValues[VarManager::kAmplitudeFT0C] += amp;
+            VarManager::fgValues[VarManager::kNFiredChannelsFT0A] = ft0.channelA().size();
+            VarManager::fgValues[VarManager::kNFiredChannelsFT0C] = ft0.channelC().size();
+            VarManager::fgValues[VarManager::kTriggerMaskFT0] = ft0.triggerMask();
+          }
+          if (newbc.has_foundFV0()) {
+            auto fv0a = newbc.foundFV0();
+            VarManager::fgValues[VarManager::kTimeFV0A] = fv0a.time();
+            const auto& amps = fv0a.amplitude();
+            VarManager::fgValues[VarManager::kAmplitudeFV0A] = 0.f;
+            for (auto amp : amps)
+              VarManager::fgValues[VarManager::kAmplitudeFV0A] += amp;
+            VarManager::fgValues[VarManager::kNFiredChannelsFV0A] = fv0a.channel().size();
+            VarManager::fgValues[VarManager::kTriggerMaskFV0A] = fv0a.triggerMask();
+          }
+          if (newbc.has_foundFDD()) {
+            auto fdd = newbc.foundFDD();
+            VarManager::fgValues[VarManager::kTimeFDDA] = fdd.timeA();
+            VarManager::fgValues[VarManager::kTimeFDDC] = fdd.timeC();
+            const auto& ampsA = fdd.chargeA();
+            const auto& ampsC = fdd.chargeC();
+            VarManager::fgValues[VarManager::kAmplitudeFDDA] = 0.f;
+            for (auto amp : ampsA)
+              VarManager::fgValues[VarManager::kAmplitudeFDDA] += amp;
+            VarManager::fgValues[VarManager::kAmplitudeFDDC] = 0.f;
+            for (auto amp : ampsC)
+              VarManager::fgValues[VarManager::kAmplitudeFDDC] += amp;
+            VarManager::fgValues[VarManager::kNFiredChannelsFDDA] = fdd.channelA().size();
+            VarManager::fgValues[VarManager::kNFiredChannelsFDDC] = fdd.channelC().size();
+            VarManager::fgValues[VarManager::kTriggerMaskFDD] = fdd.triggerMask();
+          }
+        }
+      }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
         auto groupedTrackIndices = trackAssocs.sliceBy(trackIndicesPerCollision, collision.globalIndex());
         VarManager::FillEventTrackEstimators<TTrackFillMap>(collision, groupedTrackIndices, tracks);
@@ -967,6 +1019,37 @@ struct TableMaker {
         } else {
           zdc(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);
         }
+      }
+      // Fill FIT table if requested
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedFit) > 0) {
+        fit(VarManager::fgValues[VarManager::kAmplitudeFT0A], VarManager::fgValues[VarManager::kAmplitudeFT0C],
+            VarManager::fgValues[VarManager::kTimeFT0A], VarManager::fgValues[VarManager::kTimeFT0C],
+            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFT0]),
+            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0A]),
+            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0C]),
+            VarManager::fgValues[VarManager::kAmplitudeFDDA], VarManager::fgValues[VarManager::kAmplitudeFDDC],
+            VarManager::fgValues[VarManager::kTimeFDDA], VarManager::fgValues[VarManager::kTimeFDDC],
+            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFDD]),
+            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFDDA]),
+            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFDDC]),
+            VarManager::fgValues[VarManager::kAmplitudeFV0A], VarManager::fgValues[VarManager::kTimeFV0A],
+            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFV0A]),
+            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFV0A]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Apf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Apf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Cpf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Cpf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFV0Apf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFV0Apf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDApf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDApf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDCpf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDCpf]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kDistClosestBcTOR]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kDistClosestBcTSC]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kDistClosestBcTVX]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kDistClosestBcV0A]),
+            static_cast<int32_t>(VarManager::fgValues[VarManager::kDistClosestBcT0A]));
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
