@@ -41,12 +41,12 @@
 
 #include <TH1.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <algorithm>
 
 #include <math.h>
 
@@ -249,7 +249,6 @@ struct FullJetSpectra {
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(14, "EMCAcceptedDetTrigCollWithLowChargedJetTriggers");
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(15, "EMCAcceptedDetTrigCollWithHighChargedJetTriggers");
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(16, "EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers");
-
     }
 
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
@@ -1215,7 +1214,7 @@ struct FullJetSpectra {
     //   registry.fill(HIST("hDetTrigcollisionCounter"), 11.5); // AllRejectedTrigOverlaps
     //   return;
     // }
-    if ((hasFullJetHighPt && hasFullJetLowPt )) {
+    if ((hasFullJetHighPt && hasFullJetLowPt)) {
       registry.fill(HIST("hDetTrigcollisionCounter"), 9.5); // AllRejectedTrigOverlaps
       return;
     }
@@ -1231,7 +1230,6 @@ struct FullJetSpectra {
       return;
     }
     registry.fill(HIST("hDetTrigcollisionCounter"), 12.5); // EMCAcceptedDetTrigColl
-
 
     if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
       registry.fill(HIST("hDetTrigcollisionCounter"), 13.5); // EMCAcceptedDetTrigCollWithLowChargedJetTriggers
