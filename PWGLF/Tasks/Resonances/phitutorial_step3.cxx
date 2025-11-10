@@ -187,6 +187,7 @@ struct phitutorial_step3 {
 
   void processDataMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks) // notice the collisions subscrition, it is not an iterator here!
   {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
 
     for (const auto& [c1, tracks1, c2, tracks2] : pair) {
 
