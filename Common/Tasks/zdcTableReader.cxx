@@ -130,7 +130,7 @@ struct ZDCLIAnalysis {
       auto centrFT0A = zdc.centralityFt0a();
       auto centrFT0M = zdc.centralityFt0m();
       auto timestamp = zdc.timestamp();
-      //auto selectionBits = zdc.selectionBits();
+      // auto selectionBits = zdc.selectionBits();
 
       if ((useZvtx && (zvtx < zVval)) || !useZvtx) {
         registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
