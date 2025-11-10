@@ -68,6 +68,7 @@ namespace o2::aod
 {
 namespace dqanalysisflags
 {
+DECLARE_SOA_COLUMN(MixingHash, mixingHash, int);                                     //! Hash used in event mixing //need to understand
 DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 32);                     //! Event decision
 DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelected, isBarrelSelected, 32);                   //! Barrel track decisions
 DECLARE_SOA_COLUMN(BarrelAmbiguityInBunch, barrelAmbiguityInBunch, int8_t);          //! Barrel track in-bunch ambiguity
@@ -163,6 +164,7 @@ DECLARE_SOA_COLUMN(OniaVtxZ, oniaVtxZ, float);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
+DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASHA", dqanalysisflags::MixingHash);                                                            //!  joinable to ReducedEvents
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected);                                                    //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::BarrelAmbiguityInBunch, dqanalysisflags::BarrelAmbiguityOutOfBunch); //!  joinable to ReducedBarrelTracks
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc
@@ -201,6 +203,7 @@ using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsE
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
+using MyEventsVtxCovHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels, aod::MixingHashes>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelLabels>;
@@ -244,8 +247,9 @@ void PrintBitMap(TMap map, int nbits)
 // Analysis task that produces event decisions and the Hash table used in event mixing
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
+  Produces<aod::MixingHashes> hash;
   OutputObj<THashList> fOutputList{"output"};
-
+  Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
@@ -261,6 +265,8 @@ struct AnalysisEventSelection {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramManager* fHistMan = nullptr;
+  MixingHandler* fMixHandler = nullptr;
+
   AnalysisCompositeCut* fEventCut;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -311,6 +317,16 @@ struct AnalysisEventSelection {
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
+    TString mixVarsString = fConfigMixingVariables.value;
+    std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
+    if (objArray->GetEntries() > 0) {
+      fMixHandler = new MixingHandler("mixingHandler", "mixing handler");
+      fMixHandler->Init();
+      for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+        dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
+      }
+    }
+
     fCurrentRun = -1;
     fCCDB->setURL(fConfigCcdbUrl.value);
     fCCDB->setCaching(true);
@@ -358,6 +374,10 @@ struct AnalysisEventSelection {
       } else {
         auto& evIndices = fBCCollMap[event.globalBC()];
         evIndices.push_back(event.globalIndex());
+      }
+      if (fMixHandler != nullptr) {
+        int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
+        hash(hh);
       }
     }
 
@@ -1733,10 +1753,10 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
   void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
   {
-    // if (events.size() == 0) {
-    //   LOG(warning) << "No events in this TF, going to the next one ...";
-    //   return;
-    // }
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
     if (fCurrentRun != events.begin().runNumber()) {
       initParamsFromCCDB(events.begin().timestamp(), TTwoProngFitter);
       fCurrentRun = events.begin().runNumber();
@@ -3529,7 +3549,9 @@ struct AnalysisDileptonTrack {
   Configurable<float> fConfigDileptonpTCut{"cfgDileptonpTCut", 0.0, "pT cut for dileptons used in the triplet vertexing"};
   Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
-
+  Configurable<float> fConfigDileptonLowpTCut{"cfgDileptonLowpTCut", 0.0, "Low pT cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonHighpTCut{"cfgDileptonHighpTCut", 1E5, "High pT cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonRapCutAbs{"cfgDileptonRapCutAbs", 1.0, "Rap cut for dileptons used in the triplet vertexing"};
   Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
@@ -3552,6 +3574,8 @@ struct AnalysisDileptonTrack {
   Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 1.0f, "minimum pt for the hadron"};
   Configurable<float> fConfigMCGenDileptonLegEtaAbs{"cfgMCGenDileptonLegEtaAbs", 0.9f, "eta abs range for the dilepton leg"};
   Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
+  Configurable<bool> fConfigUseMCRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing(reconstructed)"};
+  Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;
@@ -3571,7 +3595,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonLowpTCut&& aod::reducedpair::pt<fConfigDileptonHighpTCut && aod::reducedpair::mass> fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
@@ -3585,6 +3609,8 @@ struct AnalysisDileptonTrack {
   std::vector<MCSignal*> fRecMCSignals;
   std::vector<MCSignal*> fGenMCSignals;
 
+  NoBinningPolicy<aod::dqanalysisflags::MixingHash> fHashBin;
+
   void init(o2::framework::InitContext& context)
   {
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
@@ -3592,6 +3618,8 @@ struct AnalysisDileptonTrack {
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isMCGen = context.mOptions.get<bool>("processMCGen") || context.mOptions.get<bool>("processMCGenWithEventSelection");
     bool isDummy = context.mOptions.get<bool>("processDummy");
+    bool isMCGen_energycorrelators = context.mOptions.get<bool>("processMCGenEnergyCorrelators") || context.mOptions.get<bool>("processMCGenEnergyCorrelatorsPion");
+    bool isMCGen_energycorrelatorsME = context.mOptions.get<bool>("processMCGenEnergyCorrelatorsME") || context.mOptions.get<bool>("processMCGenEnergyCorrelatorsPionME");
 
     if (isDummy) {
       if (isBarrel || isMuon || isBarrelAsymmetric || isMCGen) {
@@ -3879,6 +3907,18 @@ struct AnalysisDileptonTrack {
       }
     }
 
+    if (isMCGen_energycorrelators) {
+      for (auto& sig : fGenMCSignals) {
+        DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelators_%s", sig->GetName()), "");
+      }
+    }
+
+    if (isMCGen_energycorrelatorsME) {
+      for (auto& sig : fGenMCSignals) {
+        DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelatorsME_%s", sig->GetName()), "");
+      }
+    }
+
     TString addHistsStr = fConfigAddJSONHistograms.value;
     if (addHistsStr != "") {
       dqhistograms::AddHistogramsFromJSON(fHistMan, addHistsStr.Data());
@@ -3939,6 +3979,10 @@ struct AnalysisDileptonTrack {
       if (dilepton.sign() != 0) {
         continue;
       }
+      // dilepton rap cut
+      float rap = dilepton.rap();
+      if (fConfigUseMCRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+        continue;
 
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
 
@@ -4328,6 +4372,143 @@ struct AnalysisDileptonTrack {
     } // end loop over reconstructed events
   }
 
+  template <int THadronMassType, typename TEvent, typename TMCTracks>
+  void runEnergyCorrelators(TEvent const& event, TMCTracks const& mcTracks)
+  {
+    auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+    groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+    for (auto& t1 : groupedMCTracks) {
+      auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+      // apply kinematic cuts for signal
+      if ((t1_raw.pt() < fConfigDileptonLowpTCut || t1_raw.pt() > fConfigDileptonHighpTCut))
+        continue;
+      if (abs(t1_raw.y()) > fConfigDileptonRapCutAbs)
+        continue;
+      // for the energy correlators
+      for (auto& t2 : groupedMCTracks) {
+        auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22)
+          continue;
+        if (t2_raw.pt() < fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCGenHadronEtaAbs.value)
+          continue;
+        if (t2_raw.getGenStatusCode() <= 0)
+          continue;
+        VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues);
+        for (auto& sig : fGenMCSignals) {
+          if (sig->CheckSignal(true, t1_raw)) {
+            fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
+          }
+        }
+      }
+    }
+  }
+  void processMCGenEnergyCorrelators(soa::Filtered<MyEventsVtxCovSelected> const& events,
+                                     ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+      runEnergyCorrelators<VarManager::kJpsiHadronMass>(event, mcTracks);
+    }
+  }
+
+  void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEventsVtxCovSelected> const& events,
+                                         ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+      runEnergyCorrelators<VarManager::kJpsiPionMass>(event, mcTracks);
+    }
+  }
+
+  template <int THadronMassType, typename TEvent, typename TMCTracks>
+  void runEnergyCorrelatorsMixedEvent(TEvent const& event1, TEvent const& event2, TMCTracks const& mcTracks)
+  {
+    auto groupedMCTracks1 = mcTracks.sliceBy(perReducedMcEvent, event1.reducedMCeventId());
+    auto groupedMCTracks2 = mcTracks.sliceBy(perReducedMcEvent, event2.reducedMCeventId());
+    groupedMCTracks1.bindInternalIndicesTo(&mcTracks);
+    groupedMCTracks2.bindInternalIndicesTo(&mcTracks);
+    for (auto& t1 : groupedMCTracks1) {
+      auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+      // apply kinematic cuts for signal
+      if ((t1_raw.pt() < fConfigDileptonLowpTCut || t1_raw.pt() > fConfigDileptonHighpTCut))
+        continue;
+      if (abs(t1_raw.y()) > fConfigDileptonRapCutAbs)
+        continue;
+      // for the energy correlators
+      for (auto& t2 : groupedMCTracks2) {
+        auto t2_raw = groupedMCTracks2.rawIteratorAt(t2.globalIndex());
+        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22)
+          continue;
+        if (t2_raw.pt() < fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCGenHadronEtaAbs.value)
+          continue;
+        if (t2_raw.getGenStatusCode() <= 0)
+          continue;
+        VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues);
+        for (auto& sig : fGenMCSignals) {
+          if (sig->CheckSignal(true, t1_raw)) {
+            fHistMan->FillHistClass(Form("MCTruthEenergyCorrelatorsME_%s", sig->GetName()), VarManager::fgValues);
+          }
+        }
+      }
+    }
+  }
+
+  void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEventsVtxCovHashSelected> const& events,
+                                       ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
+    // loop over two event comibnations
+    for (auto& [event1, event2] : selfCombinations(fHashBin, fConfigMixingDepth.value, -1, events, events)) {
+      if (!event1.isEventSelected_bit(0) || !event2.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event1.has_reducedMCevent() || !event2.has_reducedMCevent()) {
+        continue;
+      }
+      runEnergyCorrelatorsMixedEvent<VarManager::kJpsiHadronMass>(event1, event2, mcTracks);
+    }
+  }
+
+  void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEventsVtxCovHashSelected> const& events,
+                                           ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
+    // loop over two event comibnations
+    for (auto& [event1, event2] : selfCombinations(fHashBin, fConfigMixingDepth.value, -1, events, events)) {
+      if (!event1.isEventSelected_bit(0) || !event2.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event1.has_reducedMCevent() || !event2.has_reducedMCevent()) {
+        continue;
+      }
+      runEnergyCorrelatorsMixedEvent<VarManager::kJpsiPionMass>(event1, event2, mcTracks);
+    }
+  }
+
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -4338,6 +4519,10 @@ struct AnalysisDileptonTrack {
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelators, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelatorsPion, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelatorsME, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelatorsPionME, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", true);
 };
 
@@ -4445,5 +4630,10 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     if (classStr.Contains("DileptonHadronCorrelation")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
     }
+
+    if (classStr.Contains("MCTruthEenergyCorrelators")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "energy-correlator-gen");
+    }
+
   } // end loop over histogram classes
 }

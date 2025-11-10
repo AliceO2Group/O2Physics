@@ -1909,6 +1909,33 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electron pair and pion pair from Psi2S", {pronge, pronge, prongPi, prongPi}, {2, 2, 1, 1});
     return signal;
   }
+
+  if (!nameStr.compare("eeFromPromptJpsiAnyPrimary")) {
+    MCProng pronge(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {true});
+    pronge.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongPrimary(1);
+    prongPrimary.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "anyprimary and electron pair from prompt jpsi", {pronge, pronge, prongPrimary}, {1, 1, -1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiAnyPrimary")) {
+    MCProng pronge(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    pronge.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongPrimary(1);
+    prongPrimary.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "anyprimary and electron pair from prompt jpsi", {pronge, pronge, prongPrimary}, {1, 1, -1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromNonPromptJpsiAnyPrimary")) {
+    MCProng pronge(3, {11, 443, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    pronge.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongPrimary(1);
+    prongPrimary.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "anyprimary and electron pair from non-prompt jpsi", {pronge, pronge, prongPrimary}, {1, 1, -1});
+    return signal;
+  }
   return nullptr;
 }
 
