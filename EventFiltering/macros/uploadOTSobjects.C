@@ -26,7 +26,7 @@
 #include "TTree.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "EventFiltering/ZorroHelper.h"
+#include "Common/Core/ZorroHelper.h"
 #include "CommonConstants/LHCConstants.h"
 
 constexpr uint32_t chunkSize = 1000000;
