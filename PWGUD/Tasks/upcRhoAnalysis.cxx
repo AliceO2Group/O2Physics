@@ -126,6 +126,8 @@ struct UpcRhoAnalysis {
 
   Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
 
+  Configurable<bool> isPO{"isPO", false, "process proton-oxygen data"};
+
   Configurable<bool> cutGapSide{"cutGapSide", true, "apply gap side cut"};
   Configurable<int> gapSide{"gapSide", 2, "required gap side"};
   Configurable<bool> useTrueGap{"useTrueGap", false, "use true gap"};
@@ -447,15 +449,17 @@ struct UpcRhoAnalysis {
   template <typename C>
   bool collisionPassesCuts(const C& collision, int runIndex) // collision cuts
   {
-    if (!collision.vtxITSTPC())
-      return false;
-    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 2);
-    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 2, runIndex);
+    if (!isPO) {
+      if (!collision.vtxITSTPC())
+        return false;
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 2);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 2, runIndex);
 
-    if (!collision.sbp())
-      return false;
-    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 3);
-    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 3, runIndex);
+      if (!collision.sbp())
+        return false;
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 3);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 3, runIndex);
+    }
 
     if (!collision.itsROFb())
       return false;
@@ -472,20 +476,26 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 6);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 6, runIndex);
 
-    if (cutNumContribs && (collision.numContrib() > collisionsNumContribsMaxCut))
-      return false;
-    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 7);
-    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 7, runIndex);
+    if (cutNumContribs) {
+      if (collision.numContrib() > collisionsNumContribsMaxCut)
+        return false;
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 7);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 7, runIndex);
+    }
 
-    if (useRctFlag && !isGoodRctFlag(collision)) // check RCT flags
-      return false;
-    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 8);
-    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 8, runIndex);
+    if (useRctFlag) {
+      if (!isGoodRctFlag(collision)) // check RCT flags
+        return false;
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 8);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 8, runIndex);
+    }
 
-    if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
-      return false;
-    rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
-    rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
+    if (useRecoFlag) {
+      if (collision.flags() != cutRecoFlag) // check reconstruction mode
+        return false;
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
+    }
 
     // if all selections passed
     return true;
@@ -547,10 +557,12 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hSelectionCounter"), 10);
     rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 10, runIndex);
 
-    if (requireTof && !track.hasTOF())
-      return false;
-    rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
-    rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, runIndex);
+    if (requireTof) {
+      if (!track.hasTOF())
+        return false;
+      rQC.fill(HIST("QC/tracks/hSelectionCounter"), 11);
+      rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 11, runIndex);
+    }
 
     if (track.pt() < tracksMinPtCut)
       return false;
