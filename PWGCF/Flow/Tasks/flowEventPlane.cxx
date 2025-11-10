@@ -80,10 +80,19 @@ struct FlowEventPlane {
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.15, "p_{T} minimum"};
   Configurable<float> cTrackMaxPt{"cTrackMaxPt", 2.0, "p_{T} maximum"};
+  Configurable<int> cNEtaBins{"cNEtaBins", 7, "# of eta bins"};
   Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<bool> cTrackGlobal{"cTrackGlobal", true, "Global Track"};
   Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
   Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
+  Configurable<int> cNRapBins{"cNRapBins", 5, "# of y bins"};
+  Configurable<int> cNInvMassBins{"cNInvMassBins", 500, "# of m bins"};
+
+  // Track PID
+  Configurable<float> cTpcNSigmaKa{"cTpcNSigmaKa", 2., "Tpc nsigma Ka"};
+  Configurable<float> cTpcRejCut{"cTpcRejCut", 2., "Tpc rejection cut"};
+  Configurable<float> cTofNSigmaKa{"cTofNSigmaKa", 2., "Tof nsigma Ka"};
+  Configurable<float> cTofRejCut{"cTofRejCut", 2., "Tof rejection cut"};
 
   // Gain calibration
   Configurable<bool> cDoGainCalib{"cDoGainCalib", false, "Gain Calib Flag"};
@@ -131,6 +140,16 @@ struct FlowEventPlane {
     {"hYZNCVsCent", "hYZNCVsVx", "hYZNCVsVy", "hYZNCVsVz"}};
   std::map<CorrectionType, std::vector<std::vector<std::string>>> corrTypeHistNameMap = {{kFineCorr, vFineCorrHistNames}, {kCoarseCorr, vCoarseCorrHistNames}};
 
+  // Container for histograms
+  struct CorrectionHistContainer {
+    TH2F* hGainCalib;
+    std::array<std::array<THnSparseF*, 1>, 4> vCoarseCorrHist;
+    std::array<std::array<TProfile*, 4>, 4> vFineCorrHist;
+  } CorrectionHistContainer;
+
+  // Run number
+  int cRunNum = 0, lRunNum = 0;
+
   void init(InitContext const&)
   {
     // Set CCDB url
@@ -166,10 +185,13 @@ struct FlowEventPlane {
     const AxisSpec axisV1{400, -4, 4, "v_{1}"};
 
     const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
-    const AxisSpec axisTrackEta{16, -0.8, 0.8, "#eta"};
+    const AxisSpec axisTrackEta{cNEtaBins, -0.8, 0.8, "#eta"};
+    const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
+    const AxisSpec axisInvMass{cNInvMassBins, 0.87, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
 
     const AxisSpec axisTrackDcaXY{60, -0.15, 0.15, "DCA_{XY}"};
     const AxisSpec axisTrackDcaZ{230, -1.15, 1.15, "DCA_{XY}"};
+    const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
 
     // Create histograms
     histos.add("Event/hCent", "FT0C%", kTH1F, {axisCent});
@@ -216,6 +238,9 @@ struct FlowEventPlane {
     histos.add("Checks/hYaXc", "Y^{A}_{1}X^{C}_{1}", kTProfile, {axisCent});
     histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
     histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
+    histos.add("TrackQA/hTrackTPCdEdX", "hTrackTPCdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
+    histos.add("TrackQA/hUSCentPtInvMass", "hUSCentPtInvMass", kTH3F, {axisCent, axisTrackPt, axisInvMass});
+    histos.add("TrackQA/hLSCentPtInvMass", "hLSCentPtInvMass", kTH3F, {axisCent, axisTrackPt, axisInvMass});
     histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
     histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
     histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
@@ -223,6 +248,10 @@ struct FlowEventPlane {
     histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
     histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
     histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/Reso/US/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+    histos.add("DF/Reso/US/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+    histos.add("DF/Reso/LS/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+    histos.add("DF/Reso/LS/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
   }
 
   template <typename C>
@@ -300,45 +329,52 @@ struct FlowEventPlane {
 
   void gainCalib(float const& vz, int const& runNumber, std::array<float, 4>& energy, const char* histName = "hZNAEnergy")
   {
-    // Set CCDB path
-    std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(runNumber);
+    if (cRunNum != lRunNum) {
+      // Set CCDB path
+      std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(runNumber);
 
-    // Get object from CCDB
-    auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+      // Get object from CCDB
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
 
-    // Get gain calibration
-    TH2F* h = reinterpret_cast<TH2F*>(ccdbObj->FindObject(histName));
+      // Store histogram in container
+      CorrectionHistContainer.hGainCalib = reinterpret_cast<TH2F*>(ccdbObj->FindObject(histName));
+    }
+
     float v = 0.;
     for (int i = 0; i < static_cast<int>(energy.size()); ++i) {
-      v = h->GetBinContent(h->FindBin(i + 0.5, vz + 0.00001));
+      v = CorrectionHistContainer.hGainCalib->GetBinContent(CorrectionHistContainer.hGainCalib->FindBin(i + 0.5, vz + 0.00001));
       energy[i] *= v;
     }
   }
 
-  template <typename C, typename F>
-  std::vector<float> getAvgCorrFactors(const C& ccdbObject, const F& corrType, const std::vector<float>& vCollParam)
+  std::vector<float> getAvgCorrFactors(CorrectionType const& corrType, const std::vector<float>& vCollParam)
   {
     std::vector<float> vAvgOutput = {0., 0., 0., 0.};
-    std::vector<std::vector<std::string>> vHistNames = corrTypeHistNameMap.at(corrType);
     int binarray[4];
-    int cntrx = 0;
-    for (auto const& x : vHistNames) {
-      int cntry = 0;
-      for (auto const& y : x) {
-        if (corrType == kFineCorr) {
-          TProfile* hp = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
-          vAvgOutput[cntrx] += hp->GetBinContent(hp->GetXaxis()->FindBin(vCollParam[cntry]));
-        } else {
-          THnSparseF* hn = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
-          for (int i = 0; i < static_cast<int>(vHistNames.size()); ++i) {
-            binarray[i] = hn->GetAxis(i)->FindBin(vCollParam[i]);
-          }
-          vAvgOutput[cntrx] += hn->GetBinContent(hn->GetBin(binarray));
+    if (corrType == kCoarseCorr) {
+      int cntrx = 0;
+      for (auto const& v : CorrectionHistContainer.vCoarseCorrHist) {
+        for (auto const& h : v) {
+          binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent] + 0.0001);
+          binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx] + 0.0001);
+          binarray[kVy] = h->GetAxis(kVy)->FindBin(vCollParam[kVy] + 0.0001);
+          binarray[kVz] = h->GetAxis(kVz)->FindBin(vCollParam[kVz] + 0.0001);
+          vAvgOutput[cntrx] += h->GetBinContent(h->GetBin(binarray));
         }
-        ++cntry;
+        ++cntrx;
       }
-      ++cntrx;
+    } else {
+      int cntrx = 0;
+      for (auto const& v : CorrectionHistContainer.vFineCorrHist) {
+        int cntry = 0;
+        for (auto const& h : v) {
+          vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry] + 0.0001));
+          ++cntry;
+        }
+        ++cntrx;
+      }
     }
+
     return vAvgOutput;
   }
 
@@ -362,26 +398,119 @@ struct FlowEventPlane {
         corrType = kFineCorr;
       }
 
-      // Set ccdb path
-      ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(runNumber);
+      // Check current and last run number, fetch ccdb object and store corrections in container
+      if (cRunNum != lRunNum) {
+        // Set ccdb path
+        ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(runNumber);
 
-      // Get object from CCDB
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+        // Get object from CCDB
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
 
-      // Check CCDB Object
-      if (!ccdbObj) {
-        LOGF(warning, "CCDB OBJECT NOT FOUND");
-        return;
+        // Check CCDB Object
+        if (!ccdbObject) {
+          LOGF(warning, "CCDB OBJECT NOT FOUND");
+          return;
+        }
+
+        // Store histograms in Hist Container
+        std::vector<std::vector<std::string>> vHistNames = corrTypeHistNameMap.at(corrType);
+        int cntrx = 0;
+        for (auto const& x : vHistNames) {
+          int cntry = 0;
+          for (auto const& y : x) {
+            if (corrType == kFineCorr) {
+              CorrectionHistContainer.vFineCorrHist[cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+            } else {
+              CorrectionHistContainer.vCoarseCorrHist[cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
+            }
+            ++cntry;
+          }
+          ++cntrx;
+        }
       }
 
       // Get averages
-      std::vector<float> vAvg = getAvgCorrFactors(ccdbObj, corrType, inputParam);
+      std::vector<float> vAvg = getAvgCorrFactors(corrType, inputParam);
 
       // Apply correction
       outputParam[kXa] -= vAvg[kXa];
       outputParam[kYa] -= vAvg[kYa];
       outputParam[kXc] -= vAvg[kXc];
       outputParam[kYc] -= vAvg[kYc];
+    }
+  }
+
+  template <typename T>
+  bool isKaon(T const& track)
+  {
+    bool tofFlagKa{false}, tpcFlagKa{false};
+    // check tof signal
+    if (track.hasTOF()) {
+      if (std::abs(track.tofNSigmaKa()) < cTofNSigmaKa && std::abs(track.tofNSigmaPi()) > cTofRejCut && std::abs(track.tofNSigmaPr()) > cTofRejCut) {
+        tofFlagKa = true;
+      }
+      if (std::abs(track.tpcNSigmaKa()) < cTpcNSigmaKa) {
+        tpcFlagKa = true;
+      }
+    } else { // select from TPC
+      tofFlagKa = true;
+      if (std::abs(track.tpcNSigmaKa()) < cTpcNSigmaKa && std::abs(track.tpcNSigmaPi()) > cTpcRejCut && std::abs(track.tpcNSigmaPr()) > cTpcRejCut) {
+        tpcFlagKa = true;
+      }
+    }
+
+    if (tofFlagKa && tpcFlagKa) {
+      return true;
+    }
+
+    return false;
+  }
+
+  template <typename T>
+  void getResoFlow(T const& tracks, std::vector<float> const& vSP)
+  {
+    float ux = 0., uy = 0., v1a = 0., v1c = 0.;
+    for (auto const& [track1, track2] : soa::combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+      // Discard same track
+      if (track1.index() == track2.index()) {
+        continue;
+      }
+
+      // Select track
+      if (!selectTrack(track1) || !selectTrack(track2)) {
+        continue;
+      }
+
+      // Identify track
+      if (!isKaon(track1) || !isKaon(track2)) {
+        continue;
+      }
+
+      histos.fill(HIST("TrackQA/hTrackTPCdEdX"), track1.pt(), track1.tpcSignal());
+      histos.fill(HIST("TrackQA/hTrackTPCdEdX"), track2.pt(), track2.tpcSignal());
+
+      // Reconstruct invariant mass
+      float p = RecoDecay::p((track1.px() + track2.px()), (track1.py() + track2.py()), (track1.pz() + track2.pz()));
+      float e = RecoDecay::e(track1.px(), track1.py(), track1.pz(), MassKaonCharged) + RecoDecay::e(track2.px(), track2.py(), track2.pz(), MassKaonCharged);
+      float m = std::sqrt(RecoDecay::m2(p, e));
+
+      // Get directed flow
+      std::array<float, 3> v = {track1.px() + track2.px(), track1.py() + track2.py(), track1.pz() + track2.pz()};
+      ux = std::cos(RecoDecay::phi(v));
+      uy = std::sin(RecoDecay::phi(v));
+      v1a = ux * vSP[kXa] + uy * vSP[kYa];
+      v1c = ux * vSP[kXc] + uy * vSP[kYc];
+
+      // Fill histograms
+      if (track1.sign() != track2.sign()) {
+        histos.fill(HIST("TrackQA/hUSCentPtInvMass"), cent, RecoDecay::pt(v), m);
+        histos.fill(HIST("DF/Reso/US/hPhiQuA"), cent, RecoDecay::y(v, MassPhi), m, v1a);
+        histos.fill(HIST("DF/Reso/US/hPhiQuC"), cent, RecoDecay::y(v, MassPhi), m, v1c);
+      } else {
+        histos.fill(HIST("TrackQA/hLSCentPtInvMass"), cent, RecoDecay::pt(v), m);
+        histos.fill(HIST("DF/Reso/LS/hPhiQuA"), cent, RecoDecay::y(v, MassPhi), m, v1a);
+        histos.fill(HIST("DF/Reso/LS/hPhiQuC"), cent, RecoDecay::y(v, MassPhi), m, v1c);
+      }
     }
   }
 
@@ -422,7 +551,7 @@ struct FlowEventPlane {
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr, aod::TrackCompColls>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls>;
 
   void process(CollisionsRun3::iterator const& collision, BCsRun3 const& /* bcs*/, aod::Zdcs const&, Tracks const& tracks)
   {
@@ -442,7 +571,7 @@ struct FlowEventPlane {
 
     // Get bunch crossing
     auto bc = collision.foundBC_as<BCsRun3>();
-    int runNumber = collision.foundBC_as<BCsRun3>().runNumber();
+    cRunNum = collision.foundBC_as<BCsRun3>().runNumber();
 
     // check zdc
     if (!bc.has_zdc()) {
@@ -470,8 +599,8 @@ struct FlowEventPlane {
 
     // Do gain calibration
     if (cDoGainCalib) {
-      gainCalib(vCollParam[kVz], runNumber, znaEnergy, "hZNASignal");
-      gainCalib(vCollParam[kVz], runNumber, zncEnergy, "hZNCSignal");
+      gainCalib(vCollParam[kVz], cRunNum, znaEnergy, "hZNASignal");
+      gainCalib(vCollParam[kVz], cRunNum, zncEnergy, "hZNCSignal");
     }
 
     // Fill zdc signal
@@ -519,7 +648,7 @@ struct FlowEventPlane {
 
     // Do corrections
     if (cApplyRecentCorr) {
-      applyCorrection(vCollParam, runNumber, vSP);
+      applyCorrection(vCollParam, cRunNum, vSP);
     }
 
     // Fill X and Y histograms for corrections after each iteration
@@ -569,6 +698,12 @@ struct FlowEventPlane {
         histos.fill(HIST("DF/hCQuNeg"), cent, track.eta(), v1c);
       }
     }
+
+    // Get resonance flow
+    getResoFlow(tracks, vSP);
+
+    // Update run number
+    lRunNum = cRunNum;
   }
 };
 

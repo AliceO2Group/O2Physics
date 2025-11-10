@@ -22,8 +22,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -202,6 +201,10 @@ struct LfMyV0s {
     registryData.add("V0pyInRest_frame", "V0pyInRest_frame", kTH1F, {axisPy});
     registryData.add("V0pzInRest_frame", "V0pzInRest_frame", kTH1F, {axisPz});
 
+    registryData.add("V0pxInJetframe", "V0pxInJetframe", kTH1F, {axisPx});
+    registryData.add("V0pyInJetframe", "V0pyInJetframe", kTH1F, {axisPy});
+    registryData.add("V0pzInJetframe", "V0pzInJetframe", kTH1F, {axisPz});
+
     registryData.add("protonQA/V0protonpxInLab", "V0protonpxInLab", kTH1F, {axisPx});
     registryData.add("protonQA/V0protonpyInLab", "V0protonpyInLab", kTH1F, {axisPy});
     registryData.add("protonQA/V0protonpzInLab", "V0protonpzInLab", kTH1F, {axisPz});
@@ -285,7 +288,7 @@ struct LfMyV0s {
     registryData.add("profileAntiLambda", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("TProfile1DLambdasinphiInJet", "#Delta #theta vs sin(phi)", {HistType::kTProfile, {{200, 0.0, TMath::Pi()}}});
     registryData.add("hAntiLambdamassandSinPhi", "hAntiLambdaPhiandSinPhi", kTH2F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}, {200, -1, 1}});
-
+    registryData.add("hprotonsinphiInJetV0frame", "hprotonsinphiInJetV0frame", kTH1F, {axisSinPhi});
     registryData.add("TProfile2DLambdaPtMassSinPhi", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryData.add("TProfile2DAntiLambdaPtMassSinPhi", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryData.add("TProfile2DLambdaPtMassSintheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
@@ -300,7 +303,7 @@ struct LfMyV0s {
     registryData.add("hprotonThetaInV0", "hprotonThetaInV0", kTH1F, {axisTheta});
     registryData.add("hprotonThetaInJetV0", "hprotonThetaInJetV0", kTH1F, {axisTheta});
 
-    registryData.add("hNEvents", "hNEvents", {HistType::kTH1I, {{10, 0.f, 10.f}}});
+    registryData.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
@@ -1287,6 +1290,10 @@ struct LfMyV0s {
         registryData.fill(HIST("TProfile2DLambdaMassDeltaTheta"), TMath::ACos(cosThetaLambdaInJet), candidate.mLambda(), lambdasinphiInJet);
         registryData.fill(HIST("TProfile1DLambdasinphiInJet"), TMath::ACos(cosThetaLambdaInJet), lambdasinphiInJet);
 
+        registryData.fill(HIST("V0pxInJetframe"), lambdaInJet(1, 0));
+        registryData.fill(HIST("V0pyInJetframe"), lambdaInJet(2, 0));
+        registryData.fill(HIST("V0pzInJetframe"), lambdaInJet(3, 0));
+
         TMatrixD lambdaInJetV0(4, 1);
         lambdaInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
         registryData.fill(HIST("V0LambdapxInJetV0frame"), lambdaInJetV0(1, 0));
@@ -1421,6 +1428,8 @@ struct LfMyV0s {
         double protonCosThetainJetV0 = protonInJetV0(3, 0) / protonPinJetV0;
 
         protonsinPhiInJetV0frame = protonsinPhiInJetV0frame + protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+
+        registryData.fill(HIST("hprotonsinphiInJetV0frame"), protonsinPhiInJetV0frame);
 
         registryData.fill(HIST("TProfile2DLambdaPtMassSinPhi"), candidate.mLambda(), candidate.pt(), protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0)));
         registryData.fill(HIST("TProfile2DLambdaPtMassSintheta"), candidate.mLambda(), candidate.pt(), (4.0 / TMath::Pi()) * protonSinThetainJetV0);

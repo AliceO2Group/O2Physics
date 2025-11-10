@@ -156,7 +156,7 @@ struct FlowTask {
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
     // for deltaPt/<pT> vs centrality
-    O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs c22 vs centrality")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs centrality")
     O2_DEFINE_CONFIGURABLE(cfgDptDisSelectionSwitch, int, 0, "0: disable, 1: use low cut, 2:use high cut")
     TH1D* hEvAvgMeanPt = nullptr;
     TH1D* fDptDisCutLow = nullptr;
@@ -1108,11 +1108,12 @@ struct FlowTask {
     if (cfgFuncParas.cfgDptDisEnable) {
       double meanPt = ptSum / weffEvent;
       double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(independent));
-      registry.fill(HIST("hNormDeltaPt_X"), meanPt, independent, weffEvent);
-      if (cfgFuncParas.cfgDptDisSelectionSwitch == kLowDptCut && deltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
+      double normDeltaPt = deltaPt / meanPt;
+      registry.fill(HIST("hNormDeltaPt_X"), normDeltaPt, independent, weffEvent);
+      if (cfgFuncParas.cfgDptDisSelectionSwitch == kLowDptCut && normDeltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
         // only keep low 10% dpt event
         return;
-      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == kHighDptCut && deltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
+      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == kHighDptCut && normDeltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
         // only keep high 10% dpt event
         return;
       }

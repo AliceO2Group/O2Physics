@@ -24,7 +24,7 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/StringUtils.h"
