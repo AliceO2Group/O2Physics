@@ -84,6 +84,11 @@ struct HfTaskDplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  // UPC gap determination thresholds
+  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", hf_upc::defaults::FT0AThreshold, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", hf_upc::defaults::FT0CThreshold, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
+  Configurable<float> upcZDCThreshold{"upcZDCThreshold", hf_upc::defaults::ZDCThreshold, "ZDC energy threshold for UPC gap determination (a.u.)"};
+
   HfEventSelection hfEvSel; // event selection and monitoring
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -127,11 +132,6 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {3, -0.5, 2.5}, "axis for UPC gap type (0=GapA, 1=GapC, 2=DoubleGap)"};
   ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
-
-  // UPC gap determination thresholds
-  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", hf_upc::defaults::FT0AThreshold, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", hf_upc::defaults::FT0CThreshold, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcZDCThreshold{"upcZDCThreshold", hf_upc::defaults::ZDCThreshold, "ZDC energy threshold for UPC gap determination (a.u.)"};
 
   HistogramRegistry registry{
     "registry",
