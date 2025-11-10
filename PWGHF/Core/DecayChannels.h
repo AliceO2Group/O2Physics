@@ -265,13 +265,14 @@ namespace hf_cand_sigmac
 {
 enum DecayChannelMain : HfDecayChannel {
   // Σc0(2455) → Λc+ π- → p K- π+ π-
-  Sc0ToPKPiPi = 0,
+  Sc0ToPKPiPi = 1,
   // Σc++(2455) → Λc+ π+ → p K- π+ π+
-  ScplusplusToPKPiPi,
+  ScplusplusToPKPiPi = 2,
   // Σc0(2520) → Λc+ π- → p K- π+ π-
-  ScStar0ToPKPiPi,
+  ScStar0ToPKPiPi = 3,
   // Σc++(2520) → Λc+ π+ → p K- π+ π+
-  ScStarPlusPlusToPKPiPi
+  ScStarPlusPlusToPKPiPi = 4,
+  NChannelsMain = ScStarPlusPlusToPKPiPi // last channel
 };
 } // namespace hf_cand_sigmac
 

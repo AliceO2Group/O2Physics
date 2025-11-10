@@ -602,10 +602,10 @@ struct HfTaskSigmac {
     for (const auto& particle : mcParticlesSc) {
 
       /// reject immediately particles different from Σc0,++
-      bool const isSc0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi));
-      bool const isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi));
-      bool const isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi));
-      bool const isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi));
+      bool const isSc0Gen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi);
+      bool const isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi);
+      bool const isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi);
+      bool const isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi);
       if (!isSc0Gen && !isScPlusPlusGen && !isScStar0Gen && !isScStarPlusPlusGen) {
         continue;
       }
@@ -798,10 +798,10 @@ struct HfTaskSigmac {
 
       // candidateLc.flagMcDecayChanRec();
 
-      bool const isTrueSc0Reco = std::abs(candSc.flagMcMatchRec()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi);
-      bool const isTrueScStar0Reco = std::abs(candSc.flagMcMatchRec()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi);
-      bool const isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi);
-      bool const isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == BIT(o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi);
+      bool const isTrueSc0Reco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi;
+      bool const isTrueScStar0Reco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi;
+      bool const isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi;
+      bool const isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi;
       int sigmacSpecies = -1;
       if ((isTrueSc0Reco || isTrueScStar0Reco) && (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull)) {
         /// Reconstructed Σc0 signal
