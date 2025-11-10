@@ -752,16 +752,25 @@ struct doublephimeson {
     // --- φ multiplicity with PID ---
     int phimult = 0;
     for (auto const& t : phitracks) {
-      if (t.phiMass() < minPhiMass1 || t.phiMass() > maxPhiMass1)
-        continue;
       const double kpluspt = std::hypot(t.phid1Px(), t.phid1Py());
       const double kminuspt = std::hypot(t.phid2Px(), t.phid2Py());
+      // PID QA before
+      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), t.phid1TPC(), t.phid1TOF(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t.phid1TPC(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t.phid2TPC(), kminuspt);
+      if (t.phiMass() < minPhiMass1 || t.phiMass() > maxPhiMass1)
+        continue;
       if (kpluspt > maxKaonPt || kminuspt > maxKaonPt)
         continue;
       if (!selectionPID(t.phid1TPC(), t.phid1TOF(), t.phid1TOFHit(), strategyPID1, kpluspt))
         continue;
       if (!selectionPID(t.phid2TPC(), t.phid2TOF(), t.phid2TOFHit(), strategyPID2, kminuspt))
         continue;
+      // PID QA after
+      histos.fill(HIST("hnsigmaTPCTOFKaon"), t.phid1TPC(), t.phid1TOF(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonPlus"), t.phid1TPC(), kpluspt);
+      histos.fill(HIST("hnsigmaTPCKaonMinus"), t.phid2TPC(), kminuspt);
+
       ++phimult;
     }
     if (phimult < 2)
@@ -815,11 +824,6 @@ struct doublephimeson {
       const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
       const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
 
-      // PID QA before
-      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t1.phid1TPC(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t1.phid2TPC(), kminus1pt);
-
       if (kplus1pt > maxKaonPt || kminus1pt > maxKaonPt)
         continue;
       if (!selectionPID(t1.phid1TPC(), t1.phid1TOF(), t1.phid1TOFHit(), strategyPID1, kplus1pt))
@@ -837,14 +841,9 @@ struct doublephimeson {
         continue;
       if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt)
         continue;
-      // PID QA after
-      histos.fill(HIST("hnsigmaTPCTOFKaon"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonPlus"), t1.phid1TPC(), kplus1pt);
-      histos.fill(HIST("hnsigmaTPCKaonMinus"), t1.phid2TPC(), kminus1pt);
-      histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
 
       const auto id1 = t1.index();
-
+      histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
       for (auto const& t2 : phitracks) {
         const auto id2 = t2.index();
         if (id2 <= id1)
