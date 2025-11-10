@@ -15,13 +15,11 @@
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "Common/DataModel/EventSelection.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -135,7 +133,7 @@ struct strangeness_derived_tutorial {
   using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackMCIds>;
 
   void processRecMC(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-                    soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas, aod::CascCoreMCLabels>> const& Cascades,
+                    soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas, aod::CascTOFPIDs, aod::CascCoreMCLabels>> const& Cascades,
                     dauTracks const&,
                     aod::CascMCCores const& /*cascmccores*/)
   {
@@ -186,7 +184,7 @@ struct strangeness_derived_tutorial {
       bool xiPassTOFSelection = true;
       bool omegaPassTOFSelection = true;
       if (casc.sign() < 0) {
-        if (posDaughterTrackCasc.hasTOF()) {
+        if (casc.positiveHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
             xiPassTOFSelection &= false;
           }
@@ -194,7 +192,7 @@ struct strangeness_derived_tutorial {
             omegaPassTOFSelection &= false;
           }
         }
-        if (negDaughterTrackCasc.hasTOF()) {
+        if (casc.negativeHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
             xiPassTOFSelection &= false;
           }
@@ -203,7 +201,7 @@ struct strangeness_derived_tutorial {
           }
         }
       } else {
-        if (posDaughterTrackCasc.hasTOF()) {
+        if (casc.positiveHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
             xiPassTOFSelection &= false;
           }
@@ -211,7 +209,7 @@ struct strangeness_derived_tutorial {
             omegaPassTOFSelection &= false;
           }
         }
-        if (negDaughterTrackCasc.hasTOF()) {
+        if (casc.negativeHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
             xiPassTOFSelection &= false;
           }
@@ -221,16 +219,7 @@ struct strangeness_derived_tutorial {
         }
       }
 
-      if (bachDaughterTrackCasc.hasTOF()) {
-        if (std::abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
-          xiPassTOFSelection &= false;
-        }
-        if (std::abs(casc.tofNSigmaOmKa()) > NSigmaTOFKaon) {
-          omegaPassTOFSelection &= false;
-        }
-      }
-
-      if (bachDaughterTrackCasc.hasTOF()) {
+      if (casc.bachelorHasTOF()) {
         if (std::abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
           xiPassTOFSelection &= false;
         }
@@ -249,7 +238,7 @@ struct strangeness_derived_tutorial {
         rXi.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters());
         rXi.fill(HIST("hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       }
-      if (std::abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                                  // Omega case
+      if (std::abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                // Omega case
         if (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) > cascadesetting_competingmassrej) { // competing mass rejection, only in case of Omega
           rOmega.fill(HIST("hMassOmegaSelected"), casc.mOmega());
           if (omegaPassTOFSelection) {
@@ -279,7 +268,7 @@ struct strangeness_derived_tutorial {
         }
       }
       if (std::abs(cascmccore.pdgCode()) == PDG_t::kOmegaMinus) {
-        if (std::abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                                  // Omega case
+        if (std::abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                // Omega case
           if (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) > cascadesetting_competingmassrej) { // competing mass rejection, only in case of Omega
             rOmega.fill(HIST("hMassOmegaTrueRec"), casc.mOmega());
             rOmega.fill(HIST("hPtOmegaTrueRec"), casc.pt());
