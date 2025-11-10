@@ -360,7 +360,7 @@ struct kstarInOO {
           tofpid = 999;
         }
       }
-      if (std::sqrt(tpcpid * tpcpid + tofpid * tofpid) < cfgTrackCircleValue) {
+      if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
         tpcPIDPassed = true;
         tofPIDPassed = true;
       }
@@ -416,7 +416,7 @@ struct kstarInOO {
           tofpid = 999;
         }
       }
-      if (std::sqrt(tpcpid * tpcpid + tofpid * tofpid) < cfgTrackCircleValue) {
+      if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
         tpcPIDPassed = true;
         tofPIDPassed = true;
       }
