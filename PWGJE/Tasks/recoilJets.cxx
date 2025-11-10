@@ -977,17 +977,13 @@ struct RecoilJets {
 
     if (foundBC.foundFT0Id() > 0) // -1 if does not
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 0.5, fillNumber, weight);
-    else {
+    else
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 1.5, fillNumber, weight);
-      // LOG(info) << "FT0A: " << multFT0A << " | FT0C: " << multFT0C;
-    }
 
     if (collision.foundBCId() > 0)
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 2.5, fillNumber, weight);
-    else {
+    else
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 3.5, fillNumber, weight);
-      // LOG(info) << "Coll id: " << collision.globalIndex();
-    }
   }
 
   template <typename JCollision, typename JTracks>
