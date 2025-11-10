@@ -191,8 +191,8 @@ struct jEPFlowAnalysis {
     if (coll.qvecAmp()[detId] < 1e-5 || coll.qvecAmp()[refAId] < 1e-5 || coll.qvecAmp()[refBId] < 1e-5)
       return;
 
-    for (int i = 0; i < cfgnMode; i++) {       // loop over different harmonic orders
-      harmInd = cfgnTotalSystem * i; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
+    for (int i = 0; i < cfgnMode; i++) { // loop over different harmonic orders
+      harmInd = cfgnTotalSystem * i;     // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
       eps[0] = helperEP.GetEventPlane(coll.qvecShiftedRe()[detId + harmInd], coll.qvecShiftedIm()[detId + harmInd], i + 2);
       eps[1] = helperEP.GetEventPlane(coll.qvecShiftedRe()[refAId + harmInd], coll.qvecShiftedIm()[refAId + harmInd], i + 2);
       eps[2] = helperEP.GetEventPlane(coll.qvecShiftedRe()[refBId + harmInd], coll.qvecShiftedIm()[refBId + harmInd], i + 2);
@@ -314,7 +314,6 @@ struct jEPFlowAnalysis {
           deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i + 2) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i + 2) * eps[0])));
           deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i + 2) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i + 2) * eps[1])));
           deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i + 2) * eps[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i + 2) * eps[2])));
-
         }
 
         eps[0] += deltapsiDet;
