@@ -280,6 +280,8 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
       } else {
         if (chaDaughter.hasTOF()) {
           this->evaluateObservable(kChaDaughTpctofProton, std::hypot(chaDaughter.tpcNSigmaPr(), chaDaughter.tofNSigmaPr()));
+        } else {
+          this->evaluateObservable(kChaDaughTpctofProton, 999.f);
         }
       }
     }
