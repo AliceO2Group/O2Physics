@@ -74,6 +74,6 @@ o2physics_add_dpl_workflow(long-range-dihadron-cor
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(two-particle-correlation-pp
-                           SOURCES twoParticleCorrelationpp.cxx
+                           SOURCES twoParticleCorrelationPp.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
