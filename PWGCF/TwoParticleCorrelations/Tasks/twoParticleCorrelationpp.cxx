@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file   twoParticleCorrelationpp.cxx
+/// \brief  Task for two particle correlation in pp in order to calculate a baseline in a template fit for the flow coefficients
+/// \author Josué Martínez García <josuem@cern.ch>
+
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
@@ -45,13 +49,13 @@ struct TwoParticleCorrelationpp {
   Configurable<int> range5Min{"range5Min", 41, {"Range on multiplicity"}};
   Configurable<int> range5Max{"range5Max", 50, {"Range on multiplicity"}};
   Configurable<int> nEventsMixed{"nEventsMixed", 5, {"Events to be Mixed"}};
-  Configurable<bool> EvSel8{"EvSel8", true, {"rejects collisions using sel8()"}};
-  Configurable<float> cfgZVtxCut = {"zvtxcut", 10.0, "Vertex z cut. Default 10 cm"};
-  Configurable<bool> EvSelkNoSameBunchPileup{"EvSelkNoSameBunchPileup", true, {"rejects collisions which are associated with the same found-by-T0 bunch crossing"}};
-  Configurable<bool> EvSelkNoITSROFrameBorder{"EvSelkNoITSROFrameBorder", true, {"reject events at ITS ROF border"}};
-  Configurable<bool> EvSelkNoTimeFrameBorder{"EvSelkNoTimeFrameBorder", true, {"reject events at TF border"}};
-  Configurable<bool> EvSelkIsGoodZvtxFT0vsPV{"EvSelkIsGoodZvtxFT0vsPV", true, {"removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution"}};
-  Configurable<bool> EvSelkNoCollInTimeRangeStandard{"EvSelkNoCollInTimeRangeStandard", true, {"no collisions in specified time range"}};
+  Configurable<bool> evSel8{"evSel8", true, {"rejects collisions using sel8()"}};
+  Configurable<float> cfgZVtxCut = {"cfgZVtxCut", 10.0, "Vertex z cut. Default 10 cm"};
+  Configurable<bool> evSelkNoSameBunchPileup{"evSelkNoSameBunchPileup", true, {"rejects collisions which are associated with the same found-by-T0 bunch crossing"}};
+  Configurable<bool> evSelkNoITSROFrameBorder{"evSelkNoITSROFrameBorder", true, {"reject events at ITS ROF border"}};
+  Configurable<bool> evSelkNoTimeFrameBorder{"evSelkNoTimeFrameBorder", true, {"reject events at TF border"}};
+  Configurable<bool> evSelkIsGoodZvtxFT0vsPV{"evSelkIsGoodZvtxFT0vsPV", true, {"removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution"}};
+  Configurable<bool> evSelkNoCollInTimeRangeStandard{"evSelkNoCollInTimeRangeStandard", true, {"no collisions in specified time range"}};
   // Declare configurables on tracks
   Configurable<float> cutMyptMin{"cutMyptMin", 0.2, {"My Track cut"}};
   Configurable<float> cutMyptMax{"cutMyptMax", 3., {"My Track cut"}};
@@ -78,15 +82,15 @@ struct TwoParticleCorrelationpp {
                                                 {"Photon", "K0", "Lambda", "Phi", "Rho"}},
                                                "Pair cuts on various particles"};
   // Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
-  ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {32, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {32, -1.6, 1.6}, "delta eta axis for histograms"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
-  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
-  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
-  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
+    ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {32, -PIHalf, kThreeHalfPi}, "delta phi axis for histograms"};
+    ConfigurableAxis axisDeltaEta{"axisDeltaEta", {32, -1.6, 1.6}, "delta eta axis for histograms"};
+    ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
+    ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
+    ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110.1}, "multiplicity / multiplicity axis for histograms"};
+    ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
+    ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
+    ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -102,8 +106,8 @@ struct TwoParticleCorrelationpp {
     const AxisSpec axisCountTracks{17, -0.5, 16.5};
     const AxisSpec axisCountEvents{8, -0.5, 7.5};
 
-    histos.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    histos.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+    histos.add("yields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+    histos.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {100, -2, 2, "#eta"}, {64, 0., TwoPI, "#varphi"}}});
     histos.add("sameEvent2D", "#Delta #eta vs #Delta #phi", {HistType::kTH2F, {axisDeltaEta, axisDeltaPhi}});
     histos.add("sameEvent_2_10", "#Delta #eta vs #Delta #phi", {HistType::kTH2F, {axisDeltaEta, axisDeltaPhi}});
     histos.add("sameEvent_11_20", "#Delta #eta vs #Delta #phi", {HistType::kTH2F, {axisDeltaEta, axisDeltaPhi}});
@@ -166,25 +170,25 @@ struct TwoParticleCorrelationpp {
   template <typename TCollision>
   bool isEventSelected(TCollision collision)
   {
-    if (EvSel8 && !collision.sel8()) {
+    if (evSel8 && !collision.sel8()) {
       return false;
     }
     if (collision.posZ() < -cfgZVtxCut || cfgZVtxCut < collision.posZ()) {
       return false;
     }
-    if (EvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (evSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    if (EvSelkNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (evSelkNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
-    if (EvSelkNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (evSelkNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-    if (EvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (evSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    if (EvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (evSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     return true;
@@ -257,7 +261,7 @@ struct TwoParticleCorrelationpp {
   template <typename TTracks>
   void fillQA(TTracks tracks, float multiplicity)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       histos.fill(HIST("yields"), multiplicity, track.pt(), track.eta());
       histos.fill(HIST("etaphi"), multiplicity, track.eta(), track.phi());
     }
@@ -424,7 +428,7 @@ struct TwoParticleCorrelationpp {
     hFlowEvents->GetXaxis()->SetBinLabel(8, "kNoCollInTimeRangeStandard");
 
     histos.fill(HIST("Events/hEventsAfterCuts"), 0);
-    if (EvSel8 && !collision.sel8()) {
+    if (evSel8 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 1);
@@ -432,23 +436,23 @@ struct TwoParticleCorrelationpp {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 2);
-    if (EvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (evSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 3);
-    if (EvSelkNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (evSelkNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 4);
-    if (EvSelkNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (evSelkNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 5);
-    if (EvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (evSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 6);
-    if (EvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (evSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
     histos.fill(HIST("Events/hEventsAfterCuts"), 7);
@@ -563,6 +567,6 @@ struct TwoParticleCorrelationpp {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TwoParticleCorrelationpp>(cfgc),
+    adaptAnalysisTask<TwoParticleCorrelationpp>(cfgc, "two-particle-correlation-pp"),
   };
 }
