@@ -661,22 +661,22 @@ struct ZdcQVectors {
 
     centralities.push_back(collision.centFT0C());
 
-    if (cfgFT0Cvariant1){
+    if (cfgFT0Cvariant1) {
       centralities.push_back(collision.centFT0CVariant1());
       if (cfgUseSecondCent)
         cent = collision.centFT0CVariant1();
     }
-    if (cfgFT0M){
+    if (cfgFT0M) {
       centralities.push_back(collision.centFT0M());
       if (cfgUseSecondCent)
         cent = collision.centFT0M();
     }
-    if (cfgFV0A){
+    if (cfgFV0A) {
       centralities.push_back(collision.centFV0A());
       if (cfgUseSecondCent)
         cent = collision.centFV0A();
     }
-    if (cfgNGlobal){
+    if (cfgNGlobal) {
       centralities.push_back(collision.centNGlobal());
       if (cfgUseSecondCent)
         cent = collision.centNGlobal();
