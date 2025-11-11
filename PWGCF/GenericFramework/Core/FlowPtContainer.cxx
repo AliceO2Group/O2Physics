@@ -977,7 +977,7 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
           if (third > fourth)
             continue;
           if (insub1[getVectorIndex(m, 0)] != 0 && insub2[getVectorIndex(m, 0)] != 0 && cmDen1[m] * cmDen2[m] != 0)
-            ((BootstrapProfile*)fSubCMList->FindObject(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth)))->FillProfile(centmult, cmVal1[second * (second - 1) / 2 + second - first + 1] * cmVal2[fourth * (fourth - 1) / 2 + fourth - third + 1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[m] * cmDen2[m], rn);
+            dynamic_cast<BootstrapProfile*>(fSubCMList->FindObject(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth)))->FillProfile(centmult, cmVal1[second * (second - 1) / 2 + second - first + 1] * cmVal2[fourth * (fourth - 1) / 2 + fourth - third + 1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[m] * cmDen2[m], rn);
         }
       }
     }
