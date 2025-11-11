@@ -51,9 +51,9 @@ class FlowPtContainer : public TNamed
   void initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   // initial pt-pt correlations with two subevents
-  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
-  void initialiseSubevent(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
-  void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
+  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsub = 10);
+  void initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsub = 10);
+  void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsub = 10);
   void fill(const double& w, const double& pt);
   void fillSub1(const double& w, const double& pt);
   void fillSub2(const double& w, const double& pt);

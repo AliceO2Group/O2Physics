@@ -391,7 +391,7 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsub)
 {
   if (!mpar)
     mpar = m;
@@ -453,7 +453,7 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
   }
   LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
 }
-void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsub)
 {
   if (!mpar)
     mpar = m;
@@ -507,7 +507,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   }
   LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
 }
-void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsub)
 {
   if (!mpar)
     mpar = m;
