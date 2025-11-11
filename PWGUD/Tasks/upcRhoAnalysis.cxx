@@ -168,11 +168,11 @@ struct UpcRhoAnalysis {
   Configurable<float> systemPtCut{"systemPtCut", 0.1, "max pT cut for reco system"};
   Configurable<float> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
-  ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "#it{m} (GeV/#it{c}^{2})"};
-  ConfigurableAxis ptAxis{"ptAxis", {1000, 0.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis pt2Axis{"pt2Axis", {1000, 0.0, 0.1}, "#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2})"};
+  ConfigurableAxis mAxis{"mAxis", {400, 0.0, 4.0}, "#it{m} (GeV/#it{c}^{2})"};
+  ConfigurableAxis ptAxis{"ptAxis", {400, 0.0, 4.0}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis pt2Axis{"pt2Axis", {1000, 0.0, 1.0}, "#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {300, -1.5, 1.5}, "#it{#eta}"};
-  ConfigurableAxis yAxis{"yAxis", {400, -4.0, 4.0}, "#it{y}"};
+  ConfigurableAxis yAxis{"yAxis", {300, -1.5, 1.5}, "#it{y}"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#it{#phi} (rad)"};
   ConfigurableAxis deltaPhiAxis{"deltaPhiAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#Delta#it{#phi} (rad)"};
   ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
