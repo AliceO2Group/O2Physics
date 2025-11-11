@@ -46,6 +46,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -69,8 +70,8 @@ struct kstarInOO {
   Configurable<float> cfgEventVtxCut{"cfgEventVtxCut", 10.0, "V_z cut selection"};
   ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the centrality axis"};
   Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
-  Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -100, "minimum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<float> cfgOccupancyMax{"cfgOccupancyMax", 999999., "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<float> cfgOccupancyMin{"cfgOccupancyMin", -100., "minimum occupancy of tracks in neighbouring collisions in a given time range"};
 
   // Track Selection
   // General
@@ -138,6 +139,7 @@ struct kstarInOO {
     const AxisSpec axisDCAxy{binsDCAxy, "DCA_{XY}"};
 
     if (cfgEventCutQA) {
+      histos.add("hEvent_Cut", "Number of event after cuts", kTH1D, {{12, 0, 12}});
       histos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{300, -15.0, 15.0}});
       histos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{300, -15.0, 15.0}});
       histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{110, 0.0, 110.0}});
@@ -207,6 +209,24 @@ struct kstarInOO {
       histos.add("hMC_USS_KPi_True", "hMC_USS_KPi_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hMC_USS_PiK_True", "hMC_USS_PiK_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
+
+    std::shared_ptr<TH1> hCutFlow = histos.get<TH1>(HIST("hEvent_Cut"));
+    std::vector<std::string> eventCutLabels = {
+      "All Events",
+      "sel8",
+      Form("|Vz| < %.1f", cfgEventVtxCut.value),
+      "kIsGoodZvtxFT0vsPV",
+      "kNoSameBunchPileup",
+      "kNoTimeFrameBorder",
+      "kNoITSROFrameBorder",
+      "kNoCollInTimeRangeStandard",
+      "kIsGoodITSLayersAll",
+      Form("Occupancy < %.0f", cfgOccupancyMax.value),
+      "All passed events"};
+    for (size_t i = 0; i < eventCutLabels.size(); ++i) {
+      hCutFlow->GetXaxis()->SetBinLabel(i + 1, eventCutLabels[i].c_str());
+    }
+
   } // end of init
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Cs>; //, aod::CentFT0Ms, aod::CentFT0As
@@ -235,29 +255,57 @@ struct kstarInOO {
   bool eventSelection(const EventType event)
   {
     if (cfgEventCutQA) {
+      histos.fill(HIST("hEvent_Cut"), 0);
       histos.fill(HIST("hPosZ_BC"), event.posZ());
       histos.fill(HIST("hcentFT0C_BC"), event.centFT0C());
     }
     if (!event.sel8())
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 1);
+
     if (std::abs(event.posZ()) > cfgEventVtxCut)
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 2);
+
     if (!event.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 3);
+
     if (!event.selection_bit(aod::evsel::kNoSameBunchPileup))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 4);
+
     if (!event.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 5);
+
     if (!event.selection_bit(aod::evsel::kNoITSROFrameBorder))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 6);
+
     if (!event.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 7);
+
     if (!event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 8);
+
     if (cfgOccupancySel && (event.trackOccupancyInTimeRange() > cfgOccupancyMax || event.trackOccupancyInTimeRange() < cfgOccupancyMin))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 9);
 
     if (cfgEventCutQA) {
+      histos.fill(HIST("hEvent_Cut"), 10);
       histos.fill(HIST("hPosZ_AC"), event.posZ());
       histos.fill(HIST("hcentFT0C_AC"), event.centFT0C());
     }
@@ -279,7 +327,6 @@ struct kstarInOO {
       histos.fill(HIST("hTPCChi2_BC"), track.tpcChi2NCl());
       histos.fill(HIST("QA_track_pT_BC"), track.pt());
     }
-
     if (cfgTrackGlobalSel && !track.isGlobalTrack())
       return false;
     if (track.pt() < cfgTrackMinPt)
@@ -361,7 +408,7 @@ struct kstarInOO {
           tofpid = 999;
         }
       }
-      if (std::sqrt(tpcpid * tpcpid + tofpid * tofpid) < cfgTrackCircleValue) {
+      if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
         tpcPIDPassed = true;
         tofPIDPassed = true;
       }
@@ -417,7 +464,7 @@ struct kstarInOO {
           tofpid = 999;
         }
       }
-      if (std::sqrt(tpcpid * tpcpid + tofpid * tofpid) < cfgTrackCircleValue) {
+      if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
         tpcPIDPassed = true;
         tofPIDPassed = true;
       }
