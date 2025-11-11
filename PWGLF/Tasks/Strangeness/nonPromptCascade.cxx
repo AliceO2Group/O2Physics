@@ -121,10 +121,10 @@ struct NPCascCandidate {
   float bachPionTOFNSigma;
   bool sel8;
   float multFT0C;
-  float multFT0A;
+  float multFV0A;
   float multFT0M;
   float centFT0C;
-  float centFT0A;
+  float centFV0A;
   float centFT0M;
   int multNTracksGlobal;
   uint32_t toiMask;
@@ -177,8 +177,8 @@ struct NonPromptCascadeTask {
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
-  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::MultsGlobal>;
-  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
@@ -205,6 +205,7 @@ struct NonPromptCascadeTask {
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
 
   Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
+  Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<float> cfgMinMult{"cfgMinMult", 3000.f, "Lower range of FT0M histo in zoomed histo"};
   Configurable<float> cfgMaxCent{"cfgMaxCent", 8.0025f, "Upper range of FT0M histo"};
 
@@ -224,9 +225,11 @@ struct NonPromptCascadeTask {
   std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCentZoom;
 
   int nBinsMult = cfgMaxMult;
+  int nBinsMultFV0 = cfgMaxMultFV0;
   int nBinsMultZoom = cfgMaxMult - cfgMinMult;
   int nBinsCentZoom = (cfgMaxCent + 0.0025) / 0.005;
   AxisSpec multAxis = {nBinsMult, 0, cfgMaxMult, "Multiplicity FT0M"};
+  AxisSpec multAxisFV0 = {nBinsMultFV0, 0, cfgMaxMultFV0, "Multiplicity FT0M"};
   AxisSpec centAxis = {101, -0.025, 101.025, "Centrality"};
   AxisSpec centAxisZoom = {nBinsCentZoom, -0.0025, cfgMaxCent, "Centrality"};
   AxisSpec multAxisZoom = {nBinsMultZoom, cfgMinMult, cfgMaxMult, "Multiplicity FT0M"};
@@ -274,6 +277,12 @@ struct NonPromptCascadeTask {
     auto cutsXi{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.296, 1.346}}))};
     mRegistry.add("hMultVsCent", "hMultVsCent", HistType::kTH2F, {centAxis, multAxis});
     mRegistry.add("hMultVsCentZoom", "hMultVsCentZoom", HistType::kTH2F, {centAxisZoom, multAxisZoom});
+    mRegistry.add("hMultFV0VshNTracks", "hMultFV0VshNTracks", HistType::kTH2F, {nTracksAxis, multAxisFV0});
+    mRegistry.add("hNTracksVsCentFV0A", "hNTracksVsCentFV0A", HistType::kTH2F, {nTracksAxis, centAxis});
+    mRegistry.add("hMultFT0CVshNTracks", "hMultFT0CVshNTracks", HistType::kTH2F, {nTracksAxis, multAxis});
+    mRegistry.add("hNTracksVsCentFT0C", "hNTracksVsCentFT0C", HistType::kTH2F, {nTracksAxis, centAxis});
+
+
     mRegistry.add("hNTracksVsCent", "hNTracksVsCent", HistType::kTH2F, {centAxis, nTracksAxis});
     mRegistry.add("hNTracksVsCentZoom", "hNTracksVsCentZoom", HistType::kTH2F, {centAxisZoom, nTracksAxis});
 
@@ -362,9 +371,13 @@ struct NonPromptCascadeTask {
       mHistsPerRunNtracktVsCentZoom[histNameTvCZ]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
       // run integrated histos
       mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
+      mRegistry.fill(HIST("hMultFV0VshNTracks"), coll.multNTracksGlobal(), coll.multFV0A());
+      mRegistry.fill(HIST("hNTracksVsCentFV0A"), coll.multNTracksGlobal(), coll.centFV0A());
+      mRegistry.fill(HIST("hMultFT0CVshNTracks"), coll.multNTracksGlobal(), coll.multFT0C());
+      mRegistry.fill(HIST("hNTracksVsCentFT0C"), coll.multNTracksGlobal(), coll.centFT0C());
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float)coll.multNTracksGlobal());
-      mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), coll.multNTracksGlobal());
+      mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), (float)coll.multNTracksGlobal());
     }
   };
 
@@ -587,7 +600,7 @@ struct NonPromptCascadeTask {
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachelor.hasTOF(),
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M(), collision.multNTracksGlobal(), toiMask, collision.selection_bit(aod::evsel::kNoSameBunchPileup)});
+                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFV0A(), collision.multFT0M(), collision.centFT0C(), collision.centFV0A(), collision.centFT0M(), collision.multNTracksGlobal(), toiMask, collision.selection_bit(aod::evsel::kNoSameBunchPileup)});
     }
   }
 
@@ -607,7 +620,7 @@ struct NonPromptCascadeTask {
                                   c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                                   c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                   c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                  c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
+                                  c.sel8, c.multFT0C, c.multFV0A, c.multFT0M, c.centFT0C, c.centFV0A, c.centFT0M, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
     }
   }
 
@@ -643,7 +656,7 @@ struct NonPromptCascadeTask {
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
+                                c.sel8, c.multFT0C, c.multFV0A, c.multFT0M, c.centFT0C, c.centFV0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
                                 mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
