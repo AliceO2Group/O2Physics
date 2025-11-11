@@ -64,6 +64,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 using namespace o2::aod::rctsel;
+using namespace o2::constants::math;
 
 namespace o2::analysis::qvectortask
 {
@@ -217,8 +218,8 @@ struct ZdcQVectors {
     std::vector<const char*> sides = {"A", "C"};
     std::vector<const char*> capCOORDS = {"X", "Y"};
 
-    AxisSpec axisPsiA = {100, -M_PI, M_PI, "#Psi_{1} ZNA"};
-    AxisSpec axisPsiC = {100, -M_PI, M_PI, "#Psi_{1} ZNC"};
+    AxisSpec axisPsiA = {100, -PI, PI, "#Psi_{1} ZNA"};
+    AxisSpec axisPsiC = {100, -PI, PI, "#Psi_{1} ZNC"};
 
     // This is the only histogram that is AL~WA~YS filled.
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
@@ -258,7 +259,7 @@ struct ZdcQVectors {
       if (cfgFillHistRegistry) {
         registry.add<TH2>(Form("QA/before/hSPplaneA"), "hSPplaneA", kTH2D, {axisPsiA, axisCent10});
         registry.add<TH2>(Form("QA/before/hSPplaneC"), "hSPplaneC", kTH2D, {axisPsiC, axisCent10});
-        registry.add<TH2>(Form("QA/before/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -M_PI, M_PI}, axisCent10});
+        registry.add<TH2>(Form("QA/before/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -PI, PI}, axisCent10});
         for (const auto& side : sides) {
           registry.add<TH2>(Form("QA/before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
         }
@@ -375,30 +376,6 @@ struct ZdcQVectors {
   {
     registry.fill(HIST("hEventCount"), evSel);
     // FT0C is the default centrality estimator
-    auto cent = collision.centFT0C();
-    cents.push_back(collision.centFT0C());
-
-    if (cfgFT0Cvariant1) {
-      if (cfgUseSecondCent)
-        cent = collision.centFT0CVariant1();
-      cents.push_back(collision.centFT0CVariant1());
-    }
-    if (cfgFT0M) {
-      if (cfgUseSecondCent)
-        cent = collision.centFT0M();
-      cents.push_back(collision.centFT0M());
-    }
-    if (cfgFV0A) {
-      if (cfgUseSecondCent)
-        cent = collision.centFV0A();
-      cents.push_back(collision.centFV0A());
-    }
-    if (cfgNGlobal) {
-      if (cfgUseSecondCent)
-        cent = collision.centNGlobal();
-      cents.push_back(collision.centNGlobal());
-    }
-    centrality = cent;
 
     if (!cfgFillCutAnalysis || cfgFillNothing)
       return;
@@ -407,16 +384,16 @@ struct ZdcQVectors {
     registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vy"))->Fill(Form("%d", runnumber), evSel, collision.posY());
     registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vz"))->Fill(Form("%d", runnumber), evSel, collision.posZ());
 
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t0_cent"))->Fill(cent, evSel, zdcBC.energyCommonZNA(), 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t1_cent"))->Fill(cent, evSel, zdcBC.energySectorZNA()[0], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t2_cent"))->Fill(cent, evSel, zdcBC.energySectorZNA()[1], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t3_cent"))->Fill(cent, evSel, zdcBC.energySectorZNA()[2], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t4_cent"))->Fill(cent, evSel, zdcBC.energySectorZNA()[3], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t0_cent"))->Fill(cent, evSel, zdcBC.energyCommonZNC(), 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t1_cent"))->Fill(cent, evSel, zdcBC.energySectorZNC()[0], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t2_cent"))->Fill(cent, evSel, zdcBC.energySectorZNC()[1], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t3_cent"))->Fill(cent, evSel, zdcBC.energySectorZNC()[2], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t4_cent"))->Fill(cent, evSel, zdcBC.energySectorZNC()[3], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t0_cent"))->Fill(centrality, evSel, zdcBC.energyCommonZNA(), 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t1_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[0], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t2_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[1], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t3_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[2], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t4_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[3], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t0_cent"))->Fill(centrality, evSel, zdcBC.energyCommonZNC(), 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t1_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[0], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t2_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[1], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t3_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[2], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t4_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[3], 1);
   }
 
   template <typename TCollision, typename TBunchCrossing>
@@ -677,17 +654,36 @@ struct ZdcQVectors {
 
     isSelected = true;
 
+    std::vector<float> centralities;
+
     auto cent = collision.centFT0C();
-    if (cfgFT0Cvariant1)
-      cent = collision.centFT0CVariant1();
-    if (cfgFT0M)
-      cent = collision.centFT0M();
-    if (cfgFV0A)
-      cent = collision.centFV0A();
-    if (cfgNGlobal)
-      cent = collision.centNGlobal();
+    centrality = cent;
+
+    centralities.push_back(collision.centFT0C());
+
+    if (cfgFT0Cvariant1) {
+      centralities.push_back(collision.centFT0CVariant1());
+      if (cfgUseSecondCent)
+        cent = collision.centFT0CVariant1();
+    }
+    if (cfgFT0M) {
+      centralities.push_back(collision.centFT0M());
+      if (cfgUseSecondCent)
+        cent = collision.centFT0M();
+    }
+    if (cfgFV0A) {
+      centralities.push_back(collision.centFV0A());
+      if (cfgUseSecondCent)
+        cent = collision.centFV0A();
+    }
+    if (cfgNGlobal) {
+      centralities.push_back(collision.centNGlobal());
+      if (cfgUseSecondCent)
+        cent = collision.centNGlobal();
+    }
 
     v = {collision.posX(), collision.posY(), collision.posZ()};
+    cents = centralities;
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     runnumber = foundBC.runNumber();

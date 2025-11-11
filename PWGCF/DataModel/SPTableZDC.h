@@ -10,6 +10,9 @@
 // or submit itself to any jurisdiction.
 
 /// \file SPTableZDC.h
+/// \author Noor Koster
+/// \since  11/2024
+/// \brief  Table to hold Q-vectors and neccesary information for the ZDC q-vector calibration.
 
 #ifndef PWGCF_DATAMODEL_SPTABLEZDC_H_
 #define PWGCF_DATAMODEL_SPTABLEZDC_H_
