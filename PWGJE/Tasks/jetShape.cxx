@@ -51,8 +51,11 @@ struct JetShapeTask {
   Configurable<int> nBinsTofBeta{"nBinsTofBeta", 350, "Number of Beta bins"};
   Configurable<float> pMax{"pMax", 7.0f, "Max value of p"};
   Configurable<float> ptMax{"ptMax", 5.0f, "Max value of pT"};
+  Configurable<float> jetPtMinForCut{"jetPtMinForCut", 0.0f, "Minimum value of jet pT cut"};
+  Configurable<float> jetPtMaxForCut{"jetPtMaxForCut", 200.0f, "Maximum value of the jet pT cut"};
   Configurable<int> nBinsP{"nBinsP", 70, "Number of p bins"};
   Configurable<int> nBinsPt{"nBinsPt", 50, "Number of pT bins"};
+  Configurable<int> nBinsJetPt{"nBinsJetPt", 10, "Number of jet pT bins"};
   Configurable<int> nBinsDistance{"nBinsDistance", 7, "Number of distance bins"};
   Configurable<float> distanceMax{"distanceMax", 0.7f, "Max value of distance"};
   Configurable<float> nSigmaTofCut{"nSigmaTofCut", 2.0f, "Number of sigma cut for TOF PID"};
@@ -62,10 +65,10 @@ struct JetShapeTask {
   Configurable<float> tpcNSigmaPiMax{"tpcNSigmaPiMax", 3.5f, "Max value of tpcNsigmaPion"};
 
   HistogramRegistry registry{"registry",
-                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"tpcTofPiOutOfJet", "tpcTofPiOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
-                              {"tpcTofPrOutOfJet", "tpcTofPrOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
+                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
+                              {"tpcTofPiOutOfJet", "tpcTofPiOutOfJet", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
+                              {"tpcTofPrOutOfJet", "tpcTofPrOutOfJet", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
                               {"tpcPi", "tpcPi", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tofPi", "tofPi", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcPr", "tpcPr", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
@@ -73,10 +76,10 @@ struct JetShapeTask {
                               {"tpcDedx", "tpcDedx", {HistType::kTHnSparseD, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}, {nBinsDistance, 0, distanceMax}}}},
                               {"tpcDedxOutOfJet", "tpcDedxOutOfJet", {HistType::kTH2F, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}}}},
                               {"tofBeta", "tofBeta", {HistType::kTH2F, {{nBinsPForBeta, 0, pMax}, {nBinsTofBeta, 0.4, 1.1}}}},
-                              {"pVsPtForPr", "pVsPtForPr", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"pVsPtForPi", "pVsPtPi", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"pVsPtForPrOutOfJet", "pVsPtForPrOutOfJet", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}}}},
-                              {"pVsPtForPiOutOfJet", "pVsPtPionOutOfJet", {HistType::kTH2F, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}}}},
+                              {"pVsPtForPr", "pVsPtForPr", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
+                              {"pVsPtForPi", "pVsPtPi", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsDistance, 0, distanceMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
+                              {"pVsPtForPrOutOfJet", "pVsPtForPrOutOfJet", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
+                              {"pVsPtForPiOutOfJet", "pVsPtPionOutOfJet", {HistType::kTHnSparseD, {{nBinsP, 0, pMax}, {nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}}}},
                               {"tofMass", "tofMass", {HistType::kTH1F, {{300, 0, 3}}}},
                               {"trackPhi", "trackPhi", {HistType::kTH1F, {{80, -1, 7}}}},
                               {"trackEta", "trackEta", {HistType::kTH1F, {{100, -1, 1}}}},
@@ -152,8 +155,8 @@ struct JetShapeTask {
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
-    static constexpr double kJetAreaFractionMinValue = -98.0;
-    if (jetAreaFractionMin > kJetAreaFractionMinValue) {
+    static constexpr double JetAreaFractionMinValue = -98.0;
+    if (jetAreaFractionMin > JetAreaFractionMinValue) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
@@ -161,11 +164,11 @@ struct JetShapeTask {
         return false;
       }
     }
-    static constexpr double kLeadingConstituentPtMinValue = 5.0;
-    static constexpr double kLeadingConstituentPtMaxValue = 9998.0;
+    static constexpr double LeadingConstituentPtMinValue = 5.0;
+    static constexpr double LeadingConstituentPtMaxValue = 9998.0;
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > kLeadingConstituentPtMinValue);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < kLeadingConstituentPtMaxValue);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > LeadingConstituentPtMinValue);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < LeadingConstituentPtMaxValue);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -349,15 +352,15 @@ struct JetShapeTask {
           registry.fill(HIST("tpcDedxOutOfJet"), track.p(), track.tpcSignal());
 
           if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
-            registry.fill(HIST("tpcTofPiOutOfJet"), track.p(), track.tpcNSigmaPi());
+            registry.fill(HIST("tpcTofPiOutOfJet"), track.p(), track.tpcNSigmaPi(), jet.pt());
             if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
-              registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt());
+              registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt(), jet.pt());
             }
           }
           if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
-            registry.fill(HIST("tpcTofPrOutOfJet"), track.p(), track.tpcNSigmaPr());
+            registry.fill(HIST("tpcTofPrOutOfJet"), track.p(), track.tpcNSigmaPr(), jet.pt());
             if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
-              registry.fill(HIST("pVsPtForPrOutOfJet"), track.p(), track.pt());
+              registry.fill(HIST("pVsPtForPrOutOfJet"), track.p(), track.pt(), jet.pt());
             }
           }
         }
@@ -367,16 +370,16 @@ struct JetShapeTask {
         registry.fill(HIST("tofBeta"), track.p(), track.beta());
 
         if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
-          registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance);
+          registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance, jet.pt());
           if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
-            registry.fill(HIST("pVsPtForPr"), track.p(), track.pt(), distance);
+            registry.fill(HIST("pVsPtForPr"), track.p(), track.pt(), distance, jet.pt());
           }
         }
 
         if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
-          registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance);
+          registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance, jet.pt());
           if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
-            registry.fill(HIST("pVsPtForPi"), track.p(), track.pt(), distance);
+            registry.fill(HIST("pVsPtForPi"), track.p(), track.pt(), distance, jet.pt());
           }
         }
       }
