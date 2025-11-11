@@ -117,7 +117,7 @@ struct strangeness_derived_tutorial {
   using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   void process(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-               soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas>> const& Cascades,
+               soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas, aod::CascTOFPIDs>> const& Cascades,
                dauTracks const&)
   {
     // Fill the event counter
@@ -167,7 +167,7 @@ struct strangeness_derived_tutorial {
       bool xiPassTOFSelection = true;
       bool omegaPassTOFSelection = true;
       if (casc.sign() < 0) {
-        if (posDaughterTrackCasc.hasTOF()) {
+        if (casc.positiveHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
             xiPassTOFSelection &= false;
           }
@@ -175,7 +175,7 @@ struct strangeness_derived_tutorial {
             omegaPassTOFSelection &= false;
           }
         }
-        if (negDaughterTrackCasc.hasTOF()) {
+        if (casc.negativeHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
             xiPassTOFSelection &= false;
           }
@@ -184,7 +184,7 @@ struct strangeness_derived_tutorial {
           }
         }
       } else {
-        if (posDaughterTrackCasc.hasTOF()) {
+        if (casc.positiveHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
             xiPassTOFSelection &= false;
           }
@@ -192,7 +192,7 @@ struct strangeness_derived_tutorial {
             omegaPassTOFSelection &= false;
           }
         }
-        if (negDaughterTrackCasc.hasTOF()) {
+        if (casc.negativeHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
             xiPassTOFSelection &= false;
           }
@@ -202,7 +202,7 @@ struct strangeness_derived_tutorial {
         }
       }
 
-      if (bachDaughterTrackCasc.hasTOF()) {
+      if (casc.bachelorHasTOF()) {
         if (std::abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
           xiPassTOFSelection &= false;
         }
