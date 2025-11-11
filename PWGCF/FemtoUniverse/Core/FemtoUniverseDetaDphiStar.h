@@ -668,6 +668,11 @@ class FemtoUniverseDetaDphiStar
 
     auto deta = part1.eta() - part2.eta();
     auto dphiAvg = averagePhiStar(part1, part2, 0);
+    auto DeltaPhiStarMax = static_cast<float>(cutDeltaPhiStarMaxVector[ktbinval]);
+    auto DeltaPhiStarMin = static_cast<float>(cutDeltaPhiStarMinVector[ktbinval]);
+    auto DeltaEtaMax = static_cast<float>(cutDeltaEtaMaxVector[ktbinval]);
+    auto DeltaEtaMin = static_cast<float>(cutDeltaEtaMinVector[ktbinval]);
+
     if (ChosenEventType == femto_universe_container::EventType::same) {
       histdetadphisamebeforekT[ktbinval]->Fill(deta, dphiAvg);
     } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
@@ -676,9 +681,9 @@ class FemtoUniverseDetaDphiStar
       LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
     }
 
-    if (CircCut && (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMaxVector[ktbinval], 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMaxVector[ktbinval], 2) < 1.)) {
+    if (CircCut && (std::pow(dphiAvg, 2) / std::pow(DeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(DeltaEtaMax, 2) < 1.)) {
       return true;
-    } else if (!CircCut && (dphiAvg > cutDeltaPhiStarMinVector[ktbinval]) && (dphiAvg < cutDeltaPhiStarMaxVector[ktbinval]) && (deta > cutDeltaEtaMinVector[ktbinval]) && (deta < cutDeltaEtaMaxVector[ktbinval])) {
+    } else if (!CircCut && (dphiAvg > DeltaPhiStarMin) && (dphiAvg < DeltaPhiStarMax) && (deta > DeltaEtaMin) && (deta < DeltaEtaMax)) {
       return true;
     } else {
       if (ChosenEventType == femto_universe_container::EventType::same) {

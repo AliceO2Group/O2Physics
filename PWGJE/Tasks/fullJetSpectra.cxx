@@ -24,8 +24,8 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/CCDB/TriggerAliases.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
@@ -41,6 +41,7 @@
 
 #include <TH1.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -120,7 +121,7 @@ struct FullJetSpectra {
   Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0, "minimum value of pTHat"};
 
   int trackSelection = -1;
-  const float kJetAreaFractionMinThreshold = -98.0f;
+  // const float kJetAreaFractionMinThreshold = -98.0f;
   const float kLeadingTrackPtMinThreshold = -98.0f;
   const float kLeadingTrackPtMaxThreshold = 9998.0f;
   const float kLeadingClusterPtMinThreshold = -98.0f;
@@ -182,14 +183,14 @@ struct FullJetSpectra {
     if (doprocessBCs) {
       auto hBCCounter = registry.get<TH1>(HIST("hBCCounter"));
       hBCCounter->GetXaxis()->SetBinLabel(1, "AllBC");
-      hBCCounter->GetXaxis()->SetBinLabel(2, "BC+TVX");
-      hBCCounter->GetXaxis()->SetBinLabel(3, "BC+TVX+NoTFB");
-      hBCCounter->GetXaxis()->SetBinLabel(4, "BC+TVX+NoTFB+NoITSROFB");
-      hBCCounter->GetXaxis()->SetBinLabel(5, "CollinBC");
-      hBCCounter->GetXaxis()->SetBinLabel(6, "CollinBC+Sel8");
-      hBCCounter->GetXaxis()->SetBinLabel(7, "CollinBC+Sel8Full");
-      hBCCounter->GetXaxis()->SetBinLabel(8, "CollinBC+Sel8Full+GoodZvtx");
-      hBCCounter->GetXaxis()->SetBinLabel(9, "CollinBC+Sel8Full+VtxZ+GoodZvtx");
+      hBCCounter->GetXaxis()->SetBinLabel(2, "BC+kTVXinEMC");
+      hBCCounter->GetXaxis()->SetBinLabel(3, "BC+kTVXinEMC+NoTFB");
+      hBCCounter->GetXaxis()->SetBinLabel(4, "BC+kTVXinEMC+NoTFB+NoITSROFB");
+      hBCCounter->GetXaxis()->SetBinLabel(5, "kTVXinEMC+CollinBC");
+      hBCCounter->GetXaxis()->SetBinLabel(6, "kTVXinEMC+CollinBC+Sel8");
+      hBCCounter->GetXaxis()->SetBinLabel(7, "kTVXinEMC+CollinBC+Sel8Full");
+      hBCCounter->GetXaxis()->SetBinLabel(8, "kTVXinEMC+CollinBC+Sel8Full+GoodZvtx");
+      hBCCounter->GetXaxis()->SetBinLabel(9, "kTVXinEMC+CollinBC+Sel8Full+VtxZ+GoodZvtx");
     }
 
     if (doprocessDataTracks || doprocessMCTracks) {
@@ -233,17 +234,21 @@ struct FullJetSpectra {
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(1, "allDetTrigColl");
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(2, "DetTrigCollAfterZorroSelection");
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(3, "DetTrigCollWithVertexZ");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(4, "EventsNotSatisfyingEventSelection");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(5, "EMCreadoutDetTrigEventsWithkTVXinEMC");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(6, "OnlyHighPt+NoLowPt+NoMB");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(7, "OnlyLowPt+NoMB");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(8, "OnlyMB");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(9, "FullJetHighPt+FullJetLowPt");
-      // hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(9, "EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(10, "FullJetHighPt+MB");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(11, "FullJetLowPt+MB");
-      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(12, "AllRejectedTrigOverlaps");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(4, "EventsNotSatisfyingEvent+TriggerSelection");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(5, "OnlyFullJetHighPt+NoFullJetLowPt");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(6, "OnlyFullJetLowPt");
+      // hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(7, "OnlyLowPt+NoMB");
+      // hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(8, "OnlyMB");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(7, "FullJetHighPt+FullJetLowPt");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(8, "FullJetHighPt+MB");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(9, "FullJetLowPt+MB");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(10, "AllRejectedTrigOverlaps");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(11, "EMCAcceptedDetTrigCollAfterTrigOverlapChecks");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(12, "AllRejectedDetTrigEventsAfterEMCEventSelection");
       hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(13, "EMCAcceptedDetTrigColl");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(14, "EMCAcceptedDetTrigCollWithLowChargedJetTriggers");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(15, "EMCAcceptedDetTrigCollWithHighChargedJetTriggers");
+      hDetTrigcollisionCounter->GetXaxis()->SetBinLabel(16, "EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers");
     }
 
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
@@ -419,7 +424,7 @@ struct FullJetSpectra {
     }
 
     // Jet QA histograms
-    if (doprocessJetsData || doprocessJetsMCD || doprocessJetsMCDWeighted) {
+    if (doprocessJetsData || doprocessJetsMCD || doprocessJetsMCDWeighted || doprocessJetsTriggeredData) {
 
       registry.add("hDetcollisionCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.}}}, doSumw2);
 
@@ -471,7 +476,8 @@ struct FullJetSpectra {
       registry.add("h2_full_jet_nef_corr_allTracks70", "Jet pT vs NEF (corr, alltracks70); p_{T,jet}; NEF", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 1.}}}, doSumw2);
     }
     if (doprocessJetsTriggeredData) {
-      registry.add("hDetTrigcollisionCounter", "event status;;entries", {HistType::kTH1F, {{14, 0.0, 14.}}}, doSumw2);
+      registry.add("hDetTrigcollisionCounter", "event status;;entries", {HistType::kTH1F, {{17, 0.0, 17.}}}, doSumw2);
+      // registry.add("h2_full_jet_nef_rejected", "#it{p}_{T,jet} vs nef at Det Level for rejected events; #it{p}_{T,jet} (GeV/#it{c});nef", {HistType::kTH2F, {{350, 0., 350.}, {105, 0., 1.05}}}, doSumw2);
     }
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
       registry.add("hPartcollisionCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}, doSumw2);
@@ -769,7 +775,6 @@ struct FullJetSpectra {
   void fillJetHistograms(T const& jet, float weight = 1.0)
   {
     // float neutralEnergy = 0.0;
-    double sumtrackE = 0.0;
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_full_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_full_jet_eta"), jet.eta(), weight);
@@ -841,7 +846,7 @@ struct FullJetSpectra {
       registry.fill(HIST("h2_full_jet_nef_corr_oneTrack70"), jet.pt(), nef_corr_oneTrack70, weight);
       registry.fill(HIST("h2_full_jet_nef_corr_allTracks100"), jet.pt(), nef_corr_allTracks100, weight);
       registry.fill(HIST("h2_full_jet_nef_corr_allTracks70"), jet.pt(), nef_corr_allTracks70, weight);
-
+      double sumtrackE = 0;
       for (const auto& jettrack : jet.template tracks_as<aod::JetTracks>()) {
         sumtrackE += jettrack.energy();
 
@@ -865,8 +870,8 @@ struct FullJetSpectra {
   template <typename T>
   void fillRejectedJetHistograms(T const& jet, float weight = 1.0)
   {
-    float neutralEnergy = 0.0;
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
+      float neutralEnergy = 0.0;
       for (const auto& cluster : jet.template clusters_as<ClusterWithCorrections>()) {
         neutralEnergy += cluster.energy();
       }
@@ -878,12 +883,6 @@ struct FullJetSpectra {
   template <typename T>
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
-    float neutralEnergy = 0.0;
-    int neutralconsts = 0;
-    int chargedconsts = 0;
-    int mcpjetOutsideFid = 0;
-    int mcpjetInsideFid = 0;
-
     auto isInFiducial = [&](auto const& jet) {
       return jet.eta() >= jetEtaMin && jet.eta() <= jetEtaMax &&
              jet.phi() >= jetPhiMin && jet.phi() <= jetPhiMax;
@@ -899,18 +898,19 @@ struct FullJetSpectra {
 
       if (!isInFiducial(jet)) {
         // jet is outside
-        mcpjetOutsideFid++;
-        registry.fill(HIST("h2_full_mcpjetOutsideFiducial_pt"), jet.pt(), mcpjetOutsideFid, weight);
+        registry.fill(HIST("h2_full_mcpjetOutsideFiducial_pt"), jet.pt(), 1, weight);
         registry.fill(HIST("h_full_mcpjetOutside_eta_part"), jet.eta(), weight);
         registry.fill(HIST("h_full_mcpjetOutside_phi_part"), jet.phi(), weight);
       } else {
         // jet is inside
-        mcpjetInsideFid++;
-        registry.fill(HIST("h2_full_mcpjetInsideFiducial_pt"), jet.pt(), mcpjetInsideFid, weight);
+        registry.fill(HIST("h2_full_mcpjetInsideFiducial_pt"), jet.pt(), 1, weight);
         registry.fill(HIST("h_full_mcpjetInside_eta_part"), jet.eta(), weight);
         registry.fill(HIST("h_full_mcpjetInside_phi_part"), jet.phi(), weight);
       }
 
+      float neutralEnergy = 0.0;
+      int neutralconsts = 0;
+      int chargedconsts = 0;
       for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
         auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
         if (pdgParticle->Charge() == 0) {
@@ -1123,10 +1123,10 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsData, "Full Jets Data", false);
 
-  void processJetsTriggeredData(soa::Filtered<EMCCollisionsTriggeredData>::iterator const& collision, FullJetTableDataJoined const& /*jets*/,
+  void processJetsTriggeredData(soa::Filtered<EMCCollisionsTriggeredData>::iterator const& collision, FullJetTableDataJoined const& jets,
                                 aod::JetTracks const&, ClusterWithCorrections const&, aod::JBCs const&)
   {
-    // bool eventAccepted = false;
+    bool eventAccepted = false;
 
     registry.fill(HIST("hDetTrigcollisionCounter"), 0.5); // allDetTrigColl
 
@@ -1149,11 +1149,11 @@ struct FullJetSpectra {
       registry.fill(HIST("hDetTrigcollisionCounter"), 3.5); // EventsNotSatisfyingEvent+TriggerSelection
       return;
     }
-    //- should this kTVX HW trigger be still in place??
-    if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+    //- should this kTVX HW trigger be still in place? - Removing it for now; probably not needed if we are only interested in SW triggers
+    /*if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
       // eventAccepted = true;
       registry.fill(HIST("hDetTrigcollisionCounter"), 4.5); // EMCreadoutDetTrigEventsWithkTVXinEMC
-    }
+    }*/
     // split event selections based on selected triggers -
     //  make sure there're no trigger overlaps: when analysing JetFullHighPt-> check no JetFullLowPt and kTVXinEMC are fired
     //  when analysing JetFullLowPt, check kTVXinEMC isn't fired!
@@ -1171,75 +1171,85 @@ struct FullJetSpectra {
 
     // Case 1: hasFullJetHighPt && !hasFullJetLowPt && !hasMB : Pure FullJetHighPt
     //  i.e. for every JetFullHighPt trig that was fired, check the low triggers weren't fired
-    if (hasFullJetHighPt && !hasFullJetLowPt && !hasMB) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 5.5); // OnlyHighPt+NoLowPt+NoMB
+    if (hasFullJetHighPt && !hasFullJetLowPt) {
+      registry.fill(HIST("hDetTrigcollisionCounter"), 4.5); // FullJetHighPt+FullJetLowPt
+      eventAccepted = true;
     }
     // Case 2: hasFullJetLowPt && !hasMB : Pure FullJetLowPt
     //  i.e. for every hasFullJetLowPt trig that was fired, check the MB trig wasn't fired
-    if (hasFullJetLowPt && !hasMB) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 6.5); // OnlyLowPt+NoMB
+    if (hasFullJetLowPt) {
+      registry.fill(HIST("hDetTrigcollisionCounter"), 5.5); // FullJetLowPt
+      eventAccepted = true;
     }
-    // Case 3: hasMB && !hasFullJetLowPt && !hasFullJetHighPt : Pure MB
-    //  i.e. for every MB trig that was fired, check the higher trigs weren't fired
-    if (hasMB && !hasFullJetLowPt && !hasFullJetHighPt) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 7.5); // OnlyMB
-    }
+    // // Case 3: hasMB && !hasFullJetLowPt && !hasFullJetHighPt : Pure MB
+    // //  i.e. for every MB trig that was fired, check the higher trigs weren't fired
+    // if (hasMB && !hasFullJetLowPt && !hasFullJetHighPt) {
+    //   registry.fill(HIST("hDetTrigcollisionCounter"), 7.5); // OnlyMB
+    // }
 
     //*****Step 2: Check for trigger overlap cases (for QA):*****
 
     if (hasFullJetHighPt && hasFullJetLowPt) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 8.5); // FullJetHighPt+FullJetLowPt
+      registry.fill(HIST("hDetTrigcollisionCounter"), 6.5); // FullJetHighPt+FullJetLowPt
+      eventAccepted = true;
     }
     if (hasFullJetHighPt && hasMB) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 9.5); // FullJetHighPt+MB
+      registry.fill(HIST("hDetTrigcollisionCounter"), 7.5); // FullJetHighPt+MB
+      eventAccepted = true;
     }
     if (hasFullJetLowPt && hasMB) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 10.5); // FullJetLowPt+MB
+      registry.fill(HIST("hDetTrigcollisionCounter"), 8.5); // FullJetLowPt+MB
+      eventAccepted = true;
     }
 
     //*****Step 3: Reject ALL overlapping events by applying EXCLUSIVE Trigger Selections *****
     // Skip further processing if ANY overlaps exist
-    if ((hasFullJetHighPt && (hasFullJetLowPt || hasMB)) || (hasFullJetLowPt && hasMB)) {
-      registry.fill(HIST("hDetTrigcollisionCounter"), 11.5); // AllRejectedTrigOverlaps
+    // if ((hasFullJetHighPt && (hasFullJetLowPt || hasMB)) || (hasFullJetLowPt && hasMB)) {
+    //   registry.fill(HIST("hDetTrigcollisionCounter"), 11.5); // AllRejectedTrigOverlaps
+    //   return;
+    // }
+    if ((hasFullJetHighPt && hasFullJetLowPt)) {
+      registry.fill(HIST("hDetTrigcollisionCounter"), 9.5); // AllRejectedTrigOverlaps
+      return;
+    }
+    registry.fill(HIST("hDetTrigcollisionCounter"), 10.5); // EMCAcceptedDetTrigCollAfterTrigOverlapChecks
+
+    if (!eventAccepted) {
+      for (auto const& jet : jets) {
+        if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) || !isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet)) {
+          fillRejectedJetHistograms(jet, 1.0);
+        }
+      }
+      registry.fill(HIST("hDetTrigcollisionCounter"), 11.5); // AllRejectedDetTrigEventsAfterEMCEventSelection
       return;
     }
     registry.fill(HIST("hDetTrigcollisionCounter"), 12.5); // EMCAcceptedDetTrigColl
-    // if (!eventAccepted) {
-    //   // for (auto const& jet : jets) {
-    //   //   if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) || !isAcceptedRecoJet<aod::JetTracks, aod::JetClusters>(jet)) {
-    //   //     fillRejectedJetHistograms(jet, 1.0);
-    //   //   }
-    //   // }
-    //   registry.fill(HIST("hDetTrigcollisionCounter"), 4.5); // AllRejectedDetTrigEventsAfterEMCEventSelection
-    //   return;
-    // }
-    // registry.fill(HIST("hDetTrigcollisionCounter"), 5.5); // EMCAcceptedDetTrigCollWithkTVXinEMC
-    //
 
-    // if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
-    //   registry.fill(HIST("hDetTrigcollisionCounter"), 8.5); // EMCAcceptedDetTrigCollWithLowChargedJetTriggers
-    //   eventAccepted = true;
-    // }
-    // if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
-    //   registry.fill(HIST("hDetTrigcollisionCounter"), 9.5); // EMCAcceptedDetTrigCollWithHighChargedJetTriggers
-    //   eventAccepted = true;
-    // }
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChLowPt)) {
+      registry.fill(HIST("hDetTrigcollisionCounter"), 13.5); // EMCAcceptedDetTrigCollWithLowChargedJetTriggers
+      eventAccepted = true;
+    }
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetChHighPt)) {
+      registry.fill(HIST("hDetTrigcollisionCounter"), 14.5); // EMCAcceptedDetTrigCollWithHighChargedJetTriggers
+      eventAccepted = true;
+    }
 
-    // if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullHighPt)) {
-    //   registry.fill(HIST("hDetTrigcollisionCounter"), 8.5); // EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers
-    // }
-    // for (auto const& jet : jets) {
-    //   if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-    //     continue;
-    //   }
-    //   if (jet.phi() < jetPhiMin || jet.phi() > jetPhiMax) {
-    //     continue;
-    //   }
-    //   if (!isAcceptedRecoJet<aod::JetTracks, aod::JetClusters>(jet)) {
-    //     continue;
-    //   }
-    //   fillJetHistograms(jet);
-    // }
+    if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullLowPt) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullHighPt)) {
+      registry.fill(HIST("hDetTrigcollisionCounter"), 15.5); // EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers
+      eventAccepted = true;
+    }
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (jet.phi() < jetPhiMin || jet.phi() > jetPhiMax) {
+        continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet)) {
+        continue;
+      }
+      fillJetHistograms(jet);
+    }
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsTriggeredData, "Full Jets Triggered Data", false);
 
@@ -2161,9 +2171,7 @@ struct FullJetSpectra {
     // std::cout << "******************************************** " << std::endl;
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets"), selectedJets.size(), 1.0);
 
@@ -2330,9 +2338,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets"), selectedJets.size(), 1.0);
 
@@ -2490,8 +2496,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets"), selectedJets.size(), eventWeight);
 
@@ -2653,9 +2658,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets_part"), selectedJets.size(), 1.0);
 
@@ -2817,9 +2820,7 @@ struct FullJetSpectra {
 
     if (selectedJets.size() == 0) { // no jets = no leading jet
       return;
-    }
-
-    if (selectedJets.size() > 0) {
+    } else {
       // Jet multiplicity per event
       registry.fill(HIST("h_all_fulljet_Njets_part"), selectedJets.size(), mccollision.weight());
 
