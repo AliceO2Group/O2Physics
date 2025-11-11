@@ -182,6 +182,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
   static constexpr std::size_t NDaughters{3u};
+  static constexpr float kEtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -432,6 +433,13 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(HfHelper::yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
           continue;
         }
+        // Remove D+ candidates for which at least one daughter has |eta| > 0.8
+        double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
+        double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
+        double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
+        if (std::abs(etaDaugh1) >= kEtaDaughtersMax || std::abs(etaDaugh2) >= kEtaDaughtersMax || std::abs(etaDaugh3) >= kEtaDaughtersMax) {
+          continue;
+        }
         // efficiency weight determination
         int const effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
         double efficiencyWeightD = 1.;
@@ -577,13 +585,20 @@ struct HfCorrelatorDplusHadrons {
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() == NDaughters) {
-        for (const auto& dauIdx : listDaughters) {
-          auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
-          counterDaughters += 1;
-          prongsId[counterDaughters - 1] = daughI.globalIndex();
+      if (listDaughters.size() != NDaughters)
+        continue;
+      bool isDaughtersOk = true;
+      for (const auto& dauIdx : listDaughters) {
+        auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
+        if (std::abs(daughI.eta()) >= kEtaDaughtersMax) {
+          isDaughtersOk = false;
+          break;
         }
+        counterDaughters += 1;
+        prongsId[counterDaughters - 1] = daughI.globalIndex();
       }
+      if (!isDaughtersOk)
+        continue; // Skip this D+ candidate if any daughter fails eta cut
       counterDplusHadron++;
       // Dplus Hadron correlation dedicated section
       // if it's a Dplus particle, search for Hadron and evaluate correlations
