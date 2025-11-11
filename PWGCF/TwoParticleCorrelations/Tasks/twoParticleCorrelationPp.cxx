@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   twoParticleCorrelationpp.cxx
+/// \file   twoParticleCorrelationPp.cxx
 /// \brief  Task for two particle correlation in pp in order to calculate a baseline in a template fit for the flow coefficients
 /// \author Josué Martínez García <josuem@cern.ch>
 
@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 constexpr float kThreeHalfPi = 1.5f * PI;
 
-struct TwoParticleCorrelationpp {
+struct TwoParticleCorrelationPp {
 
   // Declare configurables on events/collisions
   Configurable<int> minMultiplicity{"minMultiplicity", 2, {"Range on multiplicity"}};
@@ -386,7 +386,7 @@ struct TwoParticleCorrelationpp {
     }
   }
 
-  PROCESS_SWITCH(TwoParticleCorrelationpp, processMixed, "Process mixed events", true);
+  PROCESS_SWITCH(TwoParticleCorrelationPp, processMixed, "Process mixed events", true);
 
   void processSame(FullCollisions::iterator const& collision, FullTracks const& tracks)
   {
@@ -411,7 +411,7 @@ struct TwoParticleCorrelationpp {
     fillCorrelations(same, tracks, tracks, multiplicity, collision.posZ(), SameEventTag{});
   }
 
-  PROCESS_SWITCH(TwoParticleCorrelationpp, processSame, "Process same events", true);
+  PROCESS_SWITCH(TwoParticleCorrelationPp, processSame, "Process same events", true);
 
   void process(FullCollisions::iterator const& collision, FullTracks const& tracks)
   {
@@ -563,12 +563,12 @@ struct TwoParticleCorrelationpp {
     }
   }
 
-  PROCESS_SWITCH(TwoParticleCorrelationpp, process, "Process mixed events", true);
+  PROCESS_SWITCH(TwoParticleCorrelationPp, process, "Process mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TwoParticleCorrelationpp>(cfgc, "two-particle-correlation-pp"),
+    adaptAnalysisTask<TwoParticleCorrelationPp>(cfgc),
   };
 }
