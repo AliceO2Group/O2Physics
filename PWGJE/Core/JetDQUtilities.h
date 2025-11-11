@@ -352,7 +352,7 @@ void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U&
 template <typename T, typename U>
 void fillDielectronCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& DielectronMcTable)
 {
-  DielectronMcTable(mcCollisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.y(), candidate.e(), candidate.m(), candidate.pdgCode(), candidate.getGenStatusCode(), candidate.getHepMCStatusCode(), candidate.isPhysicalPrimary(), candidate.decayFlag(), candidate.origin());
+  DielectronMcTable(mcCollisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.y(), candidate.e(), candidate.m(), candidate.pdgCode(), candidate.statusCode(), candidate.flags(), candidate.decayFlag(), candidate.origin());
 }
 
 }; // namespace jetdqutilities

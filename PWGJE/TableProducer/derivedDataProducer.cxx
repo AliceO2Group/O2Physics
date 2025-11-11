@@ -429,7 +429,7 @@ struct JetDerivedDataProducerTask {
         i++;
       }
     }
-    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.flags(), particle.statusCode(), mothersId, daughtersId);
+    products.jMcParticlesTable(particle.mcCollisionId(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersId, daughtersId);
     products.jParticlesParentIndexTable(particle.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processParticles, "produces derived parrticle table", false);
@@ -788,7 +788,7 @@ struct JetDerivedDataProducerTask {
           }
         }
         auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-        products.jV0McsTable(products.jV0McCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetv0utilities::setV0ParticleDecayBit(particles, particle));
+        products.jV0McsTable(products.jV0McCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.statusCode(), particle.flags(), jetv0utilities::setV0ParticleDecayBit(particles, particle));
         products.jV0McIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
       }
     }
@@ -842,7 +842,7 @@ struct JetDerivedDataProducerTask {
           }
         }
         auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-        products.jDielectronMcsTable(products.jDielectronMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetdqutilities::setDielectronParticleDecayBit(particles, particle), RecoDecay::getCharmHadronOrigin(particles, particle, false)); // Todo: should the last thing be false?
+        products.jDielectronMcsTable(products.jDielectronMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.statusCode(), particle.flags(), jetdqutilities::setDielectronParticleDecayBit(particles, particle), RecoDecay::getCharmHadronOrigin(particles, particle, false)); // Todo: should the last thing be false?
         products.jDielectronMcIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
         products.JDielectronMcRCollDummysTable(false);
       }
