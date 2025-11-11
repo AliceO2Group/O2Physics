@@ -274,6 +274,11 @@ struct TrackJetQa {
     histos.fill(HIST("TrackPar/signed1Pt"), track.pt(), track.sigma1Pt() * track.pt(), track.signed1Pt(), collision.centFT0A(), collision.centFT0C());
     histos.fill(HIST("TrackPar/snp"), track.pt(), track.sigma1Pt() * track.pt(), track.snp(), collision.centFT0A(), collision.centFT0C());
     histos.fill(HIST("TrackPar/tgl"), track.pt(), track.sigma1Pt() * track.pt(), track.tgl(), collision.centFT0A(), collision.centFT0C());
+    for (unsigned uint32_t i = 0; i < 32; i++) {
+      if (track.flags() & (1 << i)) {
+        histos.fill(HIST("TrackPar/flags"), track.pt(), track.sigma1Pt() * track.pt(), i);
+      }
+    }
     histos.fill(HIST("TrackPar/dcaXY"), track.pt(), track.sigma1Pt() * track.pt(), track.dcaXY(), collision.centFT0A(), collision.centFT0C());
     histos.fill(HIST("TrackPar/dcaZ"), track.pt(), track.sigma1Pt() * track.pt(), track.dcaZ(), collision.centFT0A(), collision.centFT0C());
     histos.fill(HIST("TrackPar/length"), track.pt(), track.sigma1Pt() * track.pt(), track.length(), collision.centFT0A(), collision.centFT0C());
