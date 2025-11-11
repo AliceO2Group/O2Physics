@@ -59,7 +59,7 @@ struct TriggerCorrelationsTask {
   {
     for (std::vector<int>::size_type iTrig = 0; iTrig < triggerMaskBits.size(); iTrig++) {
       if (fill) {
-        if (iTrig >= 0 && iTrig < nChargedTriggers && jetderiveddatautilities::selectChargedTrigger(collision, iTrig + 1)) {
+        if (iTrig < nChargedTriggers && jetderiveddatautilities::selectChargedTrigger(collision, iTrig + 1)) {
           registry.fill(HIST("triggerCorrelations"), iCurrentTrig, iTrig);
         }
         if (iTrig >= nChargedTriggers && iTrig < (nChargedTriggers + nChargedHFTriggers) && jetderiveddatautilities::selectChargedHFTrigger(collision, iTrig - nChargedTriggers + 1)) {
