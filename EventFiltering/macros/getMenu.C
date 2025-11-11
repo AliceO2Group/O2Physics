@@ -63,7 +63,7 @@ void getMenu(std::string period)
 
   std::cout << "First line: " << firstLine << '\n';
   TGrid::Connect("alien://");
-  TFile *scalersFile = TFile::Open((std::string("alien://") + firstLine).data(), "READ");
+  TFile* scalersFile = TFile::Open((std::string("alien://") + firstLine).data(), "READ");
   TH1D* counters = (TH1D*)scalersFile->Get("central-event-filter-task/scalers/mFiltered");
   TAxis* axis = counters->GetXaxis();
 
