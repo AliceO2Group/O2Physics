@@ -172,33 +172,34 @@ std::tuple<double, double> estimateRhoPerpCone(const T& inputParticles, const U&
   double perpMdDensity1 = 0;
   double perpMdDensity2 = 0;
 
-  double PerpendicularConeAxisPhi1 = 999., PerpendicularConeAxisPhi2 = 999.;
+  const double jetPhi = RecoDecay::constrainAngle<double, double>(jet.phi(), -M_PI);
+  const double jetEta = jet.eta();
+  const double radius = static_cast<double>(perpConeR);
 
   // build 2 perp cones in phi around the leading jet (right and left of the jet)
-  PerpendicularConeAxisPhi1 = RecoDecay::constrainAngle<double, double>(jet.phi() + (M_PI / 2.)); // This will contrain the angel between 0-2Pi
-  PerpendicularConeAxisPhi2 = RecoDecay::constrainAngle<double, double>(jet.phi() - (M_PI / 2.)); // This will contrain the angel between 0-2Pi
+  double PerpendicularConeAxisPhi1 = RecoDecay::constrainAngle<double, double>(jetPhi + (M_PI / 2.), -M_PI); // This will contrain the angel between -pi & Pi
+  double PerpendicularConeAxisPhi2 = RecoDecay::constrainAngle<double, double>(jetPhi - (M_PI / 2.), -M_PI); // This will contrain the angel between -pi & Pi
 
-  for (auto& particle : inputParticles) {
+  for (const auto& particle : inputParticles) {
     // sum the momentum of all paricles that fill the two cones
-    double dPhi1 = particle.phi() - PerpendicularConeAxisPhi1;
-    dPhi1 = RecoDecay::constrainAngle<double, double>(dPhi1, -M_PI); // This will contrain the angel between -pi & Pi
-    double dPhi2 = particle.phi() - PerpendicularConeAxisPhi2;
-    dPhi2 = RecoDecay::constrainAngle<double, double>(dPhi2, -M_PI); // This will contrain the angel between -pi & Pi
-    double dEta = jet.eta() - particle.eta();                        // The perp cone eta is the same as the leading jet since the cones are perpendicular only in phi
-    if (TMath::Sqrt(dPhi1 * dPhi1 + dEta * dEta) <= static_cast<double>(perpConeR)) {
-      perpPtDensity1 += particle.perp();
+    const double phi = RecoDecay::constrainAngle<double, double>(particle.phi(), -M_PI);
+    double dPhi1 = RecoDecay::constrainAngle<double, double>(phi - PerpendicularConeAxisPhi1, -M_PI); // This will contrain the angel between -pi & Pi
+    double dPhi2 = RecoDecay::constrainAngle<double, double>(phi - PerpendicularConeAxisPhi2, -M_PI); // This will contrain the angel between -pi & Pi
+    double dEta = jetEta - particle.eta();                                                            // The perp cone eta is the same as the leading jet since the cones are perpendicular only in phi
+    if (TMath::Sqrt(dPhi1 * dPhi1 + dEta * dEta) <= static_cast<double>(radius)) {
+      perpPtDensity1 += particle.pt();
       perpMdDensity1 += TMath::Sqrt(particle.m() * particle.m() + particle.pt() * particle.pt()) - particle.pt();
     }
 
-    if (TMath::Sqrt(dPhi2 * dPhi2 + dEta * dEta) <= perpConeR) {
-      perpPtDensity2 += particle.perp();
+    if (TMath::Sqrt(dPhi2 * dPhi2 + dEta * dEta) <= static_cast<double>(radius)) {
+      perpPtDensity2 += particle.pt();
       perpMdDensity2 += TMath::Sqrt(particle.m() * particle.m() + particle.pt() * particle.pt()) - particle.pt();
     }
   }
 
   // Caculate rho as the ratio of average pT of the two cones / the cone area
-  double perpPtDensity = (perpPtDensity1 + perpPtDensity2) / (2 * M_PI * static_cast<double>(perpConeR) * static_cast<double>(perpConeR));
-  double perpMdDensity = (perpMdDensity1 + perpMdDensity2) / (2 * M_PI * static_cast<double>(perpConeR) * static_cast<double>(perpConeR));
+  double perpPtDensity = (perpPtDensity1 + perpPtDensity2) / (2 * M_PI * static_cast<double>(radius) * static_cast<double>(radius));
+  double perpMdDensity = (perpMdDensity1 + perpMdDensity2) / (2 * M_PI * static_cast<double>(radius) * static_cast<double>(radius));
 
   return std::make_tuple(perpPtDensity, perpMdDensity);
 }
