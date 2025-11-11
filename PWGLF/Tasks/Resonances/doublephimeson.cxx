@@ -770,7 +770,6 @@ struct doublephimeson {
       histos.fill(HIST("hnsigmaTPCTOFKaon"), t.phid1TPC(), t.phid1TOF(), kpluspt);
       histos.fill(HIST("hnsigmaTPCKaonPlus"), t.phid1TPC(), kpluspt);
       histos.fill(HIST("hnsigmaTPCKaonMinus"), t.phid2TPC(), kminuspt);
-
       ++phimult;
     }
     if (phimult < 2)
@@ -824,6 +823,11 @@ struct doublephimeson {
       const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
       const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
 
+<<<<<<< HEAD
+=======
+     
+
+>>>>>>> cc7c4eeeb (fix bug of histogram fill for pid)
       if (kplus1pt > maxKaonPt || kminus1pt > maxKaonPt)
         continue;
       if (!selectionPID(t1.phid1TPC(), t1.phid1TOF(), t1.phid1TOFHit(), strategyPID1, kplus1pt))
