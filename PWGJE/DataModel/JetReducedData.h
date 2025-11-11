@@ -340,8 +340,6 @@ DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);
 
-DECLARE_SOA_DYNAMIC_COLUMN(PVector, pVector, //! Momentum vector in x,y,z-directions in GeV/c
-                           [](float px, float py, float pz) -> std::array<float, 3> { return std::array<float, 3>{px, py, pz}; });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
