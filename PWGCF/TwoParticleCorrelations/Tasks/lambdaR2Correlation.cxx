@@ -1591,11 +1591,7 @@ struct LambdaSpinCorrelation {
   void analyzeSingles(T const& tracks)
   {
     static constexpr std::string_view SubDirHist[] = {"LaP", "LaM"};
-    int ntrk = 0;
     for (auto const& track : tracks) {
-      // Count tracks
-      ++ntrk;
-
       // Get four-momentum of lambda
       std::array<float, 4> l = {MassLambda0, track.px(), track.py(), track.pz()};
       std::array<float, 4> p = {MassProton, track.prPx(), track.prPy(), track.prPz()};
