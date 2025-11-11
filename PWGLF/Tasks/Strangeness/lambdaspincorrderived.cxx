@@ -529,7 +529,7 @@ struct lambdaspincorrderived {
   void fillHistograms2(int tag1, int tag2,
                        const ROOT::Math::PtEtaPhiMVector& particle1, const ROOT::Math::PtEtaPhiMVector& particle2,
                        const ROOT::Math::PtEtaPhiMVector& daughpart1, const ROOT::Math::PtEtaPhiMVector& daughpart2,
-                       int datatype, float mixpairweight)
+                       int datatype, float mixpairweight, int mixedLeg)
   {
 
     auto lambda1Mass = 0.0;
@@ -615,38 +615,42 @@ struct lambdaspincorrderived {
     double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
     double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
 
-    double epsWeight1 = 1.0;
-    double epsWeight2 = 1.0;
-
-    if (useweight && datatype == 1) {
-      // --- Leg 1: choose map only by species (tag1) ---
-      if (tag1 == 0) { // Λ
-        if (hweight1) {
-          epsWeight1 = hweight1->GetBinContent(hweight1->FindBin(dphi1, deta1, pt1));
+    // -----------------------------
+    //  Kinematic *matching* weight
+    //  (only for mixed events, only mixed leg)
+    // -----------------------------
+    double epsWeightMixedLeg = 1.0;
+    if (useweight && datatype == 1) { // only for ME
+      if (mixedLeg == 1) {
+        // Only leg 1 is from the mixing pool
+        double w1 = 1.0;
+        if (tag1 == 0) { // Λ
+          if (hweight1) {
+            w1 = hweight1->GetBinContent(hweight1->FindBin(dphi1, deta1, pt1));
+          }
+        } else { // Λbar
+          if (hweight4) {
+            w1 = hweight4->GetBinContent(hweight4->FindBin(dphi1, deta1, pt1));
+          }
         }
-      } else { // Λ̄
-        if (hweight4) {
-          epsWeight1 = hweight4->GetBinContent(hweight4->FindBin(dphi1, deta1, pt1));
+        if (w1 > 0.0 && std::isfinite(w1)) {
+          epsWeightMixedLeg = w1;
         }
-      }
-
-      // --- Leg 2: choose map only by species (tag2) ---
-      if (tag2 == 0) { // Λ
-        if (hweight12) {
-          epsWeight2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
+      } else if (mixedLeg == 2) {
+        // Only leg 2 is from the mixing pool
+        double w2 = 1.0;
+        if (tag2 == 0) { // Λ
+          if (hweight12) {
+            w2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
+          }
+        } else { // Λbar
+          if (hweight42) {
+            w2 = hweight42->GetBinContent(hweight42->FindBin(dphi2, deta2, pt2));
+          }
         }
-      } else { // Λ̄
-        if (hweight42) {
-          epsWeight2 = hweight42->GetBinContent(hweight42->FindBin(dphi2, deta2, pt2));
+        if (w2 > 0.0 && std::isfinite(w2)) {
+          epsWeightMixedLeg = w2;
         }
-      }
-
-      // Safety: avoid zero/NaN
-      if (epsWeight1 <= 0.0 || !std::isfinite(epsWeight1)) {
-        epsWeight1 = 1.0;
-      }
-      if (epsWeight2 <= 0.0 || !std::isfinite(epsWeight2)) {
-        epsWeight2 = 1.0;
       }
     }
 
@@ -694,9 +698,9 @@ struct lambdaspincorrderived {
       double weight = mixpairweight;
       if (useweight) {
         if (usebothweight) {
-          weight = mixpairweight / (epsWeight1 * epsWeight2);
+          weight = mixpairweight / (epsWeightMixedLeg);
         } else {
-          weight = mixpairweight / (epsWeight1);
+          weight = mixpairweight / (epsWeightMixedLeg);
         }
       }
       if (weight <= 0.0) {
@@ -787,16 +791,16 @@ struct lambdaspincorrderived {
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
         histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), 0.0F, harmonicDphi));
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
-          fillHistograms2(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
+          fillHistograms2(0, 0, lambda, lambda2, proton, proton2, 0, 1.0, 0);
         }
         if (v0.v0Status() == 0 && v02.v0Status() == 1) {
-          fillHistograms2(0, 1, lambda, lambda2, proton, proton2, 0, 1.0);
+          fillHistograms2(0, 1, lambda, lambda2, proton, proton2, 0, 1.0, 0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 0) {
-          fillHistograms2(1, 0, lambda, lambda2, proton, proton2, 0, 1.0);
+          fillHistograms2(1, 0, lambda, lambda2, proton, proton2, 0, 1.0, 0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 1) {
-          fillHistograms2(1, 1, lambda, lambda2, proton, proton2, 0, 1.0);
+          fillHistograms2(1, 1, lambda, lambda2, proton, proton2, 0, 1.0, 0);
         }
       }
     }
@@ -859,16 +863,16 @@ struct lambdaspincorrderived {
           lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
           histos.fill(HIST("deltaPhiMix"), RecoDecay::constrainAngle(t3.lambdaPhi() - t2.lambdaPhi(), 0.0F, harmonicDphi));
           if (t3.v0Status() == 0 && t2.v0Status() == 0) {
-            fillHistograms2(0, 0, lambda, lambda2, proton, proton2, 1, 1.0);
+            fillHistograms2(0, 0, lambda, lambda2, proton, proton2, 1, 1.0, 1);
           }
           if (t3.v0Status() == 0 && t2.v0Status() == 1) {
-            fillHistograms2(0, 1, lambda, lambda2, proton, proton2, 1, 1.0);
+            fillHistograms2(0, 1, lambda, lambda2, proton, proton2, 1, 1.0, 1);
           }
           if (t3.v0Status() == 1 && t2.v0Status() == 0) {
-            fillHistograms2(1, 0, lambda, lambda2, proton, proton2, 1, 1.0);
+            fillHistograms2(1, 0, lambda, lambda2, proton, proton2, 1, 1.0, 1);
           }
           if (t3.v0Status() == 1 && t2.v0Status() == 1) {
-            fillHistograms2(1, 1, lambda, lambda2, proton, proton2, 1, 1.0);
+            fillHistograms2(1, 1, lambda, lambda2, proton, proton2, 1, 1.0, 1);
           }
         }
       } // replacement track pair
@@ -939,16 +943,16 @@ struct lambdaspincorrderived {
             histos.fill(HIST("deltaPhiMix"), dPhi, invN);
 
             if (t3.v0Status() == 0 && t2.v0Status() == 0) {
-              fillHistograms2(0, 0, lambda, lambda2, proton, proton2, 1, invN);
+              fillHistograms2(0, 0, lambda, lambda2, proton, proton2, 1, invN, 1);
             }
             if (t3.v0Status() == 0 && t2.v0Status() == 1) {
-              fillHistograms2(0, 1, lambda, lambda2, proton, proton2, 1, invN);
+              fillHistograms2(0, 1, lambda, lambda2, proton, proton2, 1, invN, 1);
             }
             if (t3.v0Status() == 1 && t2.v0Status() == 0) {
-              fillHistograms2(1, 0, lambda, lambda2, proton, proton2, 1, invN);
+              fillHistograms2(1, 0, lambda, lambda2, proton, proton2, 1, invN, 1);
             }
             if (t3.v0Status() == 1 && t2.v0Status() == 1) {
-              fillHistograms2(1, 1, lambda, lambda2, proton, proton2, 1, invN);
+              fillHistograms2(1, 1, lambda, lambda2, proton, proton2, 1, invN, 1);
             }
           }
         } // end mixing-event loop
@@ -1047,7 +1051,7 @@ struct lambdaspincorrderived {
 
             const float dPhi = std::fabs(RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
             histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
-            fillHistograms2(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, wBase);
+            fillHistograms2(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, wBase, 1);
           }
         }
       }
@@ -1285,7 +1289,7 @@ struct lambdaspincorrderived {
           const float dPhi = std::fabs(RecoDecay::constrainAngle(lambda1.Phi() - lambda2.Phi(), 0.0F, harmonicDphi));
           histos.fill(HIST("deltaPhiMix"), dPhi, w1);
 
-          fillHistograms2(tX.v0Status(), t2.v0Status(), lambda1, lambda2, proton1, proton2, 1, w1);
+          fillHistograms2(tX.v0Status(), t2.v0Status(), lambda1, lambda2, proton1, proton2, 1, w1, 1);
         }
 
         // --- Type B: replace leg 2 → (t1, tY) ---
@@ -1305,7 +1309,7 @@ struct lambdaspincorrderived {
           const float dPhi = std::fabs(RecoDecay::constrainAngle(lambda1.Phi() - lambda2.Phi(), 0.0F, harmonicDphi));
           histos.fill(HIST("deltaPhiMix"), dPhi, w2);
 
-          fillHistograms2(t1.v0Status(), tY.v0Status(), lambda1, lambda2, proton1, proton2, 1, w2);
+          fillHistograms2(t1.v0Status(), tY.v0Status(), lambda1, lambda2, proton1, proton2, 1, w2, 2);
         }
       }
     }
