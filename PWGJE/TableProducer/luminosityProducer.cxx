@@ -119,7 +119,7 @@ struct LuminosityProducer {
     int readCollisionWithCustomCounter = 0;
     for (const auto& collision : collisions) {
       readCollisionCounter++;
-      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("TVX"))) { // asuumes all selections include the TVX trigger
+      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("TVX"))) { // asuumes all selections include the TVX trigger and also assumes the default RCT configuration is always used
         readCollisionWithTVXCounter++;
         if (std::abs(collision.posZ()) > vertexZCutForCounting) {
           continue;

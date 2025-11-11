@@ -157,7 +157,6 @@ struct JetFinderHFTask {
     } else {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
     }
-    std::vector<double> jetPtBins;
     int jetPtMaxInt = static_cast<int>(jetPtMax);
     int jetPtMinInt = static_cast<int>(jetPtMin);
     jetPtMinInt = (jetPtMinInt / jetPtBinWidth) * jetPtBinWidth;
@@ -246,10 +245,10 @@ struct JetFinderHFTask {
     if (!jetfindingutilities::analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax)) {
       return;
     }
-    if constexpr (!isEvtWiseSub) {
-      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, &candidate);
-    } else {
+    if constexpr (isEvtWiseSub) {
       jetfindingutilities::analyseParticles<false>(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, &candidate);
+    } else {
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, &candidate);
     }
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
   }
