@@ -53,6 +53,7 @@ struct JetDerivedDataWriter {
     Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
     Configurable<float> trackPtSelectionMin{"trackPtSelectionMin", 0.15, "only save tracks that have a pT larger than this pT"};
     Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
+    Configurable<bool> savePartonLevelInfo{"savePartonLevelInfo", true, "save parton level info at MCP level"};
 
     Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
@@ -665,21 +666,27 @@ struct JetDerivedDataWriter {
         for (auto particle : particlesPerMcCollision) {
 
           std::vector<int32_t> mothersIds;
-          if (particle.has_mothers()) {
-            auto mothersIdTemps = particle.mothersIds();
-            for (auto mothersIdTemp : mothersIdTemps) {
-              mothersIds.push_back(particleMapping[mothersIdTemp]);
-            }
-          }
           int daughtersIds[2] = {-1, -1};
-          if (particle.has_daughters()) {
-            auto i = 0;
-            for (auto daughterId : particle.daughtersIds()) {
-              if (i > 1) {
-                break;
+          if (config.savePartonLevelInfo) {
+            if (particle.has_mothers()) {
+              auto mothersIdTemps = particle.mothersIds();
+              for (auto mothersIdTemp : mothersIdTemps) {
+                mothersIds.push_back(particleMapping[mothersIdTemp]);
               }
-              daughtersIds[i] = particleMapping[daughterId];
-              i++;
+            }
+            if (particle.has_daughters()) {
+              auto i = 0;
+              for (auto daughterId : particle.daughtersIds()) {
+                if (i > 1) {
+                  break;
+                }
+                daughtersIds[i] = particleMapping[daughterId];
+                i++;
+              }
+            }
+          } else {
+            if (!particle.isPhysicalPrimary()) { // add outgoing partons exclusion here later
+              continue;
             }
           }
           products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersIds, daughtersIds);
@@ -909,14 +916,14 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processColllisonsMcCollisionLabel, "write out collision mcCollision label output tables", false);
 
-  void processTracksMcParticleLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JTracks, aod::JMcTrackLbs> const& tracks)
+  void processTracksMcParticleLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JTracks, aod::JMcTrackLbs> const& tracks, aod::JMcParticles const&)
   {
     if (collision.isCollisionSelected()) {
       for (const auto& track : tracks) {
         if (!trackSelection(track)) {
           continue;
         }
-        if (track.has_mcParticle()) {
+        if (track.has_mcParticle() && (config.savePartonLevelInfo || track.mcParticle().isPhysicalPrimary())) {
           products.storedJMcTracksLabelTable(particleMapping[track.mcParticleId()]);
         } else {
           products.storedJMcTracksLabelTable(-1);
@@ -926,12 +933,18 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processTracksMcParticleLabel, "write out track mcParticle label output tables", false);
 
-  void processClusterMcLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JClusters, aod::JMcClusterLbs> const& clusters)
+  void processClusterMcLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JClusters, aod::JMcClusterLbs> const& clusters, aod::JMcParticles const& particles)
   {
     if (collision.isCollisionSelected()) {
       for (const auto& cluster : clusters) {
         std::vector<int32_t> clusterStoredJParticleIDs;
         for (const auto& clusterParticleId : cluster.mcParticlesIds()) {
+          if (!config.savePartonLevelInfo) {
+            const auto& particle = particles.iteratorAt(clusterParticleId);
+            if (!particle.isPhysicalPrimary()) {
+              continue;
+            }
+          }
           clusterStoredJParticleIDs.push_back(particleMapping[clusterParticleId]);
         }
         std::vector<float> amplitudeA;
