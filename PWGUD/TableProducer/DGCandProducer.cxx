@@ -17,8 +17,8 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
