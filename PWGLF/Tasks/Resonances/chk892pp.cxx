@@ -35,8 +35,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -195,7 +194,7 @@ struct Chk892pp {
     Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                 // TPC
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
-    Configurable<bool> cfgTOFVeto{"cfgTOFVeto", true, "TOF Veto, if false, TOF is nessessary for PID selection"};   // TOF Veto
+    Configurable<bool> cfgTOFVeto{"cfgTOFVeto", false, "TOF Veto, if false, TOF is nessessary for PID selection"};  // TOF Veto
     Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"};                             // TOF pT cut
   } PIDCuts;
 
@@ -463,6 +462,9 @@ struct Chk892pp {
       hstep->GetXaxis()->SetBinLabel(2, "zvtx");
       hstep->GetXaxis()->SetBinLabel(3, "INEL>0");
       hstep->GetXaxis()->SetBinLabel(4, "Assoc with reco coll");
+
+      histos.add("MCReco/hInvmass_Kstar_true", "MC-reco truth-tagged chK(892)", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso});
+      histos.add("MCReco/hInvmass_Kstar_bkg", "MC-reco residual background chK(892)", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso});
     }
 
     ccdb->setURL(CCDBConfig.cfgURL);
@@ -967,16 +969,23 @@ struct Chk892pp {
         lDecayDaughter_bach = LorentzVectorSetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
 
-        double ptgen = 0, ygen = 0;
-        if (!matchRecoToTruthKstar(v0, bTrack, ptgen, ygen))
-          continue;
-
         const double ptreco = lResoKstar.Pt();
         const double yreco = lResoKstar.Rapidity();
 
         if (std::abs(yreco) > KstarCuts.cfgKstarMaxRap)
           continue;
-        histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
+
+        double ptgen = 0, ygen = 0;
+        const bool isTrue = matchRecoToTruthKstar(v0, bTrack, ptgen, ygen);
+
+        if (isTrue) {
+
+          histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
+          histos.fill(HIST("MCReco/hInvmass_Kstar_true"), lCentrality, ptreco, lResoKstar.M());
+
+        } else {
+          histos.fill(HIST("MCReco/hInvmass_Kstar_bkg"), lCentrality, ptreco, lResoKstar.M());
+        }
       }
     }
   } // effKstarProcessReco

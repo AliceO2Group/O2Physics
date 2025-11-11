@@ -114,7 +114,7 @@
             ]
         },
         "calculationMethod": "0",
-        "calculateCascades": "-1",
+        "calculateCascades": "1",
         "cascadeCalibration.qaV0DCADau": "0.5",
         "axisNSigma": {
             "values": [
@@ -131,7 +131,7 @@
             ]
         },
         "manualRunNumber": "544122",
-        "calculateV0TOFPIDs": "-1",
+        "calculateV0TOFPIDs": "1",
         "cascadeCalibration.qaCascCosPA": "0.995",
         "processDerivedData": "1",
         "calculateV0s": "-1",
@@ -145,7 +145,7 @@
             ]
         },
         "doBCshift": "1",
-        "useCustomRunNumber": "1",
+        "useCustomRunNumber": "0",
         "axisPosition": {
             "values": [
                 400,
@@ -161,9 +161,9 @@
                 50000
             ]
         },
-        "calculateCascTOFPIDs": "-1",
+        "calculateCascTOFPIDs": "1",
         "ccdb.mVtxPath": "GLO/Calib/MeanVertex",
-        "calculateV0TOFDebugs": "-1",
+        "calculateV0TOFDebugs": "1",
         "axisSnp": {
             "values": [
                 220,
