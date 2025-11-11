@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdlib>
 // #include <iostream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -597,7 +598,7 @@ struct F0980pbpbanalysis {
         if (cfgPhiDeepAngleSel && !pairAngleSelection(trk1, trk2)) {
           continue;
         }
-
+        
         pion1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massPtl);
         pion2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPtl);
         reco = pion1 + pion2;
@@ -694,12 +695,14 @@ struct F0980pbpbanalysis {
 
   void processOnce(EventCandidatesOrigin const& events)
   {
-    nTotalEvents += events.size();
-    auto hTotalEvents = histos.get<TH1>(HIST("EventQA/hnEvents"));
-    if (hTotalEvents)
-      hTotalEvents->SetBinContent(1, static_cast<double>(nTotalEvents));
-    // std::cout << "Total number of events processed: " << nTotalEvents << std::endl;
-  }
+    if (cfgQAEventCut) {
+      nTotalEvents += events.size();
+      auto hTotalEvents = histos.get<TH1>(HIST("EventQA/hnEvents"));
+      if (hTotalEvents)
+        hTotalEvents->SetBinContent(1, static_cast<double>(nTotalEvents));
+      // std::cout << "Total number of events processed: " << nTotalEvents << std::endl;
+      }
+    }
   PROCESS_SWITCH(F0980pbpbanalysis, processOnce, "fill Total nEvents once", true);
 
   void init(o2::framework::InitContext&)
