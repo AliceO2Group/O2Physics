@@ -511,7 +511,7 @@ struct FlowTask {
     fFCpt->setUseGapMethod(true);
     fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
     if (cfgEtaGapPtPtEnabled)
-      fFCpt->initialiseSubevent(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
+      fFCpt->initialiseSubevent(axisIndependent, cfgMpar, cfgNbootstrap);
     for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
       corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
     }
