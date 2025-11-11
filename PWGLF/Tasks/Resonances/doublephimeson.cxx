@@ -824,7 +824,6 @@ struct doublephimeson {
       const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
       const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
 
-
       if (kplus1pt > maxKaonPt || kminus1pt > maxKaonPt)
         continue;
       if (!selectionPID(t1.phid1TPC(), t1.phid1TOF(), t1.phid1TOFHit(), strategyPID1, kplus1pt))
