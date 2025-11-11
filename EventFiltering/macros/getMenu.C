@@ -19,9 +19,9 @@
 
 #include <iostream>
 #include <regex>
-#include <string>
-#include <sstream>
 #include <set>
+#include <sstream>
+#include <string>
 #include <vector>
 
 void getMenu(int runNumber, std::string baseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/")
@@ -111,7 +111,8 @@ void getMenu(std::string periods)
     std::cout << "\n=== Menu " << menuId++ << " (periods: ";
     for (size_t i = 0; i < periods.size(); ++i) {
       std::cout << periods[i];
-      if (i < periods.size() - 1) std::cout << ", ";
+      if (i < periods.size() - 1)
+        std::cout << ", ";
     }
     std::cout << ") ===\n";
 
