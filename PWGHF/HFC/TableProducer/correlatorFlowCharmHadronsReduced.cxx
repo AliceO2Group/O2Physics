@@ -199,9 +199,9 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       } else {
         axes.insert(axes.end(), {axisInvMass});
         // axes.insert(axes.end(), {axisInvMass, axisMlOne, axisMlTwo});
-        if (doprocessSameEventCharmHadWCentMix || doprocessSameEventCharmHadWMultMix) {
+        if (doprocessSameEventCharmHadWCentMix || doprocessSameEventCharmHadWMultMix || doprocessSameEventCharmHadWCentMixBase) {
           registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axes);
-        } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventCharmHadWMultMix) {
+        } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventCharmHadWMultMix || doprocessMixedEventCharmHadWCentMixBase) {
           registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axes);
         }
         if (doprocessCharmTriggers) {
