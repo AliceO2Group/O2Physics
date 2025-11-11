@@ -598,13 +598,6 @@ struct TableMakerMC {
       }
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
 
-      // apply the event filter
-      if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
-        if (!collision.eventFilter()) {
-          continue;
-        }
-      }
-
       auto bc = collision.template bc_as<BCsWithTimestamps>();
       // store the selection decisions
       uint64_t tag = static_cast<uint64_t>(0);
@@ -664,20 +657,11 @@ struct TableMakerMC {
         multZNC = collision.multZNC();
         multTracklets = collision.multTracklets();
         multTracksPV = collision.multNTracksPV();
-        if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
-          // Use the FIT signals from the nearest BC with FIT amplitude above threshold
-          multFV0A = collision.newBcMultFV0A();
-          multFT0A = collision.newBcMultFT0A();
-          multFT0C = collision.newBcMultFT0C();
-          multFDDA = collision.newBcMultFDDA();
-          multFDDC = collision.newBcMultFDDC();
-        } else {
-          multFV0A = collision.multFV0A();
-          multFT0A = collision.multFT0A();
-          multFT0C = collision.multFT0C();
-          multFDDA = collision.multFDDA();
-          multFDDC = collision.multFDDC();
-        }
+        multFV0A = collision.multFV0A();
+        multFT0A = collision.multFT0A();
+        multFT0C = collision.multFT0C();
+        multFDDA = collision.multFDDA();
+        multFDDC = collision.multFDDC();
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
         centFT0C = collision.centFT0C();

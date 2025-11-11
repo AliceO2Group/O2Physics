@@ -24,7 +24,7 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/StringUtils.h"
@@ -38,8 +38,6 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include <string>
 #include <utility>
 #include <vector>
-
-o2::framework::Service<o2::framework::O2DatabasePDG> pdgDB;
 
 // namespace to be used for pt plots and bins
 namespace pthistos
@@ -675,6 +673,7 @@ struct V0PtInvMassPlots {
 
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
+  o2::framework::Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void genMCProcess(
     aod::McCollisions::iterator const& mcCollisions,
