@@ -627,7 +627,7 @@ struct RadialFlowDecorr {
     // pT cumulants
     histos.add("MCGen/Prof_C2_Cent", ";cent;C_{2}", kTProfile, {centAxis});
     histos.add("MCGen/Prof_C2_Mult", ";N_{PV};C_{2}", kTProfile, {nChAxis});
-    histos.add<TProfile3D>("MCGen/Prof_C2Sub_Mult_etabin_ptbin",";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D,{{KNbinsNchFluc, KBinOffset, KNchMax}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+    histos.add<TProfile3D>("MCGen/Prof_C2Sub_Mult_etabin_ptbin", ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{KNbinsNchFluc, KBinOffset, KNchMax}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("MCGen/Prof_ipt0_C2Sub2D_Mult_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}});
     histos.add<TProfile3D>("MCGen/Prof_ipt1_C2Sub2D_Mult_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}});
     histos.add<TProfile3D>("MCGen/Prof_ipt2_C2Sub2D_Mult_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}});
@@ -639,7 +639,7 @@ struct RadialFlowDecorr {
     histos.add("MCGen/Prof_ipt2_Cov_Eta", ";#eta;cov", kTProfile, {{(KNEta - 1) / 2, 0., KEtaAxisMax}});
     histos.add("MCGen/Prof_C2Et_Cent", ";cent;C_{2}^{E_{T}}", kTProfile, {centAxis});
     histos.add("MCGen/Prof_C2Et_Mult", ";N_{PV};C_{2}^{E_{T}}", kTProfile, {nChAxis});
-    histos.add<TProfile3D>("MCGen/Prof_C2EtSub_Mult_etabin_ptbin", ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D,{{KNbinsNchFluc, KBinOffset, KNchMax}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+    histos.add<TProfile3D>("MCGen/Prof_C2EtSub_Mult_etabin_ptbin", ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{KNbinsNchFluc, KBinOffset, KNchMax}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("MCGen/Prof_ipt0_C2EtSub2D_Mult_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}});
     histos.add<TProfile3D>("MCGen/Prof_ipt1_C2EtSub2D_Mult_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}});
     histos.add<TProfile3D>("MCGen/Prof_ipt2_C2EtSub2D_Mult_etaA_etaC", ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}, {KNEta - 1, KEtaAxisMin, KEtaAxisMax}});
