@@ -46,7 +46,7 @@ o2physics_add_dpl_workflow(correlator-ds-hadrons
 
 o2physics_add_dpl_workflow(derived-data-creator-correlations-reduced
                     SOURCES derivedDataCreatorCorrelationsReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(correlator-flow-charm-hadrons-reduced
@@ -81,5 +81,5 @@ o2physics_add_dpl_workflow(correlator-lc-sc-hadrons
 
 o2physics_add_dpl_workflow(femto-dream-producer
                     SOURCES femtoDreamProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::MLCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)

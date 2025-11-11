@@ -25,7 +25,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "EventFiltering/Zorro.h"
+#include "Common/Core/Zorro.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/AnalysisHelpers.h"

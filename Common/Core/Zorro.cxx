@@ -12,7 +12,7 @@
 
 #include "Zorro.h"
 
-#include "EventFiltering/ZorroHelper.h"
+#include "Common/Core/ZorroHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
