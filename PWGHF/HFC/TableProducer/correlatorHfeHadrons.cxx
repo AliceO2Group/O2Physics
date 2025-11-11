@@ -133,9 +133,9 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hLSEHCorrel", "Sparse for Delta phi and Delta eta Like sign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hTofnSigmaVsP", " Tof nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
-    registry.add("hTpcnSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
-    registry.add("hTpcTofnSigmaVsP", " TPC and Tof nSigma info vs P; n#sigman#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
+    registry.add("hTofnSigmaVsP", " Tof nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
+    registry.add("hTpcnSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
+    registry.add("hTpcTofnSigmaVsP", " TPC and Tof nSigma info vs P; #sigma#sigma;#it{p} (GeV#it{/c});", {HistType::kTH3F, {{axisNSigma}, {axisNSigma}, {axisPt}}});
 
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
