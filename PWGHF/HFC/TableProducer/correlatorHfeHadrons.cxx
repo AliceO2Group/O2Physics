@@ -135,6 +135,7 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hTofnSigmaVsP", " Tof nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
     registry.add("hTpcnSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
+    registry.add("hTpcTofnSigmaVsP", " TPC and Tof nSigma info vs P; n#sigman#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
 
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -230,6 +231,9 @@ struct HfCorrelatorHfeHadrons {
       } else if (!eTrack.isEmcal() && !requireEmcal) {
 
         // Apply sigma cut
+
+        registry.fill(HIST("hTpcTofnSigmaVsP"), eTrack.tofNSigmaElTrack(), eTrack.tpcNSigmaElTrack(), eTrack.ptTrack());
+
         if (std::abs(eTrack.tofNSigmaElTrack()) < tofNSigmaEl && eTrack.tpcNSigmaElTrack() > tpcNsigmaElectronMin &&
             eTrack.tpcNSigmaElTrack() < tpcNsigmaElectronMax) {
           registry.fill(HIST("hTofnSigmaVsP"), eTrack.tofNSigmaElTrack(), eTrack.ptTrack());
