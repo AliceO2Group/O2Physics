@@ -100,31 +100,21 @@ struct RecoilJets {
   Configurable<float> meanFT0CPartLevel{"meanFT0CPartLevel", -1., "Mean number of charged part. within FT0C acceptance"};
 
   // Parameters for recoil jet selection
-  Configurable<float> ptTTrefMin{"ptTTrefMin", 5., "Minimum pT of reference TT"};
-  Configurable<float> ptTTrefMax{"ptTTrefMax", 7., "Maximum pT of reference TT"};
-  Configurable<float> ptTTsigMin{"ptTTsigMin", 20., "Minimum pT of signal TT"};
-  Configurable<float> ptTTsigMax{"ptTTsigMax", 50., "Maximum pT of signal TT"};
+  Configurable<std::vector<float>> ptTTref{"ptTTref", {5., 7}, "Transverse momentum (min, max) range for reference TT"};
+  Configurable<std::vector<float>> ptTTsig{"ptTTsig", {20., 50}, "Transverse momentum (min, max) range for signal TT"};
   Configurable<float> recoilRegion{"recoilRegion", 0.6, "Width of recoil acceptance"};
-  Configurable<float> minPhiForTTSelection{"minPhiForTTSelection", 0.0, "Min rectriction of phi angle for TT if phi is non-uniform"};
-  Configurable<float> maxPhiForTTSelection{"maxPhiForTTSelection", 6.3, "Max rectriction of phi angle for TT if phi is non-uniform"};
+  Configurable<std::vector<float>> phiRestrTTSelection{"phiRestrTTSelection", {0., 6.3}, "Restriction on phi angle (min, max) to search for TT"};
 
   // Leading track and associated track
-  Configurable<std::vector<float>> pTLeadTrack{"pTLeadTrack", {1., 3.}, "Transverse momenturm range for leading tracks"};
-  Configurable<std::vector<float>> pTAssociatTrack{"pTAssociatTrack", {1., 3.}, "Transverse momenturm range for associated tracks"};
+  Configurable<std::vector<float>> pTLeadTrack{"pTLeadTrack", {1., 3.}, "Transverse momenturm range (min, max) for leading tracks"};
+  Configurable<std::vector<float>> pTAssociatTrack{"pTAssociatTrack", {1., 3.}, "Transverse momenturm range (min, max) for associated tracks"};
 
   // List of configurable parameters for histograms
-  Configurable<uint16_t> histJetPt{"histJetPt", 100, "Maximum value of jet pT shown in histograms"};
+  Configurable<uint16_t> histJetPt{"histJetPt", 100, "Maximum value of jet pT stored in histograms"};
   Configurable<uint16_t> histMultBins{"histMultBins", 1000, "Number of bins for scaled FT0M multiplicity"};
   Configurable<uint16_t> histZDCTimeBins{"histZDCTimeBins", 240, "Number of bins for ZDC timing histograms"};
 
   // Axes specification
-  AxisSpec phiAngle{40, 0.0, constants::math::TwoPI, "#it{#varphi} (rad)"};
-  AxisSpec deltaPhiAngle{52, 0.0, constants::math::PI, "#Delta#it{#varphi} (rad)"};
-  AxisSpec pseudorap{40, -1., 1., "#it{#eta}"};
-  AxisSpec pseudorapJets{20, -0.5, 0.5, "#it{#eta}_{jet}"};
-  AxisSpec jetArea{50, 0.0, 5., "Area_{jet}"};
-  AxisSpec rhoArea{60, 0.0, 60., "#it{#rho} #times Area_{jet}"};
-  AxisSpec rho{50, 0.0, 50., "#it{#rho}"};
   ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133, 0.233, 0.367, 0.567, 0.767, 1.067, 1.4, 1.867, 2.5, 3.9, 5.4, 6.9, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};   // default values for raw data
   ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"}; // default values for raw data
 
@@ -164,6 +154,13 @@ struct RecoilJets {
     AxisSpec scaledFT0C{histMultBins, 0.0, 20., "FT0C / #LT FT0C #GT"};
     AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
     AxisSpec zdcTiming{histZDCTimeBins, -30., 30., ""};
+
+    AxisSpec phiAngle{40, 0.0, constants::math::TwoPI, "#it{#varphi} (rad)"};
+    AxisSpec deltaPhiAngle{52, 0.0, constants::math::PI, "#Delta#it{#varphi} (rad)"};
+    AxisSpec pseudorap{40, -1., 1., "#it{#eta}"};
+    AxisSpec pseudorapJets{20, -0.5, 0.5, "#it{#eta}_{jet}"};
+    AxisSpec jetArea{50, 0.0, 5., "Area_{jet}"};
+    AxisSpec rho{50, 0.0, 50., "#it{#rho}"};
 
     std::string nameFT0Caxis = "FT0C / #LT FT0C #GT";
     std::string nameFT0Maxis = "FT0M^{*}";
@@ -256,11 +253,11 @@ struct RecoilJets {
       spectra.add("hScaledFT0M_TTSig", "Events w. TT_{Sig}: scaled FT0M", kTH1F, {scaledFT0M});
 
       // Rectricted phi range for TT selection
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
     }
 
     // List of MC particle level distributions
@@ -337,11 +334,11 @@ struct RecoilJets {
       spectra.add("hScaledFT0M_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M", kTH1F, {scaledFT0M});
 
       // Rectricted phi range for TT selection
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiRestrTTSelection->at(0), phiRestrTTSelection->at(1)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
     }
 
     // Jet matching: part. vs. det.
@@ -470,6 +467,11 @@ struct RecoilJets {
       spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetXaxis()->SetBinLabel(3, "Coll. w. BC");
       spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetXaxis()->SetBinLabel(4, "Coll. w/o BC");
 
+      // FT0 signal for the case when there is no associated BC
+      spectra.add("hFT0AsignalWithoutBC", "", kTH2F, {{2000, 0.0, 40000., "FT0A"}, {nRunsOO, 0., nRunsOO * 1.}});
+      spectra.add("hFT0CsignalWithoutBC", "", kTH2F, {{2000, 0.0, 40000., "FT0C"}, {nRunsOO, 0., nRunsOO * 1.}});
+      spectra.add("hFT0MsignalWithoutBC", "", kTH2F, {{2000, 0.0, 40000., "FT0M"}, {nRunsOO, 0., nRunsOO * 1.}});
+
       // Rename Y axis with Run numbers
       for (int iRun = 0; iRun < nRunsOO; ++iRun) {
         spectra.get<TH3>(HIST("hScaledFT0APerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
@@ -481,6 +483,10 @@ struct RecoilJets {
         spectra.get<TH3>(HIST("hFT0MPerRunPerSetOfFlags"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
 
         spectra.get<TH2>(HIST("hIsFT0SignalComeFromCollPerRun"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+
+        spectra.get<TH2>(HIST("hFT0AsignalWithoutBC"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+        spectra.get<TH2>(HIST("hFT0CsignalWithoutBC"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
+        spectra.get<TH2>(HIST("hFT0MsignalWithoutBC"))->GetYaxis()->SetBinLabel(iRun + 1, runNumbersOO[iRun]);
       }
 
       // Rename Z axis with event selection flags
@@ -502,9 +508,9 @@ struct RecoilJets {
   }
 
   // Fill histograms with raw or MC det. level data
-  template <typename Collision, typename Jets, typename Tracks>
-  void fillHistograms(Collision const& collision, Jets const& jets,
-                      Tracks const& tracks, float weight = 1.)
+  template <typename JCollision, typename Jets, typename JTracks>
+  void fillHistograms(JCollision const& collision, Jets const& jets,
+                      JTracks const& tracks, float weight = 1.)
   {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
@@ -538,13 +544,13 @@ struct RecoilJets {
       spectra.fill(HIST("hScaledFT0MTrackPtEtaPhi"), scaledFT0M, trackPt, track.eta(), trackPhi, weight);
 
       // Search for TT candidate
-      if (bSigEv && (trackPt > ptTTsigMin && trackPt < ptTTsigMax)) {
+      if (bSigEv && (trackPt > ptTTsig->at(0) && trackPt < ptTTsig->at(1))) {
         vPhiOfTT.push_back(trackPhi);
         spectra.fill(HIST("hTTSig_pT"), trackPt, weight);
         ++nTT;
       }
 
-      if (!bSigEv && (trackPt > ptTTrefMin && trackPt < ptTTrefMax)) {
+      if (!bSigEv && (trackPt > ptTTref->at(0) && trackPt < ptTTref->at(1))) {
         vPhiOfTT.push_back(trackPhi);
         ++nTT;
       }
@@ -601,7 +607,7 @@ struct RecoilJets {
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTSig"), scaledFT0M, dphi, jetPt, weight);
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig"), jetArea, jetPt, rho, weight);
 
-          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+          if (phiTT > phiRestrTTSelection->at(0) && phiTT < phiRestrTTSelection->at(1)) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi"), scaledFT0M, dphi, jetPtCorr, weight);
           }
@@ -621,7 +627,7 @@ struct RecoilJets {
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTRef"), scaledFT0M, dphi, jetPt, weight);
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef"), jetArea, jetPt, rho, weight);
 
-          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+          if (phiTT > phiRestrTTSelection->at(0) && phiTT < phiRestrTTSelection->at(1)) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi"), scaledFT0M, dphi, jetPtCorr, weight);
           }
@@ -638,9 +644,9 @@ struct RecoilJets {
     }
   }
 
-  template <typename Collision, typename Jets, typename Particles>
-  void fillMCPHistograms(Collision const& collision, Jets const& jets,
-                         Particles const& particles, float weight = 1.)
+  template <typename JCollision, typename Jets, typename JParticles>
+  void fillMCPHistograms(JCollision const& collision, Jets const& jets,
+                         JParticles const& particles, float weight = 1.)
   {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
@@ -676,12 +682,12 @@ struct RecoilJets {
       spectra.fill(HIST("hScaledFT0CPartPtEtaPhi"), scaledFT0C, particlePt, particle.eta(), particlePhi, weight);
       spectra.fill(HIST("hScaledFT0MPartPtEtaPhi"), scaledFT0M, particlePt, particle.eta(), particlePhi, weight);
 
-      if (bSigEv && (particlePt > ptTTsigMin && particlePt < ptTTsigMax)) {
+      if (bSigEv && (particlePt > ptTTsig->at(0) && particlePt < ptTTsig->at(1))) {
         vPhiOfTT.push_back(particlePhi);
         ++nTT;
       }
 
-      if (!bSigEv && (particlePt > ptTTrefMin && particlePt < ptTTrefMax)) {
+      if (!bSigEv && (particlePt > ptTTref->at(0) && particlePt < ptTTref->at(1))) {
         vPhiOfTT.push_back(particlePhi);
         ++nTT;
       }
@@ -736,7 +742,7 @@ struct RecoilJets {
 
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig_Part"), jetArea, jetPt, rho, weight);
 
-          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+          if (phiTT > phiRestrTTSelection->at(0) && phiTT < phiRestrTTSelection->at(1)) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part"), scaledFT0M, dphi, jetPtCorr, weight);
           }
@@ -759,7 +765,7 @@ struct RecoilJets {
 
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef_Part"), jetArea, jetPt, rho, weight);
 
-          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+          if (phiTT > phiRestrTTSelection->at(0) && phiTT < phiRestrTTSelection->at(1)) {
             spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part"), scaledFT0C, dphi, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part"), scaledFT0M, dphi, jetPtCorr, weight);
           }
@@ -776,8 +782,8 @@ struct RecoilJets {
     }
   }
 
-  template <typename TracksTable, typename JetsBase, typename JetsTag>
-  void fillMatchedHistograms(TracksTable const& tracks,
+  template <typename JTracksTable, typename JetsBase, typename JetsTag>
+  void fillMatchedHistograms(JTracksTable const& tracks,
                              JetsBase const& jetsBase, JetsTag const& jetsTag,
                              float weight = 1.)
   {
@@ -788,7 +794,7 @@ struct RecoilJets {
       if (skipTrack(track))
         continue;
 
-      if (track.pt() > ptTTsigMin && track.pt() < ptTTsigMax) {
+      if (track.pt() > ptTTsig->at(0) && track.pt() < ptTTsig->at(1)) {
         vPhiOfTT.push_back(track.phi());
       }
     }
@@ -805,8 +811,8 @@ struct RecoilJets {
     }
   }
 
-  template <typename Collision>
-  void fillMultiplicityHistogramsOO(Collision const& collision,
+  template <typename JCollision>
+  void fillMultiplicityHistogramsOO(JCollision const& collision,
                                     float weight = 1.)
   {
     float multFT0A = collision.multFT0A();
@@ -861,8 +867,8 @@ struct RecoilJets {
     spectra.fill(HIST("hScaleMultFT0M_vs_ZPA_vs_ZPC"), scaledFT0M, multZPA, multZPC, weight);
   }
 
-  template <typename CollisionMC>
-  void fillMultiplicityHistogramsPartLevelMC(CollisionMC const& collision,
+  template <typename JCollisionMC>
+  void fillMultiplicityHistogramsPartLevelMC(JCollisionMC const& collision,
                                              float weight = 1.)
   {
     spectra.fill(HIST("hMultFT0APartLevel"), collision.multFT0A(), weight);
@@ -976,9 +982,14 @@ struct RecoilJets {
     spectra.fill(HIST("hScaledFT0M_TracksPV"), scaledFT0M, multNContribs, weight);
 
     if (foundBC.foundFT0Id() > 0) // -1 if does not
+    {
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 0.5, fillNumber, weight);
-    else
+    } else {
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 1.5, fillNumber, weight);
+      spectra.fill(HIST("hFT0AsignalWithoutBC"), multFT0A, fillNumber, weight);
+      spectra.fill(HIST("hFT0CsignalWithoutBC"), multFT0C, fillNumber, weight);
+      spectra.fill(HIST("hFT0MsignalWithoutBC"), multFT0M, fillNumber, weight);
+    }
 
     if (collision.foundBCId() > 0)
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 2.5, fillNumber, weight);
