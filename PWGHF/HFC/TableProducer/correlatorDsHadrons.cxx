@@ -280,9 +280,9 @@ struct HfCorrelatorDsHadrons {
       registry.add("hDsPoolBin", "Ds candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
       registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
       if (pidTrkApplied) {
-        registry.add("hTpcTofNSigmaPIDpion", "n sigma tpc and tof for pion hypothesis", {HistType::kTH2F, {{axisPid}, {axisPid}, {axisPtHadron}}});
-        registry.add("hTpcTofNSigmaPIDkaon", "n sigma tpc and tof for kaon hypothesis", {HistType::kTH2F, {{axisPid}, {axisPid}, {axisPtHadron}}});
-        registry.add("hTpcTofNSigmaPIDproton", "n sigma tpc and tof for proton hypothesis", {HistType::kTH2F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPIDpion", "n sigma tpc and tof for pion hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPIDkaon", "n sigma tpc and tof for kaon hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPIDproton", "n sigma tpc and tof for proton hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
       }
     }
     // Histograms for MC Reco analysis
