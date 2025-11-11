@@ -303,7 +303,8 @@ struct JetSpectraCharged {
   bool applyMCCollisionCuts(TMCColl const& mccollision, TCollisions const& collisions, bool fillHistograms = false, bool isWeighted = false, float eventWeight = 1.0)
   {
     float centrality = -1.0;
-    checkCentFT0M ? centrality = mccollision.centFT0M() : centrality = mccollision.centFT0C();
+    // checkCentFT0M ? centrality = mccollision.centFT0M() : centrality = mccollision.centFT0C();
+    centrality = mccollision.centFT0M();
 
     if (fillHistograms) {
       registry.fill(HIST("h_mccollisions"), 0.5);

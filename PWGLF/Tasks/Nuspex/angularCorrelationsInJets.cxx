@@ -15,6 +15,7 @@
 /// \brief task for analysis of angular correlations in jets using Fastjet
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
+#include "PWGJE/Core/JetUtilities.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
@@ -1110,7 +1111,7 @@ struct AngularCorrelationsInJets {
 
     registryData.fill(HIST("eventProtocol"), 3);
 
-    auto [rhoPerp, rhoMPerp] = bkgSub.estimateRhoPerpCone(jetInput, jets);
+    auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(jetInput, jets[0], jetR);
 
     for (const auto& jet : jets) {
       // this is where the magic happens
@@ -1291,7 +1292,7 @@ struct AngularCorrelationsInJets {
 
     registryData.fill(HIST("eventProtocol"), 3);
 
-    auto [rhoPerp, rhoMPerp] = bkgSub.estimateRhoPerpCone(jetInput, jets);
+    auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(jetInput, jets[0], jetR);
 
     for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (jets are modified)
       if (!jet.has_constituents())

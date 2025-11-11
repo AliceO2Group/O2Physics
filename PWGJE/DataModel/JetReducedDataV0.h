@@ -65,9 +65,8 @@ DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
-DECLARE_SOA_COLUMN(GenStatusCode, getGenStatusCode, int); // TODO : We can look at combining this with the two below
-DECLARE_SOA_COLUMN(HepMCStatusCode, getHepMCStatusCode, int);
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
+DECLARE_SOA_COLUMN(StatusCode, statusCode, int);
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);
 DECLARE_SOA_COLUMN(DecayFlag, decayFlag, int8_t);
@@ -79,6 +78,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float e) -> float { return e; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(ProducedByGenerator, producedByGenerator, //! True if particle produced by the generator (==TMCProcess::kPrimary); False if by the transport code
+                           [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0; });
+DECLARE_SOA_DYNAMIC_COLUMN(FromBackgroundEvent, fromBackgroundEvent, //! Particle from background event
+                           [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::FromBackgroundEvent) == o2::aod::mcparticle::enums::FromBackgroundEvent; });
+DECLARE_SOA_DYNAMIC_COLUMN(GetProcess, getProcess, //! The VMC physics code (as int) that generated this particle (see header TMCProcess.h in ROOT)
+                           [](uint8_t flags, int statusCode) -> int { if ((flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0) { return 0 /*TMCProcess::kPrimary*/; } else { return statusCode; } });
+DECLARE_SOA_DYNAMIC_COLUMN(GetGenStatusCode, getGenStatusCode, //! The native status code put by the generator, or -1 if a particle produced during transport
+                           [](uint8_t flags, int statusCode) -> int { if ((flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0) { return o2::mcgenstatus::getGenStatusCode(statusCode); } else { return -1; } });
+DECLARE_SOA_DYNAMIC_COLUMN(GetHepMCStatusCode, getHepMCStatusCode, //! The HepMC status code put by the generator, or -1 if a particle produced during transport
+                           [](uint8_t flags, int statusCode) -> int { if ((flags & o2::aod::mcparticle::enums::ProducedByTransport) == 0x0) { return o2::mcgenstatus::getHepMCStatusCode(statusCode); } else { return -1; } });
+DECLARE_SOA_DYNAMIC_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, //! True if particle is considered a physical primary according to the ALICE definition
+                           [](uint8_t flags) -> bool { return (flags & o2::aod::mcparticle::enums::PhysicalPrimary) == o2::aod::mcparticle::enums::PhysicalPrimary; });
 } // namespace jv0mc
 
 DECLARE_SOA_TABLE_STAGED(JV0Mcs, "JV0MC",
@@ -91,14 +105,20 @@ DECLARE_SOA_TABLE_STAGED(JV0Mcs, "JV0MC",
                          jv0mc::E,
                          jv0mc::M,
                          jv0mc::PdgCode,
-                         jv0mc::GenStatusCode,
-                         jv0mc::HepMCStatusCode,
-                         jv0mc::IsPhysicalPrimary,
+                         jv0mc::StatusCode,
+                         jv0mc::Flags,
                          jv0mc::DecayFlag,
                          jv0mc::Px<jv0mc::Pt, jv0mc::Phi>,
                          jv0mc::Py<jv0mc::Pt, jv0mc::Phi>,
                          jv0mc::Pz<jv0mc::Pt, jv0mc::Eta>,
-                         jv0mc::P<jv0mc::Pt, jv0mc::Eta>);
+                         jv0mc::P<jv0mc::Pt, jv0mc::Eta>,
+                         jv0mc::Energy<jv0mc::E>,
+                         jv0mc::ProducedByGenerator<jv0mc::Flags>,
+                         jv0mc::FromBackgroundEvent<jv0mc::Flags>,
+                         jv0mc::GetProcess<jv0mc::Flags, jv0mc::StatusCode>,
+                         jv0mc::GetGenStatusCode<jv0mc::Flags, jv0mc::StatusCode>,
+                         jv0mc::GetHepMCStatusCode<jv0mc::Flags, jv0mc::StatusCode>,
+                         jv0mc::IsPhysicalPrimary<jv0mc::Flags>);
 
 using JV0Mc = JV0Mcs::iterator;
 using StoredJV0Mc = StoredJV0Mcs::iterator;

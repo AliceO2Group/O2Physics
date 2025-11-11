@@ -82,6 +82,7 @@ struct JetDerivedDataSelector {
     Configurable<float> thresholdChargedEventWiseSubtractedDielectronJetPtMin{"thresholdChargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
     Configurable<float> thresholdChargedDielectronMCPJetPtMin{"thresholdChargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
     Configurable<float> thresholdTriggerTrackPtMin{"thresholdTriggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
+    Configurable<float> thresholdTriggerParticlePtMin{"thresholdTriggerParticlePtMin", 0.0, "Minimum trigger particle pt to accept event"};
     Configurable<float> thresholdClusterEnergyMin{"thresholdClusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<int> downscaleFactor{"downscaleFactor", 1, "random downscale of selected events"};
 
@@ -268,6 +269,8 @@ struct JetDerivedDataSelector {
       selectionObjectPtMin = config.thresholdChargedDielectronMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
       selectionObjectPtMin = config.thresholdTriggerTrackPtMin;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JMcParticles>) {
+      selectionObjectPtMin = config.thresholdTriggerParticlePtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JClusters>) {
       selectionObjectPtMin = config.thresholdClusterEnergyMin;
     } else {
@@ -293,7 +296,7 @@ struct JetDerivedDataSelector {
         }
       }
       if (isTriggerObject) {
-        if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DsChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DstarChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::B0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::XicToXiPiPiChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DsChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DstarChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::B0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::XicToXiPiPiChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::JMcParticles>) {
           if (selectionObject.mcCollisionId() >= 0) {
             McCollisionFlag[selectionObject.mcCollisionId()] = true;
           }
@@ -369,6 +372,7 @@ struct JetDerivedDataSelector {
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::DielectronChargedMCParticleLevelJets>, processSelectingDielectronChargedMCPJets, "process Dielectron charged mcp jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::JClusters>, processSelectingClusters, "process EMCal clusters", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::JTracks>, processSelectingTracks, "process high pt tracks", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::JMcParticles>, processSelectingParticles, "process high pt particles", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processDoDownscaling<aod::JCollisions>, processCollisionDownscaling, "process downsaling of triggered collisions", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processDoDownscaling<aod::JMcCollisions>, processMcCollisionDownscaling, "process downsaling of triggered mccollisions", false);
   PROCESS_SWITCH(JetDerivedDataSelector, processDoCollisionSelections, "process event selections for saved events", false);

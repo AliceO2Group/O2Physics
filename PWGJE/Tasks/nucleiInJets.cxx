@@ -1449,9 +1449,8 @@ struct nucleiInJets {
             jetHist.fill(HIST("tracksInc/deuteron/h3PtVsDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
           }
         }
-        float massTOF = -999;
         if (addTOFplots && trk.hasTOF()) {
-          massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
+          float massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracksInc/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt(), centrality);
             jetHist.fill(HIST("tracksInc/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
@@ -1508,9 +1507,8 @@ struct nucleiInJets {
             jetHist.fill(HIST("tracksInc/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPt"), trk.pt(), trk.tpcNSigmaDe(), centrality);
           }
         }
-        float massTOF = -999;
         if (addTOFplots && trk.hasTOF()) {
-          massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
+          float massTOF = trk.p() * std::sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
           if (!useTPCpreSel) {
             jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt(), centrality);
             jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt(), centrality);
@@ -1716,8 +1714,6 @@ struct nucleiInJets {
       return;
     // LOG(info) <<" size(mcd) "<<mcdjets.size();
 
-    if (mcdjets.size() == 0)
-      return;
     std::vector<double> leadingJetWithPtEtaPhi(3);
     for (const auto& mcdjet : mcdjets) {
       if (!mcdjet.has_matchedJetGeo())
@@ -1785,7 +1781,6 @@ struct nucleiInJets {
       if (std::fabs(mcTrack.y()) > cfgtrkMaxRap)
         continue;
 
-      bool isTpcPassed(true);
       bool isTof(completeTrack.hasTOF());
       bool isTOFAndTPCPreSel(completeTrack.hasTOF() &&
                              (std::abs(completeTrack.tpcNSigmaPr()) < cfgnTPCPIDPrTOF || std::abs(completeTrack.tpcNSigmaDe()) < cfgnTPCPIDDeTOF ||
@@ -1820,6 +1815,7 @@ struct nucleiInJets {
       } // jet
 
       if (mapPDGToValue(mcTrack.pdgCode()) != 0) {
+        bool isTpcPassed(true); // why is this always true?
         jetHist.fill(HIST("eff/recmatched/pt/PtParticleType"), mcTrack.pt(), jetFlag, mapPDGToValue(mcTrack.pdgCode()));
         if (useMcC) {
           if (randUniform.Uniform(0, 1) < 0.5)
@@ -1925,9 +1921,7 @@ struct nucleiInJets {
     if (std::abs(collision.posZ()) > 10)
       return;
     jetHist.fill(HIST("genmatched/vertexZ"), collision.posZ());
-    std::vector<double> mcdJetPt{};
-    std::vector<double> mcdJetPhi{};
-    std::vector<double> mcdJetEta{};
+
     std::vector<double> mcpJetPt{};
     std::vector<double> mcpJetPhi{};
     std::vector<double> mcpJetEta{};
@@ -1957,6 +1951,9 @@ struct nucleiInJets {
       jetHist.fill(HIST("genmatched/leadingJet/hGenJetPt"), leadingMCPJet.pt());
       if (leadingMCPJet.has_matchedJetGeo()) {
         jetHist.fill(HIST("genmatched/leadingJet/hGenJetPtMatched"), leadingMCPJet.pt());
+        std::vector<double> mcdJetPt{};
+        std::vector<double> mcdJetPhi{};
+        std::vector<double> mcdJetEta{};
         for (const auto& mcdjet : leadingMCPJet.template matchedJetGeo_as<JetMCDetTable>()) {
           // Assuming matchedJetGeo_as returns valid MCD jets; no redundant has check needed
           // Store jet properties
