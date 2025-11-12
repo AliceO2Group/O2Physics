@@ -127,7 +127,7 @@ class CollisionAssociation
                         TTracksUnfiltered const& tracksUnfiltered,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
-                        o2::aod::BCs const&,
+                        o2::aod::BCs const& bcs,
                         Assoc& association,
                         RevIndices& reverseIndices)
   {
@@ -151,6 +151,11 @@ class CollisionAssociation
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
+              // special check to avoid crashes (in particular on some MC datasets)
+              // related to shifts in ambiguous tracks association to bc slices (off by 1) - see https://mattermost.web.cern.ch/alice/pl/g9yaaf3tn3g4pgn7c1yex9copy
+              if (ambTrack.bcIds()[0] >= bcs.size() || ambTrack.bcIds()[1] >= bcs.size()) {
+                break;
+              }
               if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
                 break;
               }
