@@ -22,6 +22,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
@@ -86,11 +87,13 @@ struct HfTaskDplus {
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   // UPC gap determination thresholds
+  Configurable<float> upcFV0AThreshold{"upcFV0AThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
   Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
   Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
   Configurable<float> upcZDCThreshold{"upcZDCThreshold", 1.0f, "ZDC energy threshold for UPC gap determination (a.u.)"};
 
   HfEventSelection hfEvSel;    // event selection and monitoring
+  SGSelector sgSelector;       // UPC gap selector
   ctpRateFetcher mRateFetcher; // interaction rate fetcher
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -132,7 +135,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis thnConfigAxisMlScore1{"thnConfigAxisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis thnConfigAxisMlScore2{"thnConfigAxisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
-  ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {3, -0.5, 2.5}, "axis for UPC gap type (0=GapA, 1=GapC, 2=DoubleGap)"};
+  ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (-1=NoGap, 0=SingleGapA, 1=SingleGapC, 2=DoubleGap, 3=NoUpc, 4=TrkOutOfRange, 5=BadDoubleGap)"};
   ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
 
@@ -280,10 +283,7 @@ struct HfTaskDplus {
 
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
-    registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
-    registry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
-    registry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
-    registry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+    registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap type;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
 
     hfEvSel.addHistograms(registry); // collision monitoring
 
@@ -716,13 +716,14 @@ struct HfTaskDplus {
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
-      GapType gap = GapType::DoubleGap;
+      // Determine gap type using SGSelector with BC range checking
+      int gap = hf_upc::determineGapType(collision, bcs, sgSelector,
+                                         upcFV0AThreshold, upcFT0AThreshold, upcFT0CThreshold);
+
       if (bc.has_zdc()) {
         const auto& zdc = bc.zdc();
         registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-        gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC(),
-                                       upcFT0AThreshold, upcFT0CThreshold, upcZDCThreshold);
         registry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
       }
       if (hf_upc::isSingleSidedGap(gap)) {
@@ -744,12 +745,12 @@ struct HfTaskDplus {
         // Lambda function to fill THn - handles both ML and non-ML cases
         auto fillTHnData = [&](const auto& candidate) {
           // Pre-calculate vector size to avoid reallocations
-          constexpr int nAxesBase = 5;                   // mass, pt, gapType, FT0A, FT0C
-          constexpr int nAxesMl = FillMl ? 3 : 0;        // 3 ML scores if FillMl
+          constexpr int NAxesBase = 5;                   // mass, pt, gapType, FT0A, FT0C
+          constexpr int NAxesMl = FillMl ? 3 : 0;        // 3 ML scores if FillMl
           int const nAxesCent = storeCentrality ? 1 : 0; // centrality if storeCentrality
           int const nAxesOcc = storeOccupancy ? 1 : 0;   // occupancy if storeOccupancy
           int const nAxesIR = storeIR ? 1 : 0;           // IR if storeIR
-          int const nAxesTotal = nAxesBase + nAxesMl + nAxesCent + nAxesOcc + nAxesIR;
+          int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOcc + nAxesIR;
 
           std::vector<double> valuesToFill;
           valuesToFill.reserve(nAxesTotal);

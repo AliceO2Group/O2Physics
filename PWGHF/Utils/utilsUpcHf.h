@@ -17,87 +17,108 @@
 #ifndef PWGHF_UTILS_UTILSUPCHF_H_
 #define PWGHF_UTILS_UTILSUPCHF_H_
 
-#include <cstdint>
+#include "PWGUD/Core/SGCutParHolder.h"
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 namespace o2::analysis::hf_upc
 {
 
-/// \brief Gap type classification for UPC events
-enum class GapType : uint8_t {
-  GapA = 0,     ///< Gap on A-side (C-side active)
-  GapC = 1,     ///< Gap on C-side (A-side active)
-  DoubleGap = 2 ///< Double gap (both sides empty)
-};
+/// \brief Use TrueGap enum from SGSelector for gap type classification
+using o2::aod::sgselector::TrueGap;
 
 /// \brief Default thresholds for gap determination
 namespace defaults
 {
+constexpr float AmplitudeThresholdFV0A = 100.0f; ///< Amplitude threshold for FV0-A (a.u.)
 constexpr float AmplitudeThresholdFT0A = 100.0f; ///< Amplitude threshold for FT0-A (a.u.)
 constexpr float AmplitudeThresholdFT0C = 50.0f;  ///< Amplitude threshold for FT0-C (a.u.)
-constexpr float EnergyThresholdZDC = 1.0f;       ///< Energy threshold for ZDC (a.u.)
+constexpr float MaxFITTime = 4.0f;               ///< Maximum FIT time (ns)
+constexpr int NDtColl = 1000;                    ///< Time window for BC range (ns)
+constexpr int MinNBCs = 7;                       ///< Minimum number of BCs to check
+constexpr int MinNTracks = 0;                    ///< Minimum number of tracks
+constexpr int MaxNTracks = 100;                  ///< Maximum number of tracks
 } // namespace defaults
 
-/// \brief Determine gap type based on FIT and ZDC signals
-/// \param ft0A FT0-A amplitude
-/// \param ft0C FT0-C amplitude
-/// \param zdcA ZDC-A (ZNA) common energy
-/// \param zdcC ZDC-C (ZNC) common energy
+/// \brief Determine gap type using SGSelector with BC range checking
+/// \tparam TCollision Collision type
+/// \tparam TBCs BC table type
+/// \param collision Collision object
+/// \param bcs BC table
+/// \param sgSelector SGSelector instance
+/// \param amplitudeThresholdFV0A Threshold for FV0-A (default: 100.0)
 /// \param amplitudeThresholdFT0A Threshold for FT0-A (default: 100.0)
 /// \param amplitudeThresholdFT0C Threshold for FT0-C (default: 50.0)
-/// \param energyThresholdZDC Threshold for ZDC (default: 1.0)
-/// \return Gap type classification
-inline GapType determineGapType(float ft0A, float ft0C, float zdcA, float zdcC,
-                                float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
-                                float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C,
-                                float energyThresholdZDC = defaults::EnergyThresholdZDC)
+/// \return TrueGap enum value (-1=NoGap, 0=SingleGapA, 1=SingleGapC, 2=DoubleGap, 3=NoUpc, 4=TrkOutOfRange, 5=BadDoubleGap)
+template <typename TCollision, typename TBCs>
+inline int determineGapType(TCollision const& collision,
+                            TBCs const& bcs,
+                            SGSelector& sgSelector,
+                            float amplitudeThresholdFV0A = defaults::AmplitudeThresholdFV0A,
+                            float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
+                            float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
 {
-  // Gap on A-side: FT0-A empty, FT0-C active, ZNA empty, ZNC active
-  if (ft0A < amplitudeThresholdFT0A && ft0C > amplitudeThresholdFT0C &&
-      zdcA < energyThresholdZDC && zdcC > energyThresholdZDC) {
-    return GapType::GapA;
+  // Configure SGSelector thresholds
+  SGCutParHolder sgCuts;
+  sgCuts.SetNDtcoll(defaults::NDtColl);
+  sgCuts.SetMinNBCs(defaults::MinNBCs);
+  sgCuts.SetNTracks(defaults::MinNTracks, defaults::MaxNTracks);
+  sgCuts.SetMaxFITtime(defaults::MaxFITTime);
+  sgCuts.SetFITAmpLimits({amplitudeThresholdFV0A, amplitudeThresholdFT0A, amplitudeThresholdFT0C});
+
+  // Get BC and BC range
+  if (!collision.has_foundBC()) {
+    return TrueGap::NoGap;
   }
 
-  // Gap on C-side: FT0-A active, FT0-C empty, ZNA active, ZNC empty
-  if (ft0A > amplitudeThresholdFT0A && ft0C < amplitudeThresholdFT0C &&
-      zdcA > energyThresholdZDC && zdcC < energyThresholdZDC) {
-    return GapType::GapC;
-  }
+  const auto bc = collision.template foundBC_as<TBCs>();
+  const auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
 
-  // Default: Double gap (or no clear gap)
-  return GapType::DoubleGap;
+  // Use SGSelector to determine gap type with BC range checking
+  const auto sgResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
+
+  return sgResult.value;
 }
 
-/// \brief Check if the gap type is a single-sided gap (GapA or GapC)
-/// \param gap Gap type
+/// \brief Check if the gap type is a single-sided gap (SingleGapA or SingleGapC)
+/// \param gap TrueGap enum value
 /// \return true if single-sided gap, false otherwise
-inline bool isSingleSidedGap(GapType gap)
+inline bool isSingleSidedGap(int gap)
 {
-  return (gap == GapType::GapA || gap == GapType::GapC);
+  return (gap == TrueGap::SingleGapA || gap == TrueGap::SingleGapC);
 }
 
 /// \brief Get gap type name as string
-/// \param gap Gap type
+/// \param gap TrueGap enum value
 /// \return String representation of gap type
-inline const char* getGapTypeName(GapType gap)
+inline const char* getGapTypeName(int gap)
 {
   switch (gap) {
-    case GapType::GapA:
-      return "GapA";
-    case GapType::GapC:
-      return "GapC";
-    case GapType::DoubleGap:
+    case TrueGap::NoGap:
+      return "NoGap";
+    case TrueGap::SingleGapA:
+      return "SingleGapA";
+    case TrueGap::SingleGapC:
+      return "SingleGapC";
+    case TrueGap::DoubleGap:
       return "DoubleGap";
+    case TrueGap::NoUpc:
+      return "NoUpc";
+    case TrueGap::TrkOutOfRange:
+      return "TrkOutOfRange";
+    case TrueGap::BadDoubleGap:
+      return "BadDoubleGap";
     default:
       return "Unknown";
   }
 }
 
 /// \brief Convert gap type to integer for histogram filling
-/// \param gap Gap type
-/// \return Integer representation (0=GapA, 1=GapC, 2=DoubleGap)
-inline int gapTypeToInt(GapType gap)
+/// \param gap TrueGap enum value
+/// \return Integer representation (-1, 0, 1, 2, 3, 4, 5)
+inline int gapTypeToInt(int gap)
 {
-  return static_cast<int>(gap);
+  return gap;
 }
 
 } // namespace o2::analysis::hf_upc
