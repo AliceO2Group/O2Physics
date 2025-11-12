@@ -70,9 +70,15 @@ struct SpectatorPlaneTutorial {
   ConfigurableAxis axisCentrality{"axisCentrality", {20, 0, 100}, "Centrality bins for vn "};
 
   // Configurables containing vector
+  float vtxZ = 10.0;
+  float etaMax = 0.8;
+  float ptMin = 0.2;
+  float ptMax = 10.0;
+  float dcaXYMax = 0.2;
+  float dcaZMax = 2.0;
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < 10.0f;
-  Filter trackFilter = nabs(aod::track::eta) < 0.8f && aod::track::pt > 0.2f && aod::track::pt < 10.0f && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < 0.2f && nabs(aod::track::dcaZ) < 2.0f;
+  Filter collisionFilter = nabs(aod::collision::posZ) < vtxZ;
+  Filter trackFilter = nabs(aod::track::eta) < etaMax && aod::track::pt > ptMin && aod::track::pt < ptMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < dcaXYMax && nabs(aod::track::dcaZ) < dcaZMax;
   using GeneralCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
   using UnfilteredTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 
@@ -93,14 +99,14 @@ struct SpectatorPlaneTutorial {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    AxisSpec axisPhi = {60, 0, M_PI * 2, "#varphi"};
+    AxisSpec axisPhi = {60, 0, constants::math::TwoPI, "#varphi"};
     AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
     AxisSpec axisVx = {40, -0.01, 0.01, "v_{x}"};
     AxisSpec axisVy = {40, -0.01, 0.01, "v_{y}"};
     AxisSpec axisVz = {40, -10, 10, "v_{z}"};
     AxisSpec axisCent = {90, 0, 90, "Centrality(%)"};
-    AxisSpec axisPhiPlane = {100, -M_PI, M_PI, "#Psi"};
+    AxisSpec axisPhiPlane = {100, -constants::math::PI, constants::math::PI, "#Psi"};
     AxisSpec axisQx = {100, -0.2, 0.2, "Q_{X}"};
     AxisSpec axisQy = {100, -0.2, 0.2, "Q_{Y}"};
     AxisSpec axisQQ = {100, -0.2, 0.2, "#LT Q_{X}^{A}Q_{Y}^{C} #GT"};
