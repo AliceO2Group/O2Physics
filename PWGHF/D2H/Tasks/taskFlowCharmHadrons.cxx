@@ -69,7 +69,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
 DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product
-DECLARE_SOA_COLUMN(Cent, cent, float); //! Centrality
+DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality
 } // namespace full
 DECLARE_SOA_TABLE(HfCandMPtInfos, "AOD", "HFCANDMPTINFO",
                   full::M,
