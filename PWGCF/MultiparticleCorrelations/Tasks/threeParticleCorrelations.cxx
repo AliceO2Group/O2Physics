@@ -204,7 +204,7 @@ struct ThreeParticleCorrelations {
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "kIsGoodZvtxFT0vsPV");
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "kNoSameBunchPileup");
-    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "Occupancy window");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, Form("%i < Occupancy < %i", static_cast<int>(evSelGroup.occupMin), static_cast<int>(evSelGroup.occupMax)));
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "kNoCollInTimeRangeStandard");
 
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{fineCentralityAxis}}});
