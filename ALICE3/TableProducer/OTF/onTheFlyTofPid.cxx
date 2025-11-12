@@ -362,13 +362,13 @@ struct OnTheFlyTofPid {
       }
       float x, y, z;
       if (!track.getXatLabR(layerRadius, x, magField)) {
-        LOG(warning) << "Could not propagate track to TOF layer at radius " << layerRadius << " cm";
+        LOG(debug) << "Could not propagate track to TOF layer at radius " << layerRadius << " cm";
         return false;
       }
       bool b;
       ROOT::Math::PositionVector3D hit = track.getXYZGloAt(x, magField, b);
       if (!b) {
-        LOG(warning) << "Could not get hit position at radius " << layerRadius << " cm";
+        LOG(debug) << "Could not get hit position at radius " << layerRadius << " cm";
         return false;
       }
       hit.GetCoordinates(x, y, z);
