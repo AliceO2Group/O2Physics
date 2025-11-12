@@ -305,11 +305,11 @@ struct OnTheFlyTofPid {
 
       // Check if hit is within layer geometric acceptance
       if (std::abs(layerRadius - r) > 10.f) {
-        LOG(warning) << "Hit out of TOF layer acceptance: r=" << r << " cm with respect to the layer radius " << layerRadius;
+        LOG(debug) << "Hit out of TOF layer acceptance: r=" << r << " cm with respect to the layer radius " << layerRadius;
         return false;
       }
       if (std::abs(z) > layerLength / 2.0f) {
-        LOG(warning) << "Hit out of TOF layer acceptance: z=" << z << " cm with respect to the layer length " << layerLength;
+        LOG(debug) << "Hit out of TOF layer acceptance: z=" << z << " cm with respect to the layer length " << layerLength;
         return false;
       }
 
