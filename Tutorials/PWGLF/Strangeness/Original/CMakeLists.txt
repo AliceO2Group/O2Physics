@@ -10,6 +10,11 @@
 # or submit itself to any jurisdiction.
 
 # Strangeness analysis tutorial
+o2physics_add_dpl_workflow(strangeness-skeleton
+                  SOURCES strangeness_skeleton.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
 o2physics_add_dpl_workflow(strangeness-step0
                   SOURCES strangeness_step0.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
