@@ -103,20 +103,20 @@ struct LongrangecorrDerived {
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
-  using CollTable = aod::CollLRTables;
-  using TrkTable = aod::TrkLRTables;
-  using MftTrkTable = aod::MftTrkLRTables;
-  using Ft0aTrkTable = aod::Ft0aLRTables;
-  using Ft0cTrkTable = aod::Ft0cLRTables;
-  using MftbestTrkTable = aod::MftBestTrkLRTables;
-  using V0TrkTable = aod::V0TrkLRTables;
+  using CollsTable = aod::CollLRTables;
+  using TrksTable = aod::TrkLRTables;
+  using MftTrksTable = aod::MftTrkLRTables;
+  using Ft0aTrksTable = aod::Ft0aLRTables;
+  using Ft0cTrksTable = aod::Ft0cLRTables;
+  using MftbestTrksTable = aod::MftBestTrkLRTables;
+  using V0TrksTable = aod::V0TrkLRTables;
 
-  Preslice<TrkTable> perColTpc = aod::lrcorrtrktable::collLRTableId;
-  Preslice<MftTrkTable> perColMft = aod::lrcorrtrktable::collLRTableId;
-  Preslice<MftbestTrkTable> perColMftbest = aod::lrcorrtrktable::collLRTableId;
-  Preslice<Ft0aTrkTable> perColFt0a = aod::lrcorrtrktable::collLRTableId;
-  Preslice<Ft0cTrkTable> perColFt0c = aod::lrcorrtrktable::collLRTableId;
-  Preslice<V0TrkTable> perColV0 = aod::lrcorrtrktable::collLRTableId;
+  Preslice<TrksTable> perColTpc = aod::lrcorrtrktable::collLRTableId;
+  Preslice<MftTrksTable> perColMft = aod::lrcorrtrktable::collLRTableId;
+  Preslice<MftbestTrksTable> perColMftbest = aod::lrcorrtrktable::collLRTableId;
+  Preslice<Ft0aTrksTable> perColFt0a = aod::lrcorrtrktable::collLRTableId;
+  Preslice<Ft0cTrksTable> perColFt0c = aod::lrcorrtrktable::collLRTableId;
+  Preslice<V0TrksTable> perColV0 = aod::lrcorrtrktable::collLRTableId;
 
   void init(InitContext const&)
   {
@@ -252,94 +252,94 @@ struct LongrangecorrDerived {
     } // pair loop
   } // process mixed
 
-  void processTpcft0aSE(CollTable::iterator const& col, TrkTable const& tracks, Ft0aTrkTable const& ft0as)
+  void processTpcft0aSE(CollsTable::iterator const& col, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
     processSame(col, tracks, ft0as);
   }
 
-  void processTpcft0cSE(CollTable::iterator const& col, TrkTable const& tracks, Ft0cTrkTable const& ft0cs)
+  void processTpcft0cSE(CollsTable::iterator const& col, TrksTable const& tracks, Ft0cTrksTable const& ft0cs)
   {
     processSame(col, tracks, ft0cs);
   }
 
-  void processTpcmftSE(CollTable::iterator const& col, TrkTable const& tracks, MftTrkTable const& mfts)
+  void processTpcmftSE(CollsTable::iterator const& col, TrksTable const& tracks, MftTrksTable const& mfts)
   {
     processSame(col, tracks, mfts);
   }
 
-  void processMftft0aSE(CollTable::iterator const& col, MftTrkTable const& mfts, Ft0aTrkTable const& ft0as)
+  void processMftft0aSE(CollsTable::iterator const& col, MftTrksTable const& mfts, Ft0aTrksTable const& ft0as)
   {
     processSame(col, mfts, ft0as);
   }
 
-  void processV0ft0aSE(CollTable::iterator const& col, V0TrkTable const& tracks, Ft0aTrkTable const& ft0as)
+  void processV0ft0aSE(CollsTable::iterator const& col, V0TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
     processSame(col, tracks, ft0as);
   }
 
-  void processV0mftSE(CollTable::iterator const& col, V0TrkTable const& tracks, MftTrkTable const& mfts)
+  void processV0mftSE(CollsTable::iterator const& col, V0TrksTable const& tracks, MftTrksTable const& mfts)
   {
     processSame(col, tracks, mfts);
   }
 
-  void processTpcmftbestSE(CollTable::iterator const& col, TrkTable const& tracks, MftbestTrkTable const& mfts)
+  void processTpcmftbestSE(CollsTable::iterator const& col, TrksTable const& tracks, MftbestTrksTable const& mfts)
   {
     processSame(col, tracks, mfts);
   }
 
-  void processMftbestft0aSE(CollTable::iterator const& col, MftbestTrkTable const& mfts, Ft0aTrkTable const& ft0as)
+  void processMftbestft0aSE(CollsTable::iterator const& col, MftbestTrksTable const& mfts, Ft0aTrksTable const& ft0as)
   {
     processSame(col, mfts, ft0as);
   }
 
-  void processV0mftbestSE(CollTable::iterator const& col, V0TrkTable const& tracks, MftbestTrkTable const& mfts)
+  void processV0mftbestSE(CollsTable::iterator const& col, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
   {
     processSame(col, tracks, mfts);
   }
 
-  void processTpcft0aME(CollTable const& col, TrkTable const& tracks, Ft0aTrkTable const& ft0as)
+  void processTpcft0aME(CollsTable const& cols, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
-    processMixed(col, tracks, ft0as);
+    processMixed(cols, tracks, ft0as);
   }
 
-  void processTpcft0cME(CollTable const& col, TrkTable const& tracks, Ft0cTrkTable const& ft0cs)
+  void processTpcft0cME(CollsTable const& cols, TrksTable const& tracks, Ft0cTrksTable const& ft0cs)
   {
-    processMixed(col, tracks, ft0cs);
+    processMixed(cols, tracks, ft0cs);
   }
 
-  void processTpcmftME(CollTable const& col, TrkTable const& tracks, MftTrkTable const& mfts)
+  void processTpcmftME(CollsTable const& cols, TrksTable const& tracks, MftTrksTable const& mfts)
   {
-    processMixed(col, tracks, mfts);
+    processMixed(cols, tracks, mfts);
   }
 
-  void processMftft0aME(CollTable const& col, MftTrkTable const& mfts, Ft0aTrkTable const& ft0as)
+  void processMftft0aME(CollsTable const& cols, MftTrksTable const& mfts, Ft0aTrksTable const& ft0as)
   {
-    processMixed(col, mfts, ft0as);
+    processMixed(cols, mfts, ft0as);
   }
 
-  void processV0ft0aME(CollTable const& col, V0TrkTable const& tracks, Ft0aTrkTable const& ft0as)
+  void processV0ft0aME(CollsTable const& cols, V0TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
-    processMixed(col, tracks, ft0as);
+    processMixed(cols, tracks, ft0as);
   }
 
-  void processV0mftME(CollTable const& col, V0TrkTable const& tracks, MftTrkTable const& mfts)
+  void processV0mftME(CollsTable const& cols, V0TrksTable const& tracks, MftTrksTable const& mfts)
   {
-    processMixed(col, tracks, mfts);
+    processMixed(cols, tracks, mfts);
   }
 
-  void processTpcmftbestME(CollTable const& col, TrkTable const& tracks, MftbestTrkTable const& mfts)
+  void processTpcmftbestME(CollsTable const& cols, TrksTable const& tracks, MftbestTrksTable const& mfts)
   {
-    processMixed(col, tracks, mfts);
+    processMixed(cols, tracks, mfts);
   }
 
-  void processMftbestft0aME(CollTable const& col, MftbestTrkTable const& mfts, Ft0aTrkTable const& ft0as)
+  void processMftbestft0aME(CollsTable const& cols, MftbestTrksTable const& mfts, Ft0aTrksTable const& ft0as)
   {
-    processMixed(col, mfts, ft0as);
+    processMixed(cols, mfts, ft0as);
   }
 
-  void processV0mftbestME(CollTable const& col, V0TrkTable const& tracks, MftbestTrkTable const& mfts)
+  void processV0mftbestME(CollsTable const& cols, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
   {
-    processMixed(col, tracks, mfts);
+    processMixed(cols, tracks, mfts);
   }
 
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
