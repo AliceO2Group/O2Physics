@@ -13,10 +13,10 @@
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -124,10 +124,10 @@ struct strangeness_tutorial {
       if (v0.v0radius() < v0setting_radius)
         continue;
 
-      if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
+      if (std::abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
       }
-      if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
+      if (std::abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
         continue;
       }
 

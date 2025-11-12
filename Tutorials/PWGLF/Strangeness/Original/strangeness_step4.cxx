@@ -13,10 +13,10 @@
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

@@ -25,13 +25,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// STEP 0
-// Starting point: loop over all V0s and fill invariant mass histogram
-
 struct strangeness_tutorial {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rKzeroShort{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
@@ -42,15 +38,11 @@ struct strangeness_tutorial {
   void init(InitContext const&)
   {
     // Axes
-    AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {nBins, -15., 15., "vrtx_{Z} [cm]"};
 
     // Histograms
     // Event selection
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
-
-    // K0s reconstruction
-    rKzeroShort.add("hMassK0Short", "hMassK0Short", {HistType::kTH1F, {K0ShortMassAxis}});
   }
 
   // Defining filters for events (event selection)
@@ -58,15 +50,10 @@ struct strangeness_tutorial {
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
-               aod::V0Datas const& V0s)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision)
   {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-
-    for (const auto& v0 : V0s) {
-      rKzeroShort.fill(HIST("hMassK0Short"), v0.mK0Short());
-    }
   }
 };
 
