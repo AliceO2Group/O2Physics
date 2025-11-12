@@ -81,8 +81,6 @@ struct HfTaskDplus {
   Configurable<bool> storePvContributors{"storePvContributors", false, "Flag to store number of PV contributors information"};
   Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
-  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   // UPC gap determination thresholds
   Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
