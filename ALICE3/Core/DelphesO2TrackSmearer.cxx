@@ -47,6 +47,8 @@ namespace o2
 namespace delphes
 {
 
+/*****************************************************************/
+
 bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 {
   if (!filename || filename[0] == '\0') {
