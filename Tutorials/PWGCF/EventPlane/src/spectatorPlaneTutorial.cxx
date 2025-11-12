@@ -152,7 +152,10 @@ struct SpectatorPlaneTutorial {
     float centrality = collision.centFT0C();
     registry.fill(HIST("hCentrality"), centrality);
 
-    if (centrality > 80 || centrality < 0)
+    float centMin = 0; 
+    float centMax = 80; 
+
+    if (centrality > centMax || centrality < centMin)
       return;
 
     if (collision.isSelected() == false)
