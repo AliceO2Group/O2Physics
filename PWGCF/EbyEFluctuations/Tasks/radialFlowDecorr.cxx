@@ -390,7 +390,7 @@ struct RadialFlowDecorr {
 
   float getEfficiency(float mult, float pt, float eta, PID pidType, int effidx) const
   {
-    TH3F* h;
+    TH3F* h = nullptr;
     if (effidx == 0)
       h = hEff[pidType];
     if (effidx == 1)
