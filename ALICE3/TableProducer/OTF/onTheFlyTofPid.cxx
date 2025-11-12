@@ -95,9 +95,9 @@ struct OnTheFlyTofPid {
     Configurable<float> outerTOFRadius{"outerTOFRadius", 80, "barrel outer TOF radius (cm)"};
     Configurable<float> innerTOFLength{"innerTOFLength", 124, "barrel inner TOF length (cm)"};
     Configurable<float> outerTOFLength{"outerTOFLength", 250, "barrel outer TOF length (cm)"};
-    Configurable<float> innerTOFPixelArea{"innerTOFPixelArea", 1.0, "barrel inner TOF pixel area (mm^2)"};
+    Configurable<std::array<float, 2>> innerTOFPixelDimension{"innerTOFPixelDimension", {0.1, 0.1}, "barrel inner TOF pixel dimension in Z and RPhi (cm)"};
     Configurable<float> innerTOFFractionOfInactiveArea{"innerTOFFractionOfInactiveArea", 0.f, "barrel inner TOF fraction of inactive area"};
-    Configurable<float> outerTOFPixelArea{"outerTOFPixelArea", 25.0, "barrel outer TOF pixel area (mm^2)"};
+    Configurable<std::array<float, 2>> outerTOFPixelDimension{"outerTOFPixelDimension", {0.1, 0.1}, "barrel outer TOF pixel dimension in Z and RPhi (cm)"};
     Configurable<float> outerTOFFractionOfInactiveArea{"outerTOFFractionOfInactiveArea", 0.f, "barrel outer TOF fraction of inactive area"};
     Configurable<float> innerTOFTimeReso{"innerTOFTimeReso", 20, "barrel inner TOF time error (ps)"};
     Configurable<float> outerTOFTimeReso{"outerTOFTimeReso", 20, "barrel outer TOF time error (ps)"};
@@ -189,8 +189,6 @@ struct OnTheFlyTofPid {
       histos.add("h2dEventTimeres", "h2dEventTimeres", kTH2F, {axisdNdeta, {300, 0, 300, "resolution"}});
       listEfficiency.setObject(new THashList);
       listEfficiency->Add(new TEfficiency("effEventTime", "effEventTime", plotsConfig.nBinsMult, 0.0f, plotsConfig.maxMultRange));
-      listEfficiency->Add(new TEfficiency("MapInnerTOF", "MapInnerTOF", 100, -simConfig.innerTOFLength / 2, simConfig.innerTOFLength / 2, 100, 0, simConfig.innerTOFRadius * M_PI_2));
-      listEfficiency->Add(new TEfficiency("MapOuterTOF", "MapOuterTOF", 100, -simConfig.outerTOFLength / 2, simConfig.outerTOFLength / 2, 100, 0, simConfig.outerTOFRadius * M_PI_2));
 
       const AxisSpec axisMomentum{static_cast<int>(plotsConfig.nBinsP), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisRigidity{static_cast<int>(plotsConfig.nBinsP), 0.0f, +10.0f, "#it{p} / |#it{z}| (GeV/#it{c})"};
@@ -204,12 +202,14 @@ struct OnTheFlyTofPid {
       histos.add("iTOF/h2dTrackLengthInnerVsPt", "h2dTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
       histos.add("iTOF/h2dTrackLengthInnerRecoVsPt", "h2dTrackLengthInnerRecoVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
       histos.add("iTOF/h2dDeltaTrackLengthInnerVsPt", "h2dDeltaTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackDeltaLength});
+      histos.add("iTOF/h2HitMap", "h2HitMap", kTH2F, {{100, -simConfig.innerTOFLength / 2, simConfig.innerTOFLength / 2}, {100, 0, simConfig.innerTOFRadius * 2 * M_PI}});
 
       histos.add("oTOF/h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
       histos.add("oTOF/h2dVelocityVsRigidityOuter", "h2dVelocityVsRigidityOuter", kTH2F, {axisRigidity, axisVelocity});
       histos.add("oTOF/h2dTrackLengthOuterVsPt", "h2dTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
       histos.add("oTOF/h2dTrackLengthOuterRecoVsPt", "h2dTrackLengthOuterRecoVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
       histos.add("oTOF/h2dDeltaTrackLengthOuterVsPt", "h2dDeltaTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackDeltaLength});
+      histos.add("oTOF/h2HitMap", "h2HitMap", kTH2F, {{100, -simConfig.outerTOFLength / 2, simConfig.outerTOFLength / 2}, {100, 0, simConfig.outerTOFRadius * 2 * M_PI}});
 
       const AxisSpec axisPt{static_cast<int>(plotsConfig.nBinsP), 0.0f, +4.0f, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec axisEta{static_cast<int>(plotsConfig.nBinsEta), -2.0f, +2.0f, "#eta"};
@@ -256,33 +256,39 @@ struct OnTheFlyTofPid {
    private:
     const float layerRadius;
     const float layerLength;
-    const float pixelArea;
+    const float pixelDimensionZ;
+    const float pixelDimensionRPhi;
     const float fractionInactive;
     const float magField;
 
-    float pixelSize;
-    float circumference;
-    float zLength;
-    int nPixelsPhi;
-    int nPixelsZ;
-    float inactiveBorderPhi;
-    float inactiveBorderZ;
+    // TH2F* hHitMapInPixel = nullptr;
+    // TH2F* hHitMap = nullptr;
+    TAxis* axisZ = nullptr;
+    TAxis* axisRPhi = nullptr;
+    TAxis* axisInPixelZ = nullptr;
+    TAxis* axisInPixelRPhi = nullptr;
 
    public:
-    TOFLayerEfficiency(float r, float l, float pA, float fIA, float m)
-      : layerRadius(r), layerLength(l), pixelArea(pA), fractionInactive(fIA), magField(m)
+    TOFLayerEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m)
+      : layerRadius(r), layerLength(l), pixelDimensionZ(pDimensions[0]), pixelDimensionRPhi(pDimensions[1]), fractionInactive(fIA), magField(m)
     {
       // Assuming square pixels for simplicity
-      pixelSize = std::sqrt(pA);
-      circumference = 2.0f * M_PI * layerRadius * 10.0f; // convert cm to mm
-      zLength = layerLength * 10.0f;                     // convert cm to mm
-      nPixelsPhi = static_cast<int>(circumference / pixelSize);
-      nPixelsZ = static_cast<int>(zLength / pixelSize);
-      inactiveBorderPhi = pixelSize * std::sqrt(fractionInactive);
-      inactiveBorderZ = pixelSize * std::sqrt(fractionInactive);
+      const float circumference = 2.0f * M_PI * layerRadius;
+      axisZ = new TAxis(static_cast<int>(layerLength / pixelDimensionZ), -layerLength / 2, layerLength);
+      axisRPhi = new TAxis(static_cast<int>(circumference / pixelDimensionRPhi), 0.f, circumference);
+
+      const float inactiveBorderRPhi = pixelDimensionRPhi * std::sqrt(fractionInactive);
+      const float inactiveBorderZ = pixelDimensionZ * std::sqrt(fractionInactive);
+      const double arrayRPhi[4] = {0.f, inactiveBorderRPhi, pixelDimensionRPhi - inactiveBorderRPhi, pixelDimensionRPhi};
+      axisInPixelRPhi = new TAxis(3, arrayRPhi);
+      const double arrayZ[4] = {0.f, inactiveBorderZ, pixelDimensionZ - inactiveBorderZ, pixelDimensionZ};
+      axisInPixelZ = new TAxis(3, arrayZ);
+
+      // hHitMap = new TH2F(Form("hHitMap_R%.0f", layerRadius), "HitMap;z (cm); r#phi (cm)", 1000, -1000, 1000, 1000, -1000, 1000);
+      // hHitMapInPixel = new TH2F(Form("hHitMapInPixel_R%.0f", layerRadius), "HitMapInPixel;z (cm); r#phi (cm)", 1000, -10, 10, 1000, -10, 10);
     }
 
-    bool isInTOFActiveArea(std::array<float, 3> hitPosition = {0.0f, 0.0f, 0.0f})
+    bool isInTOFActiveArea(std::array<float, 3> hitPosition)
     {
       if (fractionInactive <= 0.0f) {
         return true;
@@ -293,92 +299,57 @@ struct OnTheFlyTofPid {
 
       // Convert 3D position to cylindrical coordinates for area calculation
       const float phi = std::atan2(hitPosition[1], hitPosition[0]);
+      const float rphi = phi * layerRadius;
       const float z = hitPosition[2];
       const float r = std::sqrt(hitPosition[0] * hitPosition[0] + hitPosition[1] * hitPosition[1]);
 
       // Check if hit is within layer geometric acceptance
-      if (std::abs(z) > layerLength / 2.0f || r < layerRadius - 1.0f || r > layerRadius + 1.0f) {
+      if (std::abs(layerRadius - r) > 10.f) {
+        LOG(warning) << "Hit out of TOF layer acceptance: r=" << r << " cm with respect to the layer radius " << layerRadius;
+        return false;
+      }
+      if (std::abs(z) > layerLength / 2.0f) {
+        LOG(warning) << "Hit out of TOF layer acceptance: z=" << z << " cm with respect to the layer length " << layerLength;
         return false;
       }
 
-      // Convert hit position to pixel coordinates
-      const float phiNorm = (phi + M_PI) / (2.0f * M_PI);         // normalize phi to [0,1]
-      const float zNorm = (z * 10.0f + zLength / 2.0f) / zLength; // normalize z to [0,1]
+      const int pixelIndexPhi = axisRPhi->FindBin(rphi);
+      const int pixelIndexZ = axisZ->FindBin(z);
 
-      const int pixelPhi = static_cast<int>(phiNorm * nPixelsPhi) % nPixelsPhi;
-      const int pixelZ = static_cast<int>(zNorm * nPixelsZ);
+      // LOG(info) << "Hit pixel " << pixelIndexPhi << "/" << nPixelsRPhi << " and " << pixelIndexZ << "/" << nPixelsZ;
 
-      // Check if pixel is valid
-      if (pixelZ < 0 || pixelZ >= nPixelsZ) {
-        LOG(fatal) << "Pixel Z index out of bounds: " << pixelZ << " (nPixelsZ: " << nPixelsZ << ")";
-      }
-      if (pixelPhi < 0 || pixelPhi >= nPixelsPhi) {
-        LOG(fatal) << "Pixel Phi index out of bounds: " << pixelPhi << " (nPixelsPhi: " << nPixelsPhi << ")";
-      }
-      // Determine if the pixel is active based on the fraction of inactive area
-      const float phiPosInPixel = std::abs(phiNorm - pixelPhi);
-      const float zPosInPixel = std::abs(zNorm - pixelZ);
-      if (phiPosInPixel > inactiveBorderPhi) {
+      if (pixelIndexPhi <= 0 || pixelIndexPhi > axisRPhi->GetNbins() || pixelIndexZ <= 0 || pixelIndexZ > axisZ->GetNbins()) {
+        // LOG(info) << "Hit out of TOF layer pixel range: pixelIndexPhi=" << pixelIndexPhi << ", pixelIndexZ=" << pixelIndexZ;
         return false;
       }
-      if (zPosInPixel > inactiveBorderZ) {
-        return false;
+      // Calculate local position within the pixel
+      const float localRPhi = (rphi - axisRPhi->GetBinCenter(pixelIndexPhi));
+      const float localZ = (z - axisZ->GetBinCenter(pixelIndexZ));
+
+      // The difference between the hit and the pixel position cannot be greater than the size of the pixel
+      if (std::abs(localRPhi - axisRPhi->GetBinCenter(pixelIndexPhi)) > axisRPhi->GetBinWidth(pixelIndexPhi)) {
+        // LOG(warning) << "Local hit difference in phi is bigger than the pixel size";
       }
+      if (std::abs(localZ - axisZ->GetBinCenter(pixelIndexZ)) > axisZ->GetBinWidth(pixelIndexZ)) {
+        // LOG(warning) << "Local hit difference in z is bigger than the pixel size";
+      }
+      switch (axisInPixelRPhi->FindBin(localRPhi)) {
+        case 1:
+        case 3:
+          return false;
+      }
+      switch (axisInPixelZ->FindBin(localZ)) {
+        case 1:
+        case 3:
+          return false;
+      }
+      // hHitMap->Fill(z, rphi);
+      // hHitMapInPixel->Fill(localZ, localRPhi);
+      // if (static_cast<int>(hHitMapInPixel->GetEntries()) % 100000 == 0) {
+      //   hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
+      //   hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
+      // }
       return true;
-    }
-
-    /// Utility function to estimate hit position on a TOF layer
-    /// \param track the track parameters
-    /// \param radius the radius of the TOF layer
-    /// \return estimated hit position [x, y, z] in cm
-    std::array<float, 3> estimateHitPosition(const o2::track::TrackParCov& track)
-    {
-      std::array<float, 3> hitPosition = {0.0f, 0.0f, 0.0f};
-      // Get the track circle parameters
-      o2::math_utils::CircleXYf_t trcCircle;
-      float sna, csa;
-      track.getCircleParams(magField, trcCircle, sna, csa);
-
-      // Calculate intersection points with the cylinder of given radius
-      const float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
-
-      if (centerDistance < trcCircle.rC + layerRadius && centerDistance > std::fabs(trcCircle.rC - layerRadius)) {
-        // Calculate intersection point using the same logic as computeTrackLength
-        const float ux = trcCircle.xC / centerDistance;
-        const float uy = trcCircle.yC / centerDistance;
-        const float vx = -uy;
-        const float vy = +ux;
-        const float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + layerRadius * layerRadius) / (2.0f * centerDistance);
-        const float displace = (0.5f / centerDistance) * std::sqrt(
-                                                           (-centerDistance + trcCircle.rC - layerRadius) *
-                                                           (-centerDistance - trcCircle.rC + layerRadius) *
-                                                           (-centerDistance + trcCircle.rC + layerRadius) *
-                                                           (centerDistance + trcCircle.rC + layerRadius));
-
-        const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
-        const float point2[2] = {radical * ux - displace * vx, radical * uy - displace * vy};
-
-        // Choose the correct intersection point based on momentum direction
-        std::array<float, 3> mom;
-        track.getPxPyPzGlo(mom);
-        const float scalarProduct1 = point1[0] * mom[0] + point1[1] * mom[1];
-        const float scalarProduct2 = point2[0] * mom[0] + point2[1] * mom[1];
-
-        if (scalarProduct1 > scalarProduct2) {
-          hitPosition[0] = point1[0];
-          hitPosition[1] = point1[1];
-        } else {
-          hitPosition[0] = point2[0];
-          hitPosition[1] = point2[1];
-        }
-
-        // Estimate Z position using the track slope
-        float trackLength = computeTrackLength(track, layerRadius, magField);
-        if (trackLength > 0) {
-          hitPosition[2] = track.getZ() + trackLength * track.getTgl();
-        }
-      }
-      return hitPosition;
     }
 
     /// Check if a track hits the active area (convenience function)
@@ -386,20 +357,34 @@ struct OnTheFlyTofPid {
     /// \return true if the hit is in the active area
     bool isTrackInActiveArea(const o2::track::TrackParCov& track)
     {
-      auto hitPosition = estimateHitPosition(track);
-      return isInTOFActiveArea(hitPosition);
+      if (fractionInactive <= 0.f) {
+        return true;
+      }
+      float x, y, z;
+      if (!track.getXatLabR(layerRadius, x, magField)) {
+        LOG(warning) << "Could not propagate track to TOF layer at radius " << layerRadius << " cm";
+        return false;
+      }
+      bool b;
+      ROOT::Math::PositionVector3D hit = track.getXYZGloAt(x, magField, b);
+      if (!b) {
+        LOG(warning) << "Could not get hit position at radius " << layerRadius << " cm";
+        return false;
+      }
+      hit.GetCoordinates(x, y, z);
+      return isInTOFActiveArea(std::array<float, 3>{x, y, z});
     }
   };
 
   bool isInInnerTOFActiveArea(const o2::track::TrackParCov& track)
   {
-    static TOFLayerEfficiency innerTOFLayer(simConfig.innerTOFRadius, simConfig.innerTOFLength, simConfig.innerTOFPixelArea, simConfig.innerTOFFractionOfInactiveArea, simConfig.magneticField);
+    static TOFLayerEfficiency innerTOFLayer(simConfig.innerTOFRadius, simConfig.innerTOFLength, simConfig.innerTOFPixelDimension, simConfig.innerTOFFractionOfInactiveArea, simConfig.magneticField);
     return innerTOFLayer.isTrackInActiveArea(track);
   }
 
   bool isInOuterTOFActiveArea(const o2::track::TrackParCov& track)
   {
-    static TOFLayerEfficiency outerTOFLayer(simConfig.outerTOFRadius, simConfig.outerTOFLength, simConfig.outerTOFPixelArea, simConfig.outerTOFFractionOfInactiveArea, simConfig.magneticField);
+    static TOFLayerEfficiency outerTOFLayer(simConfig.outerTOFRadius, simConfig.outerTOFLength, simConfig.outerTOFPixelDimension, simConfig.outerTOFFractionOfInactiveArea, simConfig.magneticField);
     return outerTOFLayer.isTrackInActiveArea(track);
   }
 
@@ -656,18 +641,22 @@ struct OnTheFlyTofPid {
       }
 
       // Check if the track hit a sensitive area of the TOF
-      const bool activeInnerTOF = true; // isInInnerTOFActiveArea(o2track);
-      float x = 0.f;
-      o2track.getXatLabR(simConfig.innerTOFRadius, x, simConfig.magneticField.value); // to get phi at inner TOF radius
-      static_cast<TEfficiency*>(listEfficiency->At(1))->Fill(o2track.getZAt(x, simConfig.magneticField.value), simConfig.innerTOFRadius * o2track.getPhiAt(x, simConfig.magneticField.value), activeInnerTOF);
+      const bool activeInnerTOF = isInInnerTOFActiveArea(o2track);
       if (!activeInnerTOF) {
         trackLengthInnerTOF = -999.f;
+      } else {
+        float x = 0.f;
+        o2track.getXatLabR(simConfig.innerTOFRadius, x, simConfig.magneticField);
+        histos.fill(HIST("iTOF/h2HitMap"), o2track.getZAt(x, simConfig.magneticField), simConfig.innerTOFRadius * o2track.getPhiAt(x, simConfig.magneticField));
       }
+
       const bool activeOuterTOF = isInOuterTOFActiveArea(o2track);
-      o2track.getXatLabR(simConfig.outerTOFRadius, x, simConfig.magneticField.value); // to get phi at outer TOF radius
-      static_cast<TEfficiency*>(listEfficiency->At(2))->Fill(o2track.getZAt(x, simConfig.magneticField.value), simConfig.outerTOFRadius * o2track.getPhiAt(x, simConfig.magneticField.value), activeOuterTOF);
       if (!activeOuterTOF) {
         trackLengthOuterTOF = -999.f;
+      } else {
+        float x = 0.f;
+        o2track.getXatLabR(simConfig.outerTOFRadius, x, simConfig.magneticField);
+        histos.fill(HIST("oTOF/h2HitMap"), o2track.getZAt(x, simConfig.magneticField), simConfig.outerTOFRadius * o2track.getPhiAt(x, simConfig.magneticField));
       }
 
       // get mass to calculate velocity
