@@ -215,7 +215,7 @@ struct JetTutorialTask {
 
   using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
   void processMCMatchedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
-  aod::JetMcCollisions const&,
+                               aod::JetMcCollisions const&,
                                soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                JetMCPTable const&,
                                aod::JetTracks const&,

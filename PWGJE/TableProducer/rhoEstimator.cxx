@@ -90,7 +90,7 @@ struct RhoEstimatorTask {
     Configurable<float> bkgPhiMax{"bkgPhiMax", 6.283, "maximum phi for determining background density"};
     Configurable<bool> doSparse{"doSparse", false, "perfom sparse estimation"};
     Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
-    Configurable<int>    ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
+    Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
     Configurable<double> ghostArea{"ghostArea", 0.005, "Area per ghost"};
     Configurable<double> ghostGridScatter{"ghostGridScatter", 1.0, "Grid scatter"};
     Configurable<double> ghostKtScatter{"ghostKtScatter", 0.1, "kT scatter"};
@@ -142,7 +142,7 @@ struct RhoEstimatorTask {
     bkgSub.setPhiMinMax(bkgPhiMin_, bkgPhiMax_);
 
     fastjet::GhostedAreaSpec ghostAreaSpec(config.ghostRapMax, config.ghostRepeat, config.ghostArea,
-                                config.ghostGridScatter, config.ghostKtScatter, config.ghostMeanPt);
+                                           config.ghostGridScatter, config.ghostKtScatter, config.ghostMeanPt);
     bkgSub.setGhostAreaSpec(ghostAreaSpec);
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(config.eventSelections));

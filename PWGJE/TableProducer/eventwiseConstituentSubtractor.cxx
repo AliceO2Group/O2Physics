@@ -81,11 +81,11 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> eventEtaMax{"eventEtaMax", 0.9, "maximum pseudorapidity of event"};
   Configurable<bool> doRhoMassSub{"doRhoMassSub", true, "perfom mass subtraction as well"};
   Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
-    Configurable<int>    ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
-    Configurable<double> ghostArea{"ghostArea", 0.005, "Area per ghost"};
-    Configurable<double> ghostGridScatter{"ghostGridScatter", 1.0, "Grid scatter"};
-    Configurable<double> ghostKtScatter{"ghostKtScatter", 0.1, "kT scatter"};
-    Configurable<double> ghostMeanPt{"ghostMeanPt", 1e-100, "Mean ghost pT"};
+  Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
+  Configurable<double> ghostArea{"ghostArea", 0.005, "Area per ghost"};
+  Configurable<double> ghostGridScatter{"ghostGridScatter", 1.0, "Grid scatter"};
+  Configurable<double> ghostKtScatter{"ghostKtScatter", 0.1, "kT scatter"};
+  Configurable<double> ghostMeanPt{"ghostMeanPt", 1e-100, "Mean ghost pT"};
 
   JetBkgSubUtils eventWiseConstituentSubtractor;
   std::vector<fastjet::PseudoJet> inputParticles;
@@ -105,7 +105,7 @@ struct eventWiseConstituentSubtractorTask {
     eventWiseConstituentSubtractor.setConstSubAlphaRMax(alpha, rMax);
     eventWiseConstituentSubtractor.setMaxEtaEvent(eventEtaMax);
     fastjet::GhostedAreaSpec ghostAreaSpec(ghostRapMax, ghostRepeat, ghostArea,
-                                ghostGridScatter, ghostKtScatter, ghostMeanPt);
+                                           ghostGridScatter, ghostKtScatter, ghostMeanPt);
     eventWiseConstituentSubtractor.setGhostAreaSpec(ghostAreaSpec);
 
     if (applyTrackingEfficiency) {
