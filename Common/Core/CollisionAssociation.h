@@ -80,7 +80,8 @@ class CollisionAssociation
           switch (mTrackSelection) {
             case o2::aod::track_association::TrackSelection::CentralBarrelRun2: {
               unsigned char itsClusterMap = track.itsClusterMap();
-              if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
+              int minTpcNClsFound{50};
+              if (!(track.tpcNClsFound() >= minTpcNClsFound && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
                 hasGoodQuality = false;
               }
               break;
@@ -199,7 +200,7 @@ class CollisionAssociation
       uint64_t collBC = collision.bc().globalBC();
 
       // This is done per block to allow optimization below. Within each block the globalBC increase continously
-      for (auto& iterationWindow : trackIterationWindows) {
+      for (const auto& iterationWindow : trackIterationWindows) {
         bool iteratorMoved = false;
         const bool isAssignedTrackWindow = (iterationWindow.first != iterationWindow.second) ? iterationWindow.first.has_collision() : false;
         for (auto trackInWindow = iterationWindow.first; trackInWindow != iterationWindow.second; ++trackInWindow) {
