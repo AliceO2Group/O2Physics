@@ -30,6 +30,7 @@
 #include "PWGHF/Utils/utilsUpcHf.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -78,16 +79,19 @@ struct HfTaskDplus {
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
+  Configurable<bool> storeIR{"storeIR", false, "Flag to store interaction rate information"};
   Configurable<bool> storePvContributors{"storePvContributors", false, "Flag to store number of PV contributors information"};
   Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   // UPC gap determination thresholds
   Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
   Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
   Configurable<float> upcZDCThreshold{"upcZDCThreshold", 1.0f, "ZDC energy threshold for UPC gap determination (a.u.)"};
 
-  HfEventSelection hfEvSel; // event selection and monitoring
+  HfEventSelection hfEvSel;    // event selection and monitoring
+  ctpRateFetcher mRateFetcher; // interaction rate fetcher
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -121,6 +125,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {40, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
+  ConfigurableAxis thnConfigAxisIR{"thnConfigAxisIR", {5000, 0, 500}, "Interaction rate (kHz)"};
   ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {100, 0., 100.}, "axis for PV contributors"};
   ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
   ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
@@ -143,8 +148,6 @@ struct HfTaskDplus {
      {"hEtaRecBg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
      {"hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
 
-  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
   void init(InitContext&)
   {
     std::array<bool, 5> doprocess{doprocessData, doprocessDataWithMl, doprocessMc, doprocessMcWithMl, doprocessDataWithMlWithUpc};
@@ -162,6 +165,7 @@ struct HfTaskDplus {
     AxisSpec const thnAxisFlagBHad{thnConfigAxisFlagBHad, "B Hadron flag"};
     AxisSpec const thnAxisCent{thnConfigAxisCent, "Centrality"};
     AxisSpec const thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
+    AxisSpec const thnAxisIR{thnConfigAxisIR, "Interaction rate (kHz)"};
     AxisSpec const thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
     AxisSpec const thnAxisGapType{thnConfigAxisGapType, "Gap type"};
     AxisSpec const thnAxisFT0A{thnConfigAxisFT0A, "FT0-A amplitude"};
@@ -219,6 +223,9 @@ struct HfTaskDplus {
       if (storeOccupancy) {
         axes.push_back(thnAxisOccupancy);
       }
+      if (storeIR) {
+        axes.push_back(thnAxisIR);
+      }
       if (doprocessDataWithMlWithUpc) {
         axes.push_back(thnAxisGapType);
         axes.push_back(thnAxisFT0A);
@@ -271,14 +278,14 @@ struct HfTaskDplus {
       registry.add("hSparseMassGenFD", "THn for gen FD Dplus", HistType::kTHnSparseF, axesGenFD);
     }
 
-    qaRegistry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
-    qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
-    qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
-    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
-    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
-    qaRegistry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
+    registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+    registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+    registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    registry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapA) + 1, "A");
+    registry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::GapC) + 1, "C");
+    registry.get<TH1>(HIST("Data/hUpcGapAfterSelection"))->GetXaxis()->SetBinLabel(static_cast<int>(GapType::DoubleGap) + 1, "Double");
 
-    hfEvSel.addHistograms(qaRegistry); // collision monitoring
+    hfEvSel.addHistograms(registry); // collision monitoring
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -690,7 +697,7 @@ struct HfTaskDplus {
     }
   }
 
-  template <bool fillMl, typename CollType, typename CandType, typename BCsType>
+  template <bool FillMl, typename CollType, typename CandType, typename BCsType>
   void runAnalysisPerCollisionDataWithUpc(CollType const& collisions,
                                           CandType const& candidates,
                                           BCsType const& bcs,
@@ -699,25 +706,24 @@ struct HfTaskDplus {
                                           aod::FDDs const& fdds)
   {
     for (const auto& collision : collisions) {
-      uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
       float centrality{-1.f};
-      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, qaRegistry, bcs);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, BCsType>(collision, centrality, ccdb, registry, bcs);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
-      auto bc = collision.template bc_as<BCsType>();
+      const auto& bc = collision.template bc_as<BCsType>();
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
       GapType gap = GapType::DoubleGap;
       if (bc.has_zdc()) {
-        auto zdc = bc.zdc();
-        qaRegistry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
-        qaRegistry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        const auto& zdc = bc.zdc();
+        registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
         gap = hf_upc::determineGapType(fitInfo.ampFT0A, fitInfo.ampFT0C, zdc.energyCommonZNA(), zdc.energyCommonZNC(),
                                        upcFT0AThreshold, upcFT0CThreshold, upcZDCThreshold);
-        qaRegistry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
+        registry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
       }
       if (hf_upc::isSingleSidedGap(gap)) {
         // Use the candidates from this collision
@@ -725,36 +731,62 @@ struct HfTaskDplus {
         const auto& groupedDplusCandidates = candidates.sliceBy(candDplusPerCollision, thisCollId);
         float cent{-1.f};
         float occ{-1.f};
+        float ir{-1.f};
         if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         }
+        if (storeIR) {
+          ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
+        }
         float numPvContr{-1.f};
         int const gapTypeInt = hf_upc::gapTypeToInt(gap);
+
+        // Lambda function to fill THn - handles both ML and non-ML cases
+        auto fillTHnData = [&](const auto& candidate) {
+          // Pre-calculate vector size to avoid reallocations
+          constexpr int nAxesBase = 5;                   // mass, pt, gapType, FT0A, FT0C
+          constexpr int nAxesMl = FillMl ? 3 : 0;        // 3 ML scores if FillMl
+          int const nAxesCent = storeCentrality ? 1 : 0; // centrality if storeCentrality
+          int const nAxesOcc = storeOccupancy ? 1 : 0;   // occupancy if storeOccupancy
+          int const nAxesIR = storeIR ? 1 : 0;           // IR if storeIR
+          int const nAxesTotal = nAxesBase + nAxesMl + nAxesCent + nAxesOcc + nAxesIR;
+
+          std::vector<double> valuesToFill;
+          valuesToFill.reserve(nAxesTotal);
+
+          // Fill values in order matching histogram axes
+          valuesToFill.push_back(HfHelper::invMassDplusToPiKPi(candidate));
+          valuesToFill.push_back(static_cast<double>(candidate.pt()));
+          if constexpr (FillMl) {
+            std::vector<float> outputMl = {-999., -999., -999.};
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+            }
+            valuesToFill.push_back(outputMl[0]);
+            valuesToFill.push_back(outputMl[1]);
+            valuesToFill.push_back(outputMl[2]);
+          }
+          if (storeCentrality) {
+            valuesToFill.push_back(cent);
+          }
+          if (storeOccupancy) {
+            valuesToFill.push_back(occ);
+          }
+          if (storeIR) {
+            valuesToFill.push_back(ir);
+          }
+          valuesToFill.push_back(static_cast<double>(gapTypeInt));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
+          registry.get<THnSparse>(HIST("hSparseMass"))->Fill(valuesToFill.data());
+        };
 
         for (const auto& candidate : groupedDplusCandidates) {
           if ((yCandRecoMax >= 0. && std::abs(HfHelper::yDplus(candidate)) > yCandRecoMax)) {
             continue;
           }
           fillHisto(candidate);
-          if constexpr (fillMl) {
-            // Fill THn with gap type and FIT signals
-            std::vector<float> outputMl = {-999., -999., -999.};
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-              outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
-            }
-
-            std::vector<double> valuesToFill{HfHelper::invMassDplusToPiKPi(candidate), static_cast<double>(candidate.pt()), outputMl[0], outputMl[1], outputMl[2]};
-            if (storeCentrality) {
-              valuesToFill.push_back(cent);
-            }
-            if (storeOccupancy) {
-              valuesToFill.push_back(occ);
-            }
-            valuesToFill.push_back(static_cast<double>(gapTypeInt));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
-            registry.get<THnSparse>(HIST("hSparseMass"))->Fill(valuesToFill.data());
-          }
+          fillTHnData(candidate);
         }
       }
     }
