@@ -14,7 +14,6 @@
 /// \since  11/2025
 /// \brief  This is a tutorial task to show how to use the ZDC q-vectors and the spectator plane resolution.
 
-
 #include "PWGCF/DataModel/SPTableZDC.h"
 
 #include "Common/Core/EventPlaneHelper.h"
@@ -94,7 +93,6 @@ struct SpectatorPlaneTutorial {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-
     AxisSpec axisPhi = {60, 0, M_PI * 2, "#varphi"};
     AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
@@ -122,7 +120,7 @@ struct SpectatorPlaneTutorial {
     registry.add("hSPplaneAvsC", "Spectator Plane Angle A vs C; #Events; #Psi_{A}; #Psi_{C}", {HistType::kTH2D, {axisPhiPlane, axisPhiPlane}});
     registry.add("hSPplaneFull", "Spectator Plane Angle Full; #Events; #Psi_{Full}", {HistType::kTH1D, {axisPhiPlane}});
 
-    // Note: we will fill these with data from the CCDB, just to take a look! 
+    // Note: we will fill these with data from the CCDB, just to take a look!
     registry.add("CalibHistos/hQQx", "QQx; #Events; QQx", {HistType::kTProfile, {axisCent}});
     registry.add("CalibHistos/hQQy", "QQy; #Events; QQy", {HistType::kTProfile, {axisCent}});
     registry.add("CalibHistos/hQQ", "QQ; #Events; QQx + QQy", {HistType::kTProfile, {axisCent}});
@@ -130,7 +128,7 @@ struct SpectatorPlaneTutorial {
 
     registry.add("CalibHistos/hEvPlaneRes", "Event Plane Resolution; #Events; Event Plane Resolution", {HistType::kTProfile, {axisCent}});
 
-    // Flow Histograms 
+    // Flow Histograms
     registry.add("flow/v1A", "", {HistType::kTProfile, {axisPt}});
     registry.add("flow/v1C", "", {HistType::kTProfile, {axisPt}});
 
@@ -139,7 +137,6 @@ struct SpectatorPlaneTutorial {
     registry.add("flow/vnAxCyUy_MH", "", {HistType::kTProfile, {axisCent}});
     registry.add("flow/vnAyCxUy_MH", "", {HistType::kTProfile, {axisCent}});
   }
-
 
   void process(ZDCCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
@@ -150,7 +147,7 @@ struct SpectatorPlaneTutorial {
     registry.fill(HIST("hCentrality"), centrality);
 
     if (centrality > 80 || centrality < 0)
-    return;
+      return;
 
     if (collision.isSelected() == false)
       return;
@@ -165,7 +162,7 @@ struct SpectatorPlaneTutorial {
     double psiA = 1.0 * std::atan2(qyA, qxA);
     registry.fill(HIST("hSPplaneA"), psiA);
 
-    // Add the PsiA vs PsiC as a TH2D 
+    // Add the PsiA vs PsiC as a TH2D
 
     double psiC = 1.0 * std::atan2(qyC, qxC);
     double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
@@ -178,11 +175,11 @@ struct SpectatorPlaneTutorial {
 
     double QQx = 1;
     double QQy = 1;
-    double QQ = 1; 
+    double QQ = 1;
     double evPlaneRes = 1;
 
     // Get QQ-correlations from CCDB
-    if(cfgCCDBdir_QQ.value.empty() == false) {
+    if (cfgCCDBdir_QQ.value.empty() == false) {
       TList* list = ccdb->getForTimeStamp<TList>(cfgCCDBdir_QQ.value, bc.timestamp());
       TProfile* qAqCX = reinterpret_cast<TProfile*>(list->FindObject("qAqCX"));
       TProfile* qAqCY = reinterpret_cast<TProfile*>(list->FindObject("qAqCY"));
@@ -195,42 +192,40 @@ struct SpectatorPlaneTutorial {
       registry.fill(HIST("CalibHistos/hQQy"), centrality, QQy);
       registry.fill(HIST("CalibHistos/hQQ"), centrality, QQ);
     }
-    // Get event plane resolution from CCDB 
-    if(cfgCCDBdir_SP.value.empty() == false) {
+    // Get event plane resolution from CCDB
+    if (cfgCCDBdir_SP.value.empty() == false) {
       evPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp())->GetBinContent(centrality);
       registry.fill(HIST("CalibHistos/hEvPlaneRes"), centrality, evPlaneRes);
     }
 
-  for (const auto& track : tracks) {
+    for (const auto& track : tracks) {
 
-    // constrain angle to 0 -> [0,0+2pi]
-    auto phi = RecoDecay::constrainAngle(track.phi(), 0);
+      // constrain angle to 0 -> [0,0+2pi]
+      auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
-    double ux = std::cos(phi);
-    double uy = std::sin(phi);
+      double ux = std::cos(phi);
+      double uy = std::sin(phi);
 
-    double uxMH = std::cos(2 * phi);
-    double uyMH = std::sin(2 * phi);
+      double uxMH = std::cos(2 * phi);
+      double uyMH = std::sin(2 * phi);
 
-    double v1A = (uy * qyA + ux * qxA) / std::sqrt(std::fabs(QQ)); 
-    double v1C = (uy * qyC + ux * qxC) / std::sqrt(std::fabs(QQ));
+      double v1A = (uy * qyA + ux * qxA) / std::sqrt(std::fabs(QQ));
+      double v1C = (uy * qyC + ux * qxC) / std::sqrt(std::fabs(QQ));
 
-    double v2AxCxUx_MH = (uxMH * qxA * qxC) / QQx;
-    double v2AyCyUx_MH = (uxMH * qyA * qyC) / QQy;
-    double v2AxCyUy_MH = (uyMH * qxA * qyC) / QQx;
-    double v2AyCxUy_MH = (uyMH * qyA * qxC) / QQy;
+      double v2AxCxUx_MH = (uxMH * qxA * qxC) / QQx;
+      double v2AyCyUx_MH = (uxMH * qyA * qyC) / QQy;
+      double v2AxCyUy_MH = (uyMH * qxA * qyC) / QQx;
+      double v2AyCxUy_MH = (uyMH * qyA * qxC) / QQy;
 
-    registry.fill(HIST("flow/v1A"), track.eta(), v1A);
-    registry.fill(HIST("flow/v1C"), track.eta(), v1C);
+      registry.fill(HIST("flow/v1A"), track.eta(), v1A);
+      registry.fill(HIST("flow/v1C"), track.eta(), v1C);
 
-    registry.fill(HIST("flow/v2AxCxUx_MH"), centrality, v2AxCxUx_MH);
-    registry.fill(HIST("flow/v2AyCyUx_MH"), centrality, v2AyCyUx_MH);
-    registry.fill(HIST("flow/v2AxCyUy_MH"), centrality, v2AxCyUy_MH);
-    registry.fill(HIST("flow/v2AyCxUy_MH"), centrality, v2AyCxUy_MH);
-
+      registry.fill(HIST("flow/v2AxCxUx_MH"), centrality, v2AxCxUx_MH);
+      registry.fill(HIST("flow/v2AyCyUx_MH"), centrality, v2AyCyUx_MH);
+      registry.fill(HIST("flow/v2AxCyUy_MH"), centrality, v2AxCyUy_MH);
+      registry.fill(HIST("flow/v2AyCxUy_MH"), centrality, v2AyCxUy_MH);
+    }
   }
-}
-   
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
