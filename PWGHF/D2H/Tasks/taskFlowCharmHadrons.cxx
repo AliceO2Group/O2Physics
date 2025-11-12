@@ -66,19 +66,22 @@ namespace full
 {
 DECLARE_SOA_COLUMN(M, m, float);   //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of candidate (GeV/c)
-// ML scores
 DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
 DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product
 DECLARE_SOA_COLUMN(Cent, cent, float); //! Centrality
 } // namespace full
-DECLARE_SOA_TABLE(HfCandMassPts, "AOD", "HFCANDMASSPT",
+DECLARE_SOA_TABLE(HfCandMPtInfos, "AOD", "HFCANDMPTINFO",
                   full::M,
-                  full::Pt);
-DECLARE_SOA_TABLE(HfCandScores, "AOD", "HFCANDSCORE",
+                  full::Pt,
                   full::MlScore0,
                   full::MlScore1);
-DECLARE_SOA_TABLE(HfCandSPCents, "AOD", "HFCANDSPCENT",
+
+DECLARE_SOA_TABLE(HfCandFlowInfos, "AOD", "HFCANDFLOWINFO",
+                  full::M,
+                  full::Pt,
+                  full::MlScore0,
+                  full::MlScore1,
                   full::ScalarProd,
                   full::Cent);
 } // namespace o2::aod
@@ -104,9 +107,8 @@ enum QvecEstimator { FV0A = 0,
                      TPCTot };
 
 struct HfTaskFlowCharmHadrons {
-  Produces<o2::aod::HfCandMassPts> rowCandMassPt;
-  Produces<o2::aod::HfCandScores> rowCandMlScores;
-  Produces<o2::aod::HfCandSPCents> rowCandSpCent;
+  Produces<o2::aod::HfCandMPtInfos> rowCandMassPtMl;
+  Produces<o2::aod::HfCandFlowInfos> rowCandMassPtMlSpCent;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
@@ -116,9 +118,8 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
-  Configurable<bool> fillMassPtTree{"fillMassPtTree", false, "Flag to fill mass and pt tree"};
-  Configurable<bool> fillMlTree{"fillMlTree", false, "Flag to fill ML scores tree"};
-  Configurable<bool> fillSpCentTree{"fillSpCentTree", false, "Flag to fill SP and centrality tree"};
+  Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass, pt and ML scores tree"};
+  Configurable<bool> fillMassPtMlSpCentTree{"fillMassPtMlSpCentTree", false, "Flag to fill mass, pt, ML scores, SP and centrality tree"};
   Configurable<bool> fillSparse{"fillSparse", true, "Flag to fill sparse"};
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
   Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
@@ -695,21 +696,18 @@ struct HfTaskFlowCharmHadrons {
       float const scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float const cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
-      if (fillMassPtTree || fillMlTree || fillSpCentTree) {
+      if (fillMassPtMlTree || fillMassPtMlSpCentTree) {
         if (downSampleFactor < 1.) {
           float const pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
           if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
             continue;
           }
         }
-        if (fillMassPtTree) {
-          rowCandMassPt(massCand, ptCand);
+        if (fillMassPtMlTree) {
+          rowCandMassPtMl(massCand, ptCand, outputMl[0], outputMl[1]);
         }
-        if (fillMlTree) {
-          rowCandMlScores(outputMl[0], outputMl[1]);
-        }
-        if (fillSpCentTree) {
-          rowCandSpCent(scalprodCand, cent);
+        if (fillMassPtMlSpCentTree) {
+          rowCandMassPtMlSpCent(massCand, ptCand, outputMl[0], outputMl[1], scalprodCand, cent);
         }
       }
       if (fillSparse) {
