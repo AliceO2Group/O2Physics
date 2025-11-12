@@ -100,24 +100,6 @@ inline int gapTypeToInt(GapType gap)
   return static_cast<int>(gap);
 }
 
-/// \brief Struct to hold UPC QA histogram configuration
-struct HfUpcQaHistoConfig {
-  // FT0 histogram configuration
-  int ft0Nbins = 1500;
-  float ft0Min = 0.f;
-  float ft0Max = 1500.f;
-
-  // ZDC histogram configuration
-  int zdcNbins = 200;
-  float zdcMin = 0.f;
-  float zdcMax = 20.f;
-
-  // Gap type histogram configuration
-  int gapNbins = 3;
-  float gapMin = -0.5f;
-  float gapMax = 2.5f;
-};
-
 } // namespace o2::analysis::hf_upc
 
 #endif // PWGHF_UTILS_UTILSUPCHF_H_
