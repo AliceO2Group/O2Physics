@@ -200,7 +200,7 @@ class CollisionAssociation
       uint64_t collBC = collision.bc().globalBC();
 
       // This is done per block to allow optimization below. Within each block the globalBC increase continously
-      for (const auto& iterationWindow : trackIterationWindows) {
+      for (auto& iterationWindow : trackIterationWindows) { // o2-linter: disable=const-ref-in-for-loop (iterationWindow is modified)
         bool iteratorMoved = false;
         const bool isAssignedTrackWindow = (iterationWindow.first != iterationWindow.second) ? iterationWindow.first.has_collision() : false;
         for (auto trackInWindow = iterationWindow.first; trackInWindow != iterationWindow.second; ++trackInWindow) {
