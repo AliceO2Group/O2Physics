@@ -138,10 +138,10 @@ struct SpectatorPlaneTutorial {
     registry.add("flow/v1A", "", {HistType::kTProfile, {axisPt}});
     registry.add("flow/v1C", "", {HistType::kTProfile, {axisPt}});
 
-    registry.add("flow/vnAxCxUx_MH", "", {HistType::kTProfile, {axisCent}});
-    registry.add("flow/vnAyCyUx_MH", "", {HistType::kTProfile, {axisCent}});
-    registry.add("flow/vnAxCyUy_MH", "", {HistType::kTProfile, {axisCent}});
-    registry.add("flow/vnAyCxUy_MH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAxCxUxMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAyCyUxMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAxCyUyMH", "", {HistType::kTProfile, {axisCent}});
+    registry.add("flow/vnAyCxUyMH", "", {HistType::kTProfile, {axisCent}});
   }
 
   void process(ZDCCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
@@ -182,9 +182,9 @@ struct SpectatorPlaneTutorial {
     // Fill the q-vector correlations
     registry.fill(HIST("qAqCXY"), centrality, qxA * qxC + qyA * qyC);
 
-    double QQx = 1;
-    double QQy = 1;
-    double QQ = 1;
+    double corrQQx = 1;
+    double corrQQy = 1;
+    double corrQQ = 1;
     double evPlaneRes = 1;
 
     // Get QQ-correlations from CCDB
@@ -194,12 +194,12 @@ struct SpectatorPlaneTutorial {
       TProfile* qAqCY = reinterpret_cast<TProfile*>(list->FindObject("qAqCY"));
       TProfile* qAqCXY = reinterpret_cast<TProfile*>(list->FindObject("qAqCXY"));
       // The sum is qAqCXY
-      QQx = qAqCX->GetBinContent(centrality);
-      QQy = qAqCY->GetBinContent(centrality);
-      QQ = qAqCXY->GetBinContent(centrality);
-      registry.fill(HIST("CalibHistos/hQQx"), centrality, QQx);
-      registry.fill(HIST("CalibHistos/hQQy"), centrality, QQy);
-      registry.fill(HIST("CalibHistos/hQQ"), centrality, QQ);
+      corrQQx = qAqCX->GetBinContent(centrality);
+      corrQQy = qAqCY->GetBinContent(centrality);
+      corrQQ = qAqCXY->GetBinContent(centrality);
+      registry.fill(HIST("CalibHistos/hQQx"), centrality, corrQQx);
+      registry.fill(HIST("CalibHistos/hQQy"), centrality, corrQQy);
+      registry.fill(HIST("CalibHistos/hQQ"), centrality, corrQQ);
     }
     // Get event plane resolution from CCDB
     if (cfgCCDBdir_SP.value.empty() == false) {
@@ -218,21 +218,21 @@ struct SpectatorPlaneTutorial {
       double uxMH = std::cos(2 * phi);
       double uyMH = std::sin(2 * phi);
 
-      double v1A = (uy * qyA + ux * qxA) / std::sqrt(std::fabs(QQ));
-      double v1C = (uy * qyC + ux * qxC) / std::sqrt(std::fabs(QQ));
+      double v1A = (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ));
+      double v1C = (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ));
 
-      double v2AxCxUx_MH = (uxMH * qxA * qxC) / QQx;
-      double v2AyCyUx_MH = (uxMH * qyA * qyC) / QQy;
-      double v2AxCyUy_MH = (uyMH * qxA * qyC) / QQx;
-      double v2AyCxUy_MH = (uyMH * qyA * qxC) / QQy;
+      double v2AxCxUxMH = (uxMH * qxA * qxC) / corrQQx;
+      double v2AyCyUxMH = (uxMH * qyA * qyC) / corrQQy;
+      double v2AxCyUyMH = (uyMH * qxA * qyC) / corrQQx;
+      double v2AyCxUyMH = (uyMH * qyA * qxC) / corrQQy;
 
       registry.fill(HIST("flow/v1A"), track.eta(), v1A);
       registry.fill(HIST("flow/v1C"), track.eta(), v1C);
 
-      registry.fill(HIST("flow/v2AxCxUx_MH"), centrality, v2AxCxUx_MH);
-      registry.fill(HIST("flow/v2AyCyUx_MH"), centrality, v2AyCyUx_MH);
-      registry.fill(HIST("flow/v2AxCyUy_MH"), centrality, v2AxCyUy_MH);
-      registry.fill(HIST("flow/v2AyCxUy_MH"), centrality, v2AyCxUy_MH);
+      registry.fill(HIST("flow/v2AxCxUxMH"), centrality, v2AxCxUxMH);
+      registry.fill(HIST("flow/v2AyCyUxMH"), centrality, v2AyCyUxMH);
+      registry.fill(HIST("flow/v2AxCyUyMH"), centrality, v2AxCyUyMH);
+      registry.fill(HIST("flow/v2AyCxUyMH"), centrality, v2AyCxUyMH);
     }
   }
 };
