@@ -47,18 +47,6 @@ namespace o2
 namespace delphes
 {
 
-/*****************************************************************/
-// bool TrackSmearer::closeTable(int pdg, const char* filename)
-// {
-//   const std::string outPath = "/tmp/LUTs/";
-//   const std::string filePath = Form("%s/%s/snapshot.root", outPath.c_str(), filename);
-//   std::ifstream checkFile(filePath);
-//   if (!checkFile.is_open()) {
-//     LOG(warning) << "--- Could not find table to close.";
-//   }
-//   checkFile.close();
-// }
-
 bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 {
   if (!filename || filename[0] == '\0') {
