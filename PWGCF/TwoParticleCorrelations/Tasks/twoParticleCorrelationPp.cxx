@@ -269,8 +269,8 @@ struct TwoParticleCorrelationPp {
     }
   }
 
-  template <typename TTarget, typename TCollision>
-  bool fillCollision(TTarget target, TCollision collision, float multiplicity)
+  template <typename TTarget>
+  bool fillCollision(TTarget target, float multiplicity)
   {
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -378,7 +378,7 @@ struct TwoParticleCorrelationPp {
         }
         ++multiplicity;
       }
-      if (fillCollision(mixed, collision1, multiplicity) == false) {
+      if (fillCollision(mixed, multiplicity) == false) {
         return;
       }
       histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
@@ -403,7 +403,7 @@ struct TwoParticleCorrelationPp {
       ++multiplicity;
     }
     // LOGF(debug, "Filling same events");
-    if (fillCollision(same, collision, multiplicity) == false) {
+    if (fillCollision(same, multiplicity) == false) {
       return;
     }
     histos.fill(HIST("eventcount"), -2);
