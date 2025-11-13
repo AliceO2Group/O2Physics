@@ -32,17 +32,17 @@ The **PIDFeatureExtractor** combines information from multiple ALICE detectors (
 
 The task expects the following input tables from AO2D files. Some tables may be fetched from CCDB if not present in the file:
 
-| Table | Source | Purpose | Fallback |
-|-------|--------|---------|----------|
-| `aod::Tracks` | AO2D | Base track properties (momentum, angles) | Required |
-| `aod::TracksExtra` | AO2D | Extended track information | Required |
-| `aod::TracksDCA` | AO2D | Impact parameters (DCA) | Required |
-| `aod::pidTPCPi/Ka/Pr/El` | AO2D/CCDB | TPC n-sigma values for each particle species | CCDB |
-| `aod::pidTOFPi/Ka/Pr/El` | AO2D/CCDB | TOF n-sigma values for each particle species | CCDB |
-| `aod::pidTOFmass` | AO2D/CCDB | TOF reconstructed mass | CCDB |
-| `aod::pidTOFbeta` | AO2D/CCDB | TOF beta (v/c) measurement | CCDB |
-| `aod::McTrackLabels` | AO2D | MC truth matching (optional, for simulated data) | Optional |
-| `aod::McParticles` | AO2D | MC particle information | Optional |
+| Table                    | Source    | Purpose                                          | Fallback |
+|--------------------------|-----------|--------------------------------------------------|----------|
+| `aod::Tracks`            | AO2D      | Base track properties (momentum, angles)         | Required |
+| `aod::TracksExtra`       | AO2D      | Extended track information                       | Required |
+| `aod::TracksDCA`         | AO2D      | Impact parameters (DCA)                          | Required |
+| `aod::pidTPCPi/Ka/Pr/El` | AO2D/CCDB | TPC n-sigma values for each particle species     | CCDB     |
+| `aod::pidTOFPi/Ka/Pr/El` | AO2D/CCDB | TOF n-sigma values for each particle species     | CCDB     |
+| `aod::pidTOFmass`        | AO2D/CCDB | TOF reconstructed mass                           | CCDB     |
+| `aod::pidTOFbeta`        | AO2D/CCDB | TOF beta (v/c) measurement                       | CCDB     |
+| `aod::McTrackLabels`     | AO2D      | MC truth matching (optional, for simulated data) | Optional |
+| `aod::McParticles`       | AO2D      | MC particle information                          | Optional |
 
 **Note:** If PID tables are not available in the AO2D file, the framework automatically retrieves PID calibrations from CCDB using the collision timestamp to access the correct calibration period.
 
@@ -50,77 +50,77 @@ The task expects the following input tables from AO2D files. Some tables may be 
 
 ### Kinematic Variables (11 features)
 
-| Variable | Type | Range | Unit | Description |
-|----------|------|-------|------|-------------|
-| `event_id` | int | - | - | Unique collision event identifier |
-| `track_id` | int | - | - | Track index within event |
-| `px`, `py`, `pz` | float | - | GeV/c | Cartesian momentum components |
-| `pt` | float | 0.1-20 | GeV/c | Transverse momentum |
-| `p` | float | - | GeV/c | Total momentum |
-| `eta` | float | -1.5 to 1.5 | - | Pseudorapidity |
-| `phi` | float | -π to π | rad | Azimuthal angle |
-| `theta` | float | 0 to π | rad | Polar angle |
-| `charge` | int | ±1 | - | Track charge |
-| `track_type` | int | 0-2 | - | Track classification |
+| Variable         | Type  | Range       | Unit  | Description                       |
+|------------------|-------|-------------|-------|-----------------------------------|
+| `event_id`       | int   | -           | -     | Unique collision event identifier |
+| `track_id`       | int   | -           | -     | Track index within event          |
+| `px`, `py`, `pz` | float | -           | GeV/c | Cartesian momentum components     |
+| `pt`             | float | 0.1-20      | GeV/c | Transverse momentum               |
+| `p`              | float | -           | GeV/c | Total momentum                    |
+| `eta`            | float | -1.5 to 1.5 | -     | Pseudorapidity                    |
+| `phi`            | float | -π to π     | rad   | Azimuthal angle                   |
+| `theta`          | float | 0 to π      | rad   | Polar angle                       |
+| `charge`         | int   | ±1          | -     | Track charge                      |
+| `track_type`     | int   | 0-2         | -     | Track classification              |
 
 ### TPC Detector Features (7 features)
 
-| Variable | Type | Range | Unit | Description | Source |
-|----------|------|-------|------|-------------|--------|
-| `tpc_signal` | float | 0-300 | - | Specific ionization (dE/dx) | AO2D |
-| `tpc_nsigma_pi` | float | - | σ | n-sigma deviation from pion | AO2D/CCDB |
-| `tpc_nsigma_ka` | float | - | σ | n-sigma deviation from kaon | AO2D/CCDB |
-| `tpc_nsigma_pr` | float | - | σ | n-sigma deviation from proton | AO2D/CCDB |
-| `tpc_nsigma_el` | float | - | σ | n-sigma deviation from electron | AO2D/CCDB |
-| `tpc_nclusters` | int | 0-160 | - | Number of TPC clusters | AO2D |
-| `tpc_chi2` | float | - | - | TPC track fit chi-square/ndf | AO2D |
+| Variable        | Type  | Range | Unit | Description                     | Source    |
+|-----------------|-------|-------|------|---------------------------------|-----------|
+| `tpc_signal`    | float | 0-300 | -    | Specific ionization (dE/dx)     | AO2D      |
+| `tpc_nsigma_pi` | float | -     | σ    | n-sigma deviation from pion     | AO2D/CCDB |
+| `tpc_nsigma_ka` | float | -     | σ    | n-sigma deviation from kaon     | AO2D/CCDB |
+| `tpc_nsigma_pr` | float | -     | σ    | n-sigma deviation from proton   | AO2D/CCDB |
+| `tpc_nsigma_el` | float | -     | σ    | n-sigma deviation from electron | AO2D/CCDB |
+| `tpc_nclusters` | int   | 0-160 | -    | Number of TPC clusters          | AO2D      |
+| `tpc_chi2`      | float | -     | -    | TPC track fit chi-square/ndf    | AO2D      |
 
 **TPC Features Source:** n-sigma values are computed from `tpc_signal` and PID calibrations (from AO2D or CCDB). If not in AO2D, calibration data is fetched from CCDB using the collision timestamp.
 
 ### TOF Detector Features (6 features)
 
-| Variable | Type | Range | Unit | Description | Source |
-|----------|------|-------|------|-------------|--------|
-| `tof_beta` | float | 0-1.2 | - | Velocity over speed of light | AO2D/CCDB |
-| `tof_mass` | float | -0.2-2.0 | GeV/c² | Reconstructed mass | AO2D/CCDB |
-| `tof_nsigma_pi` | float | - | σ | n-sigma deviation from pion | AO2D/CCDB |
-| `tof_nsigma_ka` | float | - | σ | n-sigma deviation from kaon | AO2D/CCDB |
-| `tof_nsigma_pr` | float | - | σ | n-sigma deviation from proton | AO2D/CCDB |
-| `tof_nsigma_el` | float | - | σ | n-sigma deviation from electron | AO2D/CCDB |
+| Variable        | Type  | Range    | Unit   | Description                     | Source    |
+|-----------------|-------|----------|--------|---------------------------------|-----------|
+| `tof_beta`      | float | 0-1.2    | -      | Velocity over speed of light    | AO2D/CCDB |
+| `tof_mass`      | float | -0.2-2.0 | GeV/c² | Reconstructed mass              | AO2D/CCDB |
+| `tof_nsigma_pi` | float | -        | σ      | n-sigma deviation from pion     | AO2D/CCDB |
+| `tof_nsigma_ka` | float | -        | σ      | n-sigma deviation from kaon     | AO2D/CCDB |
+| `tof_nsigma_pr` | float | -        | σ      | n-sigma deviation from proton   | AO2D/CCDB |
+| `tof_nsigma_el` | float | -        | σ      | n-sigma deviation from electron | AO2D/CCDB |
 
 **TOF Features Source:** If not available in AO2D file, the framework fetches calibration and response parameters from CCDB. Beta and mass can be recomputed from raw TOF information and length measurement using CCDB calibrations.
 
 ### Bayesian PID Features (4 features)
 
-| Variable | Type | Range | Unit | Description |
-|----------|------|-------|------|-------------|
-| `bayes_prob_pi` | float | 0-1 | - | Probability of being pion |
-| `bayes_prob_ka` | float | 0-1 | - | Probability of being kaon |
-| `bayes_prob_pr` | float | 0-1 | - | Probability of being proton |
-| `bayes_prob_el` | float | 0-1 | - | Probability of being electron |
+| Variable        | Type  | Range | Unit | Description                   |
+|-----------------|-------|-------|------|-------------------------------|
+| `bayes_prob_pi` | float | 0-1   | -    | Probability of being pion     |
+| `bayes_prob_ka` | float | 0-1   | -    | Probability of being kaon     |
+| `bayes_prob_pr` | float | 0-1   | -    | Probability of being proton   |
+| `bayes_prob_el` | float | 0-1   | -    | Probability of being electron |
 
 **Note**: Bayesian probabilities sum to 1.0 and are computed using Gaussian likelihoods in n-sigma space (from either AO2D or CCDB-derived values) with configurable priors.
 
 ### Track Quality Features (2 features)
 
-| Variable | Type | Unit | Description |
-|----------|------|------|-------------|
-| `dca_xy` | float | cm | Distance of closest approach in xy-plane |
-| `dca_z` | float | cm | Distance of closest approach along beam |
+| Variable | Type  | Unit | Description                              |
+|----------|-------|------|------------------------------------------|
+| `dca_xy` | float | cm   | Distance of closest approach in xy-plane |
+| `dca_z`  | float | cm   | Distance of closest approach along beam  |
 
 ### Detector Availability Flags (2 features)
 
-| Variable | Type | Description |
-|----------|------|-------------|
+| Variable  | Type | Description                     |
+|-----------|------|---------------------------------|
 | `has_tpc` | bool | Track has valid TPC information |
 | `has_tof` | bool | Track has valid TOF information |
 
 ### Monte Carlo Truth (4 features, simulated data only)
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `mc_pdg` | int | PDG code of true particle |
-| `mc_px`, `mc_py`, `mc_pz` | float | True momentum components |
+| Variable                  | Type  | Description               |
+|---------------------------|-------|---------------------------|
+| `mc_pdg`                  | int   | PDG code of true particle |
+| `mc_px`, `mc_py`, `mc_pz` | float | True momentum components  |
 
 **Total: 39 features per track**
 
@@ -178,16 +178,16 @@ All task parameters are configured through the **`myConfigExtractor.json`** file
 
 #### Configuration Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `output_path` | string | `pid_features` | Base path for output files (without extension) |
-| `export_csv` | boolean | `true` | Enable CSV export of features |
-| `export_root` | boolean | `true` | Enable ROOT file export of features |
-| `eta_min` | float | `-1.5` | Minimum pseudorapidity cut for track selection |
-| `eta_max` | float | `1.5` | Maximum pseudorapidity cut for track selection |
-| `pt_min` | float | `0.1` | Minimum transverse momentum cut (GeV/c) |
-| `pt_max` | float | `20.0` | Maximum transverse momentum cut (GeV/c) |
-| `ccdb_url` | string | `http://alice-ccdb.cern.ch` | CCDB server URL for fetching PID calibrations |
+| Parameter     | Type    | Default                     | Description                                    |
+|---------------|---------|-----------------------------|------------------------------------------------|
+| `output_path` | string  | `pid_features`              | Base path for output files (without extension) |
+| `export_csv`  | boolean | `true`                      | Enable CSV export of features                  |
+| `export_root` | boolean | `true`                      | Enable ROOT file export of features            |
+| `eta_min`     | float   | `-1.5`                      | Minimum pseudorapidity cut for track selection |
+| `eta_max`     | float   | `1.5`                       | Maximum pseudorapidity cut for track selection |
+| `pt_min`      | float   | `0.1`                       | Minimum transverse momentum cut (GeV/c)        |
+| `pt_max`      | float   | `20.0`                      | Maximum transverse momentum cut (GeV/c)        |
+| `ccdb_url`    | string  | `http://alice-ccdb.cern.ch` | CCDB server URL for fetching PID calibrations  |
 
 #### Example Configurations
 
@@ -825,21 +825,21 @@ For issues, questions, or suggestions:
 
 ## Quick Reference
 
-### To run the task:
+### To run the task
 ```bash
 ./run.sh
 ```
 
-### To modify parameters:
+### To modify parameters
 1. Edit `myConfigExtractor.json`
 2. Run `./run.sh`
 
-### To see what configuration is active:
+### To see what configuration is active
 ```bash
 cat myConfigExtractor.json
 ```
 
-### To verify output:
+### To verify output
 ```bash
 ls -lh pid_features.root pid_features.csv
 ```
