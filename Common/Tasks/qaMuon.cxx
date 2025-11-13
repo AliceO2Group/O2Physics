@@ -244,7 +244,7 @@ struct muonQa {
   // Derived version of mch::Track class that handles the associated clusters as internal objects and deletes them in the destructor
   class TrackRealigned : public mch::Track
   {
-  public:
+   public:
     TrackRealigned() = default;
     ~TrackRealigned()
     {
