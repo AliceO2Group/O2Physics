@@ -13,18 +13,21 @@
 /// \brief Task to extract particle identification features from ALICE AO2D data for machine learning workflows
 /// \author Robert Forynski
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TFile.h"
 #include "TTree.h"
-#include <fstream>
+
 #include <cmath>
-#include <string>
+#include <fstream>
 #include <memory>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,44 +54,44 @@ struct PIDFeatureExtractor {
   int trackId;      /// Track index within the event
 
   // Momentum components (in GeV/c)
-  float px, py, pz;  /// Cartesian momentum components
-  float pt, p;       /// Transverse momentum and total momentum
+  float px, py, pz; /// Cartesian momentum components
+  float pt, p;      /// Transverse momentum and total momentum
 
   // Angular variables
-  float eta;         /// Pseudorapidity
-  float phi;         /// Azimuthal angle
-  float theta;       /// Polar angle (calculated from eta)
+  float eta;   /// Pseudorapidity
+  float phi;   /// Azimuthal angle
+  float theta; /// Polar angle (calculated from eta)
 
   // Track properties
-  int charge;        /// Track charge (+1 or -1)
-  int trackType;     /// Type of track (e.g., 0=global, 1=TPC-only, etc.)
+  int charge;    /// Track charge (+1 or -1)
+  int trackType; /// Type of track (e.g., 0=global, 1=TPC-only, etc.)
 
   // ============================================================================
   // TPC VARIABLES - Time Projection Chamber PID information
   // ============================================================================
-  float tpcSignal;               /// dE/dx energy loss in TPC (specific ionization)
+  float tpcSignal; /// dE/dx energy loss in TPC (specific ionization)
 
   // n-sigma values: standard deviations from expected energy loss for each particle
-  float tpcNsigmaPi;            /// n-sigma for pion (π)
-  float tpcNsigmaKa;            /// n-sigma for kaon (K)
-  float tpcNsigmaPr;            /// n-sigma for proton (p)
-  float tpcNsigmaEl;            /// n-sigma for electron (e)
+  float tpcNsigmaPi; /// n-sigma for pion (π)
+  float tpcNsigmaKa; /// n-sigma for kaon (K)
+  float tpcNsigmaPr; /// n-sigma for proton (p)
+  float tpcNsigmaEl; /// n-sigma for electron (e)
 
   // Track quality variables
-  int tpcNclusters;              /// Number of TPC clusters used in track fit
-  float tpcChi2;                 /// Chi-square per degree of freedom of TPC fit
+  int tpcNclusters; /// Number of TPC clusters used in track fit
+  float tpcChi2;    /// Chi-square per degree of freedom of TPC fit
 
   // ============================================================================
   // TOF VARIABLES - Time-Of-Flight PID information
   // ============================================================================
-  float tofBeta;                 /// β = v/c (velocity over speed of light)
-  float tofMass;                 /// Reconstructed mass from TOF measurement
+  float tofBeta; /// β = v/c (velocity over speed of light)
+  float tofMass; /// Reconstructed mass from TOF measurement
 
   // n-sigma values for TOF detection
-  float tofNsigmaPi;            /// n-sigma for pion in TOF
-  float tofNsigmaKa;            /// n-sigma for kaon in TOF
-  float tofNsigmaPr;            /// n-sigma for proton in TOF
-  float tofNsigmaEl;            /// n-sigma for electron in TOF
+  float tofNsigmaPi; /// n-sigma for pion in TOF
+  float tofNsigmaKa; /// n-sigma for kaon in TOF
+  float tofNsigmaPr; /// n-sigma for proton in TOF
+  float tofNsigmaEl; /// n-sigma for electron in TOF
 
   // ============================================================================
   // BAYESIAN PID VARIABLES - Combined PID probabilities
@@ -105,20 +108,20 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // MONTE CARLO TRUTH INFORMATION - For simulated data
   // ============================================================================
-  int mcPdg;                     /// PDG code of true particle (0 if no MC match)
-  float mcPx, mcPy, mcPz;        /// True momentum components from simulation
+  int mcPdg;              /// PDG code of true particle (0 if no MC match)
+  float mcPx, mcPy, mcPz; /// True momentum components from simulation
 
   // ============================================================================
   // DETECTOR AVAILABILITY FLAGS
   // ============================================================================
-  bool hasTpc;                   /// Flag: track has TPC information
-  bool hasTof;                   /// Flag: track has TOF information
+  bool hasTpc; /// Flag: track has TPC information
+  bool hasTof; /// Flag: track has TOF information
 
   // ============================================================================
   // TRACK IMPACT PARAMETERS - Quality and background rejection
   // ============================================================================
-  float dcaXy;                   /// Distance of closest approach in xy-plane
-  float dcaZ;                    /// Distance of closest approach in z-direction
+  float dcaXy; /// Distance of closest approach in xy-plane
+  float dcaZ;  /// Distance of closest approach in z-direction
 
   // ============================================================================
   // HISTOGRAM REGISTRY - Quality control histograms
@@ -164,7 +167,8 @@ struct PIDFeatureExtractor {
   // INITIALIZATION FUNCTION
   // ============================================================================
   /// Initialize output files and histograms
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     std::string base = outputPath.value;
 
     // ROOT OUTPUT SETUP
@@ -254,12 +258,13 @@ struct PIDFeatureExtractor {
   // BAYESIAN PID CALCULATION FUNCTION
   // ============================================================================
   /// Compute Bayesian probabilities combining TPC and TOF information
-  void computeBayesianPID(const float nsTPC[KNumSpecies], const float nsTOF[KNumSpecies], const float pri[KNumSpecies], float out[KNumSpecies]) {
+  void computeBayesianPID(const float nsTPC[KNumSpecies], const float nsTOF[KNumSpecies], const float pri[KNumSpecies], float out[KNumSpecies])
+  {
     float sum = 0;
 
     for (int i = 0; i < KNumSpecies; i++) {
-      float l = std::exp(-0.5f * (nsTPC[i]*nsTPC[i] +
-                                  (std::isfinite(nsTOF[i]) ? nsTOF[i]*nsTOF[i] : 0.0f)));
+      float l = std::exp(-0.5f * (nsTPC[i] * nsTPC[i] +
+                                  (std::isfinite(nsTOF[i]) ? nsTOF[i] * nsTOF[i] : 0.0f)));
 
       out[i] = l * pri[i];
       sum += out[i];
@@ -285,8 +290,7 @@ struct PIDFeatureExtractor {
       aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr,
       aod::pidTOFEl,
       aod::pidTOFmass, aod::pidTOFbeta,
-      aod::McTrackLabels
-    > const& tracks,
+      aod::McTrackLabels> const& tracks,
     aod::McParticles const& mcParticles)
   {
     static int eventCounter = 0;
@@ -294,8 +298,10 @@ struct PIDFeatureExtractor {
     int idx = 0;
 
     for (const auto& t : tracks) {
-      if (t.pt() < ptMin || t.pt() > ptMax) continue;
-      if (t.eta() < etaMin || t.eta() > etaMax) continue;
+      if (t.pt() < ptMin || t.pt() > ptMax)
+        continue;
+      if (t.eta() < etaMin || t.eta() > etaMax)
+        continue;
 
       trackId = idx++;
 
@@ -370,7 +376,8 @@ struct PIDFeatureExtractor {
       }
 
       // Write outputs
-      if (exportROOT) featureTree->Fill();
+      if (exportROOT)
+        featureTree->Fill();
       if (exportCSV) {
         csvFile << eventId << "," << trackId << ","
                 << px << "," << py << "," << pz << ","
@@ -390,7 +397,8 @@ struct PIDFeatureExtractor {
       histos.fill(HIST("QC/nTracks"), 1);
       histos.fill(HIST("QC/pt"), pt);
       histos.fill(HIST("QC/eta"), eta);
-      if (hasTpc) histos.fill(HIST("QC/tpc_dEdx_vs_pt"), pt, tpcSignal);
+      if (hasTpc)
+        histos.fill(HIST("QC/tpc_dEdx_vs_pt"), pt, tpcSignal);
       if (hasTof) {
         histos.fill(HIST("QC/tof_beta_vs_p"), p, tofBeta);
         histos.fill(HIST("QC/mass_vs_p"), p, tofMass);
@@ -402,7 +410,8 @@ struct PIDFeatureExtractor {
   // FINALIZATION FUNCTION
   // ============================================================================
   /// Clean up and finalize output files
-  void finalize() {
+  void finalize()
+  {
     if (exportROOT) {
       outputFile->cd();
       featureTree->Write();
@@ -418,6 +427,7 @@ struct PIDFeatureExtractor {
 // WORKFLOW DEFINITION
 // ============================================================================
 /// Define the O2Physics workflow
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<PIDFeatureExtractor>(cfgc)};
 }
