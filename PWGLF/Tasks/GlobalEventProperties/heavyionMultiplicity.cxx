@@ -144,9 +144,9 @@ AxisSpec axisMassK0s = {200, 0.4, 0.6, "K0sMass", "K0sMass"};
 AxisSpec axisMassLambda = {200, 1.07, 1.17, "Lambda/AntiLamda Mass", "Lambda/AntiLamda Mass"};
 AxisSpec axisTracks{9, 0.5, 9.5, "#tracks", "TrackAxis"};
 AxisSpec axisDeltaEta{50, -1.0, +1.0, "#Delta(#eta)"};
-auto static constexpr kMinCharge = 3.f;
-auto static constexpr kMinpTcut = 0.1f;
-auto static constexpr kNItslayers = 7;
+auto static constexpr KminCharge = 3.f;
+auto static constexpr KminPtCut = 0.1f;
+auto static constexpr KnItsLayers = 7;
 
 struct HeavyionMultiplicity {
 
@@ -257,7 +257,7 @@ struct HeavyionMultiplicity {
       auto* x2 = htrack->GetAxis(1);
       x2->SetBinLabel(1, "All tracks");
       x2->SetBinLabel(2, "Non-fake tracks");
-      for (int i = 0; i < kNItslayers; i++) {
+      for (int i = 0; i < KnItsLayers; i++) {
         x2->SetBinLabel(i + 3, Form("layer %d", i));
       }
     }
@@ -446,7 +446,7 @@ struct HeavyionMultiplicity {
     if (pdgTrack == nullptr) {
       return false;
     }
-    if (std::abs(pdgTrack->Charge()) < kMinCharge) {
+    if (std::abs(pdgTrack->Charge()) < KminCharge) {
       return false;
     }
     if (std::abs(track.eta()) >= etaRange) {
@@ -587,7 +587,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-        if (particle.pt() < kMinpTcut) {
+        if (particle.pt() < KminPtCut) {
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -651,7 +651,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kNoGenpTVar);
-        if (particle.pt() < kMinpTcut) {
+        if (particle.pt() < KminPtCut) {
           histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -685,7 +685,7 @@ struct HeavyionMultiplicity {
         }
         histos.fill(HIST("hTracksCount"), selColCent(RecCol), 1);
         bool isFakeItsTracks = false;
-        for (int i = 0; i < kNItslayers; i++) {
+        for (int i = 0; i < KnItsLayers; i++) {
           if (Rectrack.mcMask() & 1 << i) {
             isFakeItsTracks = true;
             histos.fill(HIST("hTracksCount"), selColCent(RecCol), i + 3);
@@ -837,7 +837,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-        if (particle.pt() < kMinpTcut) {
+        if (particle.pt() < KminPtCut) {
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -993,7 +993,7 @@ struct HeavyionMultiplicity {
       histos.fill(HIST("hGenMCdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
-        if (particle.pt() < kMinpTcut) {
+        if (particle.pt() < KminPtCut) {
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
