@@ -50,8 +50,8 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // KINEMATIC VARIABLES - Track momentum and position information
   // ============================================================================
-  int eventId;      /// Unique identifier for each collision event
-  int trackId;      /// Track index within the event
+  int eventId; /// Unique identifier for each collision event
+  int trackId; /// Track index within the event
 
   // Momentum components (in GeV/c)
   float px, py, pz; /// Cartesian momentum components
