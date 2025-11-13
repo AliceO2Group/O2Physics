@@ -162,22 +162,22 @@ bool matchCandAndMass(McParticleType const& particle, double& massCand)
 
   // Map decay type to mass
   switch (matchGenFlag) {
-    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaC0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCStar0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCPlusPlus;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
     }
