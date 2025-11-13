@@ -930,24 +930,18 @@ struct FemtoDreamProducerTaskReso {
       }
     }
 
+    // V0 minimal event selection
+    bool emptyLambda = true;
+    bool emptyK0S = true;
+    
     if (confIsActivateV0.value) {
-      if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isEmptyCollision(col, fullV0s, LambdaCuts, tracks)) {
-        return;
-      }
-    } else {
-      if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-        return;
-      }
+      emptyLambda = colCuts.isEmptyCollision(col, fullV0s, LambdaCuts, tracks);
     }
-
     if (confIsActivateV0K0S.value) {
-      if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isEmptyCollision(col, fullV0s, K0SCuts, tracks)) {
-        return;
-      }
-    } else {
-      if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-        return;
-      }
+      emptyK0S = colCuts.isEmptyCollision(col, fullV0s, K0SCuts, tracks);
+    }
+    if(colCuts.isEmptyCollision(col, tracks, trackCuts) && emptyLambda && emptyK0S) {
+      return;
     }
 
     if (rctCut.requireRCTFlagChecker && !rctChecker(col)) {
