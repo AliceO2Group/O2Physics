@@ -6756,8 +6756,8 @@ struct LFNucleiBATask {
     histoGen.fill(HIST("events/hMCGenReco"), 0.5);
     if (enableCentrality)
       histoGen.fill(HIST("events/hMCGenRecoVsMult"), 0.5, mcCollision.centFT0M());
-    
-      if (recoIdxINELgt0 > 0) {
+
+    if (recoIdxINELgt0 > 0) {
       histoGen.fill(HIST("events/hMCGenReco"), 1.5);
       if (enableCentrality)
         histoGen.fill(HIST("events/hMCGenRecoVsMult"), 1.5, mcCollision.centFT0M());
