@@ -40,7 +40,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // OUTPUT OBJECTS - File and data structures for feature storage
   // ============================================================================
-
   /// Output ROOT file for storing the TTree with extracted features
   std::unique_ptr<TFile> outputFile;
 
@@ -73,7 +72,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // TPC VARIABLES - Time Projection Chamber PID information
   // ============================================================================
-
   float tpc_signal; /// dE/dx energy loss in TPC (specific ionization)
 
   // n-sigma values: standard deviations from expected energy loss for each particle
@@ -102,7 +100,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // BAYESIAN PID VARIABLES - Combined PID probabilities
   // ============================================================================
-
   /// Bayesian probability that track is a pion (probability sum = 1.0)
   float bayes_prob_pi;
   /// Bayesian probability that track is a kaon
@@ -136,14 +133,12 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // HISTOGRAM REGISTRY - Quality control histograms
   // ============================================================================
-
   /// Registry for quality control histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // ============================================================================
   // CONFIGURABLE PARAMETERS - User-adjustable settings
   // ============================================================================
-
   /// Base path and filename for output files (without extension)
   Configurable<std::string> outputPath{"outputPath", "pid_features", "Output file base"};
 
@@ -168,7 +163,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // INITIALIZATION FUNCTION
   // ============================================================================
-
   /**
    * @brief Initialize output files and histograms
    *
@@ -178,18 +172,12 @@ struct PIDFeatureExtractor {
   void init(InitContext const&)
   {
     std::string base = outputPath.value;
-
-    // ========================================================================
     // ROOT OUTPUT SETUP
-    // ========================================================================
     if (exportROOT) {
-      // Create ROOT file for storing the TTree
       outputFile = std::make_unique<TFile>((base + ".root").c_str(), "RECREATE");
-
-      // Create TTree with descriptive name and title
       featureTree = std::make_unique<TTree>("pid_features", "PID features");
 
-      // Create branches for KINEMATIC VARIABLES
+      // KINEMATIC VARIABLES
       featureTree->Branch("event_id", &event_id);
       featureTree->Branch("track_id", &track_id);
       featureTree->Branch("px", &px);
@@ -203,7 +191,7 @@ struct PIDFeatureExtractor {
       featureTree->Branch("charge", &charge);
       featureTree->Branch("track_type", &track_type);
 
-      // Create branches for TPC VARIABLES
+      // TPC VARIABLES
       featureTree->Branch("tpc_signal", &tpc_signal);
       featureTree->Branch("tpc_nsigma_pi", &tpc_nsigma_pi);
       featureTree->Branch("tpc_nsigma_ka", &tpc_nsigma_ka);
@@ -212,7 +200,7 @@ struct PIDFeatureExtractor {
       featureTree->Branch("tpc_nclusters", &tpc_nclusters);
       featureTree->Branch("tpc_chi2", &tpc_chi2);
 
-      // Create branches for TOF VARIABLES
+      // TOF VARIABLES
       featureTree->Branch("tof_beta", &tof_beta);
       featureTree->Branch("tof_mass", &tof_mass);
       featureTree->Branch("tof_nsigma_pi", &tof_nsigma_pi);
@@ -220,30 +208,28 @@ struct PIDFeatureExtractor {
       featureTree->Branch("tof_nsigma_pr", &tof_nsigma_pr);
       featureTree->Branch("tof_nsigma_el", &tof_nsigma_el);
 
-      // Create branches for BAYESIAN PID VARIABLES
+      // BAYESIAN PID VARIABLES
       featureTree->Branch("bayes_prob_pi", &bayes_prob_pi);
       featureTree->Branch("bayes_prob_ka", &bayes_prob_ka);
       featureTree->Branch("bayes_prob_pr", &bayes_prob_pr);
       featureTree->Branch("bayes_prob_el", &bayes_prob_el);
 
-      // Create branches for MONTE CARLO TRUTH (simulated data only)
+      // MONTE CARLO TRUTH (simulated data only)
       featureTree->Branch("mc_pdg", &mc_pdg);
       featureTree->Branch("mc_px", &mc_px);
       featureTree->Branch("mc_py", &mc_py);
       featureTree->Branch("mc_pz", &mc_pz);
 
-      // Create branches for DETECTOR FLAGS
+      // DETECTOR FLAGS
       featureTree->Branch("has_tpc", &has_tpc);
       featureTree->Branch("has_tof", &has_tof);
 
-      // Create branches for IMPACT PARAMETERS
+      // IMPACT PARAMETERS
       featureTree->Branch("dca_xy", &dca_xy);
       featureTree->Branch("dca_z", &dca_z);
     }
 
-    // ========================================================================
     // CSV OUTPUT SETUP
-    // ========================================================================
     if (exportCSV) {
       csvFile.open((base + ".csv").c_str());
       // Write CSV header with all column names
@@ -267,6 +253,13 @@ struct PIDFeatureExtractor {
     const AxisSpec axisMass{100, -0.2, 2.0, "mass"}; // 100 bins, -0.2 to 2.0 GeV/c²
 
     // Add histograms to registry
+    // HISTOGRAM SETUP
+    const AxisSpec axisPt{200, 0, 10, "pT"};
+    const AxisSpec axisEta{60, -1.5, 1.5, "eta"};
+    const AxisSpec axisdEdx{300, 0, 300, "dE/dx"};
+    const AxisSpec axisBeta{120, 0, 1.2, "beta"};
+    const AxisSpec axisMass{100, -0.2, 2.0, "mass"};
+
     histos.add("QC/nTracks", "Tracks", kTH1F, {{10000, 0, 100000}});
     histos.add("QC/pt", "pT", kTH1F, {axisPt});
     histos.add("QC/eta", "eta", kTH1F, {axisEta});
@@ -278,7 +271,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // BAYESIAN PID CALCULATION FUNCTION
   // ============================================================================
-
   /**
    * @brief Compute Bayesian probabilities combining TPC and TOF information
    *
@@ -297,8 +289,6 @@ struct PIDFeatureExtractor {
   void computeBayesianPID(float nsTPC[4], float nsTOF[4], float pri[4], float out[4])
   {
     float sum = 0;
-
-    // Calculate likelihood for each particle species
     for (int i = 0; i < 4; i++) {
       // Gaussian likelihood: exp(-0.5 * chi²)
       // Handle invalid TOF values (NaN) by replacing with 0 contribution
@@ -309,8 +299,6 @@ struct PIDFeatureExtractor {
       out[i] = l * pri[i];
       sum += out[i];
     }
-
-    // Normalize probabilities so they sum to 1.0
     for (int i = 0; i < 4; i++) {
       out[i] = sum > 0 ? out[i] / sum : 0.f;
     }
@@ -319,7 +307,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // MAIN PROCESSING FUNCTION
   // ============================================================================
-
   /**
    * @brief Process collision and track data, extract PID features
    *
@@ -346,14 +333,10 @@ struct PIDFeatureExtractor {
       > const& tracks,
     aod::McParticles const& mcParticles)
   {
-    // Use static counter to maintain event numbering across process calls
     static int eventCounter = 0;
     event_id = eventCounter++;
     int idx = 0;
 
-    // ======================================================================
-    // TRACK LOOP - Process each track in the event
-    // ======================================================================
     for (auto& t : tracks) {
 
       // ====================================================================
@@ -366,9 +349,7 @@ struct PIDFeatureExtractor {
 
       track_id = idx++;
 
-      // ====================================================================
-      // EXTRACT KINEMATIC VARIABLES
-      // ====================================================================
+      // Kinematics
       px = t.px();
       py = t.py();
       pz = t.pz();
@@ -376,14 +357,11 @@ struct PIDFeatureExtractor {
       p = t.p();
       eta = t.eta();
       phi = t.phi();
-      // Calculate polar angle from pseudorapidity: θ = 2*arctan(exp(-η))
       theta = 2.f * atanf(expf(-eta));
       charge = t.sign();          // Track charge
       track_type = t.trackType(); // Track categorization
 
-      // ====================================================================
-      // EXTRACT TPC INFORMATION
-      // ====================================================================
+      // TPC info
       has_tpc = t.hasTPC();
       if (has_tpc) {
         // TPC has valid measurement
@@ -395,15 +373,12 @@ struct PIDFeatureExtractor {
         tpc_nclusters = t.tpcNClsFound(); // Quality: number of clusters
         tpc_chi2 = t.tpcChi2NCl();        // Quality: fit chi-square
       } else {
-        // TPC has no valid measurement - set sentinel values
         tpc_signal = tpc_nsigma_pi = tpc_nsigma_ka = tpc_nsigma_pr = tpc_nsigma_el = -999;
         tpc_nclusters = 0;
         tpc_chi2 = -999;
       }
 
-      // ====================================================================
-      // EXTRACT TOF INFORMATION
-      // ====================================================================
+      // TOF info
       has_tof = t.hasTOF();
       if (has_tof) {
         // TOF has valid measurement
@@ -414,7 +389,6 @@ struct PIDFeatureExtractor {
         tof_nsigma_pr = t.tofNSigmaPr(); // Deviation from proton hypothesis
         tof_nsigma_el = t.tofNSigmaEl(); // Deviation from electron hypothesis
       } else {
-        // TOF has no valid measurement - set sentinel values
         tof_beta = tof_mass = -999;
         tof_nsigma_pi = tof_nsigma_ka = tof_nsigma_pr = tof_nsigma_el = -999;
       }
@@ -432,18 +406,13 @@ struct PIDFeatureExtractor {
       float arrTOF[4] = {tof_nsigma_pi, tof_nsigma_ka, tof_nsigma_pr, tof_nsigma_el};
       float priors[4] = {1.f, 0.2f, 0.1f, 0.05f}; // Prior prob: π, K, p, e
       float probs[4];
-
-      // Compute combined PID probabilities
       computeBayesianPID(arrTPC, arrTOF, priors, probs);
       bayes_prob_pi = probs[0];
       bayes_prob_ka = probs[1];
       bayes_prob_pr = probs[2];
       bayes_prob_el = probs[3];
 
-      // ====================================================================
-      // EXTRACT MONTE CARLO TRUTH (if available)
-      // ====================================================================
-      // Safely access MC particle information with existence check
+      // MC truth
       if (t.has_mcParticle()) {
         auto mc = t.mcParticle();
         mc_pdg = mc.pdgCode(); // Particle identifier code
@@ -451,7 +420,6 @@ struct PIDFeatureExtractor {
         mc_py = mc.py();
         mc_pz = mc.pz();
       } else {
-        // No MC match - set sentinel values
         mc_pdg = 0;
         mc_px = mc_py = mc_pz = 0;
       }
@@ -502,7 +470,6 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // FINALIZATION FUNCTION
   // ============================================================================
-
   /**
    * @brief Clean up and finalize output files
    *
@@ -511,13 +478,11 @@ struct PIDFeatureExtractor {
   void finalize()
   {
     if (exportROOT) {
-      // Write TTree to ROOT file and close
       outputFile->cd();
       featureTree->Write();
       outputFile->Close();
     }
     if (exportCSV) {
-      // Close CSV file
       csvFile.close();
     }
   }
@@ -526,7 +491,6 @@ struct PIDFeatureExtractor {
 // ============================================================================
 // WORKFLOW DEFINITION
 // ============================================================================
-
 /**
  * @brief Define the O2Physics workflow
  *
@@ -537,4 +501,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<PIDFeatureExtractor>(cfgc)};
 }
- 
