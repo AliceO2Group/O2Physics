@@ -36,11 +36,7 @@ namespace o2::aod
 namespace dqppfilter
 {
 DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t);  //! Bit-field used for the high level event triggering
-DECLARE_SOA_COLUMN(NewBcMultFT0A, newBcMultFT0A, float); //! sum of amplitudes on A side of FT0
-DECLARE_SOA_COLUMN(NewBcMultFT0C, newBcMultFT0C, float); //! sum of amplitudes on C side of FT0
-DECLARE_SOA_COLUMN(NewBcMultFDDA, newBcMultFDDA, float); //! sum of amplitudes on A side of FDD
-DECLARE_SOA_COLUMN(NewBcMultFDDC, newBcMultFDDC, float); //! sum of amplitudes on C side of FDD
-DECLARE_SOA_COLUMN(NewBcMultFV0A, newBcMultFV0A, float); //! sum of amplitudes on A side of FDD
+DECLARE_SOA_COLUMN(NewBcIndex, newBcIndex, uint64_t);    //! globalIndex of the new BC determined in filterPbPb
 } // namespace dqppfilter
 
 DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level decisions (DQ high level triggers)
@@ -48,19 +44,7 @@ DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level dec
 
 DECLARE_SOA_TABLE(DQRapidityGapFilter, "AOD", "RAPIDITYGAPFILTER",
                   dqppfilter::EventFilter,
-                  dqppfilter::NewBcMultFT0A,
-                  dqppfilter::NewBcMultFT0C,
-                  dqppfilter::NewBcMultFDDA,
-                  dqppfilter::NewBcMultFDDC,
-                  dqppfilter::NewBcMultFV0A,
-                  zdc::EnergyCommonZNA,
-                  zdc::EnergyCommonZNC,
-                  zdc::EnergyCommonZPA,
-                  zdc::EnergyCommonZPC,
-                  zdc::TimeZNA,
-                  zdc::TimeZNC,
-                  zdc::TimeZPA,
-                  zdc::TimeZPC);
+                  dqppfilter::NewBcIndex);
 
 namespace reducedevent
 {
@@ -218,10 +202,19 @@ DECLARE_SOA_TABLE(ReducedEventsInfo, "AOD", "REDUCEVENTINFO", //!   Main event i
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
 //           can be constructed and the same data model could be used
-DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC truth information
+
+DECLARE_SOA_TABLE(ReducedMCEvents_000, "AOD", "REDUCEDMCEVENT", //!   Event level MC truth information
                   o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
+
+DECLARE_SOA_TABLE_VERSIONED(ReducedMCEvents_001, "AOD", "REDUCEDMCEVENT", 1, //!   Event level MC truth information
+                            o2::soa::Index<>,
+                            mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
+                            mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
+                            mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
+
+using ReducedMCEvents = ReducedMCEvents_001;
 
 using ReducedEvent = ReducedEvents::iterator;
 using StoredReducedEvent = StoredReducedEvents::iterator;

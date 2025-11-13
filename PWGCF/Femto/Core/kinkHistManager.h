@@ -74,14 +74,23 @@ struct ConfSigmaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
+template <const char* Prefix>
+struct ConfSigmaPlusBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  KINK_DEFAULT_BINNING(1.1, 1.3)
+};
 #undef KINK_DEFAULT_BINNING
 
 constexpr const char PrefixSigmaBinning1[] = "SigmaBinning1";
 using ConfSigmaBinning1 = ConfSigmaBinning<PrefixSigmaBinning1>;
 
+constexpr const char PrefixSigmaPlusBinning1[] = "SigmaPlusBinning1";
+using ConfSigmaPlusBinning1 = ConfSigmaPlusBinning<PrefixSigmaPlusBinning1>;
+
 template <const char* Prefix>
 struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
+  o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d QA h histograms"};
   o2::framework::ConfigurableAxis kinkAngle{"kinkAngle", {{100, 0, 3.15}}, "Kink Angle (rad)"};
   o2::framework::ConfigurableAxis dcaMothToPV{"dcaMothToPV", {{150, 0, 1.5}}, "Mother DCA to PV (cm)"};
   o2::framework::ConfigurableAxis dcaDaugToPV{"dcaDaugToPV", {{1000, 0, 100}}, "Daughter DCA to PV (cm)"};
@@ -91,6 +100,9 @@ struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixSigmaQaBinning1[] = "SigmaQaBinning1";
 using ConfSigmaQaBinning1 = ConfKinkQaBinning<PrefixSigmaQaBinning1>;
+
+constexpr const char PrefixSigmaPlusQaBinning1[] = "SigmaPlusQaBinning1";
+using ConfSigmaPlusQaBinning1 = ConfKinkQaBinning<PrefixSigmaPlusQaBinning1>;
 
 // must be in sync with enum KinkHist
 // the enum gives the correct index in the array
@@ -152,6 +164,9 @@ std::map<KinkHist, std::vector<framework::AxisSpec>> makeKinkQaHistSpecMap(T1 co
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
 constexpr char PrefixSigma1[] = "Sigma1/";
 constexpr char PrefixSigma2[] = "Sigma2/";
+constexpr char PrefixSigmaPlusQa[] = "SigmaPlusQA/";
+constexpr char PrefixSigmaPlus1[] = "SigmaPlus1/";
+constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
 
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
@@ -167,99 +182,117 @@ class KinkHistManager
 {
  public:
   KinkHistManager() = default;
-  virtual ~KinkHistManager() = default;
+  ~KinkHistManager() = default;
 
-  /// Initializes histograms for the task
-  /// \param registry Histogram registry to be passed
-  ///
   void init(o2::framework::HistogramRegistry* registry,
-            std::map<KinkHist, std::vector<o2::framework::AxisSpec>> KinkSpecs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> ChaDauSpecs)
+            std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs)
   {
     mHistogramRegistry = registry;
     mChaDauManager.init(registry, ChaDauSpecs);
-
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      std::string analysisDir = std::string(kinkPrefix) + std::string(AnalysisDir);
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {KinkSpecs[kPt]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {KinkSpecs[kEta]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {KinkSpecs[kPhi]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {KinkSpecs[kMass]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {KinkSpecs[kSign]});
+      initAnalysis(KinkSpecs);
     }
-
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      std::string qaDir = std::string(kinkPrefix) + std::string(QaDir);
+      initQa(KinkSpecs);
+    }
+  }
 
-      // Basic kinematic histograms
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {KinkSpecs[kPt]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {KinkSpecs[kEta]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {KinkSpecs[kPhi]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {KinkSpecs[kMass]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {KinkSpecs[kSign]});
+  template <typename T1, typename T2>
+  void enableOptionalHistograms(T1 const& KinkConfBinningQa, T2 const& ChaDauConfBinningQa)
+  {
+    mChaDauManager.enableOptionalHistograms(ChaDauConfBinningQa);
+    mPlot2d = KinkConfBinningQa.plot2d.value;
+  }
 
-      // Kink-specific QA histograms
-      mHistogramRegistry->add(qaDir + getHistNameV2(kKinkAngle, HistTable), getHistDesc(kKinkAngle, HistTable), getHistType(kKinkAngle, HistTable), {KinkSpecs[kKinkAngle]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kDcaMothToPV, HistTable), getHistDesc(kDcaMothToPV, HistTable), getHistType(kDcaMothToPV, HistTable), {KinkSpecs[kDcaMothToPV]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kDcaDaugToPV, HistTable), getHistDesc(kDcaDaugToPV, HistTable), getHistType(kDcaDaugToPV, HistTable), {KinkSpecs[kDcaDaugToPV]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxX, HistTable), getHistDesc(kDecayVtxX, HistTable), getHistType(kDecayVtxX, HistTable), {KinkSpecs[kDecayVtxX]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxY, HistTable), getHistDesc(kDecayVtxY, HistTable), getHistType(kDecayVtxY, HistTable), {KinkSpecs[kDecayVtxY]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxZ, HistTable), getHistDesc(kDecayVtxZ, HistTable), getHistType(kDecayVtxZ, HistTable), {KinkSpecs[kDecayVtxZ]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtx, HistTable), getHistDesc(kDecayVtx, HistTable), getHistType(kDecayVtx, HistTable), {KinkSpecs[kDecayVtx]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kTransRadius, HistTable), getHistDesc(kTransRadius, HistTable), getHistType(kTransRadius, HistTable), {KinkSpecs[kTransRadius]});
+  template <typename T1, typename T2>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
+            T1 const& KinkConfBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs,
+            T2 const& ChaDauConfBinningQa)
+  {
+    enableOptionalHistograms(KinkConfBinningQa, ChaDauConfBinningQa);
+    init(registry, KinkSpecs, ChaDauSpecs);
+  }
 
-      // 2D QA histograms
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {KinkSpecs[kPtVsEta]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {KinkSpecs[kPtVsPhi]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {KinkSpecs[kPhiVsEta]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsKinkAngle, HistTable), getHistDesc(kPtVsKinkAngle, HistTable), getHistType(kPtVsKinkAngle, HistTable), {KinkSpecs[kPtVsKinkAngle]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDecayRadius, HistTable), getHistDesc(kPtVsDecayRadius, HistTable), getHistType(kPtVsDecayRadius, HistTable), {KinkSpecs[kPtVsDecayRadius]});
+  template <typename T1, typename T2>
+  void fill(T1 const& kinkcandidate, T2 const& tracks)
+  {
+    // this used to work, still under investigation
+    // auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
+    auto chaDaughter = tracks.rawIteratorAt(kinkcandidate.chaDauId() - tracks.offset());
+    mChaDauManager.fill(chaDaughter, tracks);
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      fillAnalysis(kinkcandidate);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      fillQa(kinkcandidate);
+    }
+  }
+
+ private:
+  void initAnalysis(std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs)
+  {
+    std::string analysisDir = std::string(kinkPrefix) + std::string(AnalysisDir);
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {KinkSpecs.at(kPt)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {KinkSpecs.at(kEta)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {KinkSpecs.at(kPhi)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {KinkSpecs.at(kMass)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {KinkSpecs.at(kSign)});
+  }
+
+  void initQa(std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs)
+  {
+    std::string qaDir = std::string(kinkPrefix) + std::string(QaDir);
+    // Kink-specific QA histograms
+    mHistogramRegistry->add(qaDir + getHistNameV2(kKinkAngle, HistTable), getHistDesc(kKinkAngle, HistTable), getHistType(kKinkAngle, HistTable), {KinkSpecs.at(kKinkAngle)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDcaMothToPV, HistTable), getHistDesc(kDcaMothToPV, HistTable), getHistType(kDcaMothToPV, HistTable), {KinkSpecs.at(kDcaMothToPV)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDcaDaugToPV, HistTable), getHistDesc(kDcaDaugToPV, HistTable), getHistType(kDcaDaugToPV, HistTable), {KinkSpecs.at(kDcaDaugToPV)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxX, HistTable), getHistDesc(kDecayVtxX, HistTable), getHistType(kDecayVtxX, HistTable), {KinkSpecs.at(kDecayVtxX)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxY, HistTable), getHistDesc(kDecayVtxY, HistTable), getHistType(kDecayVtxY, HistTable), {KinkSpecs.at(kDecayVtxY)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxZ, HistTable), getHistDesc(kDecayVtxZ, HistTable), getHistType(kDecayVtxZ, HistTable), {KinkSpecs.at(kDecayVtxZ)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtx, HistTable), getHistDesc(kDecayVtx, HistTable), getHistType(kDecayVtx, HistTable), {KinkSpecs.at(kDecayVtx)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kTransRadius, HistTable), getHistDesc(kTransRadius, HistTable), getHistType(kTransRadius, HistTable), {KinkSpecs.at(kTransRadius)});
+    if (mPlot2d) {
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {KinkSpecs.at(kPtVsEta)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {KinkSpecs.at(kPtVsPhi)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {KinkSpecs.at(kPhiVsEta)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsKinkAngle, HistTable), getHistDesc(kPtVsKinkAngle, HistTable), getHistType(kPtVsKinkAngle, HistTable), {KinkSpecs.at(kPtVsKinkAngle)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDecayRadius, HistTable), getHistDesc(kPtVsDecayRadius, HistTable), getHistType(kPtVsDecayRadius, HistTable), {KinkSpecs.at(kPtVsDecayRadius)});
     }
   }
 
   /// Fill histograms for kink candidates
   /// \param kinkcandidate Kink candidate to fill histograms for
   template <typename T>
-  void fill(T const& kinkcandidate)
+  void fillAnalysis(T const& kinkcandidate)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPt, HistTable)), kinkcandidate.pt());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), kinkcandidate.eta());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), kinkcandidate.phi());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), kinkcandidate.mass());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPt, HistTable)), kinkcandidate.pt());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), kinkcandidate.eta());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), kinkcandidate.phi());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), kinkcandidate.mass());
 
-      if constexpr (isEqual(kink, modes::Kink::kSigma)) {
-        mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), kinkcandidate.sign());
-      }
+    if constexpr (isEqual(kink, modes::Kink::kSigma) || isEqual(kink, modes::Kink::kSigmaPlus)) {
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), kinkcandidate.sign());
     }
+  }
 
-    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      // Basic kinematic histograms
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kPt, HistTable)), kinkcandidate.pt());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kEta, HistTable)), kinkcandidate.eta());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kPhi, HistTable)), kinkcandidate.phi());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kMass, HistTable)), kinkcandidate.mass());
-
-      if constexpr (isEqual(kink, modes::Kink::kSigma)) {
-        mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kSign, HistTable)), kinkcandidate.sign());
-      }
-
-      // Kink-specific QA histograms
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kKinkAngle, HistTable)), kinkcandidate.kinkAngle());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDcaMothToPV, HistTable)), kinkcandidate.dcaMothToPV());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDcaDaugToPV, HistTable)), kinkcandidate.dcaDaugToPV());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxX, HistTable)), kinkcandidate.decayVtxX());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxY, HistTable)), kinkcandidate.decayVtxY());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxZ, HistTable)), kinkcandidate.decayVtxZ());
-
-      // Calculate decay distance from PV
-      float decayDistance = std::sqrt(kinkcandidate.decayVtxX() * kinkcandidate.decayVtxX() +
-                                      kinkcandidate.decayVtxY() * kinkcandidate.decayVtxY() +
-                                      kinkcandidate.decayVtxZ() * kinkcandidate.decayVtxZ());
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtx, HistTable)), decayDistance);
-      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kTransRadius, HistTable)), kinkcandidate.transRadius());
-
-      // 2D QA histograms
+  template <typename T>
+  void fillQa(T const& kinkcandidate)
+  {
+    // Kink-specific QA histograms
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kKinkAngle, HistTable)), kinkcandidate.kinkAngle());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDcaMothToPV, HistTable)), kinkcandidate.dcaMothToPV());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDcaDaugToPV, HistTable)), kinkcandidate.dcaDaugToPV());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxX, HistTable)), kinkcandidate.decayVtxX());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxY, HistTable)), kinkcandidate.decayVtxY());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxZ, HistTable)), kinkcandidate.decayVtxZ());
+    // Calculate decay distance from PV
+    float decayDistance = std::hypot(kinkcandidate.decayVtxX(), kinkcandidate.decayVtxY(), kinkcandidate.decayVtxZ());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kDecayVtx, HistTable)), decayDistance);
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kTransRadius, HistTable)), kinkcandidate.transRadius());
+    if (mPlot2d) {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), kinkcandidate.pt(), kinkcandidate.eta());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), kinkcandidate.pt(), kinkcandidate.phi());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), kinkcandidate.phi(), kinkcandidate.eta());
@@ -268,20 +301,9 @@ class KinkHistManager
     }
   }
 
-  /// Fill histograms for kink candidates - overload with track table argument
-  /// \param kinkcandidate Kink candidate to fill histograms for
-  /// \param tracks Track table for daughter access
-  template <typename T1, typename T2>
-  void fill(T1 const& kinkcandidate, T2 const& tracks)
-  {
-    auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
-    mChaDauManager.fill(chaDaughter, tracks);
-    fill(kinkcandidate);
-  }
-
- private:
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   trackhistmanager::TrackHistManager<chaDauPrefix, mode> mChaDauManager;
+  bool mPlot2d = true;
 };
 }; // namespace kinkhistmanager
 }; // namespace o2::analysis::femto

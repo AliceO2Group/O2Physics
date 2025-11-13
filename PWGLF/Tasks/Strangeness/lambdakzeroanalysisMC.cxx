@@ -22,31 +22,33 @@
 //    aimeric.landou@cern.ch (MC adaptation)
 //    david.dobrigkeit.chinellato@cern.ch (original lambdakzeroanalysis task)
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
 
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TProfile.h>
 #include <TLorentzVector.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
+#include <TProfile.h>
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;

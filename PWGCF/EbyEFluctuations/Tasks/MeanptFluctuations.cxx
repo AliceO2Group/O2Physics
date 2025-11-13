@@ -85,6 +85,7 @@ struct MeanptFluctuationsQAQnTable {
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
   Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
+  Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
 
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
@@ -327,6 +328,9 @@ struct MeanptFluctuationsQAQnTable {
       return;
     }
     if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+      return;
+    }
+    if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
 

@@ -16,18 +16,18 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "ALICE3/DataModel/MID.h"
 #include "ALICE3/DataModel/RICH.h"
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -86,7 +86,6 @@ struct HfCandidateSelectorJpsi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::Cuts[0], hf_cuts_jpsi_to_e_e::NBinsPt, hf_cuts_jpsi_to_e_e::NCutVars, hf_cuts_jpsi_to_e_e::labelsPt, hf_cuts_jpsi_to_e_e::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
-  HfHelper hfHelper;
   TrackSelectorEl selectorElectron;
   TrackSelectorMu selectorMuon;
 
@@ -126,12 +125,12 @@ struct HfCandidateSelectorJpsi {
     }
 
     // cut on e+ e− invariant mass
-    if (std::abs(hfHelper.invMassJpsiToEE(candidate) - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
+    if (std::abs(HfHelper::invMassJpsiToEE(candidate) - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
       selEE = 0;
     }
 
     // cut on μ+ μ− invariant mass
-    if (std::abs(hfHelper.invMassJpsiToMuMu(candidate) - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
+    if (std::abs(HfHelper::invMassJpsiToMuMu(candidate) - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
       selMuMu = 0;
     }
 

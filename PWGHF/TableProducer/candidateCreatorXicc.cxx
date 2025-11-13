@@ -17,9 +17,12 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch >, SALERNO
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
+#include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -78,7 +81,6 @@ struct HfCandidateCreatorXicc {
 
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter to rebuild the Xic vertex
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter to build the Xicc vertex
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
@@ -116,10 +118,10 @@ struct HfCandidateCreatorXicc {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
-        hMassXic->Fill(hfHelper.invMassXicToPKPi(xicCand), xicCand.pt());
+        hMassXic->Fill(HfHelper::invMassXicToPKPi(xicCand), xicCand.pt());
       }
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
-        hMassXic->Fill(hfHelper.invMassXicToPiKP(xicCand), xicCand.pt());
+        hMassXic->Fill(HfHelper::invMassXicToPiKP(xicCand), xicCand.pt());
       }
       auto track0 = xicCand.prong0_as<aod::TracksWCov>();
       auto track1 = xicCand.prong1_as<aod::TracksWCov>();

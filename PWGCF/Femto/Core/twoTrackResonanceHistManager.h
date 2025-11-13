@@ -118,80 +118,110 @@ constexpr char PrefixKstar[] = "Kstar0/";
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
 
-/// \class FemtoDreamEventHisto
-/// \brief Class for histogramming event properties
-// template <femtomodes::Mode mode>
 template <const char* resoPrefix, const char* posDauPrefix, const char* negDauPrefix, modes::Mode mode, modes::TwoTrackResonance reso>
 class TwoTrackResonanceHistManager
 {
  public:
-  /// Destructor
-  virtual ~TwoTrackResonanceHistManager() = default;
-  /// Initializes histograms for the task
-  /// \param registry Histogram registry to be passed
-  ///
+  TwoTrackResonanceHistManager() = default;
+  ~TwoTrackResonanceHistManager() = default;
+
   void init(o2::framework::HistogramRegistry* registry,
-            std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> ResoSpecs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> PosDauSpecs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> NegDauSpecs)
+            std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
     mPosDauManager.init(registry, PosDauSpecs);
     mNegDauManager.init(registry, NegDauSpecs);
-
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      std::string analysisDir = std::string(resoPrefix) + std::string(AnalysisDir);
-
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {ResoSpecs[kPt]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {ResoSpecs[kEta]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {ResoSpecs[kPhi]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {ResoSpecs[kMass]});
-      mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {ResoSpecs[kSign]});
+      initAnalysis(ResoSpecs);
     }
-
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      std::string qaDir = std::string(resoPrefix) + std::string(QaDir);
-
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {ResoSpecs[kPtVsEta]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {ResoSpecs[kPtVsPhi]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {ResoSpecs[kPhiVsEta]});
-      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMass, HistTable), getHistDesc(kPtVsMass, HistTable), getHistType(kPtVsMass, HistTable), {ResoSpecs[kPtVsMass]});
+      initQa(ResoSpecs);
     }
+  }
+
+  template <typename T1, typename T2>
+  void enableOptionalHistograms(T1 const& PosDauConfBinningQa, T2 const& NegDauConfBinningQa)
+  {
+    mPosDauManager.enableOptionalHistograms(PosDauConfBinningQa);
+    mNegDauManager.enableOptionalHistograms(NegDauConfBinningQa);
+  }
+
+  template <typename T1, typename T2>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> ResoSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> PosDauSpecs,
+            T1 const& PosDauConfBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> NegDauSpecs,
+            T2 const& NegDauConfBinningQa)
+  {
+    enableOptionalHistograms(PosDauConfBinningQa, NegDauConfBinningQa);
+    init(registry, ResoSpecs, PosDauSpecs, NegDauSpecs);
   }
 
   template <typename T1, typename T2>
   void fill(T1 const& resonance, T2 const& tracks)
   {
-    auto posDaughter = resonance.template posDau_as<T2>();
+    // this used to work, still under investigation
+    // auto posDaughter = resonance.template posDau_as<T2>();
+    // auto negDaughter = resonance.template negDau_as<T2>();
+    auto posDaughter = tracks.rawIteratorAt(resonance.posDauId() - tracks.offset());
     mPosDauManager.fill(posDaughter, tracks);
-    auto negDaughter = resonance.template negDau_as<T2>();
+    auto negDaughter = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
     mNegDauManager.fill(negDaughter, tracks);
-
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPt, HistTable)), resonance.pt());
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), resonance.eta());
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), resonance.phi());
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), resonance.mass());
-
-      if constexpr (modes::isEqual(reso, modes::TwoTrackResonance::kPhi) || modes::isEqual(reso, modes::TwoTrackResonance::kRho0)) {
-        mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), 0);
-      }
-      if constexpr (modes::isEqual(reso, modes::TwoTrackResonance::kKstar0) || modes::isEqual(reso, modes::TwoTrackResonance::kKstar0Bar)) {
-        mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), resonance.sign());
-      }
+      fillAnalysis(resonance);
     }
-
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), resonance.pt(), resonance.eta());
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), resonance.pt(), resonance.phi());
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), resonance.phi(), resonance.eta());
-      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMass, HistTable)), resonance.pt(), resonance.mass());
+      fillQa(resonance);
     }
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
+  void initAnalysis(std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
+  {
+    std::string analysisDir = std::string(resoPrefix) + std::string(AnalysisDir);
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPt, HistTable), getHistDesc(kPt, HistTable), getHistType(kPt, HistTable), {ResoSpecs.at(kPt)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {ResoSpecs.at(kEta)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {ResoSpecs.at(kPhi)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {ResoSpecs.at(kMass)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {ResoSpecs.at(kSign)});
+  }
+  void initQa(std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs)
+  {
+    std::string qaDir = std::string(resoPrefix) + std::string(QaDir);
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsEta, HistTable), getHistDesc(kPtVsEta, HistTable), getHistType(kPtVsEta, HistTable), {ResoSpecs.at(kPtVsEta)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsPhi, HistTable), getHistDesc(kPtVsPhi, HistTable), getHistType(kPtVsPhi, HistTable), {ResoSpecs.at(kPtVsPhi)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {ResoSpecs.at(kPhiVsEta)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMass, HistTable), getHistDesc(kPtVsMass, HistTable), getHistType(kPtVsMass, HistTable), {ResoSpecs.at(kPtVsMass)});
+  }
 
+  template <typename T>
+  void fillAnalysis(T const& resonance)
+  {
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPt, HistTable)), resonance.pt());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), resonance.eta());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), resonance.phi());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), resonance.mass());
+    if constexpr (modes::isEqual(reso, modes::TwoTrackResonance::kPhi) || modes::isEqual(reso, modes::TwoTrackResonance::kRho0)) {
+      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), 0);
+    }
+    if constexpr (modes::isEqual(reso, modes::TwoTrackResonance::kKstar0) || modes::isEqual(reso, modes::TwoTrackResonance::kKstar0Bar)) {
+      mHistogramRegistry->fill(HIST(resoPrefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), resonance.sign());
+    }
+  }
+
+  template <typename T>
+  void fillQa(T const& resonance)
+  {
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), resonance.pt(), resonance.eta());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), resonance.pt(), resonance.phi());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), resonance.phi(), resonance.eta());
+    mHistogramRegistry->fill(HIST(resoPrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMass, HistTable)), resonance.pt(), resonance.mass());
+  }
+
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   trackhistmanager::TrackHistManager<posDauPrefix, mode> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix, mode> mNegDauManager;
 };

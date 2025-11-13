@@ -86,9 +86,15 @@ struct RhoEstimatorTask {
     Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
     Configurable<float> bkgEtaMin{"bkgEtaMin", -0.7, "minimim pseudorapidity for determining background density"};
     Configurable<float> bkgEtaMax{"bkgEtaMax", 0.7, "maximum pseudorapidity for determining background density"};
-    Configurable<float> bkgPhiMin{"bkgPhiMin", -99., "minimim phi for determining background density"};
-    Configurable<float> bkgPhiMax{"bkgPhiMax", 99., "maximum phi for determining background density"};
+    Configurable<float> bkgPhiMin{"bkgPhiMin", -6.283, "minimim phi for determining background density"};
+    Configurable<float> bkgPhiMax{"bkgPhiMax", 6.283, "maximum phi for determining background density"};
     Configurable<bool> doSparse{"doSparse", false, "perfom sparse estimation"};
+    Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
+    Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
+    Configurable<double> ghostArea{"ghostArea", 0.005, "Area per ghost"};
+    Configurable<double> ghostGridScatter{"ghostGridScatter", 1.0, "Grid scatter"};
+    Configurable<double> ghostKtScatter{"ghostKtScatter", 0.1, "kT scatter"};
+    Configurable<double> ghostMeanPt{"ghostMeanPt", 1e-100, "Mean ghost pT"};
 
     Configurable<float> thresholdTriggerTrackPtMin{"thresholdTriggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
     Configurable<float> thresholdClusterEnergyMin{"thresholdClusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
@@ -134,6 +140,11 @@ struct RhoEstimatorTask {
       bkgPhiMin_ = -2.0 * M_PI;
     }
     bkgSub.setPhiMinMax(bkgPhiMin_, bkgPhiMax_);
+
+    fastjet::GhostedAreaSpec ghostAreaSpec(config.ghostRapMax, config.ghostRepeat, config.ghostArea,
+                                           config.ghostGridScatter, config.ghostKtScatter, config.ghostMeanPt);
+    bkgSub.setGhostAreaSpec(ghostAreaSpec);
+
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(config.eventSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(config.triggerMasks);
 
@@ -233,7 +244,7 @@ struct RhoEstimatorTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<true, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<false, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
     rhoChargedMcTable(rho, rhoM);
   }

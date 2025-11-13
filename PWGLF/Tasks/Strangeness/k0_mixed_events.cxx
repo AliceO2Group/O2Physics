@@ -14,40 +14,41 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
-#include <vector>
+#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Expressions.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include <TH1F.h>
+#include <TLorentzVector.h>
+#include <TParameter.h>
+
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
-
-#include <TParameter.h>
-#include <TH1F.h>
-#include <TLorentzVector.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoA.h"
-#include "Framework/DataTypes.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Expressions.h"
-#include "Framework/StaticFor.h"
-
-#include "MathUtils/Utils.h"
-#include "Common/DataModel/Multiplicity.h"
-
-#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
-#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;

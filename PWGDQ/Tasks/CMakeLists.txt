@@ -111,7 +111,7 @@ o2physics_add_dpl_workflow(task-fwd-track-pid
 
 o2physics_add_dpl_workflow(quarkonia-to-hyperons
                     SOURCES quarkoniaToHyperons.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(model-converter-mult-pv
@@ -124,7 +124,17 @@ o2physics_add_dpl_workflow(model-converter-event-extended
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(model-converter-mc-reduced-event
+                    SOURCES ModelConverterReducedMCEvents.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tag-and-probe
                     SOURCES TagAndProbe.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qa-matching
+                    SOURCES qaMatching.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)

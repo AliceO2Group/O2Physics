@@ -32,7 +32,8 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
@@ -617,39 +618,39 @@ struct strangenesstofpid {
           if (!hSigmaPosK0Pi || !hSigmaNegK0Pi || !hSigmaPosLaPi || !hSigmaPosLaPr || !hSigmaNegLaPi || !hSigmaNegLaPr) {
             LOG(info) << "Problems finding sigma histograms!";
           }
+        }
 
-          if (calculateCascades.value) {
-            hMeanPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPi"));
-            hMeanPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPr"));
-            hMeanNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPi"));
-            hMeanNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPr"));
-            hMeanBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachXiPi"));
-            hMeanPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPi"));
-            hMeanPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPr"));
-            hMeanNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPi"));
-            hMeanNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPr"));
-            hMeanBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachOmKa"));
+        if (calculateCascades.value) {
+          hMeanPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPi"));
+          hMeanPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPr"));
+          hMeanNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPi"));
+          hMeanNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPr"));
+          hMeanBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachXiPi"));
+          hMeanPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPi"));
+          hMeanPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPr"));
+          hMeanNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPi"));
+          hMeanNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPr"));
+          hMeanBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachOmKa"));
 
-            hSigmaPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPi"));
-            hSigmaPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPr"));
-            hSigmaNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPi"));
-            hSigmaNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPr"));
-            hSigmaBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachXiPi"));
-            hSigmaPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPi"));
-            hSigmaPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPr"));
-            hSigmaNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPi"));
-            hSigmaNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPr"));
-            hSigmaBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachOmKa"));
+          hSigmaPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPi"));
+          hSigmaPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPr"));
+          hSigmaNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPi"));
+          hSigmaNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPr"));
+          hSigmaBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachXiPi"));
+          hSigmaPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPi"));
+          hSigmaPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPr"));
+          hSigmaNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPi"));
+          hSigmaNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPr"));
+          hSigmaBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachOmKa"));
 
-            if (!hMeanPosXiPi || !hMeanPosXiPr || !hMeanNegXiPi || !hMeanNegXiPr || !hMeanBachXiPi)
-              LOG(info) << "Problems finding xi mean histograms!";
-            if (!hMeanPosOmPi || !hMeanPosOmPr || !hMeanNegOmPi || !hMeanNegOmPr || !hMeanBachOmKa)
-              LOG(info) << "Problems finding omega sigma histograms!";
-            if (!hSigmaPosXiPi || !hSigmaPosXiPr || !hSigmaNegXiPi || !hSigmaNegXiPr || !hSigmaBachXiPi)
-              LOG(info) << "Problems finding xi sigma histograms!";
-            if (!hSigmaPosOmPi || !hSigmaPosOmPr || !hSigmaNegOmPi || !hSigmaNegOmPr || !hSigmaBachOmKa)
-              LOG(info) << "Problems finding omega sigma histograms!";
-          }
+          if (!hMeanPosXiPi || !hMeanPosXiPr || !hMeanNegXiPi || !hMeanNegXiPr || !hMeanBachXiPi)
+            LOG(info) << "Problems finding xi mean histograms!";
+          if (!hMeanPosOmPi || !hMeanPosOmPr || !hMeanNegOmPi || !hMeanNegOmPr || !hMeanBachOmKa)
+            LOG(info) << "Problems finding omega sigma histograms!";
+          if (!hSigmaPosXiPi || !hSigmaPosXiPr || !hSigmaNegXiPi || !hSigmaNegXiPr || !hSigmaBachXiPi)
+            LOG(info) << "Problems finding xi sigma histograms!";
+          if (!hSigmaPosOmPi || !hSigmaPosOmPr || !hSigmaNegOmPi || !hSigmaNegOmPr || !hSigmaBachOmKa)
+            LOG(info) << "Problems finding omega sigma histograms!";
         }
       }
     }
@@ -804,7 +805,7 @@ struct strangenesstofpid {
     float velocityPositivePr, velocityPositivePi, lengthPositive;
     velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
 
-    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5 && pValidTOF) {
+    if (pTof.hasTOF && pTof.tofEvTime > -1e+5 && pValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
         velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
@@ -823,7 +824,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagPosV0, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagPosV0, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthPositive = pTof.length - ltIntegral.getL();
             v0tof.timePositivePr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -880,7 +883,7 @@ struct strangenesstofpid {
     }
     float velocityNegativePr, velocityNegativePi, lengthNegative;
     velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
-    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5 && nValidTOF) {
+    if (nTof.hasTOF && nTof.tofEvTime > -1e+5 && nValidTOF) {
       // method 0: legacy standalone without use of primary particle TOF
       if (calculationMethod.value == 0) {
         velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
@@ -899,7 +902,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagNegV0, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagNegV0, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthNegative = nTof.length - ltIntegral.getL();
             v0tof.timeNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, lengthNegative, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -1072,7 +1077,7 @@ struct strangenesstofpid {
 
     //_____________________________________________________________________________________________
     // Actual calculation
-    if (pTof.hasTOF && pTof.hasITS && pTof.tofEvTime > -1e+5 && pValidTOF) {
+    if (pTof.hasTOF && pTof.tofEvTime > -1e+5 && pValidTOF) {
       float velocityPositivePr, velocityPositivePi, lengthPositive;
       velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
       if (calculationMethod.value == 0) {
@@ -1092,7 +1097,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagPosCasc, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagPosCasc, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthPositive = pTof.length - ltIntegral.getL();
             casctof.posFlightPr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -1161,7 +1168,7 @@ struct strangenesstofpid {
       }
     } // end positive
 
-    if (nTof.hasTOF && nTof.hasITS && nTof.tofEvTime > -1e+5 && nValidTOF) {
+    if (nTof.hasTOF && nTof.tofEvTime > -1e+5 && nValidTOF) {
       float velocityNegativePr, velocityNegativePi, lengthNegative;
       velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1182,7 +1189,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagNegCasc, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagNegCasc, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthNegative = nTof.length - ltIntegral.getL();
             casctof.negFlightPr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
@@ -1251,7 +1260,7 @@ struct strangenesstofpid {
       }
     } // end negative
 
-    if (bTof.hasTOF && bTof.hasITS && bTof.tofEvTime > -1e+5 && bValidTOF) {
+    if (bTof.hasTOF && bTof.tofEvTime > -1e+5 && bValidTOF) {
       float velocityBachelorKa, velocityBachelorPi, lengthBachelor;
       velocityBachelorKa = velocityBachelorPi = lengthBachelor = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
@@ -1272,7 +1281,9 @@ struct strangenesstofpid {
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, bachTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          histos.fill(HIST("hPropagationBookkeeping"), kPropagBachCasc, static_cast<float>(successPropag));
+          if (doQA) {
+            histos.fill(HIST("hPropagationBookkeeping"), kPropagBachCasc, static_cast<float>(successPropag));
+          }
           if (successPropag) {
             lengthBachelor = bTof.length - ltIntegral.getL();
             casctof.bachFlightPi = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length - ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);

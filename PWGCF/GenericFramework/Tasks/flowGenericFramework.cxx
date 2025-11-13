@@ -13,42 +13,44 @@
 /// \brief Task to analyse angular and transverse momentum correlations with GFW
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <complex>
-#include <string>
-#include <map>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-
-#include "GFWPowerArray.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
 #include "FlowContainer.h"
 #include "FlowPtContainer.h"
+#include "GFW.h"
 #include "GFWConfig.h"
+#include "GFWCumulant.h"
+#include "GFWPowerArray.h"
 #include "GFWWeights.h"
 #include "GFWWeightsList.h"
-#include <TProfile.h>
-#include <TRandom3.h>
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+
 #include <TF1.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
+#include <TRandom3.h>
+
+#include <algorithm>
+#include <complex>
+#include <map>
+#include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

@@ -187,6 +187,31 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
+  template <typename t1>
+  void init_kT(HistogramRegistry* registry, t1& ktbins, std::vector<float> ldeltaphistarcutmin, std::vector<float> ldeltaphistarcutmax, std::vector<float> ldeltaetacutmin, std::vector<float> ldeltaetacutmax)
+  {
+    mHistogramRegistry = registry;
+    ktBins = ktbins;
+
+    cutDeltaPhiStarMaxVector = ldeltaphistarcutmax;
+    cutDeltaPhiStarMinVector = ldeltaphistarcutmin;
+    cutDeltaEtaMaxVector = ldeltaetacutmax;
+    cutDeltaEtaMinVector = ldeltaetacutmin;
+
+    if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+      std::string dirName = static_cast<std::string>(DirNames[0]);
+      for (int j = 1; j < static_cast<int>(ktBins.size() - 1); j++) {
+        std::string histSuffixkT1 = std::to_string(static_cast<int>(ktBins[j] * 100.0));
+        std::string histSuffixkT2 = std::to_string(static_cast<int>(ktBins[j + 1] * 100.0));
+        std::string histFolderkT = "kT_" + histSuffixkT1 + "_" + histSuffixkT2 + "/";
+        histdetadphisamebeforekT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiBeforeSame").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadphimixedbeforekT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiBeforeMixed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadphisameafterkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterSame").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadphimixedafterkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterMixed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      }
+    }
+  }
+
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
   bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, uint8_t ChosenEventType)
@@ -560,9 +585,8 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
-  ///  Check if pair is close or not
   template <typename Part>
-  bool isClosePairFrac(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, bool IsDphiAvgOrDist, float DistMax, float FracMax)
+  bool isClosePairFrac(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, bool IsDphiAvgOrDist, float DistMax, float FracMax, bool CircCut)
   {
     magfield = lmagfield;
 
@@ -585,7 +609,9 @@ class FemtoUniverseDetaDphiStar
       }
 
       if (IsDphiAvgOrDist) {
-        if ((dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
+        if (CircCut && (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.)) {
+          return true;
+        } else if (!CircCut && (dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
           return true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -614,6 +640,59 @@ class FemtoUniverseDetaDphiStar
 
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
+      return false;
+    }
+  }
+
+  ///  Check if pair is close or not
+  template <typename Part>
+  bool isClosePairkT(Part const& part1, Part const& part2, uint8_t ChosenEventType, float ktval, bool CircCut)
+  {
+    /// Track-Track combination
+    // check if provided particles are in agreement with the class instantiation
+    if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+      LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+      return false;
+    }
+
+    int ktbinval = 1;
+    if (ktval >= ktBins[1] && ktval < ktBins[2]) {
+      ktbinval = 1;
+    } else if (ktval >= ktBins[2] && ktval < ktBins[3]) {
+      ktbinval = 2;
+    } else if (ktval >= ktBins[3] && ktval < ktBins[4]) {
+      ktbinval = 3;
+    } else if (ktval >= ktBins[4] && ktval < ktBins[5]) {
+      ktbinval = 4;
+    }
+
+    auto deta = part1.eta() - part2.eta();
+    auto dphiAvg = averagePhiStar(part1, part2, 0);
+    auto DeltaPhiStarMax = static_cast<float>(cutDeltaPhiStarMaxVector[ktbinval]);
+    auto DeltaPhiStarMin = static_cast<float>(cutDeltaPhiStarMinVector[ktbinval]);
+    auto DeltaEtaMax = static_cast<float>(cutDeltaEtaMaxVector[ktbinval]);
+    auto DeltaEtaMin = static_cast<float>(cutDeltaEtaMinVector[ktbinval]);
+
+    if (ChosenEventType == femto_universe_container::EventType::same) {
+      histdetadphisamebeforekT[ktbinval]->Fill(deta, dphiAvg);
+    } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+      histdetadphimixedbeforekT[ktbinval]->Fill(deta, dphiAvg);
+    } else {
+      LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+    }
+
+    if (CircCut && (std::pow(dphiAvg, 2) / std::pow(DeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(DeltaEtaMax, 2) < 1.)) {
+      return true;
+    } else if (!CircCut && (dphiAvg > DeltaPhiStarMin) && (dphiAvg < DeltaPhiStarMax) && (deta > DeltaEtaMin) && (deta < DeltaEtaMax)) {
+      return true;
+    } else {
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadphisameafterkT[ktbinval]->Fill(deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadphimixedafterkT[ktbinval]->Fill(deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
       return false;
     }
   }
@@ -691,14 +770,26 @@ class FemtoUniverseDetaDphiStar
   float cutDeltaPhiStarMin;
   float cutDeltaEtaMax;
   float cutDeltaEtaMin;
+
+  std::vector<float> cutDeltaPhiStarMaxVector;
+  std::vector<float> cutDeltaPhiStarMinVector;
+  std::vector<float> cutDeltaEtaMaxVector;
+  std::vector<float> cutDeltaEtaMinVector;
+
   float magfield;
   bool plotForEveryRadii = false;
   float cutPhiInvMassLow;
   float cutPhiInvMassHigh;
   bool isSameSignCPR = false;
+  std::vector<double> ktBins;
 
   std::array<std::array<std::shared_ptr<TH2>, 2>, 7> histdetadpisame{};
   std::array<std::array<std::shared_ptr<TH2>, 2>, 7> histdetadpimixed{};
+  std::array<std::shared_ptr<TH2>, 4> histdetadphisamebeforekT{};
+  std::array<std::shared_ptr<TH2>, 4> histdetadphimixedbeforekT{};
+  std::array<std::shared_ptr<TH2>, 4> histdetadphisameafterkT{};
+  std::array<std::shared_ptr<TH2>, 4> histdetadphimixedafterkT{};
+
   std::array<std::array<std::shared_ptr<TH2>, 9>, 7> histdetadpiRadii{};
 
   std::shared_ptr<TH3> histdetadpiqlcmssame{};

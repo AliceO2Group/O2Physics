@@ -121,12 +121,14 @@ struct FemtoProducer {
   kinkbuilder::ConfKinkFilters confKinkFilters;
   kinkbuilder::ConfSigmaBits confSigmaBits;
   kinkbuilder::KinkBuilder<modes::Kink::kSigma> sigmaBuilder;
+  kinkbuilder::ConfSigmaPlusBits confSigmaPlusBits;
+  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus> sigmaPlusBuilder;
 
   // resonance daughter filters and partitions
   twotrackresonancebuilder::ConfTwoTrackResonanceDaughterFilters confResonanceDaughterFilters;
   // caching and preslicing
   SliceCache cache;
-  Preslice<Tracks> perColTracks = o2::aod::track::collisionId;
+  Preslice<Tracks> perColTracks = track::collisionId;
   Partition<consumeddata::Run3FullPidTracks> partitionPositiveDaughters =
     (track::signed1Pt > 0.f) &&
     (track::pt > confResonanceDaughterFilters.ptMin && track::pt < confResonanceDaughterFilters.ptMax) &&
@@ -182,6 +184,7 @@ struct FemtoProducer {
 
     // configure kink builder
     sigmaBuilder.init(confSigmaBits, confKinkFilters, confKinkTables, context);
+    sigmaPlusBuilder.init(confSigmaPlusBits, confKinkFilters, confKinkTables, context);
 
     // cascade selections
     xiBuilder.init(confXiBits, confCascadeFilters, confCascadeTables, context);
@@ -199,7 +202,7 @@ struct FemtoProducer {
     if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) && (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
     }
-    if (sigmaBuilder.fillAnyTable() && (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
+    if ((sigmaBuilder.fillAnyTable() || sigmaPlusBuilder.fillAnyTable()) && (!doprocessTracksKinksRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
       LOG(fatal) << "At least one kink table is enabled, but wrong process function is enabled. Breaking...";
     }
   }
@@ -226,8 +229,8 @@ struct FemtoProducer {
   template <typename T1, typename T2>
   void processResonances(T1 const& col, T2 const& /*tracks*/)
   {
-    auto groupPositiveTracks = partitionPositiveDaughters->sliceByCached(o2::aod::track::collisionId, col.globalIndex(), cache);
-    auto groupNegativeTracks = partitionNegativeDaughters->sliceByCached(o2::aod::track::collisionId, col.globalIndex(), cache);
+    auto groupPositiveTracks = partitionPositiveDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
+    auto groupNegativeTracks = partitionNegativeDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
     rho0Builder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
     phiBuilder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
     kstar0Builder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
@@ -248,6 +251,7 @@ struct FemtoProducer {
   void processKinks(T1 const& tracks, T2 const& kinks)
   {
     sigmaBuilder.fillKinks(collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
+    sigmaPlusBuilder.fillKinks(collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
   }
 
   // add cascades

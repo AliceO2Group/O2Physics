@@ -14,12 +14,12 @@
 /// \author Dmitri Peresunko <Dmitri.Peresunko@cern.ch>
 ///
 
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonDataFormat/InteractionRecord.h"
