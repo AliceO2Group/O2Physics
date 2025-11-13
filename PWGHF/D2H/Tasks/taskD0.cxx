@@ -103,8 +103,6 @@ struct HfTaskD0 {
   Configurable<float> upcZDCThreshold{"upcZDCThreshold", 1.0f, "ZDC energy threshold for UPC gap determination (a.u.)"};
 
   HfEventSelection hfEvSel; // event selection and monitoring
-  SGSelector sgSelector;    // UPC gap selector
-
   ctpRateFetcher mRateFetcher;
 
   SliceCache cache;
@@ -161,8 +159,10 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisMinTpcNCrossedRows{"thnConfigAxisMinTpcNCrossedRows", {10, 70, 180}, "axis for minimum TPC NCls crossed rows of candidate prongs"};
   ConfigurableAxis thnConfigAxisIR{"thnConfigAxisIR", {5000, 0, 500}, "Interaction rate (kHz)"};
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (-1=NoGap, 0=SingleGapA, 1=SingleGapC, 2=DoubleGap, 3=NoUpc, 4=TrkOutOfRange, 5=BadDoubleGap)"};
-  ConfigurableAxis thnConfigAxisFT0A{"thnConfigAxisFT0A", {1001, -1.5, 999.5}, "axis for FT0-A amplitude (a.u.)"};
-  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {1001, -1.5, 999.5}, "axis for FT0-C amplitude (a.u.)"};
+  ConfigurableAxis thnConfigAxisFT0{"thnConfigAxisFT0", {1001, -1.5, 999.5}, "axis for FT0 amplitude (a.u.)"};
+  ConfigurableAxis thnConfigAxisFV0A{"thnConfigAxisFV0A", {2001, -1.5, 1999.5}, "axis for FV0-A amplitude (a.u.)"};
+  ConfigurableAxis thnConfigAxisFDD{"thnConfigAxisFDD", {200, 0., 4000.}, "axis for FDD amplitude (a.u.)"};
+  ConfigurableAxis thnConfigAxisZN{"thnConfigAxisZN", {510, -1.5, 49.5}, "axis for ZN energy (a.u.)"};
 
   HistogramRegistry registry{
     "registry",
@@ -306,8 +306,13 @@ struct HfTaskD0 {
     const AxisSpec thnAxisMinTpcNCrossedRows{thnConfigAxisMinTpcNCrossedRows, "Minimum TPC crossed rows"};
     const AxisSpec thnAxisIR{thnConfigAxisIR, "Interaction rate"};
     const AxisSpec thnAxisGapType{thnConfigAxisGapType, "Gap type"};
-    const AxisSpec thnAxisFT0A{thnConfigAxisFT0A, "FT0-A amplitude"};
-    const AxisSpec thnAxisFT0C{thnConfigAxisFT0C, "FT0-C amplitude"};
+    const AxisSpec thnAxisFT0A{thnConfigAxisFT0, "FT0-A amplitude"};
+    const AxisSpec thnAxisFT0C{thnConfigAxisFT0, "FT0-C amplitude"};
+    const AxisSpec thnAxisFV0A{thnConfigAxisFV0A, "FV0-A amplitude"};
+    const AxisSpec thnAxisFDDA{thnConfigAxisFDD, "FDD-A amplitude"};
+    const AxisSpec thnAxisFDDC{thnConfigAxisFDD, "FDD-C amplitude"};
+    const AxisSpec thnAxisZNA{thnConfigAxisZN, "ZNA energy"};
+    const AxisSpec thnAxisZNC{thnConfigAxisZN, "ZNC energy"};
 
     if (doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessMcWithKFParticle || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent || doprocessMcWithKFParticleMl) {
       std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
@@ -361,6 +366,11 @@ struct HfTaskD0 {
       axes.push_back(thnAxisGapType);
       axes.push_back(thnAxisFT0A);
       axes.push_back(thnAxisFT0C);
+      axes.push_back(thnAxisFV0A);
+      axes.push_back(thnAxisFDDA);
+      axes.push_back(thnAxisFDDC);
+      axes.push_back(thnAxisZNA);
+      axes.push_back(thnAxisZNC);
     }
 
     if (applyMl) {
@@ -576,23 +586,42 @@ struct HfTaskD0 {
       if (rejectionMask != 0) {
         continue;
       }
-      const auto& bc = collision.template bc_as<BCsType>();
-      upchelpers::FITInfo fitInfo{};
-      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+      auto bc = collision.template bc_as<BCsType>();
 
       // Determine gap type using SGSelector with BC range checking
-      int gap = hf_upc::determineGapType(collision, bcs, sgSelector,
-                                         upcFV0AThreshold, upcFT0AThreshold, upcFT0CThreshold);
+      const auto gapResult = hf_upc::determineGapType(collision, bcs,
+                                                      upcFV0AThreshold, upcFT0AThreshold, upcFT0CThreshold);
+      const int gap = gapResult.value;
 
-      if (bc.has_zdc()) {
-        const auto& zdc = bc.zdc();
+      // Use the BC with FIT activity if available from SGSelector
+      auto bcForUPC = bc;
+      if (gapResult.bc) {
+        bcForUPC = *(gapResult.bc);
+      }
+
+      // Get FIT information from the UPC BC
+      upchelpers::FITInfo fitInfo{};
+      udhelpers::getFITinfo(fitInfo, bcForUPC, bcs, ft0s, fv0as, fdds);
+
+      // Get ZDC energies if available (extract once and reuse)
+      const bool hasZdc = bcForUPC.has_zdc();
+      float zdcEnergyZNA = -1.f;
+      float zdcEnergyZNC = -1.f;
+      if (hasZdc) {
+        const auto& zdc = bcForUPC.zdc();
+        zdcEnergyZNA = zdc.energyCommonZNA();
+        zdcEnergyZNC = zdc.energyCommonZNC();
+      }
+
+      // Fill QA histograms using the UPC BC for both FIT and ZDC
+      if (hasZdc) {
         registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
-        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
         registry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
       }
 
       if (hf_upc::isSingleSidedGap(gap)) {
-        int const gapTypeInt = hf_upc::gapTypeToInt(gap);
+        const int gapTypeInt = hf_upc::gapTypeToInt(gap);
         const auto thisCollId = collision.globalIndex();
         const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
 
@@ -624,10 +653,10 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
           }
 
-          // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C]
+          // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC]
           auto fillTHnData = [&](float mass, int d0Type) {
             // Pre-calculate vector size to avoid reallocations
-            constexpr int NAxesBase = 7;                        // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C
+            constexpr int NAxesBase = 12;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC
             constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
             int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
             int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
@@ -656,6 +685,11 @@ struct HfTaskD0 {
             valuesToFill.push_back(static_cast<double>(gapTypeInt));
             valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
             valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
+            valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
+            valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDA));
+            valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
+            valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
+            valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
 
             if constexpr (FillMl) {
               registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());

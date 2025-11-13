@@ -45,19 +45,19 @@ constexpr int MaxNTracks = 100;                  ///< Maximum number of tracks
 /// \tparam TBCs BC table type
 /// \param collision Collision object
 /// \param bcs BC table
-/// \param sgSelector SGSelector instance
 /// \param amplitudeThresholdFV0A Threshold for FV0-A (default: 100.0)
 /// \param amplitudeThresholdFT0A Threshold for FT0-A (default: 100.0)
 /// \param amplitudeThresholdFT0C Threshold for FT0-C (default: 50.0)
-/// \return TrueGap enum value (-1=NoGap, 0=SingleGapA, 1=SingleGapC, 2=DoubleGap, 3=NoUpc, 4=TrkOutOfRange, 5=BadDoubleGap)
+/// \return SelectionResult with gap type value and BC pointer
 template <typename TCollision, typename TBCs>
-inline int determineGapType(TCollision const& collision,
-                            TBCs const& bcs,
-                            SGSelector& sgSelector,
-                            float amplitudeThresholdFV0A = defaults::AmplitudeThresholdFV0A,
-                            float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
-                            float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
+inline auto determineGapType(TCollision const& collision,
+                             TBCs const& bcs,
+                             float amplitudeThresholdFV0A = defaults::AmplitudeThresholdFV0A,
+                             float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
+                             float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
 {
+  using BCType = std::decay_t<decltype(collision.template foundBC_as<TBCs>())>;
+
   // Configure SGSelector thresholds
   SGCutParHolder sgCuts;
   sgCuts.SetNDtcoll(defaults::NDtColl);
@@ -68,22 +68,23 @@ inline int determineGapType(TCollision const& collision,
 
   // Get BC and BC range
   if (!collision.has_foundBC()) {
-    return TrueGap::NoGap;
+    return SelectionResult<BCType>{TrueGap::NoGap, nullptr};
   }
 
   const auto bc = collision.template foundBC_as<TBCs>();
   const auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
 
-  // Use SGSelector to determine gap type with BC range checking
+  // Create SGSelector instance and determine gap type with BC range checking
+  SGSelector sgSelector;
   const auto sgResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
 
-  return sgResult.value;
+  return sgResult;
 }
 
 /// \brief Check if the gap type is a single-sided gap (SingleGapA or SingleGapC)
 /// \param gap TrueGap enum value
 /// \return true if single-sided gap, false otherwise
-inline bool isSingleSidedGap(int gap)
+constexpr bool isSingleSidedGap(int gap) noexcept
 {
   return (gap == TrueGap::SingleGapA || gap == TrueGap::SingleGapC);
 }
@@ -91,7 +92,7 @@ inline bool isSingleSidedGap(int gap)
 /// \brief Get gap type name as string
 /// \param gap TrueGap enum value
 /// \return String representation of gap type
-inline const char* getGapTypeName(int gap)
+constexpr const char* getGapTypeName(int gap) noexcept
 {
   switch (gap) {
     case TrueGap::NoGap:
@@ -116,7 +117,8 @@ inline const char* getGapTypeName(int gap)
 /// \brief Convert gap type to integer for histogram filling
 /// \param gap TrueGap enum value
 /// \return Integer representation (-1, 0, 1, 2, 3, 4, 5)
-inline int gapTypeToInt(int gap)
+/// \note This is a pass-through function for consistency with other utility functions
+constexpr int gapTypeToInt(int gap) noexcept
 {
   return gap;
 }
