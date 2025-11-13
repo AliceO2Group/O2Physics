@@ -202,14 +202,14 @@ struct OnTheFlyTofPid {
       histos.add("iTOF/h2dTrackLengthInnerVsPt", "h2dTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
       histos.add("iTOF/h2dTrackLengthInnerRecoVsPt", "h2dTrackLengthInnerRecoVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthInner});
       histos.add("iTOF/h2dDeltaTrackLengthInnerVsPt", "h2dDeltaTrackLengthInnerVsPt", kTH2F, {axisMomentumSmall, axisTrackDeltaLength});
-      histos.add("iTOF/h2HitMap", "h2HitMap", kTH2F, {{100, -simConfig.innerTOFLength / 2, simConfig.innerTOFLength / 2}, {100, 0, simConfig.innerTOFRadius * 2 * M_PI}});
+      histos.add("iTOF/h2HitMap", "h2HitMap", kTH2F, {{1000, -simConfig.innerTOFLength / 2, simConfig.innerTOFLength / 2}, {1000, 0, simConfig.innerTOFRadius * 2 * M_PI}});
 
       histos.add("oTOF/h2dVelocityVsMomentumOuter", "h2dVelocityVsMomentumOuter", kTH2F, {axisMomentum, axisVelocity});
       histos.add("oTOF/h2dVelocityVsRigidityOuter", "h2dVelocityVsRigidityOuter", kTH2F, {axisRigidity, axisVelocity});
       histos.add("oTOF/h2dTrackLengthOuterVsPt", "h2dTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
       histos.add("oTOF/h2dTrackLengthOuterRecoVsPt", "h2dTrackLengthOuterRecoVsPt", kTH2F, {axisMomentumSmall, axisTrackLengthOuter});
       histos.add("oTOF/h2dDeltaTrackLengthOuterVsPt", "h2dDeltaTrackLengthOuterVsPt", kTH2F, {axisMomentumSmall, axisTrackDeltaLength});
-      histos.add("oTOF/h2HitMap", "h2HitMap", kTH2F, {{100, -simConfig.outerTOFLength / 2, simConfig.outerTOFLength / 2}, {100, 0, simConfig.outerTOFRadius * 2 * M_PI}});
+      histos.add("oTOF/h2HitMap", "h2HitMap", kTH2F, {{1000, -simConfig.outerTOFLength / 2, simConfig.outerTOFLength / 2}, {1000, 0, simConfig.outerTOFRadius * 2 * M_PI}});
 
       const AxisSpec axisPt{static_cast<int>(plotsConfig.nBinsP), 0.0f, +4.0f, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec axisEta{static_cast<int>(plotsConfig.nBinsEta), -2.0f, +2.0f, "#eta"};
@@ -261,14 +261,31 @@ struct OnTheFlyTofPid {
     const float fractionInactive;
     const float magField;
 
-    // TH2F* hHitMapInPixel = nullptr;
-    // TH2F* hHitMap = nullptr;
     TAxis* axisZ = nullptr;
     TAxis* axisRPhi = nullptr;
     TAxis* axisInPixelZ = nullptr;
     TAxis* axisInPixelRPhi = nullptr;
 
+    TH2F* hHitMapInPixel = nullptr;
+    TH2F* hHitMapInPixelBefore = nullptr;
+    TH2F* hHitMap = nullptr;
+
    public:
+    ~TOFLayerEfficiency()
+    {
+      hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
+      hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
+      hHitMapInPixelBefore->SaveAs(Form("/tmp/%s.png", hHitMapInPixelBefore->GetName()));
+
+      delete axisZ;
+      delete axisRPhi;
+      delete axisInPixelZ;
+      delete axisInPixelRPhi;
+      delete hHitMap;
+      delete hHitMapInPixel;
+      delete hHitMapInPixelBefore;
+    }
+
     TOFLayerEfficiency(float r, float l, std::array<float, 2> pDimensions, float fIA, float m)
       : layerRadius(r), layerLength(l), pixelDimensionZ(pDimensions[0]), pixelDimensionRPhi(pDimensions[1]), fractionInactive(fIA), magField(m)
     {
@@ -277,15 +294,22 @@ struct OnTheFlyTofPid {
       axisZ = new TAxis(static_cast<int>(layerLength / pixelDimensionZ), -layerLength / 2, layerLength);
       axisRPhi = new TAxis(static_cast<int>(circumference / pixelDimensionRPhi), 0.f, circumference);
 
-      const float inactiveBorderRPhi = pixelDimensionRPhi * std::sqrt(fractionInactive);
-      const float inactiveBorderZ = pixelDimensionZ * std::sqrt(fractionInactive);
-      const double arrayRPhi[4] = {0.f, inactiveBorderRPhi, pixelDimensionRPhi - inactiveBorderRPhi, pixelDimensionRPhi};
+      const float inactiveBorderRPhi = pixelDimensionRPhi * std::sqrt(fractionInactive) / 2;
+      const float inactiveBorderZ = pixelDimensionZ * std::sqrt(fractionInactive) / 2;
+      const double arrayRPhi[4] = {-pixelDimensionRPhi / 2, -pixelDimensionRPhi / 2 + inactiveBorderRPhi, pixelDimensionRPhi / 2 - inactiveBorderRPhi, pixelDimensionRPhi / 2};
+      for (int i = 0; i < 4; i++) {
+        LOG(info) << "arrayRPhi[" << i << "] = " << arrayRPhi[i];
+      }
       axisInPixelRPhi = new TAxis(3, arrayRPhi);
-      const double arrayZ[4] = {0.f, inactiveBorderZ, pixelDimensionZ - inactiveBorderZ, pixelDimensionZ};
+      const double arrayZ[4] = {-pixelDimensionZ / 2, -pixelDimensionZ / 2 + inactiveBorderZ, pixelDimensionZ / 2 - inactiveBorderZ, pixelDimensionZ / 2};
+      for (int i = 0; i < 4; i++) {
+        LOG(info) << "arrayZ[" << i << "] = " << arrayZ[i];
+      }
       axisInPixelZ = new TAxis(3, arrayZ);
 
-      // hHitMap = new TH2F(Form("hHitMap_R%.0f", layerRadius), "HitMap;z (cm); r#phi (cm)", 1000, -1000, 1000, 1000, -1000, 1000);
-      // hHitMapInPixel = new TH2F(Form("hHitMapInPixel_R%.0f", layerRadius), "HitMapInPixel;z (cm); r#phi (cm)", 1000, -10, 10, 1000, -10, 10);
+      hHitMap = new TH2F(Form("hHitMap_R%.0f", layerRadius), "HitMap;z (cm); r#phi (cm)", 1000, -1000, 1000, 1000, -1000, 1000);
+      hHitMapInPixel = new TH2F(Form("hHitMapInPixel_R%.0f", layerRadius), "HitMapInPixel;z (cm); r#phi (cm)", 1000, -10, 10, 1000, -10, 10);
+      hHitMapInPixelBefore = new TH2F(Form("hHitMapInPixelBefore_R%.0f", layerRadius), "HitMapInPixel;z (cm); r#phi (cm)", 1000, -10, 10, 1000, -10, 10);
     }
 
     bool isInTOFActiveArea(std::array<float, 3> hitPosition)
@@ -333,22 +357,23 @@ struct OnTheFlyTofPid {
       if (std::abs(localZ - axisZ->GetBinCenter(pixelIndexZ)) > axisZ->GetBinWidth(pixelIndexZ)) {
         // LOG(warning) << "Local hit difference in z is bigger than the pixel size";
       }
+      hHitMapInPixelBefore->Fill(localZ, localRPhi);
       switch (axisInPixelRPhi->FindBin(localRPhi)) {
+        case 0:
         case 1:
         case 3:
+        case 4:
           return false;
       }
       switch (axisInPixelZ->FindBin(localZ)) {
+        case 0:
         case 1:
         case 3:
+        case 4:
           return false;
       }
-      // hHitMap->Fill(z, rphi);
-      // hHitMapInPixel->Fill(localZ, localRPhi);
-      // if (static_cast<int>(hHitMapInPixel->GetEntries()) % 100000 == 0) {
-      //   hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
-      //   hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
-      // }
+      hHitMapInPixel->Fill(localZ, localRPhi);
+      hHitMap->Fill(z, rphi);
       return true;
     }
 
