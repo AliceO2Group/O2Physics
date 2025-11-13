@@ -479,22 +479,6 @@ struct LumiStabilityTask {
             histos.fill(HIST("FDD/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3);
         }
 
-        if (bcPatternB[localBC]) {
-          histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-          bool isLeadBC = true;
-          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-            int kbit = jbit;
-            if (kbit < 0)
-              kbit += nbin;
-            if (bcPatternB[kbit]) {
-              isLeadBC = false;
-              break;
-            }
-          }
-          if (isLeadBC)
-            histos.fill(HIST("FDD/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3);
-        }
-
         int deltaIndex = 0; // backward move counts
         int deltaBC = 0;    // current difference wrt globalBC
         bool pastActivityFDDVertex = false;
@@ -577,21 +561,14 @@ struct LumiStabilityTask {
           }
         }
 
-          if (deltaBC < myMaxDeltaBCFDD) {
-            std::bitset<8> fddTriggersPast = fdd_past.triggerMask();
-            bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
-            pastActivityFDDVertex |= (vertexPast);
-          }
-        }
-        deltaIndex = 0;
-        deltaBC = 0;
+        if (isCoinA && isCoinC) {
+          histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
+          histos.fill(HIST("FDD/hCounts"), 3);
+          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
 
-        if (pastActivityFDDVertex == false) {
-          histos.fill(HIST("FDD/hCounts"), 2);
-          histos.fill(HIST("FDD/bcVertexTriggerPP"), localBC);
           if (bcPatternA[localBC]) {
-            histos.fill(HIST("FDD/timeACbcAVertex"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcAVertex"), localBC);
+            histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcA"), localBC);
           }
           if (bcPatternC[localBC]) {
             histos.fill(HIST("FDD/timeACbcC"), fdd.timeA(), fdd.timeC());
@@ -640,28 +617,6 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimevsBC"), localBC);
               }
             }
-          }
-        }
-
-
-        if (isCoinA && isCoinC) {
-          histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
-          histos.fill(HIST("FDD/hCounts"), 3);
-          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
-
-          if (bcPatternA[localBC]) {
-            histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcA"), localBC);
-          }
-          if (bcPatternC[localBC]) {
-            histos.fill(HIST("FDD/timeACbcC"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcC"), localBC);
-          }
-          if (bcPatternB[localBC]) {
-            histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcB"), localBC);
-            histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
-            histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
           }
           if (bcPatternE[localBC]) {
             histos.fill(HIST("FDD/timeACbcE"), fdd.timeA(), fdd.timeC());
@@ -861,15 +816,6 @@ struct LumiStabilityTask {
         histos.fill(HIST("FT0/hCounts"), 1);
         if (pastActivityFT0Vertex == false) {
           histos.fill(HIST("FT0/hCounts"), 2);
-          histos.fill(HIST("FT0/bcVertexTriggerPP"), localBC);
-        }
-        if (pastActivityFT0TriggerA == false || pastActivityFT0TriggerC == false) {
-          histos.fill(HIST("FT0/hCounts"), 3);
-          histos.fill(HIST("FT0/bcVertexTriggerBothSidesPP"), localBC);
-        }
-        if (pastActivityFT0Vertex == true) {
-          histos.fill(HIST("FT0/hCounts"), 3);
-        } else {
           histos.fill(HIST("FT0/bcVertexTriggerPP"), localBC);
         }
         if (pastActivityFT0TriggerA == false || pastActivityFT0TriggerC == false) {
