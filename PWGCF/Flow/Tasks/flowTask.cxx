@@ -167,6 +167,10 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgDptDisCutLow, std::string, "", "CCDB path to dpt lower boundary")
     O2_DEFINE_CONFIGURABLE(cfgDptDisCutHigh, std::string, "", "CCDB path to dpt higher boundary")
     ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
+    // Functional form of pt-dependent DCAxy cut
+    TF1* fPtDepDCAxy = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -571,6 +575,12 @@ struct FlowTask {
       funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
+
+    if (cfgFuncParas.cfgDCAxyNSigma) {
+      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
+    }
   }
 
   void createOutputObjectsForRun(int runNumber)
@@ -861,6 +871,8 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
