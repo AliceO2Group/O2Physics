@@ -1,125 +1,125 @@
 {
-  "internal-dpl-clock": "",
+    "internal-dpl-clock": "",
 
-  "internal-dpl-aod-reader": {
-    "time-limit": 0,
-    "aod-file-private": "AO2D.root",
-    "orbit-offset-enumeration": 0,
-    "orbit-multiplier-enumeration": 0,
-    "start-value-enumeration": 0,
-    "end-value-enumeration": -1,
-    "step-value-enumeration": 1
-  },
+    "internal-dpl-aod-reader": {
+        "time-limit": 0,
+        "aod-file-private": "AO2D.root",
+        "orbit-offset-enumeration": 0,
+        "orbit-multiplier-enumeration": 0,
+        "start-value-enumeration": 0,
+        "end-value-enumeration": -1,
+        "step-value-enumeration": 1
+    },
 
-  "tracks-extra-v002-converter": {
-    "processV000ToV002": 0,
-    "processV001ToV002": 1
-  },
+    "tracks-extra-v002-converter": {
+        "processV000ToV002": 0,
+        "processV001ToV002": 1
+    },
 
-  "timestamp-task": {
-    "verbose": 0,
-    "rct-path": "RCT/Info/RunInformation",
-    "orbit-reset-path": "CTP/Calib/OrbitReset",
-    "ccdb-url": "http://alice-ccdb.cern.ch",
-    "isRun2MC": 0
-  },
+    "timestamp-task": {
+        "verbose": 0,
+        "rct-path": "RCT/Info/RunInformation",
+        "orbit-reset-path": "CTP/Calib/OrbitReset",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "isRun2MC": 0
+    },
 
-  "bc-selection-task": {
-    "processRun2": 0,
-    "processRun3": 1
-  },
+    "bc-selection-task": {
+        "processRun2": 0,
+        "processRun3": 1
+    },
 
-  "event-selection-task": {
-    "syst": "pp",
-    "muonSelection": 0,
-    "customDeltaBC": 0,
-    "isMC": 1,
-    "processRun2": 0,
-    "processRun3": 1
-  },
+    "event-selection-task": {
+        "syst": "pp",
+        "muonSelection": 0,
+        "customDeltaBC": 0,
+        "isMC": 1,
+        "processRun2": 0,
+        "processRun3": 1
+    },
 
-  "track-propagation": {
-    "ccdb-url": "http://alice-ccdb.cern.ch",
-    "grp-path": "GLO/GRP/GRP",
-    "grp-mag-path": "GLO/Config/GRPMagField",
-    "mVtxPath": "GLO/Calib/MeanVertex",
-    "geo-path": "GLO/Config/GeometryAligned",
-    "useMatLUT": 0,
-    "processStandard": 1,
-    "processCovariance": 0,
-    "processCovarianceMc": 0,
-    "minPropagationDistance": 83.1
-  },
+    "track-propagation": {
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "grp-path": "GLO/GRP/GRP",
+        "grp-mag-path": "GLO/Config/GRPMagField",
+        "mVtxPath": "GLO/Calib/MeanVertex",
+        "geo-path": "GLO/Config/GeometryAligned",
+        "useMatLUT": 0,
+        "processStandard": 1,
+        "processCovariance": 0,
+        "processCovarianceMc": 0,
+        "minPropagationDistance": 83.1
+    },
 
-  "pid-tpc-base": {
-    "ccdb-url": "http://alice-ccdb.cern.ch",
-    "parametrization-path": "TPC/Calib/Response",
-    "parametrization-el-path": "TPC/Calib/ResponseElectron",
-    "resoPath": "TPC/Calib/PIDResponse",
-    "ccdb-timestamp": 0,
-    "useNetworkCorrection": 0,
-    "autofetch-network": 1,
-    "enableNetworkOptimization": 1,
-    "networkPathLocally": "",
-    "networkPathCCDB": "Analysis/PID/TPC",
-    "onnxFile": "network.onnx",
-    "enableNetworkInference": 0
-  },
+    "pid-tpc-base": {
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "parametrization-path": "TPC/Calib/Response",
+        "parametrization-el-path": "TPC/Calib/ResponseElectron",
+        "resoPath": "TPC/Calib/PIDResponse",
+        "ccdb-timestamp": 0,
+        "useNetworkCorrection": 0,
+        "autofetch-network": 1,
+        "enableNetworkOptimization": 1,
+        "networkPathLocally": "",
+        "networkPathCCDB": "Analysis/PID/TPC",
+        "onnxFile": "network.onnx",
+        "enableNetworkInference": 0
+    },
 
-  "pid-tpc": {
-    "param-file": "",
-    "param-sigma": "TPC.PIDResponse.sigma:",
-    "ccdb-url": "http://alice-ccdb.cern.ch",
-    "ccdbPath": "TPC/Calib/PIDResponse"
-  },
+    "pid-tpc": {
+        "param-file": "",
+        "param-sigma": "TPC.PIDResponse.sigma:",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "ccdbPath": "TPC/Calib/PIDResponse"
+    },
 
-  "pid-tof-base": {
-    "ccdb-url": "http://alice-ccdb.cern.ch",
-    "parametrizationPath": "TOF/Calib/Response",
-    "passName": "",
-    "timeShiftCCDBPath": "",
-    "fatalOnPassNotAvailable": 1
-  },
+    "pid-tof-base": {
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "parametrizationPath": "TOF/Calib/Response",
+        "passName": "",
+        "timeShiftCCDBPath": "",
+        "fatalOnPassNotAvailable": 1
+    },
 
-  "pid-tof": {
-    "param-file": "",
-    "param-sigma": "TOF.PIDResponse.sigma:",
-    "ccdb-url": "http://alice-ccdb.cern.ch",
-    "ccdbPath": "TOF/Calib/Response",
-    "passName": "",
-    "timeShiftCCDBPath": "",
-    "parametrizationPath": "TOF/Calib/Response",
-    "fatalOnPassNotAvailable": 1
-  },
+    "pid-tof": {
+        "param-file": "",
+        "param-sigma": "TOF.PIDResponse.sigma:",
+        "ccdb-url": "http://alice-ccdb.cern.ch",
+        "ccdbPath": "TOF/Calib/Response",
+        "passName": "",
+        "timeShiftCCDBPath": "",
+        "parametrizationPath": "TOF/Calib/Response",
+        "fatalOnPassNotAvailable": 1
+    },
 
-  "pid-tof-beta": {
-    "ccdb-url": "http://alice-ccdb.cern.ch"
-  },
+    "pid-tof-beta": {
+        "ccdb-url": "http://alice-ccdb.cern.ch"
+    },
 
-  "multiplicity-table": {
-    "doVertexZeq": 1,
-    "fractionOfEvents": 2,
-    "processRun2": 0,
-    "processRun3": 1
-  },
+    "multiplicity-table": {
+        "doVertexZeq": 1,
+        "fractionOfEvents": 2,
+        "processRun2": 0,
+        "processRun3": 1
+    },
 
-  "tracks-extra-converter": {
-    "processRun2": 0,
-    "processRun3": 1
-  },
+    "tracks-extra-converter": {
+        "processRun2": 0,
+        "processRun3": 1
+    },
 
-  "mccollision-converter": {
-    "processRun2": 0,
-    "processRun3": 1
-  },
+    "mccollision-converter": {
+        "processRun2": 0,
+        "processRun3": 1
+    },
 
-  "PIDFeatureExtractor": {
-    "outputPath": "pid_features",
-    "exportCSV": 1,
-    "exportROOT": 1,
-    "etaMin": -1.5,
-    "etaMax": 1.5,
-    "ptMin": 0.1,
-    "ptMax": 20.0
-  }
+    "PIDFeatureExtractor": {
+        "outputPath": "pid_features",
+        "exportCSV": 1,
+        "exportROOT": 1,
+        "etaMin": -1.5,
+        "etaMax": 1.5,
+        "ptMin": 0.1,
+        "ptMax": 20.0
+    }
 }
