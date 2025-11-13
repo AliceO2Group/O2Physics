@@ -231,7 +231,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       ///   [CASE 5]: OO, 5.36 TeV 2025, period LHC25af: CCDB path Users/m/mfaggin/test/inputsTrackTuner/OO/LHC25af
       ///             Run list: 564468 <= runNumber && runNumber <= 564472
       ///
-      pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/OO/LHC25ae";
+      pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/OO/LHC25af";
       LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]:   >>>   OO, 5.36 TeV 2025, period LHC25af: CCDB path " << pathInputFile;
       LOG(info) << "                                                   >>>   Run list: 564468 <= runNumber && runNumber <= 564472";
     } else {
