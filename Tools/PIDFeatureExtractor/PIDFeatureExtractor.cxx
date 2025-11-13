@@ -153,12 +153,12 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // CONSTANTS
   // ============================================================================
-  static constexpr int kNumSpecies = 4;
-  static constexpr float kPriorPi = 1.0f;
-  static constexpr float kPriorKa = 0.2f;
-  static constexpr float kPriorPr = 0.1f;
-  static constexpr float kPriorEl = 0.05f;
-  static constexpr float kSentinelValue = -999.0f;
+  static constexpr int KNumSpecies = 4;
+  static constexpr float KPriorPi = 1.0f;
+  static constexpr float KPriorKa = 0.2f;
+  static constexpr float KPriorPr = 0.1f;
+  static constexpr float KPriorEl = 0.05f;
+  static constexpr float KSentinelValue = -999.0f;
 
   // ============================================================================
   // INITIALIZATION FUNCTION
@@ -254,10 +254,10 @@ struct PIDFeatureExtractor {
   // BAYESIAN PID CALCULATION FUNCTION
   // ============================================================================
   /// Compute Bayesian probabilities combining TPC and TOF information
-  void computeBayesianPID(const float nsTPC[kNumSpecies], const float nsTOF[kNumSpecies], const float pri[kNumSpecies], float out[kNumSpecies]) {
+  void computeBayesianPID(const float nsTPC[KNumSpecies], const float nsTOF[KNumSpecies], const float pri[KNumSpecies], float out[KNumSpecies]) {
     float sum = 0;
 
-    for (int i = 0; i < kNumSpecies; i++) {
+    for (int i = 0; i < KNumSpecies; i++) {
       float l = std::exp(-0.5f * (nsTPC[i]*nsTPC[i] +
                                   (std::isfinite(nsTOF[i]) ? nsTOF[i]*nsTOF[i] : 0.0f)));
 
@@ -265,7 +265,7 @@ struct PIDFeatureExtractor {
       sum += out[i];
     }
 
-    for (int i = 0; i < kNumSpecies; i++) {
+    for (int i = 0; i < KNumSpecies; i++) {
       out[i] = sum > 0 ? out[i] / sum : 0.0f;
     }
   }
@@ -322,9 +322,9 @@ struct PIDFeatureExtractor {
         tpcNclusters = t.tpcNClsFound();
         tpcChi2 = t.tpcChi2NCl();
       } else {
-        tpcSignal = tpcNsigmaPi = tpcNsigmaKa = tpcNsigmaPr = tpcNsigmaEl = kSentinelValue;
+        tpcSignal = tpcNsigmaPi = tpcNsigmaKa = tpcNsigmaPr = tpcNsigmaEl = KSentinelValue;
         tpcNclusters = 0;
-        tpcChi2 = kSentinelValue;
+        tpcChi2 = KSentinelValue;
       }
 
       // TOF info
@@ -337,8 +337,8 @@ struct PIDFeatureExtractor {
         tofNsigmaPr = t.tofNSigmaPr();
         tofNsigmaEl = t.tofNSigmaEl();
       } else {
-        tofBeta = tofMass = kSentinelValue;
-        tofNsigmaPi = tofNsigmaKa = tofNsigmaPr = tofNsigmaEl = kSentinelValue;
+        tofBeta = tofMass = KSentinelValue;
+        tofNsigmaPi = tofNsigmaKa = tofNsigmaPr = tofNsigmaEl = KSentinelValue;
       }
 
       // Impact parameters
@@ -346,10 +346,10 @@ struct PIDFeatureExtractor {
       dcaZ = t.dcaZ();
 
       // Bayesian PID calculation
-      float arrTPC[kNumSpecies] = {tpcNsigmaPi, tpcNsigmaKa, tpcNsigmaPr, tpcNsigmaEl};
-      float arrTOF[kNumSpecies] = {tofNsigmaPi, tofNsigmaKa, tofNsigmaPr, tofNsigmaEl};
-      float priors[kNumSpecies] = {kPriorPi, kPriorKa, kPriorPr, kPriorEl};
-      float probs[kNumSpecies];
+      float arrTPC[KNumSpecies] = {tpcNsigmaPi, tpcNsigmaKa, tpcNsigmaPr, tpcNsigmaEl};
+      float arrTOF[KNumSpecies] = {tofNsigmaPi, tofNsigmaKa, tofNsigmaPr, tofNsigmaEl};
+      float priors[KNumSpecies] = {KPriorPi, KPriorKa, KPriorPr, KPriorEl};
+      float probs[KNumSpecies];
 
       computeBayesianPID(arrTPC, arrTOF, priors, probs);
       bayesProbPi = probs[0];
