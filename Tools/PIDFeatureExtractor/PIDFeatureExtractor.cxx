@@ -1,3 +1,14 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -26,32 +37,32 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // OUTPUT OBJECTS - File and data structures for feature storage
   // ============================================================================
-  
+
   /// Output ROOT file for storing the TTree with extracted features
   std::unique_ptr<TFile> outputFile;
-  
+
   /// TTree storing all extracted features for each track
   std::unique_ptr<TTree> featureTree;
-  
+
   /// CSV output stream for exporting features in comma-separated format
   std::ofstream csvFile;
 
   // ============================================================================
   // KINEMATIC VARIABLES - Track momentum and position information
   // ============================================================================
-  
+
   int event_id;      /// Unique identifier for each collision event
   int track_id;      /// Track index within the event
-  
+
   // Momentum components (in GeV/c)
   float px, py, pz;  /// Cartesian momentum components
   float pt, p;       /// Transverse momentum and total momentum
-  
+
   // Angular variables
   float eta;         /// Pseudorapidity
   float phi;         /// Azimuthal angle
   float theta;       /// Polar angle (calculated from eta)
-  
+
   // Track properties
   int charge;        /// Track charge (+1 or -1)
   int track_type;    /// Type of track (e.g., 0=global, 1=TPC-only, etc.)
@@ -59,15 +70,15 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // TPC VARIABLES - Time Projection Chamber PID information
   // ============================================================================
-  
+
   float tpc_signal;               /// dE/dx energy loss in TPC (specific ionization)
-  
+
   // n-sigma values: standard deviations from expected energy loss for each particle
   float tpc_nsigma_pi;            /// n-sigma for pion (π)
   float tpc_nsigma_ka;            /// n-sigma for kaon (K)
   float tpc_nsigma_pr;            /// n-sigma for proton (p)
   float tpc_nsigma_el;            /// n-sigma for electron (e)
-  
+
   // Track quality variables
   int tpc_nclusters;              /// Number of TPC clusters used in track fit
   float tpc_chi2;                 /// Chi-square per degree of freedom of TPC fit
@@ -75,10 +86,10 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // TOF VARIABLES - Time-Of-Flight PID information
   // ============================================================================
-  
+
   float tof_beta;                 /// β = v/c (velocity over speed of light)
   float tof_mass;                 /// Reconstructed mass from TOF measurement
-  
+
   // n-sigma values for TOF detection
   float tof_nsigma_pi;            /// n-sigma for pion in TOF
   float tof_nsigma_ka;            /// n-sigma for kaon in TOF
@@ -88,7 +99,7 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // BAYESIAN PID VARIABLES - Combined PID probabilities
   // ============================================================================
-  
+
   /// Bayesian probability that track is a pion (probability sum = 1.0)
   float bayes_prob_pi;
   /// Bayesian probability that track is a kaon
@@ -101,60 +112,60 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // MONTE CARLO TRUTH INFORMATION - For simulated data
   // ============================================================================
-  
+
   int mc_pdg;                     /// PDG code of true particle (0 if no MC match)
   float mc_px, mc_py, mc_pz;      /// True momentum components from simulation
 
   // ============================================================================
   // DETECTOR AVAILABILITY FLAGS
   // ============================================================================
-  
+
   bool has_tpc;                   /// Flag: track has TPC information
   bool has_tof;                   /// Flag: track has TOF information
 
   // ============================================================================
   // TRACK IMPACT PARAMETERS - Quality and background rejection
   // ============================================================================
-  
+
   float dca_xy;                   /// Distance of closest approach in xy-plane
   float dca_z;                    /// Distance of closest approach in z-direction
 
   // ============================================================================
   // HISTOGRAM REGISTRY - Quality control histograms
   // ============================================================================
-  
+
   /// Registry for quality control histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // ============================================================================
   // CONFIGURABLE PARAMETERS - User-adjustable settings
   // ============================================================================
-  
+
   /// Base path and filename for output files (without extension)
   Configurable<std::string> outputPath{"outputPath", "pid_features", "Output file base"};
-  
+
   /// Enable CSV export of features
   Configurable<bool> exportCSV{"exportCSV", true, "Export CSV"};
-  
+
   /// Enable ROOT file export of features
   Configurable<bool> exportROOT{"exportROOT", true, "Export ROOT"};
-  
+
   /// Minimum pseudorapidity cut for track selection
   Configurable<float> etaMin{"etaMin", -1.5f, "Minimum eta"};
-  
+
   /// Maximum pseudorapidity cut for track selection
   Configurable<float> etaMax{"etaMax", 1.5f, "Maximum eta"};
-  
+
   /// Minimum transverse momentum cut (GeV/c)
   Configurable<float> ptMin{"ptMin", 0.1f, "Minimum pT"};
-  
+
   /// Maximum transverse momentum cut (GeV/c)
   Configurable<float> ptMax{"ptMax", 20.0f, "Maximum pT"};
 
   // ============================================================================
   // INITIALIZATION FUNCTION
   // ============================================================================
-  
+
   /**
    * @brief Initialize output files and histograms
    *
@@ -163,14 +174,14 @@ struct PIDFeatureExtractor {
    */
   void init(InitContext const&) {
     std::string base = outputPath.value;
-    
+
     // ========================================================================
     // ROOT OUTPUT SETUP
     // ========================================================================
     if (exportROOT) {
       // Create ROOT file for storing the TTree
       outputFile = std::make_unique<TFile>((base + ".root").c_str(), "RECREATE");
-      
+
       // Create TTree with descriptive name and title
       featureTree = std::make_unique<TTree>("pid_features", "PID features");
 
@@ -220,7 +231,7 @@ struct PIDFeatureExtractor {
       // Create branches for DETECTOR FLAGS
       featureTree->Branch("has_tpc", &has_tpc);
       featureTree->Branch("has_tof", &has_tof);
-      
+
       // Create branches for IMPACT PARAMETERS
       featureTree->Branch("dca_xy", &dca_xy);
       featureTree->Branch("dca_z", &dca_z);
@@ -244,7 +255,7 @@ struct PIDFeatureExtractor {
     // ========================================================================
     // HISTOGRAM SETUP - Quality Control Plots
     // ========================================================================
-    
+
     // Define histogram axes with binning
     const AxisSpec axisPt{200, 0, 10, "pT"};               // 200 bins, 0-10 GeV/c
     const AxisSpec axisEta{60, -1.5, 1.5, "eta"};         // 60 bins, -1.5 to 1.5
@@ -264,7 +275,7 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // BAYESIAN PID CALCULATION FUNCTION
   // ============================================================================
-  
+
   /**
    * @brief Compute Bayesian probabilities combining TPC and TOF information
    *
@@ -282,19 +293,19 @@ struct PIDFeatureExtractor {
    */
   void computeBayesianPID(float nsTPC[4], float nsTOF[4], float pri[4], float out[4]) {
     float sum = 0;
-    
+
     // Calculate likelihood for each particle species
     for (int i = 0; i < 4; i++) {
       // Gaussian likelihood: exp(-0.5 * chi²)
       // Handle invalid TOF values (NaN) by replacing with 0 contribution
-      float l = std::exp(-0.5f * (nsTPC[i]*nsTPC[i] + 
+      float l = std::exp(-0.5f * (nsTPC[i]*nsTPC[i] +
                                   (std::isfinite(nsTOF[i]) ? nsTOF[i]*nsTOF[i] : 0.f)));
-      
+
       // Apply prior probability and accumulate
       out[i] = l * pri[i];
       sum += out[i];
     }
-    
+
     // Normalize probabilities so they sum to 1.0
     for (int i = 0; i < 4; i++) {
       out[i] = sum > 0 ? out[i] / sum : 0.f;
@@ -304,7 +315,7 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // MAIN PROCESSING FUNCTION
   // ============================================================================
-  
+
   /**
    * @brief Process collision and track data, extract PID features
    *
@@ -340,15 +351,15 @@ struct PIDFeatureExtractor {
     // TRACK LOOP - Process each track in the event
     // ======================================================================
     for (auto& t : tracks) {
-      
+
       // ====================================================================
       // TRACK SELECTION - Apply kinematic cuts
       // ====================================================================
       if (t.pt() < ptMin || t.pt() > ptMax) continue;       // Apply pT cut
       if (t.eta() < etaMin || t.eta() > etaMax) continue;   // Apply eta cut
-      
+
       track_id = idx++;
-      
+
       // ====================================================================
       // EXTRACT KINEMATIC VARIABLES
       // ====================================================================
@@ -415,7 +426,7 @@ struct PIDFeatureExtractor {
       float arrTOF[4] = {tof_nsigma_pi, tof_nsigma_ka, tof_nsigma_pr, tof_nsigma_el};
       float priors[4] = {1.f, 0.2f, 0.1f, 0.05f};  // Prior prob: π, K, p, e
       float probs[4];
-      
+
       // Compute combined PID probabilities
       computeBayesianPID(arrTPC, arrTOF, priors, probs);
       bayes_prob_pi = probs[0];
@@ -442,10 +453,10 @@ struct PIDFeatureExtractor {
       // ====================================================================
       // WRITE OUTPUT
       // ====================================================================
-      
+
       // Write to ROOT TTree
       if (exportROOT) featureTree->Fill();
-      
+
       // Write to CSV file
       if (exportCSV) {
         csvFile << event_id << "," << track_id << ","
@@ -468,10 +479,10 @@ struct PIDFeatureExtractor {
       histos.fill(HIST("QC/nTracks"), 1);      // Count total tracks processed
       histos.fill(HIST("QC/pt"), pt);          // pT distribution
       histos.fill(HIST("QC/eta"), eta);        // eta distribution
-      
+
       // TPC dE/dx vs pT (only if TPC measurement exists)
       if (has_tpc) histos.fill(HIST("QC/tpc_dEdx_vs_pt"), pt, tpc_signal);
-      
+
       // TOF beta and mass vs momentum (only if TOF measurement exists)
       if (has_tof) {
         histos.fill(HIST("QC/tof_beta_vs_p"), p, tof_beta);
@@ -483,7 +494,7 @@ struct PIDFeatureExtractor {
   // ============================================================================
   // FINALIZATION FUNCTION
   // ============================================================================
-  
+
   /**
    * @brief Clean up and finalize output files
    *
