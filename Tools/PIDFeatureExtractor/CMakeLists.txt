@@ -9,8 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# PID feature extractor
-o2physics_add_dpl_workflow(my-example-task-pid-feature-extractor
-                  SOURCES PIDFeatureExtractor/PIDFeatureExtractor.cxx
-                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                  COMPONENT_NAME AnalysisTutorial)
+o2physics_add_dpl_workflow(pid-feature-extractor
+                           SOURCES PIDFeatureExtractor.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
