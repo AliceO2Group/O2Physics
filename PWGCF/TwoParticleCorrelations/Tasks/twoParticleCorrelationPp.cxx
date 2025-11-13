@@ -160,9 +160,9 @@ struct TwoParticleCorrelationPp {
   using FullCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 
-  struct SameEventTag {
-  };
-  struct MixedEventTag {
+  enum EventType {
+    SameEvent = 1,
+    MixedEvent = 2
   };
 
   SliceCache cache;
@@ -277,8 +277,8 @@ struct TwoParticleCorrelationPp {
     return true;
   }
 
-  template <typename TTarget, typename TTracks, typename TTag>
-  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float multiplicity, float posZ, TTag)
+  template <typename TTarget, typename TTracks>
+  void fillCorrelations(TTarget target, TTracks tracks1, TTracks tracks2, float multiplicity, float posZ, int system)
   {
     for (const auto& track1 : tracks1) {
       if (isTrackCut(track1) == false) {
@@ -310,43 +310,40 @@ struct TwoParticleCorrelationPp {
                                     multiplicity,
                                     deltaPhi,
                                     posZ);
-        if constexpr (std::is_same_v<TTag, SameEventTag>) {
+
+        if (system == SameEvent) {
           if (minMultiplicity <= multiplicity) {
             histos.fill(HIST("sameEvent2D"), deltaEta, deltaPhi);
           }
           if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
             histos.fill(HIST("sameEvent_2_10"), deltaEta, deltaPhi);
-          }
-          if (range2Min <= multiplicity && multiplicity <= range2Max) {
+          } else if (range2Min <= multiplicity && multiplicity <= range2Max) {
             histos.fill(HIST("sameEvent_11_20"), deltaEta, deltaPhi);
-          }
-          if (range3Min <= multiplicity && multiplicity <= range3Max) {
+          } else if (range3Min <= multiplicity && multiplicity <= range3Max) {
             histos.fill(HIST("sameEvent_21_30"), deltaEta, deltaPhi);
-          }
-          if (range4Min <= multiplicity && multiplicity <= range4Max) {
+          } else if (range4Min <= multiplicity && multiplicity <= range4Max) {
             histos.fill(HIST("sameEvent_31_40"), deltaEta, deltaPhi);
-          }
-          if (range5Min <= multiplicity && multiplicity <= range5Max) {
+          } else if (range5Min <= multiplicity && multiplicity <= range5Max) {
             histos.fill(HIST("sameEvent_41_50"), deltaEta, deltaPhi);
+          } else {
+            continue;
           }
-        } else if constexpr (std::is_same_v<TTag, MixedEventTag>) {
+        } else if (system == MixedEvent) {
           if (minMultiplicity <= multiplicity) {
             histos.fill(HIST("mixedEvent2D"), deltaEta, deltaPhi);
           }
           if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
             histos.fill(HIST("mixedEvent_2_10"), deltaEta, deltaPhi);
-          }
-          if (range2Min <= multiplicity && multiplicity <= range2Max) {
+          } else if (range2Min <= multiplicity && multiplicity <= range2Max) {
             histos.fill(HIST("mixedEvent_11_20"), deltaEta, deltaPhi);
-          }
-          if (range3Min <= multiplicity && multiplicity <= range3Max) {
+          } else if (range3Min <= multiplicity && multiplicity <= range3Max) {
             histos.fill(HIST("mixedEvent_21_30"), deltaEta, deltaPhi);
-          }
-          if (range4Min <= multiplicity && multiplicity <= range4Max) {
+          } else if (range4Min <= multiplicity && multiplicity <= range4Max) {
             histos.fill(HIST("mixedEvent_31_40"), deltaEta, deltaPhi);
-          }
-          if (range5Min <= multiplicity && multiplicity <= range5Max) {
+          } else if (range5Min <= multiplicity && multiplicity <= range5Max) {
             histos.fill(HIST("mixedEvent_41_50"), deltaEta, deltaPhi);
+          } else {
+            continue;
           }
         }
       }
@@ -381,8 +378,8 @@ struct TwoParticleCorrelationPp {
       if (fillCollision(mixed, multiplicity) == false) {
         return;
       }
-      histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
-      fillCorrelations(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), MixedEventTag{});
+      //histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+      fillCorrelations(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), MixedEvent);
     }
   }
 
@@ -407,17 +404,25 @@ struct TwoParticleCorrelationPp {
       return;
     }
     histos.fill(HIST("eventcount"), -2);
+    if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
+      histos.fill(HIST("eventcount"), 1);
+    } else if (range2Min <= multiplicity && multiplicity <= range2Max) {
+      histos.fill(HIST("eventcount"), 2);
+    } else if (range3Min <= multiplicity && multiplicity <= range3Max) {
+      histos.fill(HIST("eventcount"), 3);
+    } else if (range4Min <= multiplicity && multiplicity <= range4Max) {
+      histos.fill(HIST("eventcount"), 4);
+    } else if (range5Min <= multiplicity && multiplicity <= range5Max) {
+      histos.fill(HIST("eventcount"), 5);
+    }
     fillQA(tracks, multiplicity);
-    fillCorrelations(same, tracks, tracks, multiplicity, collision.posZ(), SameEventTag{});
+    fillCorrelations(same, tracks, tracks, multiplicity, collision.posZ(), SameEvent);
   }
 
   PROCESS_SWITCH(TwoParticleCorrelationPp, processSame, "Process same events", true);
 
   void process(FullCollisions::iterator const& collision, FullTracks const& tracks)
   {
-
-    float multiplicity = 0;
-
     // Configure events flow histogram labels
     auto hFlowEvents = histos.get<TH1>(HIST("Events/hEventsAfterCuts"));
     hFlowEvents->GetXaxis()->SetBinLabel(1, "All tracks");
@@ -555,11 +560,6 @@ struct TwoParticleCorrelationPp {
         continue; // TPC chi2
       }
       histos.fill(HIST("Tracks/hTracksAfterCuts"), 16);
-
-      if (isTrackCut(track) == false) {
-        continue;
-      }
-      ++multiplicity;
     }
   }
 
