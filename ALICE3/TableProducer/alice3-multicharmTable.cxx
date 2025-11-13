@@ -113,7 +113,7 @@ struct alice3multicharmTable {
 
   Configurable<float> minPiCPt{"minPiCPt", 0.15, "Minimum pT for XiC pions"};
   Configurable<float> minPiCCPt{"minPiCCPt", 0.3, "Minimum pT for XiCC pions"};
-  Configurable<float> minNTracks{"minNTracks", -1, "Minimum number of tracks"};
+  Configurable<std::vector<float>> minNTracks{"minNTracks", {-1}, "Minimum number of tracks"};
 
   Configurable<float> minXiRadius{"minXiRadius", 0.5, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> minXiCRadius{"minXiCRadius", 0.001, "Minimum R2D for XiC decay (cm)"};
@@ -527,44 +527,41 @@ struct alice3multicharmTable {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
-    // histos.fill(HIST("hNCollisions"), 1);
-    // histos.fill(HIST("hNTracks"), tracks.size());
-
-    // if (tracks.size() < minNTracks)
-    //   return;
-
-    // histos.fill(HIST("hNCollisions"), 2);
-
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
     auto tracksPiFromXiCgrouped = tracksPiFromXiC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto tracksPiFromXiCCgrouped = tracksPiFromXiCC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    if (doDCAplots) {
-      for (auto const& cascade : cascades) {
-        if (cascade.has_cascadeTrack()) {
-          auto track = cascade.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
-          histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
-        } else {
-          LOGF(info, "Damn, something is wrong");
-        }
-      }
+    static constexpr int kMaxLUTConfigs = 20;
+    std::vector<int> nTracks(kMaxLUTConfigs);
+    for (auto const& track : tracks) {
+      int lutConfigId = track.lutConfigId();
+      nTracks[lutConfigId]++;
 
-      for (auto const& track : tracks) {
-        if (bitcheck(track.decayMap(), kTruePiFromXiC))
-          histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
-        if (bitcheck(track.decayMap(), kTruePiFromXiCC))
-          histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
-      }
+      if (bitcheck(track.decayMap(), kTruePiFromXiC))
+        histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
+      if (bitcheck(track.decayMap(), kTruePiFromXiCC))
+        histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
     }
-
+    
     for (auto const& xiCand : cascades) {
       auto xi = xiCand.cascadeTrack_as<alice3tracks>();    // de-reference cascade track
       int lutConfigId = xi.lutConfigId();
-      std::string histPath = "Configuration_" + std::to_string(lutConfigId) + "/";
       initConf(lutConfigId);
+      if (minNTracks.value.size() < static_cast<size_t>(lutConfigId)) {
+        if (nTracks[lutConfigId] < minNTracks.value.front()) {
+          continue; // fallback to first
+        }
+      } else {
+        if (nTracks[lutConfigId] < minNTracks.value[lutConfigId]) {
+          continue;
+        }
+      }
 
+
+      std::string histPath = "Configuration_" + std::to_string(lutConfigId) + "/";
       histos.fill(HIST("hMassXi"), xiCand.mXi());
+      histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), xi.pt(), xi.dcaXY() * 1e+4);
       if (std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > massWindowXi)
         continue; // out of mass region
       

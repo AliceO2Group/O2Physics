@@ -510,8 +510,6 @@ struct alice3multicharm {
       getHist(TH1, histPath + "hXiccMass")->Fill(xiccCand.xiccMass());
       getHist(TH3, histPath + "h3dXicc")->Fill(xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
 
-
-
       histos.fill(HIST("SelectionQA/hDCAXicDaughters"), xiccCand.xicDauDCA() * 1e+4);
       histos.fill(HIST("SelectionQA/hDCAXiccDaughters"), xiccCand.xiccDauDCA() * 1e+4);
       histos.fill(HIST("SelectionQA/hDCAxyXi"), std::fabs(xiccCand.xiDCAxy() * 1e+4));
