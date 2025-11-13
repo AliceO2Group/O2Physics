@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file PIDFeatureExtractor.cxx
+/// \file pidFeatureExtractor.cxx
 /// \brief Task to extract particle identification features from ALICE AO2D data for machine learning workflows
 /// \author Robert Forynski
 
