@@ -584,10 +584,10 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
     textFitMetrics->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
     textFitMetrics->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
     textFitMetrics->AddText(Form("Significance (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
-    if (mReflPdf != nullptr) {
-      textFitMetrics->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
-    }
     textFitMetrics->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
+  }
+  if (mReflPdf != nullptr) {
+    textFitMetrics->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
   }
   mInvMassFrame->addObject(textFitMetrics);
   // Analysis information
