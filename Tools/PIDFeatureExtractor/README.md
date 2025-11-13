@@ -464,7 +464,7 @@ df = pd.read_csv("pid_features.csv")
 df_valid = df[(df['has_tpc'] == True) & (df['has_tof'] == True)]
 
 # Prepare features (exclude MC truth for real data)
-feature_cols = [col for col in df.columns 
+feature_cols = [col for col in df.columns
                 if col not in ['event_id', 'track_id', 'mc_pdg', 'mc_px', 'mc_py', 'mc_pz']]
 
 X = df_valid[feature_cols].values
@@ -846,8 +846,8 @@ ls -lh pid_features.root pid_features.csv
 
 ---
 
-**Last Updated:** 2025-11-13  
-**Task Version:** 1.0.0  
-**O2Physics Compatibility:** Latest  
-**CCDB Support:** Integrated  
+**Last Updated:** 2025-11-13
+**Task Version:** 1.0.0
+**O2Physics Compatibility:** Latest
+**CCDB Support:** Integrated
 **Run Method:** `./run.sh` with `myConfigExtractor.json`
