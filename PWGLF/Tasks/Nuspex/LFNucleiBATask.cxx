@@ -430,6 +430,15 @@ struct LFNucleiBATask {
       histoGen.add("helium/MCReco/ptGen_INELgt0_Prim_antiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
 
       if (enableCentrality) {
+        histoGen.add("events/hMCGenVsMult", "hMCGenVsMult", HistType::kTH2D, {{3, 0.f, 3.f}, {binsPercentile}});
+        histoGen.get<TH2>(HIST("events/hMCGenVsMult"))->GetXaxis()->SetBinLabel(1, "All");
+        histoGen.get<TH2>(HIST("events/hMCGenVsMult"))->GetXaxis()->SetBinLabel(2, "Vtz");
+        histoGen.get<TH2>(HIST("events/hMCGenVsMult"))->GetXaxis()->SetBinLabel(3, "INELgt0");
+
+        histoGen.add("events/hMCGenRecoVsMult", "hMCGenRecoVsMult", HistType::kTH2D, {{2, 0.f, 2.f}, {binsPercentile}});
+        histoGen.get<TH2>(HIST("events/hMCGenRecoVsMult"))->GetXaxis()->SetBinLabel(1, "INEL");
+        histoGen.get<TH2>(HIST("events/hMCGenRecoVsMult"))->GetXaxis()->SetBinLabel(2, "INELgt0");
+
         histoGen.add("helium/MCGen/ptGenVsMult_INEL_Prim_He", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
         histoGen.add("helium/MCGen/ptGenVsMult_INEL_Prim_antiHe", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
         histoGen.add("helium/MCGen/ptGenVsMult_INELgt0_Prim_He", "generated particles", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
@@ -6632,13 +6641,22 @@ struct LFNucleiBATask {
     // EVENT LOSS DENOMINATOR
     // No cuts
     histoGen.fill(HIST("events/hMCGen"), 0.5);
+    if (enableCentrality)
+      histoGen.fill(HIST("events/hMCGenVsMult"), 0.5, mcCollision.centFT0M());
+
     // Vtz cut
     if (mcCollision.posZ() < cfgVzCutLow || mcCollision.posZ() > cfgVzCutHigh)
       return;
     histoGen.fill(HIST("events/hMCGen"), 1.5);
+    if (enableCentrality)
+      histoGen.fill(HIST("events/hMCGenVsMult"), 1.5, mcCollision.centFT0M());
+
     // INEL > 0
-    if (isINELgt0true)
+    if (isINELgt0true) {
       histoGen.fill(HIST("events/hMCGen"), 2.5);
+      if (enableCentrality)
+        histoGen.fill(HIST("events/hMCGenVsMult"), 2.5, mcCollision.centFT0M());
+    }
 
     // SIGNAL LOSS DENOMINATOR
     for (const auto& mcParticle : mcParticles) {
@@ -6736,8 +6754,14 @@ struct LFNucleiBATask {
 
     // EVENT LOSS NUMERATOR
     histoGen.fill(HIST("events/hMCGenReco"), 0.5);
-    if (recoIdxINELgt0 > 0)
+    if (enableCentrality)
+      histoGen.fill(HIST("events/hMCGenRecoVsMult"), 0.5, mcCollision.centFT0M());
+    
+      if (recoIdxINELgt0 > 0) {
       histoGen.fill(HIST("events/hMCGenReco"), 1.5);
+      if (enableCentrality)
+        histoGen.fill(HIST("events/hMCGenRecoVsMult"), 1.5, mcCollision.centFT0M());
+    }
 
     // SIGNAL LOSS NUMERATOR
     for (const auto& mcParticle : mcParticles) {
