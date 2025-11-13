@@ -17,6 +17,7 @@
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
+/// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
 #include "HFInvMassFitter.h"
 
@@ -572,7 +573,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   gStyle->SetFrameFillColor(0);
   pad->cd();
   // Fit metrics
-  TPaveText* textFitMetrics = new TPaveText(0.65, 0.7, 0.9, 0.88, "NDC");
+  auto* textFitMetrics = new TPaveText(0.65, 0.7, 0.9, 0.88, "NDC");
   textFitMetrics->SetBorderSize(0);
   textFitMetrics->SetFillStyle(0);
   textFitMetrics->SetTextSize(0.04);
@@ -582,17 +583,15 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   if (mTypeOfBkgPdf != NoBkg) {
     textFitMetrics->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
     textFitMetrics->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
-  }
-  if (mReflPdf) {
-    textFitMetrics->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
-  }
-  if (mTypeOfBkgPdf != NoBkg) {
     textFitMetrics->AddText(Form("Significance (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
+    if (mReflPdf != nullptr) {
+      textFitMetrics->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
+    }
     textFitMetrics->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
   }
   mInvMassFrame->addObject(textFitMetrics);
   // Analysis information
-  TPaveText* textAnalysisInfo = new TPaveText(0.18, 0.78, 0.35, 0.88, "NDC");
+  auto* textAnalysisInfo = new TPaveText(0.18, 0.78, 0.35, 0.88, "NDC");
   textAnalysisInfo->SetBorderSize(0);
   textAnalysisInfo->SetFillStyle(0);
   textAnalysisInfo->SetTextSize(0.05);
@@ -603,7 +602,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   mInvMassFrame->addObject(textAnalysisInfo);
   if (writeParInfo) {
     // right text box
-    TPaveText* textSignalPar = new TPaveText(0.18, 0.65, 0.4, 0.75, "NDC");
+    auto* textSignalPar = new TPaveText(0.18, 0.65, 0.4, 0.75, "NDC");
     textSignalPar->SetBorderSize(0);
     textSignalPar->SetFillStyle(0);
     textSignalPar->SetTextColor(kBlue);
@@ -675,7 +674,7 @@ void HFInvMassFitter::drawRatio(TVirtualPad* pad)
   mRatioFrame->GetYaxis()->SetTitle("Fit / Data");
   double xMin = mRatioFrame->GetXaxis()->GetXmin();
   double xMax = mRatioFrame->GetXaxis()->GetXmax();
-  TLine* line = new TLine(xMin, 1.0, xMax, 1.0);
+  auto* line = new TLine(xMin, 1.0, xMax, 1.0);
   line->SetLineColor(kGray);
   line->SetLineStyle(2);
   line->SetLineWidth(2);

@@ -17,6 +17,7 @@
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
+/// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
 #if !defined(__CINT__) || defined(__CLING__)
 
@@ -88,13 +89,13 @@ int runMassFitter(const TString& configFileName)
   config.ParseStream(is);
   fclose(configFile);
 
-  Bool_t isMc = config["IsMC"].GetBool();
-  Bool_t writeSignalPar = config["WriteSignalPar"].GetBool();
-  TString inputFileName = config["InFileName"].GetString();
-  TString reflFileName = config["ReflFileName"].GetString();
+  Bool_t const isMc = config["IsMC"].GetBool();
+  Bool_t const writeSignalPar = config["WriteSignalPar"].GetBool();
+  TString const inputFileName = config["InFileName"].GetString();
+  TString const reflFileName = config["ReflFileName"].GetString();
   TString outputFileName = config["OutFileName"].GetString();
-  TString particleName = config["Particle"].GetString();
-  TString collisionSystem = config["CollisionSystem"].GetString();
+  TString const particleName = config["Particle"].GetString();
+  TString const collisionSystem = config["CollisionSystem"].GetString();
 
   std::vector<std::string> inputHistoName;
   std::vector<std::string> promptHistoName;
@@ -274,40 +275,30 @@ int runMassFitter(const TString& configFileName)
   inputFile->Close();
 
   // define output histos
-  auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                                   nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                          nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsMean = new TH1D(
-    "hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigma = new TH1D(
-    "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSecSigma = new TH1D(
-    "hRawYieldsSecSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsFracDoubleGaus = new TH1D(
-    "hRawYieldsFracDoubleGaus", ";" + sliceVarName + "(" + sliceVarUnit + ");fraction of double gaussian",
-    nSliceVarBins, sliceVarLimits.data());
-  auto* hRawYieldsSignificance = new TH1D(
-    "hRawYieldsSignificance",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
-  auto* hRawYieldsSgnOverBkg =
-    new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
-  auto* hRawYieldsBkg =
-    new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
-  auto* hRawYieldsChiSquareBkg =
-    new TH1D("hRawYieldsChiSquareBkg",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-  auto* hRawYieldsChiSquareTotal =
-    new TH1D("hRawYieldsChiSquareTotal",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-  auto* hReflectionOverSignal =
-    new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
-             nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSignal = new TH1D("hRawYieldsSignal",
+                                    ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted",
+                                           ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsMean = new TH1D("hRawYieldsMean",
+                                  ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSigma = new TH1D("hRawYieldsSigma",
+                                   ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSecSigma = new TH1D("hRawYieldsSecSigma",
+                                      ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsFracDoubleGaus = new TH1D("hRawYieldsFracDoubleGaus",
+                                            ";" + sliceVarName + "(" + sliceVarUnit + ");fraction of double gaussian", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSignificance = new TH1D("hRawYieldsSignificance",
+                                          ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSgnOverBkg = new TH1D("hRawYieldsSgnOverBkg",
+                                        ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsBkg = new TH1D("hRawYieldsBkg",
+                                 ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsChiSquareBkg = new TH1D("hRawYieldsChiSquareBkg",
+                                          ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsChiSquareTotal = new TH1D("hRawYieldsChiSquareTotal",
+                                            ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
+  auto* hReflectionOverSignal = new TH1D("hReflectionOverSignal",
+                                         ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal", nSliceVarBins, sliceVarLimits.data());
 
   const Int_t nConfigsToSave = 6;
   auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
