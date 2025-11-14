@@ -13,25 +13,27 @@
 /// \brief Tasks that reads the track and Cascade tables and creates triplets; only two identical tracks and a Cascade can be used
 /// \author Raffaele Del Grande, CTU Prague
 
-#include <vector>
-#include <bitset>
-#include <string>
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
-
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainerThreeBody.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TDatabasePDG.h"
+
+#include <bitset>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -45,7 +47,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
 
   using MaskedCollisions = soa::Join<aod::FDCollisions, aod::FDColMasks>;
   using MaskedCollision = MaskedCollisions::iterator;
-  aod::femtodreamcollision::BitMaskType MaskBit = -1; 
+  aod::femtodreamcollision::BitMaskType MaskBit = -1;
   float mMassOne = -999, mMassTwo = -999, mMassThree = -999;
 
   Configurable<bool> ConfMixIfTripletPresent{"ConfMixIfTripletPresent", true, "Use for mixing only events which have a TTV0 triplet"};
@@ -82,7 +84,6 @@ struct femtoDreamTripletTaskTrackTrackCascade {
                                                       (aod::femtodreamparticle::tempFitVar <= ConfMaxDCAxy)));
   ;
 
-
   /// Histogramming of selected tracks
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoSelectedParts;
 
@@ -101,20 +102,18 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   Configurable<float> InvMassV0DaughMin{"InvMassV0DaughMin", 0., "Minimum invariant mass of the V0 Daughter"};
   Configurable<float> InvMassV0DaughMax{"InvMassV0DaughMax", 999., "Maximum invariant mass of the V0 Daughter"};
 
-
   Configurable<float> Conf_minPt_Cascade{"Conf_minPt_Cascade", 0., "Minimum pT of Cascade"};
   Configurable<float> Conf_maxPt_Cascade{"Conf_maxPt_Cascade", 999., "Maximum pT of Cascade"};
 
-  // Partition for selected particles 
+  // Partition for selected particles
   Partition<aod::FDParticles> SelectedCascades = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
-                                            (ncheckbit(aod::femtodreamparticle::cut, ConfCutCascade)) &&
-                                            (aod::femtodreamparticle::mLambda > Conf_minInvMass_Cascade) &&
-                                            (aod::femtodreamparticle::mLambda < Conf_maxInvMass_Cascade) &&
-                                            (aod::femtodreamparticle::mAntiLambda > InvMassV0DaughMin) &&
-                                            (aod::femtodreamparticle::mAntiLambda < InvMassV0DaughMax) &&
-                                            (aod::femtodreamparticle::pt > Conf_minPt_Cascade) &&
-                                            (aod::femtodreamparticle::pt < Conf_maxPt_Cascade);
-
+                                                 (ncheckbit(aod::femtodreamparticle::cut, ConfCutCascade)) &&
+                                                 (aod::femtodreamparticle::mLambda > Conf_minInvMass_Cascade) &&
+                                                 (aod::femtodreamparticle::mLambda < Conf_maxInvMass_Cascade) &&
+                                                 (aod::femtodreamparticle::mAntiLambda > InvMassV0DaughMin) &&
+                                                 (aod::femtodreamparticle::mAntiLambda < InvMassV0DaughMax) &&
+                                                 (aod::femtodreamparticle::pt > Conf_minPt_Cascade) &&
+                                                 (aod::femtodreamparticle::pt < Conf_maxPt_Cascade);
 
   /// Histogramming of selected Cascades
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascade, 2> particleHistoSelectedCascades;
@@ -160,7 +159,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCascade> pairCloseRejectionTrackCascadeSE;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionTrackTrackME;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCascade> pairCloseRejectionTrackCascadeME;
-  
+
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -254,7 +253,6 @@ struct femtoDreamTripletTaskTrackTrackCascade {
         }
       }
     }
-
 
     if ((ConfMixIfTripletPresent && ConfMixIfTVOPairPresent) ||
         (ConfMixIfTripletPresent && ConfMixIfTOrVOPartsPresent) ||
@@ -457,8 +455,6 @@ struct femtoDreamTripletTaskTrackTrackCascade {
     }
   }
   PROCESS_SWITCH(femtoDreamTripletTaskTrackTrackCascade, processMixedEvent, "Enable processing mixed events", true);
-
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
