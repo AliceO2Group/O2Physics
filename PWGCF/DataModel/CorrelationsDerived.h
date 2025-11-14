@@ -165,6 +165,54 @@ DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track tabl
 using CF2ProngTrack = CF2ProngTracks::iterator;
 //------
 
+// adding table for systematic
+//  ---- systematics bit layout (cut × WP) ----
+namespace cf2prngcuttrack
+{
+
+// Keys to refer back to collisions/tracks (handy for checks)
+DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng0, cfTrackProng0, int, CFTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng1, cfTrackProng1, int, CFTracks, "_1");
+
+// Kinematics + decay (to keep downstream code unchanged)
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(InvMass, invMass, float);
+DECLARE_SOA_COLUMN(Decay, decay, uint8_t);
+
+// Systematics bitmasks (flattened cut × WP)
+DECLARE_SOA_COLUMN(SelMask0, selMask0, uint64_t); // bits [0..63]
+DECLARE_SOA_COLUMN(SelMask1, selMask1, uint64_t); // bits [64..127]
+
+// Cut categories; WP index is handled separately
+enum CutId : uint8_t {
+  kCutCosPA,  // cosPA
+  kCutDcaDau, // DCA(daughters)
+  kCutDcaPi,  // DCA(pi→PV)
+  kCutDcaPr,  // DCA(pr→PV)
+  kCutRadMin, // radmin
+  kCutLT,     // lifetime
+  kCutPID,    // PID
+  kNCuts      // to count total number of systematic cuts
+};
+static constexpr int kMaxWP = 2;                   // reserve 16 WPs per cut
+static constexpr int kTotalBits = kNCuts * kMaxWP; // total bit capacity
+
+} // namespace cf2prngcuttrack
+
+// Self-contained “systematics” table
+DECLARE_SOA_TABLE(CF2PrngCutTracks, "AOD", "CF2PRNGCUTTRACK",
+                  o2::soa::Index<>,
+                  cftrack::CFCollisionId,
+                  cf2prngcuttrack::CFTrackProng0Id,
+                  cf2prngcuttrack::CFTrackProng1Id,
+                  cf2prngcuttrack::Pt, cf2prngcuttrack::Eta, cf2prngcuttrack::Phi,
+                  cf2prngcuttrack::InvMass, cf2prngcuttrack::Decay,
+                  cf2prngcuttrack::SelMask0, cf2prngcuttrack::SelMask1);
+using CF2PrngCutTrack = CF2PrngCutTracks::iterator;
+///-------------------
+
 namespace cf2prongtrackml
 {
 DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>);       //!

@@ -58,72 +58,31 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(([p] < 0.5 || [hasTOF] <= 0.0) && abs([sTPC]) < 3.0) || ([p] >= 0.5 && abs([sTPC]) < 2.5 && abs([sTOF]) < 3.0)", "pT dependent daughter track sigma pass condition. Parameters: [p] momentum, [sTPC] sigma TPC, [sTOF] sigma TOF, [hasTOF] has TOF.")
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(storeLooseTight, bool, false, "Store also loose and tight V0 candidates for systematics");
     O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC");
     O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity");
-    O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.15, "Minimum transverse momentum");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPr, std::vector<float>,
-                           (std::vector<float>{0.06f, 0.07f, 0.08f}),
-                           "Maximum DCAxy for daughter tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, std::vector<float>,
-                           (std::vector<float>{0.1f, 0.2f, 0.3f}),
-                           "Min V0 pion DCA for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, std::vector<float>,
-                           (std::vector<float>{0.05f, 0.1f, 0.2f}),
-                           "Min V0 pion DCA for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(daughPIDCuts, std::vector<float>,
-                           (std::vector<float>{3.0f, 4.0f, 5.0f}),
-                           "PID nsigma for V0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massK0Min, std::vector<float>,
-                           (std::vector<float>{0.4f, 0.4f, 0.4f}),
-                           "Minimum mass for K0 (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massK0Max, std::vector<float>,
-                           (std::vector<float>{0.6f, 0.6f, 0.6f}),
-                           "Maximum mass for K0 (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massLambdaMin, std::vector<float>,
-                           (std::vector<float>{1.07f, 1.07f, 1.07f}),
-                           "Minimum mass for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(massLambdaMax, std::vector<float>,
-                           (std::vector<float>{1.17f, 1.17f, 1.17f}),
-                           "Maximum mass for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMaxLambda, std::vector<float>,
-                           (std::vector<float>{20.f, 30.f, 40.f}),
-                           "Maximum decay radius (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMinLambda, std::vector<float>,
-                           (std::vector<float>{1.0f, 1.2f, 1.4f}),
-                           "Minimum decay radius (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, std::vector<float>,
-                           (std::vector<float>{1.0f, 1.2f, 1.4f}),
-                           "Maximum decay radius (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMinK0s, std::vector<float>,
-                           (std::vector<float>{0.0f, 0.0f, 0.1f}),
-                           "Minimum decay radius (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(cosPaMinLambda, std::vector<float>,
-                           (std::vector<float>{0.990f, 0.993f, 0.995f}),
-                           "Minimum cosine of pointing angle for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(cosPaMinK0s, std::vector<float>,
-                           (std::vector<float>{0.990f, 0.993f, 0.995f}),
-                           "Minimum cosine of pointing angle for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, std::vector<float>,
-                           (std::vector<float>{0.7f, 0.8f, 0.9f}),
-                           "Maximum DCA among the V0 daughters (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, std::vector<float>,
-                           (std::vector<float>{0.7f, 0.8f, 0.9f}),
-                           "Maximum DCA among the V0 daughters (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, std::vector<float>,
-                           (std::vector<float>{0.2f, 0.2f, 0.2f}),
-                           "Minimum Armenteros' qt for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, std::vector<float>,
-                           (std::vector<float>{40.f, 30.f, 25.f}),
-                           "Maximum lambda lifetime (in cm) (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, std::vector<float>,
-                           (std::vector<float>{40.f, 30.f, 25.f}),
-                           "Maximum K0s lifetime (in cm) (Loose, Default, Tight)");
-
+    O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.1, "Minimum transverse momentum");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPr, float, 0.1, "Min V0 proton DCA");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, float, 0.1, "Min V0 pion DCA for lambda");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, float, 0.1, "Min V0 pion DCA for K0s");
+    O2_DEFINE_CONFIGURABLE(daughPIDCuts, float, 4.0, "PID nsigma for V0s");
+    O2_DEFINE_CONFIGURABLE(massK0Min, float, 0.4, "Minimum mass for K0");
+    O2_DEFINE_CONFIGURABLE(massK0Max, float, 0.6, "Maximum mass for K0");
+    O2_DEFINE_CONFIGURABLE(massLambdaMin, float, 1.0, "Minimum mass for lambda");
+    O2_DEFINE_CONFIGURABLE(massLambdaMax, float, 1.3, "Maximum mass for lambda");
+    O2_DEFINE_CONFIGURABLE(radiusMaxLambda, float, 2.3, "Maximum decay radius (cm) for lambda");
+    O2_DEFINE_CONFIGURABLE(radiusMinLambda, float, 0.0, "Minimum decay radius (cm) for lambda");
+    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, float, 2.3, "Maximum decay radius (cm) for K0s");
+    O2_DEFINE_CONFIGURABLE(radiusMinK0s, float, 0.0, "Minimum decay radius (cm) for K0s");
+    O2_DEFINE_CONFIGURABLE(cosPaMinLambda, float, 0.98, "Minimum cosine of pointing angle for lambda");
+    O2_DEFINE_CONFIGURABLE(cosPaMinK0s, float, 0.98, "Minimum cosine of pointing angle for K0s");
+    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, float, 0.2, "Maximum DCA among the V0 daughters (cm) for lambda");
+    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, float, 0.2, "Maximum DCA among the V0 daughters (cm) for K0s");
+    O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, float, 0.12, "Minimum Armenteros' qt for K0s");
+    O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, float, 30, "Maximum lambda lifetime (in cm)");
+    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, float, 30, "Maximum K0s lifetime (in cm)");
   } grpV0;
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(storeLooseTightforphi, bool, true, "Store also loose and tight phi candidates for systematics");
     O2_DEFINE_CONFIGURABLE(ImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)");
     O2_DEFINE_CONFIGURABLE(ImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)");
     O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS");
@@ -131,9 +90,9 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(lowITSPIDNsigma, float, 3.0, "lower cut on PID nsigma for ITS");
     O2_DEFINE_CONFIGURABLE(highITSPIDNsigma, float, 3.0, "higher cut on PID nsigma for ITS");
     O2_DEFINE_CONFIGURABLE(ITSclusterPhiMeson, int, 5, "Minimum number of ITS cluster for phi meson track");
-    O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, std::vector<int>, (std::vector<int>{70, 80, 90}), "Minimum number of TPC Crossed Rows for phi meson track (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, std::vector<float>, (std::vector<float>{0.12, 0.1, 0.08}), "Maximum DCAxy for phi meson tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, std::vector<float>, (std::vector<float>{0.12, 0.1, 0.08}), "Maximum DCAz for phi meson tracks (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, int, 80, "Minimum number of TPC Crossed Rows for phi meson track");
+    O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, float, 0.1, "Maximum DCAxy for phi meson track");
+    O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, float, 0.1, "Maximum DCAz for phi meson track");
     O2_DEFINE_CONFIGURABLE(cutEtaPhiMeson, float, 0.8, "Maximum eta for phi meson track");
     O2_DEFINE_CONFIGURABLE(cutPTPhiMeson, float, 0.15, "Maximum pt for phi meson track");
     O2_DEFINE_CONFIGURABLE(isDeepAngle, bool, true, "Flag for applying deep angle");
@@ -146,8 +105,64 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(applyTOF, bool, false, "Flag for applying TOF");
   } grpPhi;
 
+  struct : ConfigurableGroup {
+    // kshort
+    O2_DEFINE_CONFIGURABLE(cosPA_WPs, std::vector<float>,
+                           (std::vector<float>{0.991f, 0.995f}),
+                           "cosPA > WP");
+    O2_DEFINE_CONFIGURABLE(dcaDau_WPs, std::vector<float>,
+                           (std::vector<float>{0.08f, 1.2f}),
+                           "dcaDau > WP");
+    O2_DEFINE_CONFIGURABLE(dcaPi_WPs, std::vector<float>,
+                           (std::vector<float>{0.1f, 1.15f}),
+                           "dcaPi > WP");
+    O2_DEFINE_CONFIGURABLE(radMin_WPs, std::vector<float>,
+                           (std::vector<float>{1.0f, 1.5f}),
+                           "radMin > WP");
+    O2_DEFINE_CONFIGURABLE(lT_WPs, std::vector<int>,
+                           (std::vector<int>{15, 25}),
+                           "lT > WP");
+    O2_DEFINE_CONFIGURABLE(PID_WPs, std::vector<int>,
+                           (std::vector<int>{3, 5}),
+                           "PID > WP");
+
+    // lambda,antilambda
+    O2_DEFINE_CONFIGURABLE(cosPALAL_WPs, std::vector<float>,
+                           (std::vector<float>{0.991f, 0.995f}),
+                           "cosPALAL > WP");
+    O2_DEFINE_CONFIGURABLE(dcaDauLAL_WPs, std::vector<float>,
+                           (std::vector<float>{0.08f, 1.2f}),
+                           "dcaDauLAL > WP");
+    O2_DEFINE_CONFIGURABLE(dcaPosL_WPs, std::vector<float>,
+                           (std::vector<float>{0.1f, 1.15f}),
+                           "dcaPosL > WP");
+    O2_DEFINE_CONFIGURABLE(dcaNegL_WPs, std::vector<float>,
+                           (std::vector<float>{0.1f, 1.15f}),
+                           "dcaNegL > WP");
+    O2_DEFINE_CONFIGURABLE(radMinLAL_WPs, std::vector<float>,
+                           (std::vector<float>{1.0f, 1.5f}),
+                           "radMinLAL > WP");
+    O2_DEFINE_CONFIGURABLE(lTLAL_WPs, std::vector<int>,
+                           (std::vector<int>{15, 25}),
+                           "lTLAL > WP");
+    O2_DEFINE_CONFIGURABLE(PIDLAL_WPs, std::vector<int>,
+                           (std::vector<int>{3, 5}),
+                           "PIDLAL > WP");
+
+    O2_DEFINE_CONFIGURABLE(dcaPosAL_WPs, std::vector<float>,
+                           (std::vector<float>{0.1f, 1.15f}),
+                           "dcaPosAL > WP");
+    O2_DEFINE_CONFIGURABLE(dcaNegAL_WPs, std::vector<float>,
+                           (std::vector<float>{0.1f, 1.15f}),
+                           "dcaNegAL > WP");
+
+  } grpSyst;
+
+  Configurable<bool> fillsystematictable{"fillsystematictable", 1, "Flag to fill systematics table"};
+
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
+  Produces<aod::CF2PrngCutTracks> output2PrngCutTracks; // added for systematics
   Produces<aod::CF2ProngTrackmls> output2ProngTrackmls;
 
   Produces<aod::CF2ProngMcParts> output2ProngMcParts;
@@ -187,6 +202,16 @@ struct Filter2Prong {
           LOGF(warning, "Unrecognized cfgImSigmaFormula parameter %s.", sigmaFormula->GetParName(i));
       }
     }
+  }
+
+  // ---------- helpers ----------
+  static inline int bitIndex(int cutId, int wpId) { return cutId * 2.0 + wpId; }
+  static inline void setBit(uint64_t& m0, uint64_t& m1, int idx)
+  {
+    if (idx < 64)
+      m0 |= (1ull << idx);
+    else
+      m1 |= (1ull << (idx - 64));
   }
 
   template <class HFCandidatesType>
@@ -319,18 +344,7 @@ struct Filter2Prong {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPhi.ITSclusterPhiMeson && std::abs(candidate.eta()) <= grpPhi.cutEtaPhiMeson && candidate.pt() >= grpPhi.cutPTPhiMeson) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool selectionSys(const T& candidate, bool isLoose, bool isTight)
-  {
-    const int indexCut = isLoose ? 0 : (isTight ? 2 : 1);
-
-    if (std::abs(candidate.dcaXY()) <= grpPhi.cutDCAxyPhiMeson.value[indexCut] && std::abs(candidate.dcaZ()) <= grpPhi.cutDCAzPhiMeson.value[indexCut] && candidate.tpcNClsCrossedRows() > grpPhi.TPCCrossedRowsPhiMeson.value[indexCut]) {
+    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPhi.ITSclusterPhiMeson && candidate.tpcNClsCrossedRows() > grpPhi.TPCCrossedRowsPhiMeson && std::abs(candidate.dcaXY()) <= grpPhi.cutDCAxyPhiMeson && std::abs(candidate.dcaZ()) <= grpPhi.cutDCAzPhiMeson && std::abs(candidate.eta()) <= grpPhi.cutEtaPhiMeson && candidate.pt() >= grpPhi.cutPTPhiMeson) {
       return true;
     }
     return false;
@@ -365,78 +379,74 @@ struct Filter2Prong {
   }
 
   template <typename Collision, typename V0Cand>
-  bool isSelectedV0AsK0s(Collision const& collision, const V0Cand& v0, bool isLoose, bool isTight)
+  bool isSelectedV0AsK0s(Collision const& collision, const V0Cand& v0)
   {
     const auto& posTrack = v0.template posTrack_as<PIDTrack>();
     const auto& negTrack = v0.template negTrack_as<PIDTrack>();
 
-    const int indexCut = isLoose ? 0 : (isTight ? 2 : 1);
-
     float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0;
 
-    if (v0.mK0Short() < grpV0.massK0Min.value[indexCut] || v0.mK0Short() > grpV0.massK0Max.value[indexCut]) {
+    if (v0.mK0Short() < grpV0.massK0Min || v0.mK0Short() > grpV0.massK0Max) {
       return false;
     }
-    if ((v0.qtarm() / std::abs(v0.alpha())) < grpV0.qtArmenterosMinForK0s.value[indexCut]) {
+    if ((v0.qtarm() / std::abs(v0.alpha())) < grpV0.qtArmenterosMinForK0s) {
       return false;
     }
-    if (v0.v0radius() > grpV0.radiusMaxK0s.value[indexCut] || v0.v0radius() < grpV0.radiusMinK0s.value[indexCut]) {
+    if (v0.v0radius() > grpV0.radiusMaxK0s || v0.v0radius() < grpV0.radiusMinK0s) {
       return false;
     }
-    if (v0.v0cosPA() < grpV0.cosPaMinK0s.value[indexCut]) {
+    if (v0.v0cosPA() < grpV0.cosPaMinK0s) {
       return false;
     }
-    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxK0s.value[indexCut]) {
+    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxK0s) {
       return false;
     }
-    if (std::abs(CtauK0s) > grpV0.maxK0sLifeTime.value[indexCut]) {
+    if (std::abs(CtauK0s) > grpV0.maxK0sLifeTime) {
       return false;
     }
-    if (((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]))) {
+    if (((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts))) {
       return false;
     }
-    if ((TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiK0s.value[indexCut]) || (TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiK0s.value[indexCut])) {
+    if ((TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiK0s || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiK0s)) {
       return false;
     }
     return true;
   }
 
   template <LambdaPid pid, typename Collision, typename V0Cand>
-  bool isSelectedV0AsLambda(Collision const& collision, const V0Cand& v0, bool isLoose, bool isTight)
+  bool isSelectedV0AsLambda(Collision const& collision, const V0Cand& v0)
   {
     const auto& posTrack = v0.template posTrack_as<PIDTrack>();
     const auto& negTrack = v0.template negTrack_as<PIDTrack>();
 
-    const int indexCut = isLoose ? 0 : (isTight ? 2 : 1);
-
     float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda;
 
-    if ((v0.mLambda() < grpV0.massLambdaMin.value[indexCut] || v0.mLambda() > grpV0.massLambdaMax.value[indexCut]) &&
-        (v0.mAntiLambda() < grpV0.massLambdaMin.value[indexCut] || v0.mAntiLambda() > grpV0.massLambdaMax.value[indexCut])) {
+    if ((v0.mLambda() < grpV0.massLambdaMin || v0.mLambda() > grpV0.massLambdaMax) &&
+        (v0.mAntiLambda() < grpV0.massLambdaMin || v0.mAntiLambda() > grpV0.massLambdaMax)) {
       return false;
     }
-    if (v0.v0radius() > grpV0.radiusMaxLambda.value[indexCut] || v0.v0radius() < grpV0.radiusMinLambda.value[indexCut]) {
+    if (v0.v0radius() > grpV0.radiusMaxLambda || v0.v0radius() < grpV0.radiusMinLambda) {
       return false;
     }
-    if (v0.v0cosPA() < grpV0.cosPaMinLambda.value[indexCut]) {
+    if (v0.v0cosPA() < grpV0.cosPaMinLambda) {
       return false;
     }
-    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxLambda.value[indexCut]) {
+    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxLambda) {
       return false;
     }
-    if (pid == LambdaPid::kLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPr.value[indexCut] || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiLambda.value[indexCut])) {
+    if (pid == LambdaPid::kLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPr || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiLambda)) {
       return false;
     }
-    if (pid == LambdaPid::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda.value[indexCut] || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr.value[indexCut])) {
+    if (pid == LambdaPid::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr)) {
       return false;
     }
-    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts.value[indexCut]) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]))) {
+    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts))) {
       return false;
     }
-    if (pid == LambdaPid::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts.value[indexCut]) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts.value[indexCut]))) {
+    if (pid == LambdaPid::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts))) {
       return false;
     }
-    if (std::abs(CtauLambda) > grpV0.maxLambdaLifeTime.value[indexCut]) {
+    if (std::abs(CtauLambda) > grpV0.maxLambdaLifeTime) {
       return false;
     }
     return true;
@@ -620,28 +630,15 @@ struct Filter2Prong {
       double massV0 = 0.0;
 
       // K0s
-      if (isSelectedV0AsK0s(collision, v0, false, false)) { // candidate is K0s
+      if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            posTrack.globalIndex(), negTrack.globalIndex(),
                            v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
       }
-      if (grpV0.storeLooseTight) // store also loose and tight K0s
-      {
-        if (isSelectedV0AsK0s(collision, v0, true, false)) { // candidate is loose K0s
-          output2ProngTracks(cfcollisions.begin().globalIndex(),
-                             posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPiLoose);
-        }
-        if (isSelectedV0AsK0s(collision, v0, false, true)) { // candidate is tight K0s
-          output2ProngTracks(cfcollisions.begin().globalIndex(),
-                             posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPiTight);
-        }
-      }
 
       // Lambda and Anti-Lambda
-      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, false, false);
-      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0, false, false);
+      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0);
+      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0);
 
       // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
       if (LambdaTag) { // candidate is Lambda
@@ -654,33 +651,207 @@ struct Filter2Prong {
         output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
                            v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdatoPiP);
       }
-      if (grpV0.storeLooseTight) { // store also loose and tight Lambdas
-        bool LambdaLooseTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, true, false);
-        bool aLambdaLooseTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0, true, false);
-        bool LambdaTightTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, false, true);
-        bool aLambdaTightTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0, false, true);
 
-        if (LambdaLooseTag) { // candidate is loose Lambda
+      if (fillsystematictable) {
+        const int n = 2;
+        // Precompute common geometric stuff once (same as for K0s)
+        const float cosPA = v0.v0cosPA();
+        const float dcaD = v0.dcaV0daughters();
+        const float dcaPos = std::abs(v0.dcapostopv());
+        const float dcaNeg = std::abs(v0.dcanegtopv());
+        const float radi = v0.v0radius();
+        const float distOverP = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ());
+        const float lifetimekshort = std::abs(distOverP * o2::constants::physics::MassK0);
+        const float lifetimeLambda = std::abs(distOverP * o2::constants::physics::MassLambda);
+
+        if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
+
+          const auto nsigmapostr = std::abs(posTrack.tpcNSigmaPi());
+          const auto nsigmanegtr = std::abs(negTrack.tpcNSigmaPi());
+
+          // ---- pack systematics bits ----
+          uint64_t mask0 = 0, mask1 = 0;
+
+          {
+            const auto& W = grpSyst.cosPA_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (cosPA > W[i])
+                setBit(mask0, mask1, bitIndex(aod::cf2prngcuttrack::kCutCosPA, i));
+          }
+          {
+            const auto& W = grpSyst.dcaDau_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaD < W[i])
+                setBit(mask0, mask1, bitIndex(aod::cf2prngcuttrack::kCutDcaDau, i));
+          }
+          {
+            const auto& W = grpSyst.dcaPi_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaPos > W[i] && dcaNeg > W[i])
+                setBit(mask0, mask1, bitIndex(aod::cf2prngcuttrack::kCutDcaPi, i));
+          }
+          {
+            const auto& W = grpSyst.radMin_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (radi > W[i])
+                setBit(mask0, mask1, bitIndex(aod::cf2prngcuttrack::kCutRadMin, i));
+          }
+          {
+            const auto& W = grpSyst.lT_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (lifetimekshort < W[i])
+                setBit(mask0, mask1, bitIndex(aod::cf2prngcuttrack::kCutLT, i));
+          }
+          {
+            const auto& W = grpSyst.PID_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (nsigmapostr < W[i] && nsigmanegtr < W[i])
+                setBit(mask0, mask1, bitIndex(aod::cf2prngcuttrack::kCutPID, i));
+          }
+          // ---- write the systematics row (self-contained) ----
+          output2PrngCutTracks(cfcollisions.begin().globalIndex(),
+                               posTrack.globalIndex(), negTrack.globalIndex(),
+                               v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi,
+                               mask0, mask1);
+        }
+
+        if (LambdaTag) { // candidate is Lambda
           massV0 = v0.mLambda();
-          output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::LambdaToPPiLoose);
+          // PID: pos = proton, neg = pion
+          const auto nsigmaPr = std::abs(posTrack.tpcNSigmaPr());
+          const auto nsigmaPi = std::abs(negTrack.tpcNSigmaPi());
+
+          uint64_t mask0L = 0, mask1L = 0;
+
+          // cosPA
+          {
+            const auto& W = grpSyst.cosPALAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (cosPA > W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutCosPA, i));
+          }
+          // DCA(daughters)
+          {
+            const auto& W = grpSyst.dcaDauLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaD < W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutDcaDau, i));
+          }
+          // DCApos to PV (both tracks)
+          {
+            const auto& W = grpSyst.dcaPosL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaPos > W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutDcaPr, i));
+          }
+          // DCAneg to PV (both tracks)
+          {
+            const auto& W = grpSyst.dcaNegL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaNeg > W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutDcaPi, i));
+          }
+          // radius
+          {
+            const auto& W = grpSyst.radMinLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (radi > W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutRadMin, i));
+          }
+          // lifetime (Λ mass)
+          {
+            const auto& W = grpSyst.lTLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (lifetimeLambda < W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutLT, i));
+          }
+          // PID (p, π)
+          {
+            const auto& W = grpSyst.PIDLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (nsigmaPr < W[i] && nsigmaPi < W[i])
+                setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutPID, i));
+          }
+
+          // write Λ sys row
+          output2PrngCutTracks(cfcollisions.begin().globalIndex(),
+                               posTrack.globalIndex(), negTrack.globalIndex(),
+                               v0.pt(), v0.eta(), v0.phi(), massV0,
+                               aod::cf2prongtrack::LambdatoPPi,
+                               mask0L, mask1L);
         }
-        if (LambdaTightTag) { // candidate is tight Lambda
-          massV0 = v0.mLambda();
-          output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::LambdaToPPiTight);
-        }
-        if (aLambdaLooseTag) { // candidate is loose Anti-lambda
+
+        if (aLambdaTag) { // candidate is Anti-lambda
           massV0 = v0.mAntiLambda();
-          output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdaToPiPLoose);
-        }
-        if (aLambdaTightTag) { // candidate is tight Anti-lambda
-          massV0 = v0.mAntiLambda();
-          output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdaToPiPTight);
-        }
-      } // end of Lambda and Anti-Lambda processing
+          // PID: pos = pion, neg = proton (swapped)
+          const auto nsigmaPi = std::abs(posTrack.tpcNSigmaPi());
+          const auto nsigmaPr = std::abs(negTrack.tpcNSigmaPr());
+          uint64_t mask0AL = 0, mask1AL = 0;
+
+          // cosPA
+          {
+            const auto& W = grpSyst.cosPALAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (cosPA > W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutCosPA, i));
+          }
+
+          // DCA(daughters)
+          {
+            const auto& W = grpSyst.dcaDauLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaD < W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutDcaDau, i));
+          }
+
+          // DCApos to PV (both tracks)
+          {
+            const auto& W = grpSyst.dcaPosAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaPos > W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutDcaPi, i));
+          }
+
+          // DCAneg to PV (both tracks)
+          {
+            const auto& W = grpSyst.dcaNegAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (dcaNeg > W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutDcaPr, i));
+          }
+
+          // radius
+          {
+            const auto& W = grpSyst.radMinLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (radi > W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutRadMin, i));
+          }
+
+          // lifetime (Λ mass)
+          {
+            const auto& W = grpSyst.lTLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (lifetimeLambda < W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutLT, i));
+          }
+
+          // PID (p, π)
+          {
+            const auto& W = grpSyst.PIDLAL_WPs.value;
+            for (int i = 0; i < n; ++i)
+              if (nsigmaPr < W[i] && nsigmaPi < W[i])
+                setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutPID, i));
+          }
+
+          // write Λ sys row
+          output2PrngCutTracks(cfcollisions.begin().globalIndex(),
+                               posTrack.globalIndex(), negTrack.globalIndex(),
+                               v0.pt(), v0.eta(), v0.phi(), massV0,
+                               aod::cf2prongtrack::AntiLambdatoPiP,
+                               mask0AL, mask1AL);
+        } // end of Lambda and Anti-Lambda processing
+      } // end of systematic loop
     } // end of loop over V0 candidates
 
     // Phi
@@ -747,24 +918,8 @@ struct Filter2Prong {
                              cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID2);
         }
         if (selectionPID3(p1) && selectionPID3(p2)) {
-          if (selectionSys(p1, false, false) && selectionSys(p2, false, false)) // default
-          {
-            output2ProngTracks(cfcollisions.begin().globalIndex(),
-                               cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3);
-          }
-          if (grpPhi.storeLooseTightforphi) // store also loose and tight K0s
-          {
-            if (selectionSys(p1, true, false) && selectionSys(p2, true, false)) // loose
-            {
-              output2ProngTracks(cfcollisions.begin().globalIndex(),
-                                 cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3Loose);
-            }
-            if (selectionSys(p1, false, true) && selectionSys(p2, false, true)) // tight
-            {
-              output2ProngTracks(cfcollisions.begin().globalIndex(),
-                                 cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3Tight);
-            }
-          }
+          output2ProngTracks(cfcollisions.begin().globalIndex(),
+                             cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKKPID3);
         }
       } // end of loop over second track
     } // end of loop over first track
@@ -787,15 +942,15 @@ struct Filter2Prong {
       double massV0 = 0.0;
 
       // K0s
-      if (isSelectedV0AsK0s(collision, v0, false, false)) { // candidate is K0s
+      if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
         output2ProngTracks(cfcollisions.begin().globalIndex(),
                            posTrack.globalIndex(), negTrack.globalIndex(),
                            v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
       }
 
       // Lambda and Anti-Lambda
-      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0, false, false);
-      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0, false, false);
+      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0);
+      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0);
 
       // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
       if (LambdaTag) { // candidate is Lambda

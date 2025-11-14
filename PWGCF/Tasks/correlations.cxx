@@ -121,6 +121,7 @@ struct CorrelationTask {
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
   ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "invariant mass axis for histograms"};
+  Configurable<uint64_t> cfgSystMask{"cfgSystMask", 0ull, "Systematics selection bitmask acting on selMask0() from CF2ProngSysTracks"};
 
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -128,7 +129,7 @@ struct CorrelationTask {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
 
   // MC filters
@@ -137,6 +138,7 @@ struct CorrelationTask {
 
   // HF filters
   Filter track2pFilter = (nabs(aod::cf2prongtrack::eta) < cfgCutEta) && (aod::cf2prongtrack::pt > cfgCutPt);
+  Filter track2psFilter = (nabs(aod::cf2prngcuttrack::eta) < cfgCutEta) && (aod::cf2prngcuttrack::pt > cfgCutPt);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -173,7 +175,7 @@ struct CorrelationTask {
       LOGF(fatal, "cfgPtDepMLbkg or cfgPtCentDepMLbkgSel can not be empty when ML 2-prong selections are used.");
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
-    if (doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMCSameDerived2Prong) {
+    if (doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMCSameDerived2Prong || doprocessSame2ProngDerivedSys) {
       registry.add("yieldsTrigger", "multiplicity/centrality vs pT vs eta (triggers)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
       const AxisSpec& a = AxisSpec(axisInvMass);
@@ -340,14 +342,30 @@ struct CorrelationTask {
   using HasInvMass = decltype(std::declval<T&>().invMass());
   template <class T>
   using HasPDGCode = decltype(std::declval<T&>().pdgCode());
+  // detect selMask0 member
+  template <typename T>
+  using SelMask0_t = decltype(std::declval<T>().selMask0());
+  template <typename Row>
+  using HasSelMask0 = std::experimental::is_detected<SelMask0_t, Row>;
 
   template <typename TCollision, typename TTracks1, typename TTracks2>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
   {
+    using RowType = typename TTracks1::iterator;
+
     for (const auto& track1 : tracks1) {
       if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
           continue;
+        // 2) systematics selection (NEW) — only active for sys table
+        if constexpr (HasSelMask0<RowType>::value) {
+          if (cfgSystMask != 0ull) {
+            auto m0 = track1.selMask0(); // we only use mask0 for now (bits 0..63)
+            // require all bits in cfgSystMask to be set
+            if ((m0 & cfgSystMask) != cfgSystMask)
+              continue;
+          }
+        }
         if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks1::iterator>::value) {
           if (!passMLScore(track1))
             continue;
@@ -358,6 +376,15 @@ struct CorrelationTask {
             if (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) {
               if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
                 continue;
+              // 2) systematics selection (NEW) — only active for sys table
+              if constexpr (HasSelMask0<RowType>::value) {
+                if (cfgSystMask != 0ull) {
+                  auto m0 = track1.selMask0(); // we only use mask0 for now (bits 0..63)
+                  // require all bits in cfgSystMask to be set
+                  if ((m0 & cfgSystMask) != cfgSystMask)
+                    continue;
+                }
+              }
               if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks2::iterator>::value) {
                 if (!passMLScore(track2))
                   continue;
@@ -510,6 +537,8 @@ struct CorrelationTask {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
   {
+    using RowType = typename TTracks1::iterator;
+
     // Cache efficiency for particles (too many FindBin lookups)
     if constexpr (step == CorrelationContainer::kCFStepCorrected) {
       if (cfg.mEfficiencyAssociated) {
@@ -556,6 +585,15 @@ struct CorrelationTask {
       } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
           continue; // skip particles that do not match the decay mask
+        }
+        // 2) systematics selection (NEW) — only active for sys table
+        if constexpr (HasSelMask0<RowType>::value) {
+          if (cfgSystMask != 0ull) {
+            auto m0 = track1.selMask0(); // we only use mask0 for now (bits 0..63)
+            // require all bits in cfgSystMask to be set
+            if ((m0 & cfgSystMask) != cfgSystMask)
+              continue;
+          }
         }
         if (cfgV0RapidityMax > 0) {
           auto [t, y] = getV0Rapidity(track1);
@@ -639,6 +677,16 @@ struct CorrelationTask {
         } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
             continue; // skip particles that do not match the decay mask
+          }
+          using RowType = typename TTracks2::iterator;
+          // 2) systematics selection (NEW) — only active for sys table
+          if constexpr (HasSelMask0<RowType>::value) {
+            if (cfgSystMask != 0ull) {
+              auto m0 = track1.selMask0(); // we only use mask0 for now (bits 0..63)
+              // require all bits in cfgSystMask to be set
+              if ((m0 & cfgSystMask) != cfgSystMask)
+                continue;
+            }
           }
 
           // track2 here is charged hadron so we don't need rapidity cut for this track...this rapidity is only needed for V0
@@ -732,7 +780,7 @@ struct CorrelationTask {
         } // ML selection
 
         // last param is the weight
-        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) && !(doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessMixed2ProngDerived || doprocessMixed2ProngDerivedML)) {
+        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) && !(doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessMixed2ProngDerived || doprocessMixed2ProngDerivedML || doprocessSame2ProngDerivedSys || doprocessMixed2ProngDerivedSys)) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
@@ -872,6 +920,14 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSame2ProngDerived, "Process same event on derived data", false);
 
+  //**********for systematic*********************
+  void processSame2ProngDerivedSys(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2PrngCutTracks> const& p2tracks)
+  {
+    processSameDerivedT(collision, p2tracks, tracks);
+  }
+  PROCESS_SWITCH(CorrelationTask, processSame2ProngDerivedSys, "Process same event on derived data for systematic", false);
+  //*********************************************
+
   void processSame2ProngDerivedML(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<soa::Join<aod::CF2ProngTracks, aod::CF2ProngTrackmls>> const& p2tracks)
   {
     processSameDerivedT(collision, p2tracks, tracks);
@@ -1007,6 +1063,14 @@ struct CorrelationTask {
     processMixedDerivedT(collisions, p2tracks, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerived, "Process mixed events on derived data", false);
+
+  //**********for systematic*********************
+  void processMixed2ProngDerivedSys(DerivedCollisions const& collisions, DerivedTracks const& tracks, soa::Filtered<aod::CF2PrngCutTracks> const& p2tracks)
+  {
+    processMixedDerivedT(collisions, p2tracks, tracks);
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerivedSys, "Process mixed event on derived data for systematic", false);
+  //*********************************************
 
   void processMixed2ProngDerivedML(DerivedCollisions const& collisions, DerivedTracks const& tracks, soa::Filtered<soa::Join<aod::CF2ProngTracks, aod::CF2ProngTrackmls>> const& p2tracks)
   {
@@ -1246,7 +1310,7 @@ struct CorrelationTask {
       }
     }
 
-    if (!(doprocessSameDerived || doprocessSameDerivedMultSet || doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML)) {
+    if (!(doprocessSameDerived || doprocessSameDerivedMultSet || doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML || doprocessSame2ProngDerivedSys)) {
       if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value)
         fillQA(mcCollision, multiplicity, mcParticles1, mcParticles2);
       else
