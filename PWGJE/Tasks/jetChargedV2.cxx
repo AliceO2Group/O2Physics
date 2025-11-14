@@ -584,17 +584,14 @@ struct JetChargedV2 {
     fFitModulationV2v3P->SetParameter(1, 0.01);
     fFitModulationV2v3P->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-
     if (ep2 < 0) {
-      ep2fix = RecoDecay::constrainAngle(ep2);
+      double ep2fix = RecoDecay::constrainAngle(ep2);
       fFitModulationV2v3P->FixParameter(2, ep2fix);
     } else {
       fFitModulationV2v3P->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      ep3fix = RecoDecay::constrainAngle(ep3);
+      double ep3fix = RecoDecay::constrainAngle(ep3);
       fFitModulationV2v3P->FixParameter(4, ep3fix);
     } else {
       fFitModulationV2v3P->FixParameter(4, ep3);
@@ -1187,17 +1184,14 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-
     if (ep2 < 0) {
-      ep2fix = RecoDecay::constrainAngle(ep2);
+      double ep2fix = RecoDecay::constrainAngle(ep2);
       fFitModulationV2v3->FixParameter(2, ep2fix);
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      ep3fix = RecoDecay::constrainAngle(ep3);
+      double ep3fix = RecoDecay::constrainAngle(ep3);
       fFitModulationV2v3->FixParameter(4, ep3fix);
     } else {
       fFitModulationV2v3->FixParameter(4, ep3);
@@ -1241,12 +1235,12 @@ struct JetChargedV2 {
     chiSqr = chi2;
     cDF = 1. - chiSquareCDF(nDF, chiSqr);
 
-    int evtCentAreaMin = 0;
-    int evtCentAreaMax = 5;
-    int evtMidAreaMin = 30;
-    int evtMidAreaMax = 50;
     double evtcent = collision.centFT0M();
     if (cfgChkFitQuality) {
+      int evtCentAreaMin = 0;
+      int evtCentAreaMax = 5;
+      int evtMidAreaMin = 30;
+      int evtMidAreaMax = 50;
       registry.fill(HIST("h_PvalueCDF_CombinFit"), cDF);
       registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centFT0M(), cDF);
       registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centFT0M(), chiSqr / (static_cast<float>(nDF)));
@@ -1322,7 +1316,6 @@ struct JetChargedV2 {
       TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
-      float randomConePt = 0;
       double integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
       double rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
 
@@ -1330,6 +1323,7 @@ struct JetChargedV2 {
       if (nmode == cfgNmodA) {
         double rcPhiPsi2;
         rcPhiPsi2 = randomConePhi - ep2;
+        float randomConePt = 0;
 
         for (auto const& track : tracks) {
           if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -1444,17 +1438,14 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-
     if (ep2 < 0) {
-      ep2fix = RecoDecay::constrainAngle(ep2);
+      double ep2fix = RecoDecay::constrainAngle(ep2);
       fFitModulationV2v3->FixParameter(2, ep2fix);
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      ep3fix = RecoDecay::constrainAngle(ep3);
+      double ep3fix = RecoDecay::constrainAngle(ep3);
       fFitModulationV2v3->FixParameter(4, ep3fix);
     } else {
       fFitModulationV2v3->FixParameter(4, ep3);
@@ -1498,12 +1489,12 @@ struct JetChargedV2 {
     chiSqr = chi2;
     cDF = 1. - chiSquareCDF(nDF, chiSqr);
 
-    int evtCentAreaMin = 0;
-    int evtCentAreaMax = 5;
-    int evtMidAreaMin = 30;
-    int evtMidAreaMax = 50;
     double evtcent = collision.centFT0M();
     if (cfgChkFitQuality) {
+      int evtCentAreaMin = 0;
+      int evtCentAreaMax = 5;
+      int evtMidAreaMin = 30;
+      int evtMidAreaMax = 50;
       registry.fill(HIST("h_PvalueCDF_CombinFit"), cDF);
       registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centFT0M(), cDF);
       registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centFT0M(), chiSqr / (static_cast<float>(nDF)));
@@ -1573,7 +1564,6 @@ struct JetChargedV2 {
       TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
-      float randomConePt = 0;
       double integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
       double rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
 
@@ -1581,6 +1571,7 @@ struct JetChargedV2 {
       if (nmode == cfgNmodA) {
         double rcPhiPsi2;
         rcPhiPsi2 = randomConePhi - ep2;
+        float randomConePt = 0;
 
         for (auto const& track : tracks) {
           if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -1912,17 +1903,14 @@ struct JetChargedV2 {
         fFitModulationRM->SetParameter(1, 0.01);
         fFitModulationRM->SetParameter(3, 0.01);
 
-        double ep2fix = 0.;
-        double ep3fix = 0.;
-
         if (ep2 < 0) {
-          ep2fix = RecoDecay::constrainAngle(ep2);
+          double ep2fix = RecoDecay::constrainAngle(ep2);
           fFitModulationRM->FixParameter(2, ep2fix);
         } else {
           fFitModulationRM->FixParameter(2, ep2);
         }
         if (ep3 < 0) {
-          ep3fix = RecoDecay::constrainAngle(ep3);
+          double ep3fix = RecoDecay::constrainAngle(ep3);
           fFitModulationRM->FixParameter(4, ep3fix);
         } else {
           fFitModulationRM->FixParameter(4, ep3);

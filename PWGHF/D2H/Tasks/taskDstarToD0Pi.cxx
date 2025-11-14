@@ -569,7 +569,12 @@ struct HfTaskDstarToD0Pi {
       } else if (studyD0ToPiKPi0 && candDstarMcRec.isSelDstarToD0Pi() && (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(candDstarMcRec.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0)) {
         // Aplly all selection to study D*->D0(piKpi0)pi channel same as signal channel
         // MC Matched but to D*->D0(piKpi0)pi channel
-        auto deltaMDstar = std::abs(candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0());
+        double deltaMDstar = -999.;
+        if (candDstarMcRec.signSoftPi() < 0) {
+          deltaMDstar = candDstarMcRec.invMassAntiDstar() - candDstarMcRec.invMassD0Bar();
+        } else {
+          deltaMDstar = candDstarMcRec.invMassDstar() - candDstarMcRec.invMassD0();
+        }
         if constexpr (ApplyMl) {
           auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
           // inclusive study

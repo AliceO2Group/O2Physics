@@ -755,7 +755,6 @@ struct BJetTreeCreator {
       }
 
       std::vector<int> indicesTracks;
-      std::vector<int> indicesSVs;
 
       int16_t jetFlavor = analysisJet.origin();
 
@@ -792,6 +791,7 @@ struct BJetTreeCreator {
       }
 
       if (produceTree) {
+        std::vector<int> indicesSVs;
         bjetConstituentsTable(bjetParamsTable.lastIndex() + 1, indicesTracks, indicesSVs);
         bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), indicesTracks.size(), nVertices, analysisJet.mass(), jetFlavor, analysisJet.r());
       }

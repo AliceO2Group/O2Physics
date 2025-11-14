@@ -174,8 +174,6 @@ struct JetChCorr {
     fastjet::PseudoJet parentSubJet2;
     bool softDropped = false;
     auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
 
     // std::vector<float> energyMotherVec;
     // std::vector<float> ptLeadingVec;
@@ -219,8 +217,8 @@ struct JetChCorr {
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (found1 == true && found2 == true) { // found leading and next-to-leading in seperate prongs
           if (!softDropped) {
-            zg = z;
-            rg = theta;
+            auto zg = z;
+            auto rg = theta;
             if constexpr (!isSubtracted && !isMCP) {
               registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
               registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);
@@ -239,7 +237,7 @@ struct JetChCorr {
             v2.SetXYZ(parentSubJet2.px(), parentSubJet2.py(), parentSubJet2.pz());
 
             vR = v1 + v2;
-            float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal()));
+            float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal())); // you redefine z here, please check!
             float fT = ((2. * z * (1 - z) * vR.Mag()) / v1.Perp2(vR)) / 6.;
             float kt_p = v1.Perp(vR);
 

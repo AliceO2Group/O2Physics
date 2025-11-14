@@ -88,7 +88,7 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("SigmaPlusBits");
   KINK_DEFAULT_BITS
   o2::framework::Configurable<std::vector<float>> chaDauTpcProton{"chaDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for charged daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> chaDauTpctofProton{"chaDauTpctofProton", {5.f}, "Maximum combined |nsigma_Proton| (TPC+TOF) for charged daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> chaDauTofProton{"chaDauTofProton", {5.f}, "Maximum combined |nsigma_Proton| (TPC+TOF) for charged daughter tracks"};
   o2::framework::Configurable<float> pidThres{"pidThres", 0.75f, "Momentum threshold for using TOF/combined pid for daughter tracks (GeV/c)"};
 };
 
@@ -146,7 +146,7 @@ enum KinkSeles {
 
   kChaDaughTpcPion,
   kChaDaughTpcProton,
-  kChaDaughTpctofProton,
+  kChaDaughTofProton,
 
   kAlphaAPMin,
   kAlphaAPMax,
@@ -167,7 +167,7 @@ const std::unordered_map<KinkSeles, std::string> kinkSelsToStrings = {
   {kMothDcaPvMax, "mothDcaPvMax"},
   {kChaDaughTpcPion, "chaDauTpcPion"},
   {kChaDaughTpcProton, "chaDauTpcProton"},
-  {kChaDaughTpctofProton, "chaDauTpctofProton"},
+  {kChaDaughTofProton, "chaDauTofProton"},
   {kAlphaAPMin, "alphaAPMin"},
   {kAlphaAPMax, "alphaAPMax"},
   {kQtAPMin, "qtAPMin"},
@@ -205,7 +205,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
       mMassSigmaPlusUpperLimit = filter.massMaxSigmaPlus.value;
       mPidThreshold = config.pidThres.value;
       this->addSelection(config.chaDauTpcProton.value, kChaDaughTpcProton, limits::kAbsUpperLimit, true, true);
-      this->addSelection(config.chaDauTpctofProton.value, kChaDaughTpctofProton, limits::kUpperLimit, true, true);
+      this->addSelection(config.chaDauTofProton.value, kChaDaughTofProton, limits::kUpperLimit, true, true);
     }
 
     this->addSelection(config.kinkTopoDcaMax.value, kKinkTopoDcaMax, limits::kUpperLimit, true, true);
@@ -279,7 +279,9 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
         this->evaluateObservable(kChaDaughTpcProton, chaDaughter.tpcNSigmaPr());
       } else {
         if (chaDaughter.hasTOF()) {
-          this->evaluateObservable(kChaDaughTpctofProton, std::hypot(chaDaughter.tpcNSigmaPr(), chaDaughter.tofNSigmaPr()));
+          this->evaluateObservable(kChaDaughTofProton, std::abs(chaDaughter.tofNSigmaPr()));
+        } else {
+          this->evaluateObservable(kChaDaughTofProton, 999.f);
         }
       }
     }
