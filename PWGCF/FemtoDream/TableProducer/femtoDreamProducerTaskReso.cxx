@@ -600,7 +600,7 @@ struct FemtoDreamProducerTaskReso {
       resoCutsKStar.setDaughterCuts(femto_dream_reso_selection::kNegdaugh, Resonance.confKstarDaughterDCAzMax, femtoDreamTrackSelection::kDCAzMax, femtoDreamSelection::kAbsUpperLimit);
       resoCutsKStar.setDaughterCuts(femto_dream_reso_selection::kNegdaugh, Resonance.confKstarDaughterPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
 
-      resoCutsKStar.init<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC, /// chose this particle type, since there is no kResoKstar-Particle type (implementing it would only serve the naming of the producer histos)
+      resoCutsKStar.init<aod::femtodreamparticle::ParticleType::kResoKStar, /// chose this particle type, since there is no kResoKstar-Particle type (implementing it would only serve the naming of the producer histos)
                          aod::femtodreamparticle::ParticleType::kResoKStarChild>(&qaRegistryReso, &resoRegistry);
 
       resoCutsKStar.assign(Resonance.confKstarDaughterPTPCThr); // assigns Configurable value to class member
@@ -1485,22 +1485,22 @@ struct FemtoDreamProducerTaskReso {
           /// Resos, where both daughters have the same PID are defaulted to sign 1. and resoIsNotAnti = true
 
           if (resoIsNotAnti) {
-            resoCutsKStar.fillResoQA<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC>(track1, track2, true, tempReso.M(), tempAntiReso.M(), Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
+            resoCutsKStar.fillResoQA<aod::femtodreamparticle::ParticleType::kResoKStar>(track1, track2, true, tempReso.M(), tempAntiReso.M(), Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
             if (!(tempReso.M() > Resonance.confKstarInvMassLowLimit.value && tempReso.M() < Resonance.confKstarInvMassUpLimit.value))
               continue;
-            resoCutsKStar.fillMassSelectedQA<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC>(tempReso.M(), true);
+            resoCutsKStar.fillMassSelectedQA<aod::femtodreamparticle::ParticleType::kResoKStar>(tempReso.M(), true);
           } else {
-            resoCutsKStar.fillResoQA<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC>(track1, track2, false, tempAntiReso.M(), tempReso.M(), Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
+            resoCutsKStar.fillResoQA<aod::femtodreamparticle::ParticleType::kResoKStar>(track1, track2, false, tempAntiReso.M(), tempReso.M(), Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
             if (!(tempAntiReso.M() > Resonance.confKstarInvMassLowLimit.value && tempAntiReso.M() < Resonance.confKstarInvMassUpLimit.value))
               continue;
-            resoCutsKStar.fillMassSelectedQA<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC>(tempAntiReso.M(), false);
+            resoCutsKStar.fillMassSelectedQA<aod::femtodreamparticle::ParticleType::kResoKStar>(tempAntiReso.M(), false);
           }
 
           resoCutsKStar.fillQA<aod::femtodreamparticle::ParticleType::kResoKStarChild,
                                aod::femtodreamparticle::TrackType::kPosChild,
                                aod::femtodreamparticle::TrackType::kNegChild>(track1, track2);
 
-          auto type = resoCutsKStar.getType<aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC>(track1, track2, resoIsNotAnti); //   kResoPosdaughTPC_NegdaughTPC
+          auto type = resoCutsKStar.getType<aod::femtodreamparticle::kResoKStar>(track1, track2, resoIsNotAnti); //   kResoPosdaughTPC_NegdaughTPC
                                                                                                                                         //   kResoPosdaughTPC_NegdaughTOF
                                                                                                                                         //   kResoPosdaughTPC_NegdaughTPC
                                                                                                                                         //   kResoPosdaughTOF_NegdaughTOF as possible output
@@ -1579,8 +1579,8 @@ struct FemtoDreamProducerTaskReso {
       } // for (const auto& track1 : slicePosdaugh)
 
       if (Resonance.confDoLikeSignKstar.value) {
-        fillLikeSign<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC>(slicePosdaugh, resoCutsKStar, Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
-        fillLikeSign<aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC>(sliceNegdaugh, resoCutsKStar, Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
+        fillLikeSign<aod::femtodreamparticle::ParticleType::kResoKStar>(slicePosdaugh, resoCutsKStar, Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
+        fillLikeSign<aod::femtodreamparticle::ParticleType::kResoKStar>(sliceNegdaugh, resoCutsKStar, Resonance.confKstarDaughterPIDspecies.value, Resonance.confMassQAKstarPart2PID.value);
       }
     } // if (confIsActivateKStar.value)
   } // void fillCollisionsAndTracksAndV0(...)
