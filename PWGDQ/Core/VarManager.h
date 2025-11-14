@@ -1245,6 +1245,8 @@ class VarManager : public TObject
   template <typename TBCs, typename TFT0s, typename TFDDs, typename TFV0As>
   static void FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t>>& bcMap, TBCs const& bcs, TFT0s const& ft0s, TFDDs const& fdds, TFV0As const& fv0as, float* values = nullptr);
   template <typename T>
+  static void FillFIT(const T& fit, float* values = nullptr);
+  template <typename T>
   static void FillBdtScore(const T& bdtScore, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
@@ -5350,6 +5352,139 @@ void VarManager::FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t
   // Fill pileup flags and distances to closest BCs
   // This requires scanning nearby BCs - simplified version for now
   // Full implementation would need the complete BC range similar to PWGUD processFITInfo
+}
+
+template <typename T>
+void VarManager::FillFIT(const T& obj, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // Initialize all FIT variables to default values
+  values[kAmplitudeFT0A] = -1.f;
+  values[kAmplitudeFT0C] = -1.f;
+  values[kTimeFT0A] = -999.f;
+  values[kTimeFT0C] = -999.f;
+  values[kTriggerMaskFT0] = 0;
+  values[kNFiredChannelsFT0A] = 0;
+  values[kNFiredChannelsFT0C] = 0;
+  values[kAmplitudeFDDA] = -1.f;
+  values[kAmplitudeFDDC] = -1.f;
+  values[kTimeFDDA] = -999.f;
+  values[kTimeFDDC] = -999.f;
+  values[kTriggerMaskFDD] = 0;
+  values[kNFiredChannelsFDDA] = 0;
+  values[kNFiredChannelsFDDC] = 0;
+  values[kAmplitudeFV0A] = -1.f;
+  values[kTimeFV0A] = -999.f;
+  values[kTriggerMaskFV0A] = 0;
+  values[kNFiredChannelsFV0A] = 0;
+  values[kBBFT0Apf] = 0;
+  values[kBGFT0Apf] = 0;
+  values[kBBFT0Cpf] = 0;
+  values[kBGFT0Cpf] = 0;
+  values[kBBFV0Apf] = 0;
+  values[kBGFV0Apf] = 0;
+  values[kBBFDDApf] = 0;
+  values[kBGFDDApf] = 0;
+  values[kBBFDDCpf] = 0;
+  values[kBGFDDCpf] = 0;
+  values[kDistClosestBcTOR] = 999;
+  values[kDistClosestBcTSC] = 999;
+  values[kDistClosestBcTVX] = 999;
+  values[kDistClosestBcV0A] = 999;
+  values[kDistClosestBcT0A] = 999;
+
+  // Check if this is a ReducedFIT object (has amplitudeFT0A() method) or a BC object (has has_foundFT0() method)
+  // Use if constexpr with requires clause or SFINAE to distinguish between the two types
+  // For now, we'll use a simpler approach: try to call methods that exist on each type
+
+  if constexpr (requires { obj.amplitudeFT0A(); }) {
+    // This is a ReducedFIT object - fill from reduced DQ data model
+    values[kAmplitudeFT0A] = obj.amplitudeFT0A();
+    values[kAmplitudeFT0C] = obj.amplitudeFT0C();
+    values[kTimeFT0A] = obj.timeFT0A();
+    values[kTimeFT0C] = obj.timeFT0C();
+    values[kTriggerMaskFT0] = obj.triggerMaskFT0();
+    values[kNFiredChannelsFT0A] = obj.nFiredChannelsFT0A();
+    values[kNFiredChannelsFT0C] = obj.nFiredChannelsFT0C();
+    values[kAmplitudeFDDA] = obj.amplitudeFDDA();
+    values[kAmplitudeFDDC] = obj.amplitudeFDDC();
+    values[kTimeFDDA] = obj.timeFDDA();
+    values[kTimeFDDC] = obj.timeFDDC();
+    values[kTriggerMaskFDD] = obj.triggerMaskFDD();
+    values[kNFiredChannelsFDDA] = obj.nFiredChannelsFDDA();
+    values[kNFiredChannelsFDDC] = obj.nFiredChannelsFDDC();
+    values[kAmplitudeFV0A] = obj.amplitudeFV0A();
+    values[kTimeFV0A] = obj.timeFV0A();
+    values[kTriggerMaskFV0A] = obj.triggerMaskFV0A();
+    values[kNFiredChannelsFV0A] = obj.nFiredChannelsFV0A();
+    values[kBBFT0Apf] = obj.bbFT0Apf();
+    values[kBGFT0Apf] = obj.bgFT0Apf();
+    values[kBBFT0Cpf] = obj.bbFT0Cpf();
+    values[kBGFT0Cpf] = obj.bgFT0Cpf();
+    values[kBBFV0Apf] = obj.bbFV0Apf();
+    values[kBGFV0Apf] = obj.bgFV0Apf();
+    values[kBBFDDApf] = obj.bbFDDApf();
+    values[kBGFDDApf] = obj.bgFDDApf();
+    values[kBBFDDCpf] = obj.bbFDDCpf();
+    values[kBGFDDCpf] = obj.bgFDDCpf();
+    values[kDistClosestBcTOR] = obj.distClosestBcTOR();
+    values[kDistClosestBcTSC] = obj.distClosestBcTSC();
+    values[kDistClosestBcTVX] = obj.distClosestBcTVX();
+    values[kDistClosestBcV0A] = obj.distClosestBcV0A();
+    values[kDistClosestBcT0A] = obj.distClosestBcT0A();
+  } else if constexpr (requires { obj.has_foundFT0(); }) {
+    // This is a BC object - fill from raw FIT detectors
+    // Fill FT0 information
+    if (obj.has_foundFT0()) {
+      auto ft0 = obj.foundFT0();
+      values[kTimeFT0A] = ft0.timeA();
+      values[kTimeFT0C] = ft0.timeC();
+      const auto& ampsA = ft0.amplitudeA();
+      const auto& ampsC = ft0.amplitudeC();
+      values[kAmplitudeFT0A] = 0.f;
+      for (auto amp : ampsA)
+        values[kAmplitudeFT0A] += amp;
+      values[kAmplitudeFT0C] = 0.f;
+      for (auto amp : ampsC)
+        values[kAmplitudeFT0C] += amp;
+      values[kNFiredChannelsFT0A] = ft0.channelA().size();
+      values[kNFiredChannelsFT0C] = ft0.channelC().size();
+      values[kTriggerMaskFT0] = ft0.triggerMask();
+    }
+
+    // Fill FV0A information
+    if (obj.has_foundFV0()) {
+      auto fv0a = obj.foundFV0();
+      values[kTimeFV0A] = fv0a.time();
+      const auto& amps = fv0a.amplitude();
+      values[kAmplitudeFV0A] = 0.f;
+      for (auto amp : amps)
+        values[kAmplitudeFV0A] += amp;
+      values[kNFiredChannelsFV0A] = fv0a.channel().size();
+      values[kTriggerMaskFV0A] = fv0a.triggerMask();
+    }
+
+    // Fill FDD information
+    if (obj.has_foundFDD()) {
+      auto fdd = obj.foundFDD();
+      values[kTimeFDDA] = fdd.timeA();
+      values[kTimeFDDC] = fdd.timeC();
+      const auto& ampsA = fdd.chargeA();
+      const auto& ampsC = fdd.chargeC();
+      values[kAmplitudeFDDA] = 0.f;
+      for (auto amp : ampsA)
+        values[kAmplitudeFDDA] += amp;
+      values[kAmplitudeFDDC] = 0.f;
+      for (auto amp : ampsC)
+        values[kAmplitudeFDDC] += amp;
+      values[kNFiredChannelsFDDA] = fdd.channelA().size();
+      values[kNFiredChannelsFDDC] = fdd.channelC().size();
+      values[kTriggerMaskFDD] = fdd.triggerMask();
+    }
+  }
 }
 
 template <typename T1, typename T2>

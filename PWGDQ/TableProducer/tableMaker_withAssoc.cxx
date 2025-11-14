@@ -868,49 +868,8 @@ struct TableMaker {
         if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
           // The DQRapidityGapFilter contains the index of the bc we want to get FIT info from
           auto newbc = bcs.rawIteratorAt(collision.newBcIndex());
-          // Fill FIT information from newbc
-          if (newbc.has_foundFT0()) {
-            auto ft0 = newbc.foundFT0();
-            VarManager::fgValues[VarManager::kTimeFT0A] = ft0.timeA();
-            VarManager::fgValues[VarManager::kTimeFT0C] = ft0.timeC();
-            const auto& ampsA = ft0.amplitudeA();
-            const auto& ampsC = ft0.amplitudeC();
-            VarManager::fgValues[VarManager::kAmplitudeFT0A] = 0.f;
-            for (auto amp : ampsA)
-              VarManager::fgValues[VarManager::kAmplitudeFT0A] += amp;
-            VarManager::fgValues[VarManager::kAmplitudeFT0C] = 0.f;
-            for (auto amp : ampsC)
-              VarManager::fgValues[VarManager::kAmplitudeFT0C] += amp;
-            VarManager::fgValues[VarManager::kNFiredChannelsFT0A] = ft0.channelA().size();
-            VarManager::fgValues[VarManager::kNFiredChannelsFT0C] = ft0.channelC().size();
-            VarManager::fgValues[VarManager::kTriggerMaskFT0] = ft0.triggerMask();
-          }
-          if (newbc.has_foundFV0()) {
-            auto fv0a = newbc.foundFV0();
-            VarManager::fgValues[VarManager::kTimeFV0A] = fv0a.time();
-            const auto& amps = fv0a.amplitude();
-            VarManager::fgValues[VarManager::kAmplitudeFV0A] = 0.f;
-            for (auto amp : amps)
-              VarManager::fgValues[VarManager::kAmplitudeFV0A] += amp;
-            VarManager::fgValues[VarManager::kNFiredChannelsFV0A] = fv0a.channel().size();
-            VarManager::fgValues[VarManager::kTriggerMaskFV0A] = fv0a.triggerMask();
-          }
-          if (newbc.has_foundFDD()) {
-            auto fdd = newbc.foundFDD();
-            VarManager::fgValues[VarManager::kTimeFDDA] = fdd.timeA();
-            VarManager::fgValues[VarManager::kTimeFDDC] = fdd.timeC();
-            const auto& ampsA = fdd.chargeA();
-            const auto& ampsC = fdd.chargeC();
-            VarManager::fgValues[VarManager::kAmplitudeFDDA] = 0.f;
-            for (auto amp : ampsA)
-              VarManager::fgValues[VarManager::kAmplitudeFDDA] += amp;
-            VarManager::fgValues[VarManager::kAmplitudeFDDC] = 0.f;
-            for (auto amp : ampsC)
-              VarManager::fgValues[VarManager::kAmplitudeFDDC] += amp;
-            VarManager::fgValues[VarManager::kNFiredChannelsFDDA] = fdd.channelA().size();
-            VarManager::fgValues[VarManager::kNFiredChannelsFDDC] = fdd.channelC().size();
-            VarManager::fgValues[VarManager::kTriggerMaskFDD] = fdd.triggerMask();
-          }
+          // Fill FIT information from newbc using VarManager::FillFIT()
+          VarManager::FillFIT(newbc);
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
