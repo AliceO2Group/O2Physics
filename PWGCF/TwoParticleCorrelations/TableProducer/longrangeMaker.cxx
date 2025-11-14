@@ -185,7 +185,8 @@ struct LongrangeMaker {
   SGSelector sgSelector;
   // Create instance of cut holder class to contain the user defined cuts
   SGCutParHolder cfgSgCuts = SGCutParHolder();
-  Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
+  Configurable<SGCutParHolder> sgCuts{"sgCuts", {}, "SG event cuts"};
+  Configurable<int> cfgGapSide{"cfgGapSide", 2, "cut on UPC events"};
 
   void init(InitContext&)
   {
@@ -229,7 +230,7 @@ struct LongrangeMaker {
     itsNsigmaCut = itsNsigmaPidCut;
     tpcNsigmaCut = tpcNsigmaPidCut;
 
-    cfgSgCuts = (SGCutParHolder)SGCuts;
+    cfgSgCuts = (SGCutParHolder)sgCuts;
   }
 
   Produces<aod::CollLRTables> collisionLRTable;
@@ -242,7 +243,7 @@ struct LongrangeMaker {
 
   Produces<aod::UpcCollLRTables> outupccol;
   Produces<aod::UpcSgCollLRTables> outsgupccol;
-  Produces<aod::zdcLRTables> outzdctable;
+  Produces<aod::ZdcLRTables> outzdctable;
 
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
@@ -381,7 +382,7 @@ struct LongrangeMaker {
     int issgevent = isSGEvent.value;
     histos.fill(HIST("hSelectionResult"), isSGEvent.value);
 
-    if (issgevent <= 2) {
+    if (issgevent <= cfgGapSide) {
       if (cfgSgCuts.minRgtrwTOF()) {
         if (udhelpers::rPVtrwTOF<true>(tracks, col.numContrib()) < cfgSgCuts.minRgtrwTOF())
           return;
