@@ -86,14 +86,9 @@ struct HfTaskDplus {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
-  // UPC gap determination thresholds
-  Configurable<float> upcFV0AThreshold{"upcFV0AThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcFT0AThreshold{"upcFT0AThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcFT0CThreshold{"upcFT0CThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
-  Configurable<float> upcZDCThreshold{"upcZDCThreshold", 1.0f, "ZDC energy threshold for UPC gap determination (a.u.)"};
-
-  HfEventSelection hfEvSel;    // event selection and monitoring
-  ctpRateFetcher mRateFetcher; // interaction rate fetcher
+  HfEventSelection hfEvSel;         // event selection and monitoring
+  HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
+  ctpRateFetcher mRateFetcher;      // interaction rate fetcher
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -134,7 +129,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis thnConfigAxisMlScore1{"thnConfigAxisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis thnConfigAxisMlScore2{"thnConfigAxisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
-  ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (-1=NoGap, 0=SingleGapA, 1=SingleGapC, 2=DoubleGap, 3=NoUpc, 4=TrkOutOfRange, 5=BadDoubleGap)"};
+  ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (see TrueGap enum in o2::aod::sgselector)"};
   ConfigurableAxis thnConfigAxisFT0{"thnConfigAxisFT0", {1001, -1.5, 999.5}, "axis for FT0 amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFV0A{"thnConfigAxisFV0A", {2001, -1.5, 1999.5}, "axis for FV0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFDD{"thnConfigAxisFDD", {200, 0., 4000.}, "axis for FDD amplitude (a.u.)"};
@@ -726,8 +721,7 @@ struct HfTaskDplus {
       auto bc = collision.template bc_as<BCsType>();
 
       // Determine gap type using SGSelector with BC range checking
-      const auto gapResult = hf_upc::determineGapType(collision, bcs,
-                                                      upcFV0AThreshold, upcFT0AThreshold, upcFT0CThreshold);
+      const auto gapResult = hf_upc::determineGapType(collision, bcs, upcThresholds);
       const int gap = gapResult.value;
 
       // Use the BC with FIT activity if available from SGSelector

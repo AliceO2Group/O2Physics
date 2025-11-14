@@ -21,11 +21,24 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 
+#include <Framework/Configurable.h>
+
+#include <string>
+
 namespace o2::analysis::hf_upc
 {
 
 /// \brief Use TrueGap enum from SGSelector for gap type classification
 using o2::aod::sgselector::TrueGap;
+
+/// \brief Configurable group for UPC gap determination thresholds
+struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
+  std::string prefix = "upc"; // JSON group name
+  o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
+  o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
+  o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
+  o2::framework::Configurable<float> zdcThreshold{"zdcThreshold", 1.0f, "ZDC energy threshold for UPC gap determination (a.u.)"};
+};
 
 /// \brief Default thresholds for gap determination
 namespace defaults
@@ -79,6 +92,24 @@ inline auto determineGapType(TCollision const& collision,
   const auto sgResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
 
   return sgResult;
+}
+
+/// \brief Determine gap type using SGSelector with BC range checking and HfUpcGapThresholds
+/// \tparam TCollision Collision type
+/// \tparam TBCs BC table type
+/// \param collision Collision object
+/// \param bcs BC table
+/// \param thresholds HfUpcGapThresholds object containing all UPC thresholds
+/// \return SelectionResult with gap type value and BC pointer
+template <typename TCollision, typename TBCs>
+inline auto determineGapType(TCollision const& collision,
+                             TBCs const& bcs,
+                             HfUpcGapThresholds const& thresholds)
+{
+  return determineGapType(collision, bcs,
+                          thresholds.fv0aThreshold.value,
+                          thresholds.ft0aThreshold.value,
+                          thresholds.ft0cThreshold.value);
 }
 
 /// \brief Check if the gap type is a single-sided gap (SingleGapA or SingleGapC)
