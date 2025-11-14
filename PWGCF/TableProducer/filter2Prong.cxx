@@ -737,14 +737,14 @@ struct Filter2Prong {
               if (dcaD < W[i])
                 setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutDcaDau, i));
           }
-          // DCApos to PV (both tracks)
+          // DCApos to PV
           {
             const auto& W = grpSyst.dcaPosL_WPs.value;
             for (int i = 0; i < n; ++i)
               if (dcaPos > W[i])
                 setBit(mask0L, mask1L, bitIndex(aod::cf2prngcuttrack::kCutDcaPr, i));
           }
-          // DCAneg to PV (both tracks)
+          // DCAneg to PV
           {
             const auto& W = grpSyst.dcaNegL_WPs.value;
             for (int i = 0; i < n; ++i)
@@ -804,7 +804,7 @@ struct Filter2Prong {
                 setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutDcaDau, i));
           }
 
-          // DCApos to PV (both tracks)
+          // DCApos to PV
           {
             const auto& W = grpSyst.dcaPosAL_WPs.value;
             for (int i = 0; i < n; ++i)
@@ -812,7 +812,7 @@ struct Filter2Prong {
                 setBit(mask0AL, mask1AL, bitIndex(aod::cf2prngcuttrack::kCutDcaPi, i));
           }
 
-          // DCAneg to PV (both tracks)
+          // DCAneg to PV
           {
             const auto& W = grpSyst.dcaNegAL_WPs.value;
             for (int i = 0; i < n; ++i)
