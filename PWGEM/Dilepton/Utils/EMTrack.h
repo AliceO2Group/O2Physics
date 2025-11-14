@@ -52,6 +52,7 @@ class EMTrack
   float cZY() const { return fCZY; }
   float cZZ() const { return fCZZ; }
 
+  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(fPt, 2))); }
   float p() const { return fPt * std::cosh(fEta); }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
@@ -150,8 +151,9 @@ class EMTrackWithCov : public EMTrack
 class EMPair : public EMTrack
 {
  public:
-  EMPair(float pt, float eta, float phi, float mass) : EMTrack(pt, eta, phi, mass, 0, 0, 0, 0, 0, 0)
+  EMPair(float pt, float eta, float phi, float mass, int8_t charge = 0) : EMTrack(pt, eta, phi, mass, charge, 0, 0, 0, 0, 0)
   {
+    fPairDCA = 999.f;
     fVPos = ROOT::Math::PtEtaPhiMVector(0, 0, 0, 0);
     fVNeg = ROOT::Math::PtEtaPhiMVector(0, 0, 0, 0);
     fVx = 0.f;
@@ -160,6 +162,9 @@ class EMPair : public EMTrack
   }
 
   ~EMPair() {}
+
+  void setPairDCA(float dca) { fPairDCA = dca; }
+  float getPairDCA() const { return fPairDCA; }
 
   void setPositiveLegPtEtaPhiM(float pt, float eta, float phi, float m)
   {
@@ -170,6 +175,29 @@ class EMPair : public EMTrack
   }
   void setNegativeLegPtEtaPhiM(float pt, float eta, float phi, float m)
   {
+    fVNeg.SetPt(pt);
+    fVNeg.SetEta(eta);
+    fVNeg.SetPhi(phi);
+    fVNeg.SetM(m);
+  }
+
+  void setPositiveLegPxPyPzM(float px, float py, float pz, float m)
+  {
+    float pt = std::sqrt(px * px + py * py);
+    float eta = std::atanh(pz / sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)));
+    float phi = std::atan2(py, px);
+
+    fVPos.SetPt(pt);
+    fVPos.SetEta(eta);
+    fVPos.SetPhi(phi);
+    fVPos.SetM(m);
+  }
+  void setNegativeLegPxPyPzM(float px, float py, float pz, float m)
+  {
+    float pt = std::sqrt(px * px + py * py);
+    float eta = std::atanh(pz / std::sqrt(pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)));
+    float phi = std::atan2(py, px);
+
     fVNeg.SetPt(pt);
     fVNeg.SetEta(eta);
     fVNeg.SetPhi(phi);
@@ -189,10 +217,11 @@ class EMPair : public EMTrack
   float vy() const { return fVy; }
   float vz() const { return fVz; }
   float v0radius() const { return std::sqrt(std::pow(fVx, 2) + std::pow(fVy, 2)); }
-  float eta_cp() const { return std::atanh(fVz / sqrt(pow(fVx, 2) + pow(fVy, 2) + pow(fVz, 2))); }
+  float eta_cp() const { return std::atanh(fVz / std::sqrt(std::pow(fVx, 2) + std::pow(fVy, 2) + std::pow(fVz, 2))); }
   float phi_cp() const { return std::atan2(fVy, fVx); }
 
  protected:
+  float fPairDCA;
   ROOT::Math::PtEtaPhiMVector fVPos;
   ROOT::Math::PtEtaPhiMVector fVNeg;
 
