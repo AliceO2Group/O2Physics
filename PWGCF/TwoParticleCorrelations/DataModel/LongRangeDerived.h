@@ -28,6 +28,10 @@ namespace lrcorrcolltable
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float); //! sum of amplitudes on A side of FT0
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float); //! sum of amplitudes on C side of FT0
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float); //! sum of amplitudes on A side of FDD
+DECLARE_SOA_COLUMN(GapSide, gapSide, uint8_t);                     // 0 for side A, 1 for side C, 2 for both sides
 } // namespace lrcorrcolltable
 
 DECLARE_SOA_TABLE(CollLRTables, "AOD", "COLLLRTABLE",
@@ -38,6 +42,35 @@ DECLARE_SOA_TABLE(CollLRTables, "AOD", "COLLLRTABLE",
                   lrcorrcolltable::Centrality,
                   timestamp::Timestamp);
 using CollLRTable = CollLRTables::iterator;
+
+DECLARE_SOA_TABLE(UpcCollLRTables, "AOD", "UPCCOLLLRTABLE",
+                  o2::soa::Index<>,
+                  bc::GlobalBC,
+                  bc::RunNumber,
+                  lrcorrcolltable::Zvtx,
+                  lrcorrcolltable::Multiplicity,
+                  lrcorrcolltable::TotalFT0AmplitudeA,
+                  lrcorrcolltable::TotalFT0AmplitudeC,
+                  lrcorrcolltable::TotalFV0AmplitudeA);
+using UpcCollLRTable = UpcCollLRTables::iterator;
+
+DECLARE_SOA_TABLE(UpcSgCollLRTables, "AOD", "UPCSGCOLLLRTABLE",
+                  lrcorrcolltable::GapSide);
+using UpcSgCollLRTable = UpcSgCollLRTables::iterator;
+
+namespace lrcorrzdctable
+{
+DECLARE_SOA_INDEX_COLUMN(UpcCollLRTable, upcCollLRTable);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
+} // namespace lrcorrzdctable
+
+DECLARE_SOA_TABLE(zdcLRTables, "AOD", "ZDCLRTABLE",
+                  o2::soa::Index<>,
+                  lrcorrzdctable::UpcCollLRTableId,
+                  lrcorrzdctable::EnergyCommonZNA,
+                  lrcorrzdctable::EnergyCommonZNC);
+using zdcLRTable = zdcLRTables::iterator;
 
 namespace lrcorrtrktable
 {
