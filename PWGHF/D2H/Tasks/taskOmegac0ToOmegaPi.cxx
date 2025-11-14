@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskOmegac0ToOmegapi.cxx
+/// \file taskOmegac0ToOmegaPi.cxx
 /// \brief OmegaC0 analysis task
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
@@ -66,7 +66,7 @@ DECLARE_SOA_TABLE(HfKfOmegacML, "AOD", "HFKFOMEGACML",
 } // namespace o2::aod
 
 /// Omegac0 analysis task
-struct HfTaskOmegac0ToOmegapi {
+struct HfTaskOmegac0ToOmegaPi {
   Produces<o2::aod::HfKfOmegacML> kfCandMl;
 
   Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", true, "Select Omegac0 candidates"};
@@ -328,55 +328,55 @@ struct HfTaskOmegac0ToOmegapi {
   {
     processData<false>(candidates);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticle, "process data with KFParticle", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processDataKFParticle, "process data with KFParticle", false);
 
   void processDataKFParticleMl(Omegac0CandsMlKF const& candidates)
   {
     processData<true>(candidates);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMl, "process data with KFParticle, ML selections", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processDataKFParticleMl, "process data with KFParticle, ML selections", false);
 
   void processDataKFParticleFT0C(Omegac0CandsKF const& candidates,
                                  CollisionsWithFT0C const& collisions)
   {
     processDataCent<false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleFT0C, "process data with KFParticle, FT0C centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processDataKFParticleFT0C, "process data with KFParticle, FT0C centrality", false);
 
   void processDataKFParticleMlFT0C(Omegac0CandsMlKF const& candidates,
                                    CollisionsWithFT0C const& collisions)
   {
     processDataCent<true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMlFT0C, "process data with KFParticle, ML selections, FT0C centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processDataKFParticleMlFT0C, "process data with KFParticle, ML selections, FT0C centrality", false);
 
   void processDataKFParticleFT0M(Omegac0CandsKF const& candidates,
                                  CollisionsWithFT0M const& collisions)
   {
     processDataCent<false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleFT0M, "process data with KFParticle, FT0M centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processDataKFParticleFT0M, "process data with KFParticle, FT0M centrality", false);
 
   void processDataKFParticleMlFT0M(Omegac0CandsMlKF const& candidates,
                                    CollisionsWithFT0M const& collisions)
   {
     processDataCent<true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMlFT0M, "process data with KFParticle, ML selections, FT0M centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processDataKFParticleMlFT0M, "process data with KFParticle, ML selections, FT0M centrality", false);
 
   void processMcKFParticle(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
                            Omegac0Gen const& mcParticles)
   {
     processMc<false>(omegaC0CandidatesMcKF, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticle, "Process MC with KFParticle", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processMcKFParticle, "Process MC with KFParticle", false);
 
   void processMcKFParticleMl(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
                              Omegac0Gen const& mcParticles)
   {
     processMc<true>(omegac0CandidatesMlMcKF, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleMl, "Process MC with KFParticle, ML selections", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processMcKFParticleMl, "Process MC with KFParticle, ML selections", false);
 
   void processMcKFParticleFT0M(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
                                Omegac0Gen const& mcParticles,
@@ -385,7 +385,7 @@ struct HfTaskOmegac0ToOmegapi {
   {
     processMcCent<false>(omegaC0CandidatesMcKF, mcParticles, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleFT0M, "Process MC with KFParticle, FT0M centrality (from MC)", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processMcKFParticleFT0M, "Process MC with KFParticle, FT0M centrality (from MC)", false);
 
   void processMcKFParticleMlFT0M(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
                                  Omegac0Gen const& mcParticles,
@@ -394,10 +394,10 @@ struct HfTaskOmegac0ToOmegapi {
   {
     processMcCent<true>(omegac0CandidatesMlMcKF, mcParticles, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleMlFT0M, "Process MC with KFParticle, ML selections, FT0M centrality (from MC)", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegaPi, processMcKFParticleMlFT0M, "Process MC with KFParticle, ML selections, FT0M centrality (from MC)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskOmegac0ToOmegapi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskOmegac0ToOmegaPi>(cfgc)};
 }
