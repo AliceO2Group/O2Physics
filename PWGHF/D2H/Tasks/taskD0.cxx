@@ -1173,6 +1173,19 @@ struct HfTaskD0 {
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
   // TODO: add the processMcWithKFParticleMlCent
 
+  void processDataWithDCAFitterNWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                        aod::BcFullInfos const& bcs,
+                                        D0Candidates const&,
+                                        aod::TracksWExtra const& tracks,
+                                        aod::FT0s const& ft0s,
+                                        aod::FV0As const& fv0as,
+                                        aod::FDDs const& fdds,
+                                        aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedD0Candidates, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNWithUpc, "Process real data with DCAFitterN w/o ML with UPC", false);
+
   void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                           aod::BcFullInfos const& bcs,
                                           D0CandidatesMl const&,

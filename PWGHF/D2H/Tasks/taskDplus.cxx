@@ -861,6 +861,19 @@ struct HfTaskDplus {
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
 
+  void processDataWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                          aod::BcFullInfos const& bcs,
+                          CandDplusData const& selectedDplusCandidates,
+                          aod::Tracks const&,
+                          aod::FT0s const& ft0s,
+                          aod::FV0As const& fv0as,
+                          aod::FDDs const& fdds,
+                          aod::Zdcs const& /*zdcs*/)
+  {
+    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedDplusCandidates, bcs, ft0s, fv0as, fdds);
+  }
+  PROCESS_SWITCH(HfTaskDplus, processDataWithUpc, "Process real data w/o ML with UPC", false);
+
   void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                 aod::BcFullInfos const& bcs,
                                 CandDplusDataWithMl const& selectedDplusCandidatesMl,
