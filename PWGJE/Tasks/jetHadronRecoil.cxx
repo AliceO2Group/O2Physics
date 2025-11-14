@@ -1081,7 +1081,7 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
 
-  void processRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Join< aod::JetMcCollisions, aod::BkgChargedRhos >>::iterator const& mccollision,
+  void processRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Join < aod::JetMcCollisions, aod::BkgChargedRhos >> ::iterator const& mccollision,
                                                                 soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                                                 soa::Filtered<aod::JetTracksMCD> const& tracks,
