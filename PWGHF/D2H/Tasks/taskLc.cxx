@@ -462,18 +462,18 @@ struct HfTaskLc {
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
-          double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
           const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
 
           auto fillTHnRecSig = [&](bool isPKPi) {
-            massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+            const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
             if constexpr (FillMl) {
-              if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-                outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-                outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
-                outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
+              const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
+              if (mlProb.size() == NumberOfMlClasses) {
+                outputBkg = mlProb[MlClassBackground]; /// bkg score
+                outputPrompt = mlProb[MlClassPrompt];  /// prompt score
+                outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
               std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
@@ -655,18 +655,18 @@ struct HfTaskLc {
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         }
-        double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
         const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
 
         auto fillTHnData = [&](bool isPKPi) {
-          massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
+          const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
           if constexpr (FillMl) {
-            if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-              outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-              outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
-              outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
+            const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
+            if (mlProb.size() == NumberOfMlClasses) {
+              outputBkg = mlProb[MlClassBackground]; /// bkg score
+              outputPrompt = mlProb[MlClassPrompt];  /// prompt score
+              outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
