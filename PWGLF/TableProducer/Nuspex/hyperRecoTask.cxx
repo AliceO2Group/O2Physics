@@ -687,7 +687,7 @@ struct hyperRecoTask {
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                       collision.posX(), collision.posY(), collision.posZ(),
-                      hypCand.isMatter,
+                      mRunNumber, hypCand.isMatter,
                       hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                       hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
@@ -722,7 +722,7 @@ struct hyperRecoTask {
                               collision.psiFT0C(), collision.multFT0C(), collision.qFT0C(),
                               collision.psiTPC(), collision.multTPC(),
                               collision.posX(), collision.posY(), collision.posZ(),
-                              hypCand.isMatter,
+                              mRunNumber, hypCand.isMatter,
                               hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                               hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                               hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
@@ -750,7 +750,7 @@ struct hyperRecoTask {
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                                 collision.posX(), collision.posY(), collision.posZ(),
-                                hypCand.isMatter,
+                                mRunNumber, hypCand.isMatter,
                                 hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                                 hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                                 hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
@@ -786,7 +786,7 @@ struct hyperRecoTask {
       float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.posX(), collision.posY(), collision.posZ(),
-                    hypCand.isMatter,
+                    mRunNumber, hypCand.isMatter,
                     hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                     hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
@@ -861,7 +861,7 @@ struct hyperRecoTask {
       }
 
       outputMCTable(centFT0A, centFT0C, centFT0M,
-                    -1, -1, -1,
+                    mRunNumber, -1, -1, -1,
                     0,
                     -1, -1, -1,
                     -1, -1, -1,
