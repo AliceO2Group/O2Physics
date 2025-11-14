@@ -563,23 +563,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
-      registry.fill(HIST("hDplusBin"), poolBin);
-      registry.fill(HIST("hPtCandMCGen"), particle1.pt());
-      registry.fill(HIST("hEtaMcGen"), particle1.eta());
-      registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle1.phi(), -PIHalf));
-      registry.fill(HIST("hYMCGen"), yD);
-
-      // prompt and non-prompt division
-      isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
-      isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
-      if (isDplusPrompt) {
-        registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
-      } else if (isDplusNonPrompt) {
-        registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
-      }
-
-      // prompt and non-prompt division
-      std::vector<int> listDaughters{};
+            std::vector<int> listDaughters{};
       std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
       std::array<int, NDaughters> prongsId{};
       listDaughters.clear();
@@ -600,6 +584,22 @@ struct HfCorrelatorDplusHadrons {
       if (!isDaughtersOk)
         continue; // Skip this D+ candidate if any daughter fails eta cut
       counterDplusHadron++;
+      
+      registry.fill(HIST("hDplusBin"), poolBin);
+      registry.fill(HIST("hPtCandMCGen"), particle1.pt());
+      registry.fill(HIST("hEtaMcGen"), particle1.eta());
+      registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle1.phi(), -PIHalf));
+      registry.fill(HIST("hYMCGen"), yD);
+
+      // prompt and non-prompt division
+      isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
+      isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
+      if (isDplusPrompt) {
+        registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
+      } else if (isDplusNonPrompt) {
+        registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
+      }
+
       // Dplus Hadron correlation dedicated section
       // if it's a Dplus particle, search for Hadron and evaluate correlations
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
