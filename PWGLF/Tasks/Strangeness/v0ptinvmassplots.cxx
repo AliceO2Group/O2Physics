@@ -39,6 +39,11 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include <utility>
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
+
 // namespace to be used for pt plots and bins
 namespace pthistos
 {
@@ -52,10 +57,6 @@ std::vector<std::shared_ptr<TH1>> kaonSplit;
 std::vector<std::shared_ptr<TH1>> lambdaSplit;
 std::vector<std::shared_ptr<TH1>> antilambdaSplit;
 } // namespace pthistos
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::constants::physics;
 
 struct V0PtInvMassPlots {
   // Histogram Registries
@@ -673,7 +674,7 @@ struct V0PtInvMassPlots {
 
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
-  o2::framework::Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void genMCProcess(
     aod::McCollisions::iterator const& mcCollisions,
