@@ -245,6 +245,13 @@ struct LongrangeMaker {
   Produces<aod::UpcSgCollLRTables> outsgupccol;
   Produces<aod::ZdcLRTables> outzdctable;
 
+  Produces<aod::TrkLRUpcTables> tracksLRUpcTable;
+  Produces<aod::Ft0aLRUpcTables> ft0aLRUpcTable;
+  Produces<aod::Ft0cLRUpcTables> ft0cLRUpcTable;
+  Produces<aod::MftTrkLRUpcTables> mftLRUpcTable;
+  Produces<aod::MftBestTrkLRUpcTables> mftbestLRUpcTable;
+  Produces<aod::V0TrkLRUpcTables> v0LRUpcTable;
+
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
 
@@ -406,13 +413,13 @@ struct LongrangeMaker {
           continue;
         if (!myTrackFilter.IsSelected(track))
           continue;
-        tracksLRTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpCharge);
+        tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpCharge);
         if (getTrackPID(track) == PionTrackN)
-          tracksLRTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpPion);
+          tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpPion);
         if (getTrackPID(track) == KaonTrackN)
-          tracksLRTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpKaon);
+          tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpKaon);
         if (getTrackPID(track) == ProtonTrackN)
-          tracksLRTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpProton);
+          tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpProton);
       }
 
       // ft0 loop
@@ -423,14 +430,14 @@ struct LongrangeMaker {
           float ampl = ft0.amplitudeA()[iCh];
           auto phi = getPhiFT0(chanelid, 0);
           auto eta = getEtaFT0(chanelid, 0);
-          ft0aLRTable(outupccol.lastIndex(), chanelid, ampl, eta, phi);
+          ft0aLRUpcTable(outupccol.lastIndex(), chanelid, ampl, eta, phi);
         }
         for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
           auto chanelid = ft0.channelC()[iCh];
           float ampl = ft0.amplitudeC()[iCh];
           auto phi = getPhiFT0(chanelid, 1);
           auto eta = getEtaFT0(chanelid, 1);
-          ft0cLRTable(outupccol.lastIndex(), chanelid, ampl, eta, phi);
+          ft0cLRUpcTable(outupccol.lastIndex(), chanelid, ampl, eta, phi);
         }
       }
 
@@ -440,7 +447,7 @@ struct LongrangeMaker {
           continue;
         auto phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
-        mftLRTable(outupccol.lastIndex(), track.pt(), track.eta(), phi);
+        mftLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), phi);
       }
 
       if (retracks.size() > 0) {
@@ -454,7 +461,7 @@ struct LongrangeMaker {
           }
           auto phi = track.phi();
           o2::math_utils::bringTo02Pi(phi);
-          mftbestLRTable(outupccol.lastIndex(), track.pt(), track.eta(), phi);
+          mftbestLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), phi);
         }
       }
 
@@ -469,8 +476,8 @@ struct LongrangeMaker {
 
         // K0short
         if (isSelectK0s(col, v0)) { // candidate is K0s
-          v0LRTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                    v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::lrcorrtrktable::kSpK0short);
+          v0LRUpcTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                       v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::lrcorrtrktable::kSpK0short);
         }
 
         // Lambda and Anti-Lambda
@@ -480,13 +487,13 @@ struct LongrangeMaker {
         // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
         if (lambdaTag) { // candidate is Lambda
           massV0 = v0.mLambda();
-          v0LRTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                    v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpLambda);
+          v0LRUpcTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                       v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpLambda);
         }
         if (antilambdaTag) { // candidate is Anti-lambda
           massV0 = v0.mAntiLambda();
-          v0LRTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                    v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpALambda);
+          v0LRUpcTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                       v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpALambda);
         } // end of Lambda and Anti-Lambda processing
       }
     } // SG events
