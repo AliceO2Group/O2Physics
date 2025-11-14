@@ -65,12 +65,12 @@ DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 } // namespace lrcorrzdctable
 
-DECLARE_SOA_TABLE(zdcLRTables, "AOD", "ZDCLRTABLE",
+DECLARE_SOA_TABLE(ZdcLRTables, "AOD", "ZDCLRTABLE",
                   o2::soa::Index<>,
                   lrcorrzdctable::UpcCollLRTableId,
                   lrcorrzdctable::EnergyCommonZNA,
                   lrcorrzdctable::EnergyCommonZNC);
-using zdcLRTable = zdcLRTables::iterator;
+using ZdcLRTable = ZdcLRTables::iterator;
 
 namespace lrcorrtrktable
 {
