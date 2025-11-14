@@ -112,7 +112,7 @@ struct doublephimeson {
 
     histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisPtCorr});
     // histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
-    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi});
+    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisPtCorr});
   }
 
   // get kstar
@@ -925,6 +925,194 @@ struct doublephimeson {
     }
   }
   PROCESS_SWITCH(doublephimeson, processopti3, "Process Optimized same event", false);
+
+  SliceCache cache;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+
+  void processMixedEvent(aod::RedPhiEvents& collisions, aod::PhiTracks& phitracks)
+  {
+    auto tracksTuple = std::make_tuple(phitracks);
+    BinningTypeVertexContributor binningOnPositions{{CfgVtxBins, CfgMultBins}, true};
+    SameKindPair<aod::RedPhiEvents, aod::PhiTracks, BinningTypeVertexContributor> pair{
+      binningOnPositions, nEvtMixing, -1, collisions, tracksTuple, &cache};
+
+    // --- helpers (same as in processopti3) ---
+    constexpr double mPhiPDG = 1.019461; // GeV/c^2
+
+    const auto deltaMPhi = [=](double m1, double m2) {
+      const double d1 = m1 - mPhiPDG;
+      const double d2 = m2 - mPhiPDG;
+      return std::sqrt(d1 * d1 + d2 * d2);
+    };
+
+    const auto deltaR = [](double phi1, double eta1, double phi2, double eta2) {
+      const double dphi = TVector2::Phi_mpi_pi(phi1 - phi2);
+      const double deta = eta1 - eta2;
+      return std::sqrt(dphi * dphi + deta * deta);
+    };
+
+    const auto minKaonDeltaR =
+      [&](const ROOT::Math::PtEtaPhiMVector& kplusA,
+          const ROOT::Math::PtEtaPhiMVector& kplusB,
+          const ROOT::Math::PtEtaPhiMVector& kminusA,
+          const ROOT::Math::PtEtaPhiMVector& kminusB) {
+        // same-sign first (keep QA as in SE)
+        const double dRkplus =
+          deltaR(kplusA.Phi(), kplusA.Eta(), kplusB.Phi(), kplusB.Eta());
+        const double dRkminus =
+          deltaR(kminusA.Phi(), kminusA.Eta(), kminusB.Phi(), kminusB.Eta());
+        histos.fill(HIST("hDeltaRkaonplus"), dRkplus);
+        histos.fill(HIST("hDeltaRkaonminus"), dRkminus);
+
+        // all other combinations
+        const double dR_k1p_k1m =
+          deltaR(kplusA.Phi(), kplusA.Eta(), kminusA.Phi(), kminusA.Eta());
+        const double dR_k1p_k2m =
+          deltaR(kplusA.Phi(), kplusA.Eta(), kminusB.Phi(), kminusB.Eta());
+        const double dR_k2p_k1m =
+          deltaR(kplusB.Phi(), kplusB.Eta(), kminusA.Phi(), kminusA.Eta());
+        const double dR_k2p_k2m =
+          deltaR(kplusB.Phi(), kplusB.Eta(), kminusB.Phi(), kminusB.Eta());
+
+        double minDR = dRkplus;
+        minDR = std::min(minDR, dRkminus);
+        minDR = std::min(minDR, dR_k1p_k1m);
+        minDR = std::min(minDR, dR_k1p_k2m);
+        minDR = std::min(minDR, dR_k2p_k1m);
+        minDR = std::min(minDR, dR_k2p_k2m);
+        return minDR;
+      };
+
+    struct PhiCand {
+      ROOT::Math::PtEtaPhiMVector phi;
+      ROOT::Math::PtEtaPhiMVector kplus;
+      ROOT::Math::PtEtaPhiMVector kminus;
+    };
+
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      // safety: should never happen but keep it
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+
+      // optional event-level selection (same idea as in SE)
+      if (additionalEvsel) {
+        if (collision1.numPos() < 2 || collision1.numNeg() < 2) {
+          continue;
+        }
+        if (collision2.numPos() < 2 || collision2.numNeg() < 2) {
+          continue;
+        }
+      }
+
+      std::vector<PhiCand> cands1, cands2;
+
+      // --- build φ candidates for event 1 (φ1) ---
+      for (auto const& t1 : tracks1) {
+        const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
+        const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
+
+        if (kplus1pt > maxKaonPt || kminus1pt > maxKaonPt)
+          continue;
+        if (!selectionPID(t1.phid1TPC(), t1.phid1TOF(), t1.phid1TOFHit(), strategyPID1, kplus1pt))
+          continue;
+        if (!selectionPID(t1.phid2TPC(), t1.phid2TOF(), t1.phid2TOFHit(), strategyPID2, kminus1pt))
+          continue;
+
+        TLorentzVector phi1, k1p, k1m;
+        phi1.SetXYZM(t1.phiPx(), t1.phiPy(), t1.phiPz(), t1.phiMass());
+        k1p.SetXYZM(t1.phid1Px(), t1.phid1Py(), t1.phid1Pz(), 0.493);
+        k1m.SetXYZM(t1.phid2Px(), t1.phid2Py(), t1.phid2Pz(), 0.493);
+
+        if (t1.phiMass() < minPhiMass1 || t1.phiMass() > maxPhiMass1)
+          continue;
+        if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt)
+          continue;
+
+        histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
+
+        PhiCand cand;
+        cand.phi = ROOT::Math::PtEtaPhiMVector(phi1.Pt(), phi1.Eta(), phi1.Phi(), phi1.M());
+        cand.kplus = ROOT::Math::PtEtaPhiMVector(k1p.Pt(), k1p.Eta(), k1p.Phi(), 0.493);
+        cand.kminus = ROOT::Math::PtEtaPhiMVector(k1m.Pt(), k1m.Eta(), k1m.Phi(), 0.493);
+
+        cands1.emplace_back(std::move(cand));
+      }
+
+      // --- build φ candidates for event 2 (φ2) ---
+      for (auto const& t2 : tracks2) {
+        const double kplus2pt = std::hypot(t2.phid1Px(), t2.phid1Py());
+        const double kminus2pt = std::hypot(t2.phid2Px(), t2.phid2Py());
+
+        if (kplus2pt > maxKaonPt || kminus2pt > maxKaonPt)
+          continue;
+        if (!selectionPID(t2.phid1TPC(), t2.phid1TOF(), t2.phid1TOFHit(), strategyPID1, kplus2pt))
+          continue;
+        if (!selectionPID(t2.phid2TPC(), t2.phid2TOF(), t2.phid2TOFHit(), strategyPID2, kminus2pt))
+          continue;
+
+        TLorentzVector phi2, k2p, k2m;
+        phi2.SetXYZM(t2.phiPx(), t2.phiPy(), t2.phiPz(), t2.phiMass());
+        k2p.SetXYZM(t2.phid1Px(), t2.phid1Py(), t2.phid1Pz(), 0.493);
+        k2m.SetXYZM(t2.phid2Px(), t2.phid2Py(), t2.phid2Pz(), 0.493);
+
+        if (t2.phiMass() < minPhiMass2 || t2.phiMass() > maxPhiMass2)
+          continue;
+        if (phi2.Pt() < minPhiPt || phi2.Pt() > maxPhiPt)
+          continue;
+
+        histos.fill(HIST("hPhiMass"), phi2.M(), phi2.Pt());
+
+        PhiCand cand;
+        cand.phi = ROOT::Math::PtEtaPhiMVector(phi2.Pt(), phi2.Eta(), phi2.Phi(), phi2.M());
+        cand.kplus = ROOT::Math::PtEtaPhiMVector(k2p.Pt(), k2p.Eta(), k2p.Phi(), 0.493);
+        cand.kminus = ROOT::Math::PtEtaPhiMVector(k2m.Pt(), k2m.Eta(), k2m.Phi(), 0.493);
+
+        cands2.emplace_back(std::move(cand));
+      }
+
+      if (cands1.empty() || cands2.empty()) {
+        continue;
+      }
+
+      // --- build mixed-event pairs and fill MEMassUnlike ---
+      for (auto const& c1 : cands1) {
+        TLorentzVector phi1;
+        phi1.SetPtEtaPhiM(c1.phi.Pt(), c1.phi.Eta(), c1.phi.Phi(), c1.phi.M());
+
+        for (auto const& c2 : cands2) {
+          TLorentzVector phi2;
+          phi2.SetPtEtaPhiM(c2.phi.Pt(), c2.phi.Eta(), c2.phi.Phi(), c2.phi.M());
+
+          const double dM = deltaMPhi(phi1.M(), phi2.M());
+          if (dM > maxDeltaMPhi)
+            continue;
+
+          TLorentzVector pair = phi1 + phi2;
+          if (pair.M() < minExoticMass || pair.M() > maxExoticMass)
+            continue;
+
+          const double minDR = minKaonDeltaR(c1.kplus, c2.kplus, c1.kminus, c2.kminus);
+          const double dR = deltaR(phi1.Phi(), phi1.Eta(), phi2.Phi(), phi2.Eta());
+
+          // same definition as SE
+          const double ptcorr = (pair.Pt() - phi1.Pt() != 0.)
+                                  ? phi1.Pt() / (pair.Pt() - phi1.Pt())
+                                  : 0.;
+
+          histos.fill(HIST("MEMassUnlike"),
+                      pair.M(),  // M(phi-phi)
+                      minDR,     // min ΔR among all kaon pairs
+                      pair.Pt(), // pT(phi-phi)
+                      dR,        // ΔR(phi1, phi2)
+                      dM,        // Δm(phi)
+                      ptcorr);   // pT correlation
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(doublephimeson, processMixedEvent,
+                 "Process EventMixing for combinatorial background", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<doublephimeson>(cfgc)}; }
