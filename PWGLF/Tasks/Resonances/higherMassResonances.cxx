@@ -104,6 +104,7 @@ struct HigherMassResonances {
     Configurable<int> configOccCut{"configOccCut", 1000, "Occupancy cut"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
+    Configurable<bool> isSel8{"isSel8", false, "Event Selection 8"};
 
     // Configurables for event selection
     // Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
@@ -378,8 +379,8 @@ struct HigherMassResonances {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 1);
 
-    // if (!collision.sel8())
-    //   return false;
+    if (config.isSel8 && !collision.sel8())
+      return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 2);
 
@@ -416,8 +417,8 @@ struct HigherMassResonances {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 8);
 
-    // if (config.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
-    //   return false;
+    if (config.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
+      return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 9);
 
