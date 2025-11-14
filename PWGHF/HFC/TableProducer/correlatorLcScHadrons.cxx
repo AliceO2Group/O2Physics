@@ -603,22 +603,18 @@ struct HfCorrelatorLcScHadrons {
           registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
           registry.fill(HIST("hTPCnSigmaPr"), posTrackV0.pt(), posTrackV0.tpcNSigmaPr());
-        if (posTrackV0.hasTOF()) {
-        registry.fill(HIST("hTOFnSigmaPr"), posTrackV0.pt(), posTrackV0.tofNSigmaPr());  
-      }
-
+          if (posTrackV0.hasTOF()) {
+            registry.fill(HIST("hTOFnSigmaPr"), posTrackV0.pt(), posTrackV0.tofNSigmaPr());
+          }
 
           if (passPIDSelection(posTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             registry.fill(HIST("hV0LambdaPiKRej"), v0.mLambda(), v0.pt(), posTrackV0.pt());
             registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
-registry.fill(HIST("hTPCnSigmaPrPiKRej"),posTrackV0.pt(), posTrackV0.tpcNSigmaPr());
+            registry.fill(HIST("hTPCnSigmaPrPiKRej"), posTrackV0.pt(), posTrackV0.tpcNSigmaPr());
             if (posTrackV0.hasTOF()) {
-        registry.fill(HIST("hTOFnSigmaPrPiKRej"),posTrackV0.pt(), posTrackV0.tofNSigmaPr());
-      }
-
-
-
+              registry.fill(HIST("hTOFnSigmaPrPiKRej"), posTrackV0.pt(), posTrackV0.tofNSigmaPr());
+            }
           }
         }
       }
@@ -628,17 +624,17 @@ registry.fill(HIST("hTPCnSigmaPrPiKRej"),posTrackV0.pt(), posTrackV0.tpcNSigmaPr
           registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), posTrackV0.pt());
 
           registry.fill(HIST("hTPCnSigmaPr"), negTrackV0.pt(), negTrackV0.tpcNSigmaPr());
-        if (negTrackV0.hasTOF()) {
-        registry.fill(HIST("hTOFnSigmaPr"), negTrackV0.pt(), negTrackV0.tofNSigmaPr());  
-      }
+          if (negTrackV0.hasTOF()) {
+            registry.fill(HIST("hTOFnSigmaPr"), negTrackV0.pt(), negTrackV0.tofNSigmaPr());
+          }
           if (passPIDSelection(negTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             registry.fill(HIST("hV0LambdaPiKRej"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
             registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mLambda(), v0.pt(), posTrackV0.pt());
-	
-	registry.fill(HIST("hTPCnSigmaPrPiKRej"),negTrackV0.pt(), negTrackV0.tpcNSigmaPr());
+
+            registry.fill(HIST("hTPCnSigmaPrPiKRej"), negTrackV0.pt(), negTrackV0.tpcNSigmaPr());
             if (negTrackV0.hasTOF()) {
-        registry.fill(HIST("hTOFnSigmaPrPiKRej"),negTrackV0.pt(), negTrackV0.tofNSigmaPr());
-      }
+              registry.fill(HIST("hTOFnSigmaPrPiKRej"), negTrackV0.pt(), negTrackV0.tofNSigmaPr());
+            }
           }
         }
       }
