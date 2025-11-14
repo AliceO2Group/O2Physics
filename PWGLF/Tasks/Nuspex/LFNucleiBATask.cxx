@@ -411,11 +411,17 @@ struct LFNucleiBATask {
       histoGen.get<TH1>(HIST("events/hMCReco"))->GetXaxis()->SetBinLabel(2, "Ev sel passed");
       histoGen.get<TH1>(HIST("events/hMCReco"))->GetXaxis()->SetBinLabel(3, "INELgt0");
 
+      histoGen.add<TH2>("helium/MCGen/h2HeliumYvsPt", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptHeAxis}});
+      histoGen.add<TH2>("helium/MCGen/h2antiHeliumYvsPt", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptHeAxis}});
+
       histoGen.add("helium/MCGen/ptGen_INEL_Prim_He", "generated particles", HistType::kTH1F, {ptHeAxis});
       histoGen.add("helium/MCGen/ptGen_INEL_Prim_antiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
 
       histoGen.add("helium/MCGen/ptGen_INELgt0_Prim_He", "generated particles", HistType::kTH1F, {ptHeAxis});
       histoGen.add("helium/MCGen/ptGen_INELgt0_Prim_antiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
+
+      histoGen.add<TH2>("helium/MCGenReco/h2HeliumYvsPt", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptHeAxis}});
+      histoGen.add<TH2>("helium/MCGenReco/h2antiHeliumYvsPt", "#it{y} vs #it{p}_{T} (He)", HistType::kTH2F, {{96, -1.2, 1.2}, {ptHeAxis}});
 
       histoGen.add("helium/MCGenReco/ptGen_INEL_Prim_He", "generated particles", HistType::kTH1F, {ptHeAxis});
       histoGen.add("helium/MCGenReco/ptGen_INEL_Prim_antiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
@@ -2282,7 +2288,8 @@ struct LFNucleiBATask {
   template <bool IsMC, bool IsFilteredData, typename CollisionType, typename TracksType, typename ParticleType>
   void fillHistograms(const CollisionType& event,
                       const TracksType& tracks,
-                      const ParticleType& particles)
+                      const ParticleType& particles,
+                      float centFT0M)
   {
     histos.fill(HIST("event/eventSkimming"), 0.5);
     // Apply skimming
@@ -2299,7 +2306,7 @@ struct LFNucleiBATask {
 
     // Event histos fill
     if (enableCentrality)
-      histos.fill(HIST("event/eventSelection"), 0, event.centFT0M());
+      histos.fill(HIST("event/eventSelection"), 0, centFT0M);
     else
       histos.fill(HIST("event/eventSelection"), 0);
     if (enableDebug)
@@ -2311,7 +2318,7 @@ struct LFNucleiBATask {
           return;
       } else {
         if (enableCentrality)
-          histos.fill(HIST("event/eventSelection"), 1, event.centFT0M());
+          histos.fill(HIST("event/eventSelection"), 1, centFT0M);
         else
           histos.fill(HIST("event/eventSelection"), 1);
         if (enableDebug)
@@ -2323,7 +2330,7 @@ struct LFNucleiBATask {
           return;
       } else {
         if (enableCentrality)
-          histos.fill(HIST("event/eventSelection"), 2, event.centFT0M());
+          histos.fill(HIST("event/eventSelection"), 2, centFT0M);
         else
           histos.fill(HIST("event/eventSelection"), 2);
         if (enableDebug)
@@ -2335,7 +2342,7 @@ struct LFNucleiBATask {
           return;
       } else {
         if (enableCentrality)
-          histos.fill(HIST("event/eventSelection"), 3, event.centFT0M());
+          histos.fill(HIST("event/eventSelection"), 3, centFT0M);
         else
           histos.fill(HIST("event/eventSelection"), 3);
         if (enableDebug)
@@ -2346,7 +2353,7 @@ struct LFNucleiBATask {
           (event.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
           (event.selection_bit(aod::evsel::kIsTriggerTVX))) {
         if (enableCentrality)
-          histos.fill(HIST("event/eventSelection"), 4, event.centFT0M());
+          histos.fill(HIST("event/eventSelection"), 4, centFT0M);
         else
           histos.fill(HIST("event/eventSelection"), 4);
       }
@@ -2354,7 +2361,7 @@ struct LFNucleiBATask {
       if (evselOptions.useSel8 && !event.sel8())
         return;
       if (enableCentrality)
-        histos.fill(HIST("event/eventSelection"), 5, event.centFT0M());
+        histos.fill(HIST("event/eventSelection"), 5, centFT0M);
       else
         histos.fill(HIST("event/eventSelection"), 5);
       if (enableDebug)
@@ -2363,7 +2370,7 @@ struct LFNucleiBATask {
       if (event.posZ() < cfgVzCutLow || event.posZ() > cfgVzCutHigh)
         return;
       if (enableCentrality)
-        histos.fill(HIST("event/eventSelection"), 6, event.centFT0M());
+        histos.fill(HIST("event/eventSelection"), 6, centFT0M);
       else
         histos.fill(HIST("event/eventSelection"), 6);
 
@@ -2373,11 +2380,11 @@ struct LFNucleiBATask {
       if (evselOptions.removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
         return;
     }
-    if (event.centFT0M() <= cfgMultCutLow || event.centFT0M() > cfgMultCutHigh) {
+    if (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh) {
       return;
     }
     if (enableCentrality)
-      histos.fill(HIST("event/eventSelection"), 7, event.centFT0M());
+      histos.fill(HIST("event/eventSelection"), 7, centFT0M);
     else
       histos.fill(HIST("event/eventSelection"), 7);
 
@@ -2395,11 +2402,11 @@ struct LFNucleiBATask {
 
     // Event histos fill
     if (enableCentrality)
-      histos.fill(HIST("event/h1VtxZ"), event.posZ(), event.centFT0M());
+      histos.fill(HIST("event/h1VtxZ"), event.posZ(), centFT0M);
     else
       histos.fill(HIST("event/h1VtxZ"), event.posZ());
     if (enableDebug && enableCentrality)
-      debugHistos.fill(HIST("event/hFT0M"), event.centFT0M());
+      debugHistos.fill(HIST("event/hFT0M"), centFT0M);
 
     if constexpr (IsFilteredData) {
       if (enableCentrality)
@@ -3268,7 +3275,7 @@ struct LFNucleiBATask {
           if (usenITSLayer && !itsClusterMap.test(trkqcOptions.nITSLayer))
             continue;
           if (enableCentrality)
-            histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtDeuteronVsMult"), DPt, track.dcaXY(), event.centFT0M());
+            histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtDeuteronVsMult"), DPt, track.dcaXY(), centFT0M);
           else
             histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtDeuteron"), DPt, track.dcaXY());
           if (!track.hasTOF() && (outFlagOptions.enableNoTOFPlots))
@@ -3278,7 +3285,7 @@ struct LFNucleiBATask {
           if (usenITSLayer && !itsClusterMap.test(trkqcOptions.nITSLayer))
             continue;
           if (enableCentrality)
-            histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteronVsMult"), antiDPt, track.dcaXY(), event.centFT0M());
+            histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteronVsMult"), antiDPt, track.dcaXY(), centFT0M);
           else
             histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteron"), antiDPt, track.dcaXY());
           if (!track.hasTOF() && (outFlagOptions.enableNoTOFPlots))
@@ -4504,7 +4511,7 @@ struct LFNucleiBATask {
         switch (useHasTRDConfig) {
           case 0:
             if (enableCentrality)
-              histos.fill(HIST("tracks/deuteron/h3DeuteronVspTNSigmaTPCVsMult"), DPt, track.tpcNSigmaDe(), event.centFT0M());
+              histos.fill(HIST("tracks/deuteron/h3DeuteronVspTNSigmaTPCVsMult"), DPt, track.tpcNSigmaDe(), centFT0M);
             else
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTPC"), DPt, track.tpcNSigmaDe());
             break;
@@ -4529,7 +4536,7 @@ struct LFNucleiBATask {
         switch (useHasTRDConfig) {
           case 0:
             if (enableCentrality)
-              histos.fill(HIST("tracks/deuteron/h3antiDeuteronVspTNSigmaTPCVsMult"), antiDPt, track.tpcNSigmaDe(), event.centFT0M());
+              histos.fill(HIST("tracks/deuteron/h3antiDeuteronVspTNSigmaTPCVsMult"), antiDPt, track.tpcNSigmaDe(), centFT0M);
             else
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTPC"), antiDPt, track.tpcNSigmaDe());
             break;
@@ -4552,7 +4559,7 @@ struct LFNucleiBATask {
         histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe"), track.p(), nITSHe);
         histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTPC"), hePt, track.tpcNSigmaHe());
         if (enableCentrality)
-          histos.fill(HIST("tracks/helium/h3HeliumVspTNSigmaTPCVsMult"), hePt, track.tpcNSigmaHe(), event.centFT0M());
+          histos.fill(HIST("tracks/helium/h3HeliumVspTNSigmaTPCVsMult"), hePt, track.tpcNSigmaHe(), centFT0M);
       }
       if (isAntiHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
@@ -4560,7 +4567,7 @@ struct LFNucleiBATask {
         histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe"), track.p(), nITSHe);
         histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaTPC"), antihePt, track.tpcNSigmaHe());
         if (enableCentrality)
-          histos.fill(HIST("tracks/helium/h3antiHeliumVspTNSigmaTPCVsMult"), antihePt, track.tpcNSigmaHe(), event.centFT0M());
+          histos.fill(HIST("tracks/helium/h3antiHeliumVspTNSigmaTPCVsMult"), antihePt, track.tpcNSigmaHe(), centFT0M);
       }
       if (isHeWTPCpid) {
         histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe_wTPCpid"), track.p(), nITSHe);
@@ -4986,7 +4993,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/eff/deuteron/hPtDeTOF"), DPt);
           histos.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt"), massTOF, DPt);
           if (enableCentrality)
-            histos.fill(HIST("tracks/deuteron/h3TOFmass2DeuteronVsPtVsMult"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, DPt, event.centFT0M());
+            histos.fill(HIST("tracks/deuteron/h3TOFmass2DeuteronVsPtVsMult"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, DPt, centFT0M);
           else
             histos.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, DPt);
           if (outFlagOptions.enableBetaCut && (track.beta() > cfgBetaCut)) {
@@ -5012,7 +5019,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/eff/deuteron/hPtantiDeTOF"), antiDPt);
           histos.fill(HIST("tracks/deuteron/h2TOFmassantiDeuteronVsPt"), massTOF, antiDPt);
           if (enableCentrality)
-            histos.fill(HIST("tracks/deuteron/h3TOFmass2antiDeuteronVsPtVsMult"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, antiDPt, event.centFT0M());
+            histos.fill(HIST("tracks/deuteron/h3TOFmass2antiDeuteronVsPtVsMult"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, antiDPt, centFT0M);
           else
             histos.fill(HIST("tracks/deuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteronVal * MassDeuteronVal, antiDPt);
           if (outFlagOptions.enableBetaCut && (track.beta() > cfgBetaCut)) {
@@ -5041,7 +5048,7 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/helium/h2TOFmassDeltaHeliumVsPt"), 2.f * massTOFhe - MassHeliumVal, hePt);
           histos.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), 2.f * massTOFhe * 2.f * massTOFhe - MassHeliumVal * MassHeliumVal, hePt);
           if (enableCentrality)
-            histos.fill(HIST("tracks/helium/h3TOFmass2HeliumVsPtVsMult"), 2.f * massTOFantihe * 2.f * massTOFantihe - MassHeliumVal * MassHeliumVal, hePt, event.centFT0M());
+            histos.fill(HIST("tracks/helium/h3TOFmass2HeliumVsPtVsMult"), 2.f * massTOFantihe * 2.f * massTOFantihe - MassHeliumVal * MassHeliumVal, hePt, centFT0M);
           if (outFlagOptions.enableBetaCut && (track.beta() > cfgBetaCut)) {
             histos.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt_BetaCut"), 2.f * massTOFhe, hePt);
             histos.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_BetaCut"), 2.f * massTOFhe * 2.f * massTOFhe - MassHeliumVal * MassHeliumVal, hePt);
@@ -5056,7 +5063,7 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/helium/h2TOFmassDeltaantiHeliumVsPt"), 2.f * massTOFantihe - MassHeliumVal, antihePt);
           histos.fill(HIST("tracks/helium/h2TOFmass2antiHeliumVsPt"), 2.f * massTOFantihe * 2.f * massTOFantihe - MassHeliumVal * MassHeliumVal, antihePt);
           if (enableCentrality)
-            histos.fill(HIST("tracks/helium/h3TOFmass2antiHeliumVsPtVsMult"), 2.f * massTOFantihe * 2.f * massTOFantihe - MassHeliumVal * MassHeliumVal, antihePt, event.centFT0M());
+            histos.fill(HIST("tracks/helium/h3TOFmass2antiHeliumVsPtVsMult"), 2.f * massTOFantihe * 2.f * massTOFantihe - MassHeliumVal * MassHeliumVal, antihePt, centFT0M);
           if (outFlagOptions.enableBetaCut && (track.beta() > cfgBetaCut)) {
             histos.fill(HIST("tracks/helium/h2TOFmassantiHeliumVsPt_BetaCut"), 2.f * massTOFantihe, antihePt);
             histos.fill(HIST("tracks/helium/h2TOFmass2antiHeliumVsPt_BetaCut"), 2.f * massTOFantihe * 2.f * massTOFantihe - MassHeliumVal * MassHeliumVal, antihePt);
@@ -5787,7 +5794,7 @@ struct LFNucleiBATask {
             if (isHelium && passDCAzCutHe && passDCAxyCutHe) {
               histos.fill(HIST("tracks/helium/h1HeliumSpectraTrue_Z2"), 2 * hePt);
               if (enableCentrality)
-                histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueVsMult_Z2"), 2 * hePt, event.centFT0M());
+                histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueVsMult_Z2"), 2 * hePt, centFT0M);
 
               if (outFlagOptions.makeDCAAfterCutPlots) {
                 histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtHeliumTrue"), hePt, track.dcaXY());
@@ -5801,7 +5808,7 @@ struct LFNucleiBATask {
               if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
                 histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueWPID_Z2"), 2 * hePt);
                 if (enableCentrality)
-                  histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueWPIDVsMult_Z2"), 2 * hePt, event.centFT0M());
+                  histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueWPIDVsMult_Z2"), 2 * hePt, centFT0M);
                 if (outFlagOptions.enableEffPlots) {
                   histos.fill(HIST("tracks/eff/helium/hPtHeTrue_Z2"), 2 * hePt);
                   if (track.hasTOF() && outFlagOptions.doTOFplots) {
@@ -5812,13 +5819,13 @@ struct LFNucleiBATask {
               if (isPhysPrim) {
                 histos.fill(HIST("tracks/helium/h1HeliumSpectraTruePrim_Z2"), 2 * hePt);
                 if (enableCentrality)
-                  histos.fill(HIST("tracks/helium/h2HeliumSpectraTruePrimVsMult_Z2"), 2 * hePt, event.centFT0M());
+                  histos.fill(HIST("tracks/helium/h2HeliumSpectraTruePrimVsMult_Z2"), 2 * hePt, centFT0M);
 
                 if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
                   if (track.hasTOF() && outFlagOptions.doTOFplots) {
                     histos.fill(HIST("tracks/helium/TOF/h1HeliumSpectraTruePrim_Z2"), 2 * hePt);
                     if (enableCentrality)
-                      histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraTruePrimVsMult_Z2"), 2 * hePt, event.centFT0M());
+                      histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraTruePrimVsMult_Z2"), 2 * hePt, centFT0M);
                   }
                 }
 
@@ -5845,7 +5852,7 @@ struct LFNucleiBATask {
                 if (isWeakDecay) {
                   histos.fill(HIST("tracks/helium/h1HeliumSpectraTrueSec_Z2"), 2 * hePt);
                   if (enableCentrality)
-                    histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueSecVsMult_Z2"), 2 * hePt, event.centFT0M());
+                    histos.fill(HIST("tracks/helium/h2HeliumSpectraTrueSecVsMult_Z2"), 2 * hePt, centFT0M);
                   if (outFlagOptions.makeDCAAfterCutPlots) {
                     histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtHeliumTrueSec"), hePt, track.dcaXY());
                     histos.fill(HIST("tracks/helium/dca/after/hDCAzVsPtHeliumTrueSec"), hePt, track.dcaZ());
@@ -5862,7 +5869,7 @@ struct LFNucleiBATask {
             if (isHelium && passDCAzCutAntiHe && passDCAxyCutAntiHe) {
               histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrue_Z2"), 2 * antihePt);
               if (enableCentrality)
-                histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueVsMult_Z2"), 2 * antihePt, event.centFT0M());
+                histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueVsMult_Z2"), 2 * antihePt, centFT0M);
 
               if (outFlagOptions.makeDCAAfterCutPlots) {
                 histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtantiHeliumTrue"), antihePt, track.dcaXY());
@@ -5875,7 +5882,7 @@ struct LFNucleiBATask {
               if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID_Z2"), 2 * antihePt);
                 if (enableCentrality)
-                  histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueWPIDVsMult_Z2"), 2 * antihePt, event.centFT0M());
+                  histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueWPIDVsMult_Z2"), 2 * antihePt, centFT0M);
                 if (outFlagOptions.enableEffPlots) {
                   histos.fill(HIST("tracks/eff/helium/hPtantiHeTrue_Z2"), 2 * antihePt);
                   if (track.hasTOF() && outFlagOptions.doTOFplots) {
@@ -5886,13 +5893,13 @@ struct LFNucleiBATask {
               if (isPhysPrim) {
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTruePrim_Z2"), 2 * antihePt);
                 if (enableCentrality)
-                  histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTruePrimVsMult_Z2"), 2 * antihePt, event.centFT0M());
+                  histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTruePrimVsMult_Z2"), 2 * antihePt, centFT0M);
 
                 if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
                   if (track.hasTOF() && outFlagOptions.doTOFplots) {
                     histos.fill(HIST("tracks/helium/TOF/h1antiHeliumSpectraTruePrim_Z2"), 2 * antihePt);
                     if (enableCentrality)
-                      histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraTruePrimVsMult_Z2"), 2 * antihePt, event.centFT0M());
+                      histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraTruePrimVsMult_Z2"), 2 * antihePt, centFT0M);
                   }
                 }
 
@@ -5919,7 +5926,7 @@ struct LFNucleiBATask {
                 if (isWeakDecay) {
                   histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueSec_Z2"), 2 * antihePt);
                   if (enableCentrality)
-                    histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueSecVsMult_Z2"), 2 * antihePt, event.centFT0M());
+                    histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueSecVsMult_Z2"), 2 * antihePt, centFT0M);
                   if (outFlagOptions.makeDCAAfterCutPlots) {
                     histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtantiHeliumTrueSec"), antihePt, track.dcaXY());
                     histos.fill(HIST("tracks/helium/dca/after/hDCAzVsPtantiHeliumTrueSec"), antihePt, track.dcaZ());
@@ -6037,7 +6044,7 @@ struct LFNucleiBATask {
                    TrackCandidates const& tracks,
                    o2::aod::BCsWithTimestamps const&)
   {
-    fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
+    fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
   PROCESS_SWITCH(LFNucleiBATask, processData, "process data", true);
 
@@ -6046,7 +6053,7 @@ struct LFNucleiBATask {
                         TrackCandidatesLfPid const& tracks,
                         o2::aod::BCsWithTimestamps const&)
   {
-    fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
+    fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
   PROCESS_SWITCH(LFNucleiBATask, processDataLfPid, "process data with LF PID", false);
 
@@ -6057,7 +6064,7 @@ struct LFNucleiBATask {
   {
     // Runs on data filtered on the fly with LF Tree creator nuclei task
     // Takes as input full AO2Ds
-    fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+    fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
   PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
 
@@ -6067,7 +6074,7 @@ struct LFNucleiBATask {
   {
     // Runs on derived tables produced with LF Tree creator nuclei task
     // Takes as input derived trees
-    fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+    fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   }
   PROCESS_SWITCH(LFNucleiBATask, processDataLight, "process data on the derived trees", false);
 
@@ -6080,7 +6087,7 @@ struct LFNucleiBATask {
 
   // Process function that runs on the original AO2D (for the MC)
   void processMCReco(EventCandidatesMC::iterator const& event,
-                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions,
                      soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks,
                      aod::McParticles const& mcParticles,
                      o2::aod::BCsWithTimestamps const&)
@@ -6102,21 +6109,26 @@ struct LFNucleiBATask {
         doRecoSep = false;
     }
 
+    float mcCentFT0M = -1.f;
+
     if (doRecoSep && event.has_mcCollision()) {
       const int mcIdx = event.mcCollisionId();
       if (mcIdx >= 0) {
         effEvtSet.insert(mcIdx);
         effEvtSetReady = true;
+
+        auto mcColIter = mcCollisions.iteratorAt(mcIdx);
+        mcCentFT0M = mcColIter.centFT0M();
       }
     }
 
-    fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles);
+    fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles, mcCentFT0M);
   } // CLOSING PROCESS MC RECO
   PROCESS_SWITCH(LFNucleiBATask, processMCReco, "process mc reco", false);
 
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPid(EventCandidatesMC::iterator const& event,
-                          soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                          soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions,
                           soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const& tracks,
                           aod::McParticles const& mcParticles,
                           o2::aod::BCsWithTimestamps const&)
@@ -6138,15 +6150,20 @@ struct LFNucleiBATask {
         doRecoSep = false;
     }
 
+    float mcCentFT0M = -1.f;
+
     if (doRecoSep && event.has_mcCollision()) {
       const int mcIdx = event.mcCollisionId();
       if (mcIdx >= 0) {
         effEvtSet.insert(mcIdx);
         effEvtSetReady = true;
+
+        auto mcColIter = mcCollisions.iteratorAt(mcIdx);
+        mcCentFT0M = mcColIter.centFT0M();
       }
     }
 
-    fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles);
+    fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles, mcCentFT0M);
   } // CLOSING PROCESS MC RECO
   PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPid, "process mc reco with LfPid", false);
 
@@ -6267,7 +6284,7 @@ struct LFNucleiBATask {
                              soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks,
                              o2::aod::BCsWithTimestamps const&)
   {
-    fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+    fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
   PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
 
@@ -6275,7 +6292,7 @@ struct LFNucleiBATask {
                                   soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks,
                                   o2::aod::BCsWithTimestamps const&)
   {
-    fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+    fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/, event.centFT0M());
   } // CLOSING PROCESS MC RECO ON FILTERED DATA
   PROCESS_SWITCH(LFNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
 
@@ -6630,11 +6647,14 @@ struct LFNucleiBATask {
   }
   PROCESS_SWITCH(LFNucleiBATask, processEvSgLossMC, "process MC SignLoss", false);
 
+  //   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
+  //                    aod::McParticles const& mcParticles)
+
   // EVENT LOSS, SIGNAL LOSS and EFFICIENCY CHECKER process function
   void processMCGenLosses(
     soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
     const soa::SmallGroups<soa::Join<EventCandidatesMC, o2::aod::PVMults>>& collisions,
-    o2::aod::McParticles const& mcParticles)
+    aod::McParticles const& mcParticles)
   {
     bool isINELgt0true = pwglf::isINELgtNmc(mcParticles, 0, pdgDB);
 
@@ -6669,10 +6689,12 @@ struct LFNucleiBATask {
 
       if (enableHe && isPhysPrim && (std::abs(pdg) == PDGHelium)) {
         if (pdg > 0) {
+          histoGen.fill(HIST("helium/MCGen/h2HeliumYvsPt"), mcParticle.y(), pt);
           histoGen.fill(HIST("helium/MCGen/ptGen_INEL_Prim_He"), pt);
           if (enableCentrality)
             histoGen.fill(HIST("helium/MCGen/ptGenVsMult_INEL_Prim_He"), pt, mcCollision.centFT0M());
         } else {
+          histoGen.fill(HIST("helium/MCGen/h2antiHeliumYvsPt"), mcParticle.y(), pt);
           histoGen.fill(HIST("helium/MCGen/ptGen_INEL_Prim_antiHe"), pt);
           if (enableCentrality)
             histoGen.fill(HIST("helium/MCGen/ptGenVsMult_INEL_Prim_antiHe"), pt, mcCollision.centFT0M());
@@ -6693,6 +6715,7 @@ struct LFNucleiBATask {
 
     int recoIdxINEL = 0;
     int recoIdxINELgt0 = 0;
+    // for (const auto& collision : collisions) {
     for (const auto& collision : collisions) {
       bool hasTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
       bool hasNoTFB = collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
@@ -6774,10 +6797,12 @@ struct LFNucleiBATask {
 
       if (enableHe && isPhysPrim && (std::abs(pdg) == PDGHelium)) {
         if (pdg > 0) {
+          histoGen.fill(HIST("helium/MCGenReco/h2HeliumYvsPt"), mcParticle.y(), pt);
           histoGen.fill(HIST("helium/MCGenReco/ptGen_INEL_Prim_He"), pt);
           if (enableCentrality)
             histoGen.fill(HIST("helium/MCGenReco/ptGenVsMult_INEL_Prim_He"), pt, mcCollision.centFT0M());
         } else {
+          histoGen.fill(HIST("helium/MCGenReco/h2antiHeliumYvsPt"), mcParticle.y(), pt);
           histoGen.fill(HIST("helium/MCGenReco/ptGen_INEL_Prim_antiHe"), pt);
           if (enableCentrality)
             histoGen.fill(HIST("helium/MCGenReco/ptGenVsMult_INEL_Prim_antiHe"), pt, mcCollision.centFT0M());
