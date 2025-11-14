@@ -480,7 +480,7 @@ int runMassFitter(const TString& configFileName)
       setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
       setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
       setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
-      setFixedValue(fixFracDoubleGaus, fixFracDoubleGausManual, nullptr, std::bind(&HFInvMassFitter::setFixFrac2Gaus, massFitter, std::placeholders::_1), "FRAC DOUBLE GAUS");
+      setFixedValue(fixFracDoubleGaus, fixFracDoubleGausManual, hFracDoubleGausToFix, std::bind(&HFInvMassFitter::setFixFrac2Gaus, massFitter, std::placeholders::_1), "FRAC DOUBLE GAUS");
 
       if (enableRefl) {
         reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
