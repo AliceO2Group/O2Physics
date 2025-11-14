@@ -655,7 +655,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U, typename X, typename Y>
-  void fillRecoilJetMatchedHistograms(T const& jetsBase, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
+  void fillRecoilJetMatchedHistograms(T const&, U const& jetsTag, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     std::vector<double> phiTTAr;
     double phiTT = 0;
@@ -1049,7 +1049,7 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatched, "process MC matched (recoil jets)", false);
 
-  void processRecoilJetsMCPMCDMatchedWeighted(aod::JetMcCollisions const& mccollision,
+  void processRecoilJetsMCPMCDMatchedWeighted(aod::JetMcCollision const& mccollision,
                                               soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                               soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                               soa::Filtered<aod::JetTracksMCD> const& tracks,
@@ -1081,7 +1081,7 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
 
-  void processRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Join < aod::JetMcCollisions, aod::BkgChargedRhos >> ::iterator const& mccollision,
+  void processRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Join<aod::JetMcCollisions, aod::BkgChargedRhos>::iterator const& mccollision,
                                                                 soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                                                 soa::Filtered<aod::JetTracksMCD> const& tracks,
