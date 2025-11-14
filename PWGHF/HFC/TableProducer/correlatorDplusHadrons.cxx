@@ -563,7 +563,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
-            std::vector<int> listDaughters{};
+      std::vector<int> listDaughters{};
       std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
       std::array<int, NDaughters> prongsId{};
       listDaughters.clear();
@@ -584,7 +584,7 @@ struct HfCorrelatorDplusHadrons {
       if (!isDaughtersOk)
         continue; // Skip this D+ candidate if any daughter fails eta cut
       counterDplusHadron++;
-      
+
       registry.fill(HIST("hDplusBin"), poolBin);
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMcGen"), particle1.eta());
