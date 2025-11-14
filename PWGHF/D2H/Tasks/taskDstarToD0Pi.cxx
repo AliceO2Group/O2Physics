@@ -254,6 +254,7 @@ struct HfTaskDstarToD0Pi {
     // Hists at Gen level usefull for efficiency calculation
     if (doprocessMcWoMl || doprocessMcWML) {
       if (isCentStudy) {
+        registry.add("SignalLoss/hPtVsCentVsPvContribGenWRecEve", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
         registry.add("Efficiency/hPtVsCentVsPvContribGen", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
         registry.add("Efficiency/hPtPromptVsCentVsPvContribGen", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
         registry.add("Efficiency/hPtNonPromptVsCentVsPvContribGen", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
@@ -677,6 +678,9 @@ struct HfTaskDstarToD0Pi {
 
         registry.fill(HIST("Efficiency/hPtVsYDstarGen"), ptGen, yGen, weightValue);
         if (isCentStudy) {
+          if (recCollisions.size() != 0) {
+            registry.fill(HIST("SignalLoss/hPtVsCentVsPvContribGenWRecEve"), ptGen, centFT0MGen, pvContributors, weightValue);
+          }
           registry.fill(HIST("Efficiency/hPtVsCentVsPvContribGen"), ptGen, centFT0MGen, pvContributors, weightValue);
         } else {
           registry.fill(HIST("Efficiency/hPtGen"), ptGen, weightValue);
