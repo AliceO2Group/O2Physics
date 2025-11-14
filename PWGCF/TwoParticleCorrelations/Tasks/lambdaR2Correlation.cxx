@@ -1586,13 +1586,9 @@ struct LambdaSpinCorrelation {
     boost(pr1, v1);
     boost(pr2, v2);
 
-    float cdot = pr1[0] * pr2[0] + pr1[1] * pr2[1] + pr1[2] * pr2[2];
-    float mag1 = std::sqrt(pr1[0] * pr1[0] + pr1[1] * pr1[1] + pr1[2] * pr1[2]);
-    float mag2 = std::sqrt(pr2[0] * pr2[0] + pr2[1] * pr2[1] + pr2[2] * pr2[2]);
-    float cphi = cdot / (mag1 * mag2);
-
     std::array<float, 3> pr1tv = {pr1[0], pr1[1], pr1[2]};
     std::array<float, 3> pr2tv = {pr2[0], pr2[1], pr2[2]};
+    float cphi = RecoDecay::dotProd(pr1tv, pr2tv) / (RecoDecay::sqrtSumOfSquares(pr1tv[0], pr1tv[1], pr1tv[2]) * RecoDecay::sqrtSumOfSquares(pr2tv[0], pr2tv[1], pr2tv[2]));
     float prdphi = RecoDecay::constrainAngle(RecoDecay::phi(pr1) - RecoDecay::phi(pr2), -PI);
     float prdrap = RecoDecay::eta(pr1tv) - RecoDecay::eta(pr2tv);
     float dr = std::sqrt(prdrap * prdrap + prdphi * prdphi);
