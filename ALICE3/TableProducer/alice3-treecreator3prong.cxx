@@ -307,7 +307,7 @@ struct Alice3TreeCreator3Prong {
   /// \tparam TCand Type of candidate
   /// \param nCands Number of candidates to reserve space for
   /// \param cand Candidate to be used to check which PID tables to reserve
-  template<typename TCand>
+  template <typename TCand>
   void reserveTables(size_t nCands, const TCand& cand)
   {
     if (fillTables.fillCandVtxInfo) {
@@ -340,23 +340,23 @@ struct Alice3TreeCreator3Prong {
     // PID tables
     if (fillTables.fillPid) {
       LOG(info) << "Reserving PID tables for " << nCands << " candidates.";
-      if constexpr ( requires { cand.nSigTrkPi0(); } )
+      if constexpr (requires { cand.nSigTrkPi0(); })
         rowPidPi0.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkPi1(); } )
+      if constexpr (requires { cand.nSigTrkPi1(); })
         rowPidPi1.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkPi2(); } )
+      if constexpr (requires { cand.nSigTrkPi2(); })
         rowPidPi2.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkKa0(); } )
+      if constexpr (requires { cand.nSigTrkKa0(); })
         rowPidKa0.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkKa1(); } )
+      if constexpr (requires { cand.nSigTrkKa1(); })
         rowPidKa1.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkKa2(); } )
+      if constexpr (requires { cand.nSigTrkKa2(); })
         rowPidKa2.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkPr0(); } )
+      if constexpr (requires { cand.nSigTrkPr0(); })
         rowPidPr0.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkPr1(); } )
+      if constexpr (requires { cand.nSigTrkPr1(); })
         rowPidPr1.reserve(nCands);
-      if constexpr ( requires { cand.nSigTrkPr2(); } )
+      if constexpr (requires { cand.nSigTrkPr2(); })
         rowPidPr2.reserve(nCands);
     }
   }
@@ -408,7 +408,7 @@ struct Alice3TreeCreator3Prong {
         cand.errorImpactParameterZ1(),
         cand.errorImpactParameterZ2());
     }
-    if constexpr ( requires { cand.mlScore0(); } ) {
+    if constexpr (requires { cand.mlScore0(); }) {
       if (fillTables.fillMlScoreInfo) {
         rowCandMls(cand.mlScore0(), cand.mlScore1(), cand.mlScore2());
       }
@@ -430,23 +430,23 @@ struct Alice3TreeCreator3Prong {
 
     // Fill PID tables
     if (fillTables.fillPid) {
-      if constexpr ( requires { cand.nSigTrkPi0(); } )
+      if constexpr (requires { cand.nSigTrkPi0(); })
         rowPidPi0(cand.nSigTrkPi0(), cand.nSigRichPi0(), cand.nSigInnTofPi0(), cand.nSigOutTofPi0());
-      if constexpr ( requires { cand.nSigTrkPi1(); } )
+      if constexpr (requires { cand.nSigTrkPi1(); })
         rowPidPi1(cand.nSigTrkPi1(), cand.nSigRichPi1(), cand.nSigInnTofPi1(), cand.nSigOutTofPi1());
-      if constexpr ( requires { cand.nSigTrkPi2(); } )
+      if constexpr (requires { cand.nSigTrkPi2(); })
         rowPidPi2(cand.nSigTrkPi2(), cand.nSigRichPi2(), cand.nSigInnTofPi2(), cand.nSigOutTofPi2());
-      if constexpr ( requires { cand.nSigTrkKa0(); } )
+      if constexpr (requires { cand.nSigTrkKa0(); })
         rowPidKa0(cand.nSigTrkKa0(), cand.nSigRichKa0(), cand.nSigInnTofKa0(), cand.nSigOutTofKa0());
-      if constexpr ( requires { cand.nSigTrkKa1(); } )
+      if constexpr (requires { cand.nSigTrkKa1(); })
         rowPidKa1(cand.nSigTrkKa1(), cand.nSigRichKa1(), cand.nSigInnTofKa1(), cand.nSigOutTofKa1());
-      if constexpr ( requires { cand.nSigTrkKa2(); } )
+      if constexpr (requires { cand.nSigTrkKa2(); })
         rowPidKa2(cand.nSigTrkKa2(), cand.nSigRichKa2(), cand.nSigInnTofKa2(), cand.nSigOutTofKa2());
-      if constexpr ( requires { cand.nSigTrkPr0(); } )
+      if constexpr (requires { cand.nSigTrkPr0(); })
         rowPidPr0(cand.nSigTrkPr0(), cand.nSigRichPr0(), cand.nSigInnTofPr0(), cand.nSigOutTofPr0());
-      if constexpr ( requires { cand.nSigTrkPr1(); } )
+      if constexpr (requires { cand.nSigTrkPr1(); })
         rowPidPr1(cand.nSigTrkPr1(), cand.nSigRichPr1(), cand.nSigInnTofPr1(), cand.nSigOutTofPr1());
-      if constexpr ( requires { cand.nSigTrkPr2(); } )
+      if constexpr (requires { cand.nSigTrkPr2(); })
         rowPidPr2(cand.nSigTrkPr2(), cand.nSigRichPr2(), cand.nSigInnTofPr2(), cand.nSigOutTofPr2());
     }
   }
@@ -474,9 +474,9 @@ struct Alice3TreeCreator3Prong {
   /// \tparam TCandsGen Type of generated candidates collection
   /// \param candsRec Reconstructed candidates collection
   /// \param candsGen Generated candidates collection
-  template<CharmHadAlice3 CharmHad, typename TCandsRec, typename TCandsGen>
+  template <CharmHadAlice3 CharmHad, typename TCandsRec, typename TCandsGen>
   void fillRecoGenTables(const TCandsRec& candsRec,
-                  const TCandsGen& candsGen)
+                         const TCandsGen& candsGen)
   {
     reserveTables(candsRec.size(), *candsRec.begin());
     for (const auto& cand : candsRec) {
@@ -513,7 +513,6 @@ struct Alice3TreeCreator3Prong {
     }
   }
   PROCESS_SWITCH(Alice3TreeCreator3Prong, processLcWMl, "Process Lc with ML", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

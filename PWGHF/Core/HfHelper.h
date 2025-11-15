@@ -1337,18 +1337,17 @@ class HfHelper
     return applySelectionDmesMlScoresForB(cuts, binsPtC, RecoDecay::pt(candB.pxProng0(), candB.pyProng0()), mlScores);
   }
 
-
   /// Get candidate mass (ALICE3 HF data model)
   /// \tparam TCand candidate type
   /// \param cand candidate
   /// \return candidate mass
-  template<o2::analysis::CharmHadAlice3 CharmHad, typename TCand>
+  template <o2::analysis::CharmHadAlice3 CharmHad, typename TCand>
   static double getCandMass(const TCand& cand)
   {
     switch (CharmHad) {
       case o2::analysis::CharmHadAlice3::Lc:
         return cand.isSwapped() ? invMassLcToPiKP(cand)
-                                  : invMassLcToPKPi(cand);
+                                : invMassLcToPKPi(cand);
       default:
         LOG(fatal) << "Unsupported charm hadron type";
         return -1.;
@@ -1359,7 +1358,7 @@ class HfHelper
   /// \tparam TCand candidate type
   /// \param cand candidate
   /// \return candidate energy
-  template<o2::analysis::CharmHadAlice3 CharmHad, typename TCand>
+  template <o2::analysis::CharmHadAlice3 CharmHad, typename TCand>
   static double getCandEnergy(const TCand& cand)
   {
     switch (CharmHad) {
@@ -1375,10 +1374,10 @@ class HfHelper
   /// \tparam TCand candidate type
   /// \param cand candidate
   /// \return candidate rapidity
-  template<o2::analysis::CharmHadAlice3 CharmHad, typename TCand>
+  template <o2::analysis::CharmHadAlice3 CharmHad, typename TCand>
   static double getCandY(const TCand& cand)
   {
-    if constexpr ( requires { cand.flagMcRec(); } ) {
+    if constexpr (requires { cand.flagMcRec(); }) {
       switch (CharmHad) {
         case o2::analysis::CharmHadAlice3::Lc:
           return yLc(cand);
@@ -1396,7 +1395,6 @@ class HfHelper
       }
     }
   }
-
 };
 
 #endif // PWGHF_CORE_HFHELPER_H_

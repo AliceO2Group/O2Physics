@@ -14,18 +14,17 @@
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#include "ALICE3/ML/alice3-mlresponse3prong.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFRICH.h"
-#include "ALICE3/DataModel/RICH.h"
-#include "ALICE3/DataModel/A3DecayFinderTables.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "ALICE3/DataModel/OTFPIDTrk.h"
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/RICH.h"
+#include "ALICE3/ML/alice3-mlresponse3prong.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/PIDResponseCombined.h"
 
@@ -61,7 +60,7 @@ enum Particles {
 
 /// Struct for applying Lc selection cuts
 struct Alice3Selector3Prong {
-  Produces<aod::Alice3Sel3Ps> candSelFlags;   // flags for isSelLc
+  Produces<aod::Alice3Sel3Ps> candSelFlags; // flags for isSelLc
   Produces<aod::Alice3Ml3Ps> candMlScores;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of cand pT"};
@@ -241,14 +240,14 @@ struct Alice3Selector3Prong {
   /// \param pidTrack0 is the PID status of proton cand track
   /// \param pidTrack1 is the PID status of kaon cand track
   /// \param pidTrack2 is the PID status of pion cand track
-  template<CharmHadAlice3 CharmHad, typename TCand>
+  template <CharmHadAlice3 CharmHad, typename TCand>
   void configurePidMask(const TCand& cand, uint32_t& pidMask)
   {
 
-    auto isSelPid = [&] (int selCut, float nsigma, float pt, float nSigmaMax, float ptMin, float ptMax)
-    {
+    auto isSelPid = [&](int selCut, float nsigma, float pt, float nSigmaMax, float ptMin, float ptMax) {
       bool isSelected = !(pt >= ptMin && pt < ptMax && std::abs(nsigma) > nSigmaMax);
-      if (isSelected)  SETBIT(pidMask, selCut);
+      if (isSelected)
+        SETBIT(pidMask, selCut);
       return isSelected;
     };
 
@@ -291,7 +290,7 @@ struct Alice3Selector3Prong {
     bool isSel = false;
     std::vector<float> outputMl{-1.f, -1.f, -1.f};
     uint32_t pidMask = 0;
-    
+
     // looping over 3-prong cands
     for (const auto& cand : cands) {
       isSel = false;

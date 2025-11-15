@@ -183,7 +183,7 @@ struct alice3decaypreselector {
       if (!checkPDG(track, +4122, +211)) { //+4122 -> +2212 -321 +211
         bitoff(selectionMap[track.globalIndex()], kTruePiPlusFromLc);
       }
-      if (!checkPDG(track, -4122, -2212)){ //-4122 -> -2212 +321 -211
+      if (!checkPDG(track, -4122, -2212)) { //-4122 -> -2212 +321 -211
         bitoff(selectionMap[track.globalIndex()], kTruePrMinusFromLc);
       }
       if (!checkPDG(track, -4122, +321)) { //-4122 -> -2212 +321 -211
