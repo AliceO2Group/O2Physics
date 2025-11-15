@@ -13,18 +13,17 @@
 /// \brief 3-prong candidates analysis task for ALICE 3 simulation studies
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFRICH.h"
-#include "ALICE3/DataModel/RICH.h"
-
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
+#include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "ALICE3/DataModel/OTFPIDTrk.h"
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/RICH.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -71,7 +70,7 @@ struct Alice3Task3Prong {
   HfHelper hfHelper;
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  
+
   int selectedPdg{-1};
 
   using Cands3PReco = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3McRecFlags>>;
@@ -353,7 +352,7 @@ struct Alice3Task3Prong {
     fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
   }
   PROCESS_SWITCH(Alice3Task3Prong, processLc, "Process Lc w/o ML sels", true);
-  
+
   void processLcWMl(Cands3PRecoWMl const& candsLcWMl,
                     Cands3PGen const&)
   {
@@ -361,7 +360,6 @@ struct Alice3Task3Prong {
     fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
   }
   PROCESS_SWITCH(Alice3Task3Prong, processLcWMl, "Process Lc with ML sels", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

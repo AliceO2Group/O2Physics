@@ -80,8 +80,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt2Prong0, pt2Prong0, //!
                            [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng0, pVectorProng0, //!
                            [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
-DECLARE_SOA_COLUMN(ImpactParameterY0, impactParameterY0, float);                     //!
-DECLARE_SOA_COLUMN(ErrorImpactParameterY0, errorImpactParameterY0, float);           //!
+DECLARE_SOA_COLUMN(ImpactParameterY0, impactParameterY0, float);                   //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterY0, errorImpactParameterY0, float);         //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, //!
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(ImpactParameterZ0, impactParameterZ0, float);                     //!
@@ -97,8 +97,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt2Prong1, pt2Prong1, //!
                            [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng1, pVectorProng1, //!
                            [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
-DECLARE_SOA_COLUMN(ImpactParameterY1, impactParameterY1, float);                     //!
-DECLARE_SOA_COLUMN(ErrorImpactParameterY1, errorImpactParameterY1, float);           //!
+DECLARE_SOA_COLUMN(ImpactParameterY1, impactParameterY1, float);                   //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterY1, errorImpactParameterY1, float);         //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, //!
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(ImpactParameterZ1, impactParameterZ1, float);                     //!
@@ -114,8 +114,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt2Prong2, pt2Prong2, //!
                            [](float px, float py) -> float { return RecoDecay::pt2(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng2, pVectorProng2, //!
                            [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
-DECLARE_SOA_COLUMN(ImpactParameterY2, impactParameterY2, float);                     //!
-DECLARE_SOA_COLUMN(ErrorImpactParameterY2, errorImpactParameterY2, float);           //!
+DECLARE_SOA_COLUMN(ImpactParameterY2, impactParameterY2, float);                   //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterY2, errorImpactParameterY2, float);         //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(ImpactParameterZ2, impactParameterZ2, float);                     //!
@@ -124,42 +124,42 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalis
                            [](float dca, float err) -> float { return dca / err; });
 
 /// prong PID nsigma
-DECLARE_SOA_COLUMN(NSigTrkPi0, nSigTrkPi0, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkKa0, nSigTrkKa0, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkPr0, nSigTrkPr0, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkPi1, nSigTrkPi1, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkKa1, nSigTrkKa1, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkPr1, nSigTrkPr1, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkPi2, nSigTrkPi2, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkKa2, nSigTrkKa2, float);               //!
-DECLARE_SOA_COLUMN(NSigTrkPr2, nSigTrkPr2, float);               //!
-DECLARE_SOA_COLUMN(NSigRichPi0, nSigRichPi0, float);             //!
-DECLARE_SOA_COLUMN(NSigRichKa0, nSigRichKa0, float);             //!
-DECLARE_SOA_COLUMN(NSigRichPr0, nSigRichPr0, float);             //!
-DECLARE_SOA_COLUMN(NSigRichPi1, nSigRichPi1, float);             //!
-DECLARE_SOA_COLUMN(NSigRichKa1, nSigRichKa1, float);             //!
-DECLARE_SOA_COLUMN(NSigRichPr1, nSigRichPr1, float);             //!
-DECLARE_SOA_COLUMN(NSigRichPi2, nSigRichPi2, float);             //!
-DECLARE_SOA_COLUMN(NSigRichKa2, nSigRichKa2, float);             //!
-DECLARE_SOA_COLUMN(NSigRichPr2, nSigRichPr2, float);             //!
-DECLARE_SOA_COLUMN(NSigInnTofPi0, nSigInnTofPi0, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofKa0, nSigInnTofKa0, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofPr0, nSigInnTofPr0, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofPi1, nSigInnTofPi1, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofKa1, nSigInnTofKa1, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofPr1, nSigInnTofPr1, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofPi2, nSigInnTofPi2, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofKa2, nSigInnTofKa2, float);         //!
-DECLARE_SOA_COLUMN(NSigInnTofPr2, nSigInnTofPr2, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofPi0, nSigOutTofPi0, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofKa0, nSigOutTofKa0, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofPr0, nSigOutTofPr0, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofPi1, nSigOutTofPi1, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofKa1, nSigOutTofKa1, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofPr1, nSigOutTofPr1, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofPi2, nSigOutTofPi2, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofKa2, nSigOutTofKa2, float);         //!
-DECLARE_SOA_COLUMN(NSigOutTofPr2, nSigOutTofPr2, float);         //!
+DECLARE_SOA_COLUMN(NSigTrkPi0, nSigTrkPi0, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkKa0, nSigTrkKa0, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkPr0, nSigTrkPr0, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkPi1, nSigTrkPi1, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkKa1, nSigTrkKa1, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkPr1, nSigTrkPr1, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkPi2, nSigTrkPi2, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkKa2, nSigTrkKa2, float);       //!
+DECLARE_SOA_COLUMN(NSigTrkPr2, nSigTrkPr2, float);       //!
+DECLARE_SOA_COLUMN(NSigRichPi0, nSigRichPi0, float);     //!
+DECLARE_SOA_COLUMN(NSigRichKa0, nSigRichKa0, float);     //!
+DECLARE_SOA_COLUMN(NSigRichPr0, nSigRichPr0, float);     //!
+DECLARE_SOA_COLUMN(NSigRichPi1, nSigRichPi1, float);     //!
+DECLARE_SOA_COLUMN(NSigRichKa1, nSigRichKa1, float);     //!
+DECLARE_SOA_COLUMN(NSigRichPr1, nSigRichPr1, float);     //!
+DECLARE_SOA_COLUMN(NSigRichPi2, nSigRichPi2, float);     //!
+DECLARE_SOA_COLUMN(NSigRichKa2, nSigRichKa2, float);     //!
+DECLARE_SOA_COLUMN(NSigRichPr2, nSigRichPr2, float);     //!
+DECLARE_SOA_COLUMN(NSigInnTofPi0, nSigInnTofPi0, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofKa0, nSigInnTofKa0, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofPr0, nSigInnTofPr0, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofPi1, nSigInnTofPi1, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofKa1, nSigInnTofKa1, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofPr1, nSigInnTofPr1, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofPi2, nSigInnTofPi2, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofKa2, nSigInnTofKa2, float); //!
+DECLARE_SOA_COLUMN(NSigInnTofPr2, nSigInnTofPr2, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofPi0, nSigOutTofPi0, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofKa0, nSigOutTofKa0, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofPr0, nSigOutTofPr0, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofPi1, nSigOutTofPi1, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofKa1, nSigOutTofKa1, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofPr1, nSigOutTofPr1, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofPi2, nSigOutTofPi2, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofKa2, nSigOutTofKa2, float); //!
+DECLARE_SOA_COLUMN(NSigOutTofPr2, nSigOutTofPr2, float); //!
 
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
@@ -202,41 +202,41 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 
 // ML scores columns
-DECLARE_SOA_COLUMN(MlScore0, mlScore0, float);             //!
-DECLARE_SOA_COLUMN(MlScore1, mlScore1, float);             //!
-DECLARE_SOA_COLUMN(MlScore2, mlScore2, float);             //!
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //!
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //!
+DECLARE_SOA_COLUMN(MlScore2, mlScore2, float); //!
 } // namespace a3_hf_cand
 
-#define HFCAND_COLUMNS \
-  a3_hf_cand::CollisionId,                                                                                                                                                                                       \
-  collision::PosX, collision::PosY, collision::PosZ,                                                                                                                                                             \
-  a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ZSecondaryVertex,                                                                                                                      \
-  a3_hf_cand::ErrorDecayLength, a3_hf_cand::ErrorDecayLengthXY,                                                                                                                                                  \
-  a3_hf_cand::Chi2PCA,                                                                                                                                                                                           \
-  /* dynamic columns */ a3_hf_cand::RSecondaryVertex<a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex>,                                                                                                \
-  a3_hf_cand::DecayLength<collision::PosX, collision::PosY, collision::PosZ, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ZSecondaryVertex>,                                          \
-  a3_hf_cand::DecayLengthXY<collision::PosX, collision::PosY, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex>,                                                                                       \
-  a3_hf_cand::DecayLengthNormalised<collision::PosX, collision::PosY, collision::PosZ, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ZSecondaryVertex, a3_hf_cand::ErrorDecayLength>,  \
-  a3_hf_cand::DecayLengthXYNormalised<collision::PosX, collision::PosY, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ErrorDecayLengthXY>
+#define HFCAND_COLUMNS                                                                                                                                                                                            \
+  a3_hf_cand::CollisionId,                                                                                                                                                                                        \
+    collision::PosX, collision::PosY, collision::PosZ,                                                                                                                                                            \
+    a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ZSecondaryVertex,                                                                                                                     \
+    a3_hf_cand::ErrorDecayLength, a3_hf_cand::ErrorDecayLengthXY,                                                                                                                                                 \
+    a3_hf_cand::Chi2PCA,                                                                                                                                                                                          \
+    /* dynamic columns */ a3_hf_cand::RSecondaryVertex<a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex>,                                                                                               \
+    a3_hf_cand::DecayLength<collision::PosX, collision::PosY, collision::PosZ, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ZSecondaryVertex>,                                         \
+    a3_hf_cand::DecayLengthXY<collision::PosX, collision::PosY, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex>,                                                                                      \
+    a3_hf_cand::DecayLengthNormalised<collision::PosX, collision::PosY, collision::PosZ, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ZSecondaryVertex, a3_hf_cand::ErrorDecayLength>, \
+    a3_hf_cand::DecayLengthXYNormalised<collision::PosX, collision::PosY, a3_hf_cand::XSecondaryVertex, a3_hf_cand::YSecondaryVertex, a3_hf_cand::ErrorDecayLengthXY>
 
 // general columns
-#define HFPRONG0_COLUMNS \
+#define HFPRONG0_COLUMNS                                                                                     \
   a3_hf_cand::ImpactParameterNormalised0<a3_hf_cand::ImpactParameterY0, a3_hf_cand::ErrorImpactParameterY0>, \
-  a3_hf_cand::PtProng0<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0>, \
-  a3_hf_cand::Pt2Prong0<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0>, \
-  a3_hf_cand::PVectorProng0<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0, a3_hf_cand::PzProng0>
+    a3_hf_cand::PtProng0<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0>,                                        \
+    a3_hf_cand::Pt2Prong0<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0>,                                       \
+    a3_hf_cand::PVectorProng0<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0, a3_hf_cand::PzProng0>
 
-#define HFPRONG1_COLUMNS \
+#define HFPRONG1_COLUMNS                                                                                     \
   a3_hf_cand::ImpactParameterNormalised1<a3_hf_cand::ImpactParameterY1, a3_hf_cand::ErrorImpactParameterY1>, \
-  a3_hf_cand::PtProng1<a3_hf_cand::PxProng1, a3_hf_cand::PyProng1>, \
-  a3_hf_cand::Pt2Prong1<a3_hf_cand::PxProng1, a3_hf_cand::PyProng1>, \
-  a3_hf_cand::PVectorProng1<a3_hf_cand::PxProng1, a3_hf_cand::PyProng1, a3_hf_cand::PzProng1>
+    a3_hf_cand::PtProng1<a3_hf_cand::PxProng1, a3_hf_cand::PyProng1>,                                        \
+    a3_hf_cand::Pt2Prong1<a3_hf_cand::PxProng1, a3_hf_cand::PyProng1>,                                       \
+    a3_hf_cand::PVectorProng1<a3_hf_cand::PxProng1, a3_hf_cand::PyProng1, a3_hf_cand::PzProng1>
 
-#define HFPRONG2_COLUMNS \
+#define HFPRONG2_COLUMNS                                                                                     \
   a3_hf_cand::ImpactParameterNormalised2<a3_hf_cand::ImpactParameterY2, a3_hf_cand::ErrorImpactParameterY2>, \
-  a3_hf_cand::PtProng2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2>, \
-  a3_hf_cand::Pt2Prong2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2>, \
-  a3_hf_cand::PVectorProng2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2, a3_hf_cand::PzProng2>
+    a3_hf_cand::PtProng2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2>,                                        \
+    a3_hf_cand::Pt2Prong2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2>,                                       \
+    a3_hf_cand::PVectorProng2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2, a3_hf_cand::PzProng2>
 
 namespace a3DecayMap
 {
@@ -309,22 +309,22 @@ DECLARE_SOA_TABLE(Alice3D0MCTruth, "AOD", "ALICE3D0MCTRUTH", //!
 namespace a3_hf_cand_3prong
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-DECLARE_SOA_COLUMN(Px, px, float); //!
-DECLARE_SOA_COLUMN(Py, py, float); //!
-DECLARE_SOA_COLUMN(Pz, pz, float); //!
-DECLARE_SOA_COLUMN(Pt, pt, float); //!
+DECLARE_SOA_COLUMN(Px, px, float);              //!
+DECLARE_SOA_COLUMN(Py, py, float);              //!
+DECLARE_SOA_COLUMN(Pz, pz, float);              //!
+DECLARE_SOA_COLUMN(Pt, pt, float);              //!
 DECLARE_SOA_DYNAMIC_COLUMN(M, m,
                            [](float px0, float py0, float pz0,
                               float px1, float py1, float pz1,
                               float px2, float py2, float pz2,
                               const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0},
-                                                                                                         std::array{px1, py1, pz1},
-                                                                                                         std::array{px2, py2, pz2}},
+                                                                                                        std::array{px1, py1, pz1},
+                                                                                                        std::array{px2, py2, pz2}},
                                                                                              m); });
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, //!
                            [](float px, float py, float pz, const float m) -> float { return RecoDecay::e(px, py, pz, m); });
-DECLARE_SOA_COLUMN(Eta, eta, float); //!
-DECLARE_SOA_COLUMN(Phi, phi, float); //!
+DECLARE_SOA_COLUMN(Eta, eta, float);            //!
+DECLARE_SOA_COLUMN(Phi, phi, float);            //!
 DECLARE_SOA_COLUMN(IsSwapped, isSwapped, bool); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y,
                            [](float px, float py, float pz, const float m) -> float { return RecoDecay::y(std::array{px, py, pz}, m); });
@@ -361,12 +361,11 @@ DECLARE_SOA_TABLE(Alice3Cand3Ps, "AOD", "ALICE3CAND3P", //!
                   a3_hf_cand_3prong::M<a3_hf_cand::PxProng0, a3_hf_cand::PyProng0, a3_hf_cand::PzProng0,
                                        a3_hf_cand::PxProng1, a3_hf_cand::PyProng1, a3_hf_cand::PzProng1,
                                        a3_hf_cand::PxProng2, a3_hf_cand::PyProng2, a3_hf_cand::PzProng2>,
-                  a3_hf_cand_3prong::E<a3_hf_cand_3prong::Px, a3_hf_cand_3prong::Py, a3_hf_cand_3prong::Pz>
-                );
+                  a3_hf_cand_3prong::E<a3_hf_cand_3prong::Px, a3_hf_cand_3prong::Py, a3_hf_cand_3prong::Pz>);
 
 namespace a3_hf_sel_3prong
 {
-DECLARE_SOA_COLUMN(IsSel, isSel, bool);        //!
+DECLARE_SOA_COLUMN(IsSel, isSel, bool); //!
 
 // PID selection
 enum PidSels {
@@ -385,7 +384,7 @@ enum PidSels {
   OutTofProng2,
   NPidSelections
 };
-DECLARE_SOA_COLUMN(PidBitMask, pidBitMask, uint32_t);        //!
+DECLARE_SOA_COLUMN(PidBitMask, pidBitMask, uint32_t); //!
 } // namespace a3_hf_sel_3prong
 DECLARE_SOA_TABLE(Alice3Sel3Ps, "AOD", "ALICE3SEL3P", //!
                   a3_hf_sel_3prong::IsSel,
@@ -393,19 +392,19 @@ DECLARE_SOA_TABLE(Alice3Sel3Ps, "AOD", "ALICE3SEL3P", //!
 
 namespace a3_mc_truth
 {
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);            //!
-DECLARE_SOA_COLUMN(BHadMotherPtRec, bHadMotherPtRec, float);  //!
-DECLARE_SOA_COLUMN(FlagMcRec, flagMcRec, int);                //!
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);            //!
-DECLARE_SOA_COLUMN(BHadMotherPtGen, bHadMotherPtGen, float);  //!
-DECLARE_SOA_COLUMN(FlagMcGen, flagMcGen, int);                //!
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);           //!
+DECLARE_SOA_COLUMN(BHadMotherPtRec, bHadMotherPtRec, float); //!
+DECLARE_SOA_COLUMN(FlagMcRec, flagMcRec, int);               //!
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);           //!
+DECLARE_SOA_COLUMN(BHadMotherPtGen, bHadMotherPtGen, float); //!
+DECLARE_SOA_COLUMN(FlagMcGen, flagMcGen, int);               //!
 } // namespace a3_mc_truth
-DECLARE_SOA_TABLE(Alice3McRecFlags, "AOD", "ALICE3MCRECFLAG",   //!
+DECLARE_SOA_TABLE(Alice3McRecFlags, "AOD", "ALICE3MCRECFLAG", //!
                   a3_mc_truth::OriginMcRec,
                   a3_mc_truth::BHadMotherPtRec,
                   a3_mc_truth::FlagMcRec);
 
-DECLARE_SOA_TABLE(Alice3McGenFlags, "AOD", "ALICE3MCGENFLAG",   //!
+DECLARE_SOA_TABLE(Alice3McGenFlags, "AOD", "ALICE3MCGENFLAG", //!
                   a3_mc_truth::OriginMcGen,
                   a3_mc_truth::BHadMotherPtGen,
                   a3_mc_truth::FlagMcGen);

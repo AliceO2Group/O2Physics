@@ -16,7 +16,6 @@
 #ifndef ALICE3_ML_ALICE3MLRESPONSE3PRONG_H_
 #define ALICE3_ML_ALICE3MLRESPONSE3PRONG_H_
 
-#include "Tools/ML/MlResponse.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Tools/ML/MlResponse.h"
@@ -38,10 +37,10 @@
 
 // Specific case of CHECK_AND_FILL_ML_ALICE3_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_ML_ALICE3(GETTER)                     \
-  case static_cast<uint8_t>(InputFeatures3Prong::GETTER): {  \
-    inputFeatures.emplace_back(candidate.GETTER());          \
-    break;                                                   \
+#define CHECK_AND_FILL_ML_ALICE3(GETTER)                    \
+  case static_cast<uint8_t>(InputFeatures3Prong::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER());         \
+    break;                                                  \
   }
 
 namespace o2::analysis
@@ -62,15 +61,15 @@ enum class InputFeatures3Prong : uint8_t {
   cpa,
   cpaXY,
   chi2PCA,
-  nSigRichPr0, // 0
-  nSigRichKa0, // 0
-  nSigRichPi0, // 0
-  nSigRichPr1, // 1
-  nSigRichKa1, // 1
-  nSigRichPi1, // 1
-  nSigRichPr2, // 2
-  nSigRichKa2, // 2
-  nSigRichPi2, // 2
+  nSigRichPr0,   // 0
+  nSigRichKa0,   // 0
+  nSigRichPi0,   // 0
+  nSigRichPr1,   // 1
+  nSigRichKa1,   // 1
+  nSigRichPi1,   // 1
+  nSigRichPr2,   // 2
+  nSigRichKa2,   // 2
+  nSigRichPi2,   // 2
   nSigInnTofPr0, // 0
   nSigInnTofKa0, // 0
   nSigInnTofPi0, // 0
@@ -89,15 +88,15 @@ enum class InputFeatures3Prong : uint8_t {
   nSigOutTofPr2, // 2
   nSigOutTofKa2, // 2
   nSigOutTofPi2, // 2
-  nSigTrkPr0, // 0
-  nSigTrkKa0, // 0
-  nSigTrkPi0, // 0
-  nSigTrkPr1, // 1
-  nSigTrkKa1, // 1
-  nSigTrkPi1, // 1
-  nSigTrkPr2, // 2
-  nSigTrkKa2, // 2
-  nSigTrkPi2  // 2
+  nSigTrkPr0,    // 0
+  nSigTrkKa0,    // 0
+  nSigTrkPi0,    // 0
+  nSigTrkPr1,    // 1
+  nSigTrkKa1,    // 1
+  nSigTrkPi1,    // 1
+  nSigTrkPr2,    // 2
+  nSigTrkKa2,    // 2
+  nSigTrkPi2     // 2
 };
 
 template <typename TypeOutputScore = float>
