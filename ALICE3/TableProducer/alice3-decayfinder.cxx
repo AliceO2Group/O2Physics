@@ -17,24 +17,7 @@
 //    HF decays. Work in progress: use at your own risk!
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-#include <vector>
-#include <algorithm>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
@@ -45,7 +28,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -61,12 +43,14 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <iterator>
 #include <map>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
