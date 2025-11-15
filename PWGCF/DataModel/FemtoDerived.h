@@ -37,7 +37,8 @@ enum CollisionBinning {
   kMult,               //! Bin collision in number of charged tracks for mixing
   kMultPercentile,     //! Bin collision in multiplicity percentile for mixing
   kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
-  kMultPercentileQn,   //! Bin collision in multiplicity percentile an qn value for mixing
+  kMultPercentileQn,   //! Bin collision in multiplicity percentile and qn value for mixing
+  kMultPercentileEP,   //! Bin collision in multiplicity percentile and event plane (deg) for mixing
   kNCollisionBinning
 };
 
@@ -54,8 +55,9 @@ DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit f
 
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 
-DECLARE_SOA_COLUMN(QnVal, qnVal, int);         //! qn values for dividing events
-DECLARE_SOA_COLUMN(Occupancy, occupancy, int); //! Occupancy of the event
+DECLARE_SOA_COLUMN(QnVal, qnVal, double);           //! qn values for dividing events
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);      //! Occupancy of the event
+DECLARE_SOA_COLUMN(EventPlane, eventPlane, double); //! Event-plane of the event (deg)
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
@@ -70,6 +72,9 @@ using FDCollision = FDCollisions::iterator;
 DECLARE_SOA_TABLE(FDExtQnCollisions, "AOD", "FDEXTQNCOLLISION",
                   femtodreamcollision::QnVal,
                   femtodreamcollision::Occupancy);
+
+DECLARE_SOA_TABLE(FDExtEPCollisions, "AOD", "FDEXTEPCOLLISION",
+                  femtodreamcollision::EventPlane);
 
 DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
@@ -228,47 +233,47 @@ enum CharmHadronMassHypo {
   lcToPiKP = 2,
   dplusToPiKPi = 4
 };
-DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                      //! Global index for the collision
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);                  //! Timestamp for the collision
-DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);                        //! VertexZ for the collision
-DECLARE_SOA_COLUMN(TrackId, trackId, int);                          //! track id to match associate particle with charm hadron prongs
-DECLARE_SOA_COLUMN(Charge, charge, int8_t);                         //! Charge of charm hadron
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                        //! Track id of charm hadron prong0
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                        //! Track id of charm hadron prong1
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                        //! Track id of charm hadron prong2
-DECLARE_SOA_COLUMN(Prong0Pt, prong0Pt, float);                      //! Track pT of charm hadron prong0
-DECLARE_SOA_COLUMN(Prong1Pt, prong1Pt, float);                      //! Track pT of charm hadron prong1
-DECLARE_SOA_COLUMN(Prong2Pt, prong2Pt, float);                      //! Track pT of charm hadron prong2
-DECLARE_SOA_COLUMN(Prong0Eta, prong0Eta, float);                    //! Track eta of charm hadron prong0
-DECLARE_SOA_COLUMN(Prong1Eta, prong1Eta, float);                    //! Track eta of charm hadron prong1
-DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);                    //! Track eta of charm hadron prong2
-DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);                    //! Track phi of charm hadron prong0
-DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);                    //! Track phi of charm hadron prong1
-DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);                    //! Track phi of charm hadron prong2
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);        //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
-DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                            //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, N3ProngD = 2ecays };
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);                  //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);                  //! flag for generator level matching (1 for prompt, 2 for non-prompt)
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int);    //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
-DECLARE_SOA_COLUMN(TrkPt, trkPt, float);                            //! Transverse momentum of associate femto particle
-DECLARE_SOA_COLUMN(TrkEta, trkEta, float);                          //! Eta of associate femto particle
-DECLARE_SOA_COLUMN(TrkPhi, trkPhi, float);                          //! Phi of associate femto particle
-DECLARE_SOA_COLUMN(Kstar, kstar, float);                            //! Relative momentum in particles pair frame
-DECLARE_SOA_COLUMN(KT, kT, float);                                  //! kT distribution of particle pairs
-DECLARE_SOA_COLUMN(MT, mT, float);                                  //! Transverse mass distribution
-DECLARE_SOA_COLUMN(CharmM, charmM, float);                          //! Charm hadron mass
-DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                    //! Charm hadron track mass
-DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                        //! Transverse momentum of charm hadron for result task
-DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                      //! Eta of charm hadron for result task
-DECLARE_SOA_COLUMN(CharmPhi, charmPhi, float);                      //! Phi of charm hadron for result task
-DECLARE_SOA_COLUMN(Mult, mult, int);                                //! Charge particle multiplicity
-DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);          //! Multiplicity precentile
-DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                     //! Selection between like sign (1) and unlike sign pair (2)
-DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);              //! Selection between same-event (1), and mixed-event (2)
-DECLARE_SOA_DYNAMIC_COLUMN(M, m,                                    //!
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                   //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);               //! Timestamp for the collision
+DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);                     //! VertexZ for the collision
+DECLARE_SOA_COLUMN(TrackId, trackId, int);                       //! track id to match associate particle with charm hadron prongs
+DECLARE_SOA_COLUMN(Charge, charge, int8_t);                      //! Charge of charm hadron
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                     //! Track id of charm hadron prong0
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                     //! Track id of charm hadron prong1
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                     //! Track id of charm hadron prong2
+DECLARE_SOA_COLUMN(Prong0Pt, prong0Pt, float);                   //! Track pT of charm hadron prong0
+DECLARE_SOA_COLUMN(Prong1Pt, prong1Pt, float);                   //! Track pT of charm hadron prong1
+DECLARE_SOA_COLUMN(Prong2Pt, prong2Pt, float);                   //! Track pT of charm hadron prong2
+DECLARE_SOA_COLUMN(Prong0Eta, prong0Eta, float);                 //! Track eta of charm hadron prong0
+DECLARE_SOA_COLUMN(Prong1Eta, prong1Eta, float);                 //! Track eta of charm hadron prong1
+DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);                 //! Track eta of charm hadron prong2
+DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);                 //! Track phi of charm hadron prong0
+DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);                 //! Track phi of charm hadron prong1
+DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);                 //! Track phi of charm hadron prong2
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int);     //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
+DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                       //! Background score using Boosted Decision Tree for charm hadron
+DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                 //! Prompt signal score using Boosted Decision Tree for charm hadron
+DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                         //! Feed-down score using Boosted Decision Tree for charm hadron
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 17, DsToKKPi = 6, XicToPKPi = 21, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
+DECLARE_SOA_COLUMN(TrkPt, trkPt, float);                         //! Transverse momentum of associate femto particle
+DECLARE_SOA_COLUMN(TrkEta, trkEta, float);                       //! Eta of associate femto particle
+DECLARE_SOA_COLUMN(TrkPhi, trkPhi, float);                       //! Phi of associate femto particle
+DECLARE_SOA_COLUMN(Kstar, kstar, float);                         //! Relative momentum in particles pair frame
+DECLARE_SOA_COLUMN(KT, kT, float);                               //! kT distribution of particle pairs
+DECLARE_SOA_COLUMN(MT, mT, float);                               //! Transverse mass distribution
+DECLARE_SOA_COLUMN(CharmM, charmM, float);                       //! Charm hadron mass
+DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                 //! Charm hadron track mass
+DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                     //! Transverse momentum of charm hadron for result task
+DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                   //! Eta of charm hadron for result task
+DECLARE_SOA_COLUMN(CharmPhi, charmPhi, float);                   //! Phi of charm hadron for result task
+DECLARE_SOA_COLUMN(Mult, mult, int);                             //! Charge particle multiplicity
+DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);       //! Multiplicity precentile
+DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                  //! Selection between like sign (1) and unlike sign pair (2)
+DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);           //! Selection between same-event (1), and mixed-event (2)
+DECLARE_SOA_DYNAMIC_COLUMN(M, m,                                 //!
                            [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{
                                                                                                                                                                                                         RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
                                                                                                                                                                                                         RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
