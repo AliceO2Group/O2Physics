@@ -142,8 +142,10 @@ enum CascadeSels {
   kCascadeSelsMax
 };
 
-const char cascadeSelsName[] = "Cascade Selection Object";
-const std::unordered_map<CascadeSels, std::string> cascadeSelsToString = {
+constexpr char XiSelHistName[] = "hXiSelection";
+constexpr char OmegaSelHistName[] = "hOmegaSelection";
+constexpr char CascadeSelsName[] = "Cascade Selection Object";
+const std::unordered_map<CascadeSels, std::string> cascadeSelectionNames = {
   {kCascadeCpaMin, "Cascade CPA Min"},
   {kCascadeDcaDaughMax, "Cascade DCA Daughters Max"},
   {kCascadeTransRadMin, "Cascade Transverse Radius Min"},
@@ -167,7 +169,7 @@ const std::unordered_map<CascadeSels, std::string> cascadeSelsToString = {
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-template <modes::Cascade cascadeType>
+template <modes::Cascade cascadeType, const char* HistName>
 class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::CascadeMaskType, kCascadeSelsMax>
 {
  public:
@@ -175,21 +177,21 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
   ~CascadeSelection() = default;
 
   template <typename T1, typename T2>
-  void configure(T1 const& config, T2 const& filter)
+  void configure(o2::framework::HistogramRegistry* registry, T1 const& config, T2 const& filter)
   {
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
       mXiMassUpperLimit = filter.massXiMax.value;
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
-      this->addSelection(config.bachelorTpcPion.value, kBachelorTpcPion, limits::kAbsUpperLimit, true, true);
+      this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
       mOmegaMassUpperLimit = filter.massOmegaMax.value;
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
-      this->addSelection(config.bachelorTpcKaon.value, kBachelorTpcKaon, limits::kAbsUpperLimit, true, true);
+      this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
     }
 
     mPtMin = filter.ptMin.value;
@@ -201,19 +203,21 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
     mLambdaMassMin = filter.massLambdaMin.value;
     mLambdaMassMax = filter.massLambdaMax.value;
 
-    this->addSelection(config.posDauTpc.value, kPosDauTpc, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.negDauTpc.value, kNegDauTpc, limits::kAbsUpperLimit, true, true);
+    this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
 
-    this->addSelection(config.cascadeCpaMin.value, kCascadeCpaMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.cascadeTransRadMin.value, kCascadeTransRadMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.cascadeDcaDauMax.value, kCascadeDcaDaughMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.lambdaCpaMin.value, kLambdaCpaMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.lambdaTransRadMin.value, kLambdaTransRadMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.lambdaDcaDauMax.value, kLambdaDcaDauMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.lambdaDcaToPvMin.value, kLambdaDcaToPvMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.dauAbsEtaMax.value, kDauAbsEtaMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.dauDcaMin.value, kDauDcaMin, limits::kAbsLowerLimit, true, true);
-    this->addSelection(config.dauTpcClustersMin.value, kDauTpcClsMin, limits::kLowerLimit, true, true);
+    this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kLambdaTransRadMin, cascadeSelectionNames.at(kLambdaTransRadMin), config.lambdaTransRadMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kLambdaDcaToPvMin, cascadeSelectionNames.at(kLambdaDcaToPvMin), config.lambdaDcaToPvMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kDauAbsEtaMax, cascadeSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kDauDcaMin, cascadeSelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, true, true, false);
+    this->addSelection(kDauTpcClsMin, cascadeSelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
+
+    this->setupContainers<HistName>(registry);
   };
 
   template <typename T1, typename T2, typename T3>
@@ -263,31 +267,44 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
       LOG(warn) << "Encountered Cascade candidate with 0 charge";
     }
 
-    this->assembleBitmask();
+    this->assembleBitmask<HistName>();
   };
 
   template <typename T>
-  bool checkFilters(const T& cascade) const
+  bool checkCandidate(const T& cascade) const
   {
-    return ((cascade.pt() > mPtMin && cascade.pt() < mPtMax) &&
-            (cascade.eta() > mEtaMin && cascade.eta() < mEtaMax) &&
-            (cascade.phi() > mPhiMin && cascade.phi() < mPhiMax) &&
-            (cascade.mLambda() > mLambdaMassMin && cascade.mLambda() < mLambdaMassMax));
-  }
+    // check kinematics
+    const bool kinematicsOK =
+      (cascade.pt() > mPtMin && cascade.pt() < mPtMax) &&
+      (cascade.eta() > mEtaMin && cascade.eta() < mEtaMax) &&
+      (cascade.phi() > mPhiMin && cascade.phi() < mPhiMax);
 
-  template <typename T>
-  bool checkHypothesis(T const& cascadeCandidate)
-  {
-    // no need to check PID of the bachelor/daughters here, they are set as minimal cuts
-    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
-      return (mXiMassLowerLimit < cascadeCandidate.mXi() && mXiMassUpperLimit > cascadeCandidate.mXi()) &&           // inside xi mass window
-             (cascadeCandidate.mOmega() < mOmegaMassLowerLimit || cascadeCandidate.mOmega() > mOmegaMassUpperLimit); // outside omega mass window
+    if (!kinematicsOK) {
+      return false;
     }
-    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
-      return (mOmegaMassLowerLimit < cascadeCandidate.mOmega() && mOmegaMassUpperLimit > cascadeCandidate.mOmega()) && // inside omega mass window
-             (cascadeCandidate.mXi() < mXiMassLowerLimit || cascadeCandidate.mXi() > mXiMassUpperLimit);               // outside xi mass window
+
+    // check mass of daughter lambda
+    const bool lambdaOK =
+      (cascade.mLambda() > mLambdaMassMin && cascade.mLambda() < mLambdaMassMax);
+
+    if (!lambdaOK) {
+      return false;
     }
-    return false;
+
+    // check mass hypothesis
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+      // Xi candidate must be inside Xi window and outside Omega
+      return (cascade.mXi() > mXiMassLowerLimit && cascade.mXi() < mXiMassUpperLimit) &&
+             (cascade.mOmega() < mOmegaMassLowerLimit || cascade.mOmega() > mOmegaMassUpperLimit);
+    }
+
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+      // Omega candidate must be inside Omega window and outside Xi
+      return (cascade.mOmega() > mOmegaMassLowerLimit && cascade.mOmega() < mOmegaMassUpperLimit) &&
+             (cascade.mXi() < mXiMassLowerLimit || cascade.mXi() > mXiMassUpperLimit);
+    }
+
+    return false; // should never happen
   }
 
  protected:
@@ -327,7 +344,7 @@ struct ConfCascadeTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceOmegaExtras{"produceOmegaExtras", -1, "Produce OmegaExtras (-1: auto; 0 off; 1 on)"};
 };
 
-template <modes::Cascade cascadeType>
+template <modes::Cascade cascadeType, const char* HistName>
 class CascadeBuilder
 {
  public:
@@ -335,9 +352,8 @@ class CascadeBuilder
   ~CascadeBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void init(T1& config, T2& filter, T3& table, T4& initContext)
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
   {
-    mCascadeSelection.configure(config, filter);
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       LOG(info) << "Initialize femto Xi builder...";
       mProduceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
@@ -353,10 +369,13 @@ class CascadeBuilder
 
     if (mProduceXis || mProduceXiExtras || mProduceXiMasks || mProduceOmegas || mProduceOmegaMasks || mProduceOmegaExtras) {
       mFillAnyTable = true;
-      mCascadeSelection.printSelections(cascadeSelsName, cascadeSelsToString);
     } else {
-      LOG(info) << "No tables configured";
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
     }
+    mCascadeSelection.configure(registry, config, filter);
+    mCascadeSelection.printSelections(CascadeSelsName);
     LOG(info) << "Initialization done...";
   }
 
@@ -371,11 +390,11 @@ class CascadeBuilder
     int32_t posDaughterIndex = 0;
     int32_t negDaughterIndex = 0;
     for (const auto& cascade : fullCascades) {
-      if (!mCascadeSelection.checkFilters(cascade)) {
+      if (!mCascadeSelection.checkCandidate(cascade)) {
         continue;
       }
       mCascadeSelection.applySelections(cascade, fullTracks, col);
-      if (mCascadeSelection.passesAllRequiredSelections() && mCascadeSelection.checkHypothesis(cascade)) {
+      if (mCascadeSelection.passesAllRequiredSelections()) {
 
         auto bachelor = cascade.template bachelor_as<T5>();
         auto posDaughter = cascade.template posTrack_as<T5>();
@@ -450,7 +469,7 @@ class CascadeBuilder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  CascadeSelection<cascadeType> mCascadeSelection;
+  CascadeSelection<cascadeType, HistName> mCascadeSelection;
   bool mFillAnyTable = false;
   bool mProduceXis = false;
   bool mProduceXiMasks = false;
