@@ -182,7 +182,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
   static constexpr std::size_t NDaughters{3u};
-  static constexpr float kEtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
+  static constexpr float EtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -437,7 +437,7 @@ struct HfCorrelatorDplusHadrons {
         double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
         double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
         double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
-        if (std::abs(etaDaugh1) >= kEtaDaughtersMax || std::abs(etaDaugh2) >= kEtaDaughtersMax || std::abs(etaDaugh3) >= kEtaDaughtersMax) {
+        if (std::abs(etaDaugh1) >= EtaDaughtersMax || std::abs(etaDaugh2) >= EtaDaughtersMax || std::abs(etaDaugh3) >= EtaDaughtersMax) {
           continue;
         }
         // efficiency weight determination
@@ -563,6 +563,28 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
+      std::vector<int> listDaughters{};
+      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
+      std::array<int, NDaughters> prongsId{};
+      listDaughters.clear();
+      RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
+      int counterDaughters = 0;
+      if (listDaughters.size() != NDaughters)
+        continue;
+      bool isDaughtersOk = true;
+      for (const auto& dauIdx : listDaughters) {
+        auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
+        if (std::abs(daughI.eta()) >= EtaDaughtersMax) {
+          isDaughtersOk = false;
+          break;
+        }
+        counterDaughters += 1;
+        prongsId[counterDaughters - 1] = daughI.globalIndex();
+      }
+      if (!isDaughtersOk)
+        continue; // Skip this D+ candidate if any daughter fails eta cut
+      counterDplusHadron++;
+
       registry.fill(HIST("hDplusBin"), poolBin);
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMcGen"), particle1.eta());
@@ -578,28 +600,6 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
       }
 
-      // prompt and non-prompt division
-      std::vector<int> listDaughters{};
-      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
-      std::array<int, NDaughters> prongsId{};
-      listDaughters.clear();
-      RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
-      int counterDaughters = 0;
-      if (listDaughters.size() != NDaughters)
-        continue;
-      bool isDaughtersOk = true;
-      for (const auto& dauIdx : listDaughters) {
-        auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
-        if (std::abs(daughI.eta()) >= kEtaDaughtersMax) {
-          isDaughtersOk = false;
-          break;
-        }
-        counterDaughters += 1;
-        prongsId[counterDaughters - 1] = daughI.globalIndex();
-      }
-      if (!isDaughtersOk)
-        continue; // Skip this D+ candidate if any daughter fails eta cut
-      counterDplusHadron++;
       // Dplus Hadron correlation dedicated section
       // if it's a Dplus particle, search for Hadron and evaluate correlations
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)
