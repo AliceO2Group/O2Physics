@@ -45,3 +45,13 @@ o2physics_add_dpl_workflow(alice3-correlatorddbar
                     SOURCES alice3-correlatorDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-selector-3prong
+                    SOURCES alice3-selector3prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-tree-creator-3prong
+                    SOURCES alice3-treecreator3prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
