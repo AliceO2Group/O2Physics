@@ -20,6 +20,8 @@
 #include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -93,6 +95,9 @@ struct LongrangeMaker {
   } cfgCcdbParam;
 
   struct : ConfigurableGroup {
+    Configurable<bool> isApplyTrigTvx{"isApplyTrigTvx", false, "Enable Ft0a and Ft0c coincidence"};
+    Configurable<bool> isApplyTfborder{"isApplyTfborder", false, "Enable TF border cut"};
+    Configurable<bool> isApplyItsRofborder{"isApplyItsRofborder", false, "Enable ITS ROF border cut"};
     Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
     Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
     Configurable<bool> isApplyGoodITSLayersAll{"isApplyGoodITSLayersAll", false, "Enable GoodITSLayersAll cut"};
@@ -105,6 +110,8 @@ struct LongrangeMaker {
     Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", false, "Centrality based on FT0C"};
     Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
     Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+    Configurable<bool> isApplyOccuSelection{"isApplyOccuSelection", false, "Enable occupancy selection"};
+    Configurable<int> cfgOccuCut{"cfgOccuCut", 1000, "Occupancy selection"};
   } cfgevtsel;
 
   struct : ConfigurableGroup {
@@ -174,6 +181,13 @@ struct LongrangeMaker {
   std::vector<double> tpcNsigmaCut;
   o2::aod::ITSResponse itsResponse;
 
+  // Create instance of the selector class which runs the gap selection algorithm
+  SGSelector sgSelector;
+  // Create instance of cut holder class to contain the user defined cuts
+  SGCutParHolder cfgSgCuts = SGCutParHolder();
+  Configurable<SGCutParHolder> sgCuts{"sgCuts", {}, "SG event cuts"};
+  Configurable<int> cfgGapSide{"cfgGapSide", 2, "cut on UPC events"};
+
   void init(InitContext&)
   {
     ccdb->setURL(cfgCcdbParam.cfgURL);
@@ -190,14 +204,18 @@ struct LongrangeMaker {
     auto hstat = histos.get<TH1>(HIST("EventHist"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "Sel8");
-    x->SetBinLabel(3, "ApplySameBunchPileup");
-    x->SetBinLabel(4, "ApplyGoodZvtxFT0vsPV");
-    x->SetBinLabel(5, "ApplyGoodITSLayersAll");
-    x->SetBinLabel(6, "ApplyExtraCorrCut");
-    x->SetBinLabel(7, "ApplyNoCollInTimeRangeStandard");
-    x->SetBinLabel(8, "ApplyNoCollInRofStandard");
-    x->SetBinLabel(9, "ApplyNoHighMultCollInPrevRof");
+    x->SetBinLabel(2, "Apply TriggerTVX");
+    x->SetBinLabel(3, "Apply TF Border");
+    x->SetBinLabel(4, "Apply ITS ROF Border");
+    x->SetBinLabel(5, "ApplySameBunchPileup");
+    x->SetBinLabel(6, "ApplyGoodZvtxFT0vsPV");
+    x->SetBinLabel(7, "ApplyGoodITSLayersAll");
+    x->SetBinLabel(8, "ApplyExtraCorrCut");
+    x->SetBinLabel(9, "ApplyNoCollInTimeRangeStandard");
+    x->SetBinLabel(10, "ApplyNoCollInRofStandard");
+    x->SetBinLabel(11, "ApplyNoHighMultCollInPrevRof");
+    x->SetBinLabel(12, "ApplyOccupancySelection");
+    histos.add("hSelectionResult", "hSelectionResult", kTH1I, {{5, -0.5, 4.5}});
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     myTrackFilter.SetPtRange(cfgtrksel.cfgPtCutMin, cfgtrksel.cfgPtCutMax);
@@ -211,6 +229,8 @@ struct LongrangeMaker {
     tofNsigmaCut = tofNsigmaPidCut;
     itsNsigmaCut = itsNsigmaPidCut;
     tpcNsigmaCut = tpcNsigmaPidCut;
+
+    cfgSgCuts = (SGCutParHolder)sgCuts;
   }
 
   Produces<aod::CollLRTables> collisionLRTable;
@@ -221,14 +241,29 @@ struct LongrangeMaker {
   Produces<aod::MftBestTrkLRTables> mftbestLRTable;
   Produces<aod::V0TrkLRTables> v0LRTable;
 
+  Produces<aod::UpcCollLRTables> outupccol;
+  Produces<aod::UpcSgCollLRTables> outsgupccol;
+  Produces<aod::ZdcLRTables> outzdctable;
+
+  Produces<aod::TrkLRUpcTables> tracksLRUpcTable;
+  Produces<aod::Ft0aLRUpcTables> ft0aLRUpcTable;
+  Produces<aod::Ft0cLRUpcTables> ft0cLRUpcTable;
+  Produces<aod::MftTrkLRUpcTables> mftLRUpcTable;
+  Produces<aod::MftBestTrkLRUpcTables> mftbestLRUpcTable;
+  Produces<aod::V0TrkLRUpcTables> v0LRUpcTable;
+
   Filter fTracksEta = nabs(aod::track::eta) < cfgtrksel.cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgtrksel.cfgPtCutMin) && (aod::track::pt < cfgtrksel.cfgPtCutMax);
 
   using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using MftTrkTable = aod::MFTTracks;
+  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-  void process(CollTable::iterator const& col, TrksTable const& tracks, aod::FT0s const&, MftTrkTable const& mfttracks, soa::SmallGroups<aod::BestCollisionsFwd> const& retracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void processData(CollTable::iterator const& col, TrksTable const& tracks,
+                   aod::FT0s const&, MftTrkTable const& mfttracks,
+                   soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
+                   aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     if (!isEventSelected(col)) {
       return;
@@ -331,42 +366,187 @@ struct LongrangeMaker {
     }
   } // process function
 
+  void processUpc(CollTable::iterator const& col, BCs const& bcs,
+                  TrksTable const& tracks, aod::Zdcs const&,
+                  aod::FV0As const& fv0as, aod::FT0s const& ft0s,
+                  aod::FDDs const& fdds, MftTrkTable const& mfttracks,
+                  soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
+                  aod::V0Datas const& V0s)
+  {
+    if (!isEventSelected(col)) {
+      return;
+    }
+
+    if (!col.has_foundBC()) {
+      return;
+    }
+
+    auto bc = col.template foundBC_as<BCs>();
+    auto newbc = bc;
+    // obtain slice of compatible BCs
+    auto bcRange = udhelpers::compatibleBCs(col, cfgSgCuts.NDtcoll(), bcs, cfgSgCuts.minNBCs());
+    auto isSGEvent = sgSelector.IsSelected(cfgSgCuts, col, bcRange, bc);
+    int issgevent = isSGEvent.value;
+    histos.fill(HIST("hSelectionResult"), isSGEvent.value);
+
+    if (issgevent <= cfgGapSide) {
+      if (cfgSgCuts.minRgtrwTOF()) {
+        if (udhelpers::rPVtrwTOF<true>(tracks, col.numContrib()) < cfgSgCuts.minRgtrwTOF())
+          return;
+      }
+
+      upchelpers::FITInfo fitInfo{};
+      udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
+      auto multiplicity = countNTracks(tracks);
+      outupccol(bc.globalBC(), bc.runNumber(), col.posZ(), multiplicity, fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFV0A);
+      outsgupccol(issgevent);
+      if (newbc.has_zdc()) {
+        auto zdc = newbc.zdc();
+        outzdctable(outupccol.lastIndex(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+      } else {
+        outzdctable(outupccol.lastIndex(), -999, -999);
+      }
+
+      // track loop
+      for (const auto& track : tracks) {
+        if (!track.isGlobalTrack())
+          continue;
+        if (!myTrackFilter.IsSelected(track))
+          continue;
+        tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpCharge);
+        if (getTrackPID(track) == PionTrackN)
+          tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpPion);
+        if (getTrackPID(track) == KaonTrackN)
+          tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpKaon);
+        if (getTrackPID(track) == ProtonTrackN)
+          tracksLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), track.phi(), aod::lrcorrtrktable::kSpProton);
+      }
+
+      // ft0 loop
+      if (col.has_foundFT0()) {
+        const auto& ft0 = col.foundFT0();
+        for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+          auto chanelid = ft0.channelA()[iCh];
+          float ampl = ft0.amplitudeA()[iCh];
+          auto phi = getPhiFT0(chanelid, 0);
+          auto eta = getEtaFT0(chanelid, 0);
+          ft0aLRUpcTable(outupccol.lastIndex(), chanelid, ampl, eta, phi);
+        }
+        for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
+          auto chanelid = ft0.channelC()[iCh];
+          float ampl = ft0.amplitudeC()[iCh];
+          auto phi = getPhiFT0(chanelid, 1);
+          auto eta = getEtaFT0(chanelid, 1);
+          ft0cLRUpcTable(outupccol.lastIndex(), chanelid, ampl, eta, phi);
+        }
+      }
+
+      // mft loop
+      for (const auto& track : mfttracks) {
+        if (!isMftTrackSelected(track))
+          continue;
+        auto phi = track.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        mftLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), phi);
+      }
+
+      if (retracks.size() > 0) {
+        for (const auto& retrack : retracks) {
+          if (std::abs(retrack.bestDCAXY()) > cfgmfttrksel.cfigMftDcaxy) {
+            continue; // does not point to PV properly
+          }
+          auto track = retrack.mfttrack();
+          if (!isMftTrackSelected(track)) {
+            continue;
+          }
+          auto phi = track.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          mftbestLRUpcTable(outupccol.lastIndex(), track.pt(), track.eta(), phi);
+        }
+      }
+
+      // v0 loop
+      for (const auto& v0 : V0s) {
+        if (!isSelectV0Track(v0)) { // Quality selection for V0 prongs
+          continue;
+        }
+        const auto& posTrack = v0.template posTrack_as<TrksTable>();
+        const auto& negTrack = v0.template negTrack_as<TrksTable>();
+        double massV0 = 0.0;
+
+        // K0short
+        if (isSelectK0s(col, v0)) { // candidate is K0s
+          v0LRUpcTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                       v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::lrcorrtrktable::kSpK0short);
+        }
+
+        // Lambda and Anti-Lambda
+        bool lambdaTag = isSelectLambda<KindOfV0::kLambda>(col, v0);
+        bool antilambdaTag = isSelectLambda<KindOfV0::kAntiLambda>(col, v0);
+
+        // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
+        if (lambdaTag) { // candidate is Lambda
+          massV0 = v0.mLambda();
+          v0LRUpcTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                       v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpLambda);
+        }
+        if (antilambdaTag) { // candidate is Anti-lambda
+          massV0 = v0.mAntiLambda();
+          v0LRUpcTable(outupccol.lastIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                       v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpALambda);
+        } // end of Lambda and Anti-Lambda processing
+      }
+    } // SG events
+  }
+
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
   {
     histos.fill(HIST("EventHist"), 1);
-    if (!col.sel8()) {
+    if (cfgevtsel.isApplyTrigTvx && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 2);
-    if (cfgevtsel.isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (cfgevtsel.isApplyTfborder && !col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 3);
-    if (cfgevtsel.isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (cfgevtsel.isApplyItsRofborder && !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 4);
-    if (cfgevtsel.isApplyGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgevtsel.isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 5);
-    if (cfgevtsel.isApplyExtraCorrCut && col.multNTracksPV() > cfgevtsel.npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - cfgevtsel.ft0cCut)) {
+    if (cfgevtsel.isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 6);
-    if (cfgevtsel.isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (cfgevtsel.isApplyGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 7);
-    if (cfgevtsel.isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (cfgevtsel.isApplyExtraCorrCut && col.multNTracksPV() > cfgevtsel.npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - cfgevtsel.ft0cCut)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 8);
-    if (cfgevtsel.isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (cfgevtsel.isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 9);
+    if (cfgevtsel.isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 10);
+    if (cfgevtsel.isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 11);
+    if (cfgevtsel.isApplyOccuSelection && (col.trackOccupancyInTimeRange() > cfgevtsel.cfgOccuCut)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 12);
     return true;
   }
 
@@ -582,6 +762,9 @@ struct LongrangeMaker {
     }
     return true;
   }
+
+  PROCESS_SWITCH(LongrangeMaker, processData, "process All collisions", false);
+  PROCESS_SWITCH(LongrangeMaker, processUpc, "process UPC collisions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
