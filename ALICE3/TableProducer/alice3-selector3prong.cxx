@@ -156,9 +156,6 @@ struct Alice3Selector3Prong {
   bool selectionTopol(const T& cand, float candPt)
   {
     int const ptBin = findBin(binsPt, candPt);
-    if (ptBin == -1) {
-      return false;
-    }
 
     // check that the cand pT is within the analysis range
     if (candPt < ptCandMin || candPt >= ptCandMax) {
@@ -209,11 +206,11 @@ struct Alice3Selector3Prong {
     return true;
   }
 
-  template <typename TCandidate>
+  template <CharmHadAlice3 CharmHad, typename TCandidate>
   bool selectionCandidateMass(int const ptBin, const TCandidate& cand)
   {
     float massCand{0.f};
-    if (std::abs(cand.flagMcRec()) == o2::constants::physics::Pdg::kLambdaCPlus) {
+    if constexpr (CharmHad == CharmHadAlice3::Lc) {
       if (cand.isSwapped()) {
         massCand = hfHelper.invMassLcToPiKP(cand);
       } else {
@@ -244,7 +241,7 @@ struct Alice3Selector3Prong {
   /// \param pidTrack0 is the PID status of proton cand track
   /// \param pidTrack1 is the PID status of kaon cand track
   /// \param pidTrack2 is the PID status of pion cand track
-  template<typename TCand>
+  template<CharmHadAlice3 CharmHad, typename TCand>
   void configurePidMask(const TCand& cand, uint32_t& pidMask)
   {
 
@@ -257,7 +254,7 @@ struct Alice3Selector3Prong {
 
     // prong 0
     float ptProng0{cand.ptProng0()};
-    if (std::abs(cand.flagMcRec()) == o2::constants::physics::Pdg::kLambdaCPlus) {
+    if constexpr (CharmHad == CharmHadAlice3::Lc) {
       isSelPid(cand.nSigTrkPr0(), PidSels::TrkProng0, ptProng0, nSigmaTrkMax, ptPidTrkMin, ptPidTrkMax);
       isSelPid(cand.nSigRichPr0(), PidSels::RichProng0, ptProng0, nSigmaRichMax, ptPidRichMin, ptPidRichMax);
       isSelPid(cand.nSigInnTofPr0(), PidSels::InnTofProng0, ptProng0, nSigmaInnTofMax, ptPidInnTofMin, ptPidInnTofMax);
@@ -266,7 +263,7 @@ struct Alice3Selector3Prong {
 
     // prong 1
     float ptProng1{cand.ptProng1()};
-    if (std::abs(cand.flagMcRec()) == o2::constants::physics::Pdg::kLambdaCPlus) {
+    if constexpr (CharmHad == CharmHadAlice3::Lc) {
       isSelPid(cand.nSigTrkKa1(), PidSels::TrkProng1, ptProng1, nSigmaTrkMax, ptPidTrkMin, ptPidTrkMax);
       isSelPid(cand.nSigRichKa1(), PidSels::RichProng1, ptProng1, nSigmaRichMax, ptPidRichMin, ptPidRichMax);
       isSelPid(cand.nSigInnTofKa1(), PidSels::InnTofProng1, ptProng1, nSigmaInnTofMax, ptPidInnTofMin, ptPidInnTofMax);
@@ -275,7 +272,7 @@ struct Alice3Selector3Prong {
 
     // prong 2
     float ptProng2{cand.ptProng2()};
-    if (std::abs(cand.flagMcRec()) == o2::constants::physics::Pdg::kLambdaCPlus) {
+    if constexpr (CharmHad == CharmHadAlice3::Lc) {
       isSelPid(cand.nSigTrkPi2(), PidSels::TrkProng2, ptProng2, nSigmaTrkMax, ptPidTrkMin, ptPidTrkMax);
       isSelPid(cand.nSigRichPi2(), PidSels::RichProng2, ptProng2, nSigmaRichMax, ptPidRichMin, ptPidRichMax);
       isSelPid(cand.nSigInnTofPi2(), PidSels::InnTofProng2, ptProng2, nSigmaInnTofMax, ptPidInnTofMin, ptPidInnTofMax);
@@ -288,7 +285,7 @@ struct Alice3Selector3Prong {
   /// \brief function to apply Lc selections
   /// \param cands Lc cand table
   /// \param tracks track table
-  template <typename CandType>
+  template <CharmHadAlice3 CharmHad, typename CandType>
   void runSelect3Prong(CandType const& cands)
   {
     bool isSel = false;
@@ -312,7 +309,7 @@ struct Alice3Selector3Prong {
       }
 
       // Here all cands pass the cut on the mass selection
-      if (!selectionCandidateMass(ptBin, cand)) {
+      if (!selectionCandidateMass<CharmHad>(ptBin, cand)) {
         candSelFlags(isSel, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
@@ -336,7 +333,7 @@ struct Alice3Selector3Prong {
       }
 
       // PID selection
-      configurePidMask(cand, pidMask);
+      configurePidMask<CharmHad>(cand, pidMask);
       if (pidMask == 0) {
         candSelFlags(isSel, pidMask);
         if (applyMl) {
@@ -352,7 +349,7 @@ struct Alice3Selector3Prong {
       // ML selections
       if (applyMl) {
 
-        std::vector<float> inputFeaturesMassHypo0 = mlResponse.getInputFeatures(cand, std::abs(cand.flagMcRec()));
+        std::vector<float> inputFeaturesMassHypo0 = mlResponse.getInputFeatures(cand);
         isSelectedMl = mlResponse.isSelectedMl(inputFeaturesMassHypo0, ptCand, outputMl);
         candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         if (!isSelectedMl) {
@@ -376,7 +373,7 @@ struct Alice3Selector3Prong {
   void processLc(CandsLcWMcTruth const& cands)
   {
     LOG(info) << "Starting Lc 3-prong cand selection: " << cands.size() << " cands to be processed.";
-    runSelect3Prong(cands);
+    runSelect3Prong<CharmHadAlice3::Lc>(cands);
   }
   PROCESS_SWITCH(Alice3Selector3Prong, processLc, "Process 3 prong selection for Lc", true);
 };

@@ -48,8 +48,10 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/RICH.h"
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::constants::physics;
 using namespace o2::framework::expressions;
@@ -139,10 +141,11 @@ struct alice3decayFinder {
   o2::vertexing::DCAFitterN<3> fitter3;
 
   double bz{0.};
-  const float toMicrometers = 10000.; // from cm to µm
-  std::array<int, 3> daugsPdgCodes3Prong = {-1, -1, -1};
-  std::array<float, 3> daughtersMasses3Prong = {-1.f, -1.f, -1.f};
-  int motherPdgCode = -1;
+  const float toMicrometers{10000.}; // from cm to µm
+  std::array<int, 3> daugsPdgCodes3Prong{{-1, -1, -1}};
+  std::array<float, 3> daughtersMasses3Prong{{-1.f, -1.f, -1.f}};
+  int motherPdgCode{-1};
+  int charmHadFlag{0};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -241,6 +244,7 @@ struct alice3decayFinder {
     float chi2PCA;   // normalized 3D decay length
     int flagMc;  // 0 = bkg, pdg code for signal
     int origin;  // 1 = prompt, 2 = non-prompt
+    float ptBMotherRec; // pT of the B hadron mother (reconstructed)
   } cand3prong;
 
   template <typename TTrackType>
@@ -417,7 +421,7 @@ struct alice3decayFinder {
     if (indexRec < 0) {
       cand3prong.flagMc = 0; // bkg
     } else {
-      cand3prong.flagMc = motherPart.pdgCode(); // Particle
+      cand3prong.flagMc = motherPart.pdgCode() > 0 ? charmHadFlag : -charmHadFlag; // Particle
     }
     
     cand3prong.origin = 0;
@@ -428,6 +432,11 @@ struct alice3decayFinder {
       int origin = RecoDecay::getCharmHadronOrigin(mcParticles, motherParticle, false, &idxBhadMothers);
       LOG(info) << "Origin: " << origin;
       cand3prong.origin = origin;
+      cand3prong.ptBMotherRec = -1.f;
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        cand3prong.ptBMotherRec = bHadMother.pt();
+      }
     }
     return true;
   }
@@ -590,6 +599,7 @@ struct alice3decayFinder {
       daughtersMasses3Prong = {o2::constants::physics::MassProton,
                                o2::constants::physics::MassKaonCharged,
                                o2::constants::physics::MassPionCharged};
+      charmHadFlag = CharmHadAlice3::Lc;
     }
   }
 
@@ -637,18 +647,23 @@ struct alice3decayFinder {
       LOG(info) << "Processing generated MC particles: total number = " << mcParticles.size();
       for (auto const& mcParticle : mcParticles) {
         if (std::abs(mcParticle.pdgCode()) != motherPdgCode) {
-          mcGenFlags(-1, -1);
+          mcGenFlags(-1, -1, -1);
           continue;
         }
         std::vector<int> idxBhadMothers{};
         int origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false, &idxBhadMothers);
-        mcGenFlags(origin, mcParticle.pdgCode());
+        float ptBMotherGen{-1.f};
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+          ptBMotherGen = bHadMother.pt();
+        }
+        mcGenFlags(origin, ptBMotherGen, mcParticle.pdgCode() ? charmHadFlag : -charmHadFlag);
         if (mcParticle.pdgCode() > 0) {
-          LOG(info) << "[P] Origin: " << origin << " PDG: " << mcParticle.pdgCode();
+          LOG(info) << "[P] Origin: " << origin << " PDG: " << charmHadFlag << " " << mcParticle.pdgCode();
           histos.fill(HIST("h2dGen3Prong"), mcParticle.pt(), mcParticle.eta());
         } else { 
           histos.fill(HIST("h2dGen3ProngBar"), mcParticle.pt(), mcParticle.eta());
-          LOG(info) << "[AP] Origin: " << origin << " PDG: " << mcParticle.pdgCode();
+          LOG(info) << "[AP] Origin: " << origin << " PDG: " << -charmHadFlag << " " << mcParticle.pdgCode();
         }
       }
     }
@@ -1029,7 +1044,7 @@ struct alice3decayFinder {
                           false, // is swapped hypothesis
                           candPx, candPy, candPz
                          );
-          mcRecFlags(cand3prong.origin, cand3prong.flagMc); // placeholder for prompt/non-prompt
+          mcRecFlags(cand3prong.origin, cand3prong.ptBMotherRec, cand3prong.flagMc); // placeholder for prompt/non-prompt
           fillPidTable(prong0, prong1, prong2);
 
           if constexpr (FillSwapHypo) {
@@ -1057,7 +1072,7 @@ struct alice3decayFinder {
                             true, // is swapped hypothesis
                             candPx, candPy, candPz
                            );
-            mcRecFlags(cand3prong.origin, cand3prong.flagMc); // placeholder for prompt/non-prompt
+            mcRecFlags(cand3prong.origin, cand3prong.ptBMotherRec, cand3prong.flagMc); // placeholder for prompt/non-prompt
             fillPidTable(prong2, prong1, prong0);
           }
         }

@@ -80,7 +80,7 @@ struct Alice3Task3Prong {
 
   Filter filterSelectCandidates = aod::a3_hf_sel_3prong::isSel == true;
 
-  Partition<Cands3PGen> candsGenLcs = nabs(aod::a3_mc_truth::flagMcGen) == static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  Partition<Cands3PGen> candsGenLcs = nabs(aod::a3_mc_truth::flagMcGen) == static_cast<int>(CharmHadAlice3::Lc);
 
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {72, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
@@ -110,7 +110,7 @@ struct Alice3Task3Prong {
     }
 
     if (doprocessLc || doprocessLcWMl) {
-      selectedPdg = o2::constants::physics::Pdg::kLambdaCPlus;
+      selectedPdg = CharmHadAlice3::Lc;
     }
 
     auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
@@ -263,7 +263,7 @@ struct Alice3Task3Prong {
 
         const auto pt = candidate.pt();
         const auto originType = candidate.originMcRec();
-        // const auto ptRecB = candidate.ptBhadMotherPart();
+        const auto ptRecB = candidate.bHadMotherPtRec();
 
         /// Fill histograms
         fillHistogramsRecSig<CharmHad, Signal>(candidate);
@@ -332,7 +332,7 @@ struct Alice3Task3Prong {
           fillHistogramsGen<CharmHad, Prompt>(particle);
         } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           LOG(info) << "B-hadron pt still to be implemented!";
-          // float ptGenB = isPrompt ? -1. : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          ptGenB = particle.bHadMotherPtGen();
           fillHistogramsGen<CharmHad, NonPrompt>(particle);
         }
 

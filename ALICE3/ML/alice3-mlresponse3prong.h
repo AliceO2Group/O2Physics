@@ -39,9 +39,9 @@
 // Specific case of CHECK_AND_FILL_ML_ALICE3_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_ML_ALICE3(GETTER)                     \
-  case static_cast<uint8_t>(InputFeatures3Prong::GETTER): {   \
-    inputFeatures.emplace_back(candidate.GETTER());           \
-    break;                                                    \
+  case static_cast<uint8_t>(InputFeatures3Prong::GETTER): {  \
+    inputFeatures.emplace_back(candidate.GETTER());          \
+    break;                                                   \
   }
 
 namespace o2::analysis
@@ -116,7 +116,7 @@ class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
   /// \param prong2 is the candidate's prong2
   /// \return inputFeatures vector
   template <typename T1>
-  std::vector<float> getInputFeatures(T1 const& candidate, int pdg)
+  std::vector<float> getInputFeatures(T1 const& candidate)
   {
     std::vector<float> inputFeatures;
 
@@ -137,27 +137,22 @@ class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
         CHECK_AND_FILL_ML_ALICE3(cpa);
         CHECK_AND_FILL_ML_ALICE3(cpaXY);
         CHECK_AND_FILL_ML_ALICE3(chi2PCA);
-        switch (pdg) {
-          case o2::constants::physics::Pdg::kLambdaCPlus: {
-            // RICH PID variables
-            CHECK_AND_FILL_ML_ALICE3(nSigRichPr0);
-            CHECK_AND_FILL_ML_ALICE3(nSigRichKa1);
-            CHECK_AND_FILL_ML_ALICE3(nSigRichPi2);
-            // INNER TOF PID variables
-            CHECK_AND_FILL_ML_ALICE3(nSigInnTofPr0);
-            CHECK_AND_FILL_ML_ALICE3(nSigInnTofKa1);
-            CHECK_AND_FILL_ML_ALICE3(nSigInnTofPi2);
-            // OUTER TOF PID variables
-            CHECK_AND_FILL_ML_ALICE3(nSigOutTofPr0);
-            CHECK_AND_FILL_ML_ALICE3(nSigOutTofKa1);
-            CHECK_AND_FILL_ML_ALICE3(nSigOutTofPi2);
-            // TRACKER PID variables
-            CHECK_AND_FILL_ML_ALICE3(nSigTrkPr0);
-            CHECK_AND_FILL_ML_ALICE3(nSigTrkKa1);
-            CHECK_AND_FILL_ML_ALICE3(nSigTrkPi2);
-            break;
-          }
-        }
+        // TRACKER PID variables
+        CHECK_AND_FILL_ML_ALICE3(nSigTrkPr0);
+        CHECK_AND_FILL_ML_ALICE3(nSigTrkKa1);
+        CHECK_AND_FILL_ML_ALICE3(nSigTrkPi2);
+        // RICH PID variables
+        CHECK_AND_FILL_ML_ALICE3(nSigRichPr0);
+        CHECK_AND_FILL_ML_ALICE3(nSigRichKa1);
+        CHECK_AND_FILL_ML_ALICE3(nSigRichPi2);
+        // INNER TOF PID variables
+        CHECK_AND_FILL_ML_ALICE3(nSigInnTofPr0);
+        CHECK_AND_FILL_ML_ALICE3(nSigInnTofKa1);
+        CHECK_AND_FILL_ML_ALICE3(nSigInnTofPi2);
+        // OUTER TOF PID variables
+        CHECK_AND_FILL_ML_ALICE3(nSigOutTofPr0);
+        CHECK_AND_FILL_ML_ALICE3(nSigOutTofKa1);
+        CHECK_AND_FILL_ML_ALICE3(nSigOutTofPi2);
       }
     }
     return inputFeatures;

@@ -1574,7 +1574,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
   36.};
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
-// default values for the cuts                m,  ptP, ptK, ptPi, chi2PCA, dL, cosp, dLXY, NdLXY, ImpParXY
+// default values for the cuts                m,  ptP, ptK, ptPi, chi2PCA, cosp, dL, dLXY, NdLXY, ImpParXY
 constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 0  < pT < 1  */
                                             {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 1  < pT < 2  */
                                             {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 2  < pT < 3  */
@@ -1600,7 +1600,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 9"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT prong 0", "pT prong 1", "pT prong 2", "Chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "impParXY"};
+static const std::vector<std::string> labelsCutVar = {"m", "pT prong 0", "pT prong 1", "pT prong 2", "Chi2PCA", "cos pointing angle", "decay length", "decLengthXY", "normDecLXY", "impParXY"};
 } // namespace hf_cuts_3prongs_alice3
 
 } // namespace o2::analysis

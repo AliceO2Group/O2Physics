@@ -288,11 +288,11 @@ struct Alice3TreeCreator3Prong {
   using CandsMcGen = soa::Join<aod::McParticles, aod::Alice3McGenFlags>;
 
   Filter filterSelectCandidates = aod::a3_hf_sel_3prong::isSel == true;
-  Filter filterSelectGenCands = nabs(aod::a3_mc_truth::flagMcGen) == static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  Filter filterSelectGenCands = nabs(aod::a3_mc_truth::flagMcGen) == static_cast<int>(CharmHadAlice3::Lc);
 
-  Partition<CandsLcRec> recoLcCandSig = nabs(o2::aod::a3_mc_truth::flagMcRec) == static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  Partition<CandsLcRec> recoLcCandSig = nabs(o2::aod::a3_mc_truth::flagMcRec) == static_cast<int>(CharmHadAlice3::Lc);
   Partition<CandsLcRec> recoLcCandBkg = nabs(o2::aod::a3_mc_truth::flagMcRec) == 0;
-  Partition<CandsLcRecWMl> recoLcCandSigWMl = nabs(o2::aod::a3_mc_truth::flagMcRec) == static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  Partition<CandsLcRecWMl> recoLcCandSigWMl = nabs(o2::aod::a3_mc_truth::flagMcRec) == static_cast<int>(CharmHadAlice3::Lc);
   Partition<CandsLcRecWMl> recoLcCandBkgWMl = nabs(o2::aod::a3_mc_truth::flagMcRec) == 0;
 
   void init(InitContext const&)
