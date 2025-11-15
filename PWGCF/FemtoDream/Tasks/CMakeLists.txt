@@ -54,6 +54,11 @@ o2physics_add_dpl_workflow(femto-dream-triplet-task-track-track-v0-pb-pb
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-triplet-track-track-cascade
+          SOURCES femtoDreamTripletTaskTrackTrackCascade.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-debug-track
           SOURCES femtoDreamDebugTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
