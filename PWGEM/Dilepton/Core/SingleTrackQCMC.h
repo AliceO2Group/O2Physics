@@ -205,7 +205,8 @@ struct SingleTrackQCMC {
     Configurable<float> cfg_max_phi_track{"cfg_max_phi_track", 6.3, "max phi for single track"};
     Configurable<int> cfg_min_ncluster_mft{"cfg_min_ncluster_mft", 5, "min ncluster MFT"};
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
-    Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2"};
+    Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2/ndf"};
+    Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+6, "max chi2/ndf"};
     Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
@@ -359,6 +360,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
         fRegistry.add("Track/lf/positive/hPDCA", "pDCA;R at absorber (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
         fRegistry.add("Track/lf/positive/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
+        fRegistry.add("Track/lf/positive/hChi2MFT", "chi2MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
         fRegistry.add("Track/lf/positive/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
         fRegistry.add("Track/lf/positive/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
         fRegistry.add("Track/lf/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
@@ -577,6 +579,7 @@ struct SingleTrackQCMC {
     fDimuonCut.SetNClustersMFT(dimuoncuts.cfg_min_ncluster_mft, 10);
     fDimuonCut.SetNClustersMCHMID(dimuoncuts.cfg_min_ncluster_mch, 20);
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
+    fDimuonCut.SetChi2MFT(0.f, dimuoncuts.cfg_max_chi2mft);
     fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
     fDimuonCut.SetMatchingChi2MCHMID(0.f, dimuoncuts.cfg_max_matching_chi2_mchmid);
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
@@ -772,6 +775,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hMFTClusterMap"), track.mftClusterMap());
@@ -798,6 +802,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hMFTClusterMap"), track.mftClusterMap());
