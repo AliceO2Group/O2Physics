@@ -120,7 +120,7 @@ o2physics_add_dpl_workflow(task-lc-to-k0s-p
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
-                    SOURCES taskOmegac0ToOmegapi.cxx
+                    SOURCES taskOmegac0ToOmegaPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
