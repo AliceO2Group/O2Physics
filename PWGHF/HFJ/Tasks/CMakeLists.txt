@@ -9,4 +9,9 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Tasks)
+o2physics_add_dpl_workflow(task-dstar-polarisation-in-jet
+                    SOURCES taskDstarPolarisationInJet.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/PWGJE/Core)
