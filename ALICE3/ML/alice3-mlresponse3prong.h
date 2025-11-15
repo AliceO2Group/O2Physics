@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for Lc+ → p K- π+ analysis selections
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#ifndef ALICE3_ML_ALICE3MLRESPONSE3PRONG_H_
-#define ALICE3_ML_ALICE3MLRESPONSE3PRONG_H_
+#ifndef ALICE3_ML_ALICE3_MLRESPONSE3PRONG_H_
+#define ALICE3_ML_ALICE3_MLRESPONSE3PRONG_H_
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
@@ -227,4 +227,4 @@ class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_ML_ALICE3_HFHELPER
 #undef CHECK_AND_FILL_ML_ALICE3_OBJECT_SIGNED
 
-#endif // ALICE3_ML_ALICE3MLRESPONSE3PRONG_H_
+#endif  // ALICE3_ML_ALICE3_MLRESPONSE3PRONG_H_
