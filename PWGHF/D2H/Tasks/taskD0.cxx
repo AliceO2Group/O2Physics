@@ -357,7 +357,7 @@ struct HfTaskD0 {
         axes.insert(axes.begin(), thnAxisBkgScore);
       }
     }
-    if (doprocessDataWithDCAFitterNMlWithUpc) {
+    if (doprocessDataWithDCAFitterNMlWithUpc || doprocessDataWithDCAFitterNWithUpc) {
       axes.push_back(thnAxisGapType);
       axes.push_back(thnAxisFT0A);
       axes.push_back(thnAxisFT0C);
