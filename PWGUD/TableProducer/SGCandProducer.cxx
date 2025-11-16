@@ -357,7 +357,7 @@ struct SGCandProducer {
         LOGF(info, "No Newbc %i", bc.globalBC());
     }
     getHist(TH1, histdir + "/Stat")->Fill(issgevent + 10, 1.);
-    if ((storeDG && issgevent==o2::aod::sgselector::DoubleGap) || (storeSG && (issgevent==o2::aod::sgselector::SingleGapA || issgevent==o2::aod::sgselector::SingleGapC))) {
+    if ((storeDG && issgevent == o2::aod::sgselector::DoubleGap) || (storeSG && (issgevent == o2::aod::sgselector::SingleGapA || issgevent == o2::aod::sgselector::SingleGapC))) {
       if (verboseInfo)
         LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
       if (sameCuts.minRgtrwTOF()) {
