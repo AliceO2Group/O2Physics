@@ -5359,6 +5359,18 @@ void VarManager::FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t
   uint64_t leftBC = midbc >= scanRange ? midbc - scanRange : 0;
   uint64_t rightBC = midbc + scanRange;
 
+  // Use int32_t for bit operations, then convert to float for storage
+  int32_t bgFT0Apf = static_cast<int32_t>(values[kBGFT0Apf]);
+  int32_t bgFT0Cpf = static_cast<int32_t>(values[kBGFT0Cpf]);
+  int32_t bbFT0Apf = static_cast<int32_t>(values[kBBFT0Apf]);
+  int32_t bbFT0Cpf = static_cast<int32_t>(values[kBBFT0Cpf]);
+  int32_t bgFV0Apf = static_cast<int32_t>(values[kBGFV0Apf]);
+  int32_t bbFV0Apf = static_cast<int32_t>(values[kBBFV0Apf]);
+  int32_t bgFDDApf = static_cast<int32_t>(values[kBGFDDApf]);
+  int32_t bgFDDCpf = static_cast<int32_t>(values[kBGFDDCpf]);
+  int32_t bbFDDApf = static_cast<int32_t>(values[kBBFDDApf]);
+  int32_t bbFDDCpf = static_cast<int32_t>(values[kBBFDDCpf]);
+
   // Find starting BC in bcMap
   std::pair<uint64_t, int64_t> searchPair(leftBC, 0);
   auto scanIt = std::lower_bound(bcMap.begin(), bcMap.end(), searchPair,
@@ -5377,25 +5389,25 @@ void VarManager::FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t
 
         // Fill pileup flags using BC selection bits (following PWGUD pattern)
         if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
-          values[kBGFT0Apf] |= (1 << bit);
+          bgFT0Apf |= (1 << bit);
         if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
-          values[kBGFT0Cpf] |= (1 << bit);
+          bgFT0Cpf |= (1 << bit);
         if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
-          values[kBBFT0Apf] |= (1 << bit);
+          bbFT0Apf |= (1 << bit);
         if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
-          values[kBBFT0Cpf] |= (1 << bit);
+          bbFT0Cpf |= (1 << bit);
         if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
-          values[kBGFV0Apf] |= (1 << bit);
+          bgFV0Apf |= (1 << bit);
         if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
-          values[kBBFV0Apf] |= (1 << bit);
+          bbFV0Apf |= (1 << bit);
         if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
-          values[kBGFDDApf] |= (1 << bit);
+          bgFDDApf |= (1 << bit);
         if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
-          values[kBGFDDCpf] |= (1 << bit);
+          bgFDDCpf |= (1 << bit);
         if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
-          values[kBBFDDApf] |= (1 << bit);
+          bbFDDApf |= (1 << bit);
         if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
-          values[kBBFDDCpf] |= (1 << bit);
+          bbFDDCpf |= (1 << bit);
       }
 
       ++scanIt;
@@ -5404,6 +5416,18 @@ void VarManager::FillFIT(uint64_t midbc, std::vector<std::pair<uint64_t, int64_t
       scanBc = scanIt->first;
     }
   }
+
+  // Convert back to float and store in values array
+  values[kBGFT0Apf] = static_cast<float>(bgFT0Apf);
+  values[kBGFT0Cpf] = static_cast<float>(bgFT0Cpf);
+  values[kBBFT0Apf] = static_cast<float>(bbFT0Apf);
+  values[kBBFT0Cpf] = static_cast<float>(bbFT0Cpf);
+  values[kBGFV0Apf] = static_cast<float>(bgFV0Apf);
+  values[kBBFV0Apf] = static_cast<float>(bbFV0Apf);
+  values[kBGFDDApf] = static_cast<float>(bgFDDApf);
+  values[kBGFDDCpf] = static_cast<float>(bgFDDCpf);
+  values[kBBFDDApf] = static_cast<float>(bbFDDApf);
+  values[kBBFDDCpf] = static_cast<float>(bbFDDCpf);
 
   // Note: Distance to closest BCs with specific triggers (TOR, TSC, TVX, V0A, T0A)
   // would require scanning a larger range and checking trigger information.
