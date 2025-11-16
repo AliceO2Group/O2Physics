@@ -635,11 +635,11 @@ struct lambdaspincorrderived {
       } else if (mixedLeg == 2) {
         double w2 = 1.0;
         if (tag1 == 0 && tag2 == 0) {
-          w2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta1, pt2));
+          w2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
         } else if (tag1 == 0 && tag2 == 1) {
-          w2 = hweight22->GetBinContent(hweight22->FindBin(dphi2, deta1, pt2));
+          w2 = hweight22->GetBinContent(hweight22->FindBin(dphi2, deta2, pt2));
         } else if (tag1 == 1 && tag2 == 0) {
-          w2 = hweight32->GetBinContent(hweight32->FindBin(dphi2, deta1, pt2));
+          w2 = hweight32->GetBinContent(hweight32->FindBin(dphi2, deta2, pt2));
         } else if (tag1 == 1 && tag2 == 1) {
           w2 = hweight42->GetBinContent(hweight42->FindBin(dphi2, deta2, pt2));
         }
