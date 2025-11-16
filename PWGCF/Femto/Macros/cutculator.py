@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#!/usr/bin/env python3
-
 # Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
@@ -38,34 +36,47 @@ def parse_bin_label(label):
 
 
 def ask_user_selection(group):
-    """Prompt user to select bin(s) for this selection group."""
+    """
+    Prompt user to select bin(s) for this selection group.
+    - If minimal selections contain exactly 1 entry → auto-select it.
+    - Optional selections remain user-selectable.
+    """
+    selection_name = group[0].get("SelectionName", "unknown")
+
     # Separate minimal and optional bins
     minimal_bins = [b for b in group if b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0"]
     optional_bins = [b for b in group if b.get("OptionalCut", "0") == "1"]
 
     selected_bins = []
 
-    # Minimal selection (cannot skip, 0 = loosest minimal)
+    # Minimal selection
     if minimal_bins:
-        print(f"\nSelection: {group[0].get('SelectionName', 'unknown')}")
-        for idx, b in enumerate(minimal_bins):
-            print(f"  [{idx}] {b.get('Value', '')}")
-        while True:
-            sel_input = input("Enter index for minimal cut (0 = loosest minimal): ")
-            if sel_input.strip() == "":
-                sel_input = "0"
-            try:
-                sel_idx = int(sel_input)
-                if 0 <= sel_idx < len(minimal_bins):
-                    selected_bins.append(minimal_bins[sel_idx])
-                    break
-            except ValueError:
-                pass
-            print("Invalid input. Please enter a valid index.")
+        if len(minimal_bins) == 1:
+            # autoselect minimal OPTION
+            only = minimal_bins[0]
+            print(f"\nSelection: {selection_name} — only one minimal option → auto-selecting: {only.get('Value','')}")
+            selected_bins.append(only)
+        else:
+            # Multiple → ask user
+            print(f"\nSelection: {selection_name}")
+            for idx, b in enumerate(minimal_bins):
+                print(f"  [{idx}] {b.get('Value', '')}")
+            while True:
+                sel_input = input("Enter index for minimal cut (0 = loosest minimal): ")
+                if sel_input.strip() == "":
+                    sel_input = "0"
+                try:
+                    sel_idx = int(sel_input)
+                    if 0 <= sel_idx < len(minimal_bins):
+                        selected_bins.append(minimal_bins[sel_idx])
+                        break
+                except ValueError:
+                    pass
+                print("Invalid input. Please enter a valid index.")
 
     # Optional selection (can skip with 0)
     if optional_bins:
-        print(f"Selection: {group[0].get('SelectionName', 'unknown')} (optional selection, 0 to skip)")
+        print(f"Selection: {selection_name} (optional selection, 0 to skip)")
         for idx, b in enumerate(optional_bins, start=1):
             print(f"  [{idx}] {b.get('Value', '')}")
         while True:
@@ -145,10 +156,22 @@ def main(rootfile_path, tdir_path="femto-producer"):
             continue
         bitmask |= 1 << int(pos)
 
+    print("\n=======================================")
+    print("Summary of your selections:")
+    print("=======================================\n")
+
+    summary = {}
+    for b in selected_bins:
+        sel = b.get("SelectionName", "unknown")
+        summary.setdefault(sel, []).append(b.get("Value", ""))
+
+    for sel, values in summary.items():
+        print(f"  {sel}: {', '.join(values)}")
+
     print("\nFinal selected bitmask:")
-    print(f"Decimal: {bitmask}")
-    print(f"Binary:  {bin(bitmask)}")
-    print(f"Hex:     {hex(bitmask)}")
+    print(f"  Decimal: {bitmask}")
+    print(f"  Binary:  {bin(bitmask)}")
+    print(f"  Hex:     {hex(bitmask)}")
 
 
 if __name__ == "__main__":
