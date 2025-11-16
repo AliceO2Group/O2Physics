@@ -158,7 +158,7 @@ struct CreateResolutionMap {
     Configurable<int> cfg_min_ncluster_mft{"cfg_min_ncluster_mft", 5, "min ncluster MFT"};
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
     Configurable<float> cfg_max_chi2_sa{"cfg_max_chi2_sa", 1e+10, "max chi2/ndf for standalone muon track"};
-    Configurable<float> cfg_max_chi2_gl{"cfg_max_chi2_gl", 4, "max chi2/ndf for standalone muon track"};
+    Configurable<float> cfg_max_chi2_gl{"cfg_max_chi2_gl", 4, "max chi2/ndf for global muon track"};
     Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+10, "max chi2/ndf for MFTsa track"};
     Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2/ndf for MFT-MCH matching"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2/ndf for MCH-MID matching"};
