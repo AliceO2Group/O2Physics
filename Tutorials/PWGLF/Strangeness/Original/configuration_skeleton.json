@@ -577,11 +577,6 @@
     },
     "strangeness_tutorial": {
         "nBins": "100",
-        "cutzvertex": "10",
-        "v0setting_dcav0dau": "1",
-        "v0setting_dcapostopv": "0.06",
-        "v0setting_dcanegtopv": "0.06",
-        "v0setting_cospa": "0.998",
-        "v0setting_radius": "1.2"
+        "cutzvertex": "10"
     }
 }

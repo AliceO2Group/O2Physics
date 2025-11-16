@@ -72,7 +72,9 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
+  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta range for pt-pt correlations")
+  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPt, float, 0.2, "eta gap for pt-pt correlations, cfgEtaGapPtPt<|eta|<cfgEtaPtPt")
+  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
@@ -165,6 +167,10 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgDptDisCutLow, std::string, "", "CCDB path to dpt lower boundary")
     O2_DEFINE_CONFIGURABLE(cfgDptDisCutHigh, std::string, "", "CCDB path to dpt higher boundary")
     ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
+    // Functional form of pt-dependent DCAxy cut
+    TF1* fPtDepDCAxy = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -508,6 +514,8 @@ struct FlowTask {
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
     fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
+    if (cfgEtaGapPtPtEnabled)
+      fFCpt->initialiseSubevent(axisIndependent, cfgMpar, cfgNbootstrap);
     for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
       corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
     }
@@ -566,6 +574,12 @@ struct FlowTask {
       funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
       funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
+    }
+
+    if (cfgFuncParas.cfgDCAxyNSigma) {
+      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
     }
   }
 
@@ -642,6 +656,14 @@ struct FlowTask {
   {
     if (std::abs(track.eta()) < cfgEtaPtPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
+      if (cfgEtaGapPtPtEnabled) {
+        if (track.eta() < -1. * cfgEtaGapPtPt) {
+          (dt == kGen) ? fFCptgen->fillSub1(1., track.pt()) : fFCpt->fillSub1(weff, track.pt());
+        }
+        if (track.eta() > cfgEtaGapPtPt) {
+          (dt == kGen) ? fFCptgen->fillSub2(1., track.pt()) : fFCpt->fillSub2(weff, track.pt());
+        }
+      }
     }
   }
 
@@ -651,6 +673,11 @@ struct FlowTask {
     (dt == kGen) ? fFCptgen->calculateCorrelations() : fFCpt->calculateCorrelations();
     (dt == kGen) ? fFCptgen->fillPtProfiles(centmult, rndm) : fFCpt->fillPtProfiles(centmult, rndm);
     (dt == kGen) ? fFCptgen->fillCMProfiles(centmult, rndm) : fFCpt->fillCMProfiles(centmult, rndm);
+    if (cfgEtaGapPtPtEnabled) {
+      (dt == kGen) ? fFCptgen->calculateSubeventCorrelations() : fFCpt->calculateSubeventCorrelations();
+      (dt == kGen) ? fFCptgen->fillSubeventPtProfiles(centmult, rndm) : fFCpt->fillSubeventPtProfiles(centmult, rndm);
+      (dt == kGen) ? fFCptgen->fillCMSubeventProfiles(centmult, rndm) : fFCpt->fillCMSubeventProfiles(centmult, rndm);
+    }
     for (uint l_ind = 0; l_ind < corrconfigsPtVn.size(); ++l_ind) {
       if (!corrconfigsPtVn.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigsPtVn.at(l_ind), 0, kTRUE).real();
@@ -844,6 +871,8 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
