@@ -5308,6 +5308,7 @@ void VarManager::FillFIT(T const& obj, float* values)
     values[kDistClosestBcT0A] = obj.distClosestBcT0A();
   } else {
     // This is a BC object - access FIT detectors via BC associations
+    LOG(info) << "VarManager::FillFIT: Using BC object path";
     // Initialize all FIT variables to default values first
     values[kAmplitudeFT0A] = -1.f;
     values[kAmplitudeFT0C] = -1.f;
