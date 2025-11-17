@@ -442,11 +442,12 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   inputTrack.getXYZGlo(posIni);
   const float initialRadius = std::hypot(posIni[0], posIni[1]);
   const float kTrackingMargin = 0.1;
-  const int kMaxNumberOfDetectors = 20;
-  if (kMaxNumberOfDetectors < layers.size()) {
-    LOG(fatal) << "Too many layers in FastTracker, increase kMaxNumberOfDetectors";
-    return -1; // too many layers
-  }
+
+  // Delphes sets this to 20, but does not count all points in the tpc as layers which we do here
+  // Loop over all the added layers to prevent crash when adding the tpc
+  // Should not affect efficiency calculation 
+  const int kMaxNumberOfDetectors = layers.size();
+
   int firstActiveLayer = -1; // first layer that is not inert
   for (size_t i = 0; i < layers.size(); ++i) {
     if (!layers[i].isInert()) {
@@ -462,7 +463,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   const bool applyAngularCorrection = true;
 
   goodHitProbability.clear();
-  for (int i = 0; i < kMaxNumberOfDetectors; ++i) {
+  for (size_t i = 0; i < layers.size(); ++i) {
     goodHitProbability.push_back(-1.);
   }
   goodHitProbability[0] = 1.; // we use layer zero to accumulate
@@ -650,7 +651,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 
   // generate efficiency
   float eff = 1.;
-  for (int i = 0; i < kMaxNumberOfDetectors; i++) {
+  for (size_t i = 0; i < layers.size(); i++) {
     float iGoodHit = goodHitProbability[i];
     if (iGoodHit <= 0)
       continue;
