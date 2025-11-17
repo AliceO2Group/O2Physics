@@ -59,6 +59,7 @@ class DimuonCut : public TNamed
     kChi2,
     kMatchingChi2MCHMFT,
     kMatchingChi2MCHMID,
+    kChi2MFT,
     kRabs,
     kPDCA,
     kMFTHitMap,
@@ -152,6 +153,9 @@ class DimuonCut : public TNamed
     if (!IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMID)) {
       return false;
     }
+    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kChi2MFT)) {
+      return false;
+    }
     if (!IsSelectedTrack(track, DimuonCuts::kPDCA)) {
       return false;
     }
@@ -195,6 +199,9 @@ class DimuonCut : public TNamed
 
       case DimuonCuts::kChi2:
         return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : track.chi2() < mMaxChi2;
+
+      case DimuonCuts::kChi2MFT:
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) < mMaxChi2MFT : true;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
         return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
@@ -240,6 +247,7 @@ class DimuonCut : public TNamed
   void SetNClustersMFT(int min, int max);
   void SetNClustersMCHMID(int min, int max);
   void SetChi2(float min, float max);
+  void SetChi2MFT(float min, float max);
   void SetMatchingChi2MCHMFT(float min, float max);
   void SetMatchingChi2MCHMID(float min, float max);
   void SetDCAxy(float min, float max); // in cm
@@ -267,7 +275,8 @@ class DimuonCut : public TNamed
   int mTrackType{3};
   int mMinNClustersMFT{0}, mMaxNClustersMFT{10};                    // min number of MFT clusters
   int mMinNClustersMCHMID{0}, mMaxNClustersMCHMID{20};              // min number of MCH-MID clusters
-  float mMinChi2{0.f}, mMaxChi2{1e10f};                             // max tpc fit chi2 per TPC cluster
+  float mMinChi2{0.f}, mMaxChi2{1e10f};                             // max chi2 per MFT + MCH cluster
+  float mMinChi2MFT{0.f}, mMaxChi2MFT{1e10f};                       // max chi2 per MFT cluster
   float mMinMatchingChi2MCHMFT{0.f}, mMaxMatchingChi2MCHMFT{1e10f}; // max matching chi2 between MCH-MFT
   float mMinMatchingChi2MCHMID{0.f}, mMaxMatchingChi2MCHMID{1e10f}; // max matching chi2 between MCH-MID
   std::function<float(float)> mMaxPDCARabsDep{};                    // max pdca in xy plane as function of Rabs
