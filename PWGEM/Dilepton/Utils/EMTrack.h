@@ -186,6 +186,9 @@ class EMPair : public EMTrack
     float pt = std::sqrt(px * px + py * py);
     float eta = std::atanh(pz / sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)));
     float phi = std::atan2(py, px);
+    if (phi < 0.f) {
+      phi += 2.f * M_PI;
+    }
 
     fVPos.SetPt(pt);
     fVPos.SetEta(eta);
@@ -197,6 +200,9 @@ class EMPair : public EMTrack
     float pt = std::sqrt(px * px + py * py);
     float eta = std::atanh(pz / std::sqrt(pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)));
     float phi = std::atan2(py, px);
+    if (phi < 0.f) {
+      phi += 2.f * M_PI;
+    }
 
     fVNeg.SetPt(pt);
     fVNeg.SetEta(eta);
