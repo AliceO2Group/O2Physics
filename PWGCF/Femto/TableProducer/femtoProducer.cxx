@@ -87,12 +87,12 @@ struct FemtoProducer {
   collisionbuilder::ConfCollisionFilters confCollisionFilters;
   collisionbuilder::ConfCollisionBits confCollisionBits;
   collisionbuilder::ConfCollisionRctFlags confCollisionRctFlags;
-  collisionbuilder::CollisionBuilder collisionBuilder;
+  collisionbuilder::CollisionBuilder<collisionbuilder::ColSelHistName> collisionBuilder;
 
   // track builder
   trackbuilder::TrackBuilderProducts trackBuilderProducts;
   trackbuilder::ConfTrackTables confTrackTables;
-  trackbuilder::TrackBuilder trackBuilder;
+  trackbuilder::TrackBuilder<trackbuilder::TrackSelHistName> trackBuilder;
   trackbuilder::ConfTrackBits confTrackBits;
   trackbuilder::ConfTrackFilters confTrackFilters;
 
@@ -101,28 +101,28 @@ struct FemtoProducer {
   v0builder::ConfV0Tables confV0Tables;
   v0builder::ConfV0Filters confV0Filters;
   v0builder::ConfK0shortBits confK0shortBits;
-  v0builder::V0Builder<modes::V0::kK0short> k0shortBuilder;
+  v0builder::V0Builder<modes::V0::kK0short, v0builder::K0shortSelHistName> k0shortBuilder;
   v0builder::ConfLambdaBits confLambdaBits;
-  v0builder::V0Builder<modes::V0::kLambda> lambdaBuilder;
-  v0builder::V0Builder<modes::V0::kAntiLambda> antilambdaBuilder;
+  v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName> lambdaBuilder;
+  v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName> antilambdaBuilder;
 
   // cascade builder
   cascadebuilder::CascadeBuilderProducts cascadeBuilderProducts;
   cascadebuilder::ConfCascadeTables confCascadeTables;
   cascadebuilder::ConfCascadeFilters confCascadeFilters;
   cascadebuilder::ConfXiBits confXiBits;
-  cascadebuilder::CascadeBuilder<modes::Cascade::kXi> xiBuilder;
+  cascadebuilder::CascadeBuilder<modes::Cascade::kXi, cascadebuilder::XiSelHistName> xiBuilder;
   cascadebuilder::ConfOmegaBits confOmegaBits;
-  cascadebuilder::CascadeBuilder<modes::Cascade::kOmega> omegaBuilder;
+  cascadebuilder::CascadeBuilder<modes::Cascade::kOmega, cascadebuilder::OmegaSelHistName> omegaBuilder;
 
   // kink builder
   kinkbuilder::KinkBuilderProducts kinkBuilderProducts;
   kinkbuilder::ConfKinkTables confKinkTables;
   kinkbuilder::ConfKinkFilters confKinkFilters;
   kinkbuilder::ConfSigmaBits confSigmaBits;
-  kinkbuilder::KinkBuilder<modes::Kink::kSigma> sigmaBuilder;
+  kinkbuilder::KinkBuilder<modes::Kink::kSigma, kinkbuilder::SigmaSelHistName> sigmaBuilder;
   kinkbuilder::ConfSigmaPlusBits confSigmaPlusBits;
-  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus> sigmaPlusBuilder;
+  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus, kinkbuilder::SigmaPlusSelHistName> sigmaPlusBuilder;
 
   // resonance daughter filters and partitions
   twotrackresonancebuilder::ConfTwoTrackResonanceDaughterFilters confResonanceDaughterFilters;
@@ -145,14 +145,14 @@ struct FemtoProducer {
   twotrackresonancebuilder::ConfTwoTrackResonanceTables confTwoTrackResonanceTables;
   twotrackresonancebuilder::ConfRhoFilters confRhoFilters;
   twotrackresonancebuilder::ConfRho0Bits confRho0Bits;
-  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kRho0> rho0Builder;
+  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kRho0, twotrackresonancebuilder::RhoSelHistName> rho0Builder;
   twotrackresonancebuilder::ConfPhiFilters confPhiFilters;
   twotrackresonancebuilder::ConfPhiBits confPhiBits;
-  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kPhi> phiBuilder;
+  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kPhi, twotrackresonancebuilder::PhiSelHistName> phiBuilder;
   twotrackresonancebuilder::ConfKstarFilters confKstarFilters;
   twotrackresonancebuilder::ConfKstar0Bits confKstar0Bits;
-  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0> kstar0Builder;
-  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0Bar> kstar0barBuilder;
+  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0, twotrackresonancebuilder::Kstar0SelHistName> kstar0Builder;
+  twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0Bar, twotrackresonancebuilder::Kstar0barSelHistName> kstar0barBuilder;
 
   // histogramming
   // add histograms in next iteration
@@ -172,29 +172,29 @@ struct FemtoProducer {
     ccdb->setCreatedNotAfter(now);
 
     // collision selection
-    collisionBuilder.init(confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCcdb, confCollisionTables, context);
+    collisionBuilder.init(&hRegistry, confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCcdb, confCollisionTables, context);
 
     // configure track builder
-    trackBuilder.init(confTrackBits, confTrackFilters, confTrackTables, context);
+    trackBuilder.init(&hRegistry, confTrackBits, confTrackFilters, confTrackTables, context);
 
     // configure v0 builder
-    k0shortBuilder.init(confK0shortBits, confV0Filters, confV0Tables, context);
-    lambdaBuilder.init(confLambdaBits, confV0Filters, confV0Tables, context);
-    antilambdaBuilder.init(confLambdaBits, confV0Filters, confV0Tables, context);
+    k0shortBuilder.init(&hRegistry, confK0shortBits, confV0Filters, confV0Tables, context);
+    lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context);
+    antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context);
 
     // configure kink builder
-    sigmaBuilder.init(confSigmaBits, confKinkFilters, confKinkTables, context);
-    sigmaPlusBuilder.init(confSigmaPlusBits, confKinkFilters, confKinkTables, context);
+    sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context);
+    sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context);
 
     // cascade selections
-    xiBuilder.init(confXiBits, confCascadeFilters, confCascadeTables, context);
-    omegaBuilder.init(confOmegaBits, confCascadeFilters, confCascadeTables, context);
+    xiBuilder.init(&hRegistry, confXiBits, confCascadeFilters, confCascadeTables, context);
+    omegaBuilder.init(&hRegistry, confOmegaBits, confCascadeFilters, confCascadeTables, context);
 
     // configure resonance selections
-    rho0Builder.init(confRho0Bits, confRhoFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
-    phiBuilder.init(confPhiBits, confPhiFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
-    kstar0Builder.init(confKstar0Bits, confKstarFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
-    kstar0barBuilder.init(confKstar0Bits, confKstarFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
+    rho0Builder.init(&hRegistry, confRho0Bits, confRhoFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
+    phiBuilder.init(&hRegistry, confPhiBits, confPhiFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
+    kstar0Builder.init(&hRegistry, confKstar0Bits, confKstarFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
+    kstar0barBuilder.init(&hRegistry, confKstar0Bits, confKstarFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
 
     if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) && (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
       LOG(fatal) << "At least one cascade table is enabled, but wrong process function is enabled. Breaking...";

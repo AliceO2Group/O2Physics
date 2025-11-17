@@ -132,7 +132,7 @@ using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
 using ConfK0shortSelection2 = ConfK0shortSelection<PrefixK0shortSelection2>;
 
 /// The different selections for v0s
-enum V0Seles {
+enum V0Sels {
   // selections for lambdas
   kCpaMin,      ///< Min. CPA (cosine pointing angle)
   kDcaDaughMax, ///< Max. DCA of the daughters at decay vertex
@@ -154,8 +154,11 @@ enum V0Seles {
   kV0SelsMax
 };
 
-const char v0SelsName[] = "K0short selection object";
-const std::unordered_map<V0Seles, std::string> v0SelsToStrings = {
+constexpr char LambdaSelHistName[] = "hLambdaSelection";
+constexpr char AntilambdaSelHistName[] = "hAntiLambdaSelection";
+constexpr char K0shortSelHistName[] = "hK0shortSelection";
+constexpr char V0SelsName[] = "V0 selection object";
+const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
   {kCpaMin, "Min. CPA (cosine pointing angle)"},
   {kDcaDaughMax, "Max. DCA of the daughters at decay vertex"},
   {kDecayVtxMax, "Max. distance of decay vertex in x,y,z"},
@@ -173,7 +176,7 @@ const std::unordered_map<V0Seles, std::string> v0SelsToStrings = {
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-template <modes::V0 v0Type>
+template <modes::V0 v0Type, const char* HistName>
 class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskType, kV0SelsMax>
 {
  public:
@@ -181,7 +184,7 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
   ~V0Selection() = default;
 
   template <typename T1, typename T2>
-  void configure(T1& config, T2& filter)
+  void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
   {
     mPtMin = filter.ptMin.value;
     mPtMax = filter.ptMax.value;
@@ -197,13 +200,13 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
       mMassK0shortUpperLimit = filter.rejectMassMaxK0short.value;
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-        this->addSelection(config.posDauTpcProton.value, kPosDaughTpcProton, limits::kAbsUpperLimit, true, true);
-        this->addSelection(config.negDauTpcPion.value, kNegDaughTpcPion, limits::kAbsUpperLimit, true, true);
+        this->addSelection(kPosDaughTpcProton, v0SelectionNames.at(kPosDaughTpcProton), config.posDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-        this->addSelection(config.posDauTpcPion.value, kPosDaughTpcPion, limits::kAbsUpperLimit, true, true);
-        this->addSelection(config.negDauTpcProton.value, kNegDaughTpcProton, limits::kAbsUpperLimit, true, true);
+        this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
@@ -211,17 +214,19 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
       mMassK0shortUpperLimit = filter.massMaxK0short.value;
       mMassLambdaLowerLimit = filter.rejectMassMinLambda.value;
       mMassLambdaUpperLimit = filter.rejectMassMaxLambda.value;
-      this->addSelection(config.posDauTpcPion.value, kPosDaughTpcPion, limits::kAbsUpperLimit, true, true);
-      this->addSelection(config.negDauTpcPion.value, kNegDaughTpcPion, limits::kAbsUpperLimit, true, true);
+      this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
     }
 
-    this->addSelection(config.dcaDauMax.value, kDcaDaughMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.cpaMin.value, kCpaMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.transRadMin.value, kTransRadMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.transRadMax.value, kTransRadMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.dauAbsEtaMax.value, kDauAbsEtaMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.dauDcaMin.value, kDauDcaMin, limits::kAbsLowerFunctionLimit, true, true);
-    this->addSelection(config.dauTpcClustersMin.value, kDauTpcClsMin, limits::kLowerLimit, true, true);
+    this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kCpaMin, v0SelectionNames.at(kCpaMin), config.cpaMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kTransRadMin, v0SelectionNames.at(kTransRadMin), config.transRadMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kTransRadMax, v0SelectionNames.at(kTransRadMax), config.transRadMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kDauAbsEtaMax, v0SelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kDauDcaMin, v0SelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerFunctionLimit, true, true, false);
+    this->addSelection(kDauTpcClsMin, v0SelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
+
+    this->setupContainers<HistName>(registry);
   }
 
   template <typename T1, typename T2>
@@ -259,34 +264,35 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     this->evaluateObservable(kNegDaughTpcPion, negDaughter.tpcNSigmaPi());
     this->evaluateObservable(kNegDaughTpcProton, negDaughter.tpcNSigmaPr());
 
-    this->assembleBitmask();
+    this->assembleBitmask<HistName>();
   }
 
   template <typename T>
-  bool checkFilters(const T& v0) const
+  bool checkCandidate(const T& v0) const
   {
-    return ((v0.pt() > mPtMin && v0.pt() < mPtMax) &&
-            (v0.eta() > mEtaMin && v0.eta() < mEtaMax) &&
-            (v0.phi() > mPhiMin && v0.phi() < mPhiMax));
-  }
-
-  template <typename T>
-  bool checkHypothesis(T const& v0candidate) const
-  {
-    // no need to check PID of the daughters here, they are set as minimal cuts
+    // check kinematics first
+    const bool kinematicsOK =
+      (v0.pt() > mPtMin && v0.pt() < mPtMax) &&
+      (v0.eta() > mEtaMin && v0.eta() < mEtaMax) &&
+      (v0.phi() > mPhiMin && v0.phi() < mPhiMax);
+    if (!kinematicsOK) {
+      return false;
+    }
+    // now check mass hypothesis
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-      return (v0candidate.mLambda() > mMassLambdaLowerLimit && v0candidate.mLambda() < mMassLambdaUpperLimit) &&   // inside Lambda window
-             (v0candidate.mK0Short() < mMassK0shortLowerLimit || v0candidate.mK0Short() > mMassK0shortUpperLimit); // outside K0short window
+      return (v0.mLambda() > mMassLambdaLowerLimit && v0.mLambda() < mMassLambdaUpperLimit) &&   // inside Λ
+             (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit); // outside K0s
     }
+
     if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-      return                                                                                                        // check PID for daughters
-        (v0candidate.mAntiLambda() > mMassLambdaLowerLimit && v0candidate.mAntiLambda() < mMassLambdaUpperLimit) && // inside AntiLambda window
-        (v0candidate.mK0Short() < mMassK0shortLowerLimit || v0candidate.mK0Short() > mMassK0shortUpperLimit);       // outside K0short window
+      return (v0.mAntiLambda() > mMassLambdaLowerLimit && v0.mAntiLambda() < mMassLambdaUpperLimit) && // inside Λbar
+             (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit);       // outside K0s
     }
+
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
-      return (v0candidate.mK0Short() > mMassK0shortLowerLimit && v0candidate.mK0Short() < mMassK0shortUpperLimit) &&   // inside K0short window
-             (v0candidate.mLambda() < mMassLambdaLowerLimit || v0candidate.mLambda() > mMassLambdaUpperLimit) &&       // outside Lambda window
-             (v0candidate.mAntiLambda() < mMassLambdaLowerLimit || v0candidate.mAntiLambda() > mMassLambdaUpperLimit); // outside AntiLambda window
+      return (v0.mK0Short() > mMassK0shortLowerLimit && v0.mK0Short() < mMassK0shortUpperLimit) &&   // inside K0s
+             (v0.mLambda() < mMassLambdaLowerLimit || v0.mLambda() > mMassLambdaUpperLimit) &&       // outside Λ
+             (v0.mAntiLambda() < mMassLambdaLowerLimit || v0.mAntiLambda() > mMassLambdaUpperLimit); // outside Λbar
     }
     return false;
   }
@@ -326,7 +332,7 @@ struct ConfV0Tables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceK0shortExtras{"produceK0shortExtras", -1, "Produce K0shortExtras (-1: auto; 0 off; 1 on)"};
 };
 
-template <modes::V0 v0Type>
+template <modes::V0 v0Type, const char* HistName>
 class V0Builder
 {
  public:
@@ -334,9 +340,8 @@ class V0Builder
   ~V0Builder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void init(T1& config, T2& filter, T3& table, T4& initContext)
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
   {
-    mV0Selection.configure(config, filter);
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         LOG(info) << "Initialize femto Lambda builder...";
@@ -356,10 +361,13 @@ class V0Builder
     }
     if (mProduceLambdas || mProduceLambdaMasks || mProduceLambdaExtras || mProduceK0shorts || mProduceK0shortMasks || mProduceK0shortExtras) {
       mFillAnyTable = true;
-      mV0Selection.printSelections(v0SelsName, v0SelsToStrings);
     } else {
-      LOG(info) << "No tables configured";
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
     }
+    mV0Selection.configure(registry, config, filter);
+    mV0Selection.printSelections(V0SelsName);
     LOG(info) << "Initialization done...";
   }
 
@@ -372,11 +380,11 @@ class V0Builder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& v0 : v0s) {
-      if (!mV0Selection.checkFilters(v0)) {
+      if (!mV0Selection.checkCandidate(v0)) {
         continue;
       }
       mV0Selection.applySelections(v0, tracks);
-      if (mV0Selection.passesAllRequiredSelections() && mV0Selection.checkHypothesis(v0)) {
+      if (mV0Selection.passesAllRequiredSelections()) {
         auto posDaughter = v0.template posTrack_as<T5>();
         auto negDaughter = v0.template negTrack_as<T5>();
         posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
@@ -461,7 +469,7 @@ class V0Builder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  V0Selection<v0Type> mV0Selection;
+  V0Selection<v0Type, HistName> mV0Selection;
   bool mFillAnyTable = false;
   bool mProduceLambdas = false;
   bool mProduceLambdaMasks = false;
