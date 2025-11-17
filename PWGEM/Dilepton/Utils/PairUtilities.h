@@ -73,38 +73,70 @@ using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
 //_______________________________________________________________________
 template <typename TrackPrecision = float>
+void getAngleHX(std::array<TrackPrecision, 4> const& tM, std::array<TrackPrecision, 4> const& tD, const float beamE1, const float beamE2, const float beamP1, const float beamP2, float& cos_thetaHX, float& phiHX)
+{
+  // tM is mother momentum. tD is daugher momentum. Boost daugher to mother's rest frame.
+  ROOT::Math::PxPyPzEVector vM(tM[0], tM[1], tM[2], std::sqrt(std::pow(tM[0], 2) + std::pow(tM[1], 2) + std::pow(tM[2], 2) + std::pow(tM[3], 2)));
+  ROOT::Math::PxPyPzEVector vD(tD[0], tD[1], tD[2], std::sqrt(std::pow(tD[0], 2) + std::pow(tD[1], 2) + std::pow(tD[2], 2) + std::pow(tD[3], 2)));
+
+  ROOT::Math::PxPyPzEVector Beam1(0., 0., -beamP1, beamE1);
+  ROOT::Math::PxPyPzEVector Beam2(0., 0., beamP2, beamE2);
+
+  // Boost to pair rest frame
+  ROOT::Math::Boost boostvM{vM.BoostToCM()};
+  ROOT::Math::XYZVectorF vD_PRF{(boostvM(vD).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam1_PRF{(boostvM(Beam1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam2_PRF{(boostvM(Beam2).Vect()).Unit()};
+
+  // Helicity frame
+  ROOT::Math::XYZVectorF zaxis_HX{(vM.Vect()).Unit()};
+  ROOT::Math::XYZVectorF yaxis_HX{(Beam1_PRF.Cross(Beam2_PRF)).Unit()};
+  ROOT::Math::XYZVectorF xaxis_HX{(yaxis_HX.Cross(zaxis_HX)).Unit()};
+
+  cos_thetaHX = zaxis_HX.Dot(vD_PRF);
+  phiHX = std::atan2(yaxis_HX.Dot(vD_PRF), xaxis_HX.Dot(vD_PRF));
+}
+//_______________________________________________________________________
+template <typename TrackPrecision = float>
+void getAngleCS(std::array<TrackPrecision, 4> const& tM, std::array<TrackPrecision, 4> const& tD, const float beamE1, const float beamE2, const float beamP1, const float beamP2, float& cos_thetaCS, float& phiCS)
+{
+  // tM is mother momentum. tD is daugher momentum. Boost daugher to mother's rest frame.
+  ROOT::Math::PxPyPzEVector vM(tM[0], tM[1], tM[2], std::sqrt(std::pow(tM[0], 2) + std::pow(tM[1], 2) + std::pow(tM[2], 2) + std::pow(tM[3], 2)));
+  ROOT::Math::PxPyPzEVector vD(tD[0], tD[1], tD[2], std::sqrt(std::pow(tD[0], 2) + std::pow(tD[1], 2) + std::pow(tD[2], 2) + std::pow(tD[3], 2)));
+
+  ROOT::Math::PxPyPzEVector Beam1(0., 0., -beamP1, beamE1);
+  ROOT::Math::PxPyPzEVector Beam2(0., 0., beamP2, beamE2);
+
+  // Boost to pair rest frame
+  ROOT::Math::Boost boostvM{vM.BoostToCM()};
+  ROOT::Math::XYZVectorF vD_PRF{(boostvM(vD).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam1_PRF{(boostvM(Beam1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam2_PRF{(boostvM(Beam2).Vect()).Unit()};
+
+  // Collins-Soper frame
+  ROOT::Math::XYZVectorF zaxis_CS{((Beam1_PRF.Unit() - Beam2_PRF.Unit()).Unit())};
+  ROOT::Math::XYZVectorF yaxis_CS{(Beam1_PRF.Cross(Beam2_PRF)).Unit()};
+  ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+
+  cos_thetaCS = zaxis_CS.Dot(vD_PRF);
+  phiCS = std::atan2(yaxis_CS.Dot(vD_PRF), xaxis_CS.Dot(vD_PRF));
+}
+//_______________________________________________________________________
+template <typename TrackPrecision = float>
 void getAngleHX(std::array<TrackPrecision, 4> const& t1, std::array<TrackPrecision, 4> const& t2, const float beamE1, const float beamE2, const float beamP1, const float beamP2, const int8_t c1, float& cos_thetaHX, float& phiHX)
 {
   // t1[0] = px, t1[1] = py, t1[2] = pz, t1[3] = mass;
   ROOT::Math::PxPyPzEVector v1(t1[0], t1[1], t1[2], std::sqrt(std::pow(t1[0], 2) + std::pow(t1[1], 2) + std::pow(t1[2], 2) + std::pow(t1[3], 2)));
   ROOT::Math::PxPyPzEVector v2(t2[0], t2[1], t2[2], std::sqrt(std::pow(t2[0], 2) + std::pow(t2[1], 2) + std::pow(t2[2], 2) + std::pow(t2[3], 2)));
   ROOT::Math::PxPyPzEVector v12 = v1 + v2;
+  std::array<TrackPrecision, 4> arrM{static_cast<TrackPrecision>(v12.Px()), static_cast<TrackPrecision>(v12.Py()), static_cast<TrackPrecision>(v12.Pz()), static_cast<TrackPrecision>(v12.M())};
 
-  ROOT::Math::PxPyPzEVector Beam1(0., 0., -beamP1, beamE1);
-  ROOT::Math::PxPyPzEVector Beam2(0., 0., beamP2, beamE2);
-
-  // Boost to center of mass frame. i.e. rest frame of pair
-  ROOT::Math::Boost boostv12{v12.BoostToCM()};
-  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
-  // LOGF(info, "boostv12(v12).Vect().X() = %f, boostv12(v12).Vect().Y() = %f, boostv12(v12).Vect().Z() = %f", boostv12(v12).Vect().X(), boostv12(v12).Vect().Y(), boostv12(v12).Vect().Z()); // expected to be (0,0,0)
-
-  // Helicity frame
-  ROOT::Math::XYZVectorF zaxis_HX{(v12.Vect()).Unit()};
-  ROOT::Math::XYZVectorF yaxis_HX{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-  ROOT::Math::XYZVectorF xaxis_HX{(yaxis_HX.Cross(zaxis_HX)).Unit()};
-
-  // pdgCode : 11 for electron, -11 for positron
-  // pdgCode : 13 for negative muon, -13 for positive muon
-  // LOGF(info, "zaxis_HX.Dot(v1_CM) = %f , zaxis_HX.Dot(v2_CM) = %f", zaxis_HX.Dot(v1_CM), zaxis_HX.Dot(v2_CM)); // absolute value is identical. only sign is opposite.
-
-  cos_thetaHX = c1 > 0 ? zaxis_HX.Dot(v1_CM) : zaxis_HX.Dot(v2_CM);
-  phiHX = c1 > 0 ? std::atan2(yaxis_HX.Dot(v1_CM), xaxis_HX.Dot(v1_CM)) : std::atan2(yaxis_HX.Dot(v2_CM), xaxis_HX.Dot(v2_CM));
+  if (c1 > 0) {
+    getAngleHX(arrM, t1, beamE1, beamE2, beamP1, beamP2, cos_thetaHX, phiHX);
+  } else {
+    getAngleHX(arrM, t2, beamE1, beamE2, beamP1, beamP2, cos_thetaHX, phiHX);
+  }
 }
-
-//_______________________________________________________________________
 //_______________________________________________________________________
 template <typename TrackPrecision = float>
 void getAngleCS(std::array<TrackPrecision, 4> const& t1, std::array<TrackPrecision, 4> const& t2, const float beamE1, const float beamE2, const float beamP1, const float beamP2, const int8_t c1, float& cos_thetaCS, float& phiCS)
@@ -113,31 +145,14 @@ void getAngleCS(std::array<TrackPrecision, 4> const& t1, std::array<TrackPrecisi
   ROOT::Math::PxPyPzEVector v1(t1[0], t1[1], t1[2], std::sqrt(std::pow(t1[0], 2) + std::pow(t1[1], 2) + std::pow(t1[2], 2) + std::pow(t1[3], 2)));
   ROOT::Math::PxPyPzEVector v2(t2[0], t2[1], t2[2], std::sqrt(std::pow(t2[0], 2) + std::pow(t2[1], 2) + std::pow(t2[2], 2) + std::pow(t2[3], 2)));
   ROOT::Math::PxPyPzEVector v12 = v1 + v2;
+  std::array<TrackPrecision, 4> arrM{static_cast<TrackPrecision>(v12.Px()), static_cast<TrackPrecision>(v12.Py()), static_cast<TrackPrecision>(v12.Pz()), static_cast<TrackPrecision>(v12.M())};
 
-  ROOT::Math::PxPyPzEVector Beam1(0., 0., -beamP1, beamE1);
-  ROOT::Math::PxPyPzEVector Beam2(0., 0., beamP2, beamE2);
-
-  // Boost to center of mass frame. i.e. rest frame of pair
-  ROOT::Math::Boost boostv12{v12.BoostToCM()};
-  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
-  // LOGF(info, "boostv12(v12).Vect().X() = %f, boostv12(v12).Vect().Y() = %f, boostv12(v12).Vect().Z() = %f", boostv12(v12).Vect().X(), boostv12(v12).Vect().Y(), boostv12(v12).Vect().Z()); // expected to be (0,0,0)
-
-  // Collins-Soper frame
-  ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
-  ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-  ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
-
-  // pdgCode : 11 for electron, -11 for positron
-  // pdgCode : 13 for negative muon, -13 for positive muon
-  // LOGF(info, "zaxis_CS.Dot(v1_CM) = %f , zaxis_CS.Dot(v2_CM) = %f", zaxis_CS.Dot(v1_CM), zaxis_CS.Dot(v2_CM)); // absolute value is identical. only sign is opposite.
-
-  cos_thetaCS = c1 > 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM);
-  phiCS = c1 > 0 ? std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : std::atan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM));
+  if (c1 > 0) {
+    getAngleCS(arrM, t1, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+  } else {
+    getAngleCS(arrM, t2, beamE1, beamE2, beamP1, beamP2, cos_thetaCS, phiCS);
+  }
 }
-
 //_______________________________________________________________________
 template <typename TDCAFitter, typename TCollision, typename TTrack>
 bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1, TTrack const& t2, float& pca, float& lxy, float& cosPA)
@@ -172,7 +187,6 @@ bool isSVFound(TDCAFitter fitter, TCollision const& collision, TTrack const& t1,
     return false;
   }
 }
-
 //_______________________________________________________________________
 // function call without cosPA
 template <typename TDCAFitter, typename TCollision, typename TTrack>
@@ -344,13 +358,11 @@ inline float pairDCAQuadSum(const float dca1, const float dca2)
 {
   return std::sqrt((dca1 * dca1 + dca2 * dca2) / 2.);
 }
-
 //_______________________________________________________________________
 inline float pairDCASignQuadSum(const float dca1, const float dca2, const int8_t charge1, const int8_t charge2)
 {
   return charge1 * charge2 * TMath::Sign(1., dca1) * TMath::Sign(1., dca2) * std::sqrt((dca1 * dca1 + dca2 * dca2) / 2.);
 }
-
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::pairutil
 #endif // PWGEM_DILEPTON_UTILS_PAIRUTILITIES_H_
