@@ -22,9 +22,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -176,6 +175,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgsel8Require{"cfgsel8Require", true, "sel8 cut require"};
   Configurable<float> cfgminmassrejection{"cfgminmassrejection", 6.5, "Min side of He3 particle rejection"};
   Configurable<float> cfgmaxmassrejection{"cfgmaxmassrejection", 9.138, "Max side of He3 particle rejection"};
+  Configurable<float> correctionsigma{"correctionsigma", 2, "Max sigma value outside which correction is require"};
   Configurable<bool> cfghe3massrejreq{"cfghe3massrejreq", true, "Require mass cut on He4 particles"};
 
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
@@ -188,6 +188,9 @@ struct NucleitpcPbPb {
   ConfigurableAxis axisVtxZ{"axisVtxZ", {120, -20, 20}, "z"};
 
   ConfigurableAxis ptAxis{"ptAxis", {200, 0, 10}, "#it{p}_{T} (GeV/#it{c})"};
+
+  ConfigurableAxis ptAxisa{"ptAxisa", {20, 0, 10}, "#it{p}_{T} (GeV/#it{c})"}; // just check
+
   ConfigurableAxis axiseta{"axiseta", {100, -1, 1}, "eta"};
   ConfigurableAxis axisrapidity{"axisrapidity", {100, -2, 2}, "rapidity"};
   ConfigurableAxis axismass{"axismass", {100, -10, 10}, "mass"};
@@ -293,6 +296,10 @@ struct NucleitpcPbPb {
       histomc.add("histVtxZReco", "histVtxZReco", kTH1F, {axisVtxZ});
       histomc.add("histCentFT0CReco", "histCentFT0CReco", kTH1F, {axisCent});
       histomc.add("histCentFT0MReco", "histCentFT0MReco", kTH1F, {axisCent});
+
+      histomc.add("histdetapttriton", " delta pt vs pt rec for trition detected", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
+      histomc.add("histdetapttritonanti", " delta pt vs pt rec for trition detected", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
+
       histomc.add("histDeltaPtVsPtGen", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
       histomc.add("histDeltaPtVsPtGenanti", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
       histomc.add("histDeltaPtVsPtGenHe4", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
@@ -301,6 +308,11 @@ struct NucleitpcPbPb {
       histomc.add("histPIDtrackanti", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
       histomc.add("histPIDtrackhe4", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
       histomc.add("histPIDtrackantihe4", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
+    }
+
+    if (doprocessDCA) {
+
+      histomc.add<THnSparse>("hSpectraDCA", " ", HistType::kTHnSparseF, {speciesBitAxis, {5, -2.5, 2.5}, axisCent, ptAxis, ptAxis, decayTypeAxis, axisDCA});
     }
   }
   //----------------------------------------------------------------------------------------------------------------
@@ -361,33 +373,37 @@ struct NucleitpcPbPb {
           mTrackParCov.setPID(track.pidForTracking());
           ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
 
-          double a = 0, b = 0, c = 0;
+          float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
+          if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
+            continue;
+          if (tpcNsigma > correctionsigma) {
+            double a = 0, b = 0, c = 0;
 
-          int param = -1;
-          if (i == he3) {
-            param = (track.sign() > 0) ? 0 : 1;
-          } else if (i == he4) {
-            param = (track.sign() > 0) ? 2 : 3;
-          }
+            int param = -1;
+            if (i == he3) {
+              param = (track.sign() > 0) ? 0 : 1;
+            } else if (i == he4) {
+              param = (track.sign() > 0) ? 2 : 3;
+            }
 
-          if (param >= 0) {
-            a = cfgktrackcorrection->get(param, "a");
-            b = cfgktrackcorrection->get(param, "b");
-            c = cfgktrackcorrection->get(param, "c");
-          }
+            if (param >= 0) {
+              a = cfgktrackcorrection->get(param, "a");
+              b = cfgktrackcorrection->get(param, "b");
+              c = cfgktrackcorrection->get(param, "c");
+            }
 
-          if (i == he4 && cfgmccorrectionhe4Require) {
-            ptMomn = ptMomn + a + b * std::exp(c * ptMomn);
-          }
+            if (i == he4 && cfgmccorrectionhe4Require) {
+              ptMomn = ptMomn + a + b * std::exp(c * ptMomn);
+            }
 
-          if (i == he3 && cfgmccorrectionhe4Require) {
-            int pidGuess = track.pidForTracking();
-            int antitriton = 6;
-            if (pidGuess == antitriton) {
-              ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
+            if (i == he3 && cfgmccorrectionhe4Require) {
+              int pidGuess = track.pidForTracking();
+              int antitriton = 6;
+              if (pidGuess == antitriton) {
+                ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
+              }
             }
           }
-
           int sign = (track.sign() > 0) ? 1 : ((track.sign() < 0) ? -1 : 0);
 
           if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
@@ -425,9 +441,6 @@ struct NucleitpcPbPb {
             continue;
           }
 
-          float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-          if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
-            continue;
           float itsSigma = getITSnSigma(track, primaryParticles.at(i));
           if (itsSigma < cfgTrackPIDsettings2->get(i, "minITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
             continue;
@@ -468,6 +481,7 @@ struct NucleitpcPbPb {
             }
           }
           fillhmassnsigma(track, i, tpcNsigma);
+
           if ((std::abs(tpcNsigma) > cfgTrackPIDsettings2->get(i, "maxTPCnsigmaTOF")) && cfgTrackPIDsettings2->get(i, "useTPCnsigmaTOF") < 1)
             continue;
           fillhmass(track, i, collision.centFT0C());
@@ -564,10 +578,12 @@ struct NucleitpcPbPb {
           // Signal loss denominator
           if (mcParticle.pdgCode() == particlePdgCodes.at(4)) { // He3
             histomc.fill(HIST("hHe3SignalLossDenom"), mcCollInfos[i].centrality);
+
           } else if (mcParticle.pdgCode() == particlePdgCodes.at(5)) { // He4
             histomc.fill(HIST("hHe4SignalLossDenom"), mcCollInfos[i].centrality);
           } else if (mcParticle.pdgCode() == -particlePdgCodes.at(4)) { // anti-He3
             histomc.fill(HIST("haHe3SignalLossDenom"), mcCollInfos[i].centrality);
+
           } else if (mcParticle.pdgCode() == -particlePdgCodes.at(5)) { // He4
             histomc.fill(HIST("haHe4SignalLossDenom"), mcCollInfos[i].centrality);
           }
@@ -639,8 +655,8 @@ struct NucleitpcPbPb {
         }
         bool isFromWeakDecay = (decayType == 1);
 
-        //        if (!mcParticle.isPhysicalPrimary() && !isFromWeakDecay)
-        if (!mcParticle.isPhysicalPrimary() && isFromWeakDecay)
+        if (!mcParticle.isPhysicalPrimary() && !isFromWeakDecay)
+          //  if (!mcParticle.isPhysicalPrimary())
           continue;
 
         int particleType = -1;
@@ -801,8 +817,12 @@ struct NucleitpcPbPb {
                 continue;
               }
 
+              float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
+              if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
+                continue;
+
               if (i == he3 || i == he4) {
-                histomc.fill(HIST("hNumerEffAcc"), i, ptReco, matchedMCParticle.y(), collision.centFT0C(), particleAnti, decayType);
+                histomc.fill(HIST("hNumerEffAcc"), i, ptReco, getRapidity(track, i), collision.centFT0C(), particleAnti, decayType);
               }
 
               float ptTOF = -1.0; // Default: no TOF
@@ -815,7 +835,6 @@ struct NucleitpcPbPb {
                              ptReco, ptTOF);
               }
 
-              float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
               fillhmassnsigma(track, i, tpcNsigma);
               histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
               histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
@@ -829,10 +848,22 @@ struct NucleitpcPbPb {
               if (pdg == -particlePdgCodes.at(4)) {
                 histomc.fill(HIST("histDeltaPtVsPtGenanti"), ptReco, deltaPt);
                 histomc.fill(HIST("histPIDtrackanti"), ptReco, track.pidForTracking());
+
+                int pidGuess = track.pidForTracking();
+                int antitriton = 6;
+                if (pidGuess == antitriton) {
+                  histomc.fill(HIST("histdetapttritonanti"), ptReco, deltaPt);
+                }
               }
               if (pdg == particlePdgCodes.at(4)) {
                 histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
                 histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
+
+                int pidGuess = track.pidForTracking();
+                int antitriton = 6;
+                if (pidGuess == antitriton) {
+                  histomc.fill(HIST("histdetapttriton"), ptReco, deltaPt);
+                }
               }
               if (pdg == -particlePdgCodes.at(5)) {
                 histomc.fill(HIST("histDeltaPtVsPtGenHe4anti"), ptReco, deltaPt);
@@ -851,6 +882,219 @@ struct NucleitpcPbPb {
   }
   PROCESS_SWITCH(NucleitpcPbPb, processMC, "MC reco+gen analysis with efficiency corrections", false);
   //=-=-=-==-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  //----------------------------------------------------------------------------------------------------------------
+  // MC particles - DCA secondary fraction
+  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+  void processDCA(CollisionsFullMC const& collisions,
+                  aod::McCollisions const& mcCollisions,
+                  aod::McParticles const& particlesMC,
+                  soa::Join<TracksFull, aod::McTrackLabels> const& tracks,
+                  aod::BCsWithTimestamps const&)
+
+  {
+    (void)particlesMC;
+    mcCollInfos.clear();
+    mcCollInfos.resize(mcCollisions.size());
+
+    // First pass: Store centrality and apply event selection
+    for (auto const& collision : collisions) {
+      int mcCollIdx = collision.mcCollisionId();
+      if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollisions.size())) {
+        continue;
+      }
+
+      // STORE CENTRALITY WITHOUt CUTS
+      mcCollInfos[mcCollIdx].centrality = collision.centFT0C();
+
+      if (!collision.sel8() && cfgsel8Require)
+        continue;
+      if (collision.centFT0C() > centcut)
+        continue;
+
+      // Additional cuts
+      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+        continue;
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+        continue;
+      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      // Mark this MC collision as passing event selection
+      mcCollInfos[mcCollIdx].passedEvSel = true;
+
+      // Apply event selection cuts
+      if (std::abs(collision.posZ()) > cfgZvertex && cfgZvertexRequireMC)
+        continue;
+
+      mcCollInfos[mcCollIdx].passedEvSelVtZ = true;
+    }
+
+    // Process MC collisions for efficiency and reconstructed collisions
+    for (auto const& mcCollision : mcCollisions) {
+      size_t idx = mcCollision.globalIndex();
+      if (idx >= mcCollInfos.size())
+        continue;
+
+      //      bool passedEvSel = mcCollInfos[idx].passedEvSel;
+      bool passedEvSelVtZ = mcCollInfos[idx].passedEvSelVtZ;
+
+      // Process reconstructed collisions for this MC collision
+      if (passedEvSelVtZ) {
+        // Find the corresponding reconstructed collision
+        for (auto const& collision : collisions) {
+          if (collision.mcCollisionId() != static_cast<int>(idx))
+            continue;
+
+          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+          initCCDB(bc);
+          auto tracksInColl = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
+
+          for (auto const& track : tracksInColl) {
+            if (!track.has_mcParticle())
+              continue; // skip un-matched reco tracks
+
+            auto const& matchedMCParticle = track.mcParticle_as<aod::McParticles>();
+
+            // Only process particles from this MC collision
+            if (matchedMCParticle.mcCollisionId() != mcCollision.globalIndex())
+              continue;
+
+            int pdg = matchedMCParticle.pdgCode();
+            bool isHe3 = (std::abs(pdg) == particlePdgCodes.at(4));
+            bool isHe4 = (std::abs(pdg) == particlePdgCodes.at(5));
+
+            if (!isHe3 && !isHe4)
+              continue;
+
+            if (!track.isPVContributor() && cfgUsePVcontributors)
+              continue;
+            if (!track.hasITS() && cfgITSrequire)
+              continue;
+            if (!track.hasTPC() && cfgTPCrequire)
+              continue;
+            if (!track.passedITSRefit() && cfgPassedITSRefit)
+              continue;
+            if (!track.passedTPCRefit() && cfgPassedTPCRefit)
+              continue;
+            if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
+              continue;
+
+            for (size_t i = 0; i < primaryParticles.size(); i++) {
+              if (std::abs(pdg) != std::abs(particlePdgCodes.at(i)))
+                continue;
+
+              float ptReco;
+              setTrackParCov(track, mTrackParCov);
+              mTrackParCov.setPID(track.pidForTracking());
+
+              ptReco = (std::abs(pdg) == particlePdgCodes.at(4) || std::abs(pdg) == particlePdgCodes.at(5)) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+
+              int particleAnti = (pdg > 0) ? 0 : 1;
+
+              double a = 0, b = 0, c = 0;
+
+              int param = -1;
+              if (i == he3) {
+                param = (-particlePdgCodes.at(4) > 0) ? 0 : 1;
+              } else if (i == he4) {
+                param = (-particlePdgCodes.at(4) > 0) ? 2 : 3;
+              }
+
+              if (param >= 0) {
+                a = cfgktrackcorrection->get(param, "a");
+                b = cfgktrackcorrection->get(param, "b");
+                c = cfgktrackcorrection->get(param, "c");
+              }
+
+              if (std::abs(pdg) == particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
+                ptReco = ptReco + a + b * std::exp(c * ptReco);
+              }
+
+              if (std::abs(pdg) == particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
+                int pidGuess = track.pidForTracking();
+                int antitriton = 6;
+                if (pidGuess == antitriton) {
+                  ptReco = ptReco - a + b * ptReco - c * ptReco * ptReco;
+                }
+              }
+
+              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
+                continue;
+
+              if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
+                continue;
+              if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < cfgtpcNClsFindable * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
+                continue;
+              if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
+                continue;
+              if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && cfgminTPCchi2Require)
+                continue;
+              if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
+                continue;
+              double cosheta = std::cosh(track.eta());
+              if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
+                continue;
+              if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
+                continue;
+              if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
+                continue;
+              if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
+                continue;
+
+              // DCA XY cut
+              bool insideDCAxy = cfgdcaxynopt ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY")) : (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptReco, 1.1f))));
+
+              // DCA Z cut
+              bool insideDCAz = cfgdcaznopt ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ")) : (std::abs(track.dcaZ()) <= dcazSigma(ptReco, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+
+              if ((!insideDCAxy || !insideDCAz)) {
+                continue;
+              }
+
+              float ptTOF = -1.0; // Default: no TOF
+              if (track.hasTOF()) {
+                ptTOF = ptReco;
+              }
+
+              int decayType = 0; // 0 = primary, 1 = weak decay, 2 = material
+
+              bool isProdByGen = false;
+              isProdByGen = track.mcParticle().producedByGenerator();
+
+              if (matchedMCParticle.isPhysicalPrimary()) {
+                // ---- Primary particles ----
+                decayType = 0;
+
+              } else if (matchedMCParticle.getProcess() == TMCProcess::kPDecay && !isProdByGen) {
+                // ---- Secondary from weak decay ----
+                decayType = 1;
+
+              } else if (matchedMCParticle.getProcess() == 23) {
+                // ---- Secondary from material interaction ----
+                decayType = 2;
+              }
+
+              if (cfgTrackPIDsettings2->get(i, "fillsparsh") == 1) {
+                histomc.fill(HIST("hSpectraDCA"), i, particleAnti, collision.centFT0C(),
+                             ptReco, ptTOF, decayType, track.dcaXY());
+              }
+
+              //
+            }
+          }
+          break; // Found the matching collision, break out of collision loop
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(NucleitpcPbPb, processDCA, "MC DCA analysis For secondary correction", false);
+  //=-=-=-==-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
