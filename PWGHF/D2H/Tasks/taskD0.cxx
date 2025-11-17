@@ -237,14 +237,14 @@ struct HfTaskD0 {
 
   void init(InitContext&)
   {
-    std::array<bool, 13> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithDCAFitterNCent, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithDCAFitterNCent, doprocessMcWithKFParticle, doprocessDataWithDCAFitterNMl, doprocessDataWithDCAFitterNMlCent, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterNMl, doprocessMcWithDCAFitterNMlCent, doprocessMcWithKFParticleMl, doprocessDataWithDCAFitterNMlWithUpc};
+    std::array<bool, 14> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithDCAFitterNCent, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithDCAFitterNCent, doprocessMcWithKFParticle, doprocessDataWithDCAFitterNMl, doprocessDataWithDCAFitterNMlCent, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterNMl, doprocessMcWithDCAFitterNMlCent, doprocessMcWithKFParticleMl, doprocessDataWithDCAFitterNWithUpc, doprocessDataWithDCAFitterNMlWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
       LOGP(fatal, "At least one process function should be enabled at a time.");
     }
     if ((doprocessDataWithDCAFitterN || doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMl || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle || doprocessDataWithKFParticleMl || doprocessMcWithKFParticleMl)) {
       LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
-    if ((storeCentrality || storeOccupancyAndIR) && !(doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMlCent || doprocessDataWithDCAFitterNMlWithUpc)) {
+    if ((storeCentrality || storeOccupancyAndIR) && !(doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMlCent || doprocessDataWithDCAFitterNWithUpc || doprocessDataWithDCAFitterNMlWithUpc)) {
       LOGP(fatal, "Can't enable the storeCentrality and storeOccupancu without cent process or UPC process");
     }
     auto vbins = (std::vector<double>)binsPt;

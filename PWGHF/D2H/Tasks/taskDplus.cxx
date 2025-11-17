@@ -149,7 +149,7 @@ struct HfTaskDplus {
 
   void init(InitContext&)
   {
-    std::array<bool, 5> doprocess{doprocessData, doprocessDataWithMl, doprocessMc, doprocessMcWithMl, doprocessDataWithMlWithUpc};
+    std::array<bool, 6> doprocess{doprocessData, doprocessDataWithMl, doprocessMc, doprocessMcWithMl, doprocessDataWithUpc, doprocessDataWithMlWithUpc};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
