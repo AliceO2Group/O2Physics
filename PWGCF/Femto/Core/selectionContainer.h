@@ -360,6 +360,7 @@ class SelectionContainer
     std::ostringstream oss;
     std::string sectionDelimiter = ":::";
     std::string valueDelimiter = "___";
+    std::string noValue = "X";
     oss << "SelectionName" << valueDelimiter << mSelectionName << sectionDelimiter
         << "LimitType" << valueDelimiter << getLimitTypeAsString() << sectionDelimiter
         << "MinimalCut" << valueDelimiter << (mIsMinimalCut ? "1" : "0") << sectionDelimiter
@@ -368,7 +369,8 @@ class SelectionContainer
         << "Shift" << valueDelimiter << getShift() << sectionDelimiter
         << "Offset" << valueDelimiter << mOffset << sectionDelimiter
         << "Value" << valueDelimiter << (mSelectionFunctions.empty() ? std::to_string(mSelectionValues.at(selectionIndex)) : mSelectionFunctions.at(selectionIndex).GetExpFormula().Data()) << sectionDelimiter
-        << "BitPosition" << valueDelimiter << (mSkipMostPermissiveBit ? (selectionIndex == 0 ? "X" : std::to_string(mOffset + selectionIndex - 1)) : std::to_string(mOffset + selectionIndex));
+        << "BitPosition" << valueDelimiter << (mSkipMostPermissiveBit ? (selectionIndex == 0 ? noValue : std::to_string(mOffset + selectionIndex - 1)) : std::to_string(mOffset + selectionIndex)) << sectionDelimiter
+        << "Comment" << valueDelimiter << (mComments.empty() ? noValue : mComments.at(selectionIndex));
     return oss.str();
   }
 

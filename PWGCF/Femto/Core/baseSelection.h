@@ -184,8 +184,8 @@ class BaseSelection
   void reset()
   {
     mFinalBitmask.reset();
-    for (auto& container : mSelectionContainers) { // o2-linter: disable=const-ref-in-for-loop (object modified in loop)
-      container.reset();
+    for (std::size_t i = 0; i < mSelectionContainers.size(); i++) {
+      mSelectionContainers.at(i).reset();
     }
     if (mHasMinimalSelection) {
       mPassesMinimalSelections = true;
@@ -386,6 +386,7 @@ class BaseSelection
       }
       LOG(info) << "";
     }
+    LOG(info) << "Number of occupied bits: " << mNSelectionBits << " / " << sizeof(BitmaskType) * CHAR_BIT;
     LOG(info) << "Printing done";
   }
 
