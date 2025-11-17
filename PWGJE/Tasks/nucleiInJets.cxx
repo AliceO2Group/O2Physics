@@ -1643,7 +1643,7 @@ struct nucleiInJets {
 
       auto rapidityData = [&](float m2z) {
         const float rap = trk.rapidity(m2z);
-        return rap > std::abs(cfgtrkMaxRap);
+        return rap < std::abs(cfgtrkMaxRap);
       };
 
       auto prRapidityWithinRange = rapidityData(o2::constants::physics::MassProton);
@@ -2314,8 +2314,9 @@ struct nucleiInJets {
       if (std::fabs(track.dcaXY()) > dcaXYPtDepCut(track.pt()) && useDcaxyPtDepCut)
         continue;
 
-      auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
-      auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
+      // auto mass = TDatabasePDG::Instance()->GetParticle(abs(mcTrack.pdgCode()))->Mass();
+      // auto rapidity = RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass);
+      auto rapidity = mcTrack.y();
 
       if (std::abs(rapidity) > cfgtrkMaxRap)
         continue;
