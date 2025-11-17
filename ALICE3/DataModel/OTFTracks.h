@@ -32,4 +32,4 @@ DECLARE_SOA_COLUMN(LUTConfigId, lutConfigId, int); //! Index for LUT configurati
 DECLARE_SOA_TABLE(OTFLUTConfigId, "AOD", "OTFLUTConfigId", otftracks::LUTConfigId);
 } // namespace o2::aod
 
-#endif  // ALICE3_DATAMODEL_OTFTRACKS_H_
+#endif // ALICE3_DATAMODEL_OTFTRACKS_H_
