@@ -868,8 +868,11 @@ struct TableMaker {
         if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
           // The DQRapidityGapFilter contains the index of the bc we want to get FIT info from
           auto newbc = bcs.rawIteratorAt(collision.newBcIndex());
-          // Fill FIT information from newbc using VarManager::FillFIT()
+          // Fill FIT information from newbc using simple VarManager::FillFIT() like FillZDC
           VarManager::FillFIT(newbc);
+        } else {
+          // Use bcEvSel (collision BC) when RapidityGapFilter is not enabled
+          VarManager::FillFIT(bcEvSel);
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
