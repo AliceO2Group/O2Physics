@@ -243,7 +243,7 @@ int FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool reso
     }
     return 255; // as error filler
   }
-  if (part == aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC) { // KStar
+  if (part == aod::femtodreamparticle::kResoKStar) { // KStar
     if (track1.pt() <= posThresh && track2.pt() <= negThresh) {
       return aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC;
     }
