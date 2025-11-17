@@ -5262,7 +5262,34 @@ template <typename T>
 struct has_amplitudeFT0A<T, std::void_t<decltype(std::declval<T>().amplitudeFT0A())>> : std::true_type {
 };
 
-// Unified FillFIT version for both BC objects and ReducedFIT table objects
+// Helper to detect FT0 detector object (has amplitudeA method)
+template <typename T, typename = void>
+struct is_FT0 : std::false_type {
+};
+
+template <typename T>
+struct is_FT0<T, std::void_t<decltype(std::declval<T>().amplitudeA())>> : std::true_type {
+};
+
+// Helper to detect FV0A detector object (has amplitude method, not amplitudeA)
+template <typename T, typename = void>
+struct is_FV0A : std::false_type {
+};
+
+template <typename T>
+struct is_FV0A<T, std::void_t<decltype(std::declval<T>().amplitude())>> : std::true_type {
+};
+
+// Helper to detect FDD detector object (has chargeA method)
+template <typename T, typename = void>
+struct is_FDD : std::false_type {
+};
+
+template <typename T>
+struct is_FDD<T, std::void_t<decltype(std::declval<T>().chargeA())>> : std::true_type {
+};
+
+// Unified FillFIT version for ReducedFIT table objects and individual detector objects (FT0, FV0A, FDD)
 template <typename T>
 void VarManager::FillFIT(T const& obj, float* values)
 {
@@ -5270,7 +5297,7 @@ void VarManager::FillFIT(T const& obj, float* values)
     values = fgValues;
   }
 
-  // Check if this is a BC object (has has_foundFT0 method) or ReducedFIT table object (has amplitudeFT0A method)
+  // Handle different object types using type traits
   if constexpr (has_amplitudeFT0A<T>::value) {
     // This is a ReducedFIT table object - read all columns directly
     values[kAmplitudeFT0A] = obj.amplitudeFT0A();
@@ -5306,119 +5333,73 @@ void VarManager::FillFIT(T const& obj, float* values)
     values[kDistClosestBcTVX] = obj.distClosestBcTVX();
     values[kDistClosestBcV0A] = obj.distClosestBcV0A();
     values[kDistClosestBcT0A] = obj.distClosestBcT0A();
-  } else {
-    // This is a BC object - access FIT detectors via BC associations
-    LOG(info) << "VarManager::FillFIT: Using BC object path";
-    // Initialize all FIT variables to default values first
-    values[kAmplitudeFT0A] = -1.f;
-    values[kAmplitudeFT0C] = -1.f;
-    values[kTimeFT0A] = -999.f;
-    values[kTimeFT0C] = -999.f;
-    values[kTriggerMaskFT0] = 0;
-    values[kNFiredChannelsFT0A] = 0;
-    values[kNFiredChannelsFT0C] = 0;
-    values[kAmplitudeFDDA] = -1.f;
-    values[kAmplitudeFDDC] = -1.f;
-    values[kTimeFDDA] = -999.f;
-    values[kTimeFDDC] = -999.f;
-    values[kTriggerMaskFDD] = 0;
-    values[kNFiredChannelsFDDA] = 0;
-    values[kNFiredChannelsFDDC] = 0;
-    values[kAmplitudeFV0A] = -1.f;
-    values[kTimeFV0A] = -999.f;
-    values[kTriggerMaskFV0A] = 0;
-    values[kNFiredChannelsFV0A] = 0;
-    values[kBGFT0Apf] = 0.f;
-    values[kBGFT0Cpf] = 0.f;
-    values[kBBFT0Apf] = 0.f;
-    values[kBBFT0Cpf] = 0.f;
-    values[kBGFV0Apf] = 0.f;
-    values[kBBFV0Apf] = 0.f;
-    values[kBGFDDApf] = 0.f;
-    values[kBGFDDCpf] = 0.f;
-    values[kBBFDDApf] = 0.f;
-    values[kBBFDDCpf] = 0.f;
-    values[kDistClosestBcTOR] = 999.f;
-    values[kDistClosestBcTSC] = 999.f;
-    values[kDistClosestBcTVX] = 999.f;
-    values[kDistClosestBcV0A] = 999.f;
-    values[kDistClosestBcT0A] = 999.f;
-
-    // Fill FT0 information from BC
-    if (obj.has_ft0()) {
-      auto ft0 = obj.ft0();
-      float ampA = 0.f;
-      int nFiredFT0A = 0;
-      for (auto const& amp : ft0.amplitudeA()) {
-        if (amp > 0) {
-          ampA += amp;
-          nFiredFT0A++;
-        }
+  } else if constexpr (is_FT0<T>::value) {
+    // This is an FT0 detector object
+    float ampA = 0.f;
+    int nFiredFT0A = 0;
+    for (auto const& amp : obj.amplitudeA()) {
+      if (amp > 0) {
+        ampA += amp;
+        nFiredFT0A++;
       }
-      float ampC = 0.f;
-      int nFiredFT0C = 0;
-      for (auto const& amp : ft0.amplitudeC()) {
-        if (amp > 0) {
-          ampC += amp;
-          nFiredFT0C++;
-        }
-      }
-      // Only overwrite defaults if we have actual signal
-      if (nFiredFT0A > 0) values[kAmplitudeFT0A] = ampA;
-      if (nFiredFT0C > 0) values[kAmplitudeFT0C] = ampC;
-      values[kTimeFT0A] = ft0.timeA();
-      values[kTimeFT0C] = ft0.timeC();
-      values[kTriggerMaskFT0] = ft0.triggerMask();
-      values[kNFiredChannelsFT0A] = nFiredFT0A;
-      values[kNFiredChannelsFT0C] = nFiredFT0C;
     }
-
-    // Fill FV0A information from BC
-    if (obj.has_fv0a()) {
-      auto fv0a = obj.fv0a();
-      float ampV0A = 0.f;
-      int nFiredFV0A = 0;
-      for (auto const& amp : fv0a.amplitude()) {
-        if (amp > 0) {
-          ampV0A += amp;
-          nFiredFV0A++;
-        }
+    float ampC = 0.f;
+    int nFiredFT0C = 0;
+    for (auto const& amp : obj.amplitudeC()) {
+      if (amp > 0) {
+        ampC += amp;
+        nFiredFT0C++;
       }
-      // Only overwrite defaults if we have actual signal
-      if (nFiredFV0A > 0) values[kAmplitudeFV0A] = ampV0A;
-      values[kTimeFV0A] = fv0a.time();
-      values[kTriggerMaskFV0A] = fv0a.triggerMask();
-      values[kNFiredChannelsFV0A] = nFiredFV0A;
     }
-
-    // Fill FDD information from BC
-    if (obj.has_fdd()) {
-      auto fdd = obj.fdd();
-      float ampFDDA = 0.f;
-      int nFiredFDDA = 0;
-      for (auto const& amp : fdd.chargeA()) {
-        if (amp > 0) {
-          ampFDDA += amp;
-          nFiredFDDA++;
-        }
+    // Only overwrite defaults if we have actual signal
+    if (nFiredFT0A > 0) values[kAmplitudeFT0A] = ampA;
+    if (nFiredFT0C > 0) values[kAmplitudeFT0C] = ampC;
+    values[kTimeFT0A] = obj.timeA();
+    values[kTimeFT0C] = obj.timeC();
+    values[kTriggerMaskFT0] = obj.triggerMask();
+    values[kNFiredChannelsFT0A] = nFiredFT0A;
+    values[kNFiredChannelsFT0C] = nFiredFT0C;
+  } else if constexpr (is_FDD<T>::value) {
+    // This is an FDD detector object
+    float ampFDDA = 0.f;
+    int nFiredFDDA = 0;
+    for (auto const& amp : obj.chargeA()) {
+      if (amp > 0) {
+        ampFDDA += amp;
+        nFiredFDDA++;
       }
-      float ampFDDC = 0.f;
-      int nFiredFDDC = 0;
-      for (auto const& amp : fdd.chargeC()) {
-        if (amp > 0) {
-          ampFDDC += amp;
-          nFiredFDDC++;
-        }
-      }
-      // Only overwrite defaults if we have actual signal
-      if (nFiredFDDA > 0) values[kAmplitudeFDDA] = ampFDDA;
-      if (nFiredFDDC > 0) values[kAmplitudeFDDC] = ampFDDC;
-      values[kTimeFDDA] = fdd.timeA();
-      values[kTimeFDDC] = fdd.timeC();
-      values[kTriggerMaskFDD] = fdd.triggerMask();
-      values[kNFiredChannelsFDDA] = nFiredFDDA;
-      values[kNFiredChannelsFDDC] = nFiredFDDC;
     }
+    float ampFDDC = 0.f;
+    int nFiredFDDC = 0;
+    for (auto const& amp : obj.chargeC()) {
+      if (amp > 0) {
+        ampFDDC += amp;
+        nFiredFDDC++;
+      }
+    }
+    // Only overwrite defaults if we have actual signal
+    if (nFiredFDDA > 0) values[kAmplitudeFDDA] = ampFDDA;
+    if (nFiredFDDC > 0) values[kAmplitudeFDDC] = ampFDDC;
+    values[kTimeFDDA] = obj.timeA();
+    values[kTimeFDDC] = obj.timeC();
+    values[kTriggerMaskFDD] = obj.triggerMask();
+    values[kNFiredChannelsFDDA] = nFiredFDDA;
+    values[kNFiredChannelsFDDC] = nFiredFDDC;
+  } else if constexpr (is_FV0A<T>::value && !is_FT0<T>::value) {
+    // This is an FV0A detector object (exclude FT0 which also has amplitude method)
+    float ampV0A = 0.f;
+    int nFiredFV0A = 0;
+    for (auto const& amp : obj.amplitude()) {
+      if (amp > 0) {
+        ampV0A += amp;
+        nFiredFV0A++;
+      }
+    }
+    // Only overwrite defaults if we have actual signal
+    if (nFiredFV0A > 0) values[kAmplitudeFV0A] = ampV0A;
+    values[kTimeFV0A] = obj.time();
+    values[kTriggerMaskFV0A] = obj.triggerMask();
+    values[kNFiredChannelsFV0A] = nFiredFV0A;
   }
 }
 
