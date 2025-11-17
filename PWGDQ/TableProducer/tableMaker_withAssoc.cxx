@@ -1706,6 +1706,7 @@ struct TableMaker {
 
   // produce the barrel only DQ skimmed data model for UPC Pb-Pb with FIT detector info
   void processPbPbWithFilterBarrelOnlyWithFIT(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+                                              aod::FT0s const& ft0s, aod::FDDs const& fdds, aod::FV0As const& fv0as,
                                               MyBarrelTracksWithCov const& tracksBarrel,
                                               TrackAssoc const& trackAssocs)
   {

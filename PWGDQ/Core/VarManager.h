@@ -5347,49 +5347,77 @@ void VarManager::FillFIT(T const& obj, float* values)
     // Fill FT0 information from BC
     if (obj.has_ft0()) {
       auto ft0 = obj.ft0();
-      values[kAmplitudeFT0A] = 0.f;
+      float ampA = 0.f;
+      int nFiredFT0A = 0;
       for (auto const& amp : ft0.amplitudeA()) {
-        values[kAmplitudeFT0A] += amp;
+        if (amp > 0) {
+          ampA += amp;
+          nFiredFT0A++;
+        }
       }
-      values[kAmplitudeFT0C] = 0.f;
+      float ampC = 0.f;
+      int nFiredFT0C = 0;
       for (auto const& amp : ft0.amplitudeC()) {
-        values[kAmplitudeFT0C] += amp;
+        if (amp > 0) {
+          ampC += amp;
+          nFiredFT0C++;
+        }
       }
+      // Only overwrite defaults if we have actual signal
+      if (nFiredFT0A > 0) values[kAmplitudeFT0A] = ampA;
+      if (nFiredFT0C > 0) values[kAmplitudeFT0C] = ampC;
       values[kTimeFT0A] = ft0.timeA();
       values[kTimeFT0C] = ft0.timeC();
       values[kTriggerMaskFT0] = ft0.triggerMask();
-      values[kNFiredChannelsFT0A] = ft0.amplitudeA().size();
-      values[kNFiredChannelsFT0C] = ft0.amplitudeC().size();
+      values[kNFiredChannelsFT0A] = nFiredFT0A;
+      values[kNFiredChannelsFT0C] = nFiredFT0C;
     }
 
     // Fill FV0A information from BC
     if (obj.has_fv0a()) {
       auto fv0a = obj.fv0a();
-      values[kAmplitudeFV0A] = 0.f;
+      float ampV0A = 0.f;
+      int nFiredFV0A = 0;
       for (auto const& amp : fv0a.amplitude()) {
-        values[kAmplitudeFV0A] += amp;
+        if (amp > 0) {
+          ampV0A += amp;
+          nFiredFV0A++;
+        }
       }
+      // Only overwrite defaults if we have actual signal
+      if (nFiredFV0A > 0) values[kAmplitudeFV0A] = ampV0A;
       values[kTimeFV0A] = fv0a.time();
       values[kTriggerMaskFV0A] = fv0a.triggerMask();
-      values[kNFiredChannelsFV0A] = fv0a.amplitude().size();
+      values[kNFiredChannelsFV0A] = nFiredFV0A;
     }
 
     // Fill FDD information from BC
     if (obj.has_fdd()) {
       auto fdd = obj.fdd();
-      values[kAmplitudeFDDA] = 0.f;
+      float ampFDDA = 0.f;
+      int nFiredFDDA = 0;
       for (auto const& amp : fdd.chargeA()) {
-        values[kAmplitudeFDDA] += amp;
+        if (amp > 0) {
+          ampFDDA += amp;
+          nFiredFDDA++;
+        }
       }
-      values[kAmplitudeFDDC] = 0.f;
+      float ampFDDC = 0.f;
+      int nFiredFDDC = 0;
       for (auto const& amp : fdd.chargeC()) {
-        values[kAmplitudeFDDC] += amp;
+        if (amp > 0) {
+          ampFDDC += amp;
+          nFiredFDDC++;
+        }
       }
+      // Only overwrite defaults if we have actual signal
+      if (nFiredFDDA > 0) values[kAmplitudeFDDA] = ampFDDA;
+      if (nFiredFDDC > 0) values[kAmplitudeFDDC] = ampFDDC;
       values[kTimeFDDA] = fdd.timeA();
       values[kTimeFDDC] = fdd.timeC();
       values[kTriggerMaskFDD] = fdd.triggerMask();
-      values[kNFiredChannelsFDDA] = fdd.chargeA().size();
-      values[kNFiredChannelsFDDC] = fdd.chargeC().size();
+      values[kNFiredChannelsFDDA] = nFiredFDDA;
+      values[kNFiredChannelsFDDC] = nFiredFDDC;
     }
   }
 }
