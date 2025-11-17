@@ -868,27 +868,12 @@ struct TableMaker {
         if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
           // The DQRapidityGapFilter contains the index of the bc we want to get FIT info from
           auto newbc = bcs.rawIteratorAt(collision.newBcIndex());
-          // Fill FIT information from detectors explicitly like ZDC
-          if (newbc.has_ft0()) {
-            VarManager::FillFIT(newbc.ft0());
-          }
-          if (newbc.has_fv0a()) {
-            VarManager::FillFIT(newbc.fv0a());
-          }
-          if (newbc.has_fdd()) {
-            VarManager::FillFIT(newbc.fdd());
-          }
+          // Fill FIT information from all detectors (FT0, FV0A, FDD) in one call
+          // This also fills background pileup information by scanning ±16 BCs
+          VarManager::FillFIT(newbc, bcs);
         } else {
           // Use bcEvSel (collision BC) when RapidityGapFilter is not enabled
-          if (bcEvSel.has_ft0()) {
-            VarManager::FillFIT(bcEvSel.ft0());
-          }
-          if (bcEvSel.has_fv0a()) {
-            VarManager::FillFIT(bcEvSel.fv0a());
-          }
-          if (bcEvSel.has_fdd()) {
-            VarManager::FillFIT(bcEvSel.fdd());
-          }
+          VarManager::FillFIT(bcEvSel, bcs);
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
