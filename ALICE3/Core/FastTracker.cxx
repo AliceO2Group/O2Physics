@@ -445,7 +445,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 
   // Delphes sets this to 20, but does not count all points in the tpc as layers which we do here
   // Loop over all the added layers to prevent crash when adding the tpc
-  // Should not affect efficiency calculation 
+  // Should not affect efficiency calculation
   const int kMaxNumberOfDetectors = layers.size();
 
   int firstActiveLayer = -1; // first layer that is not inert

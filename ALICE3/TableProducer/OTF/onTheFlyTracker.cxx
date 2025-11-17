@@ -67,7 +67,6 @@ using namespace o2::framework;
 using std::array;
 #define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
-
 struct OnTheFlyTracker {
   Produces<aod::Collisions> tableCollisions;
   Produces<aod::McCollisionLabels> tableMcCollisionLabels;
@@ -263,7 +262,7 @@ struct OnTheFlyTracker {
   // For TGenPhaseSpace seed
   TRandom3 rand;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  
+
   static constexpr int kMaxLUTConfigs = 20;
   void init(o2::framework::InitContext&)
   {
@@ -281,7 +280,7 @@ struct OnTheFlyTracker {
 
         return foundNewCfg;
       };
-      
+
       for (int icfg = 0; icfg < kMaxLUTConfigs; ++icfg) {
         mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
         mSmearer[icfg]->setCcdbManager(ccdb.operator->());
@@ -302,10 +301,10 @@ struct OnTheFlyTracker {
           mSmearer.pop_back();
           break;
         }
-    
+
         // interpolate efficiencies if requested to do so
         mSmearer[icfg]->interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-  
+
         // smear un-reco'ed tracks if asked to do so
         mSmearer[icfg]->skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
 
@@ -322,7 +321,7 @@ struct OnTheFlyTracker {
         histPointers.insert({histPath + "hPtReconstructedPi", histos.add((histPath + "hPtReconstructedPi").c_str(), "hPtReconstructedPi", {kTH1D, {{axes.axisMomentum}}})});
         histPointers.insert({histPath + "hPtReconstructedKa", histos.add((histPath + "hPtReconstructedKa").c_str(), "hPtReconstructedKa", {kTH1D, {{axes.axisMomentum}}})});
         histPointers.insert({histPath + "hPtReconstructedPr", histos.add((histPath + "hPtReconstructedPr").c_str(), "hPtReconstructedPr", {kTH1D, {{axes.axisMomentum}}})});
-        
+
         // Collision QA
         histPointers.insert({histPath + "hPVz", histos.add((histPath + "hPVz").c_str(), "hPVz", {kTH1D, {{axes.axisVertexZ}}})});
         histPointers.insert({histPath + "hLUTMultiplicity", histos.add((histPath + "hLUTMultiplicity").c_str(), "hLUTMultiplicity", {kTH1D, {{axes.axisMultiplicity}}})});
@@ -350,9 +349,7 @@ struct OnTheFlyTracker {
           // print fastTracker settings
           fastTracker[icfg]->Print();
           histPointers.insert({histPath + "hMassXi", histos.add((histPath + "hMassXi").c_str(), "hMassXi", {kTH1D, {{axes.axisXiMass}}})});
-
         }
-
 
       } // end config loop
     }
@@ -646,7 +643,6 @@ struct OnTheFlyTracker {
         continue;
       }
 
-      
       getHist(TH1, histPath + "hPtGenerated")->Fill(mcParticle.pt());
       getHist(TH1, histPath + "hPhiGenerated")->Fill(mcParticle.phi());
       if (std::abs(mcParticle.pdgCode()) == kElectron)
@@ -1049,7 +1045,6 @@ struct OnTheFlyTracker {
     getHist(TH1, histPath + "hSimMultiplicity")->Fill(multiplicityCounter);
     getHist(TH1, histPath + "hRecoMultiplicity")->Fill(tracksAlice3.size());
     getHist(TH1, histPath + "hPVz")->Fill(primaryVertex.getZ());
-
 
     if (doExtraQA) {
       histos.fill(HIST("hRecoVsSimMultiplicity"), multiplicityCounter, tracksAlice3.size());
