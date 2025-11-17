@@ -517,10 +517,10 @@ struct ThreeParticleCorrelations {
     // Start of the Mixed-Event correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairData) {
       if (!acceptEvent(coll_1, false)) {
-	continue;
+        continue;
       }
       if (!acceptEvent(coll_2, false)) {
-	continue;
+        continue;
       }
 
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
@@ -1031,10 +1031,10 @@ struct ThreeParticleCorrelations {
 
     if (evSelGroup.useOccupCut) {
       if (!col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // kNoCollInTimeRangeStandard
-	return false;
+        return false;
       }
       if (FillHist) {
-	rQARegistry.fill(HIST("hNEvents"), 4.5);
+        rQARegistry.fill(HIST("hNEvents"), 4.5);
       }
     }
 
