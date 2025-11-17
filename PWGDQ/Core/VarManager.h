@@ -5345,8 +5345,8 @@ void VarManager::FillFIT(T const& obj, float* values)
     values[kDistClosestBcT0A] = 999.f;
 
     // Fill FT0 information from BC
-    if (obj.has_foundFT0()) {
-      auto ft0 = obj.foundFT0();
+    if (obj.has_ft0()) {
+      auto ft0 = obj.ft0();
       values[kAmplitudeFT0A] = 0.f;
       for (auto const& amp : ft0.amplitudeA()) {
         values[kAmplitudeFT0A] += amp;
@@ -5363,8 +5363,8 @@ void VarManager::FillFIT(T const& obj, float* values)
     }
 
     // Fill FV0A information from BC
-    if (obj.has_foundFV0()) {
-      auto fv0a = obj.foundFV0();
+    if (obj.has_fv0a()) {
+      auto fv0a = obj.fv0a();
       values[kAmplitudeFV0A] = 0.f;
       for (auto const& amp : fv0a.amplitude()) {
         values[kAmplitudeFV0A] += amp;
@@ -5375,8 +5375,8 @@ void VarManager::FillFIT(T const& obj, float* values)
     }
 
     // Fill FDD information from BC
-    if (obj.has_foundFDD()) {
-      auto fdd = obj.foundFDD();
+    if (obj.has_fdd()) {
+      auto fdd = obj.fdd();
       values[kAmplitudeFDDA] = 0.f;
       for (auto const& amp : fdd.chargeA()) {
         values[kAmplitudeFDDA] += amp;
