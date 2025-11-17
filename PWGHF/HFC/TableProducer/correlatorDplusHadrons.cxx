@@ -425,9 +425,6 @@ struct HfCorrelatorDplusHadrons {
       float const multiplicityFT0M = collision.multFT0M();
 
       // MC reco level
-      bool isDplusPrompt = false;
-      bool isDplusNonPrompt = false;
-      bool isDplusSignal = false;
       for (const auto& candidate : candidates) {
         // rapidity and pT selections
         if (std::abs(HfHelper::yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
@@ -447,10 +444,10 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
+        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         // prompt and non-prompt division
-        isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
-        isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+        bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+        bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
 
         std::vector<float> outputMl = {-1., -1., -1.};
 
@@ -548,8 +545,6 @@ struct HfCorrelatorDplusHadrons {
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
-    bool isDplusPrompt = false;
-    bool isDplusNonPrompt = false;
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
@@ -592,8 +587,8 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hYMCGen"), yD);
 
       // prompt and non-prompt division
-      isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
-      isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
+      bool isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
+      bool isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
       if (isDplusPrompt) {
         registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
       } else if (isDplusNonPrompt) {
