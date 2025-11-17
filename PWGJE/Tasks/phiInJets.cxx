@@ -768,10 +768,9 @@ struct phiInJets {
           JEhistos.fill(HIST("hMCRec_dEta_qa_rot_distribution"), dEta_rot_qa);
 
           lResonance = lDecayDaughter1 + lDecayDaughter2;
-          if (cfgIsKstar)
-            lRotationalResonance = lDecayDaughter1 + lRotationalTrack;
 
           if (cfgIsKstar) {
+            lRotationalResonance = lDecayDaughter1 + lRotationalTrack;
             JEhistos.fill(HIST("hMCRec_R_distribution"), dR);
             JEhistos.fill(HIST("hMCRec_hUSS_Rotational"), 1.0, lRotationalResonance.Pt(), lResonance.M());
             JEhistos.fill(HIST("hMCRec_R_Rotation_distribution"), dR_rot);
@@ -940,10 +939,9 @@ struct phiInJets {
 
             if (jetFlag) {
               if (cfgDaughterQAHists) {
-                if (lResonance.M() > 1.005 && lResonance.M() < 1.035)
+                if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
                   RealPhiCandInJet++;
-              }
-              if (cfgDaughterQAHists) {
+                }
                 JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
                 // if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
                 //   JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
@@ -1235,11 +1233,11 @@ struct phiInJets {
         double TEMP_phi_dgth_pz[2] = {0};
 
         bool good_daughter[2] = {false};
-        int dgth_index = 0;
         // First we check for Forced BR
         // if we check for Phi
         if (!cfgIsKstar) {
           if (mcParticle.has_daughters()) {
+            int dgth_index = 0;
             for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>()) {
               if (std::fabs(dgth.pdgCode()) != 321) {
                 skip = true;
