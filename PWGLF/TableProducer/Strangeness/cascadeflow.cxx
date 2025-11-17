@@ -1820,12 +1820,12 @@ struct cascadeFlow {
         fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         fullCCDBShiftCorrPathFV0A = ShiftConfigs.cfgShiftPathFV0A;
-	fullCCDBShiftCorrPathFT0A = ShiftConfigs.cfgShiftPathFT0A;
+        fullCCDBShiftCorrPathFT0A = ShiftConfigs.cfgShiftPathFT0A;
         shiftprofileFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
         shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         shiftprofileFV0A = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFV0A, coll.timestamp());
-	shiftprofileFT0A = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0A, coll.timestamp());
+        shiftprofileFT0A = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0A, coll.timestamp());
         lastRunNumber = currentRunNumber;
       }
     }
@@ -1847,7 +1847,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsT0CT0A"), eventplaneVecT0C.Dot(eventplaneVecT0A), collisionCentrality);
     resolution.fill(HIST("QVectorsT0ATPCC"), eventplaneVecT0A.Dot(eventplaneVecTPCC), collisionCentrality);
     resolution.fill(HIST("QVectorsT0ATPCA"), eventplaneVecT0A.Dot(eventplaneVecTPCA), collisionCentrality);
-    
+
     resolution.fill(HIST("EP_T0CTPCA"), std::cos(2 * (psiT0C - psiTPCA)), coll.centFT0C());
     resolution.fill(HIST("EP_T0CTPCC"), std::cos(2 * (psiT0C - psiTPCC)), coll.centFT0C());
     resolution.fill(HIST("EP_TPCAC"), std::cos(2 * (psiTPCA - psiTPCC)), coll.centFT0C());
@@ -1867,7 +1867,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0CT0A"), eventplaneVecT0C.Dot(eventplaneVecT0A) / (coll.sumAmplFT0C() * coll.sumAmplFT0A()), collisionCentrality);
     resolution.fill(HIST("QVectorsNormT0ATPCC"), eventplaneVecT0A.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0A()), collisionCentrality);
     resolution.fill(HIST("QVectorsNormT0ATPCA"), eventplaneVecT0A.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0A()), collisionCentrality);
-    
+
     std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
 
