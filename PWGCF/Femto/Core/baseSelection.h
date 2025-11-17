@@ -386,6 +386,7 @@ class BaseSelection
       }
       LOG(info) << "";
     }
+    LOG(info) << "Number of occupied bits: " << mNSelectionBits << " / " << sizeof(BitmaskType) * CHAR_BIT;
     LOG(info) << "Printing done";
   }
 

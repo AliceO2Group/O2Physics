@@ -35,6 +35,15 @@ def parse_bin_label(label):
     return result
 
 
+def format_value_with_comment(b):
+    """Return Value plus optional (comment=...) suffix."""
+    val = b.get("Value", "")
+    comment = b.get("Comment", "")
+    if comment and comment.upper() != "X":
+        return f"{val} (comment={comment})"
+    return val
+
+
 def ask_user_selection(group):
     """
     Prompt user to select bin(s) for this selection group.
@@ -49,18 +58,19 @@ def ask_user_selection(group):
 
     selected_bins = []
 
-    # Minimal selection
+    # ----- Minimal selection -----
     if minimal_bins:
         if len(minimal_bins) == 1:
-            # autoselect minimal OPTION
             only = minimal_bins[0]
-            print(f"\nSelection: {selection_name} — only one minimal option → auto-selecting: {only.get('Value','')}")
+            print(
+                f"\nSelection: {selection_name} — only one minimal option → auto-selecting: "
+                f"{format_value_with_comment(only)}"
+            )
             selected_bins.append(only)
         else:
-            # Multiple → ask user
             print(f"\nSelection: {selection_name}")
             for idx, b in enumerate(minimal_bins):
-                print(f"  [{idx}] {b.get('Value', '')}")
+                print(f"  [{idx}] {format_value_with_comment(b)}")
             while True:
                 sel_input = input("Enter index for minimal cut (0 = loosest minimal): ")
                 if sel_input.strip() == "":
@@ -68,30 +78,41 @@ def ask_user_selection(group):
                 try:
                     sel_idx = int(sel_input)
                     if 0 <= sel_idx < len(minimal_bins):
-                        selected_bins.append(minimal_bins[sel_idx])
+                        choice = minimal_bins[sel_idx]
+                        selected_bins.append(choice)
+                        print(f"Selected: {format_value_with_comment(choice)}")
                         break
                 except ValueError:
                     pass
                 print("Invalid input. Please enter a valid index.")
 
-    # Optional selection (can skip with 0)
+    # ----- Optional selection -----
     if optional_bins:
-        print(f"Selection: {selection_name} (optional selection, 0 to skip)")
+        print(f"\nSelection: {selection_name} (optional selection, 0 to skip)")
         for idx, b in enumerate(optional_bins, start=1):
-            print(f"  [{idx}] {b.get('Value', '')}")
+            print(f"  [{idx}] {format_value_with_comment(b)}")
+
         while True:
             sel_input = input("Enter indices separated by space (0 to skip): ")
             if not sel_input.strip() or sel_input.strip() == "0":
+                print("Selected: (skipped)")
                 break
+
             try:
                 indices = [int(x) for x in sel_input.split()]
                 if all(0 <= i <= len(optional_bins) for i in indices):
+                    chosen = []
                     for i in indices:
                         if i != 0:
-                            selected_bins.append(optional_bins[i - 1])
+                            b = optional_bins[i - 1]
+                            selected_bins.append(b)
+                            chosen.append(format_value_with_comment(b))
+
+                    print("Selected: " + ", ".join(chosen))
                     break
             except ValueError:
                 pass
+
             print("Invalid input. Please enter valid indices separated by space.")
 
     return selected_bins
@@ -163,7 +184,7 @@ def main(rootfile_path, tdir_path="femto-producer"):
     summary = {}
     for b in selected_bins:
         sel = b.get("SelectionName", "unknown")
-        summary.setdefault(sel, []).append(b.get("Value", ""))
+        summary.setdefault(sel, []).append(format_value_with_comment(b))
 
     for sel, values in summary.items():
         print(f"  {sel}: {', '.join(values)}")
