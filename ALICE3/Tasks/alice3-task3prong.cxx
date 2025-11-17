@@ -262,7 +262,6 @@ struct Alice3Task3Prong {
 
         const auto pt = candidate.pt();
         const auto originType = candidate.originMcRec();
-        const auto ptRecB = candidate.bHadMotherPtRec();
 
         /// Fill histograms
         fillHistogramsRecSig<CharmHad, Signal>(candidate);
