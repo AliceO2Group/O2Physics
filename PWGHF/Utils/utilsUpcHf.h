@@ -145,15 +145,6 @@ constexpr const char* getGapTypeName(int gap) noexcept
   }
 }
 
-/// \brief Convert gap type to integer for histogram filling
-/// \param gap TrueGap enum value
-/// \return Integer representation (-1, 0, 1, 2, 3, 4, 5)
-/// \note This is a pass-through function for consistency with other utility functions
-constexpr int gapTypeToInt(int gap) noexcept
-{
-  return gap;
-}
-
 } // namespace o2::analysis::hf_upc
 
 #endif // PWGHF_UTILS_UTILSUPCHF_H_

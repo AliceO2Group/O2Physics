@@ -611,11 +611,10 @@ struct HfTaskD0 {
       if (hasZdc) {
         registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-        registry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
+        registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
       }
 
       if (hf_upc::isSingleSidedGap(gap)) {
-        const int gapTypeInt = hf_upc::gapTypeToInt(gap);
         const auto thisCollId = collision.globalIndex();
         const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
 
@@ -676,7 +675,7 @@ struct HfTaskD0 {
               valuesToFill.push_back(occ);
               valuesToFill.push_back(ir);
             }
-            valuesToFill.push_back(static_cast<double>(gapTypeInt));
+            valuesToFill.push_back(static_cast<double>(gap));
             valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
             valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
             valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
@@ -1170,7 +1169,7 @@ struct HfTaskD0 {
   void processDataWithDCAFitterNWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                         aod::BcFullInfos const& bcs,
                                         D0Candidates const&,
-                                        aod::TracksWExtra const& tracks,
+                                        aod::TracksWExtra const& /*tracks*/,
                                         aod::FT0s const& ft0s,
                                         aod::FV0As const& fv0as,
                                         aod::FDDs const& fdds,
@@ -1183,7 +1182,7 @@ struct HfTaskD0 {
   void processDataWithDCAFitterNMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                           aod::BcFullInfos const& bcs,
                                           D0CandidatesMl const&,
-                                          aod::TracksWExtra const& tracks,
+                                          aod::TracksWExtra const& /*tracks*/,
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
                                           aod::FDDs const& fdds,

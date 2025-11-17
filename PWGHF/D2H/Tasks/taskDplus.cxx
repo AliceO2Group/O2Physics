@@ -748,11 +748,10 @@ struct HfTaskDplus {
       if (hasZdc) {
         registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-        registry.fill(HIST("Data/hUpcGapAfterSelection"), hf_upc::gapTypeToInt(gap));
+        registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
       }
 
       if (hf_upc::isSingleSidedGap(gap)) {
-        const int gapTypeInt = hf_upc::gapTypeToInt(gap);
         const auto thisCollId = collision.globalIndex();
         const auto& groupedDplusCandidates = candidates.sliceBy(candDplusPerCollision, thisCollId);
 
@@ -800,7 +799,7 @@ struct HfTaskDplus {
           if (storeIR) {
             valuesToFill.push_back(ir);
           }
-          valuesToFill.push_back(static_cast<double>(gapTypeInt));
+          valuesToFill.push_back(static_cast<double>(gap));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
