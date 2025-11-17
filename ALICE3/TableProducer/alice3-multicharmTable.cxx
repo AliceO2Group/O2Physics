@@ -543,9 +543,9 @@ struct alice3multicharmTable {
       if (bitcheck(track.decayMap(), kTruePiFromXiCC))
         histos.fill(HIST("h2dDCAxyVsPtPiFromXiCC"), track.pt(), track.dcaXY() * 1e+4);
     }
-    
+
     for (auto const& xiCand : cascades) {
-      auto xi = xiCand.cascadeTrack_as<alice3tracks>();    // de-reference cascade track
+      auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
       int lutConfigId = xi.lutConfigId();
       initConf(lutConfigId);
       if (minNTracks.value.size() < static_cast<size_t>(lutConfigId)) {
@@ -558,18 +558,17 @@ struct alice3multicharmTable {
         }
       }
 
-
       std::string histPath = "Configuration_" + std::to_string(lutConfigId) + "/";
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), xi.pt(), xi.dcaXY() * 1e+4);
       if (std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > massWindowXi)
         continue; // out of mass region
-      
+
       uint32_t nCombinationsC = 0;
       auto piFromXi = xiCand.bachTrack_as<alice3tracks>(); // de-reference bach track
       auto piFromLa = xiCand.negTrack_as<alice3tracks>();  // de-reference neg track
       auto prFromLa = xiCand.posTrack_as<alice3tracks>();  // de-reference pos track
-      
+
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
       if (std::fabs(xi.dcaXY()) < xiFromXiC_dcaXYconstant || std::fabs(xi.dcaZ()) < xiFromXiC_dcaZconstant)
