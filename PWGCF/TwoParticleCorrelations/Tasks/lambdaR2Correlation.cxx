@@ -1489,11 +1489,11 @@ struct LambdaSpinCorrelation {
   Configurable<int> cNPtBins{"cNPtBins", 30, "N pT Bins"};
   Configurable<float> cMinPt{"cMinPt", 0.5, "pT Min"};
   Configurable<float> cMaxPt{"cMaxPt", 3.5, "pT Max"};
-  Configurable<int> cNRapBins{"cNRapBins", 20, "N Rapidity Bins"};
+  Configurable<int> cNRapBins{"cNRapBins", 10, "N Rapidity Bins"};
   Configurable<float> cMinRap{"cMinRap", -0.5, "Minimum Rapidity"};
   Configurable<float> cMaxRap{"cMaxRap", 0.5, "Maximum Rapidity"};
   Configurable<int> cNPhiBins{"cNPhiBins", 36, "N Phi Bins"};
-  Configurable<bool> cAnaPairs{"cAnaPairs", false, "Analyze Pairs Flag"};
+  Configurable<int> cNBinsCosTS{"cNBinsCosTS", 10, "N CosTS Bins"};
   Configurable<bool> cInvBoostFlag{"cInvBoostFlag", true, "Inverse Boost Flag"};
 
   // Centrality Axis
@@ -1517,25 +1517,27 @@ struct LambdaSpinCorrelation {
     const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");
     const AxisSpec axisPhi(cNPhiBins, 0., TwoPI, "#varphi (rad)");
+    const AxisSpec axisDRap(2 * cNRapBins, cMinRap - cMaxRap, cMaxRap - cMinRap, "#Deltay");
     const AxisSpec axisDPhi(cNPhiBins, -PI, PI, "#Delta#varphi");
+    const AxisSpec axisCosTS(cNBinsCosTS, -1, 1, "cos(#theta*)");
+    const AxisSpec axisDR(10, 0, 2, "#DeltaR");
 
     // Single and Two Particle Densities
     // 1D Histograms
-    histos.add("Reco/h2f_n2_mass_LaPLaM", "m_{inv}^{#Lambda} vs m_{inv}^{#bar{#Lambda}}", kTH2F, {axisMass, axisMass});
-    histos.add("Reco/h2f_n2_mass_LaPLaP", "m_{inv}^{#Lambda} vs m_{inv}^{#Lambda}", kTH2F, {axisMass, axisMass});
-    histos.add("Reco/h2f_n2_mass_LaMLaM", "m_{inv}^{#bar{#Lambda}} vs m_{inv}^{#bar{#Lambda}}", kTH2F, {axisMass, axisMass});
-
-    // rho1 for C2
-    histos.add("RecoCorr/h2f_n1_phi_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisCent, axisPhi});
-    histos.add("RecoCorr/h2f_n1_phi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2F, {axisCent, axisPhi});
+    histos.add("Reco/h2f_n2_mass_LaPLaM", "m_{inv}^{#Lambda} vs m_{inv}^{#bar{#Lambda}}", kTHnSparseF, {axisMass, axisMass, axisPt, axisPt});
+    histos.add("Reco/h2f_n2_mass_LaPLaP", "m_{inv}^{#Lambda} vs m_{inv}^{#Lambda}", kTHnSparseF, {axisMass, axisMass, axisPt, axisPt});
+    histos.add("Reco/h2f_n2_mass_LaMLaM", "m_{inv}^{#bar{#Lambda}} vs m_{inv}^{#bar{#Lambda}}", kTHnSparseF, {axisMass, axisMass, axisPt, axisPt});
 
     // rho2 for C2
-    histos.add("RecoCorr/h2f_n2_dphi_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2F, {axisCent, axisDPhi});
-    histos.add("RecoCorr/h2f_n2_dphi_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTH2F, {axisCent, axisDPhi});
-    histos.add("RecoCorr/h2f_n2_dphi_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2F, {axisCent, axisDPhi});
-    histos.add("RecoCorr/h2f_n2_phiphi_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH3F, {axisCent, axisPhi, axisPhi});
-    histos.add("RecoCorr/h2f_n2_phiphi_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTH3F, {axisCent, axisPhi, axisPhi});
-    histos.add("RecoCorr/h2f_n2_phiphi_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH3F, {axisCent, axisPhi, axisPhi});
+    histos.add("RecoCorr/h2f_n2_dlta_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDR});
+    histos.add("RecoCorr/h2f_n2_dlta_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDR});
+    histos.add("RecoCorr/h2f_n2_dlta_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
+    histos.add("RecoCorr/h2f_n2_cphi_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
+    histos.add("RecoCorr/h2f_n2_cphi_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
+    histos.add("RecoCorr/h2f_n2_cphi_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
+    histos.add("RecoCorr/h2f_n2_dphi_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDPhi});
+    histos.add("RecoCorr/h2f_n2_dphi_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDPhi});
+    histos.add("RecoCorr/h2f_n2_dphi_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDPhi});
   }
 
   void getBoostVector(std::array<float, 4> const& p, std::array<float, 3>& v, bool inverseBoostFlag = true)
@@ -1569,7 +1571,9 @@ struct LambdaSpinCorrelation {
     static constexpr std::string_view SubDirHist[] = {"LaPLaM", "LaPLaP", "LaMLaM"};
 
     // Fill lambda pair mass
-    histos.fill(HIST("Reco/h2f_n2_mass_") + HIST(SubDirHist[part_pair]), p1.mass(), p2.mass());
+    histos.fill(HIST("Reco/h2f_n2_mass_") + HIST(SubDirHist[part_pair]), p1.mass(), p2.mass(), p1.pt(), p2.pt());
+    float drap = p1.rap() - p2.rap();
+    float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
 
     // Get Lambda-Proton four-momentum
     std::array<float, 4> l1 = {p1.px(), p1.py(), p1.pz(), MassLambda0};
@@ -1582,26 +1586,17 @@ struct LambdaSpinCorrelation {
     boost(pr1, v1);
     boost(pr2, v2);
 
+    std::array<float, 3> pr1tv = {pr1[0], pr1[1], pr1[2]};
+    std::array<float, 3> pr2tv = {pr2[0], pr2[1], pr2[2]};
+    float cphi = RecoDecay::dotProd(pr1tv, pr2tv) / (RecoDecay::sqrtSumOfSquares(pr1tv[0], pr1tv[1], pr1tv[2]) * RecoDecay::sqrtSumOfSquares(pr2tv[0], pr2tv[1], pr2tv[2]));
+    float prdphi = RecoDecay::constrainAngle(RecoDecay::phi(pr1) - RecoDecay::phi(pr2), -PI);
+    float prdrap = RecoDecay::eta(pr1tv) - RecoDecay::eta(pr2tv);
+    float dr = std::sqrt(prdrap * prdrap + prdphi * prdphi);
+
     // Fill pair density
-    histos.fill(HIST("RecoCorr/h2f_n2_phiphi_") + HIST(SubDirHist[part_pair]), cent, RecoDecay::constrainAngle(RecoDecay::phi(pr1)), RecoDecay::phi(pr2));
-    histos.fill(HIST("RecoCorr/h2f_n2_dphi_") + HIST(SubDirHist[part_pair]), cent, RecoDecay::constrainAngle(RecoDecay::phi(pr1) - RecoDecay::phi(pr2), -PI));
-  }
-
-  template <ParticleType part, typename T>
-  void analyzeSingles(T const& tracks)
-  {
-    static constexpr std::string_view SubDirHist[] = {"LaP", "LaM"};
-    for (auto const& track : tracks) {
-      // Get four-momentum of lambda
-      std::array<float, 4> l = {MassLambda0, track.px(), track.py(), track.pz()};
-      std::array<float, 4> p = {MassProton, track.prPx(), track.prPy(), track.prPz()};
-      std::array<float, 3> v;
-      getBoostVector(l, v, cInvBoostFlag);
-      boost(p, v);
-
-      // Fill single histograms
-      histos.fill(HIST("RecoCorr/h2f_n1_phi_") + HIST(SubDirHist[part]), cent, RecoDecay::constrainAngle(RecoDecay::phi(p)));
-    }
+    histos.fill(HIST("RecoCorr/h2f_n2_dphi_") + HIST(SubDirHist[part_pair]), cent, drap, dphi, RecoDecay::constrainAngle(RecoDecay::phi(pr1) - RecoDecay::phi(pr2), -PI));
+    histos.fill(HIST("RecoCorr/h2f_n2_cphi_") + HIST(SubDirHist[part_pair]), cent, drap, dphi, cphi);
+    histos.fill(HIST("RecoCorr/h2f_n2_dlta_") + HIST(SubDirHist[part_pair]), cent, drap, dphi, dr);
   }
 
   template <ParticlePairType partpair, bool samelambda, typename T>
@@ -1637,15 +1632,9 @@ struct LambdaSpinCorrelation {
 
     auto lambdaTracks = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
     auto antiLambdaTracks = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
-
-    analyzeSingles<kLambda>(lambdaTracks);
-    analyzeSingles<kAntiLambda>(antiLambdaTracks);
-
-    if (cAnaPairs) {
-      analyzePairs<kLambdaAntiLambda, false>(lambdaTracks, antiLambdaTracks);
-      analyzePairs<kLambdaLambda, true>(lambdaTracks, lambdaTracks);
-      analyzePairs<kAntiLambdaAntiLambda, true>(antiLambdaTracks, antiLambdaTracks);
-    }
+    analyzePairs<kLambdaAntiLambda, false>(lambdaTracks, antiLambdaTracks);
+    analyzePairs<kLambdaLambda, true>(lambdaTracks, lambdaTracks);
+    analyzePairs<kAntiLambdaAntiLambda, true>(antiLambdaTracks, antiLambdaTracks);
   }
 
   PROCESS_SWITCH(LambdaSpinCorrelation, processDataReco, "Process for Data and MCReco", false);

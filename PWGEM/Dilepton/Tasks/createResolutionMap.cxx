@@ -157,10 +157,11 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_eta_track_gl{"cfg_max_eta_track_gl", -1.5, "max eta for global muon track"};
     Configurable<int> cfg_min_ncluster_mft{"cfg_min_ncluster_mft", 5, "min ncluster MFT"};
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
-    Configurable<float> cfg_max_chi2_sa{"cfg_max_chi2_sa", 1e+10, "max chi2 for standalone muon track"};
-    Configurable<float> cfg_max_chi2_gl{"cfg_max_chi2_gl", 40, "max chi2 for standalone muon track"};
-    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
-    Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
+    Configurable<float> cfg_max_chi2_sa{"cfg_max_chi2_sa", 1e+10, "max chi2/ndf for standalone muon track"};
+    Configurable<float> cfg_max_chi2_gl{"cfg_max_chi2_gl", 4, "max chi2/ndf for global muon track"};
+    Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+10, "max chi2/ndf for MFTsa track"};
+    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2/ndf for MFT-MCH matching"};
+    Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2/ndf for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy_gl{"cfg_max_dcaxy_gl", 0.1, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs_sa{"cfg_min_rabs_sa", 17.6, "min Radius at the absorber end for standalone muon track"};
     Configurable<float> cfg_max_rabs_sa{"cfg_max_rabs_sa", 89.5, "max Radius at the absorber end for standalone muon track"};
@@ -607,10 +608,16 @@ struct CreateResolutionMap {
       float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
       pDCA = mchtrack.p() * dcaXY_Matched;
       nClustersMFT = mfttrack.nClusters();
+      float chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
 
       if (nClustersMFT < muoncuts.cfg_min_ncluster_mft) {
         return;
       }
+
+      if (chi2mft < 0.f || muoncuts.cfg_max_chi2mft < chi2mft) {
+        return;
+      }
+
       if (muon.chi2MatchMCHMFT() > muoncuts.cfg_max_matching_chi2_mftmch) {
         return;
       }

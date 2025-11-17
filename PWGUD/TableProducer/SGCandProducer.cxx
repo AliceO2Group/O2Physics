@@ -84,6 +84,8 @@ struct SGCandProducer {
   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
   Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
+  Configurable<bool> storeSG{"storeSG", true, "Store SG events in the output"};
+  Configurable<bool> storeDG{"storeDG", true, "Store DG events in the output"};
 
   Configurable<bool> isGoodRCTCollision{"isGoodRCTCollision", true, "Check RCT flags for FT0,ITS,TPC and tracking"};
   Configurable<bool> isGoodRCTZdc{"isGoodRCTZdc", false, "Check RCT flags for ZDC if present in run"};
@@ -355,7 +357,7 @@ struct SGCandProducer {
         LOGF(info, "No Newbc %i", bc.globalBC());
     }
     getHist(TH1, histdir + "/Stat")->Fill(issgevent + 10, 1.);
-    if (issgevent <= 2) {
+    if ((storeDG && issgevent == o2::aod::sgselector::DoubleGap) || (storeSG && (issgevent == o2::aod::sgselector::SingleGapA || issgevent == o2::aod::sgselector::SingleGapC))) {
       if (verboseInfo)
         LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
       if (sameCuts.minRgtrwTOF()) {
