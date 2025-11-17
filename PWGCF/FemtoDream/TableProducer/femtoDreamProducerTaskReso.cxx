@@ -139,7 +139,8 @@ struct FemtoDreamProducerTaskReso {
   Configurable<bool> confIsActivateV0K0S{"confIsActivateV0K0S", true, "Activate filling of V0 into femtodream tables"};
   Configurable<bool> confIsActivateKStar{"confIsActivateKStar", true, "Activate filling of KStars into femtodream tables"};
   Configurable<bool> confIsActivatePhi{"confIsActivatePhi", true, "Activates cuts on Phi's and fills tables"};
-  Configurable<bool> confIsActivateCascade{"confIsActivateCascade", false, "Activate filling of Cascades into femtodream tables"};
+  Configurable<bool> confIsActivateXi{"confIsActivateXi", false, "Activate filling of Xis into femtodream tables"};
+  Configurable<bool> confIsActivateOmega{"confIsActivateOmega", false, "Activate filling of Omegas into femtodream tables"};
   Configurable<float> confEvtMinSphericity{"confEvtMinSphericity", 0.0f, "Evt sel: Min. sphericity of event"};
   Configurable<float> confEvtSphericityPtmin{"confEvtSphericityPtmin", 0.0f, "Evt sel: Min. Pt for sphericity calculation"};
 
@@ -221,53 +222,98 @@ struct FemtoDreamProducerTaskReso {
     Configurable<std::vector<int>> confK0shortChildPIDspecies{"confK0shortChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
   } V0Sel;
 
-  FemtoDreamCascadeSelection cascadeCuts;
+  FemtoDreamCascadeSelection xiCuts;
+  FemtoDreamCascadeSelection omegaCuts;
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.2, "Lower limit of the Cascade invariant mass"};
-    Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.5, "Upper limit of the Cascade invariant mass"};
-    Configurable<bool> confCascIsSelectedOmega{"confCascIsSelectedOmega", false, "Select Omegas instead of Xis (invariant mass)"};
+    std::string prefix = std::string("Cascade");
+    // Xi Selection
+    Configurable<float> confXiInvMassLowLimit{"confXiInvMassLowLimit", 1.2, "Lower limit of the Cascade invariant mass"};
+    Configurable<float> confXiInvMassUpLimit{"confXiInvMassUpLimit", 1.5, "Upper limit of the Cascade invariant mass"};
     // Cascade
-    Configurable<std::vector<float>> confCascadeSign{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeSign, "confCascade"), std::vector<float>{-1, 1}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeSign, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadePtMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadePtMin, "confCascade"), std::vector<float>{0.3f, 0.4f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadePtMin, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadePtMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadePtMax, "confCascade"), std::vector<float>{5.5f, 6.0f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadePtMax, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadeEtaMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeEtaMax, "confCascade"), std::vector<float>{0.8f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeEtaMax, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadeDCADaughMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDCADaughMax, "confCascade"), std::vector<float>{1.f, 1.2f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDCADaughMax, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadeCPAMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeCPAMin, "confCascade"), std::vector<float>{0.99f, 0.95f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeCPAMin, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadeTranRadMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeTranRadMin, "confCascade"), std::vector<float>{0.2f, 0.5f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeTranRadMin, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadeTranRadMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeTranRadMax, "confCascade"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeTranRadMax, "Cascade selection: ")};
-    Configurable<std::vector<float>> confCascadeDecVtxMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDecVtxMax, "confCascade"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDecVtxMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiSign{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeSign, "confXi"), std::vector<float>{-1, 1}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeSign, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiPtMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadePtMin, "confXi"), std::vector<float>{0.3f, 0.4f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadePtMin, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiPtMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadePtMax, "confXi"), std::vector<float>{5.5f, 6.0f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadePtMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiEtaMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeEtaMax, "confXi"), std::vector<float>{0.8f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeEtaMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiDCADaughMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDCADaughMax, "confXi"), std::vector<float>{1.f, 1.2f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDCADaughMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiCPAMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeCPAMin, "confXi"), std::vector<float>{0.99f, 0.95f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeCPAMin, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiTranRadMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeTranRadMin, "confXi"), std::vector<float>{0.2f, 0.5f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeTranRadMin, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiTranRadMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeTranRadMax, "confXi"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeTranRadMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confXiDecVtxMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDecVtxMax, "confXi"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDecVtxMax, "Cascade selection: ")};
 
     // Cascade v0 daughters
-    Configurable<std::vector<float>> confCascadeV0DCADaughMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCADaughMax, "confCascade"), std::vector<float>{1.2f, 1.5f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCADaughMax, "CascV0 selection: ")};
-    Configurable<std::vector<float>> confCascadeV0CPAMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0CPAMin, "confCascade"), std::vector<float>{0.99f, 0.995f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0CPAMin, "CascV0 selection: ")};
-    Configurable<std::vector<float>> confCascadeV0TranRadMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0TranRadMin, "confCascade"), std::vector<float>{0.2f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0TranRadMin, "CascV0 selection: ")};
-    Configurable<std::vector<float>> confCascadeV0TranRadMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0TranRadMax, "confCascade"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0TranRadMax, "CascV0 selection: ")};
-    Configurable<std::vector<float>> confCascadeV0DCAtoPVMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, "confCascade"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, "CascV0 selection: ")};
-    Configurable<std::vector<float>> confCascadeV0DCAtoPVMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, "confCascade"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, "CascV0 selection: ")};
-    Configurable<float> confCascV0InvMassLowLimit{"confCascV0InvMassLowLimit", 1.011461, "Lower limit of the Cascade invariant mass"};
-    Configurable<float> confCascV0InvMassUpLimit{"confCascV0InvMassUpLimit", 1.027461, "Upper limit of the Cascade invariant mass"};
+    Configurable<std::vector<float>> confXiV0DCADaughMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCADaughMax, "confXi"), std::vector<float>{1.2f, 1.5f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCADaughMax, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confXiV0CPAMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0CPAMin, "confXi"), std::vector<float>{0.99f, 0.995f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0CPAMin, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confXiV0TranRadMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0TranRadMin, "confXi"), std::vector<float>{0.2f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0TranRadMin, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confXiV0TranRadMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0TranRadMax, "confXi"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0TranRadMax, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confXiV0DCAtoPVMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, "confXi"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confXiV0DCAtoPVMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, "confXi"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, "CascV0 selection: ")};
+    Configurable<float> confXiV0InvMassLowLimit{"confXiV0InvMassLowLimit", 1.011461, "Lower limit of the Cascade invariant mass"};
+    Configurable<float> confXiV0InvMassUpLimit{"confXiV0InvMassUpLimit", 1.027461, "Upper limit of the Cascade invariant mass"};
     // Cascade Daughter Tracks
-    Configurable<std::vector<float>> confCascV0ChildSign{"confCascV0ChildSign", std::vector<float>{-1, 1}, "CascV0 Child sel: Charge"};
-    Configurable<std::vector<float>> confCascV0ChildPtMin{"confCascV0ChildPtMin", std::vector<float>{0.8f}, "CascV0 Child sel: min pt"};
-    Configurable<std::vector<float>> confCascV0ChildEtaMax{"confCascV0ChildEtaMax", std::vector<float>{0.8f}, "CascV0 Child sel: max eta"};
-    Configurable<std::vector<float>> confCascV0ChildTPCnClsMin{"confCascV0ChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "CascV0 Child sel: Min. nCls TPC"};
-    Configurable<std::vector<float>> confCascV0ChildDCAMin{"confCascV0ChildDCAMin", std::vector<float>{0.05f, 0.06f}, "CascV0 Child sel:  Max. DCA Daugh to PV (cm)"};
-    Configurable<std::vector<float>> confCascV0ChildPIDnSigmaMax{"confCascV0ChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "CascV0 Child sel: Max. PID nSigma TPC"};
-    Configurable<std::vector<int>> confCascV0ChildPIDspecies{"confCascV0ChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "CascV0 Child sel: Particles species for PID"};
+    Configurable<std::vector<float>> confXiV0ChildSign{"confXiV0ChildSign", std::vector<float>{-1, 1}, "CascV0 Child sel: Charge"};
+    Configurable<std::vector<float>> confXiV0ChildPtMin{"confXiV0ChildPtMin", std::vector<float>{0.8f}, "CascV0 Child sel: min pt"};
+    Configurable<std::vector<float>> confXiV0ChildEtaMax{"confXiV0ChildEtaMax", std::vector<float>{0.8f}, "CascV0 Child sel: max eta"};
+    Configurable<std::vector<float>> confXiV0ChildTPCnClsMin{"confXiV0ChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "CascV0 Child sel: Min. nCls TPC"};
+    Configurable<std::vector<float>> confXiV0ChildDCAMin{"confXiV0ChildDCAMin", std::vector<float>{0.05f, 0.06f}, "CascV0 Child sel:  Max. DCA Daugh to PV (cm)"};
+    Configurable<std::vector<float>> confXiV0ChildPIDnSigmaMax{"confXiV0ChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "CascV0 Child sel: Max. PID nSigma TPC"};
+    Configurable<std::vector<int>> confXiV0ChildPIDspecies{"confXiV0ChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "CascV0 Child sel: Particles species for PID"};
     // Cascade Bachelor Track
-    Configurable<std::vector<float>> confCascBachelorSign{"confCascBachelorSign", std::vector<float>{-1, 1}, "Cascade Bachelor sel: Charge"};
-    Configurable<std::vector<float>> confCascBachelorPtMin{"confCascBachelorPtMin", std::vector<float>{0.8f}, "Cascade Bachelor sel: min pt"};
-    Configurable<std::vector<float>> confCascBachelorEtaMax{"confCascBachelorEtaMax", std::vector<float>{0.8f}, "Cascade Bachelor sel: max eta"};
-    Configurable<std::vector<float>> confCascBachelorTPCnClsMin{"confCascBachelorTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Cascade Bachelor sel: Min. nCls TPC"};
-    Configurable<std::vector<float>> confCascBachelorDCAMin{"confCascBachelorDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Bachelor sel:  Max. DCA Daugh to PV (cm)"};
-    Configurable<std::vector<float>> confCascBachelorPIDnSigmaMax{"confCascBachelorPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Cascade Bachelor sel: Max. PID nSigma TPC"};
-    Configurable<std::vector<int>> confCascBachelorPIDspecies{"confCascBachelorPIDspecies", std::vector<int>{o2::track::PID::Pion}, "Cascade Bachelor sel: Particles species for PID"};
+    Configurable<std::vector<float>> confXiBachelorSign{"confXiBachelorSign", std::vector<float>{-1, 1}, "Cascade Bachelor sel: Charge"};
+    Configurable<std::vector<float>> confXiBachelorPtMin{"confXiBachelorPtMin", std::vector<float>{0.8f}, "Cascade Bachelor sel: min pt"};
+    Configurable<std::vector<float>> confXiBachelorEtaMax{"confXiBachelorEtaMax", std::vector<float>{0.8f}, "Cascade Bachelor sel: max eta"};
+    Configurable<std::vector<float>> confXiBachelorTPCnClsMin{"confXiBachelorTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Cascade Bachelor sel: Min. nCls TPC"};
+    Configurable<std::vector<float>> confXiBachelorDCAMin{"confXiBachelorDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Bachelor sel:  Max. DCA Daugh to PV (cm)"};
+    Configurable<std::vector<float>> confXiBachelorPIDnSigmaMax{"confXiBachelorPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Cascade Bachelor sel: Max. PID nSigma TPC"};
+    Configurable<std::vector<int>> confXiBachelorPIDspecies{"confXiBachelorPIDspecies", std::vector<int>{o2::track::PID::Pion}, "Cascade Bachelor sel: Particles species for PID"};
 
-    Configurable<bool> confCascRejectCompetingMass{"confCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
-    Configurable<float> confCascInvCompetingMassLowLimit{"confCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
-    Configurable<float> confCascInvCompetingMassUpLimit{"confCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
+    Configurable<bool> confXiRejectCompetingMass{"confXiRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
+    Configurable<float> confXiInvCompetingMassLowLimit{"confXiInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
+    Configurable<float> confXiInvCompetingMassUpLimit{"confXiInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
 
-  } confCascSel;
+    // Omega selection
+    Configurable<float> confOmegaInvMassLowLimit{"confOmegaInvMassLowLimit", 1.2, "Lower limit of the Cascade invariant mass"};
+    Configurable<float> confOmegaInvMassUpLimit{"confOmegaInvMassUpLimit", 1.5, "Upper limit of the Cascade invariant mass"};
+    // Cascade
+    Configurable<std::vector<float>> confOmegaSign{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeSign, "confOmega"), std::vector<float>{-1, 1}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeSign, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaPtMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadePtMin, "confOmega"), std::vector<float>{0.3f, 0.4f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadePtMin, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaPtMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadePtMax, "confOmega"), std::vector<float>{5.5f, 6.0f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadePtMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaEtaMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeEtaMax, "confOmega"), std::vector<float>{0.8f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeEtaMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaDCADaughMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDCADaughMax, "confOmega"), std::vector<float>{1.f, 1.2f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDCADaughMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaCPAMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeCPAMin, "confOmega"), std::vector<float>{0.99f, 0.95f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeCPAMin, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaTranRadMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeTranRadMin, "confOmega"), std::vector<float>{0.2f, 0.5f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeTranRadMin, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaTranRadMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeTranRadMax, "confOmega"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeTranRadMax, "Cascade selection: ")};
+    Configurable<std::vector<float>> confOmegaDecVtxMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDecVtxMax, "confOmega"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDecVtxMax, "Cascade selection: ")};
+
+    // Cascade v0 daughters
+    Configurable<std::vector<float>> confOmegaV0DCADaughMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCADaughMax, "confOmega"), std::vector<float>{1.2f, 1.5f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCADaughMax, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confOmegaV0CPAMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0CPAMin, "confOmega"), std::vector<float>{0.99f, 0.995f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0CPAMin, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confOmegaV0TranRadMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0TranRadMin, "confOmega"), std::vector<float>{0.2f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0TranRadMin, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confOmegaV0TranRadMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0TranRadMax, "confOmega"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0TranRadMax, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confOmegaV0DCAtoPVMin{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, "confOmega"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, "CascV0 selection: ")};
+    Configurable<std::vector<float>> confOmegaV0DCAtoPVMax{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, "confOmega"), std::vector<float>{100.f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, "CascV0 selection: ")};
+    Configurable<float> confOmegaV0InvMassLowLimit{"confOmegaV0InvMassLowLimit", 1.011461, "Lower limit of the Cascade invariant mass"};
+    Configurable<float> confOmegaV0InvMassUpLimit{"confOmegaV0InvMassUpLimit", 1.027461, "Upper limit of the Cascade invariant mass"};
+    // Cascade Daughter Tracks
+    Configurable<std::vector<float>> confOmegaV0ChildSign{"confOmegaV0ChildSign", std::vector<float>{-1, 1}, "CascV0 Child sel: Charge"};
+    Configurable<std::vector<float>> confOmegaV0ChildPtMin{"confOmegaV0ChildPtMin", std::vector<float>{0.8f}, "CascV0 Child sel: min pt"};
+    Configurable<std::vector<float>> confOmegaV0ChildEtaMax{"confOmegaV0ChildEtaMax", std::vector<float>{0.8f}, "CascV0 Child sel: max eta"};
+    Configurable<std::vector<float>> confOmegaV0ChildTPCnClsMin{"confOmegaV0ChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "CascV0 Child sel: Min. nCls TPC"};
+    Configurable<std::vector<float>> confOmegaV0ChildDCAMin{"confOmegaV0ChildDCAMin", std::vector<float>{0.05f, 0.06f}, "CascV0 Child sel:  Max. DCA Daugh to PV (cm)"};
+    Configurable<std::vector<float>> confOmegaV0ChildPIDnSigmaMax{"confOmegaV0ChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "CascV0 Child sel: Max. PID nSigma TPC"};
+    Configurable<std::vector<int>> confOmegaV0ChildPIDspecies{"confOmegaV0ChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "CascV0 Child sel: Particles species for PID"};
+    // Cascade Bachelor Track
+    Configurable<std::vector<float>> confOmegaBachelorSign{"confOmegaBachelorSign", std::vector<float>{-1, 1}, "Cascade Bachelor sel: Charge"};
+    Configurable<std::vector<float>> confOmegaBachelorPtMin{"confOmegaBachelorPtMin", std::vector<float>{0.8f}, "Cascade Bachelor sel: min pt"};
+    Configurable<std::vector<float>> confOmegaBachelorEtaMax{"confOmegaBachelorEtaMax", std::vector<float>{0.8f}, "Cascade Bachelor sel: max eta"};
+    Configurable<std::vector<float>> confOmegaBachelorTPCnClsMin{"confOmegaBachelorTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "Cascade Bachelor sel: Min. nCls TPC"};
+    Configurable<std::vector<float>> confOmegaBachelorDCAMin{"confOmegaBachelorDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Bachelor sel:  Max. DCA Daugh to PV (cm)"};
+    Configurable<std::vector<float>> confOmegaBachelorPIDnSigmaMax{"confOmegaBachelorPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Cascade Bachelor sel: Max. PID nSigma TPC"};
+    Configurable<std::vector<int>> confOmegaBachelorPIDspecies{"confOmegaBachelorPIDspecies", std::vector<int>{o2::track::PID::Pion}, "Cascade Bachelor sel: Particles species for PID"};
+
+    Configurable<bool> confOmegaRejectCompetingMass{"confOmegaRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
+    Configurable<float> confOmegaInvCompetingMassLowLimit{"confOmegaInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
+    Configurable<float> confOmegaInvCompetingMassUpLimit{"confOmegaInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
+  } confCascadeSel;
 
   // Resonances
   FemtoDreamResoSelection resoCuts;      // Phi
@@ -489,56 +535,109 @@ struct FemtoDreamProducerTaskReso {
       K0SCuts.setKaonInvMassLimits(V0Sel.confK0shortInvKaonMassLowLimit, V0Sel.confK0shortInvKaonMassUpLimit);
     }
 
-    if (confIsActivateCascade) {
+    if (confIsActivateXi) {
       // Cascades
-      cascadeCuts.setSelection(confCascSel.confCascadeSign, femtoDreamCascadeSelection::kCascadeSign, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeSign));
-      cascadeCuts.setSelection(confCascSel.confCascadePtMin, femtoDreamCascadeSelection::kCascadePtMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadePtMin));
-      cascadeCuts.setSelection(confCascSel.confCascadePtMax, femtoDreamCascadeSelection::kCascadePtMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadePtMax));
-      cascadeCuts.setSelection(confCascSel.confCascadeEtaMax, femtoDreamCascadeSelection::kCascadeEtaMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeEtaMax));
-      cascadeCuts.setSelection(confCascSel.confCascadeDCADaughMax, femtoDreamCascadeSelection::kCascadeDCADaughMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeDCADaughMax));
-      cascadeCuts.setSelection(confCascSel.confCascadeCPAMin, femtoDreamCascadeSelection::kCascadeCPAMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeCPAMin));
-      cascadeCuts.setSelection(confCascSel.confCascadeTranRadMin, femtoDreamCascadeSelection::kCascadeTranRadMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeTranRadMin));
-      cascadeCuts.setSelection(confCascSel.confCascadeTranRadMax, femtoDreamCascadeSelection::kCascadeTranRadMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeTranRadMax));
-      cascadeCuts.setSelection(confCascSel.confCascadeDecVtxMax, femtoDreamCascadeSelection::kCascadeDecVtxMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeDecVtxMax));
+      xiCuts.setSelection(confCascadeSel.confXiSign, femtoDreamCascadeSelection::kCascadeSign, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeSign));
+      xiCuts.setSelection(confCascadeSel.confXiPtMin, femtoDreamCascadeSelection::kCascadePtMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadePtMin));
+      xiCuts.setSelection(confCascadeSel.confXiPtMax, femtoDreamCascadeSelection::kCascadePtMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadePtMax));
+      xiCuts.setSelection(confCascadeSel.confXiEtaMax, femtoDreamCascadeSelection::kCascadeEtaMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeEtaMax));
+      xiCuts.setSelection(confCascadeSel.confXiDCADaughMax, femtoDreamCascadeSelection::kCascadeDCADaughMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeDCADaughMax));
+      xiCuts.setSelection(confCascadeSel.confXiCPAMin, femtoDreamCascadeSelection::kCascadeCPAMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeCPAMin));
+      xiCuts.setSelection(confCascadeSel.confXiTranRadMin, femtoDreamCascadeSelection::kCascadeTranRadMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeTranRadMin));
+      xiCuts.setSelection(confCascadeSel.confXiTranRadMax, femtoDreamCascadeSelection::kCascadeTranRadMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeTranRadMax));
+      xiCuts.setSelection(confCascadeSel.confXiDecVtxMax, femtoDreamCascadeSelection::kCascadeDecVtxMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeDecVtxMax));
       // Cascade v0
-      cascadeCuts.setSelection(confCascSel.confCascadeV0DCADaughMax, femtoDreamCascadeSelection::kCascadeV0DCADaughMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCADaughMax));
-      cascadeCuts.setSelection(confCascSel.confCascadeV0CPAMin, femtoDreamCascadeSelection::kCascadeV0CPAMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0CPAMin));
-      cascadeCuts.setSelection(confCascSel.confCascadeV0TranRadMin, femtoDreamCascadeSelection::kCascadeV0TranRadMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0TranRadMin));
-      cascadeCuts.setSelection(confCascSel.confCascadeV0TranRadMax, femtoDreamCascadeSelection::kCascadeV0TranRadMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0TranRadMax));
-      cascadeCuts.setSelection(confCascSel.confCascadeV0DCAtoPVMin, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin));
-      cascadeCuts.setSelection(confCascSel.confCascadeV0DCAtoPVMax, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax));
+      xiCuts.setSelection(confCascadeSel.confXiV0DCADaughMax, femtoDreamCascadeSelection::kCascadeV0DCADaughMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCADaughMax));
+      xiCuts.setSelection(confCascadeSel.confXiV0CPAMin, femtoDreamCascadeSelection::kCascadeV0CPAMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0CPAMin));
+      xiCuts.setSelection(confCascadeSel.confXiV0TranRadMin, femtoDreamCascadeSelection::kCascadeV0TranRadMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0TranRadMin));
+      xiCuts.setSelection(confCascadeSel.confXiV0TranRadMax, femtoDreamCascadeSelection::kCascadeV0TranRadMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0TranRadMax));
+      xiCuts.setSelection(confCascadeSel.confXiV0DCAtoPVMin, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin));
+      xiCuts.setSelection(confCascadeSel.confXiV0DCAtoPVMax, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax));
 
       // Cascade Daughter Tracks
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-      cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kPosTrack, confCascSel.confCascV0ChildPIDspecies);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      xiCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confXiV0ChildPIDspecies);
 
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-      cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kNegTrack, confCascSel.confCascV0ChildPIDspecies);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      xiCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confXiV0ChildPIDspecies);
 
       // Cascade Bachelor Track
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
-      cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kBachTrack, confCascSel.confCascBachelorPIDspecies);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      xiCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      xiCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confXiBachelorPIDspecies);
 
-      cascadeCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistryCascade, &cascadeRegistry, confCascSel.confCascIsSelectedOmega);
-      cascadeCuts.setInvMassLimits(confCascSel.confCascInvMassLowLimit, confCascSel.confCascInvMassUpLimit);
-      cascadeCuts.setV0InvMassLimits(confCascSel.confCascV0InvMassLowLimit, confCascSel.confCascV0InvMassUpLimit);
-      if (confCascSel.confCascRejectCompetingMass) {
-        cascadeCuts.setCompetingInvMassLimits(confCascSel.confCascInvCompetingMassLowLimit, confCascSel.confCascInvCompetingMassUpLimit);
+      xiCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistryCascade, &cascadeRegistry, false);
+      xiCuts.setInvMassLimits(confCascadeSel.confXiInvMassLowLimit, confCascadeSel.confXiInvMassUpLimit);
+      xiCuts.setV0InvMassLimits(confCascadeSel.confXiV0InvMassLowLimit, confCascadeSel.confXiV0InvMassUpLimit);
+      if (confCascadeSel.confXiRejectCompetingMass) {
+        xiCuts.setCompetingInvMassLimits(confCascadeSel.confXiInvCompetingMassLowLimit, confCascadeSel.confXiInvCompetingMassUpLimit);
+      }
+    }
+
+    if (confIsActivateOmega) {
+      // Cascades
+      omegaCuts.setSelection(confCascadeSel.confOmegaSign, femtoDreamCascadeSelection::kCascadeSign, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeSign));
+      omegaCuts.setSelection(confCascadeSel.confOmegaPtMin, femtoDreamCascadeSelection::kCascadePtMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadePtMin));
+      omegaCuts.setSelection(confCascadeSel.confOmegaPtMax, femtoDreamCascadeSelection::kCascadePtMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadePtMax));
+      omegaCuts.setSelection(confCascadeSel.confOmegaEtaMax, femtoDreamCascadeSelection::kCascadeEtaMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeEtaMax));
+      omegaCuts.setSelection(confCascadeSel.confOmegaDCADaughMax, femtoDreamCascadeSelection::kCascadeDCADaughMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeDCADaughMax));
+      omegaCuts.setSelection(confCascadeSel.confOmegaCPAMin, femtoDreamCascadeSelection::kCascadeCPAMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeCPAMin));
+      omegaCuts.setSelection(confCascadeSel.confOmegaTranRadMin, femtoDreamCascadeSelection::kCascadeTranRadMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeTranRadMin));
+      omegaCuts.setSelection(confCascadeSel.confOmegaTranRadMax, femtoDreamCascadeSelection::kCascadeTranRadMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeTranRadMax));
+      omegaCuts.setSelection(confCascadeSel.confOmegaDecVtxMax, femtoDreamCascadeSelection::kCascadeDecVtxMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeDecVtxMax));
+      // Cascade v0
+      omegaCuts.setSelection(confCascadeSel.confOmegaV0DCADaughMax, femtoDreamCascadeSelection::kCascadeV0DCADaughMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCADaughMax));
+      omegaCuts.setSelection(confCascadeSel.confOmegaV0CPAMin, femtoDreamCascadeSelection::kCascadeV0CPAMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0CPAMin));
+      omegaCuts.setSelection(confCascadeSel.confOmegaV0TranRadMin, femtoDreamCascadeSelection::kCascadeV0TranRadMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0TranRadMin));
+      omegaCuts.setSelection(confCascadeSel.confOmegaV0TranRadMax, femtoDreamCascadeSelection::kCascadeV0TranRadMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0TranRadMax));
+      omegaCuts.setSelection(confCascadeSel.confOmegaV0DCAtoPVMin, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin));
+      omegaCuts.setSelection(confCascadeSel.confOmegaV0DCAtoPVMax, femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax, FemtoDreamCascadeSelection::getSelectionType(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax));
+
+      // Cascade Daughter Tracks
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      omegaCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kPosTrack, confCascadeSel.confOmegaV0ChildPIDspecies);
+
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      omegaCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kNegTrack, confCascadeSel.confOmegaV0ChildPIDspecies);
+
+      // Cascade Bachelor Track
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorPtMin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
+      omegaCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+      omegaCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kBachTrack, confCascadeSel.confOmegaBachelorPIDspecies);
+
+      omegaCuts.init<aod::femtodreamparticle::ParticleType::kOmega, aod::femtodreamparticle::ParticleType::kOmegaV0Child, aod::femtodreamparticle::ParticleType::kOmegaBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistryCascade, &cascadeRegistry, true);
+      omegaCuts.setInvMassLimits(confCascadeSel.confOmegaInvMassLowLimit, confCascadeSel.confOmegaInvMassUpLimit);
+      omegaCuts.setV0InvMassLimits(confCascadeSel.confOmegaV0InvMassLowLimit, confCascadeSel.confOmegaV0InvMassUpLimit);
+      if (confCascadeSel.confOmegaRejectCompetingMass) {
+        omegaCuts.setCompetingInvMassLimits(confCascadeSel.confOmegaInvCompetingMassLowLimit, confCascadeSel.confOmegaInvCompetingMassUpLimit);
       }
     }
 
@@ -924,23 +1023,32 @@ struct FemtoDreamProducerTaskReso {
       return;
     }
 
-    if (confIsActivateCascade.value) {
-      if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isCollisionWithoutTrkCasc(col, fullCascades, cascadeCuts, tracks)) {
-        return;
+    // minimal selection
+    bool bEmptyColl = true;
+    if (!colCuts.isEmptyCollision(col, tracks, trackCuts)) {
+      bEmptyColl = false;
+    }
+    if (bEmptyColl && confIsActivateXi.value) {
+      if (!colCuts.isCollisionWithoutTrkCasc(col, fullCascades, xiCuts, tracks)) {
+        bEmptyColl = false;
       }
     }
-
-    // V0 minimal event selection
-    bool emptyLambda = true;
-    bool emptyK0S = true;
-    
-    if (confIsActivateV0.value) {
-      emptyLambda = colCuts.isEmptyCollision(col, fullV0s, LambdaCuts, tracks);
+    if (bEmptyColl && confIsActivateOmega.value) {
+      if (!colCuts.isCollisionWithoutTrkCasc(col, fullCascades, omegaCuts, tracks)) {
+        bEmptyColl = false;
+      }
     }
-    if (confIsActivateV0K0S.value) {
-      emptyK0S = colCuts.isEmptyCollision(col, fullV0s, K0SCuts, tracks);
+    if (bEmptyColl && confIsActivateV0.value) {
+      if (!colCuts.isEmptyCollision(col, fullV0s, LambdaCuts, tracks)) {
+        bEmptyColl = false;
+      }
     }
-    if(colCuts.isEmptyCollision(col, tracks, trackCuts) && emptyLambda && emptyK0S) {
+    if (bEmptyColl && confIsActivateV0K0S.value) {
+      if (!colCuts.isEmptyCollision(col, fullV0s, K0SCuts, tracks)) {
+        bEmptyColl = false;
+      }
+    }
+    if (bEmptyColl) {
       return;
     }
 
@@ -1184,113 +1292,221 @@ struct FemtoDreamProducerTaskReso {
       }
     }
 
-    if (confIsActivateCascade.value) {
+    // Cascades (Xi and Omega)
+    if (confIsActivateXi.value || confIsActivateOmega.value) {
       for (const auto& casc : fullCascades) {
         // get the daughter tracks
         const auto& posTrackCasc = casc.template posTrack_as<TrackType>();
         const auto& negTrackCasc = casc.template negTrack_as<TrackType>();
         const auto& bachTrackCasc = casc.template bachelor_as<TrackType>();
 
-        cascadeCuts.fillQA<0, aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
-        if (!cascadeCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
-          continue;
-        }
-        cascadeCuts.fillQA<1, aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+        if (confIsActivateXi.value) {
+          // xiCuts.fillQA<0, aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
 
-        // auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, v0daugh, posTrackCasc, negTrackCasc, bachTrackCasc);
-        auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+          if (xiCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
 
-        // Fill positive child
-        int poscasctrackID = casc.posTrackId();
-        int rowInPrimaryTrackTablePosCasc = -1;
-        rowInPrimaryTrackTablePosCasc = getRowDaughters(poscasctrackID, tmpIDtrack);
-        cascadechildIDs[0] = rowInPrimaryTrackTablePosCasc;
-        cascadechildIDs[1] = 0;
-        cascadechildIDs[2] = 0;
-        outputParts(outputCollision.lastIndex(),
-                    posTrackCasc.pt(),
-                    posTrackCasc.eta(),
-                    posTrackCasc.phi(),
-                    aod::femtodreamparticle::ParticleType::kCascadeV0Child,
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosCuts),
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosPID),
-                    posTrackCasc.dcaXY(),
-                    cascadechildIDs,
-                    0,
-                    0);
-        const int rowOfPosCascadeTrack = outputParts.lastIndex();
-        // TODO: include here MC filling
-        //------
+            // xiCuts.fillQA<1, aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+            //  auto cutContainerCasc = xiCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, v0daugh, posTrackCasc, negTrackCasc, bachTrackCasc);
+            auto cutContainerCasc = xiCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
 
-        // Fill negative child
-        int negcasctrackID = casc.negTrackId();
-        int rowInPrimaryTrackTableNegCasc = -1;
-        rowInPrimaryTrackTableNegCasc = getRowDaughters(negcasctrackID, tmpIDtrack);
-        cascadechildIDs[0] = 0;
-        cascadechildIDs[1] = rowInPrimaryTrackTableNegCasc;
-        cascadechildIDs[2] = 0;
-        outputParts(outputCollision.lastIndex(),
-                    negTrackCasc.pt(),
-                    negTrackCasc.eta(),
-                    negTrackCasc.phi(),
-                    aod::femtodreamparticle::ParticleType::kCascadeV0Child,
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegCuts),
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegPID),
-                    negTrackCasc.dcaXY(),
-                    cascadechildIDs,
-                    0,
-                    0);
-        const int rowOfNegCascadeTrack = outputParts.lastIndex();
-        // TODO: include here MC filling
-        //------
+            // Fill positive child
+            int poscasctrackID = casc.posTrackId();
+            int rowInPrimaryTrackTablePosCasc = -1;
+            rowInPrimaryTrackTablePosCasc = getRowDaughters(poscasctrackID, tmpIDtrack);
+            cascadechildIDs[0] = rowInPrimaryTrackTablePosCasc;
+            cascadechildIDs[1] = 0;
+            cascadechildIDs[2] = 0;
+            outputParts(outputCollision.lastIndex(),
+                        posTrackCasc.pt(),
+                        posTrackCasc.eta(),
+                        posTrackCasc.phi(),
+                        aod::femtodreamparticle::ParticleType::kCascadeV0Child,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosCuts),
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosPID),
+                        posTrackCasc.dcaXY(),
+                        cascadechildIDs,
+                        0,
+                        0);
+            const int rowOfPosCascadeTrack = outputParts.lastIndex();
+            // TODO: include here MC filling
+            //------
 
-        // Fill bachelor child
-        int bachelorcasctrackID = casc.bachelorId();
-        int rowInPrimaryTrackTableBachelorCasc = -1;
-        rowInPrimaryTrackTableBachelorCasc = getRowDaughters(bachelorcasctrackID, tmpIDtrack);
-        cascadechildIDs[0] = 0;
-        cascadechildIDs[1] = 0;
-        cascadechildIDs[2] = rowInPrimaryTrackTableBachelorCasc;
-        outputParts(outputCollision.lastIndex(),
-                    bachTrackCasc.pt(),
-                    bachTrackCasc.eta(),
-                    bachTrackCasc.phi(),
-                    aod::femtodreamparticle::ParticleType::kCascadeBachelor,
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachCuts),
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachPID),
-                    bachTrackCasc.dcaXY(),
-                    cascadechildIDs,
-                    0,
-                    0);
-        const int rowOfBachelorCascadeTrack = outputParts.lastIndex();
-        // TODO: include here MC filling
-        //------
+            // Fill negative child
+            int negcasctrackID = casc.negTrackId();
+            int rowInPrimaryTrackTableNegCasc = -1;
+            rowInPrimaryTrackTableNegCasc = getRowDaughters(negcasctrackID, tmpIDtrack);
+            cascadechildIDs[0] = 0;
+            cascadechildIDs[1] = rowInPrimaryTrackTableNegCasc;
+            cascadechildIDs[2] = 0;
+            outputParts(outputCollision.lastIndex(),
+                        negTrackCasc.pt(),
+                        negTrackCasc.eta(),
+                        negTrackCasc.phi(),
+                        aod::femtodreamparticle::ParticleType::kCascadeV0Child,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegCuts),
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegPID),
+                        negTrackCasc.dcaXY(),
+                        cascadechildIDs,
+                        0,
+                        0);
+            const int rowOfNegCascadeTrack = outputParts.lastIndex();
+            // TODO: include here MC filling
+            //------
 
-        // Fill cascades
-        float invMassCasc = confCascSel.confCascIsSelectedOmega ? casc.mOmega() : casc.mXi();
-        std::vector<int> indexCascadeChildID = {rowOfPosCascadeTrack, rowOfNegCascadeTrack, rowOfBachelorCascadeTrack};
-        outputParts(outputCollision.lastIndex(),
-                    casc.pt(),
-                    casc.eta(),
-                    casc.phi(),
-                    aod::femtodreamparticle::ParticleType::kCascade,
-                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kCascade),
-                    0,
-                    casc.casccosPA(col.posX(), col.posY(), col.posZ()),
-                    indexCascadeChildID,
-                    invMassCasc,
-                    casc.mLambda());
-        // TODO: include here MC filling
-        //------
+            // Fill bachelor child
+            int bachelorcasctrackID = casc.bachelorId();
+            int rowInPrimaryTrackTableBachelorCasc = -1;
+            rowInPrimaryTrackTableBachelorCasc = getRowDaughters(bachelorcasctrackID, tmpIDtrack);
+            cascadechildIDs[0] = 0;
+            cascadechildIDs[1] = 0;
+            cascadechildIDs[2] = rowInPrimaryTrackTableBachelorCasc;
+            outputParts(outputCollision.lastIndex(),
+                        bachTrackCasc.pt(),
+                        bachTrackCasc.eta(),
+                        bachTrackCasc.phi(),
+                        aod::femtodreamparticle::ParticleType::kCascadeBachelor,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachCuts),
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachPID),
+                        bachTrackCasc.dcaXY(),
+                        cascadechildIDs,
+                        0,
+                        0);
+            const int rowOfBachelorCascadeTrack = outputParts.lastIndex();
+            // TODO: include here MC filling
+            //------
 
-        if (confIsDebug.value) {
-          fillDebugParticle<true, false>(posTrackCasc);  // QA for positive daughter
-          fillDebugParticle<true, false>(negTrackCasc);  // QA for negative daughter
-          fillDebugParticle<true, false>(bachTrackCasc); // QA for negative daughter
-          fillDebugCascade(casc, col);                   // QA for Cascade
-        }
-      }
-    }
+            // Fill cascades
+            std::vector<int> indexCascadeChildID = {rowOfPosCascadeTrack, rowOfNegCascadeTrack, rowOfBachelorCascadeTrack};
+            outputParts(outputCollision.lastIndex(),
+                        casc.pt(),
+                        casc.eta(),
+                        casc.phi(),
+                        aod::femtodreamparticle::ParticleType::kCascade,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kCascade),
+                        0,
+                        casc.casccosPA(col.posX(), col.posY(), col.posZ()),
+                        indexCascadeChildID,
+                        casc.mXi(),
+                        casc.mLambda());
+            // TODO: include here MC filling
+            //------
+
+            if (confIsDebug.value) {
+              fillDebugParticle<true, false>(posTrackCasc);  // QA for positive daughter
+              fillDebugParticle<true, false>(negTrackCasc);  // QA for negative daughter
+              fillDebugParticle<true, false>(bachTrackCasc); // QA for negative daughter
+              fillDebugCascade(casc, col);                   // QA for Cascade
+            }
+
+            // continue;
+          } // if xiCuts.isSelectedMinimal
+        } // if confIsActivateXi
+        /*
+        if (confIsActivateOmega.value){
+          omegaCuts.fillQA<0, aod::femtodreamparticle::ParticleType::kOmega, aod::femtodreamparticle::ParticleType::kOmegaV0Child, aod::femtodreamparticle::ParticleType::kOmegaBachelor>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+
+          if (omegaCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
+
+            omegaCuts.fillQA<1, aod::femtodreamparticle::ParticleType::kOmega, aod::femtodreamparticle::ParticleType::kOmegaV0Child, aod::femtodreamparticle::ParticleType::kOmegaBachelor>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+            // auto cutContainerCasc = xiCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, v0daugh, posTrackCasc, negTrackCasc, bachTrackCasc);
+            auto cutContainerCasc = omegaCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+
+            // Fill positive child
+            int poscasctrackID = casc.posTrackId();
+            int rowInPrimaryTrackTablePosCasc = -1;
+            rowInPrimaryTrackTablePosCasc = getRowDaughters(poscasctrackID, tmpIDtrack);
+            cascadechildIDs[0] = rowInPrimaryTrackTablePosCasc;
+            cascadechildIDs[1] = 0;
+            cascadechildIDs[2] = 0;
+            outputParts(outputCollision.lastIndex(),
+                        posTrackCasc.pt(),
+                        posTrackCasc.eta(),
+                        posTrackCasc.phi(),
+                        aod::femtodreamparticle::ParticleType::kOmegaV0Child,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosCuts),
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosPID),
+                        posTrackCasc.dcaXY(),
+                        cascadechildIDs,
+                        0,
+                        0);
+            const int rowOfPosCascadeTrack = outputParts.lastIndex();
+            // TODO: include here MC filling
+            //------
+
+            // Fill negative child
+            int negcasctrackID = casc.negTrackId();
+            int rowInPrimaryTrackTableNegCasc = -1;
+            rowInPrimaryTrackTableNegCasc = getRowDaughters(negcasctrackID, tmpIDtrack);
+            cascadechildIDs[0] = 0;
+            cascadechildIDs[1] = rowInPrimaryTrackTableNegCasc;
+            cascadechildIDs[2] = 0;
+            outputParts(outputCollision.lastIndex(),
+                        negTrackCasc.pt(),
+                        negTrackCasc.eta(),
+                        negTrackCasc.phi(),
+                        aod::femtodreamparticle::ParticleType::kOmegaV0Child,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegCuts),
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegPID),
+                        negTrackCasc.dcaXY(),
+                        cascadechildIDs,
+                        0,
+                        0);
+            const int rowOfNegCascadeTrack = outputParts.lastIndex();
+            // TODO: include here MC filling
+            //------
+
+            // Fill bachelor child
+            int bachelorcasctrackID = casc.bachelorId();
+            int rowInPrimaryTrackTableBachelorCasc = -1;
+            rowInPrimaryTrackTableBachelorCasc = getRowDaughters(bachelorcasctrackID, tmpIDtrack);
+            cascadechildIDs[0] = 0;
+            cascadechildIDs[1] = 0;
+            cascadechildIDs[2] = rowInPrimaryTrackTableBachelorCasc;
+            outputParts(outputCollision.lastIndex(),
+                        bachTrackCasc.pt(),
+                        bachTrackCasc.eta(),
+                        bachTrackCasc.phi(),
+                        aod::femtodreamparticle::ParticleType::kOmegaBachelor,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachCuts),
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachPID),
+                        bachTrackCasc.dcaXY(),
+                        cascadechildIDs,
+                        0,
+                        0);
+            const int rowOfBachelorCascadeTrack = outputParts.lastIndex();
+            // TODO: include here MC filling
+            //------
+
+            // Fill cascades
+            std::vector<int> indexCascadeChildID = {rowOfPosCascadeTrack, rowOfNegCascadeTrack, rowOfBachelorCascadeTrack};
+            outputParts(outputCollision.lastIndex(),
+                        casc.pt(),
+                        casc.eta(),
+                        casc.phi(),
+                        aod::femtodreamparticle::ParticleType::kOmega,
+                        cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kCascade),
+                        0,
+                        casc.casccosPA(col.posX(), col.posY(), col.posZ()),
+                        indexCascadeChildID,
+                        casc.mOmega(),
+                        casc.mLambda());
+            // TODO: include here MC filling
+            //------
+
+            if (confIsDebug.value) {
+              fillDebugParticle<true, false>(posTrackCasc);  // QA for positive daughter
+              fillDebugParticle<true, false>(negTrackCasc);  // QA for negative daughter
+              fillDebugParticle<true, false>(bachTrackCasc); // QA for negative daughter
+              fillDebugCascade(casc, col);                   // QA for Cascade
+            }
+
+
+            //continue;
+          } //if omegaCuts.isSelectedMinimal
+        } //if confIsActivateOmega
+        */
+      } // loop over cascades
+    } // at least one cascade active
 
     if (confIsActivatePhi.value) {
 
@@ -1501,9 +1717,9 @@ struct FemtoDreamProducerTaskReso {
                                aod::femtodreamparticle::TrackType::kNegChild>(track1, track2);
 
           auto type = resoCutsKStar.getType<aod::femtodreamparticle::kResoKStar>(track1, track2, resoIsNotAnti); //   kResoPosdaughTPC_NegdaughTPC
-                                                                                                                                        //   kResoPosdaughTPC_NegdaughTOF
-                                                                                                                                        //   kResoPosdaughTPC_NegdaughTPC
-                                                                                                                                        //   kResoPosdaughTOF_NegdaughTOF as possible output
+                                                                                                                 //   kResoPosdaughTPC_NegdaughTOF
+                                                                                                                 //   kResoPosdaughTPC_NegdaughTPC
+                                                                                                                 //   kResoPosdaughTOF_NegdaughTOF as possible output
 
           auto bitmask = resoCutsKStar.getCutContainer<aod::femtodreamparticle::cutContainerType>(track1, track2, resoSign);
 

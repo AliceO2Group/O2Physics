@@ -122,6 +122,10 @@ enum ParticleType {
   kV0K0ShortChild,
   kResoKStarChild,
   kResoKStar,
+  kOmega,
+  kOmegaV0,
+  kOmegaV0Child,
+  kOmegaBachelor,
   kNParticleTypes //! Number of particle types
 };
 
@@ -131,9 +135,9 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF", "ResoKStarPosdaughTPC_NegdaughTPC", "ResoKStarPosdaughTPC_NegdaughTOF", "ResoKStarPosdaughTOF_NegdaughTPC", "ResoKStarPosdaughTOF_NegdaughTOF", "V0K0Short", "V0K0ShortChild", "ResoKStarChild", "ResoKStar"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF", "ResoKStarPosdaughTPC_NegdaughTPC", "ResoKStarPosdaughTPC_NegdaughTOF", "ResoKStarPosdaughTOF_NegdaughTPC", "ResoKStarPosdaughTOF_NegdaughTOF", "V0K0Short", "V0K0ShortChild", "ResoKStarChild", "ResoKStar", "Omega", "OmegaV0", "OmegaV0Child", "OmegaBachelor"}; //! Naming of the different particle types
 
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
