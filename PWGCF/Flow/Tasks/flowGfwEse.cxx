@@ -242,7 +242,7 @@ struct FlowGfwEse {
   };
 
   O2_DEFINE_CONFIGURABLE(cfgAnalysisType, bool, true, "true for ese, false for mean-pT");
-  const std::string shapesel = cfgAnalysisType ? "ese" : "mpt"; 
+  const std::string shapesel = cfgAnalysisType ? "ese" : "mpt";
   static constexpr int EseBins = 100;
 
   // region indices for consistency flag
@@ -550,12 +550,12 @@ struct FlowGfwEse {
       for (int jese = 0; jese < EseBins; ++jese) {
         if (it->pTDif) {
           for (int i = 0; i < fSecondAxis->GetNbins(); ++i) {
-            std::string name = Form("%s_%d_%s_pt_%d",shapesel.c_str(), jese, it->Head.c_str(), i + 1);
+            std::string name = Form("%s_%d_%s_pt_%d", shapesel.c_str(), jese, it->Head.c_str(), i + 1);
             std::string title = it->Head + std::string("_ptDiff");
             oba->Add(new TNamed(name.c_str(), title.c_str()));
           }
         } else {
-          std::string name = Form("%s_%d_%s",shapesel.c_str(), jese, it->Head.c_str());
+          std::string name = Form("%s_%d_%s", shapesel.c_str(), jese, it->Head.c_str());
           std::string title = it->Head + std::string("_ese");
           oba->Add(new TNamed(name.c_str(), title.c_str()));
         }
@@ -795,7 +795,7 @@ struct FlowGfwEse {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_%i_%s",shapesel.c_str(), qPtmp, corrconfigs.at(l_ind).Head.c_str()), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_%i_%s", shapesel.c_str(), qPtmp, corrconfigs.at(l_ind).Head.c_str()), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
           (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfwflowese::configs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfwflowese::configs.GetpTCorrMasks()[l_ind]);
           if (cfgRunByRun && cfgFillFlowRunByRun && dt != kGen && l_ind == 0) {
             tpfsList[run][pfCorr22]->Fill(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
@@ -1200,25 +1200,23 @@ struct FlowGfwEse {
   }
   PROCESS_SWITCH(FlowGfwEse, processData, "Process analysis for non-derived data", true);
 
-  //void processMptq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs/*, aod::MeanPtShape*/>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  // void processMptq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs/*, aod::MeanPtShape*/>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
 
-  void processMptq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs, aod::MeanPtShapes, aod::MeanPts>>::iterator const& collision, aod::BCsWithTimestamps const&/*, GFWTracks const& tracks*/)
+  void processMptq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QPercentileFT0Cs, aod::MeanPtShapes, aod::MeanPts>>::iterator const& collision, aod::BCsWithTimestamps const& /*, GFWTracks const& tracks*/)
   {
     float count{0.5};
-    registry.fill(HIST("mptcorr/eventcounter"),count++); 
+    registry.fill(HIST("mptcorr/eventcounter"), count++);
     const auto centr = collision.centFT0C();
     const auto qPerc = collision.qPERCFT0C();
     const auto mPt = collision.fMEANPTSHAPE();
     const auto mPtv = collision.fMEANPT();
     if (qPerc[0] < 0 || mPt[0] < 0)
       return;
-    registry.fill(HIST("mptcorr/eventcounter"),count++);
+    registry.fill(HIST("mptcorr/eventcounter"), count++);
     registry.fill(HIST("mptcorr/h3_cent_q2_meanptperc"), centr, qPerc[0], mPt[0]);
-    registry.fill(HIST("mptcorr/h3_cent_q2_mptvalue"), centr, qPerc[0], mPtv[0]); 
-
+    registry.fill(HIST("mptcorr/h3_cent_q2_mptvalue"), centr, qPerc[0], mPtv[0]);
   }
   PROCESS_SWITCH(FlowGfwEse, processMptq2, "Process analysis for mpt-q2 correlation", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
