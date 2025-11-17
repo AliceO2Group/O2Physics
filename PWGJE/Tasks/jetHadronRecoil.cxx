@@ -703,7 +703,7 @@ struct JetHadronRecoil {
       double dRp = getWTAaxisDifference(jetTag, particles);
 
       if (jetTag.has_matchedJetGeo()) {
-        for (const auto& jetBase : jetTag.template matchedJetGeo_as<std::decay_t<U>>()) {
+        for (const auto& jetBase : jetTag.template matchedJetGeo_as<std::decay_t<T>>()) {
           if (jetBase.pt() > pTHatMaxMCD * pTHat) {
             if (outlierRejectEvent) {
               return;
