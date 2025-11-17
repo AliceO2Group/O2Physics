@@ -817,6 +817,10 @@ struct NucleitpcPbPb {
                 continue;
               }
 
+              float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
+              if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
+                continue;
+
               if (i == he3 || i == he4) {
                 histomc.fill(HIST("hNumerEffAcc"), i, ptReco, getRapidity(track, i), collision.centFT0C(), particleAnti, decayType);
               }
@@ -831,7 +835,6 @@ struct NucleitpcPbPb {
                              ptReco, ptTOF);
               }
 
-              float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
               fillhmassnsigma(track, i, tpcNsigma);
               histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
               histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
@@ -879,7 +882,6 @@ struct NucleitpcPbPb {
   }
   PROCESS_SWITCH(NucleitpcPbPb, processMC, "MC reco+gen analysis with efficiency corrections", false);
   //=-=-=-==-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
   //----------------------------------------------------------------------------------------------------------------
   // MC particles - DCA secondary fraction
   //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -891,7 +893,7 @@ struct NucleitpcPbPb {
                   aod::BCsWithTimestamps const&)
 
   {
-
+    (void)particlesMC;
     mcCollInfos.clear();
     mcCollInfos.resize(mcCollisions.size());
 
