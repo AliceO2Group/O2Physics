@@ -96,6 +96,14 @@ bool isCharmMeson(T const& track)
     return false;
   }
 
+  // reject mesons consiting of b and c quarks.
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg2 = std::stoi(pdgStr.substr(n - 3, 2));
+  if (pdg2 == 54) {
+    return false;
+  }
+
   if (400 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 500) {
     return true;
   } else {
@@ -106,6 +114,15 @@ bool isCharmMeson(T const& track)
 template <typename T>
 bool isCharmBaryon(T const& track)
 {
+
+  // reject baryons consiting of b and c quarks.
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 4, 3));
+  if (pdg3 == 514 || pdg3 == 524 || pdg3 == 534 || pdg3 == 541 || pdg3 == 542 || pdg3 == 543 || pdg3 == 544 || pdg3 == 554) {
+    return false;
+  }
+
   if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
     return true;
   } else {
