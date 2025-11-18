@@ -28,7 +28,6 @@
 
 namespace o2::analysis
 {
-
 enum BHadMothers { NotMatched = 0,
                    BPlus,
                    BZero,
