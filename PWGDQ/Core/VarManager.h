@@ -5333,154 +5333,25 @@ void VarManager::FillFIT(T const& obj, float* values)
   values[kDistClosestBcV0A] = obj.distClosestBcV0A();
   values[kDistClosestBcT0A] = obj.distClosestBcT0A();
 }
+namespace FITConstants {
+  static constexpr uint64_t kPileupScanRange = 16;
+  static constexpr float kFT0TimeThreshold = 2.0f;
+  static constexpr float kDefaultAmplitude = -1.f;
+  static constexpr float kDefaultTime = -999.f;
+  static constexpr int32_t kDefaultDistance = 999;
+}
 
-// FillFIT overload that takes BC and BCs directly (for calling once per event from raw data)
-template <typename TBC, typename TBCs>
-void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
+// Helper 함수로 pileup 스캔 로직 분리 (개선안 1)
+template <typename TBCs>
+static void FillPileupFlags(TBCs const& bcs, uint64_t midbc, 
+                           int32_t& bgFT0Apf, int32_t& bgFT0Cpf, int32_t& bbFT0Apf, int32_t& bbFT0Cpf,
+                           int32_t& bgFV0Apf, int32_t& bbFV0Apf, int32_t& bgFDDApf, int32_t& bgFDDCpf,
+                           int32_t& bbFDDApf, int32_t& bbFDDCpf, int32_t& minDistTOR, int32_t& minDistTSC,
+                           int32_t& minDistTVX, int32_t& minDistV0A, int32_t& minDistT0A)
 {
-  if (!values) {
-    values = fgValues;
-  }
+  uint64_t leftBC = midbc >= FITConstants::kPileupScanRange ? midbc - FITConstants::kPileupScanRange : 0;
+  uint64_t rightBC = midbc + FITConstants::kPileupScanRange;
 
-  // Initialize all FIT variables to default values
-  values[kAmplitudeFT0A] = -1.f;
-  values[kAmplitudeFT0C] = -1.f;
-  values[kTimeFT0A] = -999.f;
-  values[kTimeFT0C] = -999.f;
-  values[kTriggerMaskFT0] = 0;
-  values[kNFiredChannelsFT0A] = 0;
-  values[kNFiredChannelsFT0C] = 0;
-  values[kAmplitudeFDDA] = -1.f;
-  values[kAmplitudeFDDC] = -1.f;
-  values[kTimeFDDA] = -999.f;
-  values[kTimeFDDC] = -999.f;
-  values[kTriggerMaskFDD] = 0;
-  values[kNFiredChannelsFDDA] = 0;
-  values[kNFiredChannelsFDDC] = 0;
-  values[kAmplitudeFV0A] = -1.f;
-  values[kTimeFV0A] = -999.f;
-  values[kTriggerMaskFV0A] = 0;
-  values[kNFiredChannelsFV0A] = 0;
-  values[kBBFT0Apf] = 0;
-  values[kBGFT0Apf] = 0;
-  values[kBBFT0Cpf] = 0;
-  values[kBGFT0Cpf] = 0;
-  values[kBBFV0Apf] = 0;
-  values[kBGFV0Apf] = 0;
-  values[kBBFDDApf] = 0;
-  values[kBGFDDApf] = 0;
-  values[kBBFDDCpf] = 0;
-  values[kBGFDDCpf] = 0;
-  values[kDistClosestBcTOR] = 999;
-  values[kDistClosestBcTSC] = 999;
-  values[kDistClosestBcTVX] = 999;
-  values[kDistClosestBcV0A] = 999;
-  values[kDistClosestBcT0A] = 999;
-
-  // Fill FT0 information if available
-  if (bc.has_ft0()) {
-    auto ft0 = bc.ft0();
-    values[kTimeFT0A] = ft0.timeA();
-    values[kTimeFT0C] = ft0.timeC();
-    const auto& ampsA = ft0.amplitudeA();
-    const auto& ampsC = ft0.amplitudeC();
-    float ampA = 0.f;
-    int nFiredFT0A = 0;
-    for (auto amp : ampsA) {
-      if (amp > 0) {
-        ampA += amp;
-        nFiredFT0A++;
-      }
-    }
-    float ampC = 0.f;
-    int nFiredFT0C = 0;
-    for (auto amp : ampsC) {
-      if (amp > 0) {
-        ampC += amp;
-        nFiredFT0C++;
-      }
-    }
-    if (nFiredFT0A > 0) values[kAmplitudeFT0A] = ampA;
-    if (nFiredFT0C > 0) values[kAmplitudeFT0C] = ampC;
-    values[kTriggerMaskFT0] = ft0.triggerMask();
-    values[kNFiredChannelsFT0A] = nFiredFT0A;
-    values[kNFiredChannelsFT0C] = nFiredFT0C;
-  }
-
-  // Fill FV0A information if available
-  if (bc.has_fv0a()) {
-    auto fv0a = bc.fv0a();
-    values[kTimeFV0A] = fv0a.time();
-    const auto& amps = fv0a.amplitude();
-    float ampV0A = 0.f;
-    int nFiredFV0A = 0;
-    for (auto amp : amps) {
-      if (amp > 0) {
-        ampV0A += amp;
-        nFiredFV0A++;
-      }
-    }
-    if (nFiredFV0A > 0) values[kAmplitudeFV0A] = ampV0A;
-    values[kTriggerMaskFV0A] = fv0a.triggerMask();
-    values[kNFiredChannelsFV0A] = nFiredFV0A;
-  }
-
-  // Fill FDD information if available
-  if (bc.has_fdd()) {
-    auto fdd = bc.fdd();
-    values[kTimeFDDA] = fdd.timeA();
-    values[kTimeFDDC] = fdd.timeC();
-    const auto& ampsA = fdd.chargeA();
-    const auto& ampsC = fdd.chargeC();
-    float ampFDDA = 0.f;
-    int nFiredFDDA = 0;
-    for (auto amp : ampsA) {
-      if (amp > 0) {
-        ampFDDA += amp;
-        nFiredFDDA++;
-      }
-    }
-    float ampFDDC = 0.f;
-    int nFiredFDDC = 0;
-    for (auto amp : ampsC) {
-      if (amp > 0) {
-        ampFDDC += amp;
-        nFiredFDDC++;
-      }
-    }
-    if (nFiredFDDA > 0) values[kAmplitudeFDDA] = ampFDDA;
-    if (nFiredFDDC > 0) values[kAmplitudeFDDC] = ampFDDC;
-    values[kTriggerMaskFDD] = fdd.triggerMask();
-    values[kNFiredChannelsFDDA] = nFiredFDDA;
-    values[kNFiredChannelsFDDC] = nFiredFDDC;
-  }
-
-  // Fill background pileup information (scan ±16 BCs)
-  uint64_t midbc = bc.globalBC();
-  const uint64_t range = 16;
-  uint64_t leftBC = midbc >= range ? midbc - range : 0;
-  uint64_t rightBC = midbc + range;
-
-  // Initialize pileup flags
-  int32_t bgFT0Apf = 0;
-  int32_t bgFT0Cpf = 0;
-  int32_t bbFT0Apf = 0;
-  int32_t bbFT0Cpf = 0;
-  int32_t bgFV0Apf = 0;
-  int32_t bbFV0Apf = 0;
-  int32_t bgFDDApf = 0;
-  int32_t bgFDDCpf = 0;
-  int32_t bbFDDApf = 0;
-  int32_t bbFDDCpf = 0;
-
-  // Variables to track closest BCs with specific triggers
-  int32_t minDistTOR = 999;
-  int32_t minDistTSC = 999;
-  int32_t minDistTVX = 999;
-  int32_t minDistV0A = 999;
-  int32_t minDistT0A = 999;
-
-  // Scan BCs in the range [leftBC, rightBC]
   for (auto const& scanbc : bcs) {
     uint64_t bcnum = scanbc.globalBC();
     if (bcnum < leftBC) continue;
@@ -5489,7 +5360,7 @@ void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
     uint64_t bit = bcnum - leftBC;
     int32_t dist = static_cast<int32_t>(bcnum) - static_cast<int32_t>(midbc);
 
-    // Fill pileup flags using BC selection bits (following PWGUD pattern)
+    // Fill pileup flags
     if (!scanbc.selection_bit(o2::aod::evsel::kNoBGT0A))
       bgFT0Apf |= (1 << bit);
     if (!scanbc.selection_bit(o2::aod::evsel::kNoBGT0C))
@@ -5511,35 +5382,40 @@ void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
     if (scanbc.selection_bit(o2::aod::evsel::kIsBBFDC))
       bbFDDCpf |= (1 << bit);
 
-     // Track closest BCs with specific triggers
+    // Track closest BCs with specific triggers (개선안 6 - early exit 조건)
     if (scanbc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       if (std::abs(dist) < std::abs(minDistTVX)) {
         minDistTVX = dist;
       }
     }
-    
-    // TOR trigger: FT0 time-based selection (|timeA| > 2 && |timeC| > 2)
+
+    // TOR trigger with validation (개선안 2)
     if (scanbc.has_ft0()) {
       auto ft0 = scanbc.ft0();
-      if (!(std::abs(ft0.timeA()) > 2.f && std::abs(ft0.timeC()) > 2.f)) {
+      bool hasValidTiming = (ft0.timeA() > -900.f && ft0.timeC() > -900.f);
+      bool isTOR = hasValidTiming && 
+                   !(std::abs(ft0.timeA()) > FITConstants::kFT0TimeThreshold && 
+                     std::abs(ft0.timeC()) > FITConstants::kFT0TimeThreshold);
+      if (isTOR) {
         if (std::abs(dist) < std::abs(minDistTOR)) {
           minDistTOR = dist;
         }
       }
     }
-    
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBV0A)) {  // V0A trigger
+
+    if (scanbc.selection_bit(o2::aod::evsel::kIsBBV0A)) {
       if (std::abs(dist) < std::abs(minDistV0A)) {
         minDistV0A = dist;
       }
     }
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBT0A)) {  // T0A trigger
+
+    if (scanbc.selection_bit(o2::aod::evsel::kIsBBT0A)) {
       if (std::abs(dist) < std::abs(minDistT0A)) {
         minDistT0A = dist;
       }
     }
-    
-    // TSC = TVX & (TSC | TCE) - check FT0 trigger mask
+
+    // TSC trigger
     if (scanbc.has_ft0()) {
       auto ft0 = scanbc.ft0();
       if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex) &&
@@ -5550,28 +5426,171 @@ void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
         }
       }
     }
+
+    // Early exit if all closest BCs found (개선안 6)
+    bool allFound = (minDistTOR != FITConstants::kDefaultDistance && 
+                     minDistTSC != FITConstants::kDefaultDistance && 
+                     minDistTVX != FITConstants::kDefaultDistance && 
+                     minDistV0A != FITConstants::kDefaultDistance && 
+                     minDistT0A != FITConstants::kDefaultDistance);
+    if (allFound && std::abs(dist) > static_cast<int32_t>(FITConstants::kPileupScanRange)) {
+      break;
+    }
   }
-
-  // Store distance to closest BCs with specific triggers
-  values[kDistClosestBcTOR] = static_cast<float>(minDistTOR);
-  values[kDistClosestBcTSC] = static_cast<float>(minDistTSC);
-  values[kDistClosestBcTVX] = static_cast<float>(minDistTVX);
-  values[kDistClosestBcV0A] = static_cast<float>(minDistV0A);
-  values[kDistClosestBcT0A] = static_cast<float>(minDistT0A);
-
-  // Store pileup flags in values array
-  values[kBGFT0Apf] = static_cast<float>(bgFT0Apf);
-  values[kBGFT0Cpf] = static_cast<float>(bgFT0Cpf);
-  values[kBBFT0Apf] = static_cast<float>(bbFT0Apf);
-  values[kBBFT0Cpf] = static_cast<float>(bbFT0Cpf);
-  values[kBGFV0Apf] = static_cast<float>(bgFV0Apf);
-  values[kBBFV0Apf] = static_cast<float>(bbFV0Apf);
-  values[kBGFDDApf] = static_cast<float>(bgFDDApf);
-  values[kBGFDDCpf] = static_cast<float>(bgFDDCpf);
-  values[kBBFDDApf] = static_cast<float>(bbFDDApf);
-  values[kBBFDDCpf] = static_cast<float>(bbFDDCpf);
 }
 
+// Helper to detect C-style arrays
+template <typename T>
+struct is_c_array : std::false_type {};
+
+template <typename T, size_t N>
+struct is_c_array<T[N]> : std::true_type {};
+
+// Generic amplitude calculator supporting both std::vector, std::array and C-arrays
+template <typename T>
+std::pair<float, int> ComputeFITAmplitude(const T& amplitudes)
+{
+    float sum = 0.f;
+    int nFired = 0;
+
+    if constexpr (is_c_array<T>::value) {
+        // C-style array
+        for (size_t i = 0; i < std::extent<T>::value; ++i) {
+            auto a = amplitudes[i];
+            if (a > 0) {
+                sum += a;
+                nFired++;
+            }
+        }
+    } else {
+        // Containers with begin() / end()
+        for (auto a : amplitudes) {
+            if (a > 0) {
+                sum += a;
+                nFired++;
+            }
+        }
+    }
+
+    return {sum, nFired};
+}
+
+template <typename TBC, typename TBCs>
+void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // Default initialize
+  values[kAmplitudeFT0A] = FITConstants::kDefaultAmplitude;
+  values[kAmplitudeFT0C] = FITConstants::kDefaultAmplitude;
+  values[kTimeFT0A]      = FITConstants::kDefaultTime;
+  values[kTimeFT0C]      = FITConstants::kDefaultTime;
+  values[kTriggerMaskFT0] = 0;
+  values[kNFiredChannelsFT0A] = 0;
+  values[kNFiredChannelsFT0C] = 0;
+
+  values[kAmplitudeFDDA] = FITConstants::kDefaultAmplitude;
+  values[kAmplitudeFDDC] = FITConstants::kDefaultAmplitude;
+  values[kTimeFDDA]      = FITConstants::kDefaultTime;
+  values[kTimeFDDC]      = FITConstants::kDefaultTime;
+  values[kTriggerMaskFDD] = 0;
+  values[kNFiredChannelsFDDA] = 0;
+  values[kNFiredChannelsFDDC] = 0;
+
+  values[kAmplitudeFV0A] = FITConstants::kDefaultAmplitude;
+  values[kTimeFV0A]      = FITConstants::kDefaultTime;
+  values[kTriggerMaskFV0A] = 0;
+  values[kNFiredChannelsFV0A] = 0;
+
+  // --- FT0 (via foundFT0) ---
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+
+    values[kTimeFT0A] = ft0.timeA();
+    values[kTimeFT0C] = ft0.timeC();
+
+    auto [ampA, nA] = ComputeFITAmplitude(ft0.amplitudeA());
+    auto [ampC, nC] = ComputeFITAmplitude(ft0.amplitudeC());
+
+    if (nA > 0) values[kAmplitudeFT0A] = ampA;
+    if (nC > 0) values[kAmplitudeFT0C] = ampC;
+
+    values[kTriggerMaskFT0]     = ft0.triggerMask();
+    values[kNFiredChannelsFT0A] = nA;
+    values[kNFiredChannelsFT0C] = nC;
+  }
+
+  // --- FV0A ---
+  if (bc.has_foundFV0()) {
+    auto fv0a = bc.foundFV0();
+
+    values[kTimeFV0A] = fv0a.time();
+
+    auto [ampV0A, nV0A] = ComputeFITAmplitude(fv0a.amplitude());
+    if (nV0A > 0) values[kAmplitudeFV0A] = ampV0A;
+
+    values[kTriggerMaskFV0A] = fv0a.triggerMask();
+    values[kNFiredChannelsFV0A] = nV0A;
+  }
+
+  // --- FDD ---
+  if (bc.has_foundFDD()) {
+    auto fdd = bc.foundFDD();
+
+    values[kTimeFDDA] = fdd.timeA();
+    values[kTimeFDDC] = fdd.timeC();
+
+    auto [ampA, nA] = ComputeFITAmplitude(fdd.chargeA());
+    auto [ampC, nC] = ComputeFITAmplitude(fdd.chargeC());
+
+    if (nA > 0) values[kAmplitudeFDDA] = ampA;
+    if (nC > 0) values[kAmplitudeFDDC] = ampC;
+
+    values[kTriggerMaskFDD] = fdd.triggerMask();
+    values[kNFiredChannelsFDDA] = nA;
+    values[kNFiredChannelsFDDC] = nC;
+  }
+
+  // --- Background pileup flags ---
+  uint64_t midbc = bc.globalBC();
+
+  int32_t bgFT0Apf = 0, bgFT0Cpf = 0, bbFT0Apf = 0, bbFT0Cpf = 0;
+  int32_t bgFV0Apf = 0, bbFV0Apf = 0;
+  int32_t bgFDDApf = 0, bgFDDCpf = 0;
+  int32_t bbFDDApf = 0, bbFDDCpf = 0;
+  int32_t minDistTOR = FITConstants::kDefaultDistance;
+  int32_t minDistTSC = FITConstants::kDefaultDistance;
+  int32_t minDistTVX = FITConstants::kDefaultDistance;
+  int32_t minDistV0A = FITConstants::kDefaultDistance;
+  int32_t minDistT0A = FITConstants::kDefaultDistance;
+
+  FillPileupFlags(
+      bcs, midbc,
+      bgFT0Apf, bgFT0Cpf, bbFT0Apf, bbFT0Cpf,
+      bgFV0Apf, bbFV0Apf, bgFDDApf, bgFDDCpf, bbFDDApf, bbFDDCpf,
+      minDistTOR, minDistTSC, minDistTVX, minDistV0A, minDistT0A);
+
+  // distance store
+  values[kDistClosestBcTOR] = minDistTOR;
+  values[kDistClosestBcTSC] = minDistTSC;
+  values[kDistClosestBcTVX] = minDistTVX;
+  values[kDistClosestBcV0A] = minDistV0A;
+  values[kDistClosestBcT0A] = minDistT0A;
+
+  // pileup flags store
+  values[kBGFT0Apf] = bgFT0Apf;
+  values[kBGFT0Cpf] = bgFT0Cpf;
+  values[kBBFT0Apf] = bbFT0Apf;
+  values[kBBFT0Cpf] = bbFT0Cpf;
+  values[kBGFV0Apf] = bgFV0Apf;
+  values[kBBFV0Apf] = bbFV0Apf;
+  values[kBGFDDApf] = bgFDDApf;
+  values[kBGFDDCpf] = bgFDDCpf;
+  values[kBBFDDApf] = bbFDDApf;
+  values[kBBFDDCpf] = bbFDDCpf;
+}
 template <typename T1, typename T2>
 void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values, float hadronMass)
 {
