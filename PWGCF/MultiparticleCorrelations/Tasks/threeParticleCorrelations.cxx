@@ -58,6 +58,7 @@ struct ThreeParticleCorrelations {
     Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
     Configurable<int> occupMin{"occupMin", 0, "Minimum collision occupancy"};
     Configurable<int> occupMax{"occupMax", 15000, "Maximum collision occupancy"};
+    Configurable<bool> useOccupCut{"useOccupCut", true, "Use the kNoCollInTimeRangeStandard cut"};
   } evSelGroup;
 
   // V0 filter parameters
@@ -96,7 +97,8 @@ struct ThreeParticleCorrelations {
   Filter collCent = aod::cent::centFT0C > centMin&& aod::cent::centFT0C < centMax;
   Filter collZvtx = nabs(aod::collision::posZ) < evSelGroup.zvtxMax;
   Filter mcCollZvtx = nabs(aod::mccollision::posZ) < evSelGroup.zvtxMax;
-  Filter evSelect = aod::evsel::sel8 == true;
+  Filter evSel8 = aod::evsel::sel8 == true;
+  Filter evSelOccup = o2::aod::evsel::trackOccupancyInTimeRange >= evSelGroup.occupMin && o2::aod::evsel::trackOccupancyInTimeRange < evSelGroup.occupMax;
 
   // Track filters
   Filter trackPt = aod::track::pt > trackPtMin&& aod::track::pt < trackPtMax;
@@ -204,7 +206,7 @@ struct ThreeParticleCorrelations {
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "kIsGoodZvtxFT0vsPV");
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "kNoSameBunchPileup");
-    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, Form("%i < Occupancy < %i", static_cast<int>(evSelGroup.occupMin), static_cast<int>(evSelGroup.occupMax)));
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, Form("[%i < Occupancy < %i)", static_cast<int>(evSelGroup.occupMin), static_cast<int>(evSelGroup.occupMax)));
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "kNoCollInTimeRangeStandard");
 
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{fineCentralityAxis}}});
@@ -377,7 +379,6 @@ struct ThreeParticleCorrelations {
   void processSame(MyFilteredCollision const& collision, aod::V0Datas const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
 
-    rQARegistry.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
     if (!acceptEvent(collision, true)) {
       return;
     }
@@ -392,6 +393,7 @@ struct ThreeParticleCorrelations {
 
     rQARegistry.fill(HIST("hEventCentrality"), collision.centFT0C());
     rQARegistry.fill(HIST("hEventZvtx"), collision.posZ());
+    rQARegistry.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
     rQARegistry.fill(HIST("hEventBfield"), bField);
 
     // Start of the Track QA
@@ -514,15 +516,18 @@ struct ThreeParticleCorrelations {
 
     // Start of the Mixed-Event correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairData) {
-      if (!acceptEvent(coll_1, false) || !acceptEvent(coll_2, false)) {
-        return;
+      if (!acceptEvent(coll_1, false)) {
+        continue;
+      }
+      if (!acceptEvent(coll_2, false)) {
+        continue;
       }
 
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       if (switchGroup.confBfieldSwitch != 0) {
         if (std::signbit(static_cast<double>(switchGroup.confBfieldSwitch)) != std::signbit(bField)) {
-          return;
+          continue;
         }
       }
 
@@ -669,12 +674,12 @@ struct ThreeParticleCorrelations {
       if (recCollsA1.size() == 1 && recCollsA2.size() == 1) {
         for (const auto& recColl_1 : recCollsA1) {
           if (!acceptEvent(recColl_1, false)) {
-            return;
+            continue;
           }
         }
         for (const auto& recColl_2 : recCollsA2) {
           if (!acceptEvent(recColl_2, false)) {
-            return;
+            continue;
           }
         }
       }
@@ -1024,19 +1029,13 @@ struct ThreeParticleCorrelations {
       rQARegistry.fill(HIST("hNEvents"), 2.5);
     }
 
-    int occupEstim = col.trackOccupancyInTimeRange();
-    if (occupEstim <= evSelGroup.occupMin || occupEstim >= evSelGroup.occupMax) { // Occupancy window
-      return false;
-    }
-    if (FillHist) {
-      rQARegistry.fill(HIST("hNEvents"), 3.5);
-    }
-
-    if (!col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // kNoCollInTimeRangeStandard
-      return false;
-    }
-    if (FillHist) {
-      rQARegistry.fill(HIST("hNEvents"), 4.5);
+    if (evSelGroup.useOccupCut) {
+      if (!col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) { // kNoCollInTimeRangeStandard
+        return false;
+      }
+      if (FillHist) {
+        rQARegistry.fill(HIST("hNEvents"), 4.5);
+      }
     }
 
     return true;
