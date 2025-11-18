@@ -418,6 +418,7 @@ struct LumiStabilityTask {
           if (trgFV0) {
             histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
           }
+        }
       // }
     } // loop over bcs
 
