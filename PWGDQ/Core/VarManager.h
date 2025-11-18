@@ -27,6 +27,7 @@
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
+#include "DataFormatsFIT/Triggers.h"
 
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -5510,17 +5511,23 @@ void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
     if (scanbc.selection_bit(o2::aod::evsel::kIsBBFDC))
       bbFDDCpf |= (1 << bit);
 
-    // Track closest BCs with specific triggers
+     // Track closest BCs with specific triggers
     if (scanbc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       if (std::abs(dist) < std::abs(minDistTVX)) {
         minDistTVX = dist;
       }
     }
-    if (scanbc.alias_bit(o2::aod::evsel::kTVXinTRD)) {  // TOR trigger
-      if (std::abs(dist) < std::abs(minDistTOR)) {
-        minDistTOR = dist;
+    
+    // TOR trigger: FT0 time-based selection (|timeA| > 2 && |timeC| > 2)
+    if (scanbc.has_ft0()) {
+      auto ft0 = scanbc.ft0();
+      if (!(std::abs(ft0.timeA()) > 2.f && std::abs(ft0.timeC()) > 2.f)) {
+        if (std::abs(dist) < std::abs(minDistTOR)) {
+          minDistTOR = dist;
+        }
       }
     }
+    
     if (scanbc.selection_bit(o2::aod::evsel::kIsBBV0A)) {  // V0A trigger
       if (std::abs(dist) < std::abs(minDistV0A)) {
         minDistV0A = dist;
@@ -5531,10 +5538,16 @@ void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
         minDistT0A = dist;
       }
     }
-    // TSC = TVX & (TSC | TCE) - approximated by TVX for now
-    if (scanbc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-      if (std::abs(dist) < std::abs(minDistTSC)) {
-        minDistTSC = dist;
+    
+    // TSC = TVX & (TSC | TCE) - check FT0 trigger mask
+    if (scanbc.has_ft0()) {
+      auto ft0 = scanbc.ft0();
+      if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex) &&
+          (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen) ||
+           TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitSCen))) {
+        if (std::abs(dist) < std::abs(minDistTSC)) {
+          minDistTSC = dist;
+        }
       }
     }
   }
