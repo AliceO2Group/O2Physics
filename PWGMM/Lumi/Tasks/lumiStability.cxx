@@ -64,6 +64,7 @@ struct LumiStabilityTask {
   int64_t currentTFid = -1;
   int nOrbits = nOrbitsConf;
   double minOrbit = minOrbitConf;
+  int minTimeFDD = 30;
   int64_t bcSOR = 0; // global bc of the start of the first orbit, setting 0 by default for unanchored MC
   int64_t tsSOR;
   int64_t tsEOR;
@@ -273,77 +274,76 @@ struct LumiStabilityTask {
       lastRunNumber = runNumber; // do it only once
       executionCounter++;
 
-      if (runNumber >= 500000) { // access CCDB for data or anchored MC only
-        int64_t ts = bcs.iteratorAt(0).timestamp();
+      // access CCDB for data or anchored MC only
+      int64_t ts = bcs.iteratorAt(0).timestamp();
 
-        // access colliding and beam-gas bc patterns
-        grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
-        beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
-        beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
-        bcPatternA = beamPatternA & ~beamPatternC;
-        bcPatternC = ~beamPatternA & beamPatternC;
-        bcPatternB = beamPatternA & beamPatternC;
-        bcPatternE = ~beamPatternA & ~beamPatternC;
+      // access colliding and beam-gas bc patterns
+      grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
+      beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
+      bcPatternA = beamPatternA & ~beamPatternC;
+      bcPatternC = ~beamPatternA & beamPatternC;
+      bcPatternB = beamPatternA & beamPatternC;
+      bcPatternE = ~beamPatternA & ~beamPatternC;
 
-        for (int i = 0; i < nBCsPerOrbit; i++) {
-          if (bcPatternA[i]) {
-            histos.fill(HIST("hBcA"), i);
-          }
-          if (bcPatternC[i]) {
-            histos.fill(HIST("hBcC"), i);
-          }
-          if (bcPatternB[i]) {
-            histos.fill(HIST("hBcB"), i);
-            bool isLeadBC = true;
-            for (int jbit = i - minEmpty; jbit < i; jbit++) {
-              int kbit = jbit;
-              if (kbit < 0)
-                kbit += nbin;
-              if (bcPatternB[kbit]) {
-                isLeadBC = false;
-                break;
-              }
-            }
-            if (isLeadBC)
-              histos.fill(HIST("hBcBL"), i);
-          }
-          if (bcPatternE[i]) {
-            histos.fill(HIST("hBcE"), i);
-          }
+      for (int i = 0; i < nBCsPerOrbit; i++) {
+        if (bcPatternA[i]) {
+          histos.fill(HIST("hBcA"), i);
         }
-
-        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-        // access orbit-reset timestamp
-        auto ctpx = ccdb->getForTimeStamp<std::vector<int64_t>>("CTP/Calib/OrbitReset", ts);
-        int64_t tsOrbitReset = (*ctpx)[0]; // us
-        // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        std::map<std::string, std::string> metadata;
-        metadata["runNumber"] = Form("%d", runNumber);
-        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
-        tsSOR = grpecs->getTimeStart();        // ms
-        tsEOR = grpecs->getTimeEnd();          // ms
-        // calculate SOR and EOR orbits
-        int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
-        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
-        // set nOrbits and minOrbit used for orbit-axis binning
-        nOrbits = orbitEOR - orbitSOR;
-        minOrbit = orbitSOR;
-        // first bc of the first orbit (should coincide with TF start)
-        bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
-        // duration of TF in bcs
-        nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-        LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
-
-        auto hTsValues = histos.get<TH1>(HIST("tsValues"));
-        hTsValues->GetXaxis()->SetBinLabel(1, "tsSOR");
-        hTsValues->GetXaxis()->SetBinLabel(2, "tsEOR");
-        hTsValues->SetBinContent(1, tsSOR / 1000); // seconds
-        hTsValues->SetBinContent(2, tsEOR / 1000); // seconds
+        if (bcPatternC[i]) {
+          histos.fill(HIST("hBcC"), i);
+        }
+        if (bcPatternB[i]) {
+          histos.fill(HIST("hBcB"), i);
+          bool isLeadBC = true;
+          for (int jbit = i - minEmpty; jbit < i; jbit++) {
+            int kbit = jbit;
+            if (kbit < 0)
+              kbit += nbin;
+            if (bcPatternB[kbit]) {
+              isLeadBC = false;
+              break;
+            }
+          }
+          if (isLeadBC)
+            histos.fill(HIST("hBcBL"), i);
+        }
+        if (bcPatternE[i]) {
+          histos.fill(HIST("hBcE"), i);
+        }
       }
+
+      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+      // access orbit-reset timestamp
+      auto ctpx = ccdb->getForTimeStamp<std::vector<int64_t>>("CTP/Calib/OrbitReset", ts);
+      int64_t tsOrbitReset = (*ctpx)[0]; // us
+      // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
+      std::map<std::string, std::string> metadata;
+      metadata["runNumber"] = Form("%d", runNumber);
+      auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
+      nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
+      tsSOR = grpecs->getTimeStart();        // ms
+      tsEOR = grpecs->getTimeEnd();          // ms
+      // calculate SOR and EOR orbits
+      int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+      int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+      // adjust to the nearest TF edge
+      orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
+      orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
+      // set nOrbits and minOrbit used for orbit-axis binning
+      nOrbits = orbitEOR - orbitSOR;
+      minOrbit = orbitSOR;
+      // first bc of the first orbit (should coincide with TF start)
+      bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      // duration of TF in bcs
+      nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
+
+      auto hTsValues = histos.get<TH1>(HIST("tsValues"));
+      hTsValues->GetXaxis()->SetBinLabel(1, "tsSOR");
+      hTsValues->GetXaxis()->SetBinLabel(2, "tsEOR");
+      hTsValues->SetBinContent(1, tsSOR / 1000); // seconds
+      hTsValues->SetBinContent(2, tsEOR / 1000); // seconds
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
@@ -354,7 +354,7 @@ struct LumiStabilityTask {
       // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
 
-    for (auto& bc : bcs) {
+    for (auto const& bc : bcs) {
       if (bc.timestamp() == 0) {
         continue;
       }
@@ -433,11 +433,12 @@ struct LumiStabilityTask {
       auto sideC = fdd.chargeC();
       std::vector<int> channelA;
       std::vector<int> channelC;
+      int minLimit = 0;
       for (auto i = 0; i < 8; i++) {
-        if (sideA[i] > 0) {
+        if (sideA[i] > minLimit) {
           channelA.push_back(i);
         }
-        if (sideC[i] > 0) {
+        if (sideC[i] > minLimit) {
           channelC.push_back(i);
         }
       }
@@ -517,7 +518,7 @@ struct LumiStabilityTask {
             histos.fill(HIST("FDD/hTimeAVertex"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCVertex"), fdd.timeC());
             if (is2022Data) {
-              if (fdd.timeA() > 30) {
+              if (fdd.timeA() > minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTimeA2022"), 0);
                 histos.fill(HIST("FDD/hInvTimeAvsBC2022"), localBC);
               } else {
@@ -525,7 +526,7 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimeAvsBC2022"), localBC);
               }
 
-              if (fdd.timeC() > 30) {
+              if (fdd.timeC() > minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTimeC2022"), 0);
                 histos.fill(HIST("FDD/hInvTimeCvsBC2022"), localBC);
               } else {
@@ -533,11 +534,11 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimeCvsBC2022"), localBC);
               }
 
-              if (fdd.timeA() > 30 || fdd.timeC() > 30) {
+              if (fdd.timeA() > minTimeFDD || fdd.timeC() > minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTime2022"), 0);
                 histos.fill(HIST("FDD/hInvTimevsBC2022"), localBC);
               }
-              if (fdd.timeA() < 30 && fdd.timeC() < 30) {
+              if (fdd.timeA() < minTimeFDD && fdd.timeC() < minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTime2022"), 1);
                 histos.fill(HIST("FDD/hValidTimevsBC2022"), localBC);
               }
@@ -580,7 +581,7 @@ struct LumiStabilityTask {
             histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
             if (!is2022Data) {
-              if (fdd.timeA() > 30) {
+              if (fdd.timeA() > minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTimeA"), 0);
                 histos.fill(HIST("FDD/hInvTimeAvsBC"), localBC);
               } else {
@@ -588,7 +589,7 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimeAvsBC"), localBC);
               }
 
-              if (fdd.timeC() > 30) {
+              if (fdd.timeC() > minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTimeC"), 0);
                 histos.fill(HIST("FDD/hInvTimeCvsBC"), localBC);
               } else {
@@ -596,11 +597,11 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimeCvsBC"), localBC);
               }
 
-              if (fdd.timeA() > 30 || fdd.timeC() > 30) {
+              if (fdd.timeA() > minTimeFDD || fdd.timeC() > minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTime"), 0);
                 histos.fill(HIST("FDD/hInvTimevsBC"), localBC);
               }
-              if (fdd.timeA() < 30 && fdd.timeC() < 30) {
+              if (fdd.timeA() < minTimeFDD && fdd.timeC() < minTimeFDD) {
                 histos.fill(HIST("FDD/hCountsTime"), 1);
                 histos.fill(HIST("FDD/hValidTimevsBC"), localBC);
               }
@@ -634,7 +635,8 @@ struct LumiStabilityTask {
               auto sideCPast = fddPast.chargeC();
               std::vector<int> channelAPast;
               std::vector<int> channelCPast;
-              for (auto i = 0; i < 8; i++) {
+              int maxNChanels = 8
+              for (auto i = 0; i < maxNChanels; i++) {
                 if (sideAPast[i] > 0) {
                   channelAPast.push_back(i);
                 }
@@ -742,7 +744,7 @@ struct LumiStabilityTask {
           histos.fill(HIST("FT0/hTimeA"), ft0.timeA());
           histos.fill(HIST("FT0/hTimeC"), ft0.timeC());
 
-          if (ft0.timeA() > 30) {
+          if (ft0.timeA() > minTimeFDD) {
             histos.fill(HIST("FT0/hCountsTimeA"), 0);
             histos.fill(HIST("FT0/hInvTimeAvsBC"), localBC);
           } else {
@@ -750,7 +752,7 @@ struct LumiStabilityTask {
             histos.fill(HIST("FT0/hValidTimeAvsBC"), localBC);
           }
 
-          if (ft0.timeC() > 30) {
+          if (ft0.timeC() > minTimeFDD) {
             histos.fill(HIST("FT0/hCountsTimeC"), 0);
             histos.fill(HIST("FT0/hInvTimeCvsBC"), localBC);
           } else {
@@ -758,11 +760,11 @@ struct LumiStabilityTask {
             histos.fill(HIST("FT0/hValidTimeCvsBC"), localBC);
           }
 
-          if (ft0.timeA() > 30 || ft0.timeC() > 30) {
+          if (ft0.timeA() > minTimeFDD || ft0.timeC() > minTimeFDD) {
             histos.fill(HIST("FT0/hCountsTime"), 0);
             histos.fill(HIST("FT0/hInvTimevsBC"), localBC);
           }
-          if (ft0.timeA() < 30 && ft0.timeC() < 30) {
+          if (ft0.timeA() < minTimeFDD && ft0.timeC() < minTimeFDD) {
             histos.fill(HIST("FT0/hCountsTime"), 1);
             histos.fill(HIST("FT0/hValidTimevsBC"), localBC);
           }
