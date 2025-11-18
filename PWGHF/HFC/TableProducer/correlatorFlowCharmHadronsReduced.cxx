@@ -610,7 +610,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   void processSameEventCharmHadWCentMixBase(aod::HfcRedCorrColls const& collisions,
                                             TrigCharmCands const& candidates,
-                                            AssocTracks const& tracks)
+                                            aod::HfcRedAssBases const& tracks)
   {
     BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
 
@@ -631,7 +631,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   void processMixedEventCharmHadWCentMixBase(aod::HfcRedCorrColls const& collisions,
                                              TrigCharmCands const& candidates,
-                                             AssocTracks const& tracks)
+                                             aod::HfcRedAssBases const& tracks)
   {
     BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
 
