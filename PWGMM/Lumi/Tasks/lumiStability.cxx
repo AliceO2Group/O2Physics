@@ -378,7 +378,7 @@ struct LumiStabilityTask {
         histos.fill(HIST("TFsPerMinute"), timeSinceSOF);
       }
 
-      if (bcPatternB[localBC]) {
+      // if (bcPatternB[localBC]) {
         if (trgFDD) {
           histos.fill(HIST("FDD/nBCsVsTime"), timeSinceSOF);
           histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC + 7);
@@ -415,8 +415,7 @@ struct LumiStabilityTask {
           if (trgFV0) {
             histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
           }
-        }
-      }
+      // }
     } // loop over bcs
 
     for (auto const& fdd : fdds) {
