@@ -1021,7 +1021,7 @@ struct JetHadronRecoil {
                                       soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                       soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                       soa::Filtered<aod::JetParticles> const& particles,
-                                      soa::Filtered<soa::Join<aod::JetTracksMCD>> const& tracks,
+                                      soa::Filtered<aod::JetTracksMCD> const& tracks,
                                       soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets)
   {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
