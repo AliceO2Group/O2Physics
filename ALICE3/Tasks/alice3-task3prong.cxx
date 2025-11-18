@@ -14,10 +14,9 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
+#include "ALICE3/Utils/utilsSelections.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
@@ -67,7 +66,7 @@ struct Alice3Task3Prong {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
+  HfHelperAlice3 hfHelper;
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -77,7 +76,7 @@ struct Alice3Task3Prong {
   using Cands3PRecoWMl = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3Ml3Ps, aod::Alice3McRecFlags>>;
   using Cands3PGen = soa::Join<aod::McParticles, aod::Alice3McGenFlags>;
 
-  Filter filterSelectCandidates = aod::a3_hf_sel_3prong::isSel == true;
+  Filter filterSelectCandidates = (aod::a3_hf_sel_3prong::isSelMassHypo0 == true || aod::a3_hf_sel_3prong::isSelMassHypo1 == true);
 
   Partition<Cands3PGen> candsGenLcs = nabs(aod::a3_mc_truth::flagMcGen) == static_cast<int>(CharmHadAlice3::Lc);
 
@@ -195,20 +194,10 @@ struct Alice3Task3Prong {
   /// \param candidate is a reconstructed candidate
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
   template <CharmHadAlice3 CharmHad, int SignalType, typename CandidateType>
-  void fillHistogramsRecSig(CandidateType const& candidate)
+  void fillHistogramsRecSig(CandidateType const& candidate, float mass)
   {
-    if (candidate.isSel() && (!candidate.isSwapped())) {
-      registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandMass<CharmHad>(candidate));
-      registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandMass<CharmHad>(candidate), candidate.pt());
-    }
-    if (candidate.isSel() && candidate.isSwapped()) {
-      registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandMass<CharmHad>(candidate));
-      registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandMass<CharmHad>(candidate), candidate.pt());
-    }
-    if (candidate.isSel() && candidate.isSwapped()) {
-      registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandMass<CharmHad>(candidate));
-      registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandMass<CharmHad>(candidate), candidate.pt());
-    }
+    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), mass);
+    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), mass, candidate.pt());
     registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.pt());
     registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng0());
     registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng1());
@@ -248,41 +237,60 @@ struct Alice3Task3Prong {
   template <CharmHadAlice3 CharmHad, bool SaveMl, typename CandsRec>
   void fillHistosMcRec(CandsRec const& candidates)
   {
-    LOG(info) << "Number of candidates: " << candidates.size();
     for (const auto& candidate : candidates) {
       /// rapidity selection
       if (yCandRecoMax >= 0. && std::abs(hfHelper.getCandY<CharmHad>(candidate)) > yCandRecoMax) {
-        LOG(info) << "Skipping candidate with rapidity " << hfHelper.getCandY<CharmHad>(candidate);
         continue;
       }
 
       if (candidate.flagMcRec() != 0) {
-        LOG(info) << "Processing candidate with flagMcRec: " << candidate.flagMcRec();
         // Get the corresponding MC particle.
 
         const auto pt = candidate.pt();
         const auto originType = candidate.originMcRec();
 
-        /// Fill histograms
-        fillHistogramsRecSig<CharmHad, Signal>(candidate);
-        if (originType == RecoDecay::OriginType::Prompt) {
-          fillHistogramsRecSig<CharmHad, Prompt>(candidate);
-        } else if (originType == RecoDecay::OriginType::NonPrompt) {
-          fillHistogramsRecSig<CharmHad, NonPrompt>(candidate);
-        }
-
+        
         if (fillThn) {
-          double mass = hfHelper.getCandMass<CharmHad>(candidate);
-          std::vector<double> valuesToFill{mass, pt};
-          if constexpr (SaveMl) {
-            LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
-            valuesToFill.push_back(candidate.mlScore0());
-            valuesToFill.push_back(candidate.mlScore1());
-            valuesToFill.push_back(candidate.mlScore2());
+          if (candidate.isSelMassHypo0()) {
+            registry.fill(HIST("hSelectionStatus"), 0., pt);
+            double mass = hfHelper.getCandMass<CharmHad, false>(candidate);
+            /// Fill histograms
+            fillHistogramsRecSig<CharmHad, Signal>(candidate, mass);
+            if (originType == RecoDecay::OriginType::Prompt) {
+              fillHistogramsRecSig<CharmHad, Prompt>(candidate, mass);
+            } else if (originType == RecoDecay::OriginType::NonPrompt) {
+              fillHistogramsRecSig<CharmHad, NonPrompt>(candidate, mass);
+            }
+            std::vector<double> valuesToFill{mass, pt};
+            if constexpr (SaveMl) {
+              LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
+              valuesToFill.push_back(candidate.mlScore0());
+              valuesToFill.push_back(candidate.mlScore1());
+              valuesToFill.push_back(candidate.mlScore2());
+            }
+            valuesToFill.push_back(static_cast<double>(originType));
+            registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
           }
-          valuesToFill.push_back(static_cast<double>(originType));
-
-          registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
+          if (candidate.isSelMassHypo1()) {
+            registry.fill(HIST("hSelectionStatus"), 1., pt);
+            double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
+            /// Fill histograms
+            fillHistogramsRecSig<CharmHad, Signal>(candidate, mass);
+            if (originType == RecoDecay::OriginType::Prompt) {
+              fillHistogramsRecSig<CharmHad, Prompt>(candidate, mass);
+            } else if (originType == RecoDecay::OriginType::NonPrompt) {
+              fillHistogramsRecSig<CharmHad, NonPrompt>(candidate, mass);
+            }
+            std::vector<double> valuesToFill{mass, pt};
+            if constexpr (SaveMl) {
+              LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
+              valuesToFill.push_back(candidate.mlScore0());
+              valuesToFill.push_back(candidate.mlScore1());
+              valuesToFill.push_back(candidate.mlScore2());
+            }
+            valuesToFill.push_back(static_cast<double>(originType));
+            registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
+          }
         }
       }
     }
@@ -329,7 +337,6 @@ struct Alice3Task3Prong {
         if (originType == RecoDecay::OriginType::Prompt) {
           fillHistogramsGen<CharmHad, Prompt>(particle);
         } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-          LOG(info) << "B-hadron pt still to be implemented!";
           ptGenB = particle.bHadMotherPtGen();
           fillHistogramsGen<CharmHad, NonPrompt>(particle);
         }
@@ -345,8 +352,6 @@ struct Alice3Task3Prong {
   void processLc(Cands3PReco const& candsLc,
                  Cands3PGen const&)
   {
-    LOG(info) << "Processing MC without ML selections: " << candsLc.size() << " Lc candidates reconstructed, "
-              << candsGenLcs.size() << " generated Lc.";
     fillHistosMcRec<CharmHadAlice3::Lc, false>(candsLc);
     fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
   }

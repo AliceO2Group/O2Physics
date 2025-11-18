@@ -60,9 +60,9 @@ namespace a3_hf_cand
 // collision properties
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
 // secondary vertex
-DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float); //!
-DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float); //!
-DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //!
+DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, double); //!
+DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, double); //!
+DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, double); //!
 DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //!
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! sum of (non-weighted) distances of the secondary vertex to its prongs
@@ -325,7 +325,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(E, e, //!
                            [](float px, float py, float pz, const float m) -> float { return RecoDecay::e(px, py, pz, m); });
 DECLARE_SOA_COLUMN(Eta, eta, float);            //!
 DECLARE_SOA_COLUMN(Phi, phi, float);            //!
-DECLARE_SOA_COLUMN(IsSwapped, isSwapped, bool); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y,
                            [](float px, float py, float pz, const float m) -> float { return RecoDecay::y(std::array{px, py, pz}, m); });
 } // namespace a3_hf_cand_3prong
@@ -349,8 +348,6 @@ DECLARE_SOA_TABLE(Alice3Cand3Ps, "AOD", "ALICE3CAND3P", //!
                   a3_hf_cand::ErrorImpactParameterY0, a3_hf_cand::ErrorImpactParameterY1, a3_hf_cand::ErrorImpactParameterY2,
                   a3_hf_cand::ImpactParameterZ0, a3_hf_cand::ImpactParameterZ1, a3_hf_cand::ImpactParameterZ2,
                   a3_hf_cand::ErrorImpactParameterZ0, a3_hf_cand::ErrorImpactParameterZ1, a3_hf_cand::ErrorImpactParameterZ2,
-                  // Specify mass hypothesis
-                  a3_hf_cand_3prong::IsSwapped,
                   // Candidate momenta
                   a3_hf_cand_3prong::Px, a3_hf_cand_3prong::Py, a3_hf_cand_3prong::Pz,
                   // dynamic candidate properties
@@ -365,7 +362,8 @@ DECLARE_SOA_TABLE(Alice3Cand3Ps, "AOD", "ALICE3CAND3P", //!
 
 namespace a3_hf_sel_3prong
 {
-DECLARE_SOA_COLUMN(IsSel, isSel, bool); //!
+DECLARE_SOA_COLUMN(IsSelMassHypo0, isSelMassHypo0, bool); //!
+DECLARE_SOA_COLUMN(IsSelMassHypo1, isSelMassHypo1, bool); //!
 
 // PID selection
 enum PidSels {
@@ -387,7 +385,8 @@ enum PidSels {
 DECLARE_SOA_COLUMN(PidBitMask, pidBitMask, uint32_t); //!
 } // namespace a3_hf_sel_3prong
 DECLARE_SOA_TABLE(Alice3Sel3Ps, "AOD", "ALICE3SEL3P", //!
-                  a3_hf_sel_3prong::IsSel,
+                  a3_hf_sel_3prong::IsSelMassHypo0,
+                  a3_hf_sel_3prong::IsSelMassHypo1,
                   a3_hf_sel_3prong::PidBitMask);
 
 namespace a3_mc_truth

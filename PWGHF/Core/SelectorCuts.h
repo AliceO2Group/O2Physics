@@ -1554,55 +1554,6 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"m", "pT De", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "impParXY"};
 } // namespace hf_cuts_cd_to_de_k_pi
 
-namespace hf_cuts_3prongs_alice3
-{
-static constexpr int NBinsPt = 10;
-static constexpr int NCutVars = 10;
-// default values for the pT bin edges (can be used to configure histogram axis)
-// offset by 1 from the bin numbers in cuts array
-constexpr double BinsPt[NBinsPt + 1] = {
-  0.,
-  1.,
-  2.,
-  3.,
-  4.,
-  5.,
-  6.,
-  8.,
-  12.,
-  24.,
-  36.};
-const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
-
-// default values for the cuts                m,  ptP, ptK, ptPi, chi2PCA, cosp, dL, dLXY, NdLXY, ImpParXY
-constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 0  < pT < 1  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 1  < pT < 2  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 2  < pT < 3  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 3  < pT < 4  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 4  < pT < 5  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 5  < pT < 6  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 6  < pT < 8  */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 8  < pT < 12 */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10},  /* 12 < pT < 24 */
-                                            {0.4, 0.4, 0.4, 0.4, 0., 0.005, 0., 0., 0., 1e+10}}; /* 24 < pT < 36 */
-
-// row labels
-static const std::vector<std::string> labelsPt = {
-  "pT bin 0",
-  "pT bin 1",
-  "pT bin 2",
-  "pT bin 3",
-  "pT bin 4",
-  "pT bin 5",
-  "pT bin 6",
-  "pT bin 7",
-  "pT bin 8",
-  "pT bin 9"};
-
-// column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT prong 0", "pT prong 1", "pT prong 2", "Chi2PCA", "cos pointing angle", "decay length", "decLengthXY", "normDecLXY", "impParXY"};
-} // namespace hf_cuts_3prongs_alice3
-
 } // namespace o2::analysis
 
 #endif // PWGHF_CORE_SELECTORCUTS_H_

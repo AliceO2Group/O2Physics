@@ -17,10 +17,9 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Turin Polytechnic University and INFN Turin
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
@@ -278,16 +277,16 @@ struct Alice3TreeCreator3Prong {
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", true, "Flag to fill derived tables with signal"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background"};
-  Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background cands to keep"};
+  Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of cands to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
+  HfHelperAlice3 hfHelper;
 
   using CandsLcRec = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3PidLcs, aod::Alice3McRecFlags>>;
   using CandsLcRecWMl = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3PidLcs, aod::Alice3Ml3Ps, aod::Alice3McRecFlags>>;
   using CandsMcGen = soa::Join<aod::McParticles, aod::Alice3McGenFlags>;
 
-  Filter filterSelectCandidates = aod::a3_hf_sel_3prong::isSel == true;
+  Filter filterSelectCandidates = (aod::a3_hf_sel_3prong::isSelMassHypo0 == true || aod::a3_hf_sel_3prong::isSelMassHypo1 == true);
   Filter filterSelectGenCands = nabs(aod::a3_mc_truth::flagMcGen) == static_cast<int>(CharmHadAlice3::Lc);
 
   Partition<CandsLcRec> recoLcCandSig = nabs(o2::aod::a3_mc_truth::flagMcRec) == static_cast<int>(CharmHadAlice3::Lc);
@@ -339,7 +338,6 @@ struct Alice3TreeCreator3Prong {
     }
     // PID tables
     if (fillTables.fillPid) {
-      LOG(info) << "Reserving PID tables for " << nCands << " candidates.";
       if constexpr (requires { cand.nSigTrkPi0(); })
         rowPidPi0.reserve(nCands);
       if constexpr (requires { cand.nSigTrkPi1(); })
@@ -365,7 +363,7 @@ struct Alice3TreeCreator3Prong {
   /// \tparam CharmHadAlice3: charm hadron type
   /// \tparam T: candidate type
   /// \param cand: candidate to be used to fill the tables
-  template <CharmHadAlice3 CharmHad, typename T>
+  template <CharmHadAlice3 CharmHad, bool IsSwapMassHypo, typename T>
   void fillRecoTables(const T& cand)
   {
     if (fillTables.fillCandVtxInfo) {
@@ -417,7 +415,7 @@ struct Alice3TreeCreator3Prong {
       rowCandKine3Ps(
         cand.ptProng0(), cand.ptProng1(), cand.ptProng2(),
         cand.pt(), RecoDecay::p(cand.px(), cand.py(), cand.pz()), cand.eta(), cand.phi(),
-        hfHelper.getCandMass<CharmHad>(cand), hfHelper.getCandY<CharmHad>(cand), hfHelper.getCandEnergy<CharmHad>(cand));
+        hfHelper.getCandMass<CharmHad, IsSwapMassHypo>(cand), hfHelper.getCandY<CharmHad>(cand), hfHelper.getCandEnergy<CharmHad>(cand));
     }
     if (fillTables.fillDaugKineInfo) {
       rowDaugMoms(
@@ -480,7 +478,18 @@ struct Alice3TreeCreator3Prong {
   {
     reserveTables(candsRec.size(), *candsRec.begin());
     for (const auto& cand : candsRec) {
-      fillRecoTables<CharmHad>(cand);
+      if (downSampleFactor < 1.) {
+        float const pseudoRndm = cand.ptProng0() * 1000. - static_cast<int64_t>(cand.ptProng0() * 1000);
+        if (cand.pt() < ptMaxForDownSample && pseudoRndm >= downSampleFactor) {
+          continue;
+        }
+      }
+      if (cand.isSelMassHypo0()) {
+        fillRecoTables<CharmHad, false>(cand);
+      }
+      if (cand.isSelMassHypo1()) {
+        fillRecoTables<CharmHad, true>(cand);
+      }
     }
     fillGenTables<CharmHad>(candsGen);
   }
@@ -489,7 +498,6 @@ struct Alice3TreeCreator3Prong {
                  CandsMcGen const& parts,
                  aod::McCollisions const&)
   {
-    LOG(info) << "Processing MC event with " << selCandsLcRec.size() << " selected D+/- candidates";
     if (fillOnlySignal) {
       fillRecoGenTables<CharmHadAlice3::Lc>(recoLcCandSig, parts);
     } else if (fillOnlyBackground) {

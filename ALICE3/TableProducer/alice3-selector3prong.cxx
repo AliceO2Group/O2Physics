@@ -14,7 +14,8 @@
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#include "PWGHF/Core/HfHelper.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
+#include "ALICE3/Utils/utilsSelections.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -103,7 +104,7 @@ struct Alice3Selector3Prong {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
+  HfHelperAlice3 hfHelper;
   o2::analysis::Alice3MlResponse3Prong<float> mlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -205,18 +206,10 @@ struct Alice3Selector3Prong {
     return true;
   }
 
-  template <CharmHadAlice3 CharmHad, typename TCandidate>
+  template <CharmHadAlice3 CharmHad, bool SwapHypo, typename TCandidate>
   bool selectionCandidateMass(int const ptBin, const TCandidate& cand)
   {
-    float massCand{0.f};
-    if constexpr (CharmHad == CharmHadAlice3::Lc) {
-      if (cand.isSwapped()) {
-        massCand = hfHelper.invMassLcToPiKP(cand);
-      } else {
-        massCand = hfHelper.invMassLcToPKPi(cand);
-      }
-    }
-
+    float massCand = hfHelper.getCandMass<CharmHad, SwapHypo>(cand);
     // cut on mass window
     if (std::abs(massCand - MassReference) > cuts->get(ptBin, "m")) {
       return false;
@@ -287,20 +280,20 @@ struct Alice3Selector3Prong {
   template <CharmHadAlice3 CharmHad, typename CandType>
   void runSelect3Prong(CandType const& cands)
   {
-    bool isSel = false;
+    bool isSelMassHypo0{false};
+    bool isSelMassHypo1{false};
     std::vector<float> outputMl{-1.f, -1.f, -1.f};
     uint32_t pidMask = 0;
 
     // looping over 3-prong cands
     for (const auto& cand : cands) {
-      isSel = false;
       outputMl = {-1.f, -1.f, -1.f};
       pidMask = 0;
 
       auto ptCand = cand.pt();
       int const ptBin = findBin(binsPt, ptCand);
       if (ptBin == -1) {
-        candSelFlags(isSel, pidMask);
+        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -308,8 +301,10 @@ struct Alice3Selector3Prong {
       }
 
       // Here all cands pass the cut on the mass selection
-      if (!selectionCandidateMass<CharmHad>(ptBin, cand)) {
-        candSelFlags(isSel, pidMask);
+      bool const selMassHypo0 = selectionCandidateMass<CharmHad, false>(ptBin, cand);
+      bool const selMassHypo1 = selectionCandidateMass<CharmHad, true>(ptBin, cand);
+      if (!selMassHypo0 && !selMassHypo1) {
+        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -321,7 +316,7 @@ struct Alice3Selector3Prong {
 
       // Topological selection (TODO: track quality selection)
       if (!selectionTopol(cand, ptCand)) {
-        candSelFlags(isSel, pidMask);
+        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -334,7 +329,7 @@ struct Alice3Selector3Prong {
       // PID selection
       configurePidMask<CharmHad>(cand, pidMask);
       if (pidMask == 0) {
-        candSelFlags(isSel, pidMask);
+        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -352,7 +347,7 @@ struct Alice3Selector3Prong {
         isSelectedMl = mlResponse.isSelectedMl(inputFeaturesMassHypo0, ptCand, outputMl);
         candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         if (!isSelectedMl) {
-          candSelFlags(isSel, pidMask);
+          candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
           continue;
         }
 
@@ -361,8 +356,7 @@ struct Alice3Selector3Prong {
         }
       }
 
-      isSel = true;
-      candSelFlags(isSel, pidMask);
+      candSelFlags(selMassHypo0, selMassHypo1, pidMask);
     }
   }
 
@@ -371,7 +365,6 @@ struct Alice3Selector3Prong {
   /// \param tracks track table
   void processLc(CandsLcWMcTruth const& cands)
   {
-    LOG(info) << "Starting Lc 3-prong cand selection: " << cands.size() << " cands to be processed.";
     runSelect3Prong<CharmHadAlice3::Lc>(cands);
   }
   PROCESS_SWITCH(Alice3Selector3Prong, processLc, "Process 3 prong selection for Lc", true);

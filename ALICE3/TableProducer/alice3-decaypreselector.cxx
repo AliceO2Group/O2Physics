@@ -174,24 +174,18 @@ struct alice3decaypreselector {
         bitoff(selectionMap[track.globalIndex()], kTruePiMinusFromD);
 
       // Lambdac baryons
-      if (!checkPDG(track, +4122, +2212)) { //+4122 -> +2212 -321 +211
+      if (!checkPDG(track, +4122, +2212)) //+4122 -> +2212 -321 +211
         bitoff(selectionMap[track.globalIndex()], kTruePrPlusFromLc);
-      }
-      if (!checkPDG(track, +4122, -321)) { //+4122 -> +2212 -321 +211
+      if (!checkPDG(track, +4122, -321)) //+4122 -> +2212 -321 +211
         bitoff(selectionMap[track.globalIndex()], kTrueKaMinusFromLc);
-      }
-      if (!checkPDG(track, +4122, +211)) { //+4122 -> +2212 -321 +211
+      if (!checkPDG(track, +4122, +211)) //+4122 -> +2212 -321 +211
         bitoff(selectionMap[track.globalIndex()], kTruePiPlusFromLc);
-      }
-      if (!checkPDG(track, -4122, -2212)) { //-4122 -> -2212 +321 -211
+      if (!checkPDG(track, -4122, -2212)) //-4122 -> -2212 +321 -211
         bitoff(selectionMap[track.globalIndex()], kTruePrMinusFromLc);
-      }
-      if (!checkPDG(track, -4122, +321)) { //-4122 -> -2212 +321 -211
+      if (!checkPDG(track, -4122, +321)) //-4122 -> -2212 +321 -211
         bitoff(selectionMap[track.globalIndex()], kTrueKaPlusFromLc);
-      }
-      if (!checkPDG(track, -4122, -211)) { //-4122 -> -2212 +321 -211
+      if (!checkPDG(track, -4122, -211)) //-4122 -> -2212 +321 -211
         bitoff(selectionMap[track.globalIndex()], kTruePiMinusFromLc);
-      }
 
       // XiCC daughters
       if (!checkPDG(track, 4422, 211)) // 4422 -> 4232 211, pi from xicc

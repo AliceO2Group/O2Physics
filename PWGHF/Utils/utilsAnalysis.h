@@ -29,8 +29,6 @@
 namespace o2::analysis
 {
 
-enum CharmHadAlice3 { Lc = 1 };
-
 enum BHadMothers { NotMatched = 0,
                    BPlus,
                    BZero,

@@ -41,11 +41,11 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -94,10 +94,9 @@ struct alice3decayFinder {
   Produces<aod::Alice3PidLcs> pidInfoLcDaugs;    // contains PID info for Lc candidates
   Produces<aod::Alice3McGenFlags> mcGenFlags;    // contains MC gen info for 3-prong candidates
 
-  Configurable<bool> fillSwapHypo{"fillSwapHypo", true, "swap prong 0 and prong 2 in 3-prong case"};
   // Vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 1e9, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -105,7 +104,7 @@ struct alice3decayFinder {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // Operation and minimisation criteria
-  Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
+  Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"}; 
   Configurable<bool> doDCAplotsD{"doDCAplotsD", true, "do daughter prong DCA plots for D mesons"};
   Configurable<bool> doDCAplots3Prong{"doDCAplots3Prong", true, "do daughter prong DCA plots for Lc baryons"};
   Configurable<bool> doTopoPlotsForSAndB{"doTopoPlotsForSAndB", true, "do topological variable distributions for S and B separately"};
@@ -240,29 +239,29 @@ struct alice3decayFinder {
     float pt;
     float phi;
     float eta;
-    std::array<float, 3> Pdaug0;          // proton track
-    std::array<float, 3> Pdaug1;          // kaon track
-    std::array<float, 3> Pdaug2;          // pion track
-    std::array<float, 3> primaryVertex;   // primary vertex coordinates
-    std::array<float, 3> secondaryVertex; // secondary vertex coordinates
-    float impactParameterY0;              // impact parameters
-    float errorImpactParameterY0;         // impact parameters error
-    float impactParameterY1;              // impact parameters
-    float errorImpactParameterY1;         // impact parameters error
-    float impactParameterY2;              // impact parameters
-    float errorImpactParameterY2;         // impact parameters error
-    float impactParameterZ0;              // impact parameters
-    float errorImpactParameterZ0;         // impact parameters error
-    float impactParameterZ1;              // impact parameters
-    float errorImpactParameterZ1;         // impact parameters error
-    float impactParameterZ2;              // impact parameters
-    float errorImpactParameterZ2;         // impact parameters error
-    float errorDecayLength;               // normalized 3D decay length
-    float errorDecayLengthXY;             // normalized 3D decay length
-    float chi2PCA;                        // normalized 3D decay length
-    int flagMc;                           // 0 = bkg, pdg code for signal
-    int origin;                           // 1 = prompt, 2 = non-prompt
-    float ptBMotherRec;                   // pT of the B hadron mother (reconstructed)
+    std::array<float, 3> Pdaug0;           // proton track
+    std::array<float, 3> Pdaug1;           // kaon track
+    std::array<float, 3> Pdaug2;           // pion track
+    std::array<float, 3> primaryVertex;    // primary vertex coordinates
+    std::array<double, 3> secondaryVertex; // secondary vertex coordinates
+    float impactParameterY0;               // impact parameters
+    float errorImpactParameterY0;          // impact parameters error
+    float impactParameterY1;               // impact parameters
+    float errorImpactParameterY1;          // impact parameters error
+    float impactParameterY2;               // impact parameters
+    float errorImpactParameterY2;          // impact parameters error
+    float impactParameterZ0;               // impact parameters
+    float errorImpactParameterZ0;          // impact parameters error
+    float impactParameterZ1;               // impact parameters
+    float errorImpactParameterZ1;          // impact parameters error
+    float impactParameterZ2;               // impact parameters
+    float errorImpactParameterZ2;          // impact parameters error
+    float errorDecayLength;                // normalized 3D decay length
+    float errorDecayLengthXY;              // normalized 3D decay length
+    float chi2PCA;                         // normalized 3D decay length
+    int flagMc;                            // 0 = bkg, CharmHadAlice3 otherwise
+    int origin;                            // 1 = prompt, 2 = non-prompt
+    float ptBMotherRec;                    // pT of the B hadron mother (reconstructed)
   } cand3prong;
 
   template <typename TTrackType>
@@ -432,23 +431,20 @@ struct alice3decayFinder {
     cand3prong.Pdaug2[2] = P2[2];
 
     // MC truth check
+    cand3prong.flagMc = 0; // bkg
     int8_t sign = 0;
     auto arrayDaughters = std::array{prong0, prong1, prong2};
     int indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, motherPdgCode, daugsPdgCodes3Prong, true, &sign, 2);
     auto motherPart = mcParticles.rawIteratorAt(indexRec);
-    if (indexRec < 0) {
-      cand3prong.flagMc = 0; // bkg
-    } else {
+    if (indexRec > -1) {
       cand3prong.flagMc = motherPart.pdgCode() > 0 ? charmHadFlag : -charmHadFlag; // Particle
     }
 
     cand3prong.origin = 0;
-    if (indexRec > 0) {
-      LOG(info) << "indexRec: " << indexRec;
+    if (indexRec > -1) {
       auto motherParticle = mcParticles.rawIteratorAt(indexRec);
       std::vector<int> idxBhadMothers{};
       int origin = RecoDecay::getCharmHadronOrigin(mcParticles, motherParticle, false, &idxBhadMothers);
-      LOG(info) << "Origin: " << origin;
       cand3prong.origin = origin;
       cand3prong.ptBMotherRec = -1.f;
       if (origin == RecoDecay::OriginType::NonPrompt) {
@@ -661,7 +657,6 @@ struct alice3decayFinder {
       }
     }
     if (doprocessFindLc) {
-      LOG(info) << "Processing generated MC particles: total number = " << mcParticles.size();
       for (auto const& mcParticle : mcParticles) {
         if (std::abs(mcParticle.pdgCode()) != motherPdgCode) {
           mcGenFlags(-1, -1, -1);
@@ -676,11 +671,9 @@ struct alice3decayFinder {
         }
         mcGenFlags(origin, ptBMotherGen, mcParticle.pdgCode() ? charmHadFlag : -charmHadFlag);
         if (mcParticle.pdgCode() > 0) {
-          LOG(info) << "[P] Origin: " << origin << " PDG: " << charmHadFlag << " " << mcParticle.pdgCode();
           histos.fill(HIST("h2dGen3Prong"), mcParticle.pt(), mcParticle.eta());
         } else {
           histos.fill(HIST("h2dGen3ProngBar"), mcParticle.pt(), mcParticle.eta());
-          LOG(info) << "[AP] Origin: " << origin << " PDG: " << -charmHadFlag << " " << mcParticle.pdgCode();
         }
       }
     }
@@ -1015,10 +1008,9 @@ struct alice3decayFinder {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  template <bool FillSwapHypo, typename TProng>
+  template <typename TProng>
   void fill3ProngTable(aod::Collision const& collision, TProng const& prongs0, TProng const& prongs1, TProng const& prongs2, aod::McParticles const& mcParticles)
   {
-    // LOG(info) << "Filling 3-prong candidates with nprongs0: " << prongs0.size() << ", nprongs1: " << prongs1.size() << ", nprongs2: " << prongs2.size();
     for (auto const& prong0 : prongs0) {
       for (auto const& prong2 : prongs2) {
         if (prong2.globalIndex() == prong0.globalIndex())
@@ -1058,38 +1050,9 @@ struct alice3decayFinder {
                           std::sqrt(cand3prong.errorImpactParameterZ0),
                           std::sqrt(cand3prong.errorImpactParameterZ1),
                           std::sqrt(cand3prong.errorImpactParameterZ2),
-                          false, // is swapped hypothesis
                           candPx, candPy, candPz);
           mcRecFlags(cand3prong.origin, cand3prong.ptBMotherRec, cand3prong.flagMc); // placeholder for prompt/non-prompt
           fillPidTable(prong0, prong1, prong2);
-
-          if constexpr (FillSwapHypo) {
-            // fill also swapped hypothesis
-            candidate3Prong(collision.globalIndex(),
-                            cand3prong.primaryVertex[0], cand3prong.primaryVertex[1], cand3prong.primaryVertex[2],
-                            cand3prong.secondaryVertex[0], cand3prong.secondaryVertex[1], cand3prong.secondaryVertex[2],
-                            cand3prong.errorDecayLength, cand3prong.errorDecayLengthXY,
-                            cand3prong.chi2PCA,
-                            cand3prong.eta,
-                            cand3prong.phi,
-                            cand3prong.pt,
-                            prong2.globalIndex(), prong1.globalIndex(), prong0.globalIndex(),
-                            cand3prong.Pdaug2[0], cand3prong.Pdaug2[1], cand3prong.Pdaug2[2],
-                            cand3prong.Pdaug1[0], cand3prong.Pdaug1[1], cand3prong.Pdaug1[2],
-                            cand3prong.Pdaug0[0], cand3prong.Pdaug0[1], cand3prong.Pdaug0[2],
-                            cand3prong.impactParameterY2, cand3prong.impactParameterY1, cand3prong.impactParameterY0,
-                            std::sqrt(cand3prong.errorImpactParameterY2),
-                            std::sqrt(cand3prong.errorImpactParameterY1),
-                            std::sqrt(cand3prong.errorImpactParameterY0),
-                            cand3prong.impactParameterZ2, cand3prong.impactParameterZ1, cand3prong.impactParameterZ0,
-                            std::sqrt(cand3prong.errorImpactParameterZ2),
-                            std::sqrt(cand3prong.errorImpactParameterZ1),
-                            std::sqrt(cand3prong.errorImpactParameterZ0),
-                            true, // is swapped hypothesis
-                            candPx, candPy, candPz);
-            mcRecFlags(cand3prong.origin, cand3prong.ptBMotherRec, cand3prong.flagMc); // placeholder for prompt/non-prompt
-            fillPidTable(prong2, prong1, prong0);
-          }
         }
       }
     }
@@ -1128,17 +1091,8 @@ struct alice3decayFinder {
     }
 
     // Particles
-    if (fillSwapHypo) {
-      fill3ProngTable<true>(collision, tracksPrPlus, tracksKaMinus, tracksPiPlus, mcParticles);
-    } else {
-      fill3ProngTable<false>(collision, tracksPiPlus, tracksKaMinus, tracksPrPlus, mcParticles);
-    }
-    // Antiparticles
-    if (fillSwapHypo) {
-      fill3ProngTable<true>(collision, tracksPrMinus, tracksKaPlus, tracksPiMinus, mcParticles);
-    } else {
-      fill3ProngTable<false>(collision, tracksPiMinus, tracksKaPlus, tracksPrMinus, mcParticles);
-    }
+    fill3ProngTable(collision, tracksPrPlus, tracksKaMinus, tracksPiPlus, mcParticles);
+    fill3ProngTable(collision, tracksPrMinus, tracksKaPlus, tracksPiMinus, mcParticles);
   }
   PROCESS_SWITCH(alice3decayFinder, processFindLc, "find Lc Baryons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
