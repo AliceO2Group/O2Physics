@@ -1697,9 +1697,7 @@ struct TableMaker {
   }
 
   // produce the barrel-only DQ skimmed data model typically for UPC Pb-Pb (no centrality), subscribe to the DQ rapidity gap event filter (filter-PbPb)
-  void processPbPbWithFilterBarrelOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs, [[maybe_unused]] aod::FT0s const& ft0s,
-                                       [[maybe_unused]] aod::FV0As const& fv0as,
-                                       [[maybe_unused]] aod::FDDs const& fdds,
+  void processPbPbWithFilterBarrelOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs, aod::FT0s const&, aod::FV0As const&, aod::FDDs const&,
                                        MyBarrelTracksWithCov const& tracksBarrel,
                                        TrackAssoc const& trackAssocs)
   {
