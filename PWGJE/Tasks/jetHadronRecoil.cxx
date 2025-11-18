@@ -223,7 +223,6 @@ struct JetHadronRecoil {
     std::vector<double> ptTTAr;
     double phiTT = 0;
     double ptTT = 0;
-    int trigNumber = 0;
     int nTT = 0;
     double leadingPT = 0;
     double leadingTrackPt = 0;
@@ -269,7 +268,7 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPtTrackPtHard"), track.pt() / pTHat, track.pt(), weight);
     }
     if (nTT > 0) {
-      trigNumber = rand->Integer(nTT);
+      int trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
       ptTT = ptTTAr[trigNumber];
       if (isSigCol) {
@@ -359,7 +358,6 @@ struct JetHadronRecoil {
     std::vector<double> ptTTAr;
     double phiTT = 0;
     double ptTT = 0;
-    int trigNumber = 0;
     int nTT = 0;
     double leadingPT = 0;
     double leadingTrackPt = 0;
@@ -412,7 +410,7 @@ struct JetHadronRecoil {
       }
     }
     if (nTT > 0) {
-      trigNumber = rand->Integer(nTT);
+      int trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
       ptTT = ptTTAr[trigNumber];
       if (isSigCol) {
@@ -502,7 +500,6 @@ struct JetHadronRecoil {
     std::vector<double> ptTTAr;
     double phiTT = 0;
     double ptTT = 0;
-    int trigNumber = 0;
     int nTT = 0;
     double leadingPartPt = 0;
     double leadingJetPt = 0;
@@ -550,7 +547,7 @@ struct JetHadronRecoil {
     }
 
     if (nTT > 0) {
-      trigNumber = rand->Integer(nTT);
+      int trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
       ptTT = ptTTAr[trigNumber];
       if (isSigCol) {
@@ -620,8 +617,6 @@ struct JetHadronRecoil {
   void fillMatchedHistograms(T const& jetsBase, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     for (const auto& jetBase : jetsBase) {
-      double dR = 0;
-      double dRp = 0;
 
       if (jetBase.pt() > pTHatMaxMCD * pTHat) {
         if (outlierRejectEvent) {
@@ -631,7 +626,7 @@ struct JetHadronRecoil {
         }
       }
 
-      dR = getWTAaxisDifference(jetBase, tracks);
+      double dR = getWTAaxisDifference(jetBase, tracks);
 
       if (jetBase.has_matchedJetGeo()) {
         for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
@@ -643,7 +638,7 @@ struct JetHadronRecoil {
             }
           }
 
-          dRp = getWTAaxisDifference(jetTag, particles);
+          double dRp = getWTAaxisDifference(jetTag, particles);
 
           registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
           registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
@@ -666,7 +661,6 @@ struct JetHadronRecoil {
     std::vector<double> phiTTArPart;
     double phiTT = 0;
     double phiTTPart = 0;
-    int trigNumber = 0;
     int nTT = 0;
 
     for (const auto& track : tracks) {
@@ -699,7 +693,7 @@ struct JetHadronRecoil {
     }
 
     if (nTT > 0) {
-      trigNumber = rand->Integer(nTT);
+      int trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
       phiTTPart = phiTTArPart[trigNumber];
     } else {
@@ -707,8 +701,6 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jetBase : jetsBase) {
-      double dR = 0;
-      double dRp = 0;
 
       if (jetBase.pt() > pTHatMaxMCD * pTHat) {
         if (outlierRejectEvent) {
@@ -719,7 +711,7 @@ struct JetHadronRecoil {
       }
 
       float dphi = RecoDecay::constrainAngle(jetBase.phi() - phiTT);
-      dR = getWTAaxisDifference(jetBase, tracks);
+      double dR = getWTAaxisDifference(jetBase, tracks);
 
       if (jetBase.has_matchedJetGeo()) {
         for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
@@ -732,7 +724,7 @@ struct JetHadronRecoil {
           }
 
           float dphip = RecoDecay::constrainAngle(jetTag.phi() - phiTTPart);
-          dRp = getWTAaxisDifference(jetTag, particles);
+          double dRp = getWTAaxisDifference(jetTag, particles);
           registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
           registry.fill(HIST("hPhiMatched2d"), jetTag.phi(), jetTag.pt(), weight);
           registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);

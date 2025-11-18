@@ -454,7 +454,7 @@ struct HfCorrelatorLcScHadrons {
     AxisSpec const axisRapidity = {100, -2, 2, "Rapidity"};
     AxisSpec axisSign = {5, -2.5, 2.5, "Sign"};
     AxisSpec axisPtV0 = {500, 0., 50.0, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisMassV0 = {200, 0.9f, 1.2f, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
+    AxisSpec axisMassV0 = {300, 1.05f, 1.2f, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
 
     registry.add("hPtCand", "Lc,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtLc}});
     registry.add("hPtProng0", "Lc,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtLc}});
@@ -829,8 +829,8 @@ struct HfCorrelatorLcScHadrons {
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == 0) ||
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == 2);
           isSignal =
-            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == ChargeZero) ||
-            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == ChargeScPlusPlus);
+            (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi && chargeCand == ChargeZero) ||
+            (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi && std::abs(chargeCand) == ChargeScPlusPlus);
 
           auto trackPos1 = candidateLc.template prong0_as<aod::TracksWMc>();
           auto trackPos2 = candidateLc.template prong2_as<aod::TracksWMc>();
@@ -1057,8 +1057,8 @@ struct HfCorrelatorLcScHadrons {
           }
           if constexpr (IsMcRec) {
             isSignal =
-              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == ChargeZero) ||
-              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == ChargeScPlusPlus);
+              ((std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi) && chargeCand == ChargeZero) ||
+              ((std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi) && std::abs(chargeCand) == ChargeScPlusPlus);
             signSoftPion = candidate.template prong1_as<aod::TracksWMc>().sign();
           } else {
             signSoftPion = candidate.template prong1_as<aod::Tracks>().sign();

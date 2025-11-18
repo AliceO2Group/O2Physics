@@ -276,8 +276,8 @@ struct JetTaggerHFTask {
       }
     }
     if (doprocessAlgorithmGNN) {
-      float dbRange;
       if (jet.pt() >= jetpTMin) {
+        float dbRange;
         if (scoreML[jet.globalIndex()] < dbMin) {
           dbRange = 0.5; // underflow
         } else if (scoreML[jet.globalIndex()] < dbMax) {
@@ -571,7 +571,7 @@ struct JetTaggerHFTask {
       }
 
       if (bMlResponse.getOutputNodes() > 1) {
-        auto mDb = [](std::vector<float> scores, float fC) {
+        auto mDb = [](const std::vector<float>& scores, float fC) {
           return std::log(scores[2] / (fC * scores[1] + (1 - fC) * scores[0]));
         };
 

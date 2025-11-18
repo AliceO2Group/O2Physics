@@ -16,20 +16,22 @@
 /// adaped from k892analysis.cxx by Bong-Hwi Lim <bong-hwi.lim@cern.ch>, Sawan Sawan <sawan.sawan@cern.ch>
 /// \author Marta Urioni <marta.urioni@cern.ch>
 
-#include <TLorentzVector.h>
-#include "TF1.h"
-#include <vector>
+#include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "DataFormatsParameters/GRPObject.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TF1.h"
+#include <TLorentzVector.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

@@ -39,7 +39,7 @@
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
 #include "Common/Core/TPCVDriftManager.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 

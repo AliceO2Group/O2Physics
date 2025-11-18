@@ -205,7 +205,8 @@ struct SingleTrackQCMC {
     Configurable<float> cfg_max_phi_track{"cfg_max_phi_track", 6.3, "max phi for single track"};
     Configurable<int> cfg_min_ncluster_mft{"cfg_min_ncluster_mft", 5, "min ncluster MFT"};
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
-    Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2"};
+    Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2/ndf"};
+    Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+6, "max chi2/ndf"};
     Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
@@ -317,10 +318,6 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PID/positive/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
         fRegistry.add("Track/PID/positive/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        // fRegistry.add("Track/PID/positive/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        // fRegistry.add("Track/PID/positive/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        // fRegistry.add("Track/PID/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        // fRegistry.add("Track/PID/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
         fRegistry.add("Track/PID/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
         fRegistry.add("Track/PID/positive/hMeanClusterSizeITSob", "mean cluster size ITS outer barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
@@ -363,6 +360,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
         fRegistry.add("Track/lf/positive/hPDCA", "pDCA;R at absorber (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
         fRegistry.add("Track/lf/positive/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
+        fRegistry.add("Track/lf/positive/hChi2MFT", "chi2MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
         fRegistry.add("Track/lf/positive/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
         fRegistry.add("Track/lf/positive/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
         fRegistry.add("Track/lf/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
@@ -581,6 +579,7 @@ struct SingleTrackQCMC {
     fDimuonCut.SetNClustersMFT(dimuoncuts.cfg_min_ncluster_mft, 10);
     fDimuonCut.SetNClustersMCHMID(dimuoncuts.cfg_min_ncluster_mch, 20);
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
+    fDimuonCut.SetChi2MFT(0.f, dimuoncuts.cfg_max_chi2mft);
     fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
     fDimuonCut.SetMatchingChi2MCHMID(0.f, dimuoncuts.cfg_max_matching_chi2_mchmid);
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
@@ -693,10 +692,6 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
         fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-        // fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
-        // fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
-        // fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
-        // fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
       }
     } else {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
@@ -742,10 +737,6 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
         fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-        // fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
-        // fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
-        // fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
-        // fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
       }
     }
   }
@@ -784,6 +775,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hMFTClusterMap"), track.mftClusterMap());
@@ -810,6 +802,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hMFTClusterMap"), track.mftClusterMap());
@@ -908,14 +901,14 @@ struct SingleTrackQCMC {
             } else {
               fillTrackInfo<5, TMCParticles>(track);
             }
-          } else if (IsFromBeauty(mctrack, mcparticles) > 0) { // b is found in full decay chain.
-            if (IsFromCharm(mctrack, mcparticles) > 0) {       // c is found in full decay chain.
-              fillTrackInfo<9, TMCParticles>(track);
+          } else if (isWeakDecayFromBeautyHadron(mctrack, mcparticles)) { // hb->l is found in full decay chain.
+            fillTrackInfo<8, TMCParticles>(track);
+          } else if (isWeakDecayFromCharmHadron(mctrack, mcparticles)) { // hc->l is found in full decay chain.
+            if (IsFromBeauty(mcmother, mcparticles) > 0) {
+              fillTrackInfo<9, TMCParticles>(track); // hb->hc->l is fond.
             } else {
-              fillTrackInfo<8, TMCParticles>(track);
+              fillTrackInfo<7, TMCParticles>(track); // prompt hc->l is found.
             }
-          } else if (IsFromCharm(mctrack, mcparticles) > 0) { // c is found in full decay chain. Not from b.
-            fillTrackInfo<7, TMCParticles>(track);
           }
         } else {
           if (pdg_mother == 22) { // photon conversion
@@ -1013,14 +1006,14 @@ struct SingleTrackQCMC {
           } else {
             fRegistry.fill(HIST("Generated/PromptPsi2S/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
           }
-        } else if (IsFromBeauty(lepton, mcparticles) > 0) { // b is found in full decay chain.
-          if (IsFromCharm(lepton, mcparticles) > 0) {       // c is found in full decay chain.
-            fRegistry.fill(HIST("Generated/b2c2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+        } else if (isWeakDecayFromBeautyHadron(lepton, mcparticles)) { // hb->l is found
+          fRegistry.fill(HIST("Generated/b2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+        } else if (isWeakDecayFromCharmHadron(lepton, mcparticles)) { // hc->l is found in full decay chain.
+          if (IsFromBeauty(mcmother, mcparticles) > 0) {
+            fRegistry.fill(HIST("Generated/b2c2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton); // hb->hc->l is found in full decay chain.
           } else {
-            fRegistry.fill(HIST("Generated/b2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            fRegistry.fill(HIST("Generated/c2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton); // prompt hc->l is found in full decay chain.
           }
-        } else if (IsFromCharm(lepton, mcparticles) > 0) { // c is found in full decay chain. Not from b.
-          fRegistry.fill(HIST("Generated/c2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
         }
       } // end of mc lepton loop per collision
 

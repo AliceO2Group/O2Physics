@@ -153,6 +153,9 @@ inline float getMass(int pdgCode)
     case kSigmaMinus:
       mass = o2::constants::physics::MassSigmaMinus;
       break;
+    case kSigmaPlus:
+      mass = o2::constants::physics::MassSigmaPlus;
+      break;
     case kXiMinus:
       mass = o2::constants::physics::MassXiMinus;
       break;

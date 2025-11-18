@@ -25,6 +25,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
@@ -79,9 +80,14 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> rMax{"rMax", 0.24, "maximum distance of subtraction"};
   Configurable<float> eventEtaMax{"eventEtaMax", 0.9, "maximum pseudorapidity of event"};
   Configurable<bool> doRhoMassSub{"doRhoMassSub", true, "perfom mass subtraction as well"};
+  Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
+  Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
+  Configurable<double> ghostArea{"ghostArea", 0.005, "Area per ghost"};
+  Configurable<double> ghostGridScatter{"ghostGridScatter", 1.0, "Grid scatter"};
+  Configurable<double> ghostKtScatter{"ghostKtScatter", 0.1, "kT scatter"};
+  Configurable<double> ghostMeanPt{"ghostMeanPt", 1e-100, "Mean ghost pT"};
 
   JetBkgSubUtils eventWiseConstituentSubtractor;
-  float bkgPhiMax_;
   std::vector<fastjet::PseudoJet> inputParticles;
   std::vector<fastjet::PseudoJet> tracksSubtracted;
   int trackSelection = -1;
@@ -98,6 +104,9 @@ struct eventWiseConstituentSubtractorTask {
     eventWiseConstituentSubtractor.setDoRhoMassSub(doRhoMassSub);
     eventWiseConstituentSubtractor.setConstSubAlphaRMax(alpha, rMax);
     eventWiseConstituentSubtractor.setMaxEtaEvent(eventEtaMax);
+    fastjet::GhostedAreaSpec ghostAreaSpec(ghostRapMax, ghostRepeat, ghostArea,
+                                           ghostGridScatter, ghostKtScatter, ghostMeanPt);
+    eventWiseConstituentSubtractor.setGhostAreaSpec(ghostAreaSpec);
 
     if (applyTrackingEfficiency) {
       if (trackingEfficiencyPtBinning->size() < 2) {
@@ -137,7 +146,7 @@ struct eventWiseConstituentSubtractorTask {
 
       tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, candidate.rho(), candidate.rhoM());
       for (auto const& trackSubtracted : tracksSubtracted) {
-        particleSubTable(candidate.globalIndex(), trackSubtracted.pt(), trackSubtracted.eta(), trackSubtracted.phi(), trackSubtracted.rap(), trackSubtracted.e(), 211, 1, 1, 1); // everything after phi is artificial and should not be used for analyses
+        particleSubTable(candidate.globalIndex(), trackSubtracted.pt(), trackSubtracted.eta(), trackSubtracted.phi(), trackSubtracted.rap(), trackSubtracted.e(), 211, 0, static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)); // everything after phi is artificial and should not be used for analyses
       }
     }
   }
@@ -166,12 +175,12 @@ struct eventWiseConstituentSubtractorTask {
     }
     inputParticles.clear();
     tracksSubtracted.clear();
-    jetfindingutilities::analyseParticles<true, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<false, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
 
     tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, mcCollision.rho(), mcCollision.rhoM());
 
     for (auto const& trackSubtracted : tracksSubtracted) {
-      particleSubtractedTable(mcCollision.globalIndex(), trackSubtracted.pt(), trackSubtracted.eta(), trackSubtracted.phi(), trackSubtracted.rap(), trackSubtracted.e(), 211, 1, 1, 1); // everything after phi is artificial and should not be used for analyses
+      particleSubtractedTable(mcCollision.globalIndex(), trackSubtracted.pt(), trackSubtracted.eta(), trackSubtracted.phi(), trackSubtracted.rap(), trackSubtracted.e(), 211, 0, static_cast<uint8_t>(o2::aod::mcparticle::enums::PhysicalPrimary)); // everything after phi is artificial and should not be used for analyses
     }
   }
   PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processMcCollisions, "Fill table of subtracted tracks for Mc collisions", false);

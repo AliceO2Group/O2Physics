@@ -113,7 +113,8 @@ enum class V0 : o2::aod::femtodatatypes::V0Type {
 };
 
 enum class Kink : o2::aod::femtodatatypes::KinkType {
-  kSigma
+  kSigma,
+  kSigmaPlus
 };
 
 enum class Cascade : o2::aod::femtodatatypes::CascadeType {
