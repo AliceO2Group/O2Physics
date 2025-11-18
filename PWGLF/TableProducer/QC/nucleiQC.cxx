@@ -22,9 +22,9 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -51,8 +51,8 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "Math/Vector4D.h"
-#include "TRandom3.h"
 #include "TMCProcess.h"
+#include "TRandom3.h"
 
 #include <algorithm>
 #include <array>
