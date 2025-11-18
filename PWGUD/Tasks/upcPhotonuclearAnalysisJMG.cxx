@@ -743,7 +743,7 @@ struct UpcPhotonuclearAnalysisJMG {
       }
       histos.fill(HIST("Events/hCountCollisionsMixed"), 2);
       // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
-      histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
+      // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
       fillCorrelationsUD(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), MixedEventTag{});
       // LOGF(info, "Filling mixed events");
 
@@ -902,6 +902,17 @@ struct UpcPhotonuclearAnalysisJMG {
     }
     // LOGF(debug, "Filling same events");
     histos.fill(HIST("eventcount"), -2);
+    if (minMultiplicity <= multiplicity && multiplicity <= range1Max) {
+      histos.fill(HIST("eventcount"), 1);
+    } else if (range2Min <= multiplicity && multiplicity <= range2Max) {
+      histos.fill(HIST("eventcount"), 2);
+    } else if (range3Min <= multiplicity && multiplicity <= range3Max) {
+      histos.fill(HIST("eventcount"), 3);
+    } else if (range4Min <= multiplicity && multiplicity <= range4Max) {
+      histos.fill(HIST("eventcount"), 4);
+    } else if (range5Min <= multiplicity && multiplicity <= range5Max) {
+      histos.fill(HIST("eventcount"), 5);
+    }
     fillQAUD(reconstructedTracks, multiplicity);
     fillCorrelationsUD(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ(), SameEventTag{});
 
