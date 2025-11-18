@@ -764,7 +764,7 @@ struct HfTaskDplus {
         if (storeIR) {
           ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
         }
-
+        static constexpr auto kHSparseMass = HIST("hSparseMass");
         // Lambda function to fill THn - handles both ML and non-ML cases
         auto fillTHnData = [&](const auto& candidate) {
           // Pre-calculate vector size to avoid reallocations
@@ -807,7 +807,7 @@ struct HfTaskDplus {
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
           valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
           valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
-          registry.get<THnSparse>(HIST("hSparseMass"))->Fill(valuesToFill.data());
+          registry.get<THnSparse>(kHSparseMass)->Fill(valuesToFill.data());
         };
 
         for (const auto& candidate : groupedDplusCandidates) {
