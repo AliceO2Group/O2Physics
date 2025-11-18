@@ -132,6 +132,7 @@ struct OnTheFlyTracker {
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
     ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
 
+    ConfigurableAxis axisPtRes{"axisPtRes", {200, -0.4f, 0.4f}, "#Delta p_{T} / Reco p_{T}"};
     ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
     ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
 
@@ -351,6 +352,12 @@ struct OnTheFlyTracker {
           histPointers.insert({histPath + "hMassXi", histos.add((histPath + "hMassXi").c_str(), "hMassXi", {kTH1D, {{axes.axisXiMass}}})});
         }
 
+        if (doExtraQA) {
+          histPointers.insert({histPath + "h2dPtRes", histos.add((histPath + "h2dPtRes").c_str(), "h2dPtRes", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}})});
+          histPointers.insert({histPath + "h2dDCAxy", histos.add((histPath + "h2dDCAxy").c_str(), "h2dDCAxy", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}})});
+          histPointers.insert({histPath + "h2dDCAz", histos.add((histPath + "h2dDCAz").c_str(), "h2dDCAz", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}})});
+        }
+
       } // end config loop
     }
 
@@ -372,8 +379,6 @@ struct OnTheFlyTracker {
     if (doExtraQA) {
       histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
       histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
-      histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axes.axisMomentum, axes.axisDCA});
-      histos.add("h2dDCAz", "h2dDCAz", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
       histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axes.axisX});
       histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axes.axisX});
@@ -981,6 +986,7 @@ struct OnTheFlyTracker {
         getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
 
       if (doExtraQA) {
+        getHist(TH2, histPath + "h2dPtRes")->Fill(trackParCov.getPt(), (trackParCov.getPt() - mcParticle.pt()) / trackParCov.getPt());
         histos.fill(HIST("hRecoTrackX"), trackParCov.getX());
       }
 
@@ -1076,8 +1082,8 @@ struct OnTheFlyTracker {
           dcaZ = dcaInfo.getZ();
         }
         if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
-          histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
-          histos.fill(HIST("h2dDCAz"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxy")->Fill(trackParametrization.getPt(), dcaXY * 1e+4);
+          getHist(TH2, histPath + "h2dDCAz")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         if (cascadeDecaySettings.doXiQA) {
@@ -1198,8 +1204,10 @@ struct OnTheFlyTracker {
     }
 
     // do bookkeeping of fastTracker tracking
-    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker[icfg]->GetCovMatNotOK());
-    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker[icfg]->GetCovMatOK());
+    if (enableSecondarySmearing) {
+      histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker[icfg]->GetCovMatNotOK());
+      histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker[icfg]->GetCovMatOK());
+    }
   } // end process
 
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
