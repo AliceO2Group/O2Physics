@@ -93,7 +93,7 @@ struct LumiStabilityTask {
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-    const AxisSpec axisTimeRate{int(double(43200) / (nOrbitsPerTF * 89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for Run2/3).
+    const AxisSpec axisTimeRate{static_cast<int>(static_cast<double>(43200) / (nOrbitsPerTF * 89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for 2022/2023).
     const AxisSpec timeAxis{1200, 0., 1200., "#bf{t-t_{SOF} (min)}"};
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTrigger});
@@ -434,7 +434,8 @@ struct LumiStabilityTask {
       std::vector<int> channelA;
       std::vector<int> channelC;
       int minLimit = 0;
-      for (auto i = 0; i < 8; i++) {
+      int maxNChanels = 8;
+      for (auto i = 0; i < maxNChanels; i++) {
         if (sideA[i] > minLimit) {
           channelA.push_back(i);
         }
@@ -635,7 +636,7 @@ struct LumiStabilityTask {
               auto sideCPast = fddPast.chargeC();
               std::vector<int> channelAPast;
               std::vector<int> channelCPast;
-              int maxNChanels = 8
+              int maxNChanels = 8;
               for (auto i = 0; i < maxNChanels; i++) {
                 if (sideAPast[i] > 0) {
                   channelAPast.push_back(i);
