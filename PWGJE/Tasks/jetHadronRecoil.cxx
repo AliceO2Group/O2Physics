@@ -1017,7 +1017,7 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeightedWithRhoSubtraction, "process MC matched with event weights (inc jets) and rho subtraction", false);
 
-  void processRecoilJetsMCPMCDMatched(aod::JetMcCollision const& mccollision,
+  void processRecoilJetsMCPMCDMatched(aod::JetMcCollision::iterator const& mccollision,
                                       soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                       soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                       soa::Filtered<aod::JetParticles> const& particles,
@@ -1049,7 +1049,7 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatched, "process MC matched (recoil jets)", false);
 
-  void processRecoilJetsMCPMCDMatchedWeighted(aod::JetMcCollision const& mccollision,
+  void processRecoilJetsMCPMCDMatchedWeighted(aod::JetMcCollision::iterator const& mccollision,
                                               soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                               soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                               soa::Filtered<aod::JetTracksMCD> const& tracks,
