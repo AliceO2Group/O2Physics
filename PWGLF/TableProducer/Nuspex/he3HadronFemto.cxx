@@ -23,9 +23,9 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -122,12 +122,12 @@ enum ParticleFlags {
 };
 
 std::array<float, 3> kDCAxyResolutionParams[static_cast<int>(Species::kAllSpecies)] = {
-  {0.0118, 0.6889, 0.0017},  // He3
-  {0.0032, 0.5206, 0.0012}   // Pr
+  {0.0118, 0.6889, 0.0017}, // He3
+  {0.0032, 0.5206, 0.0012}  // Pr
 };
 std::array<float, 3> kDCAzResolutionParams[static_cast<int>(Species::kAllSpecies)] = {
-  {0.1014, 1.7512, 0.0024},    // He3
-  {0.0021, 1.1122, 0.0021}     // Pr
+  {0.1014, 1.7512, 0.0024}, // He3
+  {0.0021, 1.1122, 0.0021}  // Pr
 };
 
 } // namespace
@@ -213,7 +213,7 @@ struct he3HadronFemto {
 
   // Selections
   Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
-  
+
   Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> settingCutRigidityMinHe3{"settingCutRigidityMinHe3", 0.8f, "Minimum rigidity for He3"};
   Configurable<float> settingCutEta{"settingCutEta", 0.9f, "Eta cut on daughter track"};
@@ -241,7 +241,7 @@ struct he3HadronFemto {
   Configurable<bool> settingEnableDCAfitter{"settingEnableDCAfitter", false, "Enable DCA fitter"};
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingIsMC{"settingIsMC", false, "Run MC"};
-  
+
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
   Configurable<bool> settingFillQa{"settingFillQa", false, "Fill QA table"};
   Configurable<bool> settingFillPrimariesAndMixedMc{"settingFillPrimariesAndMixedMc", false, "Fill primary MC tracks and mixed tracks (e.g. a primary track and one from Li4)"};
@@ -302,7 +302,7 @@ struct he3HadronFemto {
       {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
-      
+
       {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
       {"He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"He3/hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
@@ -313,7 +313,7 @@ struct he3HadronFemto {
       {"He3/h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
       {"He3/h2NSigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
       {"He3/h2NSigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-      
+
       {"Had/hNClsHadITS", "had;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
       {"Had/hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
       {"Had/hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -469,22 +469,23 @@ struct he3HadronFemto {
     return true;
   }
 
-  float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char * dcaType = "xy") {
-  
-  std::array<float, 3> parameters;
-  if (std::strcmp(dcaType, "xy") == 0) {
-    parameters = kDCAxyResolutionParams[iSpecies];
-  } else if (std::strcmp(dcaType, "z") == 0) {
-    parameters = kDCAzResolutionParams[iSpecies];
-  } else {
-    LOG(error) << "Invalid dcaType. Accepted types are 'xy' 'z'";
-    parameters = {0., 0., 0.};
+  float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
+  {
+
+    std::array<float, 3> parameters;
+    if (std::strcmp(dcaType, "xy") == 0) {
+      parameters = kDCAxyResolutionParams[iSpecies];
+    } else if (std::strcmp(dcaType, "z") == 0) {
+      parameters = kDCAzResolutionParams[iSpecies];
+    } else {
+      LOG(error) << "Invalid dcaType. Accepted types are 'xy' 'z'";
+      parameters = {0., 0., 0.};
+    }
+    const float sigma = parameters[0] *
+                          std::exp(-std::abs(pt) * parameters[1]) +
+                        parameters[2];
+    return dca / sigma;
   }
-  const float sigma = parameters[0] *
-                      std::exp(- std::abs(pt) * parameters[1]) +
-                      parameters[2];
-  return dca / sigma;
-}
 
   template <typename Ttrack>
   bool selectDcaNsigmaCut(const Ttrack& candidate, const int ispecies)
@@ -1312,7 +1313,7 @@ struct he3HadronFemto {
   {
     if (!selectCollision</*isMC*/ false>(collision, bcs))
       return;
-    
+
     for (const auto& track : tracks) {
 
       if (!selectTrack(track, Species::kHad))
@@ -1329,13 +1330,13 @@ struct he3HadronFemto {
           mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.pt(), tofNSigmaHad);
         }
       }
-      
+
       if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(track, Species::kHe3))
         continue;
 
       mQaRegistry.fill(HIST("He3/hHe3Pt"), track.pt() * 2.f);
       mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
-      mQaRegistry.fill(HIST("He3/hDCAzHe3"), track.dcaZ());  
+      mQaRegistry.fill(HIST("He3/hDCAzHe3"), track.dcaZ());
 
       bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
       float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
@@ -1348,7 +1349,6 @@ struct he3HadronFemto {
     }
   }
   PROCESS_SWITCH(he3HadronFemto, processPurity, "Process for purity studies", false);
-
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
