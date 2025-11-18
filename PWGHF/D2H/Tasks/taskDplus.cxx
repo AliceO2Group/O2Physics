@@ -718,7 +718,7 @@ struct HfTaskDplus {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
-      auto bc = collision.template bc_as<BCsType>();
+      const auto& bc = collision.template bc_as<BCsType>();
 
       // Determine gap type using SGSelector with BC range checking
       const auto gapResult = hf_upc::determineGapType(collision, bcs, upcThresholds);
