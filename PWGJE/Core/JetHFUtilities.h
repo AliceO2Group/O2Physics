@@ -544,10 +544,9 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
  *
  * @param track track that is being checked
  * @param candidate HF candidate that is being checked
- * @param tracks the track table
  */
-template <typename T, typename U, typename V>
-bool isHFDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
+template <typename T, typename U>
+bool isHFDaughterTrack(T& track, U& candidate)
 {
   if constexpr (isD0Candidate<U>()) {
     if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {

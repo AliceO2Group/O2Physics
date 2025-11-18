@@ -11,24 +11,37 @@
 
 /// \file createEMEventPhoton.cxx
 /// \brief This code produces reduced events for photon analyses.
-///
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+//
 #include "PWGJE/DataModel/Jet.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Qvectors.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TH2.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 using namespace o2;
@@ -37,7 +50,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
+using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
@@ -209,26 +222,26 @@ struct CreateEMEventPhoton {
 
       if constexpr (eventtype == EMEventType::kEvent) {
         eventCent(105.f, 105.f, 105.f);
-        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
-                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
+        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
+                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
       } else if constexpr (eventtype == EMEventType::kEvent_Cent) {
         eventCent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
-        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
-                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
+        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
+                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
       } else if constexpr (eventtype == EMEventType::kEvent_Cent_Qvec) {
         eventCent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         const size_t qvecSize = collision.qvecFT0CReVec().size();
         if (qvecSize >= 2) { // harmonics 2,3
-          eventQvec(collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0AReVec()[0], collision.qvecFT0AImVec()[0], collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.qvecBPosReVec()[0], collision.qvecBPosImVec()[0], collision.qvecBNegReVec()[0], collision.qvecBNegImVec()[0], collision.qvecBTotReVec()[0], collision.qvecBTotImVec()[0],
-                    collision.qvecFT0MReVec()[1], collision.qvecFT0MImVec()[1], collision.qvecFT0AReVec()[1], collision.qvecFT0AImVec()[1], collision.qvecFT0CReVec()[1], collision.qvecFT0CImVec()[1], collision.qvecBPosReVec()[1], collision.qvecBPosImVec()[1], collision.qvecBNegReVec()[1], collision.qvecBNegImVec()[1], collision.qvecBTotReVec()[1], collision.qvecBTotImVec()[1]);
+          eventQvec(collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0AReVec()[0], collision.qvecFT0AImVec()[0], collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.qvecFV0AReVec()[0], collision.qvecFV0AImVec()[0], collision.qvecBPosReVec()[0], collision.qvecBPosImVec()[0], collision.qvecBNegReVec()[0], collision.qvecBNegImVec()[0], collision.qvecBTotReVec()[0], collision.qvecBTotImVec()[0],
+                    collision.qvecFT0MReVec()[1], collision.qvecFT0MImVec()[1], collision.qvecFT0AReVec()[1], collision.qvecFT0AImVec()[1], collision.qvecFT0CReVec()[1], collision.qvecFT0CImVec()[1], collision.qvecFV0AReVec()[1], collision.qvecFV0AImVec()[1], collision.qvecBPosReVec()[1], collision.qvecBPosImVec()[1], collision.qvecBNegReVec()[1], collision.qvecBNegImVec()[1], collision.qvecBTotReVec()[1], collision.qvecBTotImVec()[1]);
         } else if (qvecSize >= 1) { // harmonics 2
-          eventQvec(collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0AReVec()[0], collision.qvecFT0AImVec()[0], collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.qvecBPosReVec()[0], collision.qvecBPosImVec()[0], collision.qvecBNegReVec()[0], collision.qvecBNegImVec()[0], collision.qvecBTotReVec()[0], collision.qvecBTotImVec()[0],
-                    qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
+          eventQvec(collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0AReVec()[0], collision.qvecFT0AImVec()[0], collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.qvecFV0AReVec()[0], collision.qvecFV0AImVec()[0], collision.qvecBPosReVec()[0], collision.qvecBPosImVec()[0], collision.qvecBNegReVec()[0], collision.qvecBNegImVec()[0], collision.qvecBTotReVec()[0], collision.qvecBTotImVec()[0],
+                    qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
         }
       } else {
         eventCent(105.f, 105.f, 105.f);
-        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
-                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
+        eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
+                  qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
       }
     } // end of collision loop
 

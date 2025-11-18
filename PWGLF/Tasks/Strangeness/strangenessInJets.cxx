@@ -21,20 +21,21 @@
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -973,7 +974,7 @@ struct StrangenessInJets {
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-    auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
+    auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
     // Jet selection
     bool isAtLeastOneJetSelected = false;
@@ -1253,7 +1254,7 @@ struct StrangenessInJets {
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
 
       // Estimate background energy density (rho) in perpendicular cone
-      auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
       // Loop over clustered jets
       for (const auto& jet : jets) {
@@ -1519,7 +1520,7 @@ struct StrangenessInJets {
       // Cluster particles using the anti-kt algorithm
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-      auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
       // Jet selection
       bool isAtLeastOneJetSelected = false;

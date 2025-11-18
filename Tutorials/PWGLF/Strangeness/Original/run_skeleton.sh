@@ -1,14 +1,20 @@
 #!/bin/bash
 # log file where the terminal output will be saved
-STEP="0"
-LOGFILE="log-${STEP}.txt"
+STEP="skeleton"
+LOGFILE="log-STEP${STEP}.txt"
 
 #directory of this script
 DIR_THIS=$PWD
 
-OPTION="-b --configuration json://configuration_step0.json"
+OPTION="-b --configuration json://configuration_skeleton.json"
 
-o2-analysis-lf-cascadespawner "${OPTION}" | o2-analysistutorial-lf-strangeness-pbpb-step0 "${OPTION}" --aod-file @input_data.txt > "$LOGFILE" 2>&1
+o2-analysis-trackselection ${OPTION} |
+o2-analysis-ft0-corrected-table ${OPTION} |
+o2-analysis-multcenttable ${OPTION} |
+o2-analysis-event-selection-service ${OPTION} |
+o2-analysis-pid-tpc-service ${OPTION} |
+o2-analysis-propagationservice ${OPTION} |
+o2-analysistutorial-lf-strangeness-skeleton ${OPTION} --aod-file @input_data.txt > "$LOGFILE" 2>&1
 
 # report status
 rc=$?

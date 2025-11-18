@@ -80,7 +80,8 @@ class FemtoDreamV0Selection
   bool isSelectedMinimal(C const& col, V const& v0, T const& posTrack,
                          T const& negTrack);
 
-  template <typename C, typename V, typename T>
+  template <o2::aod::femtodreamparticle::ParticleType part,
+            typename C, typename V, typename T>
   void fillLambdaQA(C const& col, V const& v0, T const& posTrack,
                     T const& negTrack);
 
@@ -344,36 +345,36 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
     mQAHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(),
                               "", kTH2F, {massAxisLambda, massAxisAntiLambda});
 
-    posDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    posDaughTrack.init<daugh,
                        aod::femtodreamparticle::TrackType::kPosChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
-    negDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    negDaughTrack.init<daugh,
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
 
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", kTH1F,
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaNoCuts", "No cuts", kTH1F,
                               {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaInvMassCut",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaInvMassCut",
                               "Invariant mass cut", kTH1F, {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMin", "Minimum Pt cut",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaPtMin", "Minimum Pt cut",
                               kTH1F, {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaPtMax", "Maximum Pt cut",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaPtMax", "Maximum Pt cut",
                               kTH1F, {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaEtaMax", "Maximum Eta cut",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaEtaMax", "Maximum Eta cut",
                               kTH1F, {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaDCAV0Daugh",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaDCAV0Daugh",
                               "V0-daughters DCA cut", kTH1F, {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaCPA", "CPA cut", kTH1F,
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaCPA", "CPA cut", kTH1F,
                               {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaTranRadMin",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaTranRadMin",
                               "Minimum transverse radius cut", kTH1F,
                               {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaTranRadMax",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaTranRadMax",
                               "Maximum transverse radius cut", kTH1F,
                               {massAxisLambda});
-    mQAHistogramRegistry->add("LambdaQA/hInvMassLambdaDecVtxMax",
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaDecVtxMax",
                               "Maximum distance on  decay vertex cut", kTH1F,
                               {massAxisLambda});
   }
@@ -517,7 +518,8 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
   return true;
 }
 
-template <typename C, typename V, typename T>
+template <o2::aod::femtodreamparticle::ParticleType part,
+          typename C, typename V, typename T>
 void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
                                          T const& posTrack, T const& negTrack)
 {
@@ -544,45 +546,45 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
     fillMass = v0.mK0Short();
   }
 
-  mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaNoCuts"), fillMass);
+  mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaNoCuts"), fillMass);
 
   if (fMotherIsLambda) { /// Lambda
     if (invMassLambda > fInvMassLowLimit && invMassLambda < fInvMassUpLimit) {
-      mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"),
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaInvMassCut"),
                                  v0.mLambda());
     }
   } else { /// K0Short
     if (invMassKaon > fInvMassKaonLowLimit && invMassKaon < fInvMassKaonUpLimit) {
-      mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"),
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaInvMassCut"),
                                  v0.mK0Short());
     }
   }
 
   if (pT > pTV0Min) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMin"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaPtMin"),
                                fillMass);
   }
   if (pT < pTV0Max) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMax"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaPtMax"),
                                fillMass);
   }
   if (std::abs(eta) < etaV0Max) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaEtaMax"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaEtaMax"),
                                fillMass);
   }
   if (dcaDaughv0 < dCAV0DaughMax) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDCAV0Daugh"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaDCAV0Daugh"),
                                fillMass);
   }
   if (cpav0 > cPAV0Min) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaCPA"), fillMass);
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaCPA"), fillMass);
   }
   if (tranRad > tranRadV0Min) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMin"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaTranRadMin"),
                                fillMass);
   }
   if (tranRad < tranRadV0Max) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMax"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaTranRadMax"),
                                fillMass);
   }
   bool write = true;
@@ -590,7 +592,7 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
     write = write && (decVtx.at(i) < decVtxMax);
   }
   if (write) {
-    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDecVtxMax"),
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("QA/hInvMassLambdaDecVtxMax"),
                                fillMass);
   }
 }
@@ -761,9 +763,9 @@ void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTr
     }
   }
 
-  posDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
+  posDaughTrack.fillQA<daugh,
                        aod::femtodreamparticle::TrackType::kPosChild>(posTrack);
-  negDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
+  negDaughTrack.fillQA<daugh,
                        aod::femtodreamparticle::TrackType::kNegChild>(negTrack);
 }
 

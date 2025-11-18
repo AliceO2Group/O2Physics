@@ -538,7 +538,7 @@ struct JetSpectraEseTask {
   EventPlane procEP(EPCol const& vec)
   {
     constexpr std::array<float, 2> AmpCut{1e-8, 0.0};
-    auto computeEP = [&AmpCut](std::vector<float> vec, auto det, float n) { return vec[2] > AmpCut[det] ? (1.0 / n) * std::atan2(vec[1], vec[0]) : 999.; };
+    auto computeEP = [&AmpCut](const std::vector<float>& vec, auto det, float n) { return vec[2] > AmpCut[det] ? (1.0 / n) * std::atan2(vec[1], vec[0]) : 999.; };
     std::map<std::string, float> epMap;
     std::map<std::string, float> ep3Map;
     auto vec1{qVecNoESE<DetID::FT0A, P.hist>(vec)};
