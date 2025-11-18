@@ -119,6 +119,7 @@ struct LumiStabilityTask {
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
     histos.add("FDD/nBCsVsTime", "Time of TVX triggered BCs since the start of fill. FDD;;#bf{#it{N}_{BC}}", kTH1F, {timeAxis});
+    histos.add("FDD/nBCsVsTimeLeadingBC", "Time of TVX triggered BCs since the start of fill. FDD;;#bf{#it{N}_{BC}}", kTH1F, {timeAxis});
     histos.add("FDD/bcVertexTriggerCTP", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
     histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
     histos.add("FDD/bcVertexTriggerPP", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
@@ -180,6 +181,7 @@ struct LumiStabilityTask {
 
     histos.add("FT0/hCounts", "0 FT0Count - 1 FT0VertexCount - 2 FT0PPVertexCount - 3 FT0PPBothSidesCount; Number; counts", kTH1F, {axisCounts});
     histos.add("FT0/nBCsVsTime", "Time of TVX triggered BCs since the start of fill. FT0;;#bf{#it{N}_{BC}}", kTH1F, {timeAxis});
+    histos.add("FT0/nBCsVsTimeLeadingBC", "Time of TVX triggered BCs since the start of fill. FT0;;#bf{#it{N}_{BC}}", kTH1F, {timeAxis});
     histos.add("FT0/bcVertexTriggerCTP", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
     histos.add("FT0/bcVertexTriggerPP", "vertex trigger per BC (FT0) with Past Protection;BC in FT0; counts", kTH1F, {axisTrigger});
@@ -376,42 +378,45 @@ struct LumiStabilityTask {
         histos.fill(HIST("TFsPerMinute"), timeSinceSOF);
       }
 
-      // if (bcPatternB[localBC]) {
-      if (trgFDD) {
-        histos.fill(HIST("FDD/nBCsVsTime"), timeSinceSOF);
-        histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC + 7);
-        histos.fill(HIST("FDD/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-      }
-      if (trgFT0) {
-        histos.fill(HIST("FT0/nBCsVsTime"), timeSinceSOF);
-        histos.fill(HIST("FT0/bcVertexTriggerCTP"), localBC);
-        histos.fill(HIST("FT0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-      }
-      if (trgFV0) {
-        histos.fill(HIST("FV0/bcChargeTriggerCTP"), localBC);
-        histos.fill(HIST("FV0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-      }
-      bool isLeadBC = true;
-      for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-        int kbit = jbit;
-        if (kbit < 0)
-          kbit += nbin;
-        if (bcPatternB[kbit]) {
-          isLeadBC = false;
-          break;
-        }
-      }
-      if (isLeadBC)
+      if (bcPatternB[localBC]) {
         if (trgFDD) {
-          histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+          histos.fill(HIST("FDD/nBCsVsTime"), timeSinceSOF);
+          histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC + 7);
+          histos.fill(HIST("FDD/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
         }
-      if (trgFT0) {
-        histos.fill(HIST("FT0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+        if (trgFT0) {
+          histos.fill(HIST("FT0/nBCsVsTime"), timeSinceSOF);
+          histos.fill(HIST("FT0/bcVertexTriggerCTP"), localBC);
+          histos.fill(HIST("FT0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+        }
+        if (trgFV0) {
+          histos.fill(HIST("FV0/bcChargeTriggerCTP"), localBC);
+          histos.fill(HIST("FV0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+        }
+        bool isLeadBC = true;
+        for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+          int kbit = jbit;
+          if (kbit < 0)
+            kbit += nbin;
+          if (bcPatternB[kbit]) {
+            isLeadBC = false;
+            break;
+          }
+        }
+        if (isLeadBC) {
+          if (trgFDD) {
+            histos.fill(HIST("FDD/nBCsVsTimeLeadingBCe"), timeSinceSOF);
+            histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+          }
+          if (trgFT0) {
+            histos.fill(HIST("FT0/nBCsVsTimeLeadingBCe"), timeSinceSOF);
+            histos.fill(HIST("FT0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+          }
+          if (trgFV0) {
+            histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+          }
+        }
       }
-      if (trgFV0) {
-        histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
-      }
-      // }
     } // loop over bcs
 
     for (auto const& fdd : fdds) {
