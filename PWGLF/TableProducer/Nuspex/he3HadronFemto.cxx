@@ -89,7 +89,6 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 constexpr int Li4PDG = o2::constants::physics::Pdg::kLithium4;
 constexpr int H3LPDG = o2::constants::physics::Pdg::kHyperTriton;
 constexpr int ProtonPDG = PDG_t::kProton;
-constexpr int PionPDG = PDG_t::kPiPlus;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr float CommonInite = 0.0f;
 
