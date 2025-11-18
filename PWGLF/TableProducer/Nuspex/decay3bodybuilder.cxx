@@ -691,7 +691,7 @@ struct decay3bodyBuilder {
       auto const& collision = collisions.rawIteratorAt(decay3body.collisionId());
 
       // event selection
-      if constexpr (soa::is_table<TBCs>) { // only when NOT running over reduced data
+      if constexpr (soa::is_table<TBCs>) {                                                    // only when NOT running over reduced data
         if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) { // ITS ROF boarder cut if not disabled
           continue;
         }
