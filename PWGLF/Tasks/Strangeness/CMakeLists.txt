@@ -115,6 +115,11 @@ o2physics_add_dpl_workflow(strangeness-in-jets
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(strangeness-in-jets-ions
+    SOURCES strangenessInJetsIons.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(sjet-tree-creator
     SOURCES sjetTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
