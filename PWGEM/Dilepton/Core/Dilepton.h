@@ -418,111 +418,84 @@ struct Dilepton {
 
     emh_pos = new TEMH(ndepth);
     emh_neg = new TEMH(ndepth);
-    emh_pair_uls = new MyEMH_pair(ndepth);
-    emh_pair_lspp = new MyEMH_pair(ndepth);
-    emh_pair_lsmm = new MyEMH_pair(ndepth);
 
-    if (accBins.ConfMllAccBins.value[0] == VARIABLE_WIDTH) {
-      mll_bin_edges = std::vector<float>(accBins.ConfMllAccBins.value.begin(), accBins.ConfMllAccBins.value.end());
-      mll_bin_edges.erase(mll_bin_edges.begin());
-      for (const auto& edge : mll_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: mll_bin_edges = %f", edge);
+    if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) { // only for polarization
+
+      emh_pair_uls = new MyEMH_pair(ndepth);
+      emh_pair_lspp = new MyEMH_pair(ndepth);
+      emh_pair_lsmm = new MyEMH_pair(ndepth);
+
+      if (accBins.ConfMllAccBins.value[0] == VARIABLE_WIDTH) {
+        mll_bin_edges = std::vector<float>(accBins.ConfMllAccBins.value.begin(), accBins.ConfMllAccBins.value.end());
+        mll_bin_edges.erase(mll_bin_edges.begin());
+        for (const auto& edge : mll_bin_edges) {
+          LOGF(info, "VARIABLE_WIDTH: mll_bin_edges = %f", edge);
+        }
+      } else {
+        int nbins = static_cast<int>(accBins.ConfMllAccBins.value[0]);
+        float xmin = static_cast<float>(accBins.ConfMllAccBins.value[1]);
+        float xmax = static_cast<float>(accBins.ConfMllAccBins.value[2]);
+        mll_bin_edges.resize(nbins + 1);
+        for (int i = 0; i < nbins + 1; i++) {
+          mll_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+          LOGF(info, "FIXED_WIDTH: mll_bin_edges[%d] = %f", i, mll_bin_edges[i]);
+        }
       }
-    } else {
-      int nbins = static_cast<int>(accBins.ConfMllAccBins.value[0]);
-      float xmin = static_cast<float>(accBins.ConfMllAccBins.value[1]);
-      float xmax = static_cast<float>(accBins.ConfMllAccBins.value[2]);
-      mll_bin_edges.resize(nbins + 1);
-      for (int i = 0; i < nbins + 1; i++) {
-        mll_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: mll_bin_edges[%d] = %f", i, mll_bin_edges[i]);
+
+      if (accBins.ConfPtllAccBins.value[0] == VARIABLE_WIDTH) {
+        ptll_bin_edges = std::vector<float>(accBins.ConfPtllAccBins.value.begin(), accBins.ConfPtllAccBins.value.end());
+        ptll_bin_edges.erase(ptll_bin_edges.begin());
+        for (const auto& edge : ptll_bin_edges) {
+          LOGF(info, "VARIABLE_WIDTH: ptll_bin_edges = %f", edge);
+        }
+      } else {
+        int nbins = static_cast<int>(accBins.ConfPtllAccBins.value[0]);
+        float xmin = static_cast<float>(accBins.ConfPtllAccBins.value[1]);
+        float xmax = static_cast<float>(accBins.ConfPtllAccBins.value[2]);
+        ptll_bin_edges.resize(nbins + 1);
+        for (int i = 0; i < nbins + 1; i++) {
+          ptll_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+          LOGF(info, "FIXED_WIDTH: ptll_bin_edges[%d] = %f", i, ptll_bin_edges[i]);
+        }
       }
+
+      if (accBins.ConfEtallAccBins.value[0] == VARIABLE_WIDTH) {
+        etall_bin_edges = std::vector<float>(accBins.ConfEtallAccBins.value.begin(), accBins.ConfEtallAccBins.value.end());
+        etall_bin_edges.erase(etall_bin_edges.begin());
+        for (const auto& edge : etall_bin_edges) {
+          LOGF(info, "VARIABLE_WIDTH: etall_bin_edges = %f", edge);
+        }
+      } else {
+        int nbins = static_cast<int>(accBins.ConfEtallAccBins.value[0]);
+        float xmin = static_cast<float>(accBins.ConfEtallAccBins.value[1]);
+        float xmax = static_cast<float>(accBins.ConfEtallAccBins.value[2]);
+        etall_bin_edges.resize(nbins + 1);
+        for (int i = 0; i < nbins + 1; i++) {
+          etall_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+          LOGF(info, "FIXED_WIDTH: etall_bin_edges[%d] = %f", i, etall_bin_edges[i]);
+        }
+      }
+
+      if (accBins.ConfPhillAccBins.value[0] == VARIABLE_WIDTH) {
+        phill_bin_edges = std::vector<float>(accBins.ConfPhillAccBins.value.begin(), accBins.ConfPhillAccBins.value.end());
+        phill_bin_edges.erase(phill_bin_edges.begin());
+        for (const auto& edge : phill_bin_edges) {
+          LOGF(info, "VARIABLE_WIDTH: phill_bin_edges = %f", edge);
+        }
+      } else {
+        int nbins = static_cast<int>(accBins.ConfPhillAccBins.value[0]);
+        float xmin = static_cast<float>(accBins.ConfPhillAccBins.value[1]);
+        float xmax = static_cast<float>(accBins.ConfPhillAccBins.value[2]);
+        phill_bin_edges.resize(nbins + 1);
+        for (int i = 0; i < nbins + 1; i++) {
+          phill_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+          LOGF(info, "FIXED_WIDTH: phill_bin_edges[%d] = %f", i, phill_bin_edges[i]);
+        }
+      }
+
+      std::random_device seed_gen;
+      engine = std::mt19937(seed_gen());
     }
-
-    if (accBins.ConfPtllAccBins.value[0] == VARIABLE_WIDTH) {
-      ptll_bin_edges = std::vector<float>(accBins.ConfPtllAccBins.value.begin(), accBins.ConfPtllAccBins.value.end());
-      ptll_bin_edges.erase(ptll_bin_edges.begin());
-      for (const auto& edge : ptll_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: ptll_bin_edges = %f", edge);
-      }
-    } else {
-      int nbins = static_cast<int>(accBins.ConfPtllAccBins.value[0]);
-      float xmin = static_cast<float>(accBins.ConfPtllAccBins.value[1]);
-      float xmax = static_cast<float>(accBins.ConfPtllAccBins.value[2]);
-      ptll_bin_edges.resize(nbins + 1);
-      for (int i = 0; i < nbins + 1; i++) {
-        ptll_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: ptll_bin_edges[%d] = %f", i, ptll_bin_edges[i]);
-      }
-    }
-
-    if (accBins.ConfEtallAccBins.value[0] == VARIABLE_WIDTH) {
-      etall_bin_edges = std::vector<float>(accBins.ConfEtallAccBins.value.begin(), accBins.ConfEtallAccBins.value.end());
-      etall_bin_edges.erase(etall_bin_edges.begin());
-      for (const auto& edge : etall_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: etall_bin_edges = %f", edge);
-      }
-    } else {
-      int nbins = static_cast<int>(accBins.ConfEtallAccBins.value[0]);
-      float xmin = static_cast<float>(accBins.ConfEtallAccBins.value[1]);
-      float xmax = static_cast<float>(accBins.ConfEtallAccBins.value[2]);
-      etall_bin_edges.resize(nbins + 1);
-      for (int i = 0; i < nbins + 1; i++) {
-        etall_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: etall_bin_edges[%d] = %f", i, etall_bin_edges[i]);
-      }
-    }
-
-    if (accBins.ConfPhillAccBins.value[0] == VARIABLE_WIDTH) {
-      phill_bin_edges = std::vector<float>(accBins.ConfPhillAccBins.value.begin(), accBins.ConfPhillAccBins.value.end());
-      phill_bin_edges.erase(phill_bin_edges.begin());
-      for (const auto& edge : phill_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: phill_bin_edges = %f", edge);
-      }
-    } else {
-      int nbins = static_cast<int>(accBins.ConfPhillAccBins.value[0]);
-      float xmin = static_cast<float>(accBins.ConfPhillAccBins.value[1]);
-      float xmax = static_cast<float>(accBins.ConfPhillAccBins.value[2]);
-      phill_bin_edges.resize(nbins + 1);
-      for (int i = 0; i < nbins + 1; i++) {
-        phill_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        LOGF(info, "FIXED_WIDTH: phill_bin_edges[%d] = %f", i, phill_bin_edges[i]);
-      }
-    }
-
-    int nM = mll_bin_edges.size();
-    int nPt = ptll_bin_edges.size();
-    int nEta = etall_bin_edges.size();
-    int nPhi = phill_bin_edges.size();
-
-    // emhs_pair_uls.resize(nM);
-    // emhs_pair_lspp.resize(nM);
-    // emhs_pair_lsmm.resize(nM);
-    // for (int im = 0;im<nM;im++) {
-    //   emhs_pair_uls[im].resize(nPt);
-    //   emhs_pair_lspp[im].resize(nPt);
-    //   emhs_pair_lsmm[im].resize(nPt);
-    //   for (int ipt = 0;ipt<nPt;ipt++) {
-    //     emhs_pair_uls[im][ipt].resize(nEta);
-    //     emhs_pair_lspp[im][ipt].resize(nEta);
-    //     emhs_pair_lsmm[im][ipt].resize(nEta);
-    //     for (int ieta = 0;ieta<nEta;ieta++) {
-    //       emhs_pair_uls[im][ipt][ieta].resize(nPhi);
-    //       emhs_pair_lspp[im][ipt][ieta].resize(nPhi);
-    //       emhs_pair_lsmm[im][ipt][ieta].resize(nPhi);
-    //       for (int iphi = 0;iphi<nPhi;iphi++) {
-    //         emhs_pair_uls[im][ipt][ieta][iphi] = new MyEMH_pair(ndepth);
-    //         emhs_pair_lspp[im][ipt][ieta][iphi] = new MyEMH_pair(ndepth);
-    //         emhs_pair_lsmm[im][ipt][ieta][iphi] = new MyEMH_pair(ndepth);
-    //       }
-    //     }
-    //   }
-    // }
-
-    LOGF(info, "nM = %d, nPt = %d, nEta = %d, nPhi = %d", nM, nPt, nEta, nPhi);
-
-    std::random_device seed_gen;
-    engine = std::mt19937(seed_gen());
 
     DefineEMEventCut();
     addhistograms();
@@ -636,30 +609,6 @@ struct Dilepton {
     emh_pair_lspp = 0x0;
     delete emh_pair_lsmm;
     emh_pair_lsmm = 0x0;
-
-    // for (int im = 0;im<emhs_pair_uls.size();im++) {
-    //   for (int ipt = 0;ipt<emhs_pair_uls[im].size();ipt++) {
-    //     for (int ieta = 0;ieta<emhs_pair_uls[im][ipt].size();ieta++) {
-    //       for (int iphi = 0;iphi<emhs_pair_uls[im][ipt][ieta].size();iphi++) {
-    //         delete emhs_pair_uls[im][ipt][ieta][iphi];
-    //         emhs_pair_uls[im][ipt][ieta][iphi] = 0x0;
-
-    //         delete emhs_pair_lspp[im][ipt][ieta][iphi];
-    //         emhs_pair_lspp[im][ipt][ieta][iphi] = 0x0;
-
-    //         delete emhs_pair_lsmm[im][ipt][ieta][iphi];
-    //         emhs_pair_lsmm[im][ipt][ieta][iphi] = 0x0;
-    //       }
-    //     }
-    //   }
-    // }
-
-    // emhs_pair_uls.clear();
-    // emhs_pair_uls.shrink_to_fit();
-    // emhs_pair_lspp.clear();
-    // emhs_pair_lspp.shrink_to_fit();
-    // emhs_pair_lsmm.clear();
-    // emhs_pair_lsmm.shrink_to_fit();
 
     used_trackIds_per_col.clear();
     used_trackIds_per_col.shrink_to_fit();
@@ -1348,9 +1297,6 @@ struct Dilepton {
   MyEMH_pair* emh_pair_lspp = nullptr;
   MyEMH_pair* emh_pair_lsmm = nullptr;
 
-  // std::vector<std::vector<std::vector<std::vector<MyEMH_pair*>>>> emhs_pair_uls; // 4D{m, pt, eta, phi}
-  // std::vector<std::vector<std::vector<std::vector<MyEMH_pair*>>>> emhs_pair_lspp; // 4D{m, pt, eta, phi}
-  // std::vector<std::vector<std::vector<std::vector<MyEMH_pair*>>>> emhs_pair_lsmm; // 4D{m, pt, eta, phi}
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<int> used_trackIds_per_col;
@@ -1730,19 +1676,6 @@ struct Dilepton {
         emh_pair_uls->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_pair_lspp->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_pair_lsmm->AddCollisionIdAtLast(key_bin, key_df_collision);
-
-        // for (int im = 0;im<emhs_pair_uls.size();im++) {
-        //   for (int ipt = 0;ipt<emhs_pair_uls[im].size();ipt++) {
-        //     for (int ieta = 0;ieta<emhs_pair_uls[im][ipt].size();ieta++) {
-        //       for (int iphi = 0;iphi<emhs_pair_uls[im][ipt][ieta].size();iphi++) {
-        //         emhs_pair_uls[im][ipt][ieta][iphi]->AddCollisionIdAtLast(key_bin, key_df_collision);
-        //         emhs_pair_lspp[im][ipt][ieta][iphi]->AddCollisionIdAtLast(key_bin, key_df_collision);
-        //         emhs_pair_lsmm[im][ipt][ieta][iphi]->AddCollisionIdAtLast(key_bin, key_df_collision);
-        //       }
-        //     }
-        //   }
-        // }
-
       } // end of if pair exist
 
     } // end of collision loop

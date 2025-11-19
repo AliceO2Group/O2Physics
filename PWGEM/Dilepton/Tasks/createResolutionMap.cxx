@@ -557,19 +557,18 @@ struct CreateResolutionMap {
       return;
     }
     o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(muon, muon, collision, propagationPoint::kToVertex, muoncuts.matchingZ, mBzMFT);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(muon, muon, collision, propagationPoint::kToDCA, muoncuts.matchingZ, mBzMFT);
 
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
     o2::math_utils::bringTo02Pi(phi);
 
-    float dcaX = propmuonAtDCA.getX() - collision.posX();
-    float dcaY = propmuonAtDCA.getY() - collision.posY();
+    float dcaX = propmuonAtPV.getX() - collision.posX();
+    float dcaY = propmuonAtPV.getY() - collision.posY();
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
     float rAtAbsorberEnd = muon.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
-    float pDCA = muon.p() * dcaXY;
+    float pDCA = propmuonAtPV.getP() * dcaXY;
     int nClustersMFT = 0;
     float ptMatchedMCHMID = propmuonAtPV.getPt();
     float etaMatchedMCHMID = propmuonAtPV.getEta();
@@ -602,11 +601,14 @@ struct CreateResolutionMap {
       etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
       phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
       o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, muoncuts.matchingZ, mBzMFT);
-      float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
-      float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
-      float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
-      pDCA = mchtrack.p() * dcaXY_Matched;
+
+      // o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, muoncuts.matchingZ, mBzMFT);
+      // float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
+      // float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
+      // float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
+      // pDCA = mchtrack.p() * dcaXY_Matched;
+      pDCA = propmuonAtPV.getP() * dcaXY;
+
       nClustersMFT = mfttrack.nClusters();
       float chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
 
@@ -622,40 +624,32 @@ struct CreateResolutionMap {
         return;
       }
 
-      if (muoncuts.refitGlobalMuon) {
-        // eta = mfttrack.eta();
-        // phi = mfttrack.phi();
-        // o2::math_utils::bringTo02Pi(phi);
-        eta = propmuonAtDCA.getEta();
-        phi = propmuonAtDCA.getPhi();
+      if constexpr (withMFTCov) {
+        auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, muoncuts.matchingZ, mBzMFT); // propagated to matching plane
+        o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov);                                               // values at innermost update
+        mftsaAtMP.propagateToZhelix(muoncuts.matchingZ, mBzMFT);                                                                      // propagated to matching plane
+        etaMatchedMFTatMP = mftsaAtMP.getEta();
+        phiMatchedMFTatMP = mftsaAtMP.getPhi();
+        etaMatchedMCHMIDatMP = muonAtMP.getEta();
+        phiMatchedMCHMIDatMP = muonAtMP.getPhi();
+        o2::math_utils::bringTo02Pi(phiMatchedMCHMIDatMP);
+        o2::math_utils::bringTo02Pi(phiMatchedMFTatMP);
+
+        o2::track::TrackParCovFwd mftsa = getTrackParCovFwd(mfttrack, mfttrackcov);                                                // values at innermost update
+        o2::dataformats::GlobalFwdTrack globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuonAtPV_Matched, mftsa); // this is track at IU.
+        auto globalMuonAtPV = o2::aod::fwdtrackutils::propagateTrackParCovFwd(globalMuonRefit, muon.trackType(), collision, propagationPoint::kToVertex, muoncuts.matchingZ, mBzMFT);
+        pt = globalMuonAtPV.getPt();
+        eta = globalMuonAtPV.getEta();
+        phi = globalMuonAtPV.getPhi();
         o2::math_utils::bringTo02Pi(phi);
+        dcaX = globalMuonAtPV.getX() - collision.posX();
+        dcaY = globalMuonAtPV.getY() - collision.posY();
+        dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+      }
+
+      if (muoncuts.refitGlobalMuon) {
         pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
-
-        if constexpr (withMFTCov) {
-          auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-          auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, muoncuts.matchingZ, mBzMFT); // propagated to matching plane
-          o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov);                                               // values at innermost update
-          mftsaAtMP.propagateToZhelix(muoncuts.matchingZ, mBzMFT);                                                                      // propagated to matching plane
-          etaMatchedMFTatMP = mftsaAtMP.getEta();
-          phiMatchedMFTatMP = mftsaAtMP.getPhi();
-          etaMatchedMCHMIDatMP = muonAtMP.getEta();
-          phiMatchedMCHMIDatMP = muonAtMP.getPhi();
-          o2::math_utils::bringTo02Pi(phiMatchedMCHMIDatMP);
-          o2::math_utils::bringTo02Pi(phiMatchedMFTatMP);
-
-          // o2::track::TrackParCovFwd mftsa = getTrackParCovFwd(mfttrack, mfttrackcov);                                                // values at innermost update
-          // o2::dataformats::GlobalFwdTrack globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuonAtPV_Matched, mftsa); // this is track at IU.
-          // auto globalMuonAtDCA = o2::aod::fwdtrackutils::propagateTrackParCovFwd(globalMuonRefit, fwdtrack.trackType(), collision, propagationPoint::kToDCA, matchingZ, mBz);
-          // pt = globalMuonAtDCA.getPt();
-          // eta = globalMuonAtDCA.getEta();
-          // phi = globalMuonAtDCA.getPhi();
-          // o2::math_utils::bringTo02Pi(phi);
-          // cXXatDCA = globalMuonAtDCA.getSigma2X();
-          // cYYatDCA = globalMuonAtDCA.getSigma2Y();
-          // cXYatDCA = globalMuonAtDCA.getSigmaXY();
-          // dcaX = globalMuonAtDCA.getX() - collision.posX();
-          // dcaY = globalMuonAtDCA.getY() - collision.posY();
-        }
       }
 
       float dpt = (ptMatchedMCHMID - pt) / pt;
@@ -690,6 +684,12 @@ struct CreateResolutionMap {
       float xAbs = propmuonAtRabs.getX();
       float yAbs = propmuonAtRabs.getY();
       rAtAbsorberEnd = std::sqrt(xAbs * xAbs + yAbs * yAbs); // Redo propagation only for muon tracks // propagation of MFT tracks alredy done in reconstruction
+
+      o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(muon, muon, collision, propagationPoint::kToDCA, muoncuts.matchingZ, mBzMFT);
+      dcaX = propmuonAtDCA.getX() - collision.posX();
+      dcaY = propmuonAtDCA.getY() - collision.posY();
+      dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+      pDCA = muon.p() * dcaXY;
     } else {
       return;
     }
