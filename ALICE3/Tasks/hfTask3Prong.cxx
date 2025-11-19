@@ -9,12 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file alice3HfTask3Prong.cxx
+/// \file hfTask3Prong.cxx
 /// \brief 3-prong candidates analysis task for ALICE 3 simulation studies
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
-
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
@@ -24,7 +21,6 @@
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "ALICE3/Utils/utilsSelectionsAlice3.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -57,7 +53,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// Λc± → p± K∓ π± analysis task
-struct Alice3Task3Prong {
+struct Alice3HfTask3Prong {
   Configurable<double> yCandGenMax{"yCandGenMax", 0.8, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_3prongs_alice3::vecBinsPt}, "pT bin limits"};
@@ -354,7 +350,7 @@ struct Alice3Task3Prong {
     fillHistosMcRec<CharmHadAlice3::Lc, false>(candsLc);
     fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
   }
-  PROCESS_SWITCH(Alice3Task3Prong, processLc, "Process Lc w/o ML sels", true);
+  PROCESS_SWITCH(Alice3HfTask3Prong, processLc, "Process Lc w/o ML sels", true);
 
   void processLcWMl(Cands3PRecoWMl const& candsLcWMl,
                     Cands3PGen const&)
@@ -362,10 +358,10 @@ struct Alice3Task3Prong {
     fillHistosMcRec<CharmHadAlice3::Lc, true>(candsLcWMl);
     fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
   }
-  PROCESS_SWITCH(Alice3Task3Prong, processLcWMl, "Process Lc with ML sels", false);
+  PROCESS_SWITCH(Alice3HfTask3Prong, processLcWMl, "Process Lc with ML sels", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3Task3Prong>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3HfTask3Prong>(cfgc)};
 }

@@ -331,7 +331,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y,
 DECLARE_SOA_TABLE(Alice3Cand3Ps, "AOD", "ALICE3CAND3P", //!
                   o2::soa::Index<>,
                   // general candidate properties
-                  HFCAND_COLUMNS,
+                  HFCAND_COLUMNS, 
                   HFPRONG0_COLUMNS,
                   HFPRONG1_COLUMNS,
                   HFPRONG2_COLUMNS,

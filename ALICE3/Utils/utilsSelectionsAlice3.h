@@ -14,8 +14,8 @@
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#ifndef ALICE3_UTILS_SELECTIONS_H_
-#define ALICE3_UTILS_SELECTIONS_H_
+#ifndef ALICE3_UTILS_UTILSSELECTIONSALICE3_H_
+#define ALICE3_UTILS_UTILSSELECTIONSALICE3_H_
 
 #include <string> // std::string
 #include <vector> // std::vector
@@ -73,4 +73,4 @@ static const std::vector<std::string> labelsCutVar = {"m", "pT prong 0", "pT pro
 
 } // namespace o2::analysis
 
-#endif // ALICE3_UTILS_SELECTIONS_H_
+#endif // ALICE3_UTILS_UTILSSELECTIONSALICE3_H_

@@ -24,11 +24,7 @@
 #include "ALICE3/ML/MlResponse3Prong.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/DataModel/PIDResponseCombined.h"
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>

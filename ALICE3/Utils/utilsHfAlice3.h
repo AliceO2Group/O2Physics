@@ -12,10 +12,10 @@
 /// \file HfHelperAlice3.h
 /// \brief Class with helper functions for HF analyses
 ///
-/// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
+/// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#ifndef PWGHF_CORE_HFHELPERALICE3_H_
-#define PWGHF_CORE_HFHELPERALICE3_H_
+#ifndef ALICE3_UTILS_UTILSHFALICE3_H_
+#define ALICE3_UTILS_UTILSHFALICE3_H_
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -109,4 +109,4 @@ class HfHelperAlice3
   }
 };
 
-#endif // PWGHF_CORE_HFHELPERALICE3_H_
+#endif // ALICE3_UTILS_UTILSHFALICE3_H_

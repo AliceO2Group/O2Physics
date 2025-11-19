@@ -13,10 +13,8 @@
 /// \brief Class to compute the ML response for HF 3-prong candidates
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#ifndef ALICE3_MLRESPONSE3PRONG_H_
-#define ALICE3_MLRESPONSE3PRONG_H_
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#ifndef ALICE3_ML_MLRESPONSE3PRONG_H_
+#define ALICE3_ML_MLRESPONSE3PRONG_H_
 
 #include "Tools/ML/MlResponse.h"
 
@@ -223,4 +221,4 @@ class MlResponse3Prong : public MlResponse<TypeOutputScore>
 #undef FILL_MAP_3PRONG
 #undef CHECK_AND_FILL_ML_ALICE3
 
-#endif // ALICE3_MLRESPONSE3PRONG_H_
+#endif // ALICE3_ML_MLRESPONSE3PRONG_H_
