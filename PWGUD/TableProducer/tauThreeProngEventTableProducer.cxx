@@ -185,7 +185,7 @@ struct TauThreeProngEventTableProducer {
   Configurable<bool> useFV0ForVeto{"useFV0ForVeto", 0, "use FV0 for veto"};
   Configurable<bool> useFDDAForVeto{"useFDDAForVeto", 0, "use FDDA for veto"};
   Configurable<bool> useFDDCForVeto{"useFDDCForVeto", 0, "use FDDC for veto"};
-  Configurable<int> nTofTrkMinCut{"nTofTrkMinCut", 1, "min TOF tracks"};
+  Configurable<int> nTofTrkMinCut{"nTofTrkMinCut", 2, "min TOF tracks"};
 
   //  Configurable<bool> invMass3piSignalRegion{"invMass3piSignalRegion", 1, "1-use inv mass 3pi in signal region, 0-in background region"};
   //  Configurable<float> invMass3piMaxcut{"invMass3piMaxcut", 1.8, "Z invariant mass of 3 pi cut"};
@@ -244,7 +244,7 @@ struct TauThreeProngEventTableProducer {
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(3, "3: Gap=2");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(4, "4: PVcont=4");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(5, "5: |#eta^{tr}|<0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(6, "6: p_{T}^{tr}>100");
+      registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(6, "6: p_{T}^{tr}>0.1");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(7, "7: N_{TOF}^{tr}>1");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(8, "8: FIT veto");
 
@@ -811,7 +811,7 @@ struct TauThreeProngEventTableProducer {
     float nSigmaPr[6] = {-999., -999., -999., -999., -999., -999.};
     float nSigmaKa[6] = {-999., -999., -999., -999., -999., -999.};
     float nSigmaMu[6] = {-999., -999., -999., -999., -999., -999.};
-    float chi2TOF[6] = {-1., -1., -1., -1., -1., -1.};
+    float chi2TOF[6] = {-999., -999., -999., -999., -999., -999.};
     int nclTPCcrossedRows[6] = {-999, -999, -999, -999, -999, -999};
     int nclTPCfind[6] = {-999, -999, -999, -999, -999, -999};
     float nclTPCchi2[6] = {-999., -999., -999., -999., -999., -999.};
