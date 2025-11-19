@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file alice3-mlresponse3prong.h
-/// \brief Class to compute the ML response for Lc+ → p K- π+ analysis selections
+/// \file Alice3MlRResponse3Prong.h
+/// \brief Class to compute the ML response for HF 3-prong candidates
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#ifndef ALICE3_ML_ALICE3_MLRESPONSE3PRONG_H_
-#define ALICE3_ML_ALICE3_MLRESPONSE3PRONG_H_
+#ifndef ALICE3_MLRESPONSE3PRONG_H_
+#define ALICE3_MLRESPONSE3PRONG_H_
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
@@ -109,10 +109,8 @@ class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
   virtual ~Alice3MlResponse3Prong() = default;
 
   /// Method to get the input features vector needed for ML inference
-  /// \param candidate is the Lc candidate
-  /// \param prong0 is the candidate's prong0
-  /// \param prong1 is the candidate's prong1
-  /// \param prong2 is the candidate's prong2
+  /// \tparam T1 type of the 3-prong candidate
+  /// \param candidate is the 3-prong candidate
   /// \return inputFeatures vector
   template <typename T1>
   std::vector<float> getInputFeatures(T1 const& candidate)
@@ -224,7 +222,5 @@ class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
 
 #undef FILL_MAP_3PRONG
 #undef CHECK_AND_FILL_ML_ALICE3
-#undef CHECK_AND_FILL_ML_ALICE3_HFHELPER
-#undef CHECK_AND_FILL_ML_ALICE3_OBJECT_SIGNED
 
-#endif  // ALICE3_ML_ALICE3_MLRESPONSE3PRONG_H_
+#endif  // ALICE3_MLRESPONSE3PRONG_H_

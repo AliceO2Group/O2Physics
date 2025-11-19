@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candSelectorLc.cxx
-/// \brief Λc± → p± K∓ π± selection task
+/// \file alice3HfSelector3prong.cxx
+/// \brief 3-prong candidates selection task
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
 #include "ALICE3/Utils/utilsHfAlice3.h"
-#include "ALICE3/Utils/utilsSelections.h"
+#include "ALICE3/Utils/utilsSelectionsAlice3.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -25,7 +25,7 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "ALICE3/ML/alice3-mlresponse3prong.h"
+#include "ALICE3/ML/Alice3MlResponse3Prong.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/PIDResponseCombined.h"
 
@@ -150,7 +150,9 @@ struct Alice3Selector3Prong {
   }
 
   /// Conjugate-independent topological cuts
+  /// \tparam T is candidate type
   /// \param cand is cand
+  /// \param candPt is candidate pT
   /// \return true if cand passes all cuts
   template <typename T>
   bool selectionTopol(const T& cand, float candPt)
@@ -206,6 +208,13 @@ struct Alice3Selector3Prong {
     return true;
   }
 
+  /// Candidate mass selection
+  /// \tparam CharmHad is the charm hadron type
+  /// \tparam SwapHypo indicates whether to swap mass hypothesis or not
+  /// \tparam TCandidate is candidate type
+  /// \param ptBin is candidate pT bin
+  /// \param cand is candidate
+  /// \return true if candidate passes mass selection
   template <CharmHadAlice3 CharmHad, bool SwapHypo, typename TCandidate>
   bool selectionCandidateMass(int const ptBin, const TCandidate& cand)
   {
@@ -219,6 +228,7 @@ struct Alice3Selector3Prong {
   }
 
   /// Single-track dca_xy and dca_z cuts
+  /// \tparam T1 is candidate type
   /// \param cand is the Lc cand
   /// \return true if all the prongs pass the selections
   template <typename T1>
@@ -230,9 +240,10 @@ struct Alice3Selector3Prong {
   }
 
   /// Apply PID selection
-  /// \param pidTrack0 is the PID status of proton cand track
-  /// \param pidTrack1 is the PID status of kaon cand track
-  /// \param pidTrack2 is the PID status of pion cand track
+  /// \tparam CharmHad is charm hadron type
+  /// \tparam TCand is candidate type
+  /// \param cand is candidate
+  /// \param pidMask is bitmask to be configured
   template <CharmHadAlice3 CharmHad, typename TCand>
   void configurePidMask(const TCand& cand, uint32_t& pidMask)
   {
@@ -275,8 +286,9 @@ struct Alice3Selector3Prong {
   }
 
   /// \brief function to apply Lc selections
-  /// \param cands Lc cand table
-  /// \param tracks track table
+  /// \tparam CharmHad is charm hadron type
+  /// \tparam CandType is candidate type
+  /// \param cands are 3-prong candidates
   template <CharmHadAlice3 CharmHad, typename CandType>
   void runSelect3Prong(CandType const& cands)
   {

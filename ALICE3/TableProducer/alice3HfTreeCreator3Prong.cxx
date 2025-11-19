@@ -9,10 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorDplusToPiKPi.cxx
-/// \brief Writer of D+ → π+ K- π+ cands in the form of flat tables to be stored in TTrees.
+/// \file alice3HfTreeCreator3Prong.cxx
+/// \brief Writer of 3-prong candidates in the form of flat tables to be stored in TTrees.
 ///        Intended for debug, local optimization of analysis on small samples or ML training.
-///        In this file are defined and filled the output tables
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Turin Polytechnic University and INFN Turin
 
@@ -309,33 +308,24 @@ struct Alice3TreeCreator3Prong {
   template <typename TCand>
   void reserveTables(size_t nCands, const TCand& cand)
   {
-    if (fillTables.fillCandVtxInfo) {
+    if (fillTables.fillCandVtxInfo)
       rowCandVtxs.reserve(nCands);
-    }
-    if (fillTables.fillCandTopoInfo) {
+    if (fillTables.fillCandTopoInfo)
       rowCandTopos.reserve(nCands);
-    }
-    if (fillTables.fillDaugTopoInfo) {
+    if (fillTables.fillDaugTopoInfo)
       rowDaugTopos.reserve(nCands);
-    }
-    if (fillTables.fillMlScoreInfo) {
+    if (fillTables.fillMlScoreInfo)
       rowCandMls.reserve(nCands);
-    }
-    if (fillTables.fillCandKineInfo) {
+    if (fillTables.fillCandKineInfo)
       rowCandKine3Ps.reserve(nCands);
-    }
-    if (fillTables.fillCandGenKineInfo) {
+    if (fillTables.fillCandGenKineInfo)
       rowCand3PGen.reserve(nCands);
-    }
-    if (fillTables.fillDaugKineInfo) {
+    if (fillTables.fillDaugKineInfo)
       rowDaugMoms.reserve(nCands);
-    }
-    if (fillTables.fillMcMatchRecoInfo) {
+    if (fillTables.fillMcMatchRecoInfo)
       rowCand3PMcMatchRec.reserve(nCands);
-    }
-    if (fillTables.fillMcMatchGenInfo) {
+    if (fillTables.fillMcMatchGenInfo)
       rowCand3PMcMatchGen.reserve(nCands);
-    }
     // PID tables
     if (fillTables.fillPid) {
       if constexpr (requires { cand.nSigTrkPi0(); })
@@ -361,6 +351,7 @@ struct Alice3TreeCreator3Prong {
 
   /// Fill reconstructed candidate tables
   /// \tparam CharmHadAlice3: charm hadron type
+  /// \tparam IsSwapMassHypo: whether to swap mass hypothesis or not
   /// \tparam T: candidate type
   /// \param cand: candidate to be used to fill the tables
   template <CharmHadAlice3 CharmHad, bool IsSwapMassHypo, typename T>
@@ -468,6 +459,7 @@ struct Alice3TreeCreator3Prong {
 
   /// Function to fill both reco and gen tables
   /// from any candidate collection
+  /// \tparam CharmHad Type of 3prong particle
   /// \tparam TCandsRec Type of reconstructed candidates collection
   /// \tparam TCandsGen Type of generated candidates collection
   /// \param candsRec Reconstructed candidates collection

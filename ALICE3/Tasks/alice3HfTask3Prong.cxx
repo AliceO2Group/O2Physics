@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file alice3-task3prong.cxx
+/// \file alice3HfTask3Prong.cxx
 /// \brief 3-prong candidates analysis task for ALICE 3 simulation studies
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
-#include "ALICE3/Utils/utilsSelections.h"
+#include "ALICE3/Utils/utilsSelectionsAlice3.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
@@ -49,7 +49,7 @@
 #include <numeric>
 #include <string>
 #include <string_view>
-#include <vector> // std::vector
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;

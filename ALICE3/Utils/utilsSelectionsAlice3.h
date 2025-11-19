@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file utilsSelections.h
+/// \file utilsSelectionsAlice3s.h
 /// \brief Default pT bins and cut arrays for selections in ALICE3 performance analysis tasks
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
