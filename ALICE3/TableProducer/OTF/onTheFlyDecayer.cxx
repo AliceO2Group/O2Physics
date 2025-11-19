@@ -18,44 +18,39 @@
 
 #include "Framework/O2DatabasePDGPlugin.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using std::array;
 
 struct OnTheFlyDecayer {
-      Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(o2::framework::InitContext&)
   {
   }
 
-template <typename ParticleType>
-  bool decayParticle(const auto & particle){
+  template <typename ParticleType>
+  bool decayParticle(const auto& particle)
+  {
 
+    bool canDecay = false;
 
-bool canDecay = false;
+    switch (particle.pdgCode()) {
+      case 3312:
+        canDecay = true;
+    }
+    if (!canDecay) {
+      return false;
+    }
+    // Check that it does not have daughters
+    if (particle.hasDaughters()) {
+      LOG(fatal) << "Particle has daughters";
+    }
 
-switch(particle.pdgCode()){
-    case 3312:
-    canDecay = true;
-}
-if(!canDecay){
-    return false;
-}
-// Check that it does not have daughters
-if(particle.hasDaughters()){
-LOG(fatal) << "Particle has daughters";
-}
-
-
-      const auto& pdgInfo = pdgDB->GetParticle(particle.pdgCode());
-      if (!pdgInfo) {
-        LOG(fatal) << "PDG code " << particle.pdgCode() << " not found in the database";
-      }
-      
-
-
+    const auto& pdgInfo = pdgDB->GetParticle(particle.pdgCode());
+    if (!pdgInfo) {
+      LOG(fatal) << "PDG code " << particle.pdgCode() << " not found in the database";
+    }
 
     const double u = rand.Uniform(0, 1);
     double xi_mass = o2::constants::physics::MassXiMinus;
@@ -65,14 +60,13 @@ LOG(fatal) << "Particle has daughters";
 
     double mass = 0.;
     double tau = 0.;
-// Compute channel
-    switch (particle.pdgCode())
-    {
-        case 3312:
+    // Compute channel
+    switch (particle.pdgCode()) {
+      case 3312:
         mass = xi_mass;
         tau = 4.91;
         break;
-        case 3112:
+      case 3112:
         mass = la_mass;
         tau = 7.89;
         break;
@@ -84,12 +78,10 @@ LOG(fatal) << "Particle has daughters";
     // If the particle is charged, then propagate in the mag field
     o2::math_utils::CircleXYf_t circle;
     if (pdgInfo->Charge() != 0) {
-    float sna, csa;
-    track.getCircleParams(magneticField, circle, sna, csa);
-      }
-      else{ // Neutral particles
-
-      }
+      float sna, csa;
+      track.getCircleParams(magneticField, circle, sna, csa);
+    } else { // Neutral particles
+    }
     const double rxy = rxyz / sqrt(1. + track.getTgl() * track.getTgl());
     const double theta = rxy / circle.rC;
     const double newX = ((particle.vx() - circle.xC) * std::cos(theta) - (particle.vy() - circle.yC) * std::sin(theta)) + circle.xC;
@@ -123,19 +115,17 @@ LOG(fatal) << "Particle has daughters";
     laDecay.Generate();
     decayDaughters.push_back(*laDecay.GetDecay(0));
     decayDaughters.push_back(*laDecay.GetDecay(1));
-
-}
-
+  }
 
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
   {
-for(const auto & particle : mcParticles) {
-decayParticle(particle);
-  }
-};
+    for (const auto& particle : mcParticles) {
+      decayParticle(particle);
+    }
+  };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc)};
-}
+  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+  {
+    return WorkflowSpec{adaptAnalysisTask<OnTheFlyDecayer>(cfgc)};
+  }
