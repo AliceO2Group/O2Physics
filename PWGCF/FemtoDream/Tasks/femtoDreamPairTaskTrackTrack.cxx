@@ -705,7 +705,7 @@ struct femtoDreamPairTaskTrackTrack {
     }
 
     auto myEP = TMath::DegToRad() * col.eventPlane();
-    int myqnBin;
+    int myqnBin = -999;
     if (EPCal.doQnSeparation || EPCal.do3DFemto) {
       myqnBin = epCalculator.myqnBin(col.multV0M(), EPCal.centMax, EPCal.fillFlowQA, EPCal.qnBinSeparator, col.qnVal(), EPCal.numQnBins, EPCal.centBinWidth);
       if (myqnBin < EPCal.qnBinMin || myqnBin > EPCal.numQnBins) {

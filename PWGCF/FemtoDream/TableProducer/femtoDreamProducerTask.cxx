@@ -763,7 +763,7 @@ struct femtoDreamProducerTask {
     }
 
     if constexpr (doFlow) {
-      fillCollisionsFlow(col, tracks, mult, spher, multNtr, epCal.ConfHarmonicOrder);
+      fillCollisionsFlow(col, tracks, mult, spher, epCal.ConfHarmonicOrder);
     }
 
     std::vector<int> childIDs = {0, 0};           // these IDs are necessary to keep track of the children
@@ -1115,7 +1115,7 @@ struct femtoDreamProducerTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillCollisionsFlow(CollisionType const& col, TrackType const& tracks, float mult, float spher, float multNtr, int EPHarmonic)
+  void fillCollisionsFlow(CollisionType const& col, TrackType const& tracks, float mult, float spher, int EPHarmonic)
   {
     float myqn = colCuts.computeqnVec(col);
     float myEP = TMath::RadToDeg() * colCuts.computeEP(col, EPHarmonic);
