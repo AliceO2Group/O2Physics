@@ -667,7 +667,7 @@ struct PhosElId {
       }
 
       if (isTrueElectron) {
-        mHistManager.fill(HIST("TrueEl/hTrueElInPhos"), trackPT, (float)module);
+        mHistManager.fill(HIST("TrueEl/hTrueElInPhos"), trackPT, module);
       }
 
       bool posTrack = track.sign() * bz > 0;
@@ -682,7 +682,7 @@ struct PhosElId {
           continue;
 
         if (isTrueElectron) {
-          mHistManager.fill(HIST("TrueEl/hTrueElWithCluster"), trackPT, (float)module);
+          mHistManager.fill(HIST("TrueEl/hTrueElWithCluster"), trackPT, module);
         }
 
         bool isDispOK = false;
