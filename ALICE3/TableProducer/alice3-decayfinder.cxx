@@ -782,7 +782,7 @@ struct alice3decayFinder {
           continue;
         if (decayLengthXY < DMinDecayLengthXY || decayLengthXY > DMaxDecayLengthXY)
           continue;
-        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, (double)DDecayLengthSquaredCut);
+        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, static_cast<double>(DDecayLengthSquaredCut));
         if (decayLength * decayLength < decayLengthSquaredCut * decayLengthSquaredCut)
           continue;
 
@@ -929,7 +929,7 @@ struct alice3decayFinder {
           continue;
         if (decayLengthXY < DMinDecayLengthXY || decayLengthXY > DMaxDecayLengthXY)
           continue;
-        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, (double)DDecayLengthSquaredCut);
+        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, static_cast<double>(DDecayLengthSquaredCut));
         if (decayLength * decayLength < decayLengthSquaredCut * decayLengthSquaredCut)
           continue;
 
