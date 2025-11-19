@@ -456,7 +456,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   }
   const int xrhosteps = 100;
   const bool applyAngularCorrection = true;
-  
+
   // Delphes sets this to 20 instead of the number of layers,
   // but does not count all points in the tpc as layers which we do here
   // Loop over all the added layers to prevent crash when adding the tpc
