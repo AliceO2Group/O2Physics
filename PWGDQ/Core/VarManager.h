@@ -2830,19 +2830,19 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
   }
 
   float m = 0.0;
-  float pdgLifetime = 0.0; 
+  float pdgLifetime = 0.0;
   if (std::abs(MotherTrack.pdgCode()) == 521) {
     m = o2::constants::physics::MassBPlus;
-    pdgLifetime = 1.638e-12; //s
-  }  
+    pdgLifetime = 1.638e-12; // s
+  }
   if (std::abs(MotherTrack.pdgCode()) == 511) {
     m = o2::constants::physics::MassB0;
-    pdgLifetime = 1.517e-12; //s
+    pdgLifetime = 1.517e-12; // s
   }
 
   // displaced vertex is compued with decay product (track) and momentum of mother particle (MotherTrack)
   values[kMCVertexingLxy] = (collision.mcPosX() - track.vx()) * (collision.mcPosX() - track.vx()) +
-                              (collision.mcPosY() - track.vy()) * (collision.mcPosY() - track.vy());
+                            (collision.mcPosY() - track.vy()) * (collision.mcPosY() - track.vy());
   values[kMCVertexingLz] = (collision.mcPosZ() - track.vz()) * (collision.mcPosZ() - track.vz());
   values[kMCVertexingLxyz] = values[kMCVertexingLxy] + values[kMCVertexingLz];
   values[kMCVertexingLxy] = std::sqrt(values[kMCVertexingLxy]);
@@ -2851,9 +2851,9 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
   values[kMCVertexingTauz] = (collision.mcPosZ() - track.vz()) * m / (TMath::Abs(MotherTrack.pz()) * o2::constants::physics::LightSpeedCm2NS);
   values[kMCVertexingTauxy] = values[kMCVertexingLxy] * m / (MotherTrack.pt() * o2::constants::physics::LightSpeedCm2NS);
   values[kMCCosPointingAngle] = ((collision.mcPosX() - track.vx()) * MotherTrack.px() +
-                                   (collision.mcPosY() - track.vy()) * MotherTrack.py() +
-                                   (collision.mcPosZ() - track.vz()) * MotherTrack.pz()) /
-                                  (MotherTrack.p() * values[VarManager::kMCVertexingLxyz]);
+                                 (collision.mcPosY() - track.vy()) * MotherTrack.py() +
+                                 (collision.mcPosZ() - track.vz()) * MotherTrack.pz()) /
+                                (MotherTrack.p() * values[VarManager::kMCVertexingLxyz]);
 
   values[kMCLxyExpected] = (MotherTrack.pt() / m) * (pdgLifetime * o2::constants::physics::LightSpeedCm2S);
   values[kMCLxyzExpected] = (MotherTrack.p() / m) * (pdgLifetime * o2::constants::physics::LightSpeedCm2S);
@@ -2867,7 +2867,6 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
   values[kMCVertexingTauxyProjectedNs] = values[kMCVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
   values[kMCVertexingTauzProjected] = values[kMCVertexingLzProjected] * m / TMath::Abs(MotherTrack.pz());
   values[kMCVertexingTauxyzProjected] = values[kMCVertexingLxyzProjected] * m / (MotherTrack.p());
-
 }
 template <int pairType, typename T, typename T1>
 void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values)
