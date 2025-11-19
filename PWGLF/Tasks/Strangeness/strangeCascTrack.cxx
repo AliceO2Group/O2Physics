@@ -57,7 +57,7 @@ using DerMCRecTraCascDatas = soa::Join<aod::TraCascCores, aod::TraCascCollRefs, 
 // tables for PID selection
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
-struct strangecasctrack {
+struct StrangeCascTrack {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -807,14 +807,14 @@ struct strangecasctrack {
     analyseCascs(collision, traCascs); // process tracked cascades
   }
 
-  PROCESS_SWITCH(strangecasctrack, processDerivedData, "process derived data", true);
-  PROCESS_SWITCH(strangecasctrack, processDerivedMCGen, "process derived generated mc data", false);
-  PROCESS_SWITCH(strangecasctrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedData, "process derived data", true);
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCGen, "process derived generated mc data", false);
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangecasctrack>(cfgc),
+    adaptAnalysisTask<StrangeCascTrack>(cfgc),
   };
 }
