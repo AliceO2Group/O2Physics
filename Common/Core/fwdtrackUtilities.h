@@ -18,17 +18,17 @@
 #ifndef COMMON_CORE_FWDTRACKUTILITIES_H_
 #define COMMON_CORE_FWDTRACKUTILITIES_H_
 
+#include "DetectorsBase/GeometryManager.h"
+#include "Field/MagneticField.h"
 #include "Framework/AnalysisDataModel.h"
-#include <DetectorsBase/GeometryManager.h>
-#include <Field/MagneticField.h>
-#include <GlobalTracking/MatchGlobalFwd.h>
-#include <MCHTracking/TrackExtrap.h>
-#include <ReconstructionDataFormats/GlobalFwdTrack.h>
-#include <ReconstructionDataFormats/TrackFwd.h>
+#include "GlobalTracking/MatchGlobalFwd.h"
+#include "MCHTracking/TrackExtrap.h"
+#include "ReconstructionDataFormats/GlobalFwdTrack.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
 
-#include <Math/MatrixRepresentationsStatic.h>
-#include <Math/SMatrix.h>
-#include <TGeoGlobalMagField.h>
+#include "Math/MatrixRepresentationsStatic.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
 
 #include <type_traits>
 #include <vector>
@@ -51,8 +51,7 @@ using SMatrix5 = ROOT::Math::SVector<double, 5>;
 template <typename TFwdTrack, typename TFwdTrackCov>
 o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov const& cov)
 {
-  // This function works for both (saMuon, saMuon) and (MFTTrack, MFTTrackCov).
-  // Don't use covariant matrix of global muons stored in AO2D.root.
+  // This function works for (glMuon, glMuon), (saMuon, saMuon) and (MFTTrack, MFTTrackCov).
 
   double chi2 = track.chi2();
   if constexpr (std::is_same_v<std::decay_t<TFwdTrackCov>, aod::MFTTracksCov::iterator>) {
@@ -128,11 +127,12 @@ o2::dataformats::GlobalFwdTrack propagateTrackParCovFwd(TFwdTrackParCov const& f
     // o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     // auto Bz = field->getBz(centerMFT); // Get field at centre of MFT in kG.
 
-    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), collision.posX(), collision.posY(), collision.posZ());
-    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-
     if (endPoint == propagationPoint::kToVertex) {
-      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, bzkG, x2x0);
+      // auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), collision.posX(), collision.posY(), collision.posZ());
+      // auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+      // fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, bzkG, x2x0);
+      std::array<double, 3> dcaInfOrig{999.f, 999.f, 999.f};
+      fwdtrack.propagateToDCAhelix(bzkG, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
     } else if (endPoint == propagationPoint::kToDCA) {
       fwdtrack.propagateToZhelix(collision.posZ(), bzkG);
     } else if (endPoint == propagationPoint::kToMatchingPlane) {
