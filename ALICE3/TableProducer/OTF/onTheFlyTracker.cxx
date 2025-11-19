@@ -304,6 +304,7 @@ struct OnTheFlyTracker {
     hCovMatOK->GetXaxis()->SetBinLabel(2, "OK");
 
     histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axes.axisMomentum});
+    histos.add("hPhiGenerated", "hPhiGenerated", kTH1F, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}});
     histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axes.axisMomentum});
     histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axes.axisMomentum});
     histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axes.axisMomentum});
@@ -614,6 +615,7 @@ struct OnTheFlyTracker {
       }
 
       histos.fill(HIST("hPtGenerated"), mcParticle.pt());
+      histos.fill(HIST("hPhiGenerated"), mcParticle.phi());
       if (std::abs(mcParticle.pdgCode()) == kElectron)
         histos.fill(HIST("hPtGeneratedEl"), mcParticle.pt());
       if (std::abs(mcParticle.pdgCode()) == kPiPlus)
