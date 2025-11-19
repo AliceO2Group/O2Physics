@@ -22,12 +22,9 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
+#include "ALICE3/ML/HfMlResponse3Prong.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "ALICE3/Utils/utilsSelectionsAlice3.h"
-#include "ALICE3/ML/HfMlResponse3Prong.h"
-
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
