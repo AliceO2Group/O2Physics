@@ -22,18 +22,19 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Tools/TrackTuner.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -50,6 +51,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "Math/Vector4D.h"
+#include "TMCProcess.h"
 #include "TRandom3.h"
 
 #include <algorithm>
@@ -221,27 +223,31 @@ struct nucleiQC {
   void fillNucleusFlagsPdgsMc(const Tparticle& particle, nuclei::SlimCandidate& candidate)
   {
     candidate.pdgCode = particle.pdgCode();
+    candidate.mcProcess = particle.getProcess();
+
+    if (particle.has_mothers()) {
+      for (const auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
+        candidate.motherPdgCode = motherparticle.pdgCode();
+      }
+    }
 
     if (particle.isPhysicalPrimary()) {
       candidate.flags |= nuclei::Flags::kIsPhysicalPrimary;
 
-      // heavy flavour mother
-      // if (particle.has_mothers()) {
-      //  for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
-      //    if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
-      //      flags |= kIsSecondaryFromWeakDecay;
-      //      motherPdgCode = motherparticle.pdgCode();
-      //      break;
-      //    }
-      //  }
-      //}
+      ///<  heavy flavour mother
+      /*if (particle.has_mothers()) {
+        for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+          if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+            flags |= kIsSecondaryFromWeakDecay;
+            motherPdgCode = motherparticle.pdgCode();
+            break;
+          }
+        }
+      }*/
 
-    } else if (particle.has_mothers()) {
+    } else if (particle.getProcess() == TMCProcess::kPDecay) {
+      ///<  assuming that strong decays are included in the previous step
       candidate.flags |= nuclei::Flags::kIsSecondaryFromWeakDecay;
-      for (const auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
-        candidate.motherPdgCode = motherparticle.pdgCode();
-      }
-
     } else {
       candidate.flags |= nuclei::Flags::kIsSecondaryFromMaterial;
     }
@@ -328,7 +334,8 @@ struct nucleiQC {
                                        .ptGenerated = 0.f, // to be filled for mc
                                        .etaGenerated = 0.f,
                                        .phiGenerated = 0.f,
-                                       .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator)};
+                                       .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator),
+                                       .mcProcess = TMCProcess::kPNoProcess};
 
     fillDcaInformation(collision, track, candidate);
     fillNucleusFlagsPdgs(iSpecies, collision, track, candidate);
@@ -485,6 +492,7 @@ struct nucleiQC {
         candidate.DCAxy,
         candidate.DCAz,
         candidate.flags,
+        candidate.mcProcess,
         candidate.pdgCode,
         candidate.motherPdgCode);
     }

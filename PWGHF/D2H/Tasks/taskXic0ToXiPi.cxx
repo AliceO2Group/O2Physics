@@ -125,7 +125,7 @@ struct HfTaskXic0ToXiPi {
     const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
 
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
+    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterMl) {
       std::vector<AxisSpec> const axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
       registry.add("hSparseAcc", "Thn for generated Xic0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();

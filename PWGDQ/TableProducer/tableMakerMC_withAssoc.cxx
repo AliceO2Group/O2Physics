@@ -34,7 +34,8 @@
 #include "Common/DataModel/FwdTrackReAlignTables.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -597,13 +598,6 @@ struct TableMakerMC {
       }
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
 
-      // apply the event filter
-      if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
-        if (!collision.eventFilter()) {
-          continue;
-        }
-      }
-
       auto bc = collision.template bc_as<BCsWithTimestamps>();
       // store the selection decisions
       uint64_t tag = static_cast<uint64_t>(0);
@@ -663,20 +657,11 @@ struct TableMakerMC {
         multZNC = collision.multZNC();
         multTracklets = collision.multTracklets();
         multTracksPV = collision.multNTracksPV();
-        if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
-          // Use the FIT signals from the nearest BC with FIT amplitude above threshold
-          multFV0A = collision.newBcMultFV0A();
-          multFT0A = collision.newBcMultFT0A();
-          multFT0C = collision.newBcMultFT0C();
-          multFDDA = collision.newBcMultFDDA();
-          multFDDC = collision.newBcMultFDDC();
-        } else {
-          multFV0A = collision.multFV0A();
-          multFT0A = collision.multFT0A();
-          multFT0C = collision.multFT0C();
-          multFDDA = collision.multFDDA();
-          multFDDC = collision.multFDDC();
-        }
+        multFV0A = collision.multFV0A();
+        multFT0A = collision.multFT0A();
+        multFT0C = collision.multFT0C();
+        multFDDA = collision.multFDDA();
+        multFDDC = collision.multFDDC();
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
         centFT0C = collision.centFT0C();
@@ -1215,10 +1200,6 @@ struct TableMakerMC {
     eventMC.reserve(mcCollisions.size());
     skimMCCollisions(mcCollisions);
 
-    // select MC particles to be written using the specified MC signals
-    // NOTE: tables are not written at this point, only label maps are being created
-    skimMCParticles(mcParticles, mcCollisions);
-
     // skim collisions
     event.reserve(collisions.size());
     eventExtended.reserve(collisions.size());
@@ -1229,6 +1210,12 @@ struct TableMakerMC {
     if (fCollIndexMap.size() == 0) {
       return;
     }
+
+    // select MC particles to be written using the specified MC signals
+    // NOTE: tables are not written at this point, only label maps are being created
+    //       Only skim MC particles when the MC collision is reconstructed
+    //       Because in the first five DFs of each run, the MC collisions are not reconstructed
+    skimMCParticles(mcParticles, mcCollisions);
 
     // Clear index map and reserve memory for barrel tables
     if constexpr (static_cast<bool>(TTrackFillMap)) {

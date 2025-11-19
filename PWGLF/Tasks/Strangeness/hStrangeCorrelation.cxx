@@ -23,13 +23,12 @@
 
 #include "PWGLF/DataModel/LFHStrangeCorrelationTables.h"
 
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -125,6 +124,7 @@ struct HStrangeCorrelation {
     Configurable<float> maxPeakNSigma{"maxPeakNSigma", 5, "Peak region edge definition (in sigma)"};
     Configurable<float> minBgNSigma{"minBgNSigma", 5, "Bg region edge closest to peak (in sigma)"};
     Configurable<float> maxBgNSigma{"maxBgNSigma", 10, "Bg region edge furthest to peak (in sigma)"};
+    Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 1.5, "for Oemga analysis only, to check if candidate mass is around Xi"};
   } massWindowConfigurations; // allows for gap between peak and bg in case someone wants to
 
   // Implementation of on-the-spot efficiency correction
@@ -859,7 +859,7 @@ struct HStrangeCorrelation {
         //---] syst cuts [---
         if (doPPAnalysis && (std::abs(assoc.dcapostopv()) < systCuts.dcapostopv ||
                              std::abs(assoc.dcanegtopv()) < systCuts.dcanegtopv ||
-                             assoc.dcabachtopv() < systCuts.cascDcabachtopv ||
+                             std::abs(assoc.dcabachtopv()) < systCuts.cascDcabachtopv ||
                              assoc.dcaV0daughters() > systCuts.dcaV0dau ||
                              assoc.dcacascdaughters() > systCuts.cascDcacascdau ||
                              assoc.v0cosPA(pvx, pvy, pvz) < systCuts.v0cospa ||
@@ -1491,10 +1491,6 @@ struct HStrangeCorrelation {
         histos.add(fmt::format("GeneratedWithPV/h{}_MidYVsMult", kParticlenames[i]).c_str(), "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult});
         histos.add(fmt::format("GeneratedWithPV/h{}_MidYVsMult_TwoPVsOrMore", kParticlenames[i]).c_str(), "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult});
       }
-      histos.add("GeneratedWithPV/hLambdaFromXiZero", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
-      histos.add("GeneratedWithPV/hLambdaFromXiMinus", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
-      histos.add("GeneratedWithPV/hAntiLambdaFromXiZero", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
-      histos.add("GeneratedWithPV/hAntiLambdaFromXiPlus", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
     }
     if (doprocessClosureTest) {
       for (int i = 0; i < 9; i++) {
@@ -1516,6 +1512,10 @@ struct HStrangeCorrelation {
       histos.add("hLambdaFromXiZeroEtaVsPtVsPhi", "hLambdaFromXiZeroEtaVsPtVsPhi", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       histos.add("hAntiLambdaFromXiPlusEtaVsPtVsPhi", "hAntiLambdaFromXiPlusEtaVsPtVsPhi", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       histos.add("hAntiLambdaFromXiZeroEtaVsPtVsPhi", "hAntiLambdaFromXiZeroEtaVsPtVsPhi", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      histos.add("GeneratedWithPV/hLambdaFromXiZero", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
+      histos.add("GeneratedWithPV/hLambdaFromXiMinus", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
+      histos.add("GeneratedWithPV/hAntiLambdaFromXiZero", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
+      histos.add("GeneratedWithPV/hAntiLambdaFromXiPlus", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
     }
 
     // visual inspection of sizes
@@ -1722,10 +1722,6 @@ struct HStrangeCorrelation {
     }
 
     // Do basic QA
-    for (auto const& hadron : assocHadrons) {
-      auto hadronTrack = hadron.track_as<TracksComplete>();
-      histos.fill(HIST("hHadronEtaVsPtVsPhi"), hadronTrack.pt(), hadronTrack.eta(), hadronTrack.phi());
-    }
     if (!doprocessSameEventHCascades && !doprocessSameEventHV0s && !doprocessSameEventHPions) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
@@ -1920,7 +1916,7 @@ struct HStrangeCorrelation {
       //---] syst cuts [---
       if (doPPAnalysis && (std::abs(cascData.dcapostopv()) < systCuts.dcapostopv ||
                            std::abs(cascData.dcanegtopv()) < systCuts.dcanegtopv ||
-                           cascData.dcabachtopv() < systCuts.cascDcabachtopv ||
+                           std::abs(cascData.dcabachtopv()) < systCuts.cascDcabachtopv ||
                            cascData.dcaV0daughters() > systCuts.dcaV0dau ||
                            cascData.dcacascdaughters() > systCuts.cascDcacascdau ||
                            cascData.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < systCuts.v0cospa ||
@@ -1941,6 +1937,9 @@ struct HStrangeCorrelation {
 
       static_for<0, 3>([&](auto i) {
         constexpr int Index = i.value;
+        if ((Index == 2 || Index == 3) && casc.compatible(Index, systCuts.dEdxCompatibility) && std::abs(casc.invMassNSigma(Index - 2)) < massWindowConfigurations.nSigmaNearXiMassCenter) {
+          return;
+        }
         float efficiency = 1.0f;
         if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyCascade[Index]->Interpolate(cascData.pt(), cascData.eta());

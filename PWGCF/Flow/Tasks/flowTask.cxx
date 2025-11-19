@@ -72,7 +72,9 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
+  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta range for pt-pt correlations")
+  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPt, float, 0.2, "eta gap for pt-pt correlations, cfgEtaGapPtPt<|eta|<cfgEtaPtPt")
+  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
@@ -155,13 +157,20 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
-    // for deltaPt/<pT> vs c22 vs centrality
-    O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs c22 vs centrality")
-    O2_DEFINE_CONFIGURABLE(cfgDptDisCorrConfigIndex, int, 7, "Index in CorrConfig, this decide which correlation is filled")
+    // for deltaPt/<pT> vs centrality
+    O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs centrality")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisSelectionSwitch, int, 0, "0: disable, 1: use low cut, 2:use high cut")
     TH1D* hEvAvgMeanPt = nullptr;
+    TH1D* fDptDisCutLow = nullptr;
+    TH1D* fDptDisCutHigh = nullptr;
     O2_DEFINE_CONFIGURABLE(cfgDptDishEvAvgMeanPt, std::string, "", "CCDB path to hMeanPt object")
-    ConfigurableAxis cfgDptDisAxisCorr{"cfgDptDisAxisCorr", {50, 0., 0.005}, "pt axis for histograms"};
+    O2_DEFINE_CONFIGURABLE(cfgDptDisCutLow, std::string, "", "CCDB path to dpt lower boundary")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisCutHigh, std::string, "", "CCDB path to dpt higher boundary")
     ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
+    // Functional form of pt-dependent DCAxy cut
+    TF1* fPtDepDCAxy = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -222,6 +231,11 @@ struct FlowTask {
   enum DataType {
     kReco,
     kGen
+  };
+  enum DptCut {
+    kNoDptCut = 0,
+    kLowDptCut = 1,
+    kHighDptCut = 2
   };
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -324,7 +338,7 @@ struct FlowTask {
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     if (cfgFuncParas.cfgDptDisEnable) {
-      registry.add("hNormDeltaPt_Corr_X", " #delta p_{T}/[p_{T}]; Corr; X", {HistType::kTH3D, {cfgFuncParas.cfgDptDisAxisNormal, cfgFuncParas.cfgDptDisAxisCorr, axisIndependent}});
+      registry.add("hNormDeltaPt_X", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgFuncParas.cfgDptDisAxisNormal, axisIndependent}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -500,6 +514,8 @@ struct FlowTask {
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
     fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
+    if (cfgEtaGapPtPtEnabled)
+      fFCpt->initialiseSubevent(axisIndependent, cfgMpar, cfgNbootstrap);
     for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
       corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
     }
@@ -559,6 +575,12 @@ struct FlowTask {
       funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
+
+    if (cfgFuncParas.cfgDCAxyNSigma) {
+      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
+    }
   }
 
   void createOutputObjectsForRun(int runNumber)
@@ -603,25 +625,6 @@ struct FlowTask {
     return;
   }
 
-  template <char... chars>
-  void fillDeltaPtvsCorr(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& histo, const double& cent)
-  {
-    double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1) {
-        double meanPt = sum_pt / WeffEvent;
-        double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(cent));
-        registry.fill(histo, deltaPt / meanPt, val, cent, dnx * WeffEvent);
-      }
-      return;
-    }
-    return;
-  }
-
   template <DataType dt>
   void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
@@ -653,6 +656,14 @@ struct FlowTask {
   {
     if (std::abs(track.eta()) < cfgEtaPtPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
+      if (cfgEtaGapPtPtEnabled) {
+        if (track.eta() < -1. * cfgEtaGapPtPt) {
+          (dt == kGen) ? fFCptgen->fillSub1(1., track.pt()) : fFCpt->fillSub1(weff, track.pt());
+        }
+        if (track.eta() > cfgEtaGapPtPt) {
+          (dt == kGen) ? fFCptgen->fillSub2(1., track.pt()) : fFCpt->fillSub2(weff, track.pt());
+        }
+      }
     }
   }
 
@@ -662,6 +673,11 @@ struct FlowTask {
     (dt == kGen) ? fFCptgen->calculateCorrelations() : fFCpt->calculateCorrelations();
     (dt == kGen) ? fFCptgen->fillPtProfiles(centmult, rndm) : fFCpt->fillPtProfiles(centmult, rndm);
     (dt == kGen) ? fFCptgen->fillCMProfiles(centmult, rndm) : fFCpt->fillCMProfiles(centmult, rndm);
+    if (cfgEtaGapPtPtEnabled) {
+      (dt == kGen) ? fFCptgen->calculateSubeventCorrelations() : fFCpt->calculateSubeventCorrelations();
+      (dt == kGen) ? fFCptgen->fillSubeventPtProfiles(centmult, rndm) : fFCpt->fillSubeventPtProfiles(centmult, rndm);
+      (dt == kGen) ? fFCptgen->fillCMSubeventProfiles(centmult, rndm) : fFCpt->fillCMSubeventProfiles(centmult, rndm);
+    }
     for (uint l_ind = 0; l_ind < corrconfigsPtVn.size(); ++l_ind) {
       if (!corrconfigsPtVn.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigsPtVn.at(l_ind), 0, kTRUE).real();
@@ -701,6 +717,22 @@ struct FlowTask {
         LOGF(fatal, "Could not load mean pT histogram from %s", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str());
       }
       LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgFuncParas.hEvAvgMeanPt);
+    }
+    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDisSelectionSwitch > kNoDptCut) {
+      if (cfgFuncParas.cfgDptDisCutLow.value.empty() == false) {
+        cfgFuncParas.fDptDisCutLow = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutLow, timestamp);
+        if (cfgFuncParas.fDptDisCutLow == nullptr) {
+          LOGF(fatal, "Could not load dptDis low cut histogram from %s", cfgFuncParas.cfgDptDisCutLow.value.c_str());
+        }
+        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgFuncParas.cfgDptDisCutLow.value.c_str(), (void*)cfgFuncParas.fDptDisCutLow);
+      }
+      if (cfgFuncParas.cfgDptDisCutHigh.value.empty() == false) {
+        cfgFuncParas.fDptDisCutHigh = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutHigh, timestamp);
+        if (cfgFuncParas.fDptDisCutHigh == nullptr) {
+          LOGF(fatal, "Could not load dptDis high cut histogram from %s", cfgFuncParas.cfgDptDisCutHigh.value.c_str());
+        }
+        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgFuncParas.cfgDptDisCutHigh.value.c_str(), (void*)cfgFuncParas.fDptDisCutHigh);
+      }
     }
     correctionsLoaded = true;
   }
@@ -839,6 +871,8 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
@@ -1101,7 +1135,17 @@ struct FlowTask {
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
 
     if (cfgFuncParas.cfgDptDisEnable) {
-      fillDeltaPtvsCorr(corrconfigs.at(cfgFuncParas.cfgDptDisCorrConfigIndex), ptSum, weffEvent, HIST("hNormDeltaPt_Corr_X"), independent);
+      double meanPt = ptSum / weffEvent;
+      double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(independent));
+      double normDeltaPt = deltaPt / meanPt;
+      registry.fill(HIST("hNormDeltaPt_X"), normDeltaPt, independent, weffEvent);
+      if (cfgFuncParas.cfgDptDisSelectionSwitch == kLowDptCut && normDeltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
+        // only keep low 10% dpt event
+        return;
+      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == kHighDptCut && normDeltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
+        // only keep high 10% dpt event
+        return;
+      }
     }
 
     double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
