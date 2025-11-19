@@ -4059,7 +4059,7 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
-         
+
           // fill MC truth values for the B hadron
           auto currentMCParticle = trackMC;
           if (mcDecision > 0) {
