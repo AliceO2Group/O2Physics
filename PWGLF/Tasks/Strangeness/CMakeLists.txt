@@ -171,7 +171,7 @@ o2physics_add_dpl_workflow(cascadeanalysislightions
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strangecasctrack
-    SOURCES strangecasctrack.cxx
+o2physics_add_dpl_workflow(strange-casc-track
+    SOURCES strangeCascTrack.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
