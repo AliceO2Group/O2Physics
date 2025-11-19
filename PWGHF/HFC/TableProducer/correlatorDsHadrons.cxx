@@ -280,9 +280,18 @@ struct HfCorrelatorDsHadrons {
       registry.add("hDsPoolBin", "Ds candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
       registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
       if (pidTrkApplied) {
+        registry.add("hTpcTofNSigmaPreSelPidPion", "n sigma tpc and tof for pion hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPreSelPidKaon", "n sigma tpc and tof for kaon hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPreSelPidProton", "n sigma tpc and tof for proton hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPreSelPidPionM2", "n sigma tpc and tof for pion hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPreSelPidKaonM2", "n sigma tpc and tof for kaon hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPreSelPidProtonM2", "n sigma tpc and tof for proton hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaPidPion", "n sigma tpc and tof for pion hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaPidKaon", "n sigma tpc and tof for kaon hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaPidProton", "n sigma tpc and tof for proton hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPidPionM2", "n sigma tpc and tof for pion hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPidKaonM2", "n sigma tpc and tof for kaon hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
+        registry.add("hTpcTofNSigmaPidProtonM2", "n sigma tpc and tof for proton hypothesis", {HistType::kTH3F, {{axisPid}, {axisPid}, {axisPtHadron}}});
       }
     }
     // Histograms for MC Reco analysis
@@ -833,6 +842,13 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
+        registry.fill(HIST("hTpcTofNSigmaPreSelPidPion"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+        registry.fill(HIST("hTpcTofNSigmaPreSelPidKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+        registry.fill(HIST("hTpcTofNSigmaPreSelPidProton"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+        registry.fill(HIST("hTpcTofNSigmaPreSelPidPionM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
+        registry.fill(HIST("hTpcTofNSigmaPreSelPidKaonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
+        registry.fill(HIST("hTpcTofNSigmaPreSelPidProtonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
+
         if (pidTrkApplied) {
           if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
@@ -840,6 +856,9 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hTpcTofNSigmaPidPion"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
           registry.fill(HIST("hTpcTofNSigmaPidKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
           registry.fill(HIST("hTpcTofNSigmaPidProton"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPidPionM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPidKaonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPidProtonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
         }
         assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
