@@ -1101,7 +1101,7 @@ struct JetFragmentation {
   // Implementation of background subtraction at runtime
   // ---------------------------------------------------
 
-  int getPtBin(float pt, std::vector<float> ptBins)
+  int getPtBin(float pt, const std::vector<float>& ptBins)
   {
     if (pt < ptBins.at(0))
       return -1;
@@ -1216,7 +1216,7 @@ struct JetFragmentation {
     return v;
   }
   // Return the probability associated with a given outcome
-  double stateWeight(std::vector<int> state, std::vector<std::vector<double>> weights)
+  double stateWeight(const std::vector<int>& state, const std::vector<std::vector<double>>& weights)
   {
     double w = 1.;
     for (uint32_t ip = 0; ip < state.size(); ip++) {
@@ -1226,7 +1226,7 @@ struct JetFragmentation {
   }
   // Return the corrected values for z and ptjet for a given state
   // Scale values by the fraction of jet momentum carried by removed V0s
-  std::vector<double> correctedValues(std::vector<int> state, std::vector<double> values)
+  std::vector<double> correctedValues(const std::vector<int>& state, const std::vector<double>& values)
   {
     // Assumes values = (z1, z2, ..., zn, ptjet)
     std::vector<double> v(values);
@@ -1253,7 +1253,7 @@ struct JetFragmentation {
   // Return the corrected values for z and ptjet for a given state
   // Take into account tracks that would have been included in the jet regardless of the V0s
   template <typename T, typename U, typename V>
-  std::vector<double> correctedValuesPlusTracks(std::vector<int> state, V const& jet)
+  std::vector<double> correctedValuesPlusTracks(const std::vector<int>& state, V const& jet)
   {
     int ip = 0;
     double ptToSubtract = 0., ptToAdd = 0.;
@@ -1710,7 +1710,7 @@ struct JetFragmentation {
     registry.fill(HIST("data/V0/nV0sEventAccWeighted"), nV0s);
   }
   template <typename C, typename J>
-  void fillDataV0sInJetWeighted(C const& coll, J const& jet, std::vector<int> state, std::vector<double> values, double weight)
+  void fillDataV0sInJetWeighted(C const& coll, J const& jet, const std::vector<int>& state, const std::vector<double>& values, double weight)
   {
     double jetpt = values[values.size() - 1];
     int ip = 0;

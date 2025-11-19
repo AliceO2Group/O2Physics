@@ -241,6 +241,22 @@ struct muonQa {
     Configurable<int64_t> nolaterthanRealign{"ccdb-no-later-than-new", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object of new basis"};
   } configCCDB;
 
+  // Derived version of mch::Track class that handles the associated clusters as internal objects and deletes them in the destructor
+  class TrackRealigned : public mch::Track
+  {
+   public:
+    TrackRealigned() = default;
+    ~TrackRealigned()
+    {
+      // delete the clusters associated to this track
+      for (const auto& par : *this) {
+        if (par.getClusterPtr()) {
+          delete par.getClusterPtr();
+        }
+      }
+    }
+  };
+
   ////    Variables for histograms configuration
   Configurable<int> fNCandidatesMax{"nCandidatesMax", 5, ""};
 
@@ -1465,7 +1481,7 @@ struct muonQa {
   }
 
   template <typename TMCHTrack, typename TFwdCls, typename Var>
-  bool FillClusters(TMCHTrack const& muon, TFwdCls const& mchcls, Var& fgValues, mch::Track& convertedTrack)
+  bool FillClusters(TMCHTrack const& muon, TFwdCls const& mchcls, Var& fgValues, TrackRealigned& convertedTrack)
   {
     int removable = 0;
     auto clustersSliced = mchcls.sliceBy(perMuon, muon.globalIndex()); // Slice clusters by muon id
@@ -2325,7 +2341,7 @@ struct muonQa {
       }
 
       //// Fill MCH clusters: do re-alignment if asked
-      mch::Track mchrealignedTmp;
+      TrackRealigned mchrealignedTmp;
       VarClusters fgValuesClsTmp;
       if (!FillClusters(muon, clusters, fgValuesClsTmp, mchrealignedTmp)) {
         continue; // Refit is not valid
@@ -2424,7 +2440,7 @@ struct muonQa {
         FillPropagation<1>(muon, fgValuesColl, fgValuesMCH, fgValuesMCHpv); // copied in a separate variable
 
         //// Fill MCH clusters: re-align clusters if required
-        mch::Track mchrealigned;
+        TrackRealigned mchrealigned;
         VarClusters fgValuesCls;
         if (!FillClusters(muon, clusters, fgValuesCls, mchrealigned)) {
           continue; // if refit was not passed
@@ -2501,7 +2517,7 @@ struct muonQa {
       FillPropagation<1>(mchtrack, fgValuesCollMCH, VarTrack{}, fgValuesMCHpv); // saved in separate variable fgValuesMCHpv
 
       //// Fill MCH clusters: re-align clusters if required
-      mch::Track mchrealigned;
+      TrackRealigned mchrealigned;
       VarClusters fgValuesCls;
       if (!FillClusters(mchtrack, clusters, fgValuesCls, mchrealigned)) {
         continue; // if refit was not passed
@@ -2589,7 +2605,7 @@ struct muonQa {
 
       VarTrack fgValuesMuon1, fgValuesMuonPV1;
       VarTrack fgValuesMuon2, fgValuesMuonPV2;
-      mch::Track mchrealigned1, mchrealigned2;
+      TrackRealigned mchrealigned1, mchrealigned2;
       VarClusters fgValuesCls1, fgValuesCls2;
       if (!FillClusters(muonTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(muonTrack2, clusters, fgValuesCls2, mchrealigned2)) {
         continue; // Refit is not valid
@@ -3092,7 +3108,7 @@ struct muonQa {
 
         VarTrack fgValuesMuon1, fgValuesMuonPV1;
         VarTrack fgValuesMuon2, fgValuesMuonPV2;
-        mch::Track mchrealigned1, mchrealigned2;
+        TrackRealigned mchrealigned1, mchrealigned2;
         VarClusters fgValuesCls1, fgValuesCls2;
         if (!FillClusters(muonTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(muonTrack2, clusters, fgValuesCls2, mchrealigned2)) {
           continue; // Refit is not valid
@@ -3249,7 +3265,7 @@ struct muonQa {
       FillMatching(muonTrack1, fgValuesMCH1, fgValuesMFT1);
       FillMatching(muonTrack2, fgValuesMCH2, fgValuesMFT2);
 
-      mch::Track mchrealigned1, mchrealigned2;
+      TrackRealigned mchrealigned1, mchrealigned2;
       VarClusters fgValuesCls1, fgValuesCls2;
       if (!FillClusters(mchTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(mchTrack2, clusters, fgValuesCls2, mchrealigned2)) {
         continue; // Refit is not valid

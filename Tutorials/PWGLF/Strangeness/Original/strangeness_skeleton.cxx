@@ -9,23 +9,22 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Step4 of the Strangeness tutorial
-/// \author Romain Schotter
-/// based on the original codes from:
+/// \brief this is a starting point for the Strangeness tutorial
 /// \author Nepeivoda Roman (roman.nepeivoda@cern.ch)
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+
+#include "Common/DataModel/EventSelection.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct strangeness_pbpb_tutorial {
+struct strangeness_tutorial {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -34,9 +33,6 @@ struct strangeness_pbpb_tutorial {
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-
-  // PDG data base
-  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(InitContext const&)
   {
@@ -53,7 +49,7 @@ struct strangeness_pbpb_tutorial {
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
-  void process(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision)
   {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
@@ -63,5 +59,5 @@ struct strangeness_pbpb_tutorial {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangeness_pbpb_tutorial>(cfgc)};
+    adaptAnalysisTask<strangeness_tutorial>(cfgc)};
 }

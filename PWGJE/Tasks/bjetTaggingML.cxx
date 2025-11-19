@@ -269,7 +269,7 @@ struct BJetTaggingML {
       tracksParams.emplace_back(jettaggingutilities::BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
     }
 
-    auto compare = [](jettaggingutilities::BJetTrackParams& tr1, jettaggingutilities::BJetTrackParams& tr2) {
+    auto compare = [](const jettaggingutilities::BJetTrackParams& tr1, const jettaggingutilities::BJetTrackParams& tr2) {
       return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
     };
 
