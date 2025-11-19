@@ -288,8 +288,6 @@ DECLARE_SOA_COLUMN(AmplitudeFDDC, amplitudeFDDC, float);         //! FDDC total 
 DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);                   //! FDDA time
 DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);                   //! FDDC time
 DECLARE_SOA_COLUMN(TriggerMaskFDD, triggerMaskFDD, uint8_t);     //! FDD trigger mask
-DECLARE_SOA_COLUMN(NFiredChannelsFDDA, nFiredChannelsFDDA, int); //! Number of fired channels in FDDA
-DECLARE_SOA_COLUMN(NFiredChannelsFDDC, nFiredChannelsFDDC, int); //! Number of fired channels in FDDC
 DECLARE_SOA_COLUMN(AmplitudeFV0A, amplitudeFV0A, float);         //! FV0A total amplitude
 DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);                   //! FV0A time
 DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t);   //! FV0A trigger mask
@@ -304,11 +302,6 @@ DECLARE_SOA_COLUMN(BBFDDApf, bbFDDApf, int32_t);                 //! Beam-beam f
 DECLARE_SOA_COLUMN(BGFDDApf, bgFDDApf, int32_t);                 //! Beam-gas flags for FDDA
 DECLARE_SOA_COLUMN(BBFDDCpf, bbFDDCpf, int32_t);                 //! Beam-beam flags for FDDC
 DECLARE_SOA_COLUMN(BGFDDCpf, bgFDDCpf, int32_t);                 //! Beam-gas flags for FDDC
-DECLARE_SOA_COLUMN(DistClosestBcTOR, distClosestBcTOR, int32_t); //! Distance to closest BC with TOR trigger
-DECLARE_SOA_COLUMN(DistClosestBcTSC, distClosestBcTSC, int32_t); //! Distance to closest BC with TSC trigger
-DECLARE_SOA_COLUMN(DistClosestBcTVX, distClosestBcTVX, int32_t); //! Distance to closest BC with TVX trigger
-DECLARE_SOA_COLUMN(DistClosestBcV0A, distClosestBcV0A, int32_t); //! Distance to closest BC with V0A trigger
-DECLARE_SOA_COLUMN(DistClosestBcT0A, distClosestBcT0A, int32_t); //! Distance to closest BC with T0A trigger
 } // namespace reducedfit
 
 DECLARE_SOA_TABLE(ReducedFITs, "AOD", "REDUCEDFIT", //! FIT detector information
@@ -319,7 +312,6 @@ DECLARE_SOA_TABLE(ReducedFITs, "AOD", "REDUCEDFIT", //! FIT detector information
                   reducedfit::AmplitudeFDDA, reducedfit::AmplitudeFDDC,
                   reducedfit::TimeFDDA, reducedfit::TimeFDDC,
                   reducedfit::TriggerMaskFDD,
-                  reducedfit::NFiredChannelsFDDA, reducedfit::NFiredChannelsFDDC,
                   reducedfit::AmplitudeFV0A, reducedfit::TimeFV0A,
                   reducedfit::TriggerMaskFV0A,
                   reducedfit::NFiredChannelsFV0A,
@@ -327,10 +319,7 @@ DECLARE_SOA_TABLE(ReducedFITs, "AOD", "REDUCEDFIT", //! FIT detector information
                   reducedfit::BBFT0Cpf, reducedfit::BGFT0Cpf,
                   reducedfit::BBFV0Apf, reducedfit::BGFV0Apf,
                   reducedfit::BBFDDApf, reducedfit::BGFDDApf,
-                  reducedfit::BBFDDCpf, reducedfit::BGFDDCpf,
-                  reducedfit::DistClosestBcTOR, reducedfit::DistClosestBcTSC,
-                  reducedfit::DistClosestBcTVX, reducedfit::DistClosestBcV0A,
-                  reducedfit::DistClosestBcT0A);
+                  reducedfit::BBFDDCpf, reducedfit::BGFDDCpf);
 
 using ReducedFIT = ReducedFITs::iterator;
 

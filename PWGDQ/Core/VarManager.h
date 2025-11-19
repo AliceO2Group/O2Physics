@@ -21,13 +21,14 @@
 #define HomogeneousField
 #endif
 
+#include "PWGUD/Core/UDHelpers.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
-#include "DataFormatsFIT/Triggers.h"
 
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -420,39 +421,6 @@ class VarManager : public TObject
     kTimeZNC,
     kTimeZPA,
     kTimeZPC,
-    kAmplitudeFT0A,
-    kAmplitudeFT0C,
-    kTimeFT0A,
-    kTimeFT0C,
-    kTriggerMaskFT0,
-    kNFiredChannelsFT0A,
-    kNFiredChannelsFT0C,
-    kAmplitudeFDDA,
-    kAmplitudeFDDC,
-    kTimeFDDA,
-    kTimeFDDC,
-    kTriggerMaskFDD,
-    kNFiredChannelsFDDA,
-    kNFiredChannelsFDDC,
-    kAmplitudeFV0A,
-    kTimeFV0A,
-    kTriggerMaskFV0A,
-    kNFiredChannelsFV0A,
-    kBBFT0Apf,
-    kBGFT0Apf,
-    kBBFT0Cpf,
-    kBGFT0Cpf,
-    kBBFV0Apf,
-    kBGFV0Apf,
-    kBBFDDApf,
-    kBGFDDApf,
-    kBBFDDCpf,
-    kBGFDDCpf,
-    kDistClosestBcTOR,
-    kDistClosestBcTSC,
-    kDistClosestBcTVX,
-    kDistClosestBcV0A,
-    kDistClosestBcT0A,
     kQ2X0A1,
     kQ2X0A2,
     kQ2Y0A1,
@@ -947,6 +915,34 @@ class VarManager : public TObject
     kBdtPrompt,
     kBdtNonprompt,
 
+    // FIT detector variables
+    kAmplitudeFT0A,
+    kAmplitudeFT0C,
+    kTimeFT0A,
+    kTimeFT0C,
+    kTriggerMaskFT0,
+    kAmplitudeFDDA,
+    kAmplitudeFDDC,
+    kTimeFDDA,
+    kTimeFDDC,
+    kTriggerMaskFDD,
+    kAmplitudeFV0A,
+    kTimeFV0A,
+    kTriggerMaskFV0A,
+    kBBFT0Apf,
+    kBGFT0Apf,
+    kBBFT0Cpf,
+    kBGFT0Cpf,
+    kBBFV0Apf,
+    kBGFV0Apf,
+    kBBFDDApf,
+    kBGFDDApf,
+    kBBFDDCpf,
+    kBGFDDCpf,
+    kNFiredChannelsFT0A,
+    kNFiredChannelsFT0C,
+    kNFiredChannelsFV0A,
+
     kNVars
   }; // end of Variables enumeration
 
@@ -1244,11 +1240,9 @@ class VarManager : public TObject
   template <typename T>
   static void FillZDC(const T& zdc, float* values = nullptr);
   template <typename T>
-  static void FillFIT(const T& fit, float* values = nullptr);
-  template <typename TBC, typename TBCs>
-  static void FillFIT(TBC const& bc, TBCs const& bcs, float* values = nullptr);
-  template <typename T>
   static void FillBdtScore(const T& bdtScore, float* values = nullptr);
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  static void FillFIT(const T1& bc, const T2& bcs, const T3& ft0s, const T4& fv0as, const T5& fdds, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -5254,343 +5248,6 @@ void VarManager::FillZDC(T const& zdc, float* values)
   values[kTimeZPC] = zdc.timeZPC();
 }
 
-// Helper to detect if type has amplitudeFT0A method (ReducedFIT table)
-template <typename T, typename = void>
-struct has_amplitudeFT0A : std::false_type {
-};
-
-template <typename T>
-struct has_amplitudeFT0A<T, std::void_t<decltype(std::declval<T>().amplitudeFT0A())>> : std::true_type {
-};
-
-// Helper to detect FT0 detector object (has amplitudeA method)
-template <typename T, typename = void>
-struct is_FT0 : std::false_type {
-};
-
-template <typename T>
-struct is_FT0<T, std::void_t<decltype(std::declval<T>().amplitudeA())>> : std::true_type {
-};
-
-// Helper to detect FV0A detector object (has amplitude method, not amplitudeA)
-template <typename T, typename = void>
-struct is_FV0A : std::false_type {
-};
-
-template <typename T>
-struct is_FV0A<T, std::void_t<decltype(std::declval<T>().amplitude())>> : std::true_type {
-};
-
-// Helper to detect FDD detector object (has chargeA method)
-template <typename T, typename = void>
-struct is_FDD : std::false_type {
-};
-
-template <typename T>
-struct is_FDD<T, std::void_t<decltype(std::declval<T>().chargeA())>> : std::true_type {
-};
-
-// FillFIT version for ReducedFIT table objects (skimmed data with pre-computed values)
-template <typename T>
-void VarManager::FillFIT(T const& obj, float* values)
-{
-  if (!values) {
-    values = fgValues;
-  }
-
-  // ReducedFIT table object - read all pre-computed columns directly
-  values[kAmplitudeFT0A] = obj.amplitudeFT0A();
-  values[kAmplitudeFT0C] = obj.amplitudeFT0C();
-  values[kTimeFT0A] = obj.timeFT0A();
-  values[kTimeFT0C] = obj.timeFT0C();
-  values[kTriggerMaskFT0] = obj.triggerMaskFT0();
-  values[kNFiredChannelsFT0A] = obj.nFiredChannelsFT0A();
-  values[kNFiredChannelsFT0C] = obj.nFiredChannelsFT0C();
-  values[kAmplitudeFDDA] = obj.amplitudeFDDA();
-  values[kAmplitudeFDDC] = obj.amplitudeFDDC();
-  values[kTimeFDDA] = obj.timeFDDA();
-  values[kTimeFDDC] = obj.timeFDDC();
-  values[kTriggerMaskFDD] = obj.triggerMaskFDD();
-  values[kNFiredChannelsFDDA] = obj.nFiredChannelsFDDA();
-  values[kNFiredChannelsFDDC] = obj.nFiredChannelsFDDC();
-  values[kAmplitudeFV0A] = obj.amplitudeFV0A();
-  values[kTimeFV0A] = obj.timeFV0A();
-  values[kTriggerMaskFV0A] = obj.triggerMaskFV0A();
-  values[kNFiredChannelsFV0A] = obj.nFiredChannelsFV0A();
-  values[kBGFT0Apf] = obj.bgFT0Apf();
-  values[kBGFT0Cpf] = obj.bgFT0Cpf();
-  values[kBBFT0Apf] = obj.bbFT0Apf();
-  values[kBBFT0Cpf] = obj.bbFT0Cpf();
-  values[kBGFV0Apf] = obj.bgFV0Apf();
-  values[kBBFV0Apf] = obj.bbFV0Apf();
-  values[kBGFDDApf] = obj.bgFDDApf();
-  values[kBGFDDCpf] = obj.bgFDDCpf();
-  values[kBBFDDApf] = obj.bbFDDApf();
-  values[kBBFDDCpf] = obj.bbFDDCpf();
-  values[kDistClosestBcTOR] = obj.distClosestBcTOR();
-  values[kDistClosestBcTSC] = obj.distClosestBcTSC();
-  values[kDistClosestBcTVX] = obj.distClosestBcTVX();
-  values[kDistClosestBcV0A] = obj.distClosestBcV0A();
-  values[kDistClosestBcT0A] = obj.distClosestBcT0A();
-}
-namespace FITConstants {
-  static constexpr uint64_t kPileupScanRange = 16;
-  static constexpr float kFT0TimeThreshold = 2.0f;
-  static constexpr float kDefaultAmplitude = -1.f;
-  static constexpr float kDefaultTime = -999.f;
-  static constexpr int32_t kDefaultDistance = 999;
-}
-
-// Helper 함수로 pileup 스캔 로직 분리 (개선안 1)
-template <typename TBCs>
-static void FillPileupFlags(TBCs const& bcs, uint64_t midbc, 
-                           int32_t& bgFT0Apf, int32_t& bgFT0Cpf, int32_t& bbFT0Apf, int32_t& bbFT0Cpf,
-                           int32_t& bgFV0Apf, int32_t& bbFV0Apf, int32_t& bgFDDApf, int32_t& bgFDDCpf,
-                           int32_t& bbFDDApf, int32_t& bbFDDCpf, int32_t& minDistTOR, int32_t& minDistTSC,
-                           int32_t& minDistTVX, int32_t& minDistV0A, int32_t& minDistT0A)
-{
-  uint64_t leftBC = midbc >= FITConstants::kPileupScanRange ? midbc - FITConstants::kPileupScanRange : 0;
-  uint64_t rightBC = midbc + FITConstants::kPileupScanRange;
-
-  for (auto const& scanbc : bcs) {
-    uint64_t bcnum = scanbc.globalBC();
-    if (bcnum < leftBC) continue;
-    if (bcnum > rightBC) break;
-
-    uint64_t bit = bcnum - leftBC;
-    int32_t dist = static_cast<int32_t>(bcnum) - static_cast<int32_t>(midbc);
-
-    // Fill pileup flags
-    if (!scanbc.selection_bit(o2::aod::evsel::kNoBGT0A))
-      bgFT0Apf |= (1 << bit);
-    if (!scanbc.selection_bit(o2::aod::evsel::kNoBGT0C))
-      bgFT0Cpf |= (1 << bit);
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBT0A))
-      bbFT0Apf |= (1 << bit);
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBT0C))
-      bbFT0Cpf |= (1 << bit);
-    if (!scanbc.selection_bit(o2::aod::evsel::kNoBGV0A))
-      bgFV0Apf |= (1 << bit);
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBV0A))
-      bbFV0Apf |= (1 << bit);
-    if (!scanbc.selection_bit(o2::aod::evsel::kNoBGFDA))
-      bgFDDApf |= (1 << bit);
-    if (!scanbc.selection_bit(o2::aod::evsel::kNoBGFDC))
-      bgFDDCpf |= (1 << bit);
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBFDA))
-      bbFDDApf |= (1 << bit);
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBFDC))
-      bbFDDCpf |= (1 << bit);
-
-    // Track closest BCs with specific triggers (개선안 6 - early exit 조건)
-    if (scanbc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-      if (std::abs(dist) < std::abs(minDistTVX)) {
-        minDistTVX = dist;
-      }
-    }
-
-    // TOR trigger with validation (개선안 2)
-    if (scanbc.has_ft0()) {
-      auto ft0 = scanbc.ft0();
-      bool hasValidTiming = (ft0.timeA() > -900.f && ft0.timeC() > -900.f);
-      bool isTOR = hasValidTiming && 
-                   !(std::abs(ft0.timeA()) > FITConstants::kFT0TimeThreshold && 
-                     std::abs(ft0.timeC()) > FITConstants::kFT0TimeThreshold);
-      if (isTOR) {
-        if (std::abs(dist) < std::abs(minDistTOR)) {
-          minDistTOR = dist;
-        }
-      }
-    }
-
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBV0A)) {
-      if (std::abs(dist) < std::abs(minDistV0A)) {
-        minDistV0A = dist;
-      }
-    }
-
-    if (scanbc.selection_bit(o2::aod::evsel::kIsBBT0A)) {
-      if (std::abs(dist) < std::abs(minDistT0A)) {
-        minDistT0A = dist;
-      }
-    }
-
-    // TSC trigger
-    if (scanbc.has_ft0()) {
-      auto ft0 = scanbc.ft0();
-      if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex) &&
-          (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen) ||
-           TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitSCen))) {
-        if (std::abs(dist) < std::abs(minDistTSC)) {
-          minDistTSC = dist;
-        }
-      }
-    }
-
-    // Early exit if all closest BCs found (개선안 6)
-    bool allFound = (minDistTOR != FITConstants::kDefaultDistance && 
-                     minDistTSC != FITConstants::kDefaultDistance && 
-                     minDistTVX != FITConstants::kDefaultDistance && 
-                     minDistV0A != FITConstants::kDefaultDistance && 
-                     minDistT0A != FITConstants::kDefaultDistance);
-    if (allFound && std::abs(dist) > static_cast<int32_t>(FITConstants::kPileupScanRange)) {
-      break;
-    }
-  }
-}
-
-// Helper to detect C-style arrays
-template <typename T>
-struct is_c_array : std::false_type {};
-
-template <typename T, size_t N>
-struct is_c_array<T[N]> : std::true_type {};
-
-// Generic amplitude calculator supporting both std::vector, std::array and C-arrays
-template <typename T>
-std::pair<float, int> ComputeFITAmplitude(const T& amplitudes)
-{
-    float sum = 0.f;
-    int nFired = 0;
-
-    if constexpr (is_c_array<T>::value) {
-        // C-style array
-        for (size_t i = 0; i < std::extent<T>::value; ++i) {
-            auto a = amplitudes[i];
-            if (a > 0) {
-                sum += a;
-                nFired++;
-            }
-        }
-    } else {
-        // Containers with begin() / end()
-        for (auto a : amplitudes) {
-            if (a > 0) {
-                sum += a;
-                nFired++;
-            }
-        }
-    }
-
-    return {sum, nFired};
-}
-
-template <typename TBC, typename TBCs>
-void VarManager::FillFIT(TBC const& bc, TBCs const& bcs, float* values)
-{
-  if (!values) {
-    values = fgValues;
-  }
-
-  // Default initialize
-  values[kAmplitudeFT0A] = FITConstants::kDefaultAmplitude;
-  values[kAmplitudeFT0C] = FITConstants::kDefaultAmplitude;
-  values[kTimeFT0A]      = FITConstants::kDefaultTime;
-  values[kTimeFT0C]      = FITConstants::kDefaultTime;
-  values[kTriggerMaskFT0] = 0;
-  values[kNFiredChannelsFT0A] = 0;
-  values[kNFiredChannelsFT0C] = 0;
-
-  values[kAmplitudeFDDA] = FITConstants::kDefaultAmplitude;
-  values[kAmplitudeFDDC] = FITConstants::kDefaultAmplitude;
-  values[kTimeFDDA]      = FITConstants::kDefaultTime;
-  values[kTimeFDDC]      = FITConstants::kDefaultTime;
-  values[kTriggerMaskFDD] = 0;
-  values[kNFiredChannelsFDDA] = 0;
-  values[kNFiredChannelsFDDC] = 0;
-
-  values[kAmplitudeFV0A] = FITConstants::kDefaultAmplitude;
-  values[kTimeFV0A]      = FITConstants::kDefaultTime;
-  values[kTriggerMaskFV0A] = 0;
-  values[kNFiredChannelsFV0A] = 0;
-
-  // --- FT0 (via foundFT0) ---
-  if (bc.has_foundFT0()) {
-    auto ft0 = bc.foundFT0();
-
-    values[kTimeFT0A] = ft0.timeA();
-    values[kTimeFT0C] = ft0.timeC();
-
-    auto [ampA, nA] = ComputeFITAmplitude(ft0.amplitudeA());
-    auto [ampC, nC] = ComputeFITAmplitude(ft0.amplitudeC());
-
-    if (nA > 0) values[kAmplitudeFT0A] = ampA;
-    if (nC > 0) values[kAmplitudeFT0C] = ampC;
-
-    values[kTriggerMaskFT0]     = ft0.triggerMask();
-    values[kNFiredChannelsFT0A] = nA;
-    values[kNFiredChannelsFT0C] = nC;
-  }
-
-  // --- FV0A ---
-  if (bc.has_foundFV0()) {
-    auto fv0a = bc.foundFV0();
-
-    values[kTimeFV0A] = fv0a.time();
-
-    auto [ampV0A, nV0A] = ComputeFITAmplitude(fv0a.amplitude());
-    if (nV0A > 0) values[kAmplitudeFV0A] = ampV0A;
-
-    values[kTriggerMaskFV0A] = fv0a.triggerMask();
-    values[kNFiredChannelsFV0A] = nV0A;
-  }
-
-  // --- FDD ---
-  if (bc.has_foundFDD()) {
-    auto fdd = bc.foundFDD();
-
-    values[kTimeFDDA] = fdd.timeA();
-    values[kTimeFDDC] = fdd.timeC();
-
-    auto [ampA, nA] = ComputeFITAmplitude(fdd.chargeA());
-    auto [ampC, nC] = ComputeFITAmplitude(fdd.chargeC());
-
-    if (nA > 0) values[kAmplitudeFDDA] = ampA;
-    if (nC > 0) values[kAmplitudeFDDC] = ampC;
-
-    values[kTriggerMaskFDD] = fdd.triggerMask();
-    values[kNFiredChannelsFDDA] = nA;
-    values[kNFiredChannelsFDDC] = nC;
-  }
-
-  // --- Background pileup flags ---
-  uint64_t midbc = bc.globalBC();
-
-  int32_t bgFT0Apf = 0, bgFT0Cpf = 0, bbFT0Apf = 0, bbFT0Cpf = 0;
-  int32_t bgFV0Apf = 0, bbFV0Apf = 0;
-  int32_t bgFDDApf = 0, bgFDDCpf = 0;
-  int32_t bbFDDApf = 0, bbFDDCpf = 0;
-  int32_t minDistTOR = FITConstants::kDefaultDistance;
-  int32_t minDistTSC = FITConstants::kDefaultDistance;
-  int32_t minDistTVX = FITConstants::kDefaultDistance;
-  int32_t minDistV0A = FITConstants::kDefaultDistance;
-  int32_t minDistT0A = FITConstants::kDefaultDistance;
-
-  FillPileupFlags(
-      bcs, midbc,
-      bgFT0Apf, bgFT0Cpf, bbFT0Apf, bbFT0Cpf,
-      bgFV0Apf, bbFV0Apf, bgFDDApf, bgFDDCpf, bbFDDApf, bbFDDCpf,
-      minDistTOR, minDistTSC, minDistTVX, minDistV0A, minDistT0A);
-
-  // distance store
-  values[kDistClosestBcTOR] = minDistTOR;
-  values[kDistClosestBcTSC] = minDistTSC;
-  values[kDistClosestBcTVX] = minDistTVX;
-  values[kDistClosestBcV0A] = minDistV0A;
-  values[kDistClosestBcT0A] = minDistT0A;
-
-  // pileup flags store
-  values[kBGFT0Apf] = bgFT0Apf;
-  values[kBGFT0Cpf] = bgFT0Cpf;
-  values[kBBFT0Apf] = bbFT0Apf;
-  values[kBBFT0Cpf] = bbFT0Cpf;
-  values[kBGFV0Apf] = bgFV0Apf;
-  values[kBBFV0Apf] = bbFV0Apf;
-  values[kBGFDDApf] = bgFDDApf;
-  values[kBGFDDCpf] = bgFDDCpf;
-  values[kBBFDDApf] = bbFDDApf;
-  values[kBBFDDCpf] = bbFDDCpf;
-}
 template <typename T1, typename T2>
 void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values, float hadronMass)
 {
@@ -6234,5 +5891,60 @@ float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1,
   }
   return value;
 }
+template <typename T1, typename T2, typename T3, typename T4, typename T5>
+void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& fv0as, T5 const& fdds, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
 
+  // Initialize FIT info structure
+  upchelpers::FITInfo fitInfo{};
+  udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+  // Fill FT0 information
+  values[kAmplitudeFT0A] = fitInfo.ampFT0A;
+  values[kAmplitudeFT0C] = fitInfo.ampFT0C;
+  values[kTimeFT0A] = fitInfo.timeFT0A;
+  values[kTimeFT0C] = fitInfo.timeFT0C;
+  values[kTriggerMaskFT0] = static_cast<float>(fitInfo.triggerMaskFT0);
+  const auto ft0Index = bc.ft0Id();
+  if(ft0Index < 0 || ft0Index >= ft0s.size()) {
+    values[kNFiredChannelsFT0A] = -1;
+    values[kNFiredChannelsFT0C] = -1;
+  } else {
+     const auto ft0 = ft0s.iteratorAt(ft0Index);
+    values[kNFiredChannelsFT0A] = ft0.channelA().size();
+    values[kNFiredChannelsFT0C] = ft0.channelC().size();
+  }
+  // Fill FDD information
+  values[kAmplitudeFDDA] = fitInfo.ampFDDA;
+  values[kAmplitudeFDDC] = fitInfo.ampFDDC;
+  values[kTimeFDDA] = fitInfo.timeFDDA;
+  values[kTimeFDDC] = fitInfo.timeFDDC;
+  values[kTriggerMaskFDD] = static_cast<float>(fitInfo.triggerMaskFDD);
+
+  // Fill FV0A information
+  values[kAmplitudeFV0A] = fitInfo.ampFV0A;
+  values[kTimeFV0A] = fitInfo.timeFV0A;
+  values[kTriggerMaskFV0A] = static_cast<float>(fitInfo.triggerMaskFV0A);
+  const auto fv0aIndex = bc.fv0aId();
+  if(fv0aIndex < 0 || fv0aIndex >= fv0as.size()) {
+    values[kNFiredChannelsFV0A] = -1;
+  } else {
+    const auto fv0a = fv0as.iteratorAt(fv0aIndex);
+    values[kNFiredChannelsFV0A] = fv0a.channel().size();
+  }
+  // Fill pileup flags
+  values[kBBFT0Apf] = static_cast<float>(fitInfo.BBFT0Apf);
+  values[kBGFT0Apf] = static_cast<float>(fitInfo.BGFT0Apf);
+  values[kBBFT0Cpf] = static_cast<float>(fitInfo.BBFT0Cpf);
+  values[kBGFT0Cpf] = static_cast<float>(fitInfo.BGFT0Cpf);
+  values[kBBFV0Apf] = static_cast<float>(fitInfo.BBFV0Apf);
+  values[kBGFV0Apf] = static_cast<float>(fitInfo.BGFV0Apf);
+  values[kBBFDDApf] = static_cast<float>(fitInfo.BBFDDApf);
+  values[kBGFDDApf] = static_cast<float>(fitInfo.BGFDDApf);
+  values[kBBFDDCpf] = static_cast<float>(fitInfo.BBFDDCpf);
+  values[kBGFDDCpf] = static_cast<float>(fitInfo.BGFDDCpf);
+}
 #endif // PWGDQ_CORE_VARMANAGER_H_
