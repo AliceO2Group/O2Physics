@@ -133,15 +133,15 @@ struct TreeWriterTpcV0 {
   ctpRateFetcher mRateFetcher;
 
   struct V0Daughter {
-    double downsamplingTsalis{-999.};
-    double mass{-999.};
-    double maxPt4dwnsmplTsalis{-999.};
-    double tpcNSigma{-999.};
-    double tofNSigma{-999.};
-    double tpcExpSignal{-999.};
+    double downsamplingTsalis{UndefValueDouble};
+    double mass{UndefValueDouble};
+    double maxPt4dwnsmplTsalis{UndefValueDouble};
+    double tpcNSigma{UndefValueDouble};
+    double tofNSigma{UndefValueDouble};
+    double tpcExpSignal{UndefValueDouble};
     o2::track::PID::ID id{0};
-    double dwnSmplFactor{-999.};
-    double nSigmaTofDauTrack{-999.};
+    double dwnSmplFactor{UndefValueDouble};
+    double nSigmaTofDauTrack{UndefValueDouble};
     bool rejectNoTofDauTrack{false};
   };
 
@@ -165,8 +165,8 @@ struct TreeWriterTpcV0 {
   }
 
   struct V0Mother {
-    int posDaughterId{-999};
-    int negDaughterId{-999};
+    int posDaughterId{UndefValueInt};
+    int negDaughterId{UndefValueInt};
   };
 
   V0Mother createV0Mother(const int motherId)
@@ -209,7 +209,7 @@ struct TreeWriterTpcV0 {
     }
 
     LOGP(fatal, "getStrangenessTofNSigma for V0: wrong combination of motherId, daughterId and sign");
-    return -999.f;
+    return UndefValueFloat;
   }
 
   float getStrangenessTofNSigma(CascsWithID::iterator const& casc, const int motherId, const int daughterId, bool)
@@ -218,7 +218,7 @@ struct TreeWriterTpcV0 {
       return casc.tofNSigmaOmKa();
 
     LOGP(fatal, "getStrangenessTofNSigma for cascade: wrong combination of motherId and daughterId");
-    return -999.f;
+    return UndefValueFloat;
   }
 
   template <bool DoUseCorrectedDeDx, int ModeId, typename T, typename C, typename V0Casc>
@@ -259,7 +259,7 @@ struct TreeWriterTpcV0 {
                    track.y(),
                    mass,
                    bg,
-                   multTPC / 11000.,
+                   multTPC / MultiplicityNorm,
                    std::sqrt(nClNorm / ncl),
                    nclPID,
                    id,
@@ -286,7 +286,7 @@ struct TreeWriterTpcV0 {
                                 track.y(),
                                 mass,
                                 bg,
-                                multTPC / 11000.,
+                                multTPC / MultiplicityNorm,
                                 std::sqrt(nClNorm / ncl),
                                 nclPID,
                                 id,
@@ -302,7 +302,7 @@ struct TreeWriterTpcV0 {
                                 pT,
                                 v0radius,
                                 gammapsipair,
-                                existTrkQA ? trackQA.tpcdEdxNorm() : -999);
+                                existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       } else if constexpr (ModeId == ModeWithTrkQA) {
         rowTPCTreeWithTrkQA(usedDedx,
                             1. / dEdxExp,
@@ -314,7 +314,7 @@ struct TreeWriterTpcV0 {
                             track.y(),
                             mass,
                             bg,
-                            multTPC / 11000.,
+                            multTPC / MultiplicityNorm,
                             std::sqrt(nClNorm / ncl),
                             nclPID,
                             id,
@@ -333,16 +333,16 @@ struct TreeWriterTpcV0 {
                             bcGlobalIndex,
                             bcTimeFrameId,
                             bcBcInTimeFrame,
-                            existTrkQA ? trackQA.tpcClusterByteMask() : -999,
-                            existTrkQA ? trackQA.tpcdEdxMax0R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxMax1R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxMax2R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxMax3R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxTot0R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxTot1R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxTot2R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxTot3R() : -999,
-                            existTrkQA ? trackQA.tpcdEdxNorm() : -999);
+                            existTrkQA ? trackQA.tpcClusterByteMask() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxMax0R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxMax1R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxMax2R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxMax3R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxTot0R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxTot1R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxTot2R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxTot3R() : UndefValueInt,
+                            existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       }
     }
   }
@@ -423,12 +423,12 @@ struct TreeWriterTpcV0 {
       const auto& cascs = myCascs.sliceBy(perCollisionCascs, collision.globalIndex());
       const auto& bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
-      const float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
+      const float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
       const int bcGlobalIndex = bc.globalIndex();
       int bcTimeFrameId, bcBcInTimeFrame;
       if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
-        bcTimeFrameId = -999;
-        bcBcInTimeFrame = -999;
+        bcTimeFrameId = UndefValueInt;
+        bcBcInTimeFrame = UndefValueInt;
         if constexpr (ModeId == ModeWithdEdxTrkQA) {
           rowTPCTreeWithdEdxTrkQA.reserve(2 * v0s.size() + cascs.size());
         } else if (ModeId == ModeStandard) {
@@ -676,7 +676,7 @@ struct TreeWriterTpcTof {
                       track.y(),
                       mass,
                       bg,
-                      multTPC / 11000.,
+                      multTPC / MultiplicityNorm,
                       std::sqrt(nClNorm / ncl),
                       nclPID,
                       id,
@@ -698,7 +698,7 @@ struct TreeWriterTpcTof {
                                    track.y(),
                                    mass,
                                    bg,
-                                   multTPC / 11000.,
+                                   multTPC / MultiplicityNorm,
                                    std::sqrt(nClNorm / ncl),
                                    nclPID,
                                    id,
@@ -709,7 +709,7 @@ struct TreeWriterTpcTof {
                                    ft0Occ,
                                    hadronicRate,
                                    nSigmaITS,
-                                   existTrkQA ? trackQA.tpcdEdxNorm() : -999);
+                                   existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       } else if constexpr (ModeId == ModeWithTrkQA) {
         rowTPCTOFTreeWithTrkQA(usedEdx,
                                1. / dEdxExp,
@@ -721,7 +721,7 @@ struct TreeWriterTpcTof {
                                track.y(),
                                mass,
                                bg,
-                               multTPC / 11000.,
+                               multTPC / MultiplicityNorm,
                                std::sqrt(nClNorm / ncl),
                                nclPID,
                                id,
@@ -735,16 +735,16 @@ struct TreeWriterTpcTof {
                                bcGlobalIndex,
                                bcTimeFrameId,
                                bcBcInTimeFrame,
-                               existTrkQA ? trackQA.tpcClusterByteMask() : -999,
-                               existTrkQA ? trackQA.tpcdEdxMax0R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxMax1R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxMax2R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxMax3R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxTot0R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxTot1R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxTot2R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxTot3R() : -999,
-                               existTrkQA ? trackQA.tpcdEdxNorm() : -999);
+                               existTrkQA ? trackQA.tpcClusterByteMask() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxMax0R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxMax1R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxMax2R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxMax3R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxTot0R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxTot1R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxTot2R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxTot3R() : UndefValueInt,
+                               existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       }
     }
   }
@@ -801,19 +801,18 @@ struct TreeWriterTpcTof {
 
       const auto& bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
-      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
-      int bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame;
+      const float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
+      const int bcGlobalIndex = bc.globalIndex();
+      int bcTimeFrameId, bcBcInTimeFrame;
       if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
-        bcGlobalIndex = -999;
-        bcTimeFrameId = -999;
-        bcBcInTimeFrame = -999;
+        bcTimeFrameId = UndefValueInt;
+        bcBcInTimeFrame = UndefValueInt;
         if constexpr (ModeId == ModeStandard) {
           rowTPCTOFTree.reserve(tracks.size());
         } else {
           rowTPCTOFTreeWithdEdxTrkQA.reserve(tracks.size());
         }
       } else {
-        bcGlobalIndex = bc.globalIndex();
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();
         rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
@@ -836,11 +835,11 @@ struct TreeWriterTpcTof {
 
         TofTrack tofDeuteron(true, maxMomHardCutOnlyDe, maxMomTPCOnlyDe, trk.tpcNSigmaDe(), nSigmaTPCOnlyDe, downsamplingTsalisDeuterons, MassDeuteron, trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidDeuteron, dwnSmplFactorDe, nSigmaTofTpctofDe, nSigmaTpcTpctofDe);
 
-        TofTrack tofProton(false, -999., maxMomTPCOnlyPr, trk.tpcNSigmaPr(), nSigmaTPCOnlyPr, downsamplingTsalisProtons, MassProton, trk.tofNSigmaPr(), trk.itsNSigmaPr(), trk.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidProton, dwnSmplFactorPr, nSigmaTofTpctofPr, nSigmaTpcTpctofPr);
+        TofTrack tofProton(false, UndefValueDouble, maxMomTPCOnlyPr, trk.tpcNSigmaPr(), nSigmaTPCOnlyPr, downsamplingTsalisProtons, MassProton, trk.tofNSigmaPr(), trk.itsNSigmaPr(), trk.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidProton, dwnSmplFactorPr, nSigmaTofTpctofPr, nSigmaTpcTpctofPr);
 
         TofTrack tofKaon(true, maxMomHardCutOnlyKa, maxMomTPCOnlyKa, trk.tpcNSigmaKa(), nSigmaTPCOnlyKa, downsamplingTsalisKaons, MassKPlus, trk.tofNSigmaKa(), trk.itsNSigmaKa(), trk.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidKaon, dwnSmplFactorKa, nSigmaTofTpctofKa, nSigmaTpcTpctofKa);
 
-        TofTrack tofPion(false, -999., maxMomTPCOnlyPi, trk.tpcNSigmaPi(), nSigmaTPCOnlyPi, downsamplingTsalisPions, MassPiPlus, trk.tofNSigmaPi(), trk.itsNSigmaPi(), trk.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidPion, dwnSmplFactorPi, nSigmaTofTpctofPi, nSigmaTpcTpctofPi);
+        TofTrack tofPion(false, UndefValueDouble, maxMomTPCOnlyPi, trk.tpcNSigmaPi(), nSigmaTPCOnlyPi, downsamplingTsalisPions, MassPiPlus, trk.tofNSigmaPi(), trk.itsNSigmaPi(), trk.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidPion, dwnSmplFactorPi, nSigmaTofTpctofPi, nSigmaTpcTpctofPi);
 
         for (const auto& tofTrack : {&tofTriton, &tofDeuteron, &tofProton, &tofKaon, &tofPion}) {
           if ((!tofTrack->isApplyHardCutOnly || trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly) &&

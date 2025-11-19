@@ -133,4 +133,22 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
 #undef TPCSKIMS_COLUMNS_V0
 #undef TPCSKIMS_COLUMNS_BASE
 } // namespace o2::aod
+
+namespace o2::dpg_tpcskimstablecreator
+{
+enum {
+  ModeStandard = 0,
+  ModeWithdEdxTrkQA,
+  ModeWithTrkQA
+};
+
+constexpr int UndefValueInt{-999};
+constexpr float UndefValueFloat{-999.f};
+constexpr double UndefValueDouble{-999.};
+
+// an arbitrary big value to convert multiplicity into a value between 0 and 1
+constexpr double MultiplicityNorm{11000.};
+
+constexpr float OneToKilo{1e-3f};
+} // namespace o2::dpg_tpcskimstablecreator
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_

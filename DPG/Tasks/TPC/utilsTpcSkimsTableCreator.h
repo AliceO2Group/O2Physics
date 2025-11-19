@@ -39,12 +39,6 @@ enum {
   EventSelectionRun3
 };
 
-enum {
-  ModeStandard = 0,
-  ModeWithdEdxTrkQA,
-  ModeWithTrkQA
-};
-
 /// Event selection
 template <typename CollisionType>
 inline bool isEventSelected(const CollisionType& collision, const int applyEvSel)
