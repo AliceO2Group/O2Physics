@@ -5909,11 +5909,11 @@ void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& 
   values[kTimeFT0C] = fitInfo.timeFT0C;
   values[kTriggerMaskFT0] = static_cast<float>(fitInfo.triggerMaskFT0);
   const auto ft0Index = bc.ft0Id();
-  if(ft0Index < 0 || ft0Index >= ft0s.size()) {
+  if (ft0Index < 0 || ft0Index >= ft0s.size()) {
     values[kNFiredChannelsFT0A] = -1;
     values[kNFiredChannelsFT0C] = -1;
   } else {
-     const auto ft0 = ft0s.iteratorAt(ft0Index);
+    const auto ft0 = ft0s.iteratorAt(ft0Index);
     values[kNFiredChannelsFT0A] = ft0.channelA().size();
     values[kNFiredChannelsFT0C] = ft0.channelC().size();
   }
@@ -5929,7 +5929,7 @@ void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& 
   values[kTimeFV0A] = fitInfo.timeFV0A;
   values[kTriggerMaskFV0A] = static_cast<float>(fitInfo.triggerMaskFV0A);
   const auto fv0aIndex = bc.fv0aId();
-  if(fv0aIndex < 0 || fv0aIndex >= fv0as.size()) {
+  if (fv0aIndex < 0 || fv0aIndex >= fv0as.size()) {
     values[kNFiredChannelsFV0A] = -1;
   } else {
     const auto fv0a = fv0as.iteratorAt(fv0aIndex);
