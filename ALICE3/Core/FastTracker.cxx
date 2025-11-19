@@ -443,11 +443,6 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   const float initialRadius = std::hypot(posIni[0], posIni[1]);
   const float kTrackingMargin = 0.1;
 
-  // Delphes sets this to 20, but does not count all points in the tpc as layers which we do here
-  // Loop over all the added layers to prevent crash when adding the tpc
-  // Should not affect efficiency calculation
-  const int kMaxNumberOfDetectors = layers.size();
-
   int firstActiveLayer = -1; // first layer that is not inert
   for (size_t i = 0; i < layers.size(); ++i) {
     if (!layers[i].isInert()) {
@@ -461,7 +456,11 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   }
   const int xrhosteps = 100;
   const bool applyAngularCorrection = true;
-
+  
+  // Delphes sets this to 20 instead of the number of layers,
+  // but does not count all points in the tpc as layers which we do here
+  // Loop over all the added layers to prevent crash when adding the tpc
+  // Should not affect efficiency calculation
   goodHitProbability.clear();
   for (size_t i = 0; i < layers.size(); ++i) {
     goodHitProbability.push_back(-1.);
