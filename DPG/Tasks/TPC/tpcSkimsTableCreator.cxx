@@ -387,17 +387,6 @@ struct TreeWriterTpcV0 {
     return casc.cascradius();
   }
 
-  /// Evaluate tpcSignal with or without correction
-  template <bool IsCorrectedDeDx, typename TrkType>
-  double tpcSignalGeneric(const TrkType& track)
-  {
-    if constexpr (IsCorrectedDeDx) {
-      return track.tpcSignalCorrected();
-    } else {
-      return track.tpcSignal();
-    }
-  }
-
   Preslice<V0sWithID> perCollisionV0s = aod::v0data::collisionId;
   Preslice<CascsWithID> perCollisionCascs = aod::cascdata::collisionId;
 
@@ -759,17 +748,6 @@ struct TreeWriterTpcTof {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
-  }
-
-  /// Evaluate tpcSignal with or without correction
-  template <bool IsCorrectedDeDx, typename TrkType>
-  double tpcSignalGeneric(const TrkType& track)
-  {
-    if constexpr (IsCorrectedDeDx) {
-      return track.tpcSignalCorrected();
-    } else {
-      return track.tpcSignal();
-    }
   }
 
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;

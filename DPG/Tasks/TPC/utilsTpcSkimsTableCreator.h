@@ -93,5 +93,16 @@ inline bool isTrackSelected(const TrackType& track, const int trackSelection)
   return isSelected;
 }
 
+/// Evaluate tpcSignal with or without dEdx correction
+template <bool IsCorrectedDeDx, typename TrkType>
+inline double tpcSignalGeneric(const TrkType& track)
+{
+  if constexpr (IsCorrectedDeDx) {
+    return track.tpcSignalCorrected();
+  } else {
+    return track.tpcSignal();
+  }
+}
+
 } // namespace o2::dpg_tpcskimstablecreator
 #endif // DPG_TASKS_TPC_UTILSTPCSKIMSTABLECREATOR_H_
