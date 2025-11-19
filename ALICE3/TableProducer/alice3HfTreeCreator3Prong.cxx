@@ -18,13 +18,13 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "ALICE3/Utils/utilsHfAlice3.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>

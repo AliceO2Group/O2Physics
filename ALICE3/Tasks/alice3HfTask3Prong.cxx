@@ -14,8 +14,6 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "ALICE3/Utils/utilsHfAlice3.h"
-#include "ALICE3/Utils/utilsSelectionsAlice3.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
@@ -23,6 +21,8 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
+#include "ALICE3/Utils/utilsSelectionsAlice3.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -249,7 +249,6 @@ struct Alice3Task3Prong {
         const auto pt = candidate.pt();
         const auto originType = candidate.originMcRec();
 
-        
         if (fillThn) {
           if (candidate.isSelMassHypo0()) {
             registry.fill(HIST("hSelectionStatus"), 0., pt);

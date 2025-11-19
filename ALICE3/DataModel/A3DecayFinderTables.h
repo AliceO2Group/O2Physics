@@ -63,7 +63,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
 DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, double); //!
 DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, double); //!
 DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, double); //!
-DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //!
+DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex,  //!
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! sum of (non-weighted) distances of the secondary vertex to its prongs
 // Prong index columns
@@ -323,8 +323,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(M, m,
                                                                                              m); });
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, //!
                            [](float px, float py, float pz, const float m) -> float { return RecoDecay::e(px, py, pz, m); });
-DECLARE_SOA_COLUMN(Eta, eta, float);            //!
-DECLARE_SOA_COLUMN(Phi, phi, float);            //!
+DECLARE_SOA_COLUMN(Eta, eta, float); //!
+DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y,
                            [](float px, float py, float pz, const float m) -> float { return RecoDecay::y(std::array{px, py, pz}, m); });
 } // namespace a3_hf_cand_3prong
