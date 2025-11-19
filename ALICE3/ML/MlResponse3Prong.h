@@ -100,13 +100,13 @@ enum class InputFeatures3Prong : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
+class MlResponse3Prong : public MlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  Alice3MlResponse3Prong() = default;
+  MlResponse3Prong() = default;
   /// Default destructor
-  virtual ~Alice3MlResponse3Prong() = default;
+  virtual ~MlResponse3Prong() = default;
 
   /// Method to get the input features vector needed for ML inference
   /// \tparam T1 type of the 3-prong candidate

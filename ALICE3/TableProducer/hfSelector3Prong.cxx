@@ -14,18 +14,19 @@
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "ALICE3/ML/Alice3MlResponse3Prong.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "ALICE3/Utils/utilsSelectionsAlice3.h"
+#include "ALICE3/ML/MlResponse3Prong.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/PIDResponseCombined.h"
 
@@ -55,12 +56,8 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::aod::a3_hf_sel_3prong;
 
-enum Particles {
-  Lc = 0
-};
-
 /// Struct for applying Lc selection cuts
-struct Alice3Selector3Prong {
+struct Alice3HfSelector3Prong {
   Produces<aod::Alice3Sel3Ps> candSelFlags; // flags for isSelLc
   Produces<aod::Alice3Ml3Ps> candMlScores;
 
@@ -105,7 +102,7 @@ struct Alice3Selector3Prong {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelperAlice3 hfHelper;
-  o2::analysis::Alice3MlResponse3Prong<float> mlResponse;
+  o2::analysis::MlResponse3Prong<float> mlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
   using CandsLc = soa::Join<aod::Alice3Cand3Ps, aod::Alice3PidLcs>;
@@ -374,15 +371,14 @@ struct Alice3Selector3Prong {
 
   /// \brief process function for cand selection
   /// \param cands Lc cand table
-  /// \param tracks track table
   void processLc(CandsLcWMcTruth const& cands)
   {
     runSelect3Prong<CharmHadAlice3::Lc>(cands);
   }
-  PROCESS_SWITCH(Alice3Selector3Prong, processLc, "Process 3 prong selection for Lc", true);
+  PROCESS_SWITCH(Alice3HfSelector3Prong, processLc, "Process 3 prong selection for Lc", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3Selector3Prong>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3HfSelector3Prong>(cfgc)};
 }

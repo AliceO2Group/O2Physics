@@ -240,7 +240,7 @@ DECLARE_SOA_TABLE(Alice3PidPr2s, "AOD", "ALICE3PIDPR2",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct Alice3TreeCreator3Prong {
+struct Alice3HfTreeCreator3Prong {
   Produces<o2::aod::Alice3CandVtxs> rowCandVtxs;
   Produces<o2::aod::Alice3CandTopos> rowCandTopos;
   Produces<o2::aod::Alice3DaugTopos> rowDaugTopos;
@@ -498,7 +498,7 @@ struct Alice3TreeCreator3Prong {
       fillRecoGenTables<CharmHadAlice3::Lc>(selCandsLcRec, parts);
     }
   }
-  PROCESS_SWITCH(Alice3TreeCreator3Prong, processLc, "Process Lc", true);
+  PROCESS_SWITCH(Alice3HfTreeCreator3Prong, processLc, "Process Lc", true);
 
   void processLcWMl(CandsLcRecWMl const& selCandsLcRec,
                     CandsMcGen const& parts,
@@ -512,10 +512,10 @@ struct Alice3TreeCreator3Prong {
       fillRecoGenTables<CharmHadAlice3::Lc>(selCandsLcRec, parts);
     }
   }
-  PROCESS_SWITCH(Alice3TreeCreator3Prong, processLcWMl, "Process Lc with ML", false);
+  PROCESS_SWITCH(Alice3HfTreeCreator3Prong, processLcWMl, "Process Lc with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3TreeCreator3Prong>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3HfTreeCreator3Prong>(cfgc)};
 }
