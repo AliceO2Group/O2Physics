@@ -142,6 +142,13 @@ enum {
   ModeWithTrkQA
 };
 
+constexpr o2::track::PID::ID PidElectron{o2::track::PID::Electron};
+constexpr o2::track::PID::ID PidPion{o2::track::PID::Pion};
+constexpr o2::track::PID::ID PidKaon{o2::track::PID::Kaon};
+constexpr o2::track::PID::ID PidProton{o2::track::PID::Proton};
+constexpr o2::track::PID::ID PidDeuteron{o2::track::PID::Deuteron};
+constexpr o2::track::PID::ID PidTriton{o2::track::PID::Triton};
+
 constexpr int UndefValueInt{-999};
 constexpr float UndefValueFloat{-999.f};
 constexpr double UndefValueDouble{-999.};
