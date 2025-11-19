@@ -17,8 +17,8 @@
 #ifndef PWGHF_CORE_HFHELPERALICE3_H_
 #define PWGHF_CORE_HFHELPERALICE3_H_
 
-#include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"

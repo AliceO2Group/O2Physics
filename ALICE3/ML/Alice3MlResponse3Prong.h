@@ -223,4 +223,4 @@ class Alice3MlResponse3Prong : public MlResponse<TypeOutputScore>
 #undef FILL_MAP_3PRONG
 #undef CHECK_AND_FILL_ML_ALICE3
 
-#endif  // ALICE3_MLRESPONSE3PRONG_H_
+#endif // ALICE3_MLRESPONSE3PRONG_H_
