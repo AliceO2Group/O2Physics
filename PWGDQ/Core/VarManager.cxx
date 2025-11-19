@@ -1970,7 +1970,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBdtBackground"] = kBdtBackground;
   fgVarNamesMap["kBdtPrompt"] = kBdtPrompt;
   fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
-    fgVariableNames[kAmplitudeFT0A] = "FT0A amplitude";
+  fgVariableNames[kAmplitudeFT0A] = "FT0A amplitude";
   fgVariableUnits[kAmplitudeFT0A] = "a.u.";
   fgVariableNames[kAmplitudeFT0C] = "FT0C amplitude";
   fgVariableUnits[kAmplitudeFT0C] = "a.u.";
