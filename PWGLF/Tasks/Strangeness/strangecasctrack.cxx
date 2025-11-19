@@ -96,10 +96,10 @@ struct strangecasctrack {
   Configurable<bool> doApplyPurity2D{"doApplyPurity2D", false, "apply purity correction"};
   Configurable<bool> doPropagatePurity2D{"doPropagatePurity2D", false, "apply purity propagation"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> efficiencyCCDBPath_pp{"efficiencyCCDBPath_pp", "Users/y/yparovia/LHC24f4d", "Path of the efficiency and purity corrections (pp)"};
-  Configurable<std::string> efficiencyCCDBPath_PbPb{"efficiencyCCDBPath_PbPb", "Users/y/yparovia/LHC25f3", "Path of the efficiency and purity corrections (PbPb)"};
-  Configurable<std::string> efficiencyCCDBPath_OO{"efficiencyCCDBPath_OO", "Users/y/yparovia/LHC25h3", "Path of the efficiency and purity corrections (OO)"};
-  Configurable<std::string> efficiencyCCDBPath_pO{"efficiencyCCDBPath_pO", "Users/y/yparovia/LHC25h2", "Path of the efficiency and purity corrections (pO)"};
+  Configurable<std::string> efficiencyCCDBPathpp{"efficiencyCCDBPathpp", "Users/y/yparovia/LHC24f4d", "Path of the efficiency and purity corrections (pp)"};
+  Configurable<std::string> efficiencyCCDBPathPbPb{"efficiencyCCDBPathPbPb", "Users/y/yparovia/LHC25f3", "Path of the efficiency and purity corrections (PbPb)"};
+  Configurable<std::string> efficiencyCCDBPathOO{"efficiencyCCDBPathOO", "Users/y/yparovia/LHC25h3", "Path of the efficiency and purity corrections (OO)"};
+  Configurable<std::string> efficiencyCCDBPathpO{"efficiencyCCDBPathpO", "Users/y/yparovia/LHC25h2", "Path of the efficiency and purity corrections (pO)"};
 
   // event and dau track selection
   struct : ConfigurableGroup {
@@ -198,13 +198,13 @@ struct strangecasctrack {
 
     std::string efficiencyCCDBPath = [&]() {
       if (doProcesspp) {
-        return efficiencyCCDBPath_pp;
+        return efficiencyCCDBPathpp;
       } else if (doProcesspO) {
-        return efficiencyCCDBPath_pO;
+        return efficiencyCCDBPathpO;
       } else if (doProcessPbPb) {
-        return efficiencyCCDBPath_PbPb;
+        return efficiencyCCDBPathPbPb;
       }
-      return efficiencyCCDBPath_OO;
+      return efficiencyCCDBPathOO;
     }();
 
     TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
