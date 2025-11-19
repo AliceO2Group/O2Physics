@@ -345,7 +345,7 @@ struct TreeWriterTpcV0 {
                             existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       }
     }
-  }
+  } /// fillSkimmedV0Table
 
   TRandom3* fRndm = new TRandom3(0);
 
@@ -486,43 +486,42 @@ struct TreeWriterTpcV0 {
         fillDaughterTrack(casc, bachTrack, bachDaughter, bachTrackQA, existBachTrkQA);
       }
     }
-  }
+  } /// runV0
 
-  /// Apply a track quality selection with a filter!
   void processStandard(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&)
   {
     runV0<false, ModeStandard, Trks, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, static_cast<TObject*>(nullptr));
-  } /// process Standard
+  }
   PROCESS_SWITCH(TreeWriterTpcV0, processStandard, "Standard V0 Samples for PID", true);
 
   void processStandardWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&)
   {
     runV0<true, ModeStandard, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, static_cast<TObject*>(nullptr));
-  } /// process StandardWithCorrecteddEdx
+  }
   PROCESS_SWITCH(TreeWriterTpcV0, processStandardWithCorrecteddEdx, "Standard V0 Samples for PID with corrected dEdx", false);
 
   void processWithdEdxTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
   {
     runV0<false, ModeWithdEdxTrkQA, Trks, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA);
-  } /// process with dEdx from TrackQA
+  }
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQA, "Standard V0 Samples with dEdx from Track QA for PID", false);
 
   void processWithdEdxTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
   {
     runV0<true, ModeWithdEdxTrkQA, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA);
-  } /// process with dEdx from TrackQA
+  }
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQAWithCorrecteddEdx, "Standard V0 Samples with dEdx from Track QA for PID with corrected dEdx", false);
 
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
     runV0<false, ModeWithTrkQA, Trks, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
-  } /// process with TrackQA
+  }
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQA, "Standard V0 Samples with Track QA for PID", false);
 
   void processWithTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
     runV0<true, ModeWithTrkQA, TrksWithDEdxCorrection, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
-  } /// process with TrackQA
+  }
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQAWithCorrecteddEdx, "Standard V0 Samples with Track QA for PID with corrected dEdx", false);
 
   void processDummy(Colls const&) {}
@@ -736,7 +735,7 @@ struct TreeWriterTpcTof {
                                existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       }
     }
-  }
+  } /// fillSkimmedTpcTofTable
 
   void init(o2::framework::InitContext&)
   {
@@ -829,42 +828,42 @@ struct TreeWriterTpcTof {
         }
       } /// Loop tracks
     }
-  }
+  } /// runTof
 
   void processStandard(Colls const& collisions, Trks const& myTracks, aod::BCsWithTimestamps const&)
   {
     runTof<false, ModeStandard, Trks, aod::BCsWithTimestamps>(collisions, myTracks, static_cast<TObject*>(nullptr), perCollisionTracks);
-  } /// process
+  }
   PROCESS_SWITCH(TreeWriterTpcTof, processStandard, "Standard Samples for PID", true);
 
   void processStandardWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, aod::BCsWithTimestamps const&)
   {
     runTof<true, ModeStandard, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, static_cast<TObject*>(nullptr), perCollisionTracksWithCorrecteddEdx);
-  } /// process
+  }
   PROCESS_SWITCH(TreeWriterTpcTof, processStandardWithCorrecteddEdx, "Standard Samples for PID with corrected dEdx", false);
 
   void processWithdEdxTrQA(Colls const& collisions, Trks const& myTracks, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
   {
     runTof<false, ModeWithdEdxTrkQA, Trks, aod::BCsWithTimestamps>(collisions, myTracks, tracksQA, perCollisionTracks);
-  } /// process
+  }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithdEdxTrQA, "Samples for PID with TrackQA info", false);
 
   void processWithdEdxTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
   {
     runTof<true, ModeWithdEdxTrkQA, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, tracksQA, perCollisionTracksWithCorrecteddEdx);
-  } /// process
+  }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithdEdxTrQAWithCorrecteddEdx, "Samples for PID with TrackQA info with corrected dEdx", false);
 
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
     runTof<false, ModeWithTrkQA, Trks, MyBCTable>(collisions, myTracks, tracksQA, perCollisionTracks);
-  } /// process
+  }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithTrQA, "Samples for PID with TrackQA info", false);
 
   void processWithTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
     runTof<true, ModeWithTrkQA, TrksWithDEdxCorrection, MyBCTable>(collisions, myTracks, tracksQA, perCollisionTracksWithCorrecteddEdx);
-  } /// process
+  }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithTrQAWithCorrecteddEdx, "Samples for PID with TrackQA info with correced dEdx", false);
 
   void processDummy(Colls const&) {}
