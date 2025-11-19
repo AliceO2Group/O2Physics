@@ -13,12 +13,10 @@
 /// \brief Class to compute the ML response for HF 3-prong candidates
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
-#ifndef ALICE3_ML_MLRESPONSE3PRONG_H_
-#define ALICE3_ML_MLRESPONSE3PRONG_H_
+#ifndef ALICE3_ML_HFMLRESPONSE3PRONG_H_
+#define ALICE3_ML_HFMLRESPONSE3PRONG_H_
 
 #include "Tools/ML/MlResponse.h"
-
-#include <CommonConstants/PhysicsConstants.h>
 
 #include <cstdint>
 #include <map>
@@ -98,13 +96,13 @@ enum class InputFeatures3Prong : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class MlResponse3Prong : public MlResponse<TypeOutputScore>
+class HfMlResponse3Prong : public MlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  MlResponse3Prong() = default;
+  HfMlResponse3Prong() = default;
   /// Default destructor
-  virtual ~MlResponse3Prong() = default;
+  virtual ~HfMlResponse3Prong() = default;
 
   /// Method to get the input features vector needed for ML inference
   /// \tparam T1 type of the 3-prong candidate
@@ -221,4 +219,4 @@ class MlResponse3Prong : public MlResponse<TypeOutputScore>
 #undef FILL_MAP_3PRONG
 #undef CHECK_AND_FILL_ML_ALICE3
 
-#endif // ALICE3_ML_MLRESPONSE3PRONG_H_
+#endif // ALICE3_ML_HFMLRESPONSE3PRONG_H_

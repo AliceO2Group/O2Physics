@@ -66,10 +66,6 @@ DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, double); //!
 DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex,  //!
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float); //! sum of (non-weighted) distances of the secondary vertex to its prongs
-// Prong index columns
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! Index to first prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! Index to second prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, Tracks, "_2"); //! Index to third prong
 // prong properties
 DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //!
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
@@ -340,7 +336,6 @@ DECLARE_SOA_TABLE(Alice3Cand3Ps, "AOD", "ALICE3CAND3P", //!
                   a3_hf_cand_3prong::Phi,
                   a3_hf_cand_3prong::Pt,
                   // prong properties
-                  a3_hf_cand::Prong0Id, a3_hf_cand::Prong1Id, a3_hf_cand::Prong2Id,
                   a3_hf_cand::PxProng0, a3_hf_cand::PyProng0, a3_hf_cand::PzProng0, // proton track
                   a3_hf_cand::PxProng1, a3_hf_cand::PyProng1, a3_hf_cand::PzProng1, // kaon track
                   a3_hf_cand::PxProng2, a3_hf_cand::PyProng2, a3_hf_cand::PzProng2, // pion track

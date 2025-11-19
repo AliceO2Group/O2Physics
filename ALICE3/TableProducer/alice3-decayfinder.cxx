@@ -1021,7 +1021,6 @@ struct alice3decayFinder {
                           cand3prong.eta,
                           cand3prong.phi,
                           cand3prong.pt,
-                          prong0.globalIndex(), prong1.globalIndex(), prong2.globalIndex(),
                           cand3prong.Pdaug2[0], cand3prong.Pdaug2[1], cand3prong.Pdaug2[2],
                           cand3prong.Pdaug1[0], cand3prong.Pdaug1[1], cand3prong.Pdaug1[2],
                           cand3prong.Pdaug0[0], cand3prong.Pdaug0[1], cand3prong.Pdaug0[2],

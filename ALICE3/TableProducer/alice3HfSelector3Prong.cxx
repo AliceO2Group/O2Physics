@@ -22,9 +22,12 @@
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "ALICE3/ML/MlResponse3Prong.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "ALICE3/Utils/utilsSelectionsAlice3.h"
+#include "ALICE3/ML/HfMlResponse3Prong.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -98,7 +101,7 @@ struct Alice3HfSelector3Prong {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelperAlice3 hfHelper;
-  o2::analysis::MlResponse3Prong<float> mlResponse;
+  o2::analysis::HfMlResponse3Prong<float> mlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
   using CandsLc = soa::Join<aod::Alice3Cand3Ps, aod::Alice3PidLcs>;

@@ -18,21 +18,6 @@
 #define ALICE3_UTILS_UTILSHFALICE3_H_
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelectorPID.h"
-
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
-
-#include <array>
-#include <cmath>
-#include <vector>
 
 namespace o2::analysis
 {
