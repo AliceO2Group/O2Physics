@@ -32,8 +32,8 @@
 
 #include "TF1.h"
 #include "TF2.h"
-#include <TPDGCode.h>
 #include <Math/Vector4D.h>
+#include <TPDGCode.h>
 
 #include <string>
 #include <vector>
@@ -75,12 +75,12 @@ struct strangecasctrack {
   Configurable<bool> doApplyEventCuts{"doApplyEventCuts", true, "apply general event cuts"}; // general cascade cuts - dca, cosPA etc.
   // Xi selections
   Configurable<bool> doApplyGenCutsXi{"doApplyGenCutsXi", true, "apply general cuts (Omega)"}; // general cascade cuts - dca, cosPA etc.
-  Configurable<bool> doApplyPtCutsXi{"doApplyPtCutsXi", true, "apply pt cuts (Xi)"}; // ignore particles with extremely low efficiencies
+  Configurable<bool> doApplyPtCutsXi{"doApplyPtCutsXi", true, "apply pt cuts (Xi)"};           // ignore particles with extremely low efficiencies
   Configurable<bool> doApplyTPCPIDXi{"doApplyTPCPIDXi", true, "apply tpc pid to dau tracks (Xi)"};
   Configurable<bool> doApplyTOFPIDXi{"doApplyTOFPIDXi", true, "apply tof pid to dau tracks (Xi)"};
   // Omega selections
   Configurable<bool> doApplyGenCutsOmega{"doApplyGenCutsOmega", true, "apply general cuts (Omega)"}; // general cascade cuts - dca, cosPA etc.
-  Configurable<bool> doApplyPtCutsOmega{"doApplyPtCutsOmega", true, "apply pt cuts (Omega)"}; // ignore particles with extremely low efficiencies
+  Configurable<bool> doApplyPtCutsOmega{"doApplyPtCutsOmega", true, "apply pt cuts (Omega)"};        // ignore particles with extremely low efficiencies
   Configurable<bool> doApplyTPCPIDOmega{"doApplyTPCPIDOmega", true, "apply tpc pid to dau tracks (Omega)"};
   Configurable<bool> doApplyTOFPIDOmega{"doApplyTOFPIDOmega", true, "apply tof pid to dau tracks (Omega)"};
   Configurable<bool> doCompetingMassRej{"doCompetingMassRej", true, "competing mass rejection (Omega)"};
@@ -254,9 +254,9 @@ struct strangecasctrack {
     LOG(info) << "Efficiencies and purities now loaded for " << mRunNumber;
 
     if (doPropagateEfficiency2D && (!hEfficiencyErrOmegaStd2D || !hEfficiencyErrOmegaTra2D || !hEfficiencyErrXiStd2D || !hEfficiencyErrXiTra2D))
-    LOG(fatal) << "Problem getting hEfficiencyUncertainty!";
+      LOG(fatal) << "Problem getting hEfficiencyUncertainty!";
     if (doPropagatePurity2D && (!hPurityErrOmegaStd2D || !hPurityErrOmegaTra2D || !hPurityErrXiStd2D || !hPurityErrXiTra2D))
-    LOG(fatal) << "Problem getting hPurityUncertainty!";
+      LOG(fatal) << "Problem getting hPurityUncertainty!";
     LOG(info) << "Efficiencies and purities now loaded for " << mRunNumber;
   }
   // general info about processed events
@@ -280,10 +280,10 @@ struct strangecasctrack {
     if (std::abs(collision.posZ()) > selCuts.cutZVertex)
       return false;
     if (selCuts.cutSel8 && !collision.sel8())
-      return false;      
+      return false;
     return true;
   }
-    // checks general selection criteria for cascades
+  // checks general selection criteria for cascades
   template <typename TEvent, typename TCascade>
   bool isValidCasc(TEvent collision, TCascade cascade, TString particle)
   {
