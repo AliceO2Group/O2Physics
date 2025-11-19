@@ -54,6 +54,7 @@ DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
 DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
+DECLARE_SOA_COLUMN(McProcess, mcProcess, uint64_t);
 
 } // namespace NucleiTableNS
 
@@ -197,6 +198,7 @@ DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::Flags,
+                  NucleiTableNS::McProcess,
                   NucleiTableNS::PDGcode,
                   NucleiTableNS::MotherPDGcode);
 
