@@ -407,7 +407,7 @@ class V0Builder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int32_t posDaughterIndex, int32_t negDaughterIndex)
+  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     float mass, massAnti;
     if (sign > 0.f) {
@@ -443,7 +443,7 @@ class V0Builder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillK0short(T1& collisionProducts, T2& v0products, T3 const& v0, int32_t posDaughterIndex, int32_t negDaughterIndex)
+  void fillK0short(T1& collisionProducts, T2& v0products, T3 const& v0, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     if (mProduceK0shorts) {
       v0products.producedK0shorts(collisionProducts.producedCollision.lastIndex(),

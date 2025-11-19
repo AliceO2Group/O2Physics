@@ -386,9 +386,9 @@ class CascadeBuilder
       return;
     }
 
-    int32_t bachelorIndex = 0;
-    int32_t posDaughterIndex = 0;
-    int32_t negDaughterIndex = 0;
+    int64_t bachelorIndex = 0;
+    int64_t posDaughterIndex = 0;
+    int64_t negDaughterIndex = 0;
     for (const auto& cascade : fullCascades) {
       if (!mCascadeSelection.checkCandidate(cascade)) {
         continue;

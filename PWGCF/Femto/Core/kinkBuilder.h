@@ -433,7 +433,7 @@ class KinkBuilder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillSigma(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int32_t daughterIndex)
+  void fillSigma(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
     float mass = kink.mSigmaMinus();
 
@@ -490,7 +490,7 @@ class KinkBuilder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillSigmaPlus(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int32_t daughterIndex)
+  void fillSigmaPlus(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
     float mass = kink.mSigmaPlus();
 
