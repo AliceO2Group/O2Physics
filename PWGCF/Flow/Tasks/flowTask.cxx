@@ -343,7 +343,7 @@ struct FlowTask {
     // initial array
     bootstrapArray.resize(cfgNbootstrap);
     for (int i = 0; i < cfgNbootstrap; i++) {
-      bootstrapArray[i].resize(kCount_ExtraProfile);
+      bootstrapArray[i].resize(kCount_BootstrapHist);
     }
     for (auto i = 0; i < cfgNbootstrap; i++) {
       bootstrapArray[i][kMeanPtWithinGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
