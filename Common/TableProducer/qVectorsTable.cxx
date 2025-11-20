@@ -193,13 +193,13 @@ struct qVectorsTable {
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
         if (input.matcher.binding == "Qvectors") {
-          for (auto det : useDetector) {
+          for (auto const& det : useDetector) {
             useDetector[det.first.data()] = true;
           }
           LOGF(info, "Using all detectors.");
           goto allDetectorsInUse; // Added to break from nested loop if all detectors are in use.
         }
-        for (auto det : useDetector) {
+        for (auto const& det : useDetector) {
           std::string table_name_with_vector = det.first; // for replacing s with Vecs at the end.
           if (input.matcher.binding == det.first || input.matcher.binding == table_name_with_vector.replace(table_name_with_vector.size() - 1, 1, "Vecs")) {
             useDetector[det.first.data()] = true;
@@ -470,7 +470,7 @@ struct qVectorsTable {
     int nTrkTPCneg = 0;
     int nTrkTPCall = 0;
 
-    for (auto& trk : track) {
+    for (auto const& trk : track) {
       if (!SelTrack(trk)) {
         continue;
       }
