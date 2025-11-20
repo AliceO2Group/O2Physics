@@ -752,8 +752,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCdeltaphi] = "";
   fgVariableNames[kMCdeltaeta] = "#Delta#eta";
   fgVariableUnits[kMCdeltaeta] = "";
-  fgVariableNames[kNhadron] = "N_{hadron}";
-  fgVariableUnits[kNhadron] = "";
   fgVariableNames[kMCParticleWeight] = "MC particle weight";
   fgVariableUnits[kMCParticleWeight] = "";
   fgVariableNames[kMCPx] = "MC px";
@@ -1725,7 +1723,6 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
   fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
-  fgVarNamesMap["kMCCosChi_minus"] = kMCCosChi_minus;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
   fgVarNamesMap["kMCPx"] = kMCPx;
