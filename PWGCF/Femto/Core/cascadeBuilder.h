@@ -379,16 +379,16 @@ class CascadeBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void fillCascades(T1& collisionProducts, T2& trackProducts, T3& cascadeProducts, T4 const& fullCascades, T5 const& fullTracks, T6 const& col, T7& trackBuilder, T8& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& cascadeProducts, T6 const& fullCascades, T7 const& fullTracks, T8& trackBuilder, T9& indexMap)
   {
     if (!mFillAnyTable) {
       return;
     }
 
-    int32_t bachelorIndex = 0;
-    int32_t posDaughterIndex = 0;
-    int32_t negDaughterIndex = 0;
+    int64_t bachelorIndex = 0;
+    int64_t posDaughterIndex = 0;
+    int64_t negDaughterIndex = 0;
     for (const auto& cascade : fullCascades) {
       if (!mCascadeSelection.checkCandidate(cascade)) {
         continue;
@@ -396,9 +396,11 @@ class CascadeBuilder
       mCascadeSelection.applySelections(cascade, fullTracks, col);
       if (mCascadeSelection.passesAllRequiredSelections()) {
 
-        auto bachelor = cascade.template bachelor_as<T5>();
-        auto posDaughter = cascade.template posTrack_as<T5>();
-        auto negDaughter = cascade.template negTrack_as<T5>();
+        auto bachelor = cascade.template bachelor_as<T7>();
+        auto posDaughter = cascade.template posTrack_as<T7>();
+        auto negDaughter = cascade.template negTrack_as<T7>();
+
+        collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
         bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts, indexMap);
         posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
