@@ -93,7 +93,7 @@ struct doublephimeson {
     histos.add("hnsigmaTPCKaonPlus", "hnsigmaTPCKaonPlus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCKaonMinus", "hnsigmaTPCKaonMinus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCTOFKaon", "hnsigmaTPCTOFKaon", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
-    histos.add("hPhiMass", "hPhiMass", kTH2F, {{40, 1.0, 1.04f}, {100, 0.0f, 10.0f}});
+    histos.add("hPhiMass", "hPhiMass", kTH3F, {{40, 1.0, 1.04f}, {40, 1.0, 1.04f}, {100, 0.0f, 10.0f}});
     histos.add("hPhiMass2", "hPhiMass2", kTH2F, {{40, 1.0, 1.04f}, {40, 1.0f, 1.04f}});
     histos.add("hkPlusDeltaetaDeltaPhi", "hkPlusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
     histos.add("hkMinusDeltaetaDeltaPhi", "hkMinusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
@@ -444,7 +444,7 @@ struct doublephimeson {
       histos.fill(HIST("hnsigmaTPCTOFKaon"), phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), kaonplusd1pt);
       histos.fill(HIST("hnsigmaTPCKaonPlus"), phitrackd1.phid1TPC(), kaonplusd1pt);
       histos.fill(HIST("hnsigmaTPCKaonMinus"), phitrackd1.phid2TPC(), kaonminusd1pt);
-      histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
+      histos.fill(HIST("hPhiMass2"), Phid1.M(), Phid1.Pt());
       auto phid1id = phitrackd1.index();
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
       Phi1kaonplus.SetXYZM(phitrackd1.phid1Px(), phitrackd1.phid1Py(), phitrackd1.phid1Pz(), 0.493);
@@ -495,7 +495,7 @@ struct doublephimeson {
         */
 
         // Unlike
-        histos.fill(HIST("hPhiMass2"), Phid1.M(), Phid2.M());
+        // histos.fill(HIST("hPhiMass2"), Phid1.M(), Phid2.M());
         if (phitrackd2.phiMass() < minPhiMass2 || phitrackd2.phiMass() > maxPhiMass2) {
           continue;
         }
@@ -585,7 +585,7 @@ struct doublephimeson {
       histos.fill(HIST("hnsigmaTPCTOFKaon"), phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), kaonplusd1pt);
       histos.fill(HIST("hnsigmaTPCKaonPlus"), phitrackd1.phid1TPC(), kaonplusd1pt);
       histos.fill(HIST("hnsigmaTPCKaonMinus"), phitrackd1.phid2TPC(), kaonminusd1pt);
-      histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
+      histos.fill(HIST("hPhiMass2"), Phid1.M(), Phid1.Pt());
       auto phid1id = phitrackd1.index();
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
       Phi1kaonplus.SetXYZM(phitrackd1.phid1Px(), phitrackd1.phid1Py(), phitrackd1.phid1Pz(), 0.493);
@@ -843,7 +843,7 @@ struct doublephimeson {
         continue;
 
       const auto id1 = t1.index();
-      histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
+
       for (auto const& t2 : phitracks) {
         const auto id2 = t2.index();
         if (id2 <= id1)
@@ -878,7 +878,7 @@ struct doublephimeson {
         TLorentzVector pair = phi1 + phi2;
         if (pair.M() < minExoticMass || pair.M() > maxExoticMass)
           continue;
-
+        histos.fill(HIST("hPhiMass"), phi1.M(), phi2.M(), pair.Pt());
         // daughter ΔR QA and minΔR (NO CUT anymore)
         ROOT::Math::PtEtaPhiMVector k1pV(k1p.Pt(), k1p.Eta(), k1p.Phi(), 0.493);
         ROOT::Math::PtEtaPhiMVector k1mV(k1m.Pt(), k1m.Eta(), k1m.Phi(), 0.493);
@@ -1029,8 +1029,6 @@ struct doublephimeson {
         if (phi1.Pt() < minPhiPt || phi1.Pt() > maxPhiPt)
           continue;
 
-        histos.fill(HIST("hPhiMass"), phi1.M(), phi1.Pt());
-
         PhiCand cand;
         cand.phi = ROOT::Math::PtEtaPhiMVector(phi1.Pt(), phi1.Eta(), phi1.Phi(), phi1.M());
         cand.kplus = ROOT::Math::PtEtaPhiMVector(k1p.Pt(), k1p.Eta(), k1p.Phi(), 0.493);
@@ -1060,8 +1058,6 @@ struct doublephimeson {
           continue;
         if (phi2.Pt() < minPhiPt || phi2.Pt() > maxPhiPt)
           continue;
-
-        histos.fill(HIST("hPhiMass"), phi2.M(), phi2.Pt());
 
         PhiCand cand;
         cand.phi = ROOT::Math::PtEtaPhiMVector(phi2.Pt(), phi2.Eta(), phi2.Phi(), phi2.M());

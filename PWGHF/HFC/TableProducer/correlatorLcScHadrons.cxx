@@ -434,6 +434,7 @@ struct HfCorrelatorLcScHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsCandMass{"binsCandMass", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsNSigmas{"binsNSigmas", {4000, -500., 500.}, "n#sigma"};
 
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
@@ -452,6 +453,7 @@ struct HfCorrelatorLcScHadrons {
     AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisRapidity = {100, -2, 2, "Rapidity"};
+    AxisSpec const axisNSigma = {binsNSigmas, "n#sigma"};
     AxisSpec axisSign = {5, -2.5, 2.5, "Sign"};
     AxisSpec axisPtV0 = {500, 0., 50.0, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisMassV0 = {300, 1.05f, 1.2f, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
@@ -512,6 +514,10 @@ struct HfCorrelatorLcScHadrons {
     registry.add("hEtaMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}});
     registry.add("hPhiMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     registry.add("hMultFT0AMcGen", "Lc,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
+    registry.add("hTOFnSigmaPr", "hTOFnSigmaPr", {HistType::kTH2F, {{axisPtHadron}, {axisNSigma}}});
+    registry.add("hTPCnSigmaPr", "hTPCnSigmaPr", {HistType::kTH2F, {{axisPtHadron}, {axisNSigma}}});
+    registry.add("hTOFnSigmaPrPiKRej", "hTOFnSigmaPrPiKRej", {HistType::kTH2F, {{axisPtHadron}, {axisNSigma}}});
+    registry.add("hTPCnSigmaPrPiKRej", "hTPCnSigmaPrPiKRej", {HistType::kTH2F, {{axisPtHadron}, {axisNSigma}}});
 
     // Lambda V0 histograms
     registry.add("hEventLambdaV0", "Lambda, events", {HistType::kTH1F, {{2, 0, 2}}});
@@ -562,7 +568,7 @@ struct HfCorrelatorLcScHadrons {
     if (std::abs(pid) == kProton && std::abs(track.tpcNSigmaPr()) > cfgV0.cfgDaughPIDCutsTPCPr) {
       return false;
     }
-    if (std::abs(pid) == kPiPlus && std::abs(track.tpcNSigmaPi()) > cfgV0.cfgDaughPIDCutsTPCPi && std::abs(track.tofNSigmaPi()) > cfgV0.cfgDaughPIDCutsTOFPi) {
+    if (std::abs(pid) == kPiPlus && (std::abs(track.tpcNSigmaPi()) > cfgV0.cfgDaughPIDCutsTPCPi || std::abs(track.tofNSigmaPi()) > cfgV0.cfgDaughPIDCutsTOFPi)) {
       return false;
     }
     if (std::abs(track.eta()) > etaTrackMax) {
@@ -596,20 +602,39 @@ struct HfCorrelatorLcScHadrons {
           registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), posTrackV0.pt());
           registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
+          registry.fill(HIST("hTPCnSigmaPr"), posTrackV0.pt(), posTrackV0.tpcNSigmaPr());
+          if (posTrackV0.hasTOF()) {
+            registry.fill(HIST("hTOFnSigmaPr"), posTrackV0.pt(), posTrackV0.tofNSigmaPr());
+          }
+
           if (passPIDSelection(posTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             registry.fill(HIST("hV0LambdaPiKRej"), v0.mLambda(), v0.pt(), posTrackV0.pt());
             registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
+
+            registry.fill(HIST("hTPCnSigmaPrPiKRej"), posTrackV0.pt(), posTrackV0.tpcNSigmaPr());
+            if (posTrackV0.hasTOF()) {
+              registry.fill(HIST("hTOFnSigmaPrPiKRej"), posTrackV0.pt(), posTrackV0.tofNSigmaPr());
+            }
           }
         }
       }
       if (isSelectedV0Daughter(negTrackV0, kProton) && isSelectedV0Daughter(posTrackV0, kPiPlus)) {
-        if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) > cfgV0.cfgHypMassWindow) {
+        if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
           registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
           registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), posTrackV0.pt());
 
+          registry.fill(HIST("hTPCnSigmaPr"), negTrackV0.pt(), negTrackV0.tpcNSigmaPr());
+          if (negTrackV0.hasTOF()) {
+            registry.fill(HIST("hTOFnSigmaPr"), negTrackV0.pt(), negTrackV0.tofNSigmaPr());
+          }
           if (passPIDSelection(negTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             registry.fill(HIST("hV0LambdaPiKRej"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
             registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mLambda(), v0.pt(), posTrackV0.pt());
+
+            registry.fill(HIST("hTPCnSigmaPrPiKRej"), negTrackV0.pt(), negTrackV0.tpcNSigmaPr());
+            if (negTrackV0.hasTOF()) {
+              registry.fill(HIST("hTOFnSigmaPrPiKRej"), negTrackV0.pt(), negTrackV0.tofNSigmaPr());
+            }
           }
         }
       }
