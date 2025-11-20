@@ -113,6 +113,7 @@ struct Dilepton {
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
   Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  Configurable<int> ndepthDDAcc{"ndepthDDAcc", 10000, "depth for event mixing for data-driven acc. in polarization"};
   Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
@@ -421,9 +422,9 @@ struct Dilepton {
 
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) { // only for polarization
 
-      emh_pair_uls = new MyEMH_pair(ndepth);
-      emh_pair_lspp = new MyEMH_pair(ndepth);
-      emh_pair_lsmm = new MyEMH_pair(ndepth);
+      emh_pair_uls = new MyEMH_pair(ndepthDDAcc);
+      emh_pair_lspp = new MyEMH_pair(ndepthDDAcc);
+      emh_pair_lsmm = new MyEMH_pair(ndepthDDAcc);
 
       if (accBins.ConfMllAccBins.value[0] == VARIABLE_WIDTH) {
         mll_bin_edges = std::vector<float>(accBins.ConfMllAccBins.value.begin(), accBins.ConfMllAccBins.value.end());
