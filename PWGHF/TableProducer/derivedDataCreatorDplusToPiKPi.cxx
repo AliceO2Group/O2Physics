@@ -291,7 +291,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         }
         auto trackprong0 = candidate.template prong0_as<TracksWPid>();
         int const candFlag = (trackprong0.sign() > 0) ? 0 : 1; // 0: D+, 1: D-
-        fillTablesCandidate(candidate, sign, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
+        fillTablesCandidate(candidate, candFlag, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
   }
