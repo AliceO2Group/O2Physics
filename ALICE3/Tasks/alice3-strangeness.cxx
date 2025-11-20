@@ -69,11 +69,10 @@ struct alice3strangeness {
     histos.add("K0/hDCAPosDaughter", "", kTH1D, {{200, -5, 5}});
     histos.add("hPVz", "hPVz", kTH1F, {axisVertexZ});
   }
+  long int nEvents = 0;
   void process(aod::Collisions const& collisions, aod::McCollisions const& mcCollisions, aod::UpgradeV0s const& v0Recos, alice3tracks const&)
   {
-    for (const auto& mcCollision : mcCollisions) {
-      // std::cout << "______ process MC collision_______" << mcCollision.size() << std::endl;
-    }
+    LOG(info) << "Event processed " << nEvents++ << " :" << collisions.size() << " " << mcCollisions.size();
     for (const auto& collision : collisions) {
       float collisionZ = collision.posZ();
       // std::cout << "______ process V0_______" <<  collision.size() << std::endl;
