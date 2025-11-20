@@ -197,8 +197,7 @@ DECLARE_SOA_COLUMN(TfId, tfId, int);
 DECLARE_SOA_COLUMN(BcInTF, bcInTF, int);
 } // namespace occidx
 
-// DECLARE_SOA_TABLE(OccIndexTable, "AOD", "OCCINDEXTABLE", o2::soa::Index<>,
-DECLARE_SOA_INDEX_TABLE_USER(OccIndexTable, Occs, "OCCINDEXTABLE",
+DECLARE_SOA_TABLE(OccIndexTable, "AOD", "OCCINDEXTABLE", o2::soa::Index<>,
                              o2::aod::occidx::BCId,
                              o2::aod::occidx::OccId);
 
