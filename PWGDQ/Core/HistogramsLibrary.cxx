@@ -982,15 +982,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "DeltaPhi", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi);
     hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kMCdeltaeta, 50, -8.0, 8.0, VarManager::kMCdeltaphi);
     // for bkg
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_1", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_1);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_2", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_2);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_3", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_3);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_4", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_4);
+    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_trans", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_trans);
+    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_toward", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_toward);
+    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_away", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_away);
 
-    hm->AddHistogram(histClass, "Coschi_randomPhi_1", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_1, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_1);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_2", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_2, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_2);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_3", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_3, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_3);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_4", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_4, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_4);
+    hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_trans, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_trans);
+    hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_toward, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_toward);
+    hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_away, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_away);
   }
   if (!groupStr.CompareTo("pair")) {
     if (subGroupStr.Contains("cepf")) {

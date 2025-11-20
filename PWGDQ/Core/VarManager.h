@@ -629,18 +629,15 @@ class VarManager : public TObject
     kMCHadronEta,
     kMCHadronPhi,
     kMCWeight,
-    kMCCosChi_randomPhi_1,
-    kMCWeight_randomPhi_1,
-    kMCCosChi_randomPhi_2,
-    kMCWeight_randomPhi_2,
-    kMCCosChi_randomPhi_3,
-    kMCWeight_randomPhi_3,
-    kMCCosChi_randomPhi_4,
-    kMCWeight_randomPhi_4,
-    kMCdeltaphi_randomPhi_1,
-    kMCdeltaphi_randomPhi_2,
-    kMCdeltaphi_randomPhi_3,
-    kMCdeltaphi_randomPhi_4,
+    kMCCosChi_randomPhi_toward,
+    kMCWeight_randomPhi_toward,
+    kMCCosChi_randomPhi_away,
+    kMCWeight_randomPhi_away,
+    kMCCosChi_randomPhi_trans,
+    kMCWeight_randomPhi_trans,
+    kMCdeltaphi_randomPhi_toward,
+    kMCdeltaphi_randomPhi_away,
+    kMCdeltaphi_randomPhi_trans,
     kMCWeight_before,
 
     // MC mother particle variables
@@ -2831,53 +2828,38 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   values[kMCHadronPdgCode] = t1.pdgCode();
   values[kMCWeight] = E_boost / o2::constants::physics::MassJPsi;
 
-  values[kMCCosChi_randomPhi_1] = -999.9f;
-  values[kMCCosChi_randomPhi_2] = -999.9f;
-  values[kMCCosChi_randomPhi_3] = -999.9f;
-  values[kMCCosChi_randomPhi_4] = -999.9f;
+  values[kMCCosChi_randomPhi_trans] = -999.9f;
+  values[kMCCosChi_randomPhi_toward] = -999.9f;
+  values[kMCCosChi_randomPhi_away] = -999.9f;
 
-  values[kMCdeltaphi_randomPhi_1] = -999.9f;
-  values[kMCdeltaphi_randomPhi_2] = -999.9f;
-  values[kMCdeltaphi_randomPhi_3] = -999.9f;
-  values[kMCdeltaphi_randomPhi_4] = -999.9f;
+  values[kMCdeltaphi_randomPhi_trans] = -999.9f;
+  values[kMCdeltaphi_randomPhi_toward] = -999.9f;
+  values[kMCdeltaphi_randomPhi_away] = -999.9f;
 
-  float randomPhi_1 = -o2::constants::math::PIHalf;
-  float randomPhi_2 = -o2::constants::math::PIHalf;
-  float randomPhi_3 = -o2::constants::math::PIHalf;
-  float randomPhi_4 = -o2::constants::math::PIHalf;
+  float randomPhi_trans = -o2::constants::math::PIHalf;
+  float randomPhi_toward = -o2::constants::math::PIHalf;
+  float randomPhi_away = -o2::constants::math::PIHalf;
 
-  if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -0.25 * TMath::Pi()) || (deltaphi > 1.25 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi())) {
-    randomPhi_1 = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-    randomPhi_2 = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+  if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+    randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
 
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_1(v2.pt(), v2.eta(), randomPhi_1, o2::constants::physics::MassPionCharged);
-    values[kMCCosChi_randomPhi_1] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_1);
-    values[kMCWeight_randomPhi_1] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_1) / v1.M();
-    ;
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
+    values[kMCWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M();
 
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_2(v2.pt(), v2.eta(), randomPhi_2, o2::constants::physics::MassPionCharged);
-    values[kMCCosChi_randomPhi_2] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_2);
-    values[kMCWeight_randomPhi_2] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_2) / v1.M();
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_randomPhi_toward] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_toward);
+    values[kMCWeight_randomPhi_toward] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_toward) / v1.M();
 
-    values[kMCdeltaphi_randomPhi_1] = RecoDecay::constrainAngle(v1.phi() - randomPhi_1, -o2::constants::math::PIHalf);
-    values[kMCdeltaphi_randomPhi_2] = RecoDecay::constrainAngle(v1.phi() - randomPhi_2, -o2::constants::math::PIHalf);
-  }
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
+    values[kMCWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M();
 
-  if (deltaphi > 0.25 * TMath::Pi() && deltaphi < 0.75 * TMath::Pi()) {
-    randomPhi_3 = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-    randomPhi_4 = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_3(v2.pt(), v2.eta(), randomPhi_3, o2::constants::physics::MassPionCharged);
-    values[kMCCosChi_randomPhi_3] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_3);
-    values[kMCWeight_randomPhi_3] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_3) / v1.M();
-    ;
-
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_4(v2.pt(), v2.eta(), randomPhi_4, o2::constants::physics::MassPionCharged);
-    values[kMCCosChi_randomPhi_4] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_4);
-    values[kMCWeight_randomPhi_4] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_4) / v1.M();
-
-    values[kMCdeltaphi_randomPhi_3] = RecoDecay::constrainAngle(v1.phi() - randomPhi_3, -o2::constants::math::PIHalf);
-    values[kMCdeltaphi_randomPhi_4] = RecoDecay::constrainAngle(v1.phi() - randomPhi_4, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
   }
 }
 
@@ -5209,7 +5191,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     double Q1 = (dilepton.mass() * dilepton.mass() - hadronMass * hadronMass) / Pinv;
     values[kDileptonHadronKstar] = sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
   }
-  if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau]) {
+  if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau] || fgUsedVars[kCosChi_randomPhi_trans] || fgUsedVars[kCosChi_randomPhi_toward] || fgUsedVars[kCosChi_randomPhi_away]) {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
     ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
     values[kCosChi] = LorentzTransformJpsihadroncosChi("coschi", v1, v2);
@@ -5221,43 +5203,39 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kEtaDau] = v2.eta();
     values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
 
-    if (fgUsedVars[kCosChi_randomPhi_trans] || fgUsedVars[kCosChi_randomPhi_toward] || fgUsedVars[kCosChi_randomPhi_away]) {
+    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
+    values[kCosChi_randomPhi_trans] = -999.9f;
+    values[kCosChi_randomPhi_toward] = -999.9f;
+    values[kCosChi_randomPhi_away] = -999.9f;
 
-      float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
-      values[kCosChi_randomPhi_trans] = -999.9f;
-      values[kCosChi_randomPhi_toward] = -999.9f;
-      values[kCosChi_randomPhi_away] = -999.9f;
+    values[kdeltaphi_randomPhi_trans] = -999.9f;
+    values[kdeltaphi_randomPhi_toward] = -999.9f;
+    values[kdeltaphi_randomPhi_away] = -999.9f;
 
-      values[kdeltaphi_randomPhi_trans] = -999.9f;
-      values[kdeltaphi_randomPhi_toward] = -999.9f;
-      values[kdeltaphi_randomPhi_away] = -999.9f;
+    float randomPhi_trans = -o2::constants::math::PIHalf;
+    float randomPhi_toward = -o2::constants::math::PIHalf;
+    float randomPhi_away = -o2::constants::math::PIHalf;
 
-      float randomPhi_trans = -o2::constants::math::PIHalf;
-      float randomPhi_toward = -o2::constants::math::PIHalf;
-      float randomPhi_away = -o2::constants::math::PIHalf;
+    if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+      randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
 
-      if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
-        randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-        randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-        randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
+      values[kCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
+      values[kWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M();
 
-        ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
-        values[kCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
-        values[kWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M();
-        ;
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, o2::constants::physics::MassPionCharged);
+      values[kCosChi_randomPhi_toward] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_toward);
+      values[kWeight_randomPhi_toward] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_toward) / v1.M();
 
-        ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, o2::constants::physics::MassPionCharged);
-        values[kCosChi_randomPhi_toward] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_toward);
-        values[kWeight_randomPhi_toward] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_toward) / v1.M();
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, o2::constants::physics::MassPionCharged);
+      values[kCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
+      values[kWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M();
 
-        ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, o2::constants::physics::MassPionCharged);
-        values[kCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
-        values[kWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M();
-
-        values[kdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
-        values[kdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
-        values[kdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
-      }
+      values[kdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
     }
   }
 
