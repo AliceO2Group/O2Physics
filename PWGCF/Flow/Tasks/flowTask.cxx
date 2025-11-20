@@ -73,7 +73,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta range for pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPt, float, 0.2, "eta gap for pt-pt correlations, cfgEtaGapPtPt<|eta|<cfgEtaPtPt")
+  O2_DEFINE_CONFIGURABLE(cfgEtaSubPtPt, float, 0.8, "eta range for subevent pt-pt correlations")
+  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPt, float, 0.2, "eta gap for pt-pt correlations, cfgEtaGapPtPt<|eta|<cfgEtaSubPtPt")
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
@@ -217,6 +218,7 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  std::vector<std::vector<std::shared_ptr<TProfile>>> bootstrapArray;
   int lastRunNumber = -1;
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
@@ -236,6 +238,10 @@ struct FlowTask {
     kNoDptCut = 0,
     kLowDptCut = 1,
     kHighDptCut = 2
+  };
+  enum BootstrapHist {
+    kMeanPtWithinGap08 = 0,
+    kCount_BootstrapHist
   };
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -333,6 +339,14 @@ struct FlowTask {
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    // initial array
+    bootstrapArray.resize(cfgNbootstrap);
+    for (int i = 0; i < cfgNbootstrap; i++) {
+      bootstrapArray[i].resize(kCount_BootstrapHist);
+    }
+    for (auto i = 0; i < cfgNbootstrap; i++) {
+      bootstrapArray[i][kMeanPtWithinGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+    }
     registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
@@ -656,6 +670,8 @@ struct FlowTask {
   {
     if (std::abs(track.eta()) < cfgEtaPtPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
+    }
+    if (std::abs(track.eta()) < cfgEtaSubPtPt) {
       if (cfgEtaGapPtPtEnabled) {
         if (track.eta() < -1. * cfgEtaGapPtPt) {
           (dt == kGen) ? fFCptgen->fillSub1(1., track.pt()) : fFCpt->fillSub1(weff, track.pt());
@@ -1154,7 +1170,10 @@ struct FlowTask {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
     if (weffEventWithinGap08)
-      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, weffEventWithinGap08);
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
+    int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
+    if (weffEventWithinGap08)
+      bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
     // c22_gap8 * pt_withGap8
     if (weffEventWithinGap08)
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
