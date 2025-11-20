@@ -240,9 +240,9 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaKa2D", ";TPC #it{n#sigma}(K)_{leading};TPC #it{n#sigma}(K)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     // selection counter
     std::vector<std::string> trackSelectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
-                                                       "TPC crossed rows/#it{N}_{cls}",
-                                                       "TOF requirement",
-                                                       "#it{p}_{T}", "#it{DCA}", "#it{#eta}", "exactly 2 tracks", "PID"};
+                                                            "TPC crossed rows/#it{N}_{cls}",
+                                                            "TOF requirement",
+                                                            "#it{p}_{T}", "#it{DCA}", "#it{#eta}", "exactly 2 tracks", "PID"};
     rQC.add("QC/tracks/hSelectionCounter", ";;tracks passing selections", kTH1D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}});
     rQC.add("QC/tracks/hSelectionCounterPerRun", ";;run number;tracks passing selections", kTH2D, {{static_cast<int>(trackSelectionCounterLabels.size()), -0.5, static_cast<float>(trackSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
     for (int i = 0; i < static_cast<int>(trackSelectionCounterLabels.size()); ++i) {
@@ -292,7 +292,7 @@ struct UpcRhoAnalysis {
     rSystem.addClone("system/selected/AnAn/", "system/selected/Xn0n/");
     rSystem.addClone("system/selected/AnAn/", "system/selected/0nXn/");
     rSystem.addClone("system/selected/AnAn/", "system/selected/XnXn/");
-    
+
     if (context.mOptions.get<bool>("processMCdata")) {
       // MC
       // collisions
@@ -472,7 +472,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 5);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 5, runIndex);
 
-    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)  
+    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
     rQC.fill(HIST("QC/collisions/hSelectionCounter"), 6);
     rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 6, runIndex);
