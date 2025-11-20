@@ -1174,7 +1174,7 @@ struct FlowTask {
       registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
     if (weffEventWithinGap08)
-        bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
+      bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
     // c22_gap8 * pt_withGap8
     if (weffEventWithinGap08)
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
