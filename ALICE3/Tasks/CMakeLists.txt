@@ -82,4 +82,4 @@ o2physics_add_dpl_workflow(alice3-pid-evaluation
 o2physics_add_dpl_workflow(alice3-strangeness
                     SOURCES alice3-strangeness.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)                    
+                    COMPONENT_NAME Analysis)          
