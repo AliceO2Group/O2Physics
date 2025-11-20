@@ -110,7 +110,6 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
-  O2_DEFINE_CONFIGURABLE(cfgUseUnityEventWeightForPt, bool, true, "Use unity event weight for mean pT")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePtRef, bool, true, "Use refernce pt range for pt container (if you are checking the spectra, you need to extent it)")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 4, "Highest order of pt-pt correlations")
@@ -173,6 +172,7 @@ struct FlowTask {
     TF1* fPtDepDCAxy = nullptr;
     O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
     O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+    O2_DEFINE_CONFIGURABLE(cfgUseUnityEventWeightForPt, bool, true, "Use unity event weight for mean pT")
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -1171,10 +1171,10 @@ struct FlowTask {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
     if (weffEventWithinGap08)
-      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgFuncParas.cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
     if (weffEventWithinGap08)
-      bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
+      bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, cfgFuncParas.cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
     // c22_gap8 * pt_withGap8
     if (weffEventWithinGap08)
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
