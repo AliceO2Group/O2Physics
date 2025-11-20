@@ -96,6 +96,7 @@ namespace mc_tree
 {
 // misc event info
 DECLARE_SOA_COLUMN(LocalBc, localBc, int);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 // event vertex
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
@@ -109,7 +110,7 @@ DECLARE_SOA_COLUMN(TrackEta, trackEta, float[2]);
 DECLARE_SOA_COLUMN(TrackPhi, trackPhi, float[2]);
 } // namespace mc_tree
 DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
-                  mc_tree::LocalBc,
+                  mc_tree::LocalBc, mc_tree::RunNumber,
                   mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ,
                   mc_tree::PhiRandom, mc_tree::PhiCharge, mc_tree::TrackSign, mc_tree::TrackPt, mc_tree::TrackEta, mc_tree::TrackPhi);
 } // namespace o2::aod
@@ -884,7 +885,7 @@ struct UpcRhoAnalysis {
   }
 
   template <typename C, typename T>
-  void processMC(C const& mcCollision, T const& mcParticles)
+  void processMC(C const& mcCollision, T const& mcParticles, const int runNumber)
   {
     rMC.fill(HIST("MC/collisions/hPosXY"), mcCollision.posX(), mcCollision.posY());
     rMC.fill(HIST("MC/collisions/hPosZ"), mcCollision.posZ());
@@ -984,7 +985,7 @@ struct UpcRhoAnalysis {
     float trackPts[2] = {pt(positivePion.px(), positivePion.py()), pt(negativePion.px(), negativePion.py())};
     float trackEtas[2] = {eta(positivePion.px(), positivePion.py(), positivePion.pz()), eta(negativePion.px(), negativePion.py(), negativePion.pz())};
     float trackPhis[2] = {phi(positivePion.px(), positivePion.py()), phi(negativePion.px(), negativePion.py())};
-    mcTree(localBc,
+    mcTree(localBc, runNumber,
            mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
            phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis);
   }
@@ -1024,9 +1025,20 @@ struct UpcRhoAnalysis {
 
   void processMCdata(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles)
   {
-    processMC(mcCollision, mcParticles);
+    processMC(mcCollision, mcParticles, -1);
   }
   PROCESS_SWITCH(UpcRhoAnalysis, processMCdata, "analyse MC data", false);
+
+  void processMCdataWithBCs(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles, aod::BCs const& bcs)
+  {
+    int runNumber = -1;
+    if (bcs.size() != 0) {
+      auto bc = bcs.begin();
+      runNumber = bc.runNumber();
+    }
+    processMC(mcCollision, mcParticles, runNumber);
+  }
+  PROCESS_SWITCH(UpcRhoAnalysis, processMCdataWithBCs, "analyse MC data with BCs (only with on-the-fly skimming)", false);
 
   void processCollisionRecoCheck(aod::UDMcCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions>> const& collisions)
   {
