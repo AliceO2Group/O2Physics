@@ -510,19 +510,19 @@ class TwoTrackResonanceBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-  void fillResonances(T1& collisionProducts, T2& trackProducts, T3& resonanceProducts, T4& groupPositiveTracks, T5& groupNegativeTracks, T6& trackBuilder, T7& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillResonances(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& resonanceProducts, T6& groupPositiveTracks, T7& groupNegativeTracks, T8& trackBuilder, T9& indexMap)
   {
     if (!mFillAnyTable) {
       return;
     }
     for (auto const& [positiveTrack, negativeTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupPositiveTracks, groupNegativeTracks))) {
-      this->fillResonance(collisionProducts, trackProducts, resonanceProducts, positiveTrack, negativeTrack, trackBuilder, indexMap);
+      this->fillResonance<system>(col, collisionBuilder, collisionProducts, trackProducts, resonanceProducts, positiveTrack, negativeTrack, trackBuilder, indexMap);
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillResonance(T1& collisionProducts, T2& trackProducts, T3& resonanceProducts, T4 const& posDaughter, T4 const& negDaughter, T5& trackBuilder, T6& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillResonance(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& resonanceProducts, T6 const& posDaughter, T7 const& negDaughter, T8& trackBuilder, T9& indexMap)
   {
 
     mTwoTrackResonanceSelection.reconstructResonance(posDaughter, negDaughter);
@@ -532,6 +532,9 @@ class TwoTrackResonanceBuilder
     mTwoTrackResonanceSelection.applySelections(posDaughter, negDaughter); // for resonances selection are only applied to daughter tracks
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
+
+    collisionBuilder.template fillCollision<system>(collisionProducts, col);
+
     posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(posDaughter, trackProducts, collisionProducts, indexMap);
     negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(negDaughter, trackProducts, collisionProducts, indexMap);
 

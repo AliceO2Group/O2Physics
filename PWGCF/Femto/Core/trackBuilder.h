@@ -586,8 +586,8 @@ class TrackBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void fillTracks(T1 const& tracks, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& tracks, T5& trackProducts, T6& indexMap)
   {
     if (!mFillAnyTable) {
       return;
@@ -600,6 +600,8 @@ class TrackBuilder
       if (!mTrackSelection.passesAllRequiredSelections()) {
         continue;
       }
+
+      collisionBuilder.template fillCollision<system>(collisionProducts, col);
       this->fillTrack<modes::Track::kPrimaryTrack>(track, trackProducts, collisionProducts, indexMap);
     }
   }
