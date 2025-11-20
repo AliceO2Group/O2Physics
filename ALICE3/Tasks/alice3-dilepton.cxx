@@ -14,19 +14,21 @@
 /// \author  s.scheid@cern.ch, daiki.sekihata@cern.ch
 ///
 
-#include "Math/Vector4D.h"
-// O2 includes
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/Vector4D.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -314,7 +316,7 @@ struct Alice3Dilepton {
   }
 
   template <PairType pairtype, typename TTracks, typename TMCTracks>
-  void FillPairRecWithPrefilter(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& mcParticles)
+  void FillPairRecWithPrefilter(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& /*mcParticles*/)
   {
     std::vector<uint64_t> prefilteredTracks;
     if constexpr (pairtype == PairType::kULS) {
