@@ -110,6 +110,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
+  O2_DEFINE_CONFIGURABLE(cfgUseUnityEventWeightForPt, bool, true, "Use unity event weight for mean pT")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePtRef, bool, true, "Use refernce pt range for pt container (if you are checking the spectra, you need to extent it)")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 4, "Highest order of pt-pt correlations")
@@ -218,6 +219,7 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  std::vector<std::vector<std::shared_ptr<TProfile>>> bootstrapArray;
   int lastRunNumber = -1;
   std::vector<int> runNumbers;
   std::map<int, std::shared_ptr<TH3>> th3sPerRun; // map of TH3 histograms for all runs
@@ -237,6 +239,10 @@ struct FlowTask {
     kNoDptCut = 0,
     kLowDptCut = 1,
     kHighDptCut = 2
+  };
+  enum BootstrapHist {
+    kMeanPtWithinGap08 = 0,
+    kCount_BootstrapHist
   };
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -334,6 +340,14 @@ struct FlowTask {
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisIndependent}});
+    // initial array
+    bootstrapArray.resize(cfgNbootstrap);
+    for (int i = 0; i < cfgNbootstrap; i++) {
+      bootstrapArray[i].resize(kCount_ExtraProfile);
+    }
+    for (auto i = 0; i < cfgNbootstrap; i++) {
+      bootstrapArray[i][kMeanPtWithinGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+    }
     registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
@@ -1157,7 +1171,10 @@ struct FlowTask {
       registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
     }
     if (weffEventWithinGap08)
-      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, weffEventWithinGap08);
+      registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
+    int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
+    if (weffEventWithinGap08)
+        bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, cfgUseUnityEventWeightForPt ? 1.0 : weffEventWithinGap08);
     // c22_gap8 * pt_withGap8
     if (weffEventWithinGap08)
       fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
