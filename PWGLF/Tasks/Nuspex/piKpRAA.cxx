@@ -217,8 +217,9 @@ struct PiKpRAA {
   ConfigurableAxis binsPtNcl{"binsPtNcl", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 9.0, 12.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0}, "pT"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
-  ConfigurableAxis axisEta{"axisEta", {50, -1.0, 1.0}, "Eta axix"};
-  ConfigurableAxis axisY{"axisY", {50, -1.0, 1.0}, "rapidity axix"};
+  ConfigurableAxis binsZpos{"binsZpos", {60, -30.0, 30.0}, "Z pos axis"};
+  ConfigurableAxis axisEta{"axisEta", {50, -1.0, 1.0}, "Eta axis"};
+  ConfigurableAxis axisY{"axisY", {50, -1.0, 1.0}, "rapidity axis"};
   ConfigurableAxis axisArmAlpha{"axisArmAlpha", {200, -1.0, 1.0}, "Armenteros alpha"};
   ConfigurableAxis axisArmqT{"axisArmqT", {600, 0.0f, 0.3f}, "Armenteros qT"};
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, "Mass K0Short"};
@@ -345,7 +346,7 @@ struct PiKpRAA {
 
     // define axes you want to use
     const std::string titlePorPt{v0Selections.usePinPhiSelection ? "#it{p} (GeV/#it{c})" : "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisZpos{80, -20., 20., "Vtx_{z} (cm)"};
+    const AxisSpec axisZpos{binsZpos, "Vtx_{z} (cm)"};
     const AxisSpec axisEvent{15, 0.5, 15.5, ""};
     const AxisSpec axisNcl{161, -0.5, 160.5, "#it{N}_{cl} TPC"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -353,13 +354,11 @@ struct PiKpRAA {
     const AxisSpec axisPtNcl{binsPtNcl, Form("%s", titlePorPt.data())};
     const AxisSpec axisXPhiCut{binsPtPhiCut, Form("%s", titlePorPt.data())};
     const AxisSpec axisCent{binsCent, "Centrality Perc."};
-    // const char* endingEta[kNEtaHists] = {"02", "24", "46", "68"};
-    // const char* latexEta[kNEtaHists] = {"0<|#eta|<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
     const char* endingEta[kNEtaHists] = {"86", "64", "42", "20", "02", "24", "46", "68"};
     const char* latexEta[kNEtaHists] = {"-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta<0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
 
     registry.add("EventCounter", ";;Events", kTH1F, {axisEvent});
-    registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
+    registry.add("zPos", "With Event Selection;;Entries;", kTH1F, {axisZpos});
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
     registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
     registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
@@ -491,7 +490,7 @@ struct PiKpRAA {
     }
 
     if (doprocessMC || doprocessSim) {
-      registry.add("zPosMC", ";Gen. Coll. With at least One Ass. Rec. Coll.;Entries;", kTH1F, {axisZpos});
+      registry.add("zPosMC", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries;", kTH1F, {axisZpos});
       registry.add("dcaVsPtPiDec", "Secondary pions from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPrDec", "Secondary protons from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPiMat", "Secondary pions from material interactions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
@@ -513,7 +512,11 @@ struct PiKpRAA {
     }
 
     if (doprocessSim) {
+
       registry.add("NumberOfRecoCollisions", "Number of times Gen. Coll.are reconstructed;N;Entries", kTH1F, {{10, -0.5, 9.5}});
+
+      // Pt resolution
+      registry.add("PtResolution", "p_{T} resolution;;(pt_{rec} - pt_{gen})/pt_{gen};", kTH2F, {axisPt, {100, -1.0, 1.0}});
 
       // Needed to calculate the numerator of the Acceptance X Efficiency
       registry.add("PtPiVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
@@ -533,7 +536,8 @@ struct PiKpRAA {
       registry.add("NchMC_AllGen", "Generated Nch of All Gen. Evts.;Gen. Nch;Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
 
       // Needed to measure Event Splitting
-      registry.add("Centrality_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries", kTH1F, {axisCent});
+      registry.add("Centrality_WRecoEvt", "Generated Events With at least One Rec. Collision And NO Sel. criteria;;Entries", kTH1F, {axisCent});
+      registry.add("Centrality_WRecoEvtWSelCri", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries", kTH1F, {axisCent});
       registry.add("Centrality_AllRecoEvt", "Generated Events Irrespective of the number of times it was reconstructed + Evt. Selections;;Entries", kTH1F, {axisCent});
 
       // Needed to calculate the numerator of the Signal Loss correction
@@ -1438,9 +1442,9 @@ struct PiKpRAA {
           nChMC++;
         }
 
-        registry.fill(HIST("zPosMC"), mccollision.posZ());
-
         const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
+        registry.fill(HIST("Centrality_WRecoEvt"), centrality);
+        registry.fill(HIST("zPosMC"), mccollision.posZ());
 
         //---------------------------
         // All Generated events with at least one associated reconstructed collision
@@ -1456,10 +1460,11 @@ struct PiKpRAA {
           auto charge{0.};
           // Get the MC particle
           auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr)
+          if (pdgParticle != nullptr) {
             charge = pdgParticle->Charge();
-          else
+          } else {
             continue;
+          }
 
           // Is it a charged particle?
           if (std::abs(charge) < kMinCharge)
@@ -1495,7 +1500,7 @@ struct PiKpRAA {
           continue;
         }
 
-        registry.fill(HIST("Centrality_WithRecoEvt"), centrality);
+        registry.fill(HIST("Centrality_WRecoEvtWSelCri"), centrality);
         registry.fill(HIST("NchMCVsCent"), centrality, nChMC);
         registry.fill(HIST("NchMC_WithRecoEvt"), nChMC);
         registry.fill(HIST("T0Ccent"), centrality);
@@ -1522,10 +1527,11 @@ struct PiKpRAA {
           const auto& particle{track.mcParticle()};
           auto charge{0.};
           auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr)
+          if (pdgParticle != nullptr) {
             charge = pdgParticle->Charge();
-          else
+          } else {
             continue;
+          }
 
           // Is it a charged particle?
           if (std::abs(charge) < kMinCharge)
@@ -1549,21 +1555,23 @@ struct PiKpRAA {
           bool isPrimary{false};
           bool isDecay{false};
           bool isMaterial{false};
-          if (particle.isPhysicalPrimary())
+          if (particle.isPhysicalPrimary()) {
             isPrimary = true;
-          else if (particle.getProcess() == TMCProcess::kPDecay)
+          } else if (particle.getProcess() == TMCProcess::kPDecay) {
             isDecay = true;
-          else
+          } else {
             isMaterial = true;
+          }
 
           bool isPi{false};
           bool isPr{false};
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus)
+          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
             isPi = true;
-          else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar)
+          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
             isPr = true;
-          else
+          } else {
             continue;
+          }
 
           if (isPrimary && !isDecay && !isMaterial) {
             if (isPi && !isPr)
@@ -1607,10 +1615,11 @@ struct PiKpRAA {
           const auto& particle{track.mcParticle()};
           auto charge{0.};
           auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr)
+          if (pdgParticle != nullptr) {
             charge = pdgParticle->Charge();
-          else
+          } else {
             continue;
+          }
 
           // Is it a charged particle?
           if (std::abs(charge) < kMinCharge)
@@ -1658,14 +1667,15 @@ struct PiKpRAA {
           bool isKa{false};
           bool isPr{false};
 
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus)
+          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
             isPi = true;
-          else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus)
+          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
             isKa = true;
-          else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar)
+          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
             isPr = true;
-          else
+          } else {
             continue;
+          }
 
           if (isPi && !isKa && !isPr)
             registry.fill(HIST("PtPiVsCent_WithRecoEvt"), track.pt(), centrality);
@@ -1674,6 +1684,7 @@ struct PiKpRAA {
           if (isPr && !isPi && !isKa)
             registry.fill(HIST("PtPrVsCent_WithRecoEvt"), track.pt(), centrality);
 
+          registry.fill(HIST("PtResolution"), particle.pt(), (track.pt() - particle.pt()) / particle.pt());
         } // Loop over reconstructed tracks
       } // Loop over Reco. Collisions: These collisions are not required to pass the event selection
     } // If condition: Only simulated evets with at least one reconstrued collision
@@ -1695,10 +1706,11 @@ struct PiKpRAA {
       auto charge{0.};
       // Get the MC particle
       auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle != nullptr)
+      if (pdgParticle != nullptr) {
         charge = pdgParticle->Charge();
-      else
+      } else {
         continue;
+      }
 
       // Is it a charged particle?
       if (std::abs(charge) < kMinCharge)
@@ -1721,10 +1733,11 @@ struct PiKpRAA {
       auto charge{0.};
       // Get the MC particle
       auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle != nullptr)
+      if (pdgParticle != nullptr) {
         charge = pdgParticle->Charge();
-      else
+      } else {
         continue;
+      }
 
       // Is it a charged particle?
       if (std::abs(charge) < kMinCharge)
@@ -1736,14 +1749,15 @@ struct PiKpRAA {
         isPrimary = false;
 
       if (isPrimary) {
-        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) // pion
+        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
           registry.fill(HIST("PtPiVsNchMC_AllGen"), particle.pt(), nChMC);
-        else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) // kaon
+        } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
           registry.fill(HIST("PtKaVsNchMC_AllGen"), particle.pt(), nChMC);
-        else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) // proton
+        } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
           registry.fill(HIST("PtPrVsNchMC_AllGen"), particle.pt(), nChMC);
-        else
+        } else {
           continue;
+        }
       }
     } // Loop over Generated Particles
     registry.fill(HIST("NchMC_AllGen"), nChMC);
