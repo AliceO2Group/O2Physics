@@ -129,7 +129,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   }
 
   template <typename T>
-  void fillTablesCandidate(const T& candidate, uint8_t candFlag, double invMass,
+  void fillTablesCandidate(const T& candidate, int candFlag, double invMass,
                            double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, int8_t flagDecayChan, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
@@ -189,7 +189,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
     }
     if (fillCandidateSel) {
       rowCandidateSel(
-        candFlag);
+        BIT(candFlag));
     }
     if (fillCandidateMl) {
       rowCandidateMl(
@@ -290,13 +290,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
         auto trackprong0 = candidate.template prong0_as<TracksWPid>();
-        int const sign = trackprong0.sign();
-        uint8_t candFlag = 0;
-        if (sign > 0) {
-          candFlag |= BIT(0); // D+
-        } else if (sign < 0) {
-          candFlag |= BIT(1); // D-
-        }
+        int const candFlag = (trackprong0.sign() > 0) ? 0 : 1; // 0: D+, 1: D-
         fillTablesCandidate(candidate, sign, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
