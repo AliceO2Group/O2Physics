@@ -69,7 +69,7 @@ using namespace o2::framework::expressions;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::FT0MultZeqs, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms, aod::TPCMults, o2::aod::BarrelMults>;
 using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-using ColEvSelsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms>;
+using ColEvSelsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms, o2::aod::CentFT0Ms, o2::aod::BarrelMults>;
 
 using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCEl, aod::pidTOFFlags, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFullPi, aod::pidTOFFullEl>;
 
@@ -198,7 +198,7 @@ struct PiKpRAA {
   Configurable<bool> isCentSel{"isCentSel", true, "Centrality selection?"};
   Configurable<bool> isT0Ccent{"isT0Ccent", true, "Use T0C-based centrality?"};
   Configurable<bool> isZvtxPosSel{"isZvtxPosSel", true, "Zvtx position selection?"};
-
+  Configurable<bool> isINELgt0{"isINELgt0", true, "Apply INEL > 0?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
   Configurable<bool> applyNchSel{"applyNchSel", false, "Use mid-rapidity-based Nch selection"};
   Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
@@ -258,7 +258,8 @@ struct PiKpRAA {
     OccuCut,
     Centrality,
     VtxZ,
-    NchSel
+    NchSel,
+    INELgt0
   };
 
   enum TrkSelLabel {
@@ -347,7 +348,7 @@ struct PiKpRAA {
     // define axes you want to use
     const std::string titlePorPt{v0Selections.usePinPhiSelection ? "#it{p} (GeV/#it{c})" : "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisZpos{binsZpos, "Vtx_{z} (cm)"};
-    const AxisSpec axisEvent{15, 0.5, 15.5, ""};
+    const AxisSpec axisEvent{17, 0.5, 17.5, ""};
     const AxisSpec axisNcl{161, -0.5, 160.5, "#it{N}_{cl} TPC"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtV0s{binsPtV0s, "#it{p}_{T} (GeV/#it{c})"};
@@ -381,6 +382,7 @@ struct PiKpRAA {
     x->SetBinLabel(12, "Cent. Sel.");
     x->SetBinLabel(13, "VtxZ Sel.");
     x->SetBinLabel(14, "Nch Sel.");
+    x->SetBinLabel(15, "INEL > 0");
 
     if (doprocessCalibrationAndV0s) {
       registry.add("NchVsNPV", ";Nch; NPV;", kTH2F, {{{nBinsNPV, minNpv, maxNpv}, {nBinsNch, minNch, maxNch}}});
@@ -553,6 +555,7 @@ struct PiKpRAA {
 
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
     LOG(info) << "\tapplyNchSel=" << applyNchSel.value;
+    LOG(info) << "\tisINELgt0=" << isINELgt0.value;
     LOG(info) << "\tdetector4Calibration=" << detector4Calibration.value;
     LOG(info) << "\tv0TypeSelection=" << static_cast<int>(v0Selections.v0TypeSelection);
     LOG(info) << "\tselElecFromGammas=" << v0Selections.selElecFromGammas;
@@ -1366,6 +1369,41 @@ struct PiKpRAA {
   void processSim(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<ColEvSelsMC> const& collisions, BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TracksMC const& tracksMC)
   {
 
+    // Only INEL > 0 generated collisions
+    // By counting number of primary charged particles in |eta| < 1
+    if (isINELgt0) {
+      int nChMC{0};
+      for (const auto& particle : mcParticles) {
+
+        if (std::abs(particle.eta()) > kOne)
+          continue;
+
+        auto charge{0.};
+        // Get the MC particle
+        const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+        if (pdgParticle != nullptr) {
+          charge = pdgParticle->Charge();
+        } else {
+          continue;
+        }
+
+        // Is it a charged particle?
+        if (std::abs(charge) < kMinCharge)
+          continue;
+
+        // Is it a primary particle?
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        nChMC++;
+      }
+
+      // Only INEL > 0 generated events
+      if (!(nChMC > kZeroInt)) {
+        return;
+      }
+    }
+
     const auto& nRecColls{collisions.size()};
 
     registry.fill(HIST("NumberOfRecoCollisions"), nRecColls);
@@ -1425,11 +1463,12 @@ struct PiKpRAA {
 
           auto charge{0.};
           // Get the MC particle
-          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr)
+          const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
             charge = pdgParticle->Charge();
-          else
+          } else {
             continue;
+          }
 
           // Is it a charged particle?
           if (std::abs(charge) < kMinCharge)
@@ -2139,6 +2178,13 @@ struct PiKpRAA {
         return false;
       }
       registry.fill(HIST("EventCounter"), EvCutLabel::VtxZ);
+    }
+
+    if (isINELgt0) {
+      if (!col.isInelGt0()) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::INELgt0);
     }
 
     return true;
