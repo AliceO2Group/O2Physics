@@ -32,6 +32,7 @@
 
 #include "TF1.h"
 #include "TF2.h"
+#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 
 #include <string>
@@ -56,7 +57,7 @@ using DerMCRecTraCascDatas = soa::Join<aod::TraCascCores, aod::TraCascCollRefs, 
 // tables for PID selection
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
-struct strangecasctrack {
+struct StrangeCascTrack {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -70,30 +71,55 @@ struct strangecasctrack {
   Configurable<bool> doProcessPbPb{"doProcessPbPb", false, "true for PbPb"};
   Configurable<bool> doProcessOO{"doProcessOO", false, "true for OO"};
   Configurable<bool> doProcesspO{"doProcesspO", false, "true for pO"};
-  // selections
-  Configurable<bool> doApplyCuts{"doApplyCuts", true, "apply cuts"}; // general cascade cuts - dca, cosPA etc.
-  Configurable<bool> doApplyTPCPID{"doApplyTPCPID", true, "apply tpc pid to dau tracks"};
-  Configurable<bool> doApplyTOFPID{"doApplyTOFPID", true, "apply tof pid to dau tracks"};
-  Configurable<bool> doCompetingMassRej{"doCompetingMassRej", true, "competing mass rejection for omegas"};
-  // corrections
-  Configurable<bool> doApplyEfficiency{"doApplyEfficiency", false, "apply efficiency correction"};
-  Configurable<bool> doPropagateEfficiency{"doPropagateEfficiency", false, "apply efficiency propagation"};
-  Configurable<bool> doApplyPurity{"doApplyPurity", false, "apply purity correction"};
-  Configurable<bool> doPropagatePurity{"doPropagatePurity", false, "apply purity propagation"};
+
+  Configurable<bool> doApplyEventCuts{"doApplyEventCuts", true, "apply general event cuts"}; // general cascade cuts - dca, cosPA etc.
+  // Xi selections
+  Configurable<bool> doApplyGenCutsXi{"doApplyGenCutsXi", true, "apply general cuts (Omega)"}; // general cascade cuts - dca, cosPA etc.
+  Configurable<bool> doApplyPtCutsXi{"doApplyPtCutsXi", true, "apply pt cuts (Xi)"};           // ignore particles with extremely low efficiencies
+  Configurable<bool> doApplyTPCPIDXi{"doApplyTPCPIDXi", true, "apply tpc pid to dau tracks (Xi)"};
+  Configurable<bool> doApplyTOFPIDXi{"doApplyTOFPIDXi", true, "apply tof pid to dau tracks (Xi)"};
+  // Omega selections
+  Configurable<bool> doApplyGenCutsOmega{"doApplyGenCutsOmega", true, "apply general cuts (Omega)"}; // general cascade cuts - dca, cosPA etc.
+  Configurable<bool> doApplyPtCutsOmega{"doApplyPtCutsOmega", true, "apply pt cuts (Omega)"};        // ignore particles with extremely low efficiencies
+  Configurable<bool> doApplyTPCPIDOmega{"doApplyTPCPIDOmega", true, "apply tpc pid to dau tracks (Omega)"};
+  Configurable<bool> doApplyTOFPIDOmega{"doApplyTOFPIDOmega", true, "apply tof pid to dau tracks (Omega)"};
+  Configurable<bool> doCompetingMassRej{"doCompetingMassRej", true, "competing mass rejection (Omega)"};
+  // efficiency and purity corrections:
+  // only correct by pt
+  Configurable<bool> doApplyEfficiency1D{"doApplyEfficiency1D", false, "apply efficiency correction"};
+  Configurable<bool> doPropagateEfficiency1D{"doPropagateEfficiency1D", false, "apply efficiency propagation"};
+  Configurable<bool> doApplyPurity1D{"doApplyPurity1D", false, "apply purity correction"};
+  Configurable<bool> doPropagatePurity1D{"doPropagatePurity1D", false, "apply purity propagation"};
+  // correct by both pt and mult
+  Configurable<bool> doApplyEfficiency2D{"doApplyEfficiency2D", false, "apply efficiency correction"};
+  Configurable<bool> doPropagateEfficiency2D{"doPropagateEfficiency2D", false, "apply efficiency propagation"};
+  Configurable<bool> doApplyPurity2D{"doApplyPurity2D", false, "apply purity correction"};
+  Configurable<bool> doPropagatePurity2D{"doPropagatePurity2D", false, "apply purity propagation"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> efficiencyCCDBPath_pp{"efficiencyCCDBPath_pp", "Users/y/yparovia/LHC24f4d/Efficiency", "Path of the efficiency corrections"};
-  Configurable<std::string> efficiencyCCDBPath_PbPb{"efficiencyCCDBPath_PbPb", "Users/y/yparovia/LHC25f3/Efficiency", "Path of the efficiency corrections"};
-  Configurable<std::string> efficiencyCCDBPath_OO{"efficiencyCCDBPath_OO", "Users/y/yparovia/LHC25h3/Efficiency", "Path of the efficiency corrections"};
-  Configurable<std::string> efficiencyCCDBPath_pO{"efficiencyCCDBPath_pO", "Users/y/yparovia/LHC25h2/Efficiency", "Path of the efficiency corrections"};
+  Configurable<std::string> efficiencyCCDBPathpp{"efficiencyCCDBPathpp", "Users/y/yparovia/LHC24f4d", "Path of the efficiency and purity corrections (pp)"};
+  Configurable<std::string> efficiencyCCDBPathPbPb{"efficiencyCCDBPathPbPb", "Users/y/yparovia/LHC25f3", "Path of the efficiency and purity corrections (PbPb)"};
+  Configurable<std::string> efficiencyCCDBPathOO{"efficiencyCCDBPathOO", "Users/y/yparovia/LHC25h3", "Path of the efficiency and purity corrections (OO)"};
+  Configurable<std::string> efficiencyCCDBPathpO{"efficiencyCCDBPathpO", "Users/y/yparovia/LHC25h2", "Path of the efficiency and purity corrections (pO)"};
 
   // event and dau track selection
   struct : ConfigurableGroup {
     Configurable<double> cutZVertex{"cutZVertex", 10.0f, "max Z-vertex position"};
+    Configurable<bool> cutSel8{"cutSel8", true, "choose events with sel8"};
     Configurable<double> cutDCAtoPVxy{"cutDCAtoPVxy", 0.02f, "max cascade dca to PV in xy"};
     Configurable<double> cutDCAtoPVz{"cutDCAtoPVz", 0.02f, "max cascade dca to PV in z"};
-    Configurable<double> compMassRej{"compMassRej", 0.008f, "Competing mass rejection"};
     Configurable<double> cutV0CosPA{"cutV0CosPA", 0.97f, "max V0 cosPA"};
     Configurable<double> cutBachCosPA{"cutBachCosPA", 0.97f, "max Bachelor cosPA"};
+    Configurable<double> cutRapidity{"cutRapidity", 0.5f, "max rapidity"};
+    Configurable<double> cutCompMassRej{"cutCompMassRej", 0.008f, "Competing mass rejection"};
+    // minimum and maximum desired pt
+    Configurable<double> cutMinPtXiStd{"cutMinPtXiStd", 0.0f, "min pt for standard Xi"};
+    Configurable<double> cutMaxPtXiStd{"cutMaxPtXiStd", 15.0f, "min pt for standard Xi"};
+    Configurable<double> cutMinPtXiTra{"cutMinPtXiTra", 0.5f, "min pt for tracked Xi"};
+    Configurable<double> cutMaxPtXiTra{"cutMaxPtXiTra", 15.0f, "min pt for standard Xi"};
+    Configurable<double> cutMinPtOmegaStd{"cutMinPtOmegaStd", 0.5f, "min pt for standard Omega"};
+    Configurable<double> cutMaxPtOmegaStd{"cutMaxPtOmegaStd", 15.0f, "min pt for standard Omega"};
+    Configurable<double> cutMinPtOmegaTra{"cutMinPtOmegaTra", 1.0f, "min pt for tracked Omega"};
+    Configurable<double> cutMaxPtOmegaTra{"cutMaxPtOmegaTra", 15.0f, "min pt for standard Omega"};
     // TPC PID selection
     Configurable<float> nSigmaTPCPion{"nSigmaTPCPion", 4, "NSigmaTPCPion"};
     Configurable<float> nSigmaTPCKaon{"nSigmaTPCKaon", 4, "NSigmaTPCKaon"};
@@ -115,34 +141,49 @@ struct strangecasctrack {
     ConfigurableAxis axisXiMass{"axisXiMass", {2000, 1.2, 1.4}, "#Xi M_{inv} (GeV/c^{2})"};
   } axesConfig;
 
-  // Filters events
-  // Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  // Filter posZFilter = (nabs(o2::aod::collision::posZ) < selCuts.cutZVertex);
-  // Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < selCuts.cutZVertex);
-
   // cascade reconstruction types
   static constexpr std::string_view kTypeNames[] = {"Standard", "Tracked"};
 
   // for efficiency and purity corrections
-  TH2F* hEfficiencyOmegaStd;
-  TH2F* hEfficiencyOmegaTra;
-  TH2F* hEfficiencyXiStd;
-  TH2F* hEfficiencyXiTra;
+  TH1F* hEfficiencyOmegaStd1D;
+  TH1F* hEfficiencyOmegaTra1D;
+  TH1F* hEfficiencyXiStd1D;
+  TH1F* hEfficiencyXiTra1D;
 
-  TH2F* hEfficiencyErrOmegaStd;
-  TH2F* hEfficiencyErrOmegaTra;
-  TH2F* hEfficiencyErrXiStd;
-  TH2F* hEfficiencyErrXiTra;
+  TH1F* hEfficiencyErrOmegaStd1D;
+  TH1F* hEfficiencyErrOmegaTra1D;
+  TH1F* hEfficiencyErrXiStd1D;
+  TH1F* hEfficiencyErrXiTra1D;
 
-  TH2F* hPurityOmegaStd;
-  TH2F* hPurityOmegaTra;
-  TH2F* hPurityXiStd;
-  TH2F* hPurityXiTra;
+  TH1F* hPurityOmegaStd1D;
+  TH1F* hPurityOmegaTra1D;
+  TH1F* hPurityXiStd1D;
+  TH1F* hPurityXiTra1D;
 
-  TH2F* hPurityErrOmegaStd;
-  TH2F* hPurityErrOmegaTra;
-  TH2F* hPurityErrXiStd;
-  TH2F* hPurityErrXiTra;
+  TH1F* hPurityErrOmegaStd1D;
+  TH1F* hPurityErrOmegaTra1D;
+  TH1F* hPurityErrXiStd1D;
+  TH1F* hPurityErrXiTra1D;
+
+  TH2F* hEfficiencyOmegaStd2D;
+  TH2F* hEfficiencyOmegaTra2D;
+  TH2F* hEfficiencyXiStd2D;
+  TH2F* hEfficiencyXiTra2D;
+
+  TH2F* hEfficiencyErrOmegaStd2D;
+  TH2F* hEfficiencyErrOmegaTra2D;
+  TH2F* hEfficiencyErrXiStd2D;
+  TH2F* hEfficiencyErrXiTra2D;
+
+  TH2F* hPurityOmegaStd2D;
+  TH2F* hPurityOmegaTra2D;
+  TH2F* hPurityXiStd2D;
+  TH2F* hPurityXiTra2D;
+
+  TH2F* hPurityErrOmegaStd2D;
+  TH2F* hPurityErrOmegaTra2D;
+  TH2F* hPurityErrXiStd2D;
+  TH2F* hPurityErrXiTra2D;
 
   int mRunNumber;
   // loads efficiencies and purities
@@ -157,13 +198,13 @@ struct strangecasctrack {
 
     std::string efficiencyCCDBPath = [&]() {
       if (doProcesspp) {
-        return efficiencyCCDBPath_pp;
+        return efficiencyCCDBPathpp;
       } else if (doProcesspO) {
-        return efficiencyCCDBPath_pO;
+        return efficiencyCCDBPathpO;
       } else if (doProcessPbPb) {
-        return efficiencyCCDBPath_PbPb;
+        return efficiencyCCDBPathPbPb;
       }
-      return efficiencyCCDBPath_OO;
+      return efficiencyCCDBPathOO;
     }();
 
     TList* listEfficiencies = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, timeStamp);
@@ -172,29 +213,49 @@ struct strangecasctrack {
       LOG(fatal) << "Problem getting TList object with efficiencies and purities!";
     }
 
-    hEfficiencyOmegaStd = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Omega_Standard"));
-    hEfficiencyOmegaTra = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Omega_Tracked"));
-    hEfficiencyXiStd = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Xi_Standard"));
-    hEfficiencyXiTra = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Xi_Tracked"));
+    hEfficiencyOmegaStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("Eff_Omega_Standard_byPt"));
+    hEfficiencyOmegaTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("Eff_Omega_Tracked_byPt"));
+    hEfficiencyXiStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("Eff_Xi_Standard_byPt"));
+    hEfficiencyXiTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("Eff_Xi_Tracked_byPt"));
+    hEfficiencyErrOmegaStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("EffErr_Omega_Standard_byPt"));
+    hEfficiencyErrOmegaTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("EffErr_Omega_Tracked_byPt"));
+    hEfficiencyErrXiStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("EffErr_Xi_Standard_byPt"));
+    hEfficiencyErrXiTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("EffErr_Xi_Tracked_byPt"));
+    hPurityOmegaStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("Pur_Omega_Standard_byPt"));
+    hPurityOmegaTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("Pur_Omega_Tracked_byPt"));
+    hPurityXiStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("Pur_Xi_Standard_byPt"));
+    hPurityXiTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("Pur_Xi_Tracked_byPt"));
+    hPurityErrOmegaStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("PurErr_Omega_Standard_byPt"));
+    hPurityErrOmegaTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("PurErr_Omega_Tracked_byPt"));
+    hPurityErrXiStd1D = static_cast<TH1F*>(listEfficiencies->FindObject("PurErr_Xi_Standard_byPt"));
+    hPurityErrXiTra1D = static_cast<TH1F*>(listEfficiencies->FindObject("PurErr_Xi_Tracked_byPt"));
 
-    hEfficiencyErrOmegaStd = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Omega_Standard"));
-    hEfficiencyErrOmegaTra = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Omega_Tracked"));
-    hEfficiencyErrXiStd = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Xi_Standard"));
-    hEfficiencyErrXiTra = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Xi_Tracked"));
+    hEfficiencyOmegaStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Omega_Standard_byPtMult"));
+    hEfficiencyOmegaTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Omega_Tracked_byPtMult"));
+    hEfficiencyXiStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Xi_Standard_byPtMult"));
+    hEfficiencyXiTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("Eff_Xi_Tracked_byPtMult"));
+    hEfficiencyErrOmegaStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Omega_Standard_byPtMult"));
+    hEfficiencyErrOmegaTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Omega_Tracked_byPtMult"));
+    hEfficiencyErrXiStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Xi_Standard_byPtMult"));
+    hEfficiencyErrXiTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("EffErr_Xi_Tracked_byPtMult"));
+    hPurityOmegaStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Omega_Standard_byPtMult"));
+    hPurityOmegaTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Omega_Tracked_byPtMult"));
+    hPurityXiStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Xi_Standard_byPtMult"));
+    hPurityXiTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Xi_Tracked_byPtMult"));
+    hPurityErrOmegaStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Omega_Standard_byPtMult"));
+    hPurityErrOmegaTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Omega_Tracked_byPtMult"));
+    hPurityErrXiStd2D = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Xi_Standard_byPtMult"));
+    hPurityErrXiTra2D = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Xi_Tracked_byPtMult"));
 
-    hPurityOmegaStd = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Omega_Standard"));
-    hPurityOmegaTra = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Omega_Tracked"));
-    hPurityXiStd = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Xi_Standard"));
-    hPurityXiTra = static_cast<TH2F*>(listEfficiencies->FindObject("Pur_Xi_Tracked"));
-
-    hPurityErrOmegaStd = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Omega_Standard"));
-    hPurityErrOmegaTra = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Omega_Tracked"));
-    hPurityErrXiStd = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Xi_Standard"));
-    hPurityErrXiTra = static_cast<TH2F*>(listEfficiencies->FindObject("PurErr_Xi_Tracked"));
-
-    if (doPropagateEfficiency && (!hEfficiencyErrOmegaStd || !hEfficiencyErrOmegaTra || !hEfficiencyErrXiStd || !hEfficiencyErrXiTra))
+    if (doPropagateEfficiency1D && (!hEfficiencyErrOmegaStd1D || !hEfficiencyErrOmegaTra1D || !hEfficiencyErrXiStd1D || !hEfficiencyErrXiTra1D))
       LOG(fatal) << "Problem getting hEfficiencyUncertainty!";
-    if (doPropagatePurity && (!hPurityErrOmegaStd || !hPurityErrOmegaTra || !hPurityErrXiStd || !hPurityErrXiTra))
+    if (doPropagatePurity1D && (!hPurityErrOmegaStd1D || !hPurityErrOmegaTra1D || !hPurityErrXiStd1D || !hPurityErrXiTra1D))
+      LOG(fatal) << "Problem getting hPurityUncertainty!";
+    LOG(info) << "Efficiencies and purities now loaded for " << mRunNumber;
+
+    if (doPropagateEfficiency2D && (!hEfficiencyErrOmegaStd2D || !hEfficiencyErrOmegaTra2D || !hEfficiencyErrXiStd2D || !hEfficiencyErrXiTra2D))
+      LOG(fatal) << "Problem getting hEfficiencyUncertainty!";
+    if (doPropagatePurity2D && (!hPurityErrOmegaStd2D || !hPurityErrOmegaTra2D || !hPurityErrXiStd2D || !hPurityErrXiTra2D))
       LOG(fatal) << "Problem getting hPurityUncertainty!";
     LOG(info) << "Efficiencies and purities now loaded for " << mRunNumber;
   }
@@ -212,12 +273,20 @@ struct strangecasctrack {
     histos.fill(HIST("Events/PVy"), pvy);
     histos.fill(HIST("Events/PVz"), pvz);
   }
-  // checks general selection criteria
-  template <typename TEvent, typename TCascade>
-  bool isValidCasc(TEvent collision, TCascade cascade)
+  // checks general selection criteria for collisions
+  template <typename TEvent>
+  bool isValidEvent(TEvent collision)
   {
     if (std::abs(collision.posZ()) > selCuts.cutZVertex)
       return false;
+    if (selCuts.cutSel8 && !collision.sel8())
+      return false;
+    return true;
+  }
+  // checks general selection criteria for cascades
+  template <typename TEvent, typename TCascade>
+  bool isValidCasc(TEvent collision, TCascade cascade, TString particle)
+  {
     if (cascade.dcaXYCascToPV() > selCuts.cutDCAtoPVxy)
       return false;
     if (cascade.dcaZCascToPV() > selCuts.cutDCAtoPVz)
@@ -225,6 +294,13 @@ struct strangecasctrack {
     if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < selCuts.cutV0CosPA)
       return false;
     if (cascade.bachBaryonCosPA() < selCuts.cutBachCosPA)
+      return false;
+    ROOT::Math::PxPyPzMVector momentum;
+    if (particle == "xi")
+      momentum.SetCoordinates(cascade.px(), cascade.py(), cascade.pz(), o2::constants::physics::MassXiMinus);
+    else
+      momentum.SetCoordinates(cascade.px(), cascade.py(), cascade.pz(), o2::constants::physics::MassOmegaMinus);
+    if (std::abs(momentum.Rapidity()) > selCuts.cutRapidity)
       return false;
     return true;
   }
@@ -299,7 +375,7 @@ struct strangecasctrack {
     hist->SetBinContent(bin, currentContent);
     hist->SetBinError2(bin, currentError2);
   }
-  // applies selections and fills histograms
+  // applies selections for and fills histograms
   template <typename TEvent, typename TCascs>
   void analyseCascs(TEvent collision, TCascs cascades)
   {
@@ -344,13 +420,13 @@ struct strangecasctrack {
       float purityOmegaErr = 0.0f;
       float purityXiErr = 0.0f;
 
-      if (doApplyEfficiency) {
+      if (doApplyEfficiency1D) {
         if constexpr (requires { cascade.topologyChi2(); }) {
-          efficiencyOmega = hEfficiencyOmegaTra->Interpolate(cascade.pt(), mult);
-          efficiencyXi = hEfficiencyXiTra->Interpolate(cascade.pt(), mult);
-          if (doPropagateEfficiency) {
-            efficiencyOmegaErr = hEfficiencyErrOmegaTra->Interpolate(cascade.pt(), mult);
-            efficiencyXiErr = hEfficiencyErrXiTra->Interpolate(cascade.pt(), mult);
+          efficiencyOmega = hEfficiencyOmegaTra1D->Interpolate(cascade.pt());
+          efficiencyXi = hEfficiencyXiTra1D->Interpolate(cascade.pt());
+          if (doPropagateEfficiency1D) {
+            efficiencyOmegaErr = hEfficiencyErrOmegaTra1D->Interpolate(cascade.pt());
+            efficiencyXiErr = hEfficiencyErrXiTra1D->Interpolate(cascade.pt());
           }
           if (efficiencyOmega == 0) { // check for zero efficiency, do not apply if the case
             efficiencyOmega = 1.;
@@ -361,11 +437,11 @@ struct strangecasctrack {
             efficiencyXiErr = 0.;
           }
         } else {
-          efficiencyOmega = hEfficiencyOmegaStd->Interpolate(cascade.pt(), mult);
-          efficiencyXi = hEfficiencyXiStd->Interpolate(cascade.pt(), mult);
-          if (doPropagateEfficiency) {
-            efficiencyOmegaErr = hEfficiencyErrOmegaStd->Interpolate(cascade.pt(), mult);
-            efficiencyXiErr = hEfficiencyErrXiStd->Interpolate(cascade.pt(), mult);
+          efficiencyOmega = hEfficiencyOmegaStd1D->Interpolate(cascade.pt());
+          efficiencyXi = hEfficiencyXiStd1D->Interpolate(cascade.pt());
+          if (doPropagateEfficiency1D) {
+            efficiencyOmegaErr = hEfficiencyErrOmegaStd1D->Interpolate(cascade.pt());
+            efficiencyXiErr = hEfficiencyErrXiStd1D->Interpolate(cascade.pt());
           }
           if (efficiencyOmega == 0) { // check for zero efficiency, do not apply if the case
             efficiencyOmega = 1.;
@@ -378,13 +454,47 @@ struct strangecasctrack {
         }
       }
 
-      if (doApplyPurity) {
+      if (doApplyEfficiency2D) {
         if constexpr (requires { cascade.topologyChi2(); }) {
-          purityOmega = hPurityOmegaTra->Interpolate(cascade.pt(), mult);
-          purityXi = hPurityXiTra->Interpolate(cascade.pt(), mult);
-          if (doPropagatePurity) {
-            purityOmegaErr = hPurityErrOmegaTra->Interpolate(cascade.pt(), mult);
-            purityXiErr = hPurityErrXiTra->Interpolate(cascade.pt(), mult);
+          efficiencyOmega = hEfficiencyOmegaTra2D->Interpolate(cascade.pt(), mult);
+          efficiencyXi = hEfficiencyXiTra2D->Interpolate(cascade.pt(), mult);
+          if (doPropagateEfficiency2D) {
+            efficiencyOmegaErr = hEfficiencyErrOmegaTra2D->Interpolate(cascade.pt(), mult);
+            efficiencyXiErr = hEfficiencyErrXiTra2D->Interpolate(cascade.pt(), mult);
+          }
+          if (efficiencyOmega == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyOmega = 1.;
+            efficiencyOmegaErr = 0.;
+          }
+          if (efficiencyXi == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyXi = 1.;
+            efficiencyXiErr = 0.;
+          }
+        } else {
+          efficiencyOmega = hEfficiencyOmegaStd2D->Interpolate(cascade.pt(), mult);
+          efficiencyXi = hEfficiencyXiStd2D->Interpolate(cascade.pt(), mult);
+          if (doPropagateEfficiency2D) {
+            efficiencyOmegaErr = hEfficiencyErrOmegaStd2D->Interpolate(cascade.pt(), mult);
+            efficiencyXiErr = hEfficiencyErrXiStd2D->Interpolate(cascade.pt(), mult);
+          }
+          if (efficiencyOmega == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyOmega = 1.;
+            efficiencyOmegaErr = 0.;
+          }
+          if (efficiencyXi == 0) { // check for zero efficiency, do not apply if the case
+            efficiencyXi = 1.;
+            efficiencyXiErr = 0.;
+          }
+        }
+      }
+
+      if (doApplyPurity1D) {
+        if constexpr (requires { cascade.topologyChi2(); }) {
+          purityOmega = hPurityOmegaTra1D->Interpolate(cascade.pt(), mult);
+          purityXi = hPurityXiTra1D->Interpolate(cascade.pt(), mult);
+          if (doPropagatePurity1D) {
+            purityOmegaErr = hPurityErrOmegaTra1D->Interpolate(cascade.pt(), mult);
+            purityXiErr = hPurityErrXiTra1D->Interpolate(cascade.pt(), mult);
           }
           if (purityOmega == 0) { // check for zero purity, do not apply if the case
             purityOmega = 1.;
@@ -395,11 +505,45 @@ struct strangecasctrack {
             purityXiErr = 0.;
           }
         } else {
-          purityOmega = hPurityOmegaStd->Interpolate(cascade.pt(), mult);
-          purityXi = hPurityXiStd->Interpolate(cascade.pt(), mult);
-          if (doPropagatePurity) {
-            purityOmegaErr = hPurityErrOmegaStd->Interpolate(cascade.pt(), mult);
-            purityXiErr = hPurityErrXiStd->Interpolate(cascade.pt(), mult);
+          purityOmega = hPurityOmegaStd1D->Interpolate(cascade.pt(), mult);
+          purityXi = hPurityXiStd1D->Interpolate(cascade.pt(), mult);
+          if (doPropagatePurity1D) {
+            purityOmegaErr = hPurityErrOmegaStd1D->Interpolate(cascade.pt(), mult);
+            purityXiErr = hPurityErrXiStd1D->Interpolate(cascade.pt(), mult);
+          }
+          if (purityOmega == 0) { // check for zero purity, do not apply if the case
+            purityOmega = 1.;
+            purityOmegaErr = 0.;
+          }
+          if (purityXi == 0) { // check for zero purity, do not apply if the case
+            purityXi = 1.;
+            purityXiErr = 0.;
+          }
+        }
+      }
+
+      if (doApplyPurity2D) {
+        if constexpr (requires { cascade.topologyChi2(); }) {
+          purityOmega = hPurityOmegaTra2D->Interpolate(cascade.pt(), mult);
+          purityXi = hPurityXiTra2D->Interpolate(cascade.pt(), mult);
+          if (doPropagatePurity2D) {
+            purityOmegaErr = hPurityErrOmegaTra2D->Interpolate(cascade.pt(), mult);
+            purityXiErr = hPurityErrXiTra2D->Interpolate(cascade.pt(), mult);
+          }
+          if (purityOmega == 0) { // check for zero purity, do not apply if the case
+            purityOmega = 1.;
+            purityOmegaErr = 0.;
+          }
+          if (purityXi == 0) { // check for zero purity, do not apply if the case
+            purityXi = 1.;
+            purityXiErr = 0.;
+          }
+        } else {
+          purityOmega = hPurityOmegaStd2D->Interpolate(cascade.pt(), mult);
+          purityXi = hPurityXiStd2D->Interpolate(cascade.pt(), mult);
+          if (doPropagatePurity2D) {
+            purityOmegaErr = hPurityErrOmegaStd2D->Interpolate(cascade.pt(), mult);
+            purityXiErr = hPurityErrXiStd2D->Interpolate(cascade.pt(), mult);
           }
           if (purityOmega == 0) { // check for zero purity, do not apply if the case
             purityOmega = 1.;
@@ -449,29 +593,64 @@ struct strangecasctrack {
       }
 
       // start checking selections
-      bool passedAllSels = true;
+      bool passedAllSelsXi = true;
+      bool passedAllSelsOmega = true;
       // apply general selection criteria
-      if (doApplyCuts) {
-        if (!isValidCasc(collision, stdCasc))
-          passedAllSels = false;
+      if (doApplyEventCuts) {
+        if (!isValidEvent(collision)) {
+          passedAllSelsXi = false;
+          passedAllSelsOmega = false;
+        }
+      }
+      if (doApplyGenCutsXi) {
+        if (!isValidCasc(collision, stdCasc, "xi"))
+          passedAllSelsXi = false;
+      }
+      if (doApplyGenCutsOmega) {
+        if (!isValidCasc(collision, stdCasc, "omega"))
+          passedAllSelsOmega = false;
+      }
+      // apply pt cuts
+      if constexpr (requires { cascade.topologyChi2(); }) {
+        if (doApplyPtCutsXi) {
+          if (pt < selCuts.cutMinPtXiTra || pt > selCuts.cutMaxPtXiTra)
+            passedAllSelsXi = false;
+        }
+        if (doApplyPtCutsOmega) {
+          if (pt < selCuts.cutMinPtOmegaTra || pt > selCuts.cutMaxPtOmegaTra)
+            passedAllSelsOmega = false;
+        }
+      } else {
+        if (doApplyPtCutsXi) {
+          if (pt < selCuts.cutMinPtXiStd || pt > selCuts.cutMaxPtXiStd)
+            passedAllSelsXi = false;
+        }
+        if (doApplyPtCutsOmega) {
+          if (pt < selCuts.cutMinPtOmegaStd || pt > selCuts.cutMaxPtOmegaStd)
+            passedAllSelsOmega = false;
+        }
       }
       // apply tpc pid
-      if (doApplyTPCPID) {
+      if (doApplyTPCPIDXi) {
         if (!passesTPC(stdCasc))
-          passedAllSels = false;
+          passedAllSelsXi = false;
+      }
+      if (doApplyTPCPIDOmega) {
+        if (!passesTPC(stdCasc))
+          passedAllSelsOmega = false;
       }
       // apply tof pid
-      bool passedAllSelsXi = passedAllSels;
-      bool passedAllSelsOmega = passedAllSels;
-      if (doApplyTOFPID) {
+      if (doApplyTOFPIDXi) {
         if (!passesTOF(stdCasc, "xi"))
           passedAllSelsXi = false;
+      }
+      if (doApplyTOFPIDOmega) {
         if (!passesTOF(stdCasc, "omega"))
           passedAllSelsOmega = false;
       }
       // apply competing mass rej
       if (doCompetingMassRej) {
-        if (!(std::abs(massXi - o2::constants::physics::MassXiMinus) > selCuts.compMassRej))
+        if (!(std::abs(massXi - o2::constants::physics::MassXiMinus) > selCuts.cutCompMassRej))
           passedAllSelsOmega = false;
       }
 
@@ -479,7 +658,7 @@ struct strangecasctrack {
       double binFillXi[3] = {massXi, pt, mult};
 
       if constexpr (requires { collision.straMCCollisionId(); }) {
-        if (passedAllSels && (passedAllSelsXi || passedAllSelsOmega)) { // fill once for every desired cascade
+        if (passedAllSelsXi || passedAllSelsOmega) { // fill once for every desired cascade
           if (isMCTruth(stdCasc, "xi") || isMCTruth(stdCasc, "omega")) {
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/DCAxy"), cascade.dcaXYCascToPV());
             histos.fill(HIST(kTypeNames[type]) + HIST("/Rec-Truth/DCAz"), cascade.dcaZCascToPV());
@@ -581,7 +760,7 @@ struct strangecasctrack {
   void processDerivedData(DerCollisionWMults::iterator const& collision, DerCascDatas const& allCascs, DerTraCascDatas const& traCascs, DauTracks const&)
   {
     fillEvents(collision); // save info about all processed events
-    if (doApplyEfficiency) {
+    if (doApplyEfficiency1D || doApplyPurity1D || doApplyEfficiency2D || doApplyPurity2D) {
       initEfficiencyFromCCDB(collision.runNumber(), collision.timestamp());
     }
     analyseCascs(collision, allCascs); // process all cascades
@@ -621,21 +800,21 @@ struct strangecasctrack {
   void processDerivedMCRec(DerMCRecCollisions::iterator const& collision, DerMCRecCascDatas const& allCascs, DerMCRecTraCascDatas const& traCascs, DauTracks const&, DerMCGenCascades const&)
   {
     fillEvents(collision); // save info about all processed events
-    if (doApplyEfficiency) {
+    if (doApplyEfficiency1D || doApplyPurity1D || doApplyEfficiency2D || doApplyPurity2D) {
       initEfficiencyFromCCDB(collision.runNumber(), collision.timestamp());
     }
     analyseCascs(collision, allCascs); // process all cascades
     analyseCascs(collision, traCascs); // process tracked cascades
   }
 
-  PROCESS_SWITCH(strangecasctrack, processDerivedData, "process derived data", true);
-  PROCESS_SWITCH(strangecasctrack, processDerivedMCGen, "process derived generated mc data", false);
-  PROCESS_SWITCH(strangecasctrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedData, "process derived data", true);
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCGen, "process derived generated mc data", false);
+  PROCESS_SWITCH(StrangeCascTrack, processDerivedMCRec, "process derived reconstructed mc data", false); // mc and data are mutually exclusive!
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<strangecasctrack>(cfgc),
+    adaptAnalysisTask<StrangeCascTrack>(cfgc),
   };
 }

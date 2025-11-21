@@ -211,57 +211,57 @@ struct FemtoProducer {
   template <modes::System system, typename T1, typename T2, typename T3>
   bool processCollisions(T1 const& col, T2 const& /* bcs*/, T3 const& tracks)
   {
+    collisionBuilder.reset();
     auto bc = col.template bc_as<T2>();
     collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
     if (!collisionBuilder.checkCollision(col)) {
       return false;
     }
-    collisionBuilder.fillCollision<system>(collisionBuilderProducts, col);
     return true;
   }
 
-  template <typename T1>
-  void processTracks(T1 const& tracksWithItsPid)
+  template <modes::System system, typename T1, typename T2>
+  void processTracks(T1 const& col, T2 const& tracksWithItsPid)
   {
-    trackBuilder.fillTracks(tracksWithItsPid, trackBuilderProducts, collisionBuilderProducts, indexMapTracks);
+    trackBuilder.fillTracks<system>(col, collisionBuilder, collisionBuilderProducts, tracksWithItsPid, trackBuilderProducts, indexMapTracks);
   }
 
-  template <typename T1, typename T2>
+  template <modes::System system, typename T1, typename T2>
   void processResonances(T1 const& col, T2 const& /*tracks*/)
   {
     auto groupPositiveTracks = partitionPositiveDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
     auto groupNegativeTracks = partitionNegativeDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
-    rho0Builder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
-    phiBuilder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
-    kstar0Builder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
-    kstar0barBuilder.fillResonances(collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
+    rho0Builder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
+    phiBuilder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
+    kstar0Builder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
+    kstar0barBuilder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
   }
 
   // add v0s
-  template <typename T1, typename T2>
-  void processV0s(T1 const& tracks, T2 const& v0s)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processV0s(T1 const& col, T2 const& tracks, T3 const& v0s)
   {
-    lambdaBuilder.fillV0s(collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
-    antilambdaBuilder.fillV0s(collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
-    k0shortBuilder.fillV0s(collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
+    lambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
+    antilambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
+    k0shortBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
   }
 
   // add kinks
-  template <typename T1, typename T2>
-  void processKinks(T1 const& tracks, T2 const& kinks)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processKinks(T1 const& col, T2 const& tracks, T3 const& kinks)
   {
-    sigmaBuilder.fillKinks(collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
-    sigmaPlusBuilder.fillKinks(collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
+    sigmaBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
+    sigmaPlusBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
   }
 
   // add cascades
-  template <typename T1, typename T2, typename T3>
+  template <modes::System system, typename T1, typename T2, typename T3>
   void processCascades(T1 const& col, T2 const& tracks, T3 const& cascades)
   {
-    xiBuilder.fillCascades(collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                           cascades, tracks, col, trackBuilder, indexMapTracks);
-    omegaBuilder.fillCascades(collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                              cascades, tracks, col, trackBuilder, indexMapTracks);
+    xiBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
+                                   cascades, tracks, trackBuilder, indexMapTracks);
+    omegaBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
+                                      cascades, tracks, trackBuilder, indexMapTracks);
   }
 
   // proccess functions
@@ -275,8 +275,8 @@ struct FemtoProducer {
     indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
-    processTracks(tracksWithItsPid);
-    processResonances(col, tracks);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processResonances<modes::System::kPP_Run3>(col, tracks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3pp, "Process tracks", true);
 
@@ -292,9 +292,9 @@ struct FemtoProducer {
     indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
-    processTracks(tracksWithItsPid);
-    processResonances(col, tracks);
-    processV0s(tracks, v0s);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processResonances<modes::System::kPP_Run3>(col, tracks);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
   };
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3pp, "Process tracks and v0s", false);
 
@@ -310,9 +310,9 @@ struct FemtoProducer {
     indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
-    processTracks(tracksWithItsPid);
-    processResonances(col, tracks);
-    processKinks(tracks, kinks);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processResonances<modes::System::kPP_Run3>(col, tracks);
+    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3pp, "Process tracks and kinks", false);
 
@@ -329,10 +329,10 @@ struct FemtoProducer {
     indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
-    processTracks(tracksWithItsPid);
-    processResonances(col, tracks);
-    processV0s(tracks, v0s);
-    processCascades(col, tracks, cascades);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processResonances<modes::System::kPP_Run3>(col, tracks);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
+    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 
@@ -350,11 +350,11 @@ struct FemtoProducer {
     indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
-    processTracks(tracksWithItsPid);
-    processResonances(col, tracks);
-    processV0s(tracks, v0s);
-    processKinks(tracks, kinks);
-    processCascades(col, tracks, cascades);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processResonances<modes::System::kPP_Run3>(col, tracks);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
+    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
+    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 };

@@ -24,6 +24,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
+#include "TMCProcess.h"
+
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -103,6 +105,7 @@ struct SlimCandidate {
   float etaGenerated = -999.f;
   float phiGenerated = -999.f;
   float centrality = -1.f;
+  uint64_t mcProcess = TMCProcess::kPNoProcess;
 };
 
 enum Species {

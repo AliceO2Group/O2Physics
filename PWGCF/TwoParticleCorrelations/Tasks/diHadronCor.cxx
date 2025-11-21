@@ -100,6 +100,8 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgSoloPtTrack, bool, false, "Skip trigger tracks that are alone in their pT bin for same process")
+  O2_DEFINE_CONFIGURABLE(cfgSingleSoloPtTrack, bool, false, "Skip associated tracks that are alone in their pT bin for same process, works only if cfgSoloPtTrack is enabled")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -278,6 +280,13 @@ struct DiHadronCor {
       registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+    }
+    if (cfgSoloPtTrack && doprocessSame) {
+      registry.add("Nch_final_pt", "pT", {HistType::kTH1D, {axisPtTrigger}});
+      registry.add("Solo_tracks_trigger", "pT", {HistType::kTH1D, {axisPtTrigger}});
+      if (!cfgSingleSoloPtTrack) {
+        registry.add("Solo_tracks_assoc", "pT", {HistType::kTH1D, {axisPtAssoc}});
+      }
     }
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -582,6 +591,103 @@ struct DiHadronCor {
       }
     }
   }
+
+  template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
+  void fillCorrelationsExcludeSoloTracks(TTracks tracks1, TTracksAssoc tracks2, float posZ, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  {
+    std::vector<int64_t> tracksSkipIndices;
+    std::vector<int64_t> tracks2SkipIndices;
+
+    findBiasedTracks(tracks1, tracksSkipIndices, posZ);
+    if (!cfgSingleSoloPtTrack) { // only look for the solo pt tracks if we want to skip both
+      findBiasedTracks(tracks2, tracks2SkipIndices, posZ);
+    }
+
+    // Cache efficiency for particles (too many FindBin lookups)
+    if (mEfficiency) {
+      efficiencyAssociatedCache.clear();
+      efficiencyAssociatedCache.reserve(tracks2.size());
+      for (const auto& track2 : tracks2) {
+        float weff = 1.;
+        getEfficiencyCorrection(weff, track2.eta(), track2.pt(), posZ);
+        efficiencyAssociatedCache.push_back(weff);
+      }
+    }
+
+    if (!cfgCentTableUnavailable)
+      registry.fill(HIST("Centrality_used"), cent);
+    registry.fill(HIST("Nch_used"), tracks1.size());
+
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+
+    float triggerWeight = 1.0f;
+    float associatedWeight = 1.0f;
+    // loop over all tracks
+    for (auto const& track1 : tracks1) {
+
+      if (!trackSelected(track1))
+        continue;
+      if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
+        continue;
+
+      registry.fill(HIST("Nch_final_pt"), track1.pt());
+
+      if (std::find(tracksSkipIndices.begin(), tracksSkipIndices.end(), track1.globalIndex()) != tracksSkipIndices.end()) {
+        registry.fill(HIST("Solo_tracks_trigger"), track1.pt());
+        continue; // Skip the track1 if it is alone in pt bin
+      }
+      registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+
+      for (auto const& track2 : tracks2) {
+
+        if (!trackSelected(track2))
+          continue;
+        if (mEfficiency) {
+          associatedWeight = efficiencyAssociatedCache[track2.filteredIndex()];
+        }
+        if (!cfgUsePtOrder && track1.globalIndex() == track2.globalIndex())
+          continue; // For pt-differential correlations, skip if the trigger and associate are the same track
+        if (cfgUsePtOrder && track1.pt() <= track2.pt())
+          continue;                  // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
+        if (!cfgSingleSoloPtTrack) { // avoid skipping the second track if we only want one
+          if (std::find(tracks2SkipIndices.begin(), tracks2SkipIndices.end(), track2.globalIndex()) != tracks2SkipIndices.end()) {
+            registry.fill(HIST("Solo_tracks_assoc"), track2.pt());
+            continue; // Skip the track2 if it is alone in pt bin
+          }
+        }
+
+        float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
+        float deltaEta = track1.eta() - track2.eta();
+
+        if (std::abs(deltaEta) < cfgCutMerging) {
+
+          double dPhiStarHigh = getDPhiStar(track1, track2, cfgRadiusHigh, magneticField);
+          double dPhiStarLow = getDPhiStar(track1, track2, cfgRadiusLow, magneticField);
+
+          const double kLimit = 3.0 * cfgCutMerging;
+
+          bool bIsBelow = false;
+
+          if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
+            for (double rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
+              double dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
+              if (std::abs(dPhiStar) < kLimit) {
+                bIsBelow = true;
+                break;
+              }
+            }
+            if (bIsBelow)
+              continue;
+          }
+        }
+
+        // fill the right sparse and histograms
+        same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+        registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+      }
+    }
+  }
+
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
@@ -729,6 +835,45 @@ struct DiHadronCor {
     return 1;
   }
 
+  void findBiasedTracks(FilteredTracks const& tracks, std::vector<int64_t>& tracksSkipIndices, float posZ)
+  {
+    // Find the tracks that are alone in their pT bin
+    tracksSkipIndices.clear();
+    static const std::vector<double>& ptBins = axisPtTrigger.value;
+    static const size_t nPtBins = ptBins.size() - 1;
+
+    std::vector<int> numberOfTracksInBin(nPtBins, 0);
+    std::vector<int64_t> firstTrackIndex(nPtBins, -1);
+
+    float triggerWeight = 1.0f;
+
+    // Count tracks per bin and remember the first track id in each bin
+    for (const auto& track : tracks) {
+      if (!trackSelected(track))
+        continue;
+      if (!getEfficiencyCorrection(triggerWeight, track.eta(), track.pt(), posZ))
+        continue;
+      double pt = track.pt();
+      auto binEdgeIt = std::upper_bound(ptBins.begin(), ptBins.end(), pt);
+      if (binEdgeIt == ptBins.begin() || binEdgeIt == ptBins.end())
+        continue; // skip pt bins out of range
+
+      size_t binIndex = static_cast<size_t>(std::distance(ptBins.begin(), binEdgeIt) - 1);
+
+      if (numberOfTracksInBin[binIndex] == 0) {
+        firstTrackIndex[binIndex] = track.globalIndex();
+      }
+      ++numberOfTracksInBin[binIndex];
+    }
+
+    // Collect track ids for bins that have exactly one track
+    for (size_t i = 0; i < nPtBins; ++i) {
+      if (numberOfTracksInBin[i] == 1) {
+        tracksSkipIndices.push_back(firstTrackIndex[i]);
+      }
+    }
+  }
+
   void processSame(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8())
@@ -761,7 +906,11 @@ struct DiHadronCor {
     fillYield(collision, tracks);
 
     same->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, weightCent);
+    if (!cfgSoloPtTrack) {
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, weightCent);
+    } else {
+      fillCorrelationsExcludeSoloTracks<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), getMagneticField(bc.timestamp()), cent, weightCent);
+    }
   }
   PROCESS_SWITCH(DiHadronCor, processSame, "Process same event", true);
 

@@ -445,6 +445,11 @@ class CollisionBuilder
     if (!mFillAnyTable) {
       return;
     }
+
+    if (mCollisionAleadyFilled) {
+      return;
+    }
+
     if (mProducedCollisions) {
       collisionProducts.producedCollision(col.posZ(),
                                           col.multNTracksPV(),
@@ -482,10 +487,18 @@ class CollisionBuilder
         collisionProducts.producedQns(utils::qn(col));
       }
     }
+
+    mCollisionAleadyFilled = true;
+  }
+
+  void reset()
+  {
+    mCollisionAleadyFilled = false;
   }
 
  private:
   CollisionSelection<HistName> mCollisionSelection;
+  bool mCollisionAleadyFilled = false;
   Zorro mZorro;
   bool mUseTrigger = false;
   int mRunNumber = -1;

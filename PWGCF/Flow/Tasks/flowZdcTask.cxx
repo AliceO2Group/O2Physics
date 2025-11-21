@@ -340,6 +340,8 @@ struct FlowZdcTask {
       histos.add("ZpaVsTdc", "ZPAvsTDC; ZPA Amp; ZPA TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("Zem1VsTdc", "ZEM1vsTDC; ZEM1 Amp; ZEM1 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
       histos.add("Zem2VsTdc", "ZEM2vsTDC; ZEM2 Amp; ZEM2 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
+      histos.add("ZnaZpaTdc", "ZNAvsZPAvsTDC; ZNA Amp; ZPA Amp; ZPA TDC", kTH3F, {{{nBinsZDC, -0.5, maxZn}, {nBinsZDC, -0.5, maxZp}, {480, -13.5, 11.45}}});
+      histos.add("ZncZpcTdc", "ZNCvsZPCvsTDC; ZNC Amp; ZPC Amp; ZPC TDC", kTH3F, {{{nBinsZDC, -0.5, maxZn}, {nBinsZDC, -0.5, maxZp}, {480, -13.5, 11.45}}});
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -932,6 +934,8 @@ struct FlowZdcTask {
         histos.fill(HIST("ZnaVsTdc"), zdc.timeZNA(), znA);
         histos.fill(HIST("ZpcVsTdc"), zdc.timeZPC(), zpC);
         histos.fill(HIST("ZpaVsTdc"), zdc.timeZPA(), zpA);
+        histos.fill(HIST("ZnaZpaTdc"), znA, zpA, zdc.timeZPA());
+        histos.fill(HIST("ZncZpcTdc"), znC, zpC, zdc.timeZPC());
         histos.fill(HIST("Zem1VsTdc"), zdc.timeZEM1(), aZEM1);
         histos.fill(HIST("Zem2VsTdc"), zdc.timeZEM2(), aZEM2);
       }

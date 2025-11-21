@@ -71,6 +71,7 @@ using multiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MC
 struct alice3multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::map<std::string, HistPtr> histPointers;
+  std::vector<int> savedConfigs;
   std::string histPath;
 
   std::map<int, int> pdgToBin;
@@ -287,6 +288,20 @@ struct alice3multicharm {
     }
   }
 
+  void initConf(int icfg)
+  {
+    const bool confExists = std::find(savedConfigs.begin(), savedConfigs.end(), icfg) != savedConfigs.end();
+    if (confExists) {
+      return;
+    }
+    savedConfigs.push_back(icfg);
+
+    // do more plots
+    histPath = "Configuration_" + std::to_string(icfg) + "/";
+    histPointers.insert({histPath + "hXiccMass", histos.add((histPath + "hXiccMass").c_str(), "hXiccMass", {kTH1D, {{axisXiccMass}}})});
+    histPointers.insert({histPath + "h3dXicc", histos.add((histPath + "h3dXicc").c_str(), "h3dXicc", {kTH3D, {{axisPt, axisEta, axisXiccMass}}})});
+  }
+
   int getBin(const std::map<int, int>& pdgToBin, int pdg)
   {
     auto it = pdgToBin.find(pdg);
@@ -297,6 +312,9 @@ struct alice3multicharm {
   void genericProcessXicc(TMCharmCands const& xiccCands)
   {
     for (const auto& xiccCand : xiccCands) {
+      int icfg = xiccCand.lutConfigId();
+      initConf(icfg);
+
       if (bdt.enableML) {
         std::vector<float> inputFeatures{
           xiccCand.xicDauDCA(),
@@ -487,6 +505,10 @@ struct alice3multicharm {
       } else {
         histos.fill(HIST("hMCharmBuilding"), 21);
       }
+
+      histPath = "Configuration_" + std::to_string(icfg) + "/";
+      getHist(TH1, histPath + "hXiccMass")->Fill(xiccCand.xiccMass());
+      getHist(TH3, histPath + "h3dXicc")->Fill(xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
 
       histos.fill(HIST("SelectionQA/hDCAXicDaughters"), xiccCand.xicDauDCA() * 1e+4);
       histos.fill(HIST("SelectionQA/hDCAXiccDaughters"), xiccCand.xiccDauDCA() * 1e+4);

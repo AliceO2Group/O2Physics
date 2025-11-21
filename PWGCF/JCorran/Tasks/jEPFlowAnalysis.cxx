@@ -225,8 +225,8 @@ struct jEPFlowAnalysis {
         epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn * weight);
         epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin * weight);
 
-        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (TMath::Cos(track.phi()) * coll.qvecShiftedRe()[detId + harmInd] + TMath::Sin(track.phi()) * coll.qvecShiftedIm()[detId + harmInd]) * weight);
-        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (TMath::Sin(track.phi()) * coll.qvecShiftedRe()[detId + harmInd] - TMath::Cos(track.phi()) * coll.qvecShiftedIm()[detId + harmInd]) * weight);
+        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedRe()[detId + harmInd] + std::sin(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedIm()[detId + harmInd]) * weight);
+        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedRe()[detId + harmInd] - std::cos(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedIm()[detId + harmInd]) * weight);
       }
     }
   }
@@ -311,21 +311,21 @@ struct jEPFlowAnalysis {
           auto coeffshiftxRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 4.5, ishift - 0.5));
           auto coeffshiftyRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 5.5, ishift - 0.5)); // currently only FT0C/TPCpos/TPCneg
 
-          deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i + 2) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i + 2) * eps[0])));
-          deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i + 2) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i + 2) * eps[1])));
-          deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i + 2) * eps[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i + 2) * eps[2])));
+          deltapsiDet += ((2. / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i + 2) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i + 2) * eps[0]))) / static_cast<float>(i + 2);
+          deltapsiRefA += ((2. / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i + 2) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i + 2) * eps[1]))) / static_cast<float>(i + 2);
+          deltapsiRefB += ((2. / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i + 2) * eps[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i + 2) * eps[2]))) / static_cast<float>(i + 2);
         }
 
         eps[0] += deltapsiDet;
         eps[1] += deltapsiRefA;
         eps[2] += deltapsiRefB;
 
-        qx_shifted[0] = coll.qvecRe()[4 * detId + harmInd] * TMath::Cos(deltapsiDet) - coll.qvecIm()[4 * detId + harmInd] * TMath::Sin(deltapsiDet);
-        qy_shifted[0] = coll.qvecRe()[4 * detId + harmInd] * TMath::Sin(deltapsiDet) + coll.qvecIm()[4 * detId + harmInd] * TMath::Cos(deltapsiDet);
-        qx_shifted[1] = coll.qvecRe()[4 * refAId + harmInd] * TMath::Cos(deltapsiRefA) - coll.qvecIm()[4 * refAId + harmInd] * TMath::Sin(deltapsiRefA);
-        qy_shifted[1] = coll.qvecRe()[4 * refAId + harmInd] * TMath::Sin(deltapsiRefA) + coll.qvecIm()[4 * refAId + harmInd] * TMath::Cos(deltapsiRefA);
-        qx_shifted[2] = coll.qvecRe()[4 * refBId + harmInd] * TMath::Cos(deltapsiRefB) - coll.qvecIm()[4 * refBId + harmInd] * TMath::Sin(deltapsiRefB);
-        qy_shifted[2] = coll.qvecRe()[4 * refBId + harmInd] * TMath::Sin(deltapsiRefB) + coll.qvecIm()[4 * refBId + harmInd] * TMath::Cos(deltapsiRefB);
+        qx_shifted[0] = coll.qvecRe()[4 * detId + harmInd] * std::cos(deltapsiDet) - coll.qvecIm()[4 * detId + harmInd] * std::sin(deltapsiDet);
+        qy_shifted[0] = coll.qvecRe()[4 * detId + harmInd] * std::sin(deltapsiDet) + coll.qvecIm()[4 * detId + harmInd] * std::cos(deltapsiDet);
+        qx_shifted[1] = coll.qvecRe()[4 * refAId + harmInd] * std::cos(deltapsiRefA) - coll.qvecIm()[4 * refAId + harmInd] * std::sin(deltapsiRefA);
+        qy_shifted[1] = coll.qvecRe()[4 * refAId + harmInd] * std::sin(deltapsiRefA) + coll.qvecIm()[4 * refAId + harmInd] * std::cos(deltapsiRefA);
+        qx_shifted[2] = coll.qvecRe()[4 * refBId + harmInd] * std::cos(deltapsiRefB) - coll.qvecIm()[4 * refBId + harmInd] * std::sin(deltapsiRefB);
+        qy_shifted[2] = coll.qvecRe()[4 * refBId + harmInd] * std::sin(deltapsiRefB) + coll.qvecIm()[4 * refBId + harmInd] * std::cos(deltapsiRefB);
       }
 
       float resNumA = helperEP.GetResolution(eps[0], eps[1], i + 2);
@@ -354,8 +354,8 @@ struct jEPFlowAnalysis {
         epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn * weight);
         epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin * weight);
 
-        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (TMath::Cos(track.phi()) * qx_shifted[0] + TMath::Sin(track.phi()) * qy_shifted[0]) * weight);
-        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (TMath::Sin(track.phi()) * qx_shifted[0] - TMath::Cos(track.phi()) * qy_shifted[0]) * weight);
+        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]) * weight);
+        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]) * weight);
       }
     }
   }
