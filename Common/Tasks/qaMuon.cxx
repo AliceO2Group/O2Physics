@@ -2706,14 +2706,13 @@ struct muonQa {
             //
             registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPhi);
             registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPhi);
-            // dimuons
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts"))->Fill(yPair);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts"))->Fill(mass, yPair);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts"))->Fill(pT, yPair);
           }
+          registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
+          registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
+          registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
+          registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts"))->Fill(yPair);
+          registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts"))->Fill(mass, yPair);
+          registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts"))->Fill(pT, yPair);
 
           // dimuon DCA
           if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {

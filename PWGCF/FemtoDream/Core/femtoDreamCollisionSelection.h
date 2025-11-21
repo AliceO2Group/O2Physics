@@ -24,6 +24,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
+#include "TMath.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -212,18 +214,16 @@ class FemtoDreamCollisionSelection
 
   /// Initializes histograms for qn bin
   /// \param registry Histogram registry to be passed
-  void initQn(HistogramRegistry* registry, int mumQnBins = 10)
+  void initEPQA(HistogramRegistry* registry)
   {
     mHistogramQn = registry;
-    mHistogramQn->add("Event/centFT0CBefore", "; cent", kTH1F, {{10, 0, 100}});
-    mHistogramQn->add("Event/centFT0CAfter", "; cent", kTH1F, {{10, 0, 100}});
+    mHistogramQn->add("Event/centFT0CBeforeQn", "; cent", kTH1F, {{10, 0, 100}});
+    mHistogramQn->add("Event/centFT0CAfterQn", "; cent", kTH1F, {{10, 0, 100}});
     mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {100, 0, 1000}});
     mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
     mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
+    mHistogramQn->add("Event/psiEP", "; #Psi_{EP} (deg); entries", kTH1F, {{100, 0, 180}});
 
-    for (int iqn(0); iqn < mumQnBins; ++iqn) {
-      qnMults.push_back(mHistogramQn->add(("Qn/mult_" + std::to_string(iqn)).c_str(), "; cent; c22", kTH1F, {{100, 0, 3500}}));
-    }
     return;
   }
 
@@ -242,12 +242,12 @@ class FemtoDreamCollisionSelection
     mMQWeightthisEvt = new TH2D("MQWeightthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
 
     mHistogramQn = registry;
-    mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}});
-    mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}});
+    mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}}, "s");
+    mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}}, "s");
 
     if (doQnSeparation) {
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
-        profilesC22.push_back(mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}}));
+        profilesC22.push_back(mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}}, "s"));
       }
     }
     return;
@@ -324,7 +324,6 @@ class FemtoDreamCollisionSelection
     return spt;
   }
 
-  /// \todo to be implemented!
   /// Compute the qn-vector(FT0C) of an event
   /// \tparam T type of the collision
   /// \param col Collision
@@ -336,7 +335,21 @@ class FemtoDreamCollisionSelection
     return qn;
   }
 
-  /// \todo to be implemented!
+  /// Compute the event plane of an event
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \param nmode EP in which harmonic(default 2nd harmonic)
+  /// \return angle of the event plane (rad) of FT0C of the event
+  template <typename T>
+  float computeEP(T const& col, int nmode)
+  {
+    double EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
+    if (EP < 0)
+      EP += TMath::Pi();
+    // atan2 return in rad -pi/2-pi/2, then make it 0-pi
+    return EP;
+  }
+
   /// \return the 1-d qn-vector separator to 2-d
   std::vector<std::vector<float>> getQnBinSeparator2D(std::vector<float> flat, const int numQnBins = 10)
   {
@@ -359,11 +372,11 @@ class FemtoDreamCollisionSelection
     return res;
   }
 
-  /// \todo to be implemented!
   /// Get the bin number of qn-vector(FT0C) of an event
   /// \param centBinWidth centrality bin width, example: per 1%, per 10% ...
   /// \return bin number of qn-vector of the event
-  int myqnBin(float centrality, float centMax, std::vector<float> qnBinSeparator, bool doFillHisto, float fSpher, float qn, const int numQnBins, float mult, float centBinWidth = 1.f)
+  // add a param : bool doFillHisto ?
+  int myqnBin(float centrality, float centMax, bool doFillCent, std::vector<float> qnBinSeparator, float qn, const int numQnBins, float centBinWidth = 1.f)
   {
     auto twoDSeparator = getQnBinSeparator2D(qnBinSeparator, numQnBins);
     if (twoDSeparator.empty() || twoDSeparator[0][0] == -999.) {
@@ -371,9 +384,9 @@ class FemtoDreamCollisionSelection
       return -999; // safe fallback
     }
 
-    if (doFillHisto)
-      mHistogramQn->fill(HIST("Event/centFT0CBefore"), centrality);
-
+    // if (doFillHisto)
+    //   mHistogramQn->fill(HIST("Event/centFT0CBefore"), centrality);
+    // add a param : bool doFillHisto ?
     int qnBin = -999;
     int mycentBin = static_cast<int>(centrality / centBinWidth);
     if (mycentBin >= static_cast<int>(centMax / centBinWidth))
@@ -381,6 +394,9 @@ class FemtoDreamCollisionSelection
 
     if (mycentBin > static_cast<int>(twoDSeparator.size()) - 1)
       return qnBin;
+
+    if (doFillCent)
+      mHistogramQn->fill(HIST("Event/centFT0CAfterQn"), centrality);
 
     for (int iqn(0); iqn < static_cast<int>(twoDSeparator[mycentBin].size()) - 1; ++iqn) {
       if (qn > twoDSeparator[mycentBin][iqn] && qn <= twoDSeparator[mycentBin][iqn + 1]) {
@@ -392,18 +408,17 @@ class FemtoDreamCollisionSelection
     }
 
     mQnBin = qnBin;
-
-    if (doFillHisto) {
-      mHistogramQn->fill(HIST("Event/centFT0CAfter"), centrality);
-      mHistogramQn->fill(HIST("Event/centVsqn"), centrality, qn);
-      mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), centrality, qn, fSpher);
-      mHistogramQn->fill(HIST("Event/qnBin"), qnBin);
-      if (qnBin >= 0 && qnBin < numQnBins) {
-        std::get<std::shared_ptr<TH1>>(qnMults[qnBin])->Fill(mult);
-      }
-    }
-
     return qnBin;
+  }
+
+  /// \fill event-wise informations
+  void fillEPQA(float centrality, float fSpher, float qn, float psiEP)
+  {
+    mHistogramQn->fill(HIST("Event/centFT0CBeforeQn"), centrality);
+    mHistogramQn->fill(HIST("Event/centVsqn"), centrality, qn);
+    mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), centrality, qn, fSpher);
+    mHistogramQn->fill(HIST("Event/qnBin"), mQnBin + 0.f);
+    mHistogramQn->fill(HIST("Event/psiEP"), psiEP);
   }
 
   /// \todo to be implemented!
@@ -501,7 +516,6 @@ class FemtoDreamCollisionSelection
   float mSphericityPtmin = 0.f;
   int mQnBin = -999;
   HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
-  std::vector<HistPtr> qnMults;              /// Histograms of multiplicity (TH1F) per Qn bin. Stored as HistPtr (variant of shared_ptr) from HistogramManager.
   std::vector<HistPtr> profilesC22;          /// Pofile Histograms of c22 per Qn bin
   TH2D* mReQthisEvt = nullptr;               ///< For flow cumulant in an event
   TH2D* mImQthisEvt = nullptr;               ///< For flow cumulant in an event

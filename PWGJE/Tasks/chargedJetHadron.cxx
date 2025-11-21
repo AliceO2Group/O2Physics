@@ -185,7 +185,7 @@ struct ChargedJetHadron {
       registry.add("h_jet_eta", "jet eta; #eta_{jet}; counts", {HistType::kTH1F, {etaAxis}});
       registry.add("h_jet_phi", "jet phi; #phi_{jet}; counts", {HistType::kTH1F, {phiAxis}});
       registry.add("h_jet_area", "jet Area_{jet}; Area_{jet}; counts", {HistType::kTH1F, {{150, 0., 1.5}}});
-      registry.add("h_jet_ntracks", "jet N_{jet tracks}; N_{jet, tracks; counts}", {HistType::kTH1F, {{200, -0.5, 199.5}}});
+      registry.add("h_jet_ntracks", "jet N_{jet tracks}; N_{jet, tracks}; counts", {HistType::kTH1F, {{200, -0.5, 199.5}}});
       registry.add("h2_jet_pt_track_pt", "jet #it{p}_{T,jet} vs. #it{p}_{T,track}; #it{p}_{T,jet} (GeV/#it{c});  #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, trackPtAxis}});
 
       registry.add("h_jet_pt_rhoareasubtracted", "jet pt; #it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});

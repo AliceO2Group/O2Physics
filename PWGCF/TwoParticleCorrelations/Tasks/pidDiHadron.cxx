@@ -135,6 +135,8 @@ struct PidDiHadron {
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ACutEnabled, bool, false, "Enable global multiplicity vs V0A multiplicity cut")
     Configurable<std::vector<double>> cfgMultMultV0ACutPars{"cfgMultMultV0ACutPars", std::vector<double>{534.893, 184.344, 0.423539, -0.00331436, 5.34622e-06, 871.239, 53.3735, -0.203528, 0.000122758, 5.41027e-07}, "Global multiplicity vs V0A multiplicity cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
     std::vector<double> multT0CCutPars;
     std::vector<double> multPVT0CCutPars;
     std::vector<double> multGlobalPVCutPars;
@@ -149,6 +151,7 @@ struct PidDiHadron {
     TF1* fMultMultV0ACutHigh = nullptr;
     TF1* fT0AV0AMean = nullptr;
     TF1* fT0AV0ASigma = nullptr;
+    TF1* fPtDepDCAxy = nullptr;
   } cfgFuncParas;
 
   SliceCache cache;
@@ -462,6 +465,10 @@ struct PidDiHadron {
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
+    cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 100);
+    cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
+
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
     // Make histograms to check the distributions after cuts
     if (doprocessSame || doprocessSameReso) {
@@ -578,6 +585,8 @@ struct PidDiHadron {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsFound() >= cfgTpcCluster) && (track.tpcNClsCrossedRows() >= cfgTpcCrossRows) && (track.itsNCls() >= cfgITScluster));
   }
 
