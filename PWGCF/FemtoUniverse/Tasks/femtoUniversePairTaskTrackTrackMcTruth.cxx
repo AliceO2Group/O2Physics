@@ -51,7 +51,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> confEtaMax{"confEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
   /// Particle 1
-  Configurable<int32_t> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
+  Configurable<int> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<bool> confNoPDGPartOne{"confNoPDGPartOne", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart1{"confPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> confPtHighPart1{"confPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
@@ -65,7 +65,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
 
   /// Particle 2
   Configurable<bool> confIsSame{"confIsSame", false, "Pairs of the same particle"};
-  Configurable<int32_t> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
+  Configurable<int> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
   Configurable<bool> confNoPDGPartTwo{"confNoPDGPartTwo", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart2{"confPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> confPtHighPart2{"confPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
@@ -194,13 +194,15 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if ((!confNoPDGPartOne && p2.tempFitVar() != confPDGCodePartOne) || (!confNoPDGPartTwo && p1.tempFitVar() != confPDGCodePartTwo)) {
+        if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
           continue;
         }
-        if (swpart)
+
+        if (swpart) {
           sameEventCont.setPair<isMC>(p1, p2, multCol, confUse3D);
-        else
+        } else {
           sameEventCont.setPair<isMC>(p2, p1, multCol, confUse3D);
+        }
 
         swpart = !swpart;
       }
@@ -255,7 +257,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
     fNeventsProcessed++;
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if ((!confNoPDGPartOne && p2.tempFitVar() != confPDGCodePartOne) || (!confNoPDGPartTwo && p1.tempFitVar() != confPDGCodePartTwo)) {
+      if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
         continue;
       }
       if (swpart)

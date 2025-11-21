@@ -121,8 +121,7 @@ struct decay3bodyBuilder {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<bool> doTrackQA{"doTrackQA", false, "Flag to fill QA histograms for daughter tracks of (selected) decay3body candidates."};
   Configurable<bool> doVertexQA{"doVertexQA", false, "Flag to fill QA histograms for PV of (selected) events."};
-  Configurable<bool> doSel8selection{"doSel8selection", true, "flag for sel8 event selection"};
-  Configurable<bool> doPosZselection{"doPosZselection", true, "flag for posZ event selection"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROF border cut"};
 
   // data processing options
   Configurable<bool> doSkimmedProcessing{"doSkimmedProcessing", false, "Apply Zoroo counting in case of skimmed data input"};
@@ -433,11 +432,17 @@ struct decay3bodyBuilder {
 
     // Add histograms separately for different process functions
     if (doprocessRealData == true || doprocessMonteCarlo == true) {
-      auto hEventCounter = registry.add<TH1>("Counters/hEventCounter", "hEventCounter", HistType::kTH1D, {{3, 0.0f, 3.0f}});
-      hEventCounter->GetXaxis()->SetBinLabel(1, "total");
-      hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
-      hEventCounter->GetXaxis()->SetBinLabel(3, "vertexZ");
+      auto hEventCounter = registry.add<TH1>("Counters/hEventCounter", "hEventCounter", HistType::kTH1D, {{2, 0.0f, 2.0f}});
+      hEventCounter->GetXaxis()->SetBinLabel(1, "all");
+      hEventCounter->GetXaxis()->SetBinLabel(2, "selected");
       hEventCounter->LabelsOption("v");
+    }
+
+    if (doprocessMonteCarlo == true) {
+      auto hMcEventCounter = registry.add<TH1>("Counters/hMcEventCounter", "hMcEventCounter", HistType::kTH1D, {{2, 0.0f, 2.0f}});
+      hMcEventCounter->GetXaxis()->SetBinLabel(1, "all");
+      hMcEventCounter->GetXaxis()->SetBinLabel(2, "reconstructed");
+      hMcEventCounter->LabelsOption("v");
     }
 
     if (doprocessRealData == true || doprocessRealDataReduced == true || doprocessMonteCarlo == true) {
@@ -618,26 +623,31 @@ struct decay3bodyBuilder {
     // Loop over collisions for vertex QA
     for (const auto& collision : collisions) {
       if constexpr (soa::is_table<TBCs>) { // only do if NOT running over reduced data (already done in reducedCreator)
+
+        // all events
+        registry.fill(HIST("Counters/hEventCounter"), 0.5);
+
+        // ITS ROF boarder cut if not disabled
+        if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+          continue;
+        }
+
         // Zorro event counting
         bool isZorroSelected = false;
         if (doSkimmedProcessing) {
           isZorroSelected = zorro.isSelected(collision.template bc_as<TBCs>().globalBC());
-          if (!isZorroSelected && onlyKeepInterestedTrigger) {
-            continue;
+          if (isZorroSelected) {
+            isTriggeredCollision[collision.globalIndex()] = true;
           }
         }
 
-        isTriggeredCollision[collision.globalIndex()] = true;
-        // event counting
-        registry.fill(HIST("Counters/hEventCounter"), 0.5);
-        if (doSel8selection && !collision.sel8()) {
+        // event selection
+        if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
           continue;
         }
+
+        // selected events
         registry.fill(HIST("Counters/hEventCounter"), 1.5);
-        if (doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
-          continue;
-        }
-        registry.fill(HIST("Counters/hEventCounter"), 2.5);
       }
 
       // vertex QA and counting
@@ -656,7 +666,7 @@ struct decay3bodyBuilder {
 
       // In case of MC: reco collision survived event selection filter --> fill value for MC collision if collision is "true" MC collision
       if constexpr (soa::is_table<TMCParticles>) {
-        if (collision.mcCollisionId() >= 0) {
+        if (collision.has_mcCollision()) {
           isGoodCollision[collision.mcCollisionId()] = true;
         }
       }
@@ -680,6 +690,20 @@ struct decay3bodyBuilder {
       // aquire collision
       auto const& collision = collisions.rawIteratorAt(decay3body.collisionId());
 
+      // event selection
+      if constexpr (soa::is_table<TBCs>) {                                                    // only when NOT running over reduced data
+        if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) { // ITS ROF boarder cut if not disabled
+          continue;
+        }
+        if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
+          continue;
+        }
+        // Zorro
+        if (doSkimmedProcessing && onlyKeepInterestedTrigger && !isTriggeredCollision[collision.globalIndex()]) {
+          continue;
+        }
+      }
+
       // initialise CCDB from run number saved in reduced collisions table when running over reduced data
       if constexpr (!soa::is_table<TBCs>) { // only do if running over reduced data (otherwise CCDB is initialised in process function)
         if (collision.runNumber() != lastRunNumber) {
@@ -687,19 +711,6 @@ struct decay3bodyBuilder {
           lastRunNumber = collision.runNumber(); // Update the last run number
           LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         }
-      }
-
-      // event selection
-      if constexpr (soa::is_table<TBCs>) { // only when NOT running over reduced data
-        if (doSel8selection && !collision.sel8()) {
-          continue;
-        }
-        if (onlyKeepInterestedTrigger && !isTriggeredCollision[collision.globalIndex()]) {
-          continue;
-        }
-      }
-      if (doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
-        continue;
       }
 
       // aquire tracks
@@ -775,7 +786,7 @@ struct decay3bodyBuilder {
         this3BodyMCInfo.isReco = true;
 
         // set flag if selected reco collision has matched gen collision
-        if (collision.mcCollisionId() >= 0) { // reco collision is matched to gen collision
+        if (collision.has_mcCollision()) { // reco collision is matched to gen collision
           this3BodyMCInfo.survivedEventSel = isGoodCollision[collision.mcCollisionId()];
         } else {
           this3BodyMCInfo.survivedEventSel = false; // false if reco collision not matched to gen collision
@@ -1325,6 +1336,14 @@ struct decay3bodyBuilder {
     fTrackedClSizeVector.resize(decay3bodys.size(), 0);
     for (const auto& tvtx3body : tracked3bodys) {
       fTrackedClSizeVector[tvtx3body.decay3BodyId()] = tvtx3body.itsClsSize();
+    }
+
+    // MC collision counting for event loss
+    registry.fill(HIST("Counters/hMcEventCounter"), 0.5, mcCollisions.size());
+    for (const auto& collision : collisions) {
+      if (collision.has_mcCollision()) {
+        registry.fill(HIST("Counters/hMcEventCounter"), 1.5);
+      }
     }
 
     // do candidate analysis with MC processing

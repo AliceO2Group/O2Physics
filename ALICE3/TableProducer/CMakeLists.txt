@@ -53,5 +53,8 @@ o2physics_add_dpl_workflow(alice3-hf-selector-3prong
 
 o2physics_add_dpl_workflow(alice3-hf-tree-creator-3prong
                     SOURCES alice3HfTreeCreator3Prong.cxx
+
+o2physics_add_dpl_workflow(alice3-tracking-translator
+                    SOURCES alice3TrackingTranslator.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
