@@ -132,12 +132,12 @@ struct F0980pbpbanalysis {
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
   // Rotational Background Configurables
-  Configurable<bool> cfgBkgRotSel{"cfgBkgRotSel", true, "flag to construct rotational backgrounds"};
-  Configurable<int> cfgBkgRotNum{"cfgBkgRotNum", 10, "the number of rotational backgrounds"};
+  Configurable<bool> cfgBkgRotSel{"cfgBkgRotSel", false, "flag to construct rotational backgrounds"};
+  Configurable<int> cfgBkgRotNum{"cfgBkgRotNum", 5, "the number of rotational backgrounds"};
 
   // Mixed Event Background Configurables
   SliceCache cache;
-  Configurable<int> cfgBkgMixedNum{"cfgBkgMixedNum", 10, "Number of mixed events per event"};
+  Configurable<int> cfgBkgMixedNum{"cfgBkgMixedNum", 5, "Number of mixed events per event"};
   ConfigurableAxis mixAxisVertex{"mixAxisVertex", {10, -10, 10}, "Vertex axis for mixing bin"};
   ConfigurableAxis mixAxisCent{"mixAxisCent", {VARIABLE_WIDTH, 0, 10, 20, 50, 100}, "multiplicity percentile for mixing bin"};
   // ConfigurableAxis mixingAxisMultiplicity{"mixingAxisMultiplicity", {2000, 0, 10000}, "TPC multiplicity for bin"};
@@ -145,17 +145,19 @@ struct F0980pbpbanalysis {
   // List Configurables
   Configurable<int> cfgListPID{"cfgListPID", 0, "PID selection type"};
   Configurable<int> cfgListPtl{"cfgListPtl", 0, "Particle selection type"};
-  Configurable<int> cfgListPair{"cfgListPair", 2, "Pair selection type"};
 
   // Histogram QA Configurables
   Configurable<bool> cfgQAEventCut{"cfgQAEventCut", true, "Enable Event QA Hists"};
   Configurable<bool> cfgQATrackCut{"cfgQATrackCut", true, "Enable Track QA Hists"};
   Configurable<bool> cfgQAPIDCut{"cfgQAPIDCut", true, "Enable PID QA Hists"};
   Configurable<bool> cfgQAEPCut{"cfgQAEPCut", true, "Enable Event Plane QA Hists"};
+  Configurable<bool> cfgQAEventFlowCut{"cfgQAEventFlowCut", true, "Enable Event Flow QA Hists"};
 
   ConfigurableAxis histAxisDCAz{"histAxisDCAz", {40, -0.2, 0.2}, "DCAz axis"};
   ConfigurableAxis histAxisDCAr{"histAxisDCAr", {40, -0.2, 0.2}, "DCAxy axis"};
   ConfigurableAxis histAxisOccupancy{"histAxisOccupancy", {100, 0.0, 20000}, "Occupancy axis"};
+
+  Configurable<bool> cfgAnalysisMethod{"cfgAnalysisMethod", true, "true: Two for-loop, false: Combination"};
 
   // Configurable for axis
   ConfigurableAxis axisMass{"axisMass", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -217,18 +219,11 @@ struct F0980pbpbanalysis {
     PtlKaon = 1,
   };
 
-  enum IndexSelList {
-    None = 0,
-    woSame = 1,
-    leq = 2
-  };
-
   enum QAList {
     QAEvent = 1,
     QAEP = 2,
     QATrack = 3,
     QAPID = 4,
-    QAPIDS = 5
   };
 
   TRandom* rn = new TRandom();
@@ -329,13 +324,6 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("PIDQA/TPC_TOF_AC"), getTpcNSigma(obj), getTofNSigma(obj));
         }
       }
-      if (objecttype == QAPIDS) {
-        if (pass) {
-          histos.fill(HIST("PIDQA/Nsigma_TPC_selected"), obj.pt(), getTpcNSigma(obj));
-          histos.fill(HIST("PIDQA/Nsigma_TOF_selected"), obj.pt(), getTofNSigma(obj));
-          histos.fill(HIST("PIDQA/TPC_TOF_selected"), getTpcNSigma(obj), getTofNSigma(obj));
-        }
-      }
     }
   }
 
@@ -346,36 +334,50 @@ struct F0980pbpbanalysis {
       fillQA(false, collision, 1);
     if (cfgQAEPCut && QA)
       fillQA(false, collision, 2);
+    // if (cfgQAEventFlowCut) histos.fill(HIST("EventQA/hnEvents"), 0);
     //
-    // histos.fill(HIST("EventQA/hnEvents"), 0);
     if (std::abs(collision.posZ()) > cfgEventCutVertex) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 1);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 1);
+
     if (!collision.sel8()) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 2);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 2);
+
     if (cfgEventGoodZvtxSel && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 3);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 3);
+
     if (cfgEventNSamePileupSel && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 4);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 4);
+
     if (cfgEventNCollinTRSel && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 5);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 5);
+
     if (cfgEventQvecSel && (collision.qvecAmp()[detId] < QvecAmpMin || collision.qvecAmp()[refAId] < QvecAmpMin || collision.qvecAmp()[refBId] < QvecAmpMin)) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 6);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 6);
+
     if (cfgEventOccupancySel && (collision.trackOccupancyInTimeRange() > cfgEventOccupancyMax || collision.trackOccupancyInTimeRange() < cfgEventOccupancyMin)) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 7);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 7);
+
     if (cfgEventCentMax < centrality) {
       return 0;
     }
@@ -388,12 +390,18 @@ struct F0980pbpbanalysis {
           return 0;
         }
     */
-    histos.fill(HIST("EventQA/hnEvents"), 8);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 8);
+
     if (cfgEventPVSel && std::abs(collision.posZ()) > cfgEventPV) {
       return 0;
     }
-    histos.fill(HIST("EventQA/hnEvents"), 9);
-    histos.fill(HIST("EventQA/hnEvents"), 10);
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 9);
+
+    // All passed
+    if (cfgQAEventFlowCut && QA)
+      histos.fill(HIST("EventQA/hnEvents"), 10);
     return 1;
   } // event selection
 
@@ -445,7 +453,7 @@ struct F0980pbpbanalysis {
   template <typename TrackType>
   bool selectionPID(const TrackType track, const bool QA)
   {
-    if (cfgQAPIDCut && QA)
+    if (QA)
       fillQA(false, track, 4);
     //
     if (cfgListPID == PIDList::PIDRun3) {
@@ -494,21 +502,6 @@ struct F0980pbpbanalysis {
         if (std::abs(getTpcNSigma(track)) > cfgPIDMaxTPCnSigmaPionS) {
           return 0;
         }
-      }
-    }
-    return 1;
-  }
-
-  template <typename TrackType1, typename TrackType2>
-  bool pairIndexSelection(const TrackType1 track1, const TrackType2 track2)
-  {
-    if (cfgListPair == IndexSelList::woSame) {
-      if (track2.globalIndex() == track1.globalIndex()) {
-        return 0;
-      }
-    } else if (cfgListPair == IndexSelList::leq) {
-      if (track2.globalIndex() <= track1.globalIndex()) {
-        return 0;
       }
     }
     return 1;
@@ -569,7 +562,8 @@ struct F0980pbpbanalysis {
       if (!trackSelected(trk1, true)) {
         continue;
       }
-      fillQA(true, trk1, 3);
+      if (cfgQATrackCut)
+        fillQA(true, trk1, 3);
 
       if (!selectionPID(trk1, true)) {
         continue;
@@ -577,20 +571,16 @@ struct F0980pbpbanalysis {
       fillQA(true, trk1, 4);
 
       for (const auto& trk2 : dTracks) {
+        if (trk1.globalIndex() >= trk2.globalIndex()) {
+          continue;
+        }
+
         if (!trackSelected(trk2, false)) {
           continue;
         }
 
         // PID
         if (!selectionPID(trk2, false)) {
-          continue;
-        }
-
-        if (trk1.index() == trk2.index()) {
-          fillQA(true, trk1, 5);
-        }
-
-        if (!pairIndexSelection(trk1, trk2)) {
           continue;
         }
 
@@ -690,19 +680,19 @@ struct F0980pbpbanalysis {
       }
     }
   }
-  PROCESS_SWITCH(F0980pbpbanalysis, processEventMixing, "Process Event mixing", true);
+  PROCESS_SWITCH(F0980pbpbanalysis, processEventMixing, "Process Event mixing", false);
 
-  void processOnce(EventCandidatesOrigin const& events)
+  void processTotalEvent(EventCandidatesOrigin const& events)
   {
-    if (cfgQAEventCut) {
+    if (cfgQAEventFlowCut) {
       nTotalEvents += events.size();
       auto hTotalEvents = histos.get<TH1>(HIST("EventQA/hnEvents"));
-      if (hTotalEvents)
+      if (hTotalEvents) {
         hTotalEvents->SetBinContent(1, static_cast<double>(nTotalEvents));
-      // std::cout << "Total number of events processed: " << nTotalEvents << std::endl;
+      }
     }
   }
-  PROCESS_SWITCH(F0980pbpbanalysis, processOnce, "fill Total nEvents once", true);
+  PROCESS_SWITCH(F0980pbpbanalysis, processTotalEvent, "fill Total nEvents once", false);
 
   void init(o2::framework::InitContext&)
   {
@@ -749,18 +739,17 @@ struct F0980pbpbanalysis {
     }
 
     // PID QA
-    if (cfgQAPIDCut) {
-      histos.add("PIDQA/Nsigma_TPC_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-      histos.add("PIDQA/Nsigma_TOF_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-      histos.add("PIDQA/TPC_TOF_BC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
-    }
+    histos.add("PIDQA/Nsigma_TPC_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    histos.add("PIDQA/Nsigma_TOF_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    histos.add("PIDQA/TPC_TOF_BC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
+    //
     histos.add("PIDQA/Nsigma_TPC_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/Nsigma_TOF_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/TPC_TOF_AC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
     //
-    histos.add("PIDQA/Nsigma_TPC_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-    histos.add("PIDQA/Nsigma_TOF_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-    histos.add("PIDQA/TPC_TOF_selected", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
+    // histos.add("PIDQA/Nsigma_TPC_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    // histos.add("PIDQA/Nsigma_TOF_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    // histos.add("PIDQA/TPC_TOF_selected", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
 
     // Event Plane QA
     if (cfgQAEPCut) {
@@ -775,6 +764,7 @@ struct F0980pbpbanalysis {
     histos.add("EventQA/EPhistAC_AC", "", {HistType::kTH2F, {qaCentAxis, epresAxis}});
     histos.add("EventQA/EPhistBC_AC", "", {HistType::kTH2F, {qaCentAxis, epresAxis}});
 
+    // Invariant Mass Histograms
     histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass",
                {HistType::kTHnSparseF, {axisMass, axisPT, axisCent, axisEp}});
     histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass",
@@ -791,22 +781,24 @@ struct F0980pbpbanalysis {
     //    }
 
     // Event Histograms
-    histos.add("EventQA/hnEvents", "Event selection steps", {HistType::kTH1F, {{11, -0.5, 10.5}}});
-    std::shared_ptr<TH1> hEventsCutFlow = histos.get<TH1>(HIST("EventQA/hnEvents"));
-    std::vector<std::string> eventCutLabels = {
-      "All Events",
-      "Zvtx",
-      "sel8",
-      "GoodZvtxFT0vsPV",
-      "NoSameBunchPileup",
-      "NoCollInTimeRangeStandard",
-      "Qvec Amplitude",
-      "Occupancy",
-      "Centrality",
-      "Additional PV cut",
-      "Passed Events"};
-    for (size_t i = 0; i < eventCutLabels.size(); ++i) {
-      hEventsCutFlow->GetXaxis()->SetBinLabel(i + 1, eventCutLabels[i].c_str());
+    if (cfgQAEventFlowCut) {
+      histos.add("EventQA/hnEvents", "Event selection steps", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+      std::shared_ptr<TH1> hEventsCutFlow = histos.get<TH1>(HIST("EventQA/hnEvents"));
+      std::vector<std::string> eventCutLabels = {
+        "All Events",
+        "Zvtx",
+        "sel8",
+        "GoodZvtxFT0vsPV",
+        "NoSameBunchPileup",
+        "NoCollInTimeRangeStandard",
+        "Qvec Amplitude",
+        "Occupancy",
+        "Centrality",
+        "Additional PV cut",
+        "Passed Events"};
+      for (size_t i = 0; i < eventCutLabels.size(); ++i) {
+        hEventsCutFlow->GetXaxis()->SetBinLabel(i + 1, eventCutLabels[i].c_str());
+      }
     }
 
     detId = getDetId(cfgQvecDetName);
@@ -853,7 +845,7 @@ struct F0980pbpbanalysis {
 
     fillHistograms<false>(collision, tracks);
   };
-  PROCESS_SWITCH(F0980pbpbanalysis, processData, "Process Event for data", true);
+  PROCESS_SWITCH(F0980pbpbanalysis, processData, "Process Event for data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
