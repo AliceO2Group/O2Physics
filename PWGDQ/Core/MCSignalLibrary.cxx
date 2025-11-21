@@ -1859,13 +1859,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   if (!nameStr.compare("JpsiFromPromptPsi2S")) {
-    MCProng prong(2,{443, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {true});
+    MCProng prong(2, {443, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {true});
     signal = new MCSignal(name, "Jpsi from prompt Psi2S", {prong}, {-1});
     return signal;
   }
 
   if (!nameStr.compare("JpsiFromNonpromptPsi2S")) {
-    MCProng prong(2,{443, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {false});
+    MCProng prong(2, {443, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {false});
     signal = new MCSignal(name, "Jpsi from non-prompt Psi2S", {prong}, {-1});
     return signal;
   }
@@ -1932,7 +1932,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  if (!nameStr.compare("eeFromJpsiFromPromptPsi2S"))  {
+  if (!nameStr.compare("eeFromJpsiFromPromptPsi2S")) {
     MCProng prong(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {503}, {true});
     signal = new MCSignal(name, "Electron pair from Jpsi from prompt Psi2S", {prong, prong}, {1, 1});
     return signal;
