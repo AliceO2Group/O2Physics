@@ -897,7 +897,7 @@ struct FlowZdcTask {
         if (isTDCcut) {
           if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
             histos.fill(HIST("ampZna"), znA);
-          if ((tZNC >= minTdcZn) && (tZNC <= minTdcZn))
+          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))
             histos.fill(HIST("ampZnc"), znC);
           if ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))
             histos.fill(HIST("ampZpa"), zpA);
