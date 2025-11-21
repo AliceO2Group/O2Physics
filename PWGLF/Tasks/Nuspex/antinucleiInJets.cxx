@@ -1,5 +1,3 @@
-//Code modified to obtain histograms for subsample division
-
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -98,7 +96,7 @@ struct AntinucleiInJets {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMult{"registryMult", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryCorr{"registryCorr", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-    
+
   // Random generator for subsample assignment
   TRandom3 mRand;
 
@@ -210,7 +208,7 @@ struct AntinucleiInJets {
     if (setMCDefaultItsParams) {
       itsResponse.setMCDefaultParameters();
     }
-      
+
     // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
     auto time_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     mRand.SetSeed(time_seed);
@@ -469,25 +467,23 @@ struct AntinucleiInJets {
       const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
       const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
       const AxisSpec subsampleAxis{20, 0, 20, "Subsample Index"};
-        
 
       // Event counter
       registryCorr.add("eventCounter", "number of events", HistType::kTH1F, {{20, 0, 20, "counter"}});
-      
       registryCorr.add("eventCounter_centrality_fullEvent", "Number of events per centrality (Full Event)", HistType::kTH2F, {multiplicityAxis, subsampleAxis});
       //registryCorr.add("eventCounter_centrality_jet", "Number of events per centrality (Jet)", HistType::kTH1F, {multiplicityAxis});
       //registryCorr.add("eventCounter_centrality_ue", "Number of events per centrality (Underlying Event)",  HistType::kTH1F, {multiplicityAxis});
-        
+
       // Correlation histograms: antiproton vs. antideuteron number vs. event multiplicity
       //registryCorr.add("rho_jet", "rho_jet", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
       //registryCorr.add("rho_ue", "rho_ue", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
       registryCorr.add("rho_fullEvent", "rho_fullEvent", HistType::kTHnSparseD, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis, subsampleAxis});
-        
+
       // Correlation histograms: net antiproton vs. net antideuteron numbers
       //registryCorr.add("rho_netP_netD_jet", "rho_netP_netD_jet", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
       //registryCorr.add("rho_netP_netD_ue", "rho_netP_netD_ue", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
       registryCorr.add("rho_netP_netD_fullEvent", "rho_netP_netD_fullEvent", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, subsampleAxis});
-        
+
       // Efficiency histograms jet
       //registryCorr.add("q1d_jet", "q1d_jet", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
       //registryCorr.add("q1p_jet", "q1p_jet", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
@@ -495,13 +491,13 @@ struct AntinucleiInJets {
       //registryCorr.add("q1p_square_jet", "q1p_square_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
       //registryCorr.add("q1d_q1p_jet", "q1d_q1p_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
 
-       // Efficiency histograms UE
-       //registryCorr.add("q1d_ue", "q1d_ue", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
-       //registryCorr.add("q1p_ue", "q1p_ue", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
-       //registryCorr.add("q1d_square_ue", "q1d_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
-       //registryCorr.add("q1p_square_ue", "q1p_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
-       //registryCorr.add("q1d_q1p_ue", "q1d_q1p_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
-        
+      // Efficiency histograms UE
+      //registryCorr.add("q1d_ue", "q1d_ue", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
+      //registryCorr.add("q1p_ue", "q1p_ue", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
+      //registryCorr.add("q1d_square_ue", "q1d_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
+      //registryCorr.add("q1p_square_ue", "q1p_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
+      //registryCorr.add("q1d_q1p_ue", "q1d_q1p_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
+
       // Efficiency histograms full event
       registryCorr.add("q1d_fullEvent", "q1d_fullEvent", HistType::kTHnSparseD, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis, subsampleAxis});
       registryCorr.add("q1p_fullEvent", "q1p_fullEvent", HistType::kTHnSparseD, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis, subsampleAxis});
