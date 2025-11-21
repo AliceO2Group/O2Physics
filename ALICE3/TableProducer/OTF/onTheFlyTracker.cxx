@@ -585,7 +585,7 @@ struct OnTheFlyTracker {
 
     double xi_gamma = 1 / std::sqrt(1 + (particle.p() * particle.p()) / (xi_mass * xi_mass));
     double xi_ctau = 4.91 * xi_gamma;
-    double xi_rxyz = (-xi_ctau * log(1 - u));
+    double xi_rxyz = (-xi_ctau * std::log(1 - u));
     float sna, csa;
     o2::math_utils::CircleXYf_t xi_circle;
     track.getCircleParams(magneticField, xi_circle, sna, csa);
@@ -610,7 +610,7 @@ struct OnTheFlyTracker {
     double la_gamma = 1 / std::sqrt(1 + (la.P() * la.P()) / (la_mass * la_mass));
     double la_ctau = 7.89 * la_gamma;
     std::vector<double> laDaughters = {pi_mass, pr_mass};
-    double la_rxyz = (-la_ctau * log(1 - u));
+    double la_rxyz = (-la_ctau * std::log(1 - u));
     laDecayVertex.push_back(xiDecayVertex[0] + la_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
     laDecayVertex.push_back(xiDecayVertex[1] + la_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
     laDecayVertex.push_back(xiDecayVertex[2] + la_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
@@ -652,7 +652,7 @@ struct OnTheFlyTracker {
 
     double v0_gamma = 1 / std::sqrt(1 + (particle.p() * particle.p()) / (v0_mass * v0_mass));
     double v0_ctau = ctau * v0_gamma;
-    double v0_rxyz = (-v0_ctau * log(1 - u));
+    double v0_rxyz = (-v0_ctau * std::log(1 - u));
     TLorentzVector v0(particle.px(), particle.py(), particle.pz(), particle.e());
 
     v0DecayVertex.push_back(particle.vx() + v0_rxyz * (particle.px() / particle.p()));
@@ -1107,9 +1107,9 @@ struct OnTheFlyTracker {
           nV0SiliconHits[i] = 0;
           nV0TPCHits[i] = 0;
           if (enableSecondarySmearing) {
-            nV0Hits[i] = fastTracker.FastTrack(v0DaughterTrackParCovsPerfect[i], v0DaughterTrackParCovsTracked[i], dNdEta);
-            nV0SiliconHits[i] = fastTracker.GetNSiliconPoints();
-            nV0TPCHits[i] = fastTracker.GetNGasPoints();
+            nV0Hits[i] = fastTracker[icfg]->FastTrack(v0DaughterTrackParCovsPerfect[i], v0DaughterTrackParCovsTracked[i], dNdEta);
+            nV0SiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
+            nV0TPCHits[i] = fastTracker[icfg]->GetNGasPoints();
 
             if (nV0Hits[i] < 0) { // QA
               histos.fill(HIST("V0Building/hFastTrackerQA"), o2::math_utils::abs(nV0Hits[i]));
@@ -1120,8 +1120,8 @@ struct OnTheFlyTracker {
             } else {
               continue; // extra sure
             }
-            for (uint32_t ih = 0; ih < fastTracker.GetNHits(); ih++) {
-              histos.fill(HIST("V0Building/hFastTrackerHits"), fastTracker.GetHitZ(ih), std::hypot(fastTracker.GetHitX(ih), fastTracker.GetHitY(ih)));
+            for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits(); ih++) {
+              histos.fill(HIST("V0Building/hFastTrackerHits"), fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
             }
           } else {
             isReco[i] = true;
