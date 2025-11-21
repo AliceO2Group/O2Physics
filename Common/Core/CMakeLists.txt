@@ -24,7 +24,7 @@ o2physics_add_library(AnalysisCore
         FFitWeights.cxx
         Zorro.cxx
         ZorroSummary.cxx
-        INSTALL_HEADERS ZorroHelper.h ZorroSummary.h
+        INSTALL_HEADERS ZorroHelper.h ZorroSummary.h DetectorResponse.h PID/PIDTOF.h PID/TPCPIDResponse.h PID/ParamBase.h PID/PIDTOFParamService.h
         PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base O2::DataFormatsParamTOF)
 
 o2physics_target_root_dictionary(AnalysisCore
