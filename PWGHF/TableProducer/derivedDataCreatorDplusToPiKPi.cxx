@@ -289,7 +289,9 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         if constexpr (IsMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
-        fillTablesCandidate(candidate, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
+        auto trackprong0 = candidate.template prong0_as<TracksWPid>();
+        int const candFlag = (trackprong0.sign() > 0) ? 0 : 1; // 0: D+, 1: D-
+        fillTablesCandidate(candidate, candFlag, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
   }
