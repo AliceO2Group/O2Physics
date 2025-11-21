@@ -2031,6 +2031,36 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "hMass_defaultDileptonMass_Chi2OverNDFGeo", "", false, 1000, 3.0, 5.0, VarManager::kQuadDefaultDileptonMass, 150, -5, 10., VarManager::kKFChi2OverNDFGeo);
     }
   }
+  if (subGroupStr.Contains("mctruth")) {
+    hm->AddHistogram(histClass, "PtMC", "MC pT", false, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "EtaMC", "MC #eta", false, 50, -5.0, 5.0, VarManager::kMCEta);
+    hm->AddHistogram(histClass, "PhiMC", "MC #phi", false, 50, -6.3, 6.3, VarManager::kMCPhi);
+    hm->AddHistogram(histClass, "YMC", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "PtMC_YMC", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
+    hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
+    hm->AddHistogram(histClass, "LzMC", "", false, 1000, 0.0, 2.0, VarManager::kMCVertexingLz);
+    hm->AddHistogram(histClass, "LxyMC", "", false, 1000, 0.0, 2.0, VarManager::kMCVertexingLxy);
+    hm->AddHistogram(histClass, "LxyzMC", "", false, 1000, 0.0, 2.0, VarManager::kMCVertexingLxyz);
+    hm->AddHistogram(histClass, "LxyMCExpected", "", false, 1000, 0.0, 2.0, VarManager::kMCLxyExpected);
+    hm->AddHistogram(histClass, "LxyzMCExpected", "", false, 1000, 0.0, 2.0, VarManager::kMCLxyzExpected);
+    hm->AddHistogram(histClass, "LxyMC_LxyMCExpected", "", false, 500, 0.0, 2.0, VarManager::kMCVertexingLxy, 500, 0.0, 2.0, VarManager::kMCLxyExpected);
+    hm->AddHistogram(histClass, "LxyzMC_LxyzMCExpected", "", false, 500, 0.0, 2.0, VarManager::kMCVertexingLxyz, 500, 0.0, 2.0, VarManager::kMCLxyzExpected);
+    hm->AddHistogram(histClass, "TauzMC", "", false, 4000, -0.01, 0.01, VarManager::kMCVertexingTauz);
+    hm->AddHistogram(histClass, "TauxyMC", "", false, 4000, -0.01, 0.01, VarManager::kMCVertexingTauxy);
+    hm->AddHistogram(histClass, "TauzMC_PtMC", "", false, 500, -0.01, 0.01, VarManager::kMCVertexingTauz, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "TauxyMC_PtMC", "", false, 500, -0.01, 0.01, VarManager::kMCVertexingTauxy, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "TauzProjectedMC", "", false, 4000, -0.5, 0.5, VarManager::kMCVertexingTauzProjected);
+    hm->AddHistogram(histClass, "TauxyProjectedMC", "", false, 4000, -0.5, 0.5, VarManager::kMCVertexingTauxyProjected);
+    hm->AddHistogram(histClass, "TauzProjectedMC_PtMC", "", false, 500, -0.5, 0.5, VarManager::kMCVertexingTauzProjected, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "TauxyProjectedMC_PtMC", "", false, 500, -0.5, 0.5, VarManager::kMCVertexingTauxyProjected, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "LzMC_Lz", "", false, 500, 0.0, 2.0, VarManager::kMCVertexingLz, 500, 0.0, 2.0, VarManager::kVertexingLz);
+    hm->AddHistogram(histClass, "LxyMC_Lxy", "", false, 500, 0.0, 2.0, VarManager::kMCVertexingLxy, 500, 0.0, 2.0, VarManager::kVertexingLxy);
+    hm->AddHistogram(histClass, "TauzMC_Tauz", "", false, 500, -0.01, 0.01, VarManager::kMCVertexingTauz, 500, -0.01, 0.01, VarManager::kVertexingTauz);
+    hm->AddHistogram(histClass, "TauxyMC_Tauxy", "", false, 500, -0.01, 0.01, VarManager::kMCVertexingTauxy, 500, -0.01, 0.01, VarManager::kVertexingTauxy);
+    hm->AddHistogram(histClass, "CosPointingAngleMC", "", false, 100, 0.0, 1.0, VarManager::kMCCosPointingAngle);
+  }
   if (!groupStr.CompareTo("dilepton-photon-mass")) {
     hm->AddHistogram(histClass, "Mass_Dilepton", "", false, 500, 0.0, 5.0, VarManager::kPairMassDau);
     hm->AddHistogram(histClass, "Mass_Photon", "", false, 500, 0.0, 0.1, VarManager::kMassDau);
