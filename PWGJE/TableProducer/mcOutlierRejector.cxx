@@ -70,16 +70,13 @@ struct McOutlierRejectorTask {
               auto& mcCollisions = mcCollisionsOpt.value().get();
               auto mcParticle = selectionObject.template mcParticle_as<soa::Join<aod::JetParticles, aod::JMcParticlePIs>>();
               auto mcCollision = mcCollisions.sliceBy(perColParticle, mcParticle.mcCollisionId());
-              else {
-                int subGenID = mcCollision.begin().subGeneratorId();
-                int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
-                if (subGenID == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
-                    diffCollisionID != 0) { 
-                  isTrueOutlier = true;
-                }
-                else {
-                  isTrueOutlier = false;
-                }
+              int subGenID = mcCollision.begin().subGeneratorId();
+              int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
+              if (subGenID == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
+                  diffCollisionID != 0) {
+                isTrueOutlier = true;
+              } else {
+                isTrueOutlier = false;
               }
             }
           }
@@ -87,7 +84,6 @@ struct McOutlierRejectorTask {
       } else {
         maxSelectionObjectPt = selectionObjects.iteratorAt(0).pt();
       }
-
 
       if (maxSelectionObjectPt > ptHatMax * ptHard && isTrueOutlier) {
         flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
