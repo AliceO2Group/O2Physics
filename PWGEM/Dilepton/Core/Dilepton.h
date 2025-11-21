@@ -1674,9 +1674,13 @@ struct Dilepton {
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_neg->AddCollisionIdAtLast(key_bin, key_df_collision);
-        emh_pair_uls->AddCollisionIdAtLast(key_bin, key_df_collision);
-        emh_pair_lspp->AddCollisionIdAtLast(key_bin, key_df_collision);
-        emh_pair_lsmm->AddCollisionIdAtLast(key_bin, key_df_collision);
+
+        if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) { // only for polarization
+          emh_pair_uls->AddCollisionIdAtLast(key_bin, key_df_collision);
+          emh_pair_lspp->AddCollisionIdAtLast(key_bin, key_df_collision);
+          emh_pair_lsmm->AddCollisionIdAtLast(key_bin, key_df_collision);
+        }
+
       } // end of if pair exist
 
     } // end of collision loop
