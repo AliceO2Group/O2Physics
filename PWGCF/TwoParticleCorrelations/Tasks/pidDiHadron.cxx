@@ -182,7 +182,7 @@ struct PidDiHadron {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using V0TrackCandidate = aod::V0Datas;
@@ -214,12 +214,12 @@ struct PidDiHadron {
     kPhi
   };
   enum PiKpArrayIndex {
-    kPionUp = 0,
-    kKaonUp,
-    kProtonUp,
-    kPionLow,
-    kKaonLow,
-    kProtonLow
+    iPionUp = 0,
+    iKaonUp,
+    iProtonUp,
+    iPionLow,
+    iKaonLow,
+    iProtonLow
   };
   enum ResoArrayIndex {
     iK0 = 0,
@@ -307,26 +307,26 @@ struct PidDiHadron {
     readMatrix(resonanceSwitches->getData(), resoSwitchVals, kUseCosPA, kNParticleSwitches, iK0, NResoParticles);
     readMatrix(cfgUseEventCuts->getData(), eventCuts, kFilteredEvents, kNEventCuts, kEvCut1, kNEvCutTypes);
 
-    tpcNsigmaCut[kPionUp] = nSigmas->getData()[kPionUp][kTPC];
-    tpcNsigmaCut[kKaonUp] = nSigmas->getData()[kKaonUp][kTPC];
-    tpcNsigmaCut[kProtonUp] = nSigmas->getData()[kProtonUp][kTPC];
-    tpcNsigmaCut[kPionLow] = nSigmas->getData()[kPionLow][kTPC];
-    tpcNsigmaCut[kKaonLow] = nSigmas->getData()[kKaonLow][kTPC];
-    tpcNsigmaCut[kProtonLow] = nSigmas->getData()[kProtonLow][kTPC];
+    tpcNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTPC];
+    tpcNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTPC];
+    tpcNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTPC];
+    tpcNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kTPC];
+    tpcNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kTPC];
+    tpcNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kTPC];
 
-    tofNsigmaCut[kPionUp] = nSigmas->getData()[kPionUp][kTOF];
-    tofNsigmaCut[kKaonUp] = nSigmas->getData()[kKaonUp][kTOF];
-    tofNsigmaCut[kProtonUp] = nSigmas->getData()[kProtonUp][kTOF];
-    tofNsigmaCut[kPionLow] = nSigmas->getData()[kPionLow][kTOF];
-    tofNsigmaCut[kKaonLow] = nSigmas->getData()[kKaonLow][kTOF];
-    tofNsigmaCut[kProtonLow] = nSigmas->getData()[kProtonLow][kTOF];
+    tofNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTOF];
+    tofNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTOF];
+    tofNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTOF];
+    tofNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kTOF];
+    tofNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kTOF];
+    tofNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kTOF];
 
-    itsNsigmaCut[kPionUp] = nSigmas->getData()[kPionUp][kITS];
-    itsNsigmaCut[kKaonUp] = nSigmas->getData()[kKaonUp][kITS];
-    itsNsigmaCut[kProtonUp] = nSigmas->getData()[kProtonUp][kITS];
-    itsNsigmaCut[kPionLow] = nSigmas->getData()[kPionLow][kITS];
-    itsNsigmaCut[kKaonLow] = nSigmas->getData()[kKaonLow][kITS];
-    itsNsigmaCut[kProtonLow] = nSigmas->getData()[kProtonLow][kITS];
+    itsNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kITS];
+    itsNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kITS];
+    itsNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kITS];
+    itsNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kITS];
+    itsNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kITS];
+    itsNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kITS];
 
     AxisSpec axisK0Mass = {resoSwitchVals[kMassBins][iK0], resoCutVals[kMassMin][iK0], resoCutVals[kMassMax][iK0]};
     AxisSpec axisLambdaMass = {resoSwitchVals[kMassBins][iLambda], resoCutVals[kMassMin][iLambda], resoCutVals[kMassMax][iLambda]};
@@ -603,11 +603,11 @@ struct PidDiHadron {
       return 0;
 
     if (cfgUseOnlyTPC) {
-      if (pid == kPionUp && std::abs(track.tpcNSigmaPi()) > cfgTpcCut)
+      if (pid == kPions && std::abs(track.tpcNSigmaPi()) > cfgTpcCut)
         return false;
-      if (pid == kKaonUp && std::abs(track.tpcNSigmaKa()) > cfgTpcCut)
+      if (pid == kKaons && std::abs(track.tpcNSigmaKa()) > cfgTpcCut)
         return false;
-      if (pid == kProtonUp && std::abs(track.tpcNSigmaPr()) > cfgTpcCut)
+      if (pid == kProtons && std::abs(track.tpcNSigmaPr()) > cfgTpcCut)
         return false;
     } else {
       int partIndex = getNsigmaPID(track);
@@ -632,13 +632,13 @@ struct PidDiHadron {
     std::array<float, 6> detectorNsigmaCut = cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
 
     bool isPion, isKaon, isProton;
-    bool isDetectedPion = nSigmaToUse[kPionUp] < detectorNsigmaCut[kPionUp] && nSigmaToUse[kPionUp] > detectorNsigmaCut[kPionLow];
-    bool isDetectedKaon = nSigmaToUse[kKaonUp] < detectorNsigmaCut[kKaonUp] && nSigmaToUse[kKaonUp] > detectorNsigmaCut[kKaonLow];
-    bool isDetectedProton = nSigmaToUse[kProtonUp] < detectorNsigmaCut[kProtonUp] && nSigmaToUse[kProtonUp] > detectorNsigmaCut[kProtonLow];
+    bool isDetectedPion = nSigmaToUse[iPionUp] < detectorNsigmaCut[iPionUp] && nSigmaToUse[iPionUp] > detectorNsigmaCut[iPionLow];
+    bool isDetectedKaon = nSigmaToUse[iKaonUp] < detectorNsigmaCut[iKaonUp] && nSigmaToUse[iKaonUp] > detectorNsigmaCut[iKaonLow];
+    bool isDetectedProton = nSigmaToUse[iProtonUp] < detectorNsigmaCut[iProtonUp] && nSigmaToUse[iProtonUp] > detectorNsigmaCut[iProtonLow];
 
-    bool isTofPion = nSigmaTOF[kPionUp] < tofNsigmaCut[kPionUp] && nSigmaTOF[kPionUp] > tofNsigmaCut[kPionLow];
-    bool isTofKaon = nSigmaTOF[kKaonUp] < tofNsigmaCut[kKaonUp] && nSigmaTOF[kKaonUp] > tofNsigmaCut[kKaonLow];
-    bool isTofProton = nSigmaTOF[kProtonUp] < tofNsigmaCut[kProtonUp] && nSigmaTOF[kProtonUp] > tofNsigmaCut[kProtonLow];
+    bool isTofPion = nSigmaTOF[iPionUp] < tofNsigmaCut[iPionUp] && nSigmaTOF[iPionUp] > tofNsigmaCut[iPionLow];
+    bool isTofKaon = nSigmaTOF[iKaonUp] < tofNsigmaCut[iKaonUp] && nSigmaTOF[iKaonUp] > tofNsigmaCut[iKaonLow];
+    bool isTofProton = nSigmaTOF[iProtonUp] < tofNsigmaCut[iProtonUp] && nSigmaTOF[iProtonUp] > tofNsigmaCut[iProtonLow];
 
     if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
       return -1;
