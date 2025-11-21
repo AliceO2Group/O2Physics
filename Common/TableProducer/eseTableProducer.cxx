@@ -16,11 +16,13 @@
 
 #include "FFitWeights.h"
 
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
@@ -58,10 +60,14 @@ struct EseTableProducer {
   Produces<o2::aod::QPercentileTPCnegs> qPercsTPCneg;
   Produces<o2::aod::QPercentileTPCposs> qPercsTPCpos;
 
-  OutputObj<FFitWeights> FFitObj{FFitWeights("weights")};
+  Produces<o2::aod::MeanPt> meanPts;
+  Produces<o2::aod::MeanPtShapes> meanPtShapes;
+
+  OutputObj<FFitWeights> weightsFFit{FFitWeights("weights")};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   Configurable<bool> cfgESE{"cfgESE", 1, "ese activation step: false = no ese, true = evaluate qSelection and fill table"};
+  Configurable<int> cfgMeanPt{"cfgMeanPt", 0, "lvl, 0: First profile, 1: Second profile, 2: fill table"};
   Configurable<std::string> cfgEsePath{"cfgEsePath", "Users/j/joachiha/ESE/local/ffitsplines", "CCDB path for ese splines"};
   Configurable<std::vector<std::string>> cfgDetectors{"cfgDetectors", {"FT0C"}, "detectors to loop over: ['FT0C', 'FT0A', 'FV0A', 'TPCall', 'TPCneg', 'TPCpos']"};
   Configurable<std::vector<int>> cfgLoopHarmonics{"cfgLoopHarmonics", {2, 3}, "Harmonics to loop over when filling and evaluating q-Selection"};
@@ -73,6 +79,10 @@ struct EseTableProducer {
   Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
 
   int runNumber{-1};
+
+  static constexpr float ThresholdAmplitude{1e-8f};
+  static constexpr int Step1{1};
+  static constexpr int Step2{2};
 
   enum class DetID { FT0C,
                      FT0A,
@@ -91,9 +101,23 @@ struct EseTableProducer {
     {"TPCneg", DetID::TPCneg},
     {"TPCall", DetID::TPCall}};
 
-  FFitWeights* qSelection{nullptr};
+  FFitWeights* eventShape{nullptr};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  Configurable<float> cfgVtxZ{"cfgVtxZ", 10.0f, "max z vertex position"};
+  Configurable<float> cfgEta{"cfgEta", 0.8f, "max eta"};
+  Configurable<float> cfgPtmin{"cfgPtmin", 0.2f, "min pt"};
+  Configurable<float> cfgPtmax{"cfgPtmax", 5.0f, "max pt"};
+  Configurable<float> cfgChi2PrITSCls{"cfgChi2PrITSCls", 4.0f, "max chi2 per ITS cluster"};
+  Configurable<float> cfgChi2PrTPCCls{"cfgChi2PrTPCCls", 2.5f, "max chi2 per TPC cluster"};
+  Configurable<float> cfgDCAz{"cfgDCAz", 2.0f, "max DCAz cut"};
+
+  // o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
+  o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
+
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   void init(o2::framework::InitContext&)
   {
@@ -102,6 +126,7 @@ struct EseTableProducer {
 
     registry.add("hEventCounter", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     registry.add("hESEstat", "ese status;ese status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+    registry.add("hMeanPtStat", "", {HistType::kTH1F, {{4, 0.0, 4.0}}});
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -116,10 +141,10 @@ struct EseTableProducer {
         veccfg.push_back({cfgLoopHarmonics->at(i), cfgDetectors->at(j)});
       }
     }
-    FFitObj->setBinAxis(cfgaxisqn->at(0), cfgaxisqn->at(1), cfgaxisqn->at(2));
-    FFitObj->setResolution(cfgnResolution);
-    FFitObj->setQnType(veccfg);
-    FFitObj->init();
+    weightsFFit->setBinAxis(cfgaxisqn->at(0), cfgaxisqn->at(1), cfgaxisqn->at(2));
+    weightsFFit->setResolution(cfgnResolution);
+    weightsFFit->setQnType(veccfg);
+    weightsFFit->init();
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -128,20 +153,20 @@ struct EseTableProducer {
     auto timestamp = bc.timestamp();
 
     if (cfgESE) {
-      qSelection = ccdb->getForTimeStamp<FFitWeights>(cfgEsePath, timestamp);
-      if (!qSelection)
+      eventShape = ccdb->getForTimeStamp<FFitWeights>(cfgEsePath, timestamp);
+      if (!eventShape)
         LOGF(fatal, "failed loading qSelection with ese flag");
       LOGF(info, "successfully loaded qSelection");
     }
   }
 
-  float Calcqn(const float& Qx, const float& Qy, const float& Mult)
+  float calcRedqn(const float& Qx, const float& Qy, const float& Mult)
   {
     float dqn{0.0f};
     float qn{0.0f};
 
     dqn = Qx * Qx + Qy * Qy;
-    qn = TMath::Sqrt(dqn) / TMath::Sqrt(Mult);
+    qn = std::sqrt(dqn) / std::sqrt(Mult);
     return qn;
   }
 
@@ -168,11 +193,11 @@ struct EseTableProducer {
 
   void doSpline(float& splineVal, const float& centr, const float& nHarm, const char* pf, const auto& QX, const auto& QY, const auto& sumAmpl)
   {
-    if (sumAmpl > 1e-8) {
-      float qnval = Calcqn(QX * sumAmpl, QY * sumAmpl, sumAmpl);
-      FFitObj->fillWeights(centr, qnval, nHarm, pf);
+    if (sumAmpl > ThresholdAmplitude) {
+      float qnval = calcRedqn(QX * sumAmpl, QY * sumAmpl, sumAmpl);
+      weightsFFit->fillWeights(centr, qnval, nHarm, pf);
       if (cfgESE) {
-        splineVal = qSelection->eval(centr, qnval, nHarm, pf);
+        splineVal = eventShape->eval(centr, qnval, nHarm, pf);
       }
     }
   }
@@ -182,10 +207,10 @@ struct EseTableProducer {
   {
     const int detId = detIDN(id);
     const int detInd{detId * 4 + cfgnTotalSystem * 4 * (nHarm - 2)};
-    const auto Qx{col.qvecRe()[detInd + cfgnCorrLevel]};
-    const auto Qy{col.qvecIm()[detInd + cfgnCorrLevel]};
+    const auto fQx{col.qvecRe()[detInd + cfgnCorrLevel]};
+    const auto fQy{col.qvecIm()[detInd + cfgnCorrLevel]};
     const auto sumAmpl{col.qvecAmp()[detId]};
-    return {Qx, Qy, sumAmpl};
+    return {fQx, fQy, sumAmpl};
   }
 
   template <typename T>
@@ -230,6 +255,20 @@ struct EseTableProducer {
     }
   };
 
+  template <typename TTracks, typename Cent>
+  double calculateMeanPt(TTracks const& tracks, Cent const& centrality)
+  {
+    std::vector<double> meanPtEvent;
+    for (const auto& track : tracks) {
+      meanPtEvent.push_back(track.pt());
+      weightsFFit->fillPt(centrality, track.pt(), true);
+    }
+    if (meanPtEvent.empty())
+      return 0.0;
+    auto mean = std::accumulate(meanPtEvent.begin(), meanPtEvent.end(), 0.0) / meanPtEvent.size();
+    return mean;
+  }
+
   void processESE(CollWithMults::iterator const& collision, aod::BCsWithTimestamps const&, aod::FV0As const&, aod::FT0s const&)
   {
     float counter{0.5};
@@ -259,6 +298,46 @@ struct EseTableProducer {
     qPercsTPCpos(qnpTPCpos);
     registry.fill(HIST("hEventCounter"), counter++);
   }
-  PROCESS_SWITCH(EseTableProducer, processESE, "proccess q vectors to calculate reduced q-vector", true);
+  PROCESS_SWITCH(EseTableProducer, processESE, "process q vectors to calculate reduced q-vector", true);
+
+  void processMeanPt(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  {
+
+    std::vector<float> meanPt{-1};
+    std::vector<float> meanPtShape{-1};
+    if (collision.posZ() < -cfgVtxZ || collision.posZ() > cfgVtxZ) {
+      meanPts(meanPt);
+      meanPtShapes(meanPtShape);
+      return;
+    }
+
+    registry.fill(HIST("hMeanPtStat"), 0.5);
+    const auto centrality = collision.centFT0C();
+    const auto mean = calculateMeanPt(tracks, centrality);
+
+    if (cfgMeanPt == 0) {
+      registry.fill(HIST("hMeanPtStat"), 1.5);
+    } else {
+      const auto avgpt = eventShape->getPtMult(centrality);
+      if (mean == 0.0) {
+        registry.fill(HIST("hMeanPtStat"), cfgMeanPt == Step1 ? 2.5 : 3.5);
+      } else {
+        const auto binval = (mean - avgpt) / avgpt;
+        weightsFFit->fillPt(centrality, binval, false);
+        meanPt[0] = binval;
+        if (cfgMeanPt == Step1) {
+          registry.fill(HIST("hMeanPtStat"), 2.5);
+        } else if (cfgMeanPt == Step2) {
+          registry.fill(HIST("hMeanPtStat"), 3.5);
+          const auto value = eventShape->evalPt(centrality, binval);
+          meanPtShape[0] = value;
+        }
+      }
+    }
+
+    meanPts(meanPt);
+    meanPtShapes(meanPtShape);
+  }
+  PROCESS_SWITCH(EseTableProducer, processMeanPt, "process mean pt selection", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EseTableProducer>(cfgc)}; }

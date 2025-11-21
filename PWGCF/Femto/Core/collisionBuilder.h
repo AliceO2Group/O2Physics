@@ -138,8 +138,9 @@ enum CollisionSels {
   kCollisionSelsMax
 };
 
+constexpr char ColSelHistName[] = "hCollisionSelection";
 const char colSelsName[] = "Collision Selection Object";
-const std::unordered_map<CollisionSels, std::string> colSelsToString = {
+const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kSel8, "Sel8"},
   {kNoSameBunchPileUp, "No same bunch pileup"},
   {kIsVertexItsTpc, "Is vertex ITS TPC"},
@@ -162,6 +163,7 @@ const std::unordered_map<CollisionSels, std::string> colSelsToString = {
 
 };
 
+template <const char* HistName>
 class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::CollisionMaskType, kCollisionSelsMax>
 {
  public:
@@ -169,7 +171,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   ~CollisionSelection() = default;
 
   template <typename T1, typename T2>
-  void configure(T1 const& filter, T2 const& config)
+  void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config)
   {
     // cuts
     mVtxZMin = filter.vtxZMin.value;
@@ -184,26 +186,28 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     mSphericityMax = filter.sphericityMax.value;
 
     // flags
-    this->addSelection(config.sel8.value, kSel8);
-    this->addSelection(config.noSameBunchPileup.value, kNoSameBunchPileUp);
-    this->addSelection(config.isGoodZvtxFt0VsPv.value, kIsGoodZvtxFt0VsPv);
-    this->addSelection(config.noCollInTimeRangeNarrow.value, kNoCollInTimeRangeNarrow);
-    this->addSelection(config.noCollInTimeRangeStrict.value, kNoCollInTimeRangeStrict);
-    this->addSelection(config.noCollInTimeRangeStandard.value, kNoCollInTimeRangeStandard);
-    this->addSelection(config.noCollInRofStrict.value, kNoCollInRofStrict);
-    this->addSelection(config.noCollInRofStandard.value, kNoCollInRofStandard);
-    this->addSelection(config.noHighMultCollInPrevRof.value, kNoHighMultCollInPrevRof);
-    this->addSelection(config.isGoodItsLayer3.value, kIsGoodItsLayer3);
-    this->addSelection(config.isGoodItsLayer0123.value, kIsGoodItsLayer0123);
-    this->addSelection(config.isGoodItsLayersAll.value, kIsGoodItsLayersAll);
-    this->addSelection(config.occupancyMin.value, kOccupancyMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.occupancyMax.value, kOccupancyMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.sphericityMin.value, kSphericityMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.sphericityMax.value, kSphericityMax, limits::kUpperLimit, true, true);
+    this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
+    this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
+    this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
+    this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
+    this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
+    this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
+    this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
+    this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
+    this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
+    this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
+    this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
+    this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
+    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, true, true, false);
 
     std::vector<float> triggerValues(config.triggers.value.size(), 1.f);
-    this->addSelection(triggerValues, kTriggers, limits::kEqualArray, false, true);
+    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, true);
     this->addComments(kTriggers, config.triggers.value);
+
+    this->setupContainers<HistName>(registry);
   };
 
   void setMagneticField(int MagField)
@@ -302,7 +306,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
       this->evaluateObservable(kTriggers, trigger);
     }
 
-    this->assembleBitmask();
+    this->assembleBitmask<HistName>();
   };
 
  protected:
@@ -345,6 +349,7 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceQns{"produceQns", -1, "Produce Qn (-1: auto; 0 off; 1 on)"};
 };
 
+template <const char* HistName>
 class CollisionBuilder
 {
  public:
@@ -352,9 +357,24 @@ class CollisionBuilder
   ~CollisionBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void init(T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
+  void init(o2::framework::HistogramRegistry* registry, T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
   {
-    mCollisionSelection.configure(confFilter, confBits);
+    LOG(info) << "Initialize femto collision builder...";
+    mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
+    mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
+    mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
+    mProducedSphericities = utils::enableTable("FColSphericities_001", confTable.produceSphericities.value, initContext);
+    mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
+    mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
+    mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
+    if (mProducedCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
+      mFillAnyTable = true;
+    } else {
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
+    }
+
     if (!confBits.triggers.value.empty()) {
       mUseTrigger = true;
       for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
@@ -371,20 +391,8 @@ class CollisionBuilder
     }
     mGrpPath = confCcdb.grpPath.value;
 
-    LOG(info) << "Initialize femto collision builder...";
-    mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
-    mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
-    mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
-    mProducedSphericities = utils::enableTable("FColSphericities_001", confTable.produceSphericities.value, initContext);
-    mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
-    mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
-    mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
-    if (mProducedCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
-      mFillAnyTable = true;
-      mCollisionSelection.printSelections(colSelsName, colSelsToString);
-    } else {
-      LOG(info) << "No tables configured";
-    }
+    mCollisionSelection.configure(registry, confFilter, confBits);
+    mCollisionSelection.printSelections(colSelsName);
     LOG(info) << "Initialization done...";
   }
 
@@ -408,8 +416,8 @@ class CollisionBuilder
 
     mCollisionSelection.setMagneticField(mMagField);
     mCollisionSelection.setSphericity(tracks);
-    mCollisionSelection.setMultiplicity<system>(col);
-    mCollisionSelection.setCentrality<system>(col);
+    mCollisionSelection.template setMultiplicity<system>(col);
+    mCollisionSelection.template setCentrality<system>(col);
 
     std::vector<bool> triggerDecisions = {};
     if (mUseTrigger) {
@@ -437,6 +445,11 @@ class CollisionBuilder
     if (!mFillAnyTable) {
       return;
     }
+
+    if (mCollisionAleadyFilled) {
+      return;
+    }
+
     if (mProducedCollisions) {
       collisionProducts.producedCollision(col.posZ(),
                                           col.multNTracksPV(),
@@ -474,10 +487,18 @@ class CollisionBuilder
         collisionProducts.producedQns(utils::qn(col));
       }
     }
+
+    mCollisionAleadyFilled = true;
+  }
+
+  void reset()
+  {
+    mCollisionAleadyFilled = false;
   }
 
  private:
-  CollisionSelection mCollisionSelection;
+  CollisionSelection<HistName> mCollisionSelection;
+  bool mCollisionAleadyFilled = false;
   Zorro mZorro;
   bool mUseTrigger = false;
   int mRunNumber = -1;

@@ -245,6 +245,7 @@ struct BJetTreeCreator {
 
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
 
+  Configurable<bool> produceSVTree{"produceSVTree", true, "produce the SV-correlated jet TTree”"};
   Configurable<bool> produceTree{"produceTree", true, "produce the jet TTree"};
 
   Configurable<float> vtxRes{"vtxRes", 0.01, "Vertex position resolution (cluster size) for GNN vertex predictions (cm)"};
@@ -415,7 +416,7 @@ struct BJetTreeCreator {
       double energySV = candSV.e();
 
       if (svIndices.size() < (svReductionFactor * myJet.template tracks_as<AnyTracks>().size()) && svIndices.size() < maxConstSV) {
-        if (produceTree) {
+        if (produceSVTree) {
           bjetSVParamsTable(bjetParamsTable.lastIndex() + 1, candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.dispersion(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength());
         }
         svIndices.push_back(bjetSVParamsTable.lastIndex());
@@ -755,6 +756,7 @@ struct BJetTreeCreator {
       }
 
       std::vector<int> indicesTracks;
+      std::vector<int> indicesSVs;
 
       int16_t jetFlavor = analysisJet.origin();
 
@@ -791,7 +793,6 @@ struct BJetTreeCreator {
       }
 
       if (produceTree) {
-        std::vector<int> indicesSVs;
         bjetConstituentsTable(bjetParamsTable.lastIndex() + 1, indicesTracks, indicesSVs);
         bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), indicesTracks.size(), nVertices, analysisJet.mass(), jetFlavor, analysisJet.r());
       }
