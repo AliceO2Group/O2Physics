@@ -378,8 +378,9 @@ struct LumiStabilityTask {
         histos.fill(HIST("TFsPerMinute"), timeSinceSOF);
       }
 
-      // if (bcPatternB[localBC]) {
-        if (trgFDD) {
+      if (trgFDD) {
+        histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC + 7);
+        if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/nBCsVsTime"), timeSinceSOF);
           histos.fill(HIST("FDD/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
         }
@@ -396,29 +397,30 @@ struct LumiStabilityTask {
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FV0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
         }
-        bool isLeadBC = true;
-        for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-          int kbit = jbit;
-          if (kbit < 0)
-            kbit += nbin;
-          if (bcPatternB[kbit]) {
-            isLeadBC = false;
-            break;
-          }
+      }
+      bool isLeadBC = true;
+      for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+        int kbit = jbit;
+        if (kbit < 0)
+          kbit += nbin;
+        if (bcPatternB[kbit]) {
+          isLeadBC = false;
+          break;
         }
-        if (isLeadBC) {
-          if (trgFDD) {
-            histos.fill(HIST("FDD/nBCsVsTimeLeadingBCe"), timeSinceSOF);
-            histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
-          }
-          if (trgFT0) {
-            histos.fill(HIST("FT0/nBCsVsTimeLeadingBCe"), timeSinceSOF);
-            histos.fill(HIST("FT0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
-          }
-          if (trgFV0) {
-            histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
-          }
+      }
+      if (isLeadBC) {
+        if (trgFDD) {
+          histos.fill(HIST("FDD/nBCsVsTimeLeadingBC"), timeSinceSOF);
+          histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
         }
+        if (trgFT0) {
+          histos.fill(HIST("FT0/nBCsVsTimeLeadingBC"), timeSinceSOF);
+          histos.fill(HIST("FT0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
+        if (trgFV0) {
+          histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
+      }
       // }
     } // loop over bcs
 
@@ -457,9 +459,9 @@ struct LumiStabilityTask {
 
       histos.fill(HIST("FDD/hCounts"), 0);
       if (vertex) {
-        histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
-        histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        histos.fill(HIST("FDD/hCounts"), 1);
+        histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
