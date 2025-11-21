@@ -51,7 +51,7 @@
 #include "TGrid.h"
 #include <TList.h>
 #include <TPDGCode.h>
-#include <TRandom.h>
+#include <TRandom3.h>
 #include <TVector2.h>
 #include <TVector3.h>
 
