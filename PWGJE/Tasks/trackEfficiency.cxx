@@ -164,7 +164,7 @@ struct TrackEfficiency {
   }
 
   template <typename TMCCollision, typename TCollisions, typename TParticles, typename TTracks>
-  void fillParticlesHistograms(TMCCollision const& mcCollision, TCollisions const& collisions, TParticles const& mcparticles, TTracks tracks, float weight = 1.0)
+  void fillParticlesHistograms(TMCCollision const& /*mcCollision*/, TCollisions const& collisions, TParticles const& mcparticles, TTracks tracks, float weight = 1.0)
   {
     // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C(); mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
     float centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
