@@ -36,13 +36,13 @@
 #include "ReconstructionDataFormats/Vertex.h"
 
 #include "Math/Vector4D.h"
+#include "TDatabasePDG.h"
+#include "TParticlePDG.h"
 
 #include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
-#include "TDatabasePDG.h"
-#include "TParticlePDG.h"
 // #include "PWGHF/Core/PDG.h"
 #include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -186,7 +186,6 @@ struct NonPromptCascadeTask {
   using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
   using CollisionsWithLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsGlobal>;
 
-
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
 
@@ -244,7 +243,6 @@ struct NonPromptCascadeTask {
   AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
   AxisSpec nTracksAxisMC = {100, 0., 100., "NTracksMC"};
 
-
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -292,7 +290,7 @@ struct NonPromptCascadeTask {
     mRegistry.add("hMultFV0VshNTracks", "hMultFV0VshNTracks", HistType::kTH2F, {nTracksAxis, multAxisFV0});
     mRegistry.add("hNTracksVsCentFV0A", "hNTracksVsCentFV0A", HistType::kTH2F, {nTracksAxis, centAxis});
     mRegistry.add("hNTracksMCVsTracksReco", "hNTracksMCVsTracksReco", HistType::kTH2F, {nTracksAxisMC, nTracksAxis});
-    mRegistry.add("hNTracksMCNotInReco","hNTracksMCNotInReco", HistType::kTH1F, {nTracksAxisMC});
+    mRegistry.add("hNTracksMCNotInReco", "hNTracksMCNotInReco", HistType::kTH1F, {nTracksAxisMC});
     for (size_t iBin{0}; iBin < cutsNames.size(); ++iBin) {
       cutsOmega->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
       cutsXi->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
@@ -711,7 +709,7 @@ struct NonPromptCascadeTask {
 
   void processGenParticles(aod::McParticles const& mcParticles, aod::McCollisions const& collisions)
   {
-    //fillMultHistos<aod::McCollisions>(collisions)
+    // fillMultHistos<aod::McCollisions>(collisions)
     for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
       if (absCode != 3312 && absCode != 3334) {
@@ -761,22 +759,22 @@ struct NonPromptCascadeTask {
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
 
-  int getMCMult(aod::McParticles const& mcParticles, int mcCollId )
+  int getMCMult(aod::McParticles const& mcParticles, int mcCollId)
   {
     int mult = 0;
     for (auto const& mcp : mcParticles) {
-        if (mcp.mcCollisionId() == mcCollId) {
+      if (mcp.mcCollisionId() == mcCollId) {
         // multiplicity definition:
         bool accept = mcp.isPhysicalPrimary();
         accept *= (mcp.eta() < 0.5) && (mcp.eta() > -0.5);
         int q = 0;
         auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode());
-        if(pdgEntry){
+        if (pdgEntry) {
           q = int(std::round(pdgEntry->Charge() / 3.0));
         } else {
-          //LOG(warn) << "No pdg assuming neutral"; 
+          // LOG(warn) << "No pdg assuming neutral";
         }
-        accept *= (q != 0); 
+        accept *= (q != 0);
         if (accept) {
           ++mult;
         }
@@ -784,26 +782,26 @@ struct NonPromptCascadeTask {
     }
     return mult;
   }
-  void processNegMC(CollisionsWithLabel const& colls, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles )
+  void processNegMC(CollisionsWithLabel const& colls, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    //std::cout << "ProcNegMC" << std::endl;
-    std::vector<int> mcReconstructed(mcCollisions.size(),0);
-    for(auto const& col: colls){
-      int mcCollId = col.mcCollisionId();   // col.template mcCollision_as<aod::McCollisions>();
-      //auto mc = col.mcCollision();
-      //int mcId = mc.globalIndex();
-      //std::cout << "globalIndex:" << mcId << " colID:" << mcCollId << std::endl;
+    // std::cout << "ProcNegMC" << std::endl;
+    std::vector<int> mcReconstructed(mcCollisions.size(), 0);
+    for (auto const& col : colls) {
+      int mcCollId = col.mcCollisionId(); // col.template mcCollision_as<aod::McCollisions>();
+      // auto mc = col.mcCollision();
+      // int mcId = mc.globalIndex();
+      // std::cout << "globalIndex:" << mcId << " colID:" << mcCollId << std::endl;
       int mult = getMCMult(mcParticles, mcCollId);
       mcReconstructed[mcCollId] = 1;
       mRegistry.fill(HIST("hNTracksMCVsTracksReco"), mult, col.multNTracksGlobal());
     }
-    for(auto const& mc: mcCollisions){
+    for (auto const& mc : mcCollisions) {
       int gindex = mc.globalIndex();
-      //std::cout << "mc globalIndex:" << gindex << std::endl;
-      if(!mcReconstructed[gindex]){
+      // std::cout << "mc globalIndex:" << gindex << std::endl;
+      if (!mcReconstructed[gindex]) {
         int mult = getMCMult(mcParticles, gindex);
-        //std::cout << "===> unreconstructed:" << mult << std::endl; 
-        mRegistry.fill(HIST( "hNTracksMCNotInReco"), mult);
+        // std::cout << "===> unreconstructed:" << mult << std::endl;
+        mRegistry.fill(HIST("hNTracksMCNotInReco"), mult);
       }
     }
   }
