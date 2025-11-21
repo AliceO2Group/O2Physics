@@ -635,13 +635,6 @@ struct TreeWriterTpcTof {
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
 
-  Filter trackFilter = (trackSelection.node() == static_cast<int>(TrackSelectionNoCut)) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionGlobalTrack)) && requireGlobalTrackInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionTrackWoPtEta)) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionGlobalTrackWoDCA)) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionQualityTracks)) && requireQualityTracksInFilter()) ||
-                       ((trackSelection.node() == static_cast<int>(TrackSelectionInAcceptanceTracks)) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
   Preslice<TrksWithDEdxCorrection> perCollisionTracksWithCorrecteddEdx = aod::track::collisionId;
 
