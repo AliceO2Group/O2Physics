@@ -25,6 +25,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 
@@ -175,6 +176,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
   o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {100, 0, 100000}, ""};
+  o2::framework::ConfigurableAxis th2ConfigAxisInteractionRate{"th2ConfigAxisInteractionRate", {500, 0, 50000}, ""};
   o2::framework::Configurable<bool> requireGoodRct{"requireGoodRct", false, "Flag to require good RCT"};
   o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
   o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
@@ -192,10 +194,12 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   static constexpr char NameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
   static constexpr char NameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
   static constexpr char NameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
+  static constexpr char NameHistCollisionsCentIR[] = "hCollisionsCentIR";
   static constexpr char NameHistUpCollisions[] = "hUpCollisions";
 
   std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hUpCollisions;
   std::shared_ptr<TH2> hCollisionsCentOcc;
+  std::shared_ptr<TH2> hCollisionsCentIR;
 
   // util to retrieve the RCT info from CCDB
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -235,7 +239,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hUpCollisions = registry.add<TH1>(NameHistUpCollisions, "HF UPC counter;;# of UPC events", {o2::framework::HistType::kTH1D, {axisUpcEvents}});
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
+    const o2::framework::AxisSpec th2AxisInteractionRate{th2ConfigAxisInteractionRate, "Interaction Rate [Hz]"};
+
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
+    hCollisionsCentIR = registry.add<TH2>(NameHistCollisionsCentIR, "selected events;Centrality; Interaction Rate [Hz]", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisInteractionRate}});
   }
 
   /// \brief Inits the HF event selection object
@@ -402,7 +409,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   void fillHistograms(TCollision const& collision,
                       const HfCollisionRejectionMask rejectionMask,
                       const float centrality,
-                      const float occupancy = -1.f)
+                      const float occupancy = -1.f,
+                      const float ir = -1.f)
   {
     hCollisions->Fill(EventRejection::None);
     const auto posZ = collision.posZ();
@@ -421,6 +429,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hNumPvContributorsAfterSel->Fill(collision.numContrib());
     hSelCollisionsCent->Fill(centrality);
     hCollisionsCentOcc->Fill(centrality, occupancy);
+    hCollisionsCentIR->Fill(centrality, ir);
   }
 };
 
