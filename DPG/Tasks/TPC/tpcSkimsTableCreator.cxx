@@ -389,8 +389,11 @@ struct TreeWriterTpcV0 {
     constexpr bool IsWithTrackQa = ModeId != ModeStandard;
 
     std::vector<int64_t> labelTrack2TrackQA;
-    if constexpr (IsWithTrackQa) {
+    if (IsWithTrackQa) {
+      // this action should not be under constexpr, otherwise the processStandard() function crashes when it is subscribed for myTracks but they're not used
       labelTrack2TrackQA.resize(myTracks.size(), -1);
+    }
+    if constexpr (IsWithTrackQa) {
       for (const auto& trackQA : tracksQA) {
         const int64_t trackId = trackQA.trackId();
         labelTrack2TrackQA.at(trackId) = trackQA.globalIndex();
@@ -501,7 +504,11 @@ struct TreeWriterTpcV0 {
   PROCESS_SWITCH(TreeWriterTpcV0, processStandardWithCorrecteddEdx, "Standard V0 Samples for PID with corrected dEdx", false);
 
   void processWithdEdxTrQA(Colls const& collisions,
-                           Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::BCsWithTimestamps const&, aod::TracksQAVersion const& tracksQA)
+                           Trks const& myTracks,
+                           V0sWithID const& myV0s,
+                           CascsWithID const& myCascs,
+                           aod::BCsWithTimestamps const&,
+                           aod::TracksQAVersion const& tracksQA)
   {
     runV0<false, ModeWithdEdxTrkQA, Trks, aod::BCsWithTimestamps>(collisions, myTracks, myV0s, myCascs, tracksQA);
   }
