@@ -248,7 +248,7 @@ struct HStrangeCorrelation {
 
   using BinningTypePP = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypePbPb = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  
+
   // collision slicing for mixed events
   Preslice<aod::TriggerTracks> collisionSliceTracks = aod::triggerTracks::collisionId;
   Preslice<aod::AssocV0s> collisionSliceV0s = aod::assocV0s::collisionId;
