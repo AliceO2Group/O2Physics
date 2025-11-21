@@ -45,3 +45,8 @@ o2physics_add_dpl_workflow(alice3-correlatorddbar
                     SOURCES alice3-correlatorDDbar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-tracking-translator
+                    SOURCES alice3TrackingTranslator.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
