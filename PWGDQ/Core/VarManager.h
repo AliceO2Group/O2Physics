@@ -21,6 +21,8 @@
 #define HomogeneousField
 #endif
 
+#include "PWGUD/Core/UDHelpers.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
@@ -108,6 +110,7 @@ class VarManager : public TObject
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
     RapidityGapFilter = BIT(21),
+    ReducedFit = BIT(22),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -898,6 +901,34 @@ class VarManager : public TObject
     kBdtPrompt,
     kBdtNonprompt,
 
+    // FIT detector variables
+    kAmplitudeFT0A,
+    kAmplitudeFT0C,
+    kTimeFT0A,
+    kTimeFT0C,
+    kTriggerMaskFT0,
+    kAmplitudeFDDA,
+    kAmplitudeFDDC,
+    kTimeFDDA,
+    kTimeFDDC,
+    kTriggerMaskFDD,
+    kAmplitudeFV0A,
+    kTimeFV0A,
+    kTriggerMaskFV0A,
+    kBBFT0Apf,
+    kBGFT0Apf,
+    kBBFT0Cpf,
+    kBGFT0Cpf,
+    kBBFV0Apf,
+    kBGFV0Apf,
+    kBBFDDApf,
+    kBGFDDApf,
+    kBBFDDCpf,
+    kBGFDDCpf,
+    kNFiredChannelsFT0A,
+    kNFiredChannelsFT0C,
+    kNFiredChannelsFV0A,
+
     kNVars
   }; // end of Variables enumeration
 
@@ -1196,6 +1227,8 @@ class VarManager : public TObject
   static void FillZDC(const T& zdc, float* values = nullptr);
   template <typename T>
   static void FillBdtScore(const T& bdtScore, float* values = nullptr);
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  static void FillFIT(const T1& bc, const T2& bcs, const T3& ft0s, const T4& fv0as, const T5& fdds, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -5836,5 +5869,60 @@ float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1,
   }
   return value;
 }
+template <typename T1, typename T2, typename T3, typename T4, typename T5>
+void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& fv0as, T5 const& fdds, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
 
+  // Initialize FIT info structure
+  upchelpers::FITInfo fitInfo{};
+  udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+  // Fill FT0 information
+  values[kAmplitudeFT0A] = fitInfo.ampFT0A;
+  values[kAmplitudeFT0C] = fitInfo.ampFT0C;
+  values[kTimeFT0A] = fitInfo.timeFT0A;
+  values[kTimeFT0C] = fitInfo.timeFT0C;
+  values[kTriggerMaskFT0] = static_cast<float>(fitInfo.triggerMaskFT0);
+  const auto ft0Index = bc.ft0Id();
+  if (ft0Index < 0 || ft0Index >= ft0s.size()) {
+    values[kNFiredChannelsFT0A] = -1;
+    values[kNFiredChannelsFT0C] = -1;
+  } else {
+    const auto ft0 = ft0s.iteratorAt(ft0Index);
+    values[kNFiredChannelsFT0A] = ft0.channelA().size();
+    values[kNFiredChannelsFT0C] = ft0.channelC().size();
+  }
+  // Fill FDD information
+  values[kAmplitudeFDDA] = fitInfo.ampFDDA;
+  values[kAmplitudeFDDC] = fitInfo.ampFDDC;
+  values[kTimeFDDA] = fitInfo.timeFDDA;
+  values[kTimeFDDC] = fitInfo.timeFDDC;
+  values[kTriggerMaskFDD] = static_cast<float>(fitInfo.triggerMaskFDD);
+
+  // Fill FV0A information
+  values[kAmplitudeFV0A] = fitInfo.ampFV0A;
+  values[kTimeFV0A] = fitInfo.timeFV0A;
+  values[kTriggerMaskFV0A] = static_cast<float>(fitInfo.triggerMaskFV0A);
+  const auto fv0aIndex = bc.fv0aId();
+  if (fv0aIndex < 0 || fv0aIndex >= fv0as.size()) {
+    values[kNFiredChannelsFV0A] = -1;
+  } else {
+    const auto fv0a = fv0as.iteratorAt(fv0aIndex);
+    values[kNFiredChannelsFV0A] = fv0a.channel().size();
+  }
+  // Fill pileup flags
+  values[kBBFT0Apf] = static_cast<float>(fitInfo.BBFT0Apf);
+  values[kBGFT0Apf] = static_cast<float>(fitInfo.BGFT0Apf);
+  values[kBBFT0Cpf] = static_cast<float>(fitInfo.BBFT0Cpf);
+  values[kBGFT0Cpf] = static_cast<float>(fitInfo.BGFT0Cpf);
+  values[kBBFV0Apf] = static_cast<float>(fitInfo.BBFV0Apf);
+  values[kBGFV0Apf] = static_cast<float>(fitInfo.BGFV0Apf);
+  values[kBBFDDApf] = static_cast<float>(fitInfo.BBFDDApf);
+  values[kBGFDDApf] = static_cast<float>(fitInfo.BGFDDApf);
+  values[kBBFDDCpf] = static_cast<float>(fitInfo.BBFDDCpf);
+  values[kBGFDDCpf] = static_cast<float>(fitInfo.BGFDDCpf);
+}
 #endif // PWGDQ_CORE_VARMANAGER_H_
