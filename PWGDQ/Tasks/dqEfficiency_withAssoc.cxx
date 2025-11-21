@@ -4059,14 +4059,14 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
-          
-            // fill MC truth values for the B hadron
+
+          // fill MC truth values for the B hadron
           auto currentMCParticle = trackMC;
           if (mcDecision > 0) {
             while (true) {
               if (currentMCParticle.has_mothers()) {
                 currentMCParticle = currentMCParticle.template mothers_first_as<ReducedMCTracks>();
-                if (std::abs(currentMCParticle.pdgCode()) > 500 && std::abs(currentMCParticle.pdgCode()) < 549) { // nb! hardcoded pdgcodes 
+                if (std::abs(currentMCParticle.pdgCode()) > 500 && std::abs(currentMCParticle.pdgCode()) < 549) { // nb! hardcoded pdgcodes
                   VarManager::FillTrackMC(mcTracks, currentMCParticle, fValuesHadron);
                   break;
                 }
