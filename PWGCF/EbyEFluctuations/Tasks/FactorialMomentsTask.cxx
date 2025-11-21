@@ -13,26 +13,30 @@
 /// \author Salman Malik
 /// \author Balwan Singh
 
-#include <iostream>
-#include <array>
-#include <TH1F.h>
 #include "TRandom.h"
+#include <TH1F.h>
+
+#include <array>
+#include <iostream>
 // O2 includes
-#include "Framework/O2DatabasePDGPlugin.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Framework/ASoAHelpers.h"
-#include <TPDGCode.h>
-#include <unordered_set> 
+
 #include "TDatabasePDG.h"
+#include <TPDGCode.h>
+
+#include <unordered_set>
 using std::array;
 using namespace o2;
 using namespace o2::framework;
@@ -63,7 +67,7 @@ struct FactorialMoments {
   Configurable<bool> includeITSTracks{"includeITSTracks", false, "ITS Tracks"};
   Configurable<int> confSamplesize{"samplesize", 100, "Sample size"};
   Configurable<bool> confUseMC{"useMC", false, "Use MC information"};
-    Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
+  Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
   Filter filterTracks = (nabs(aod::track::eta) < confEta) && (aod::track::pt >= confPtMin) && (nabs(aod::track::dcaXY) < confDCAxy) && (nabs(aod::track::dcaZ) < confDCAz);
   Filter filterCollisions = (nabs(aod::collision::posZ) < confVertex.value[2]) && (nabs(aod::collision::posX) < confVertex.value[0]) && (nabs(aod::collision::posY) < confVertex.value[1]);
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -72,24 +76,24 @@ struct FactorialMoments {
   HistogramRegistry histos1{
     "histos1",
     {
-     {"hRecoPtBefore", "Reco pT before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-    {"hGenPtBefore", "Gen pT before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-    {"hRecoPtAfter", "Reco pT after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-    {"hGenPtAfter", "Gen pT after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-    {"hRecoEtaBefore", "Reco #eta before cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
-    {"mCentMCImpactFull", "Impact Parameter (MC All Events);Impact Parameter b [fm];Counts", {HistType::kTH1F, {{200, 0.0, 50.0}}}},
-    {"mCentMCImpact005", "Impact Parameter (MC 0–5%);Impact Parameter b [fm];Counts", {HistType::kTH1F, {{200, 0.0, 20.0}}}},
-    {"hGenEtaBefore", "Gen #eta before cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
-    {"hRecoEtaAfter", "Reco #eta after cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
-    {"hGenEtaAfter", "Gen #eta after cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
-    {"hRecoPhiBefore", "Reco #phi before cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
-    {"hGenPhiBefore", "Gen #phi before cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
-    {"hRecoPhiAfter", "Reco #phi after cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
-    {"hGenCharge", "Gen particle charge;Charge;Counts", {HistType::kTH1F, {{13, -6.5, 6.5}}}},
-    {"hGenPhiAfter", "Gen #phi after cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
+      {"hRecoPtBefore", "Reco pT before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hGenPtBefore", "Gen pT before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hRecoPtAfter", "Reco pT after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hGenPtAfter", "Gen pT after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hRecoEtaBefore", "Reco #eta before cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
+      {"mCentMCImpactFull", "Impact Parameter (MC All Events);Impact Parameter b [fm];Counts", {HistType::kTH1F, {{200, 0.0, 50.0}}}},
+      {"mCentMCImpact005", "Impact Parameter (MC 0–5%);Impact Parameter b [fm];Counts", {HistType::kTH1F, {{200, 0.0, 20.0}}}},
+      {"hGenEtaBefore", "Gen #eta before cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
+      {"hRecoEtaAfter", "Reco #eta after cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
+      {"hGenEtaAfter", "Gen #eta after cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
+      {"hRecoPhiBefore", "Reco #phi before cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
+      {"hGenPhiBefore", "Gen #phi before cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
+      {"hRecoPhiAfter", "Reco #phi after cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
+      {"hGenCharge", "Gen particle charge;Charge;Counts", {HistType::kTH1F, {{13, -6.5, 6.5}}}},
+      {"hGenPhiAfter", "Gen #phi after cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
       {"mChargeDist", "MC particle charge;Charge;Counts", {HistType::kTH1F, {{9, -4.5, 4.5}}}},
       {"mDiffPhi", "Δ#phi between selected MC particles;Δ#phi;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
-          {"mPrimariesPerEvent", "Primary MC particles per event;N_{primaries};Counts", {HistType::kTH1I, {{20000, 0, 20000}}}},
+      {"mPrimariesPerEvent", "Primary MC particles per event;N_{primaries};Counts", {HistType::kTH1I, {{20000, 0, 20000}}}},
       {"mDiffPt", "Δp_{T} between selected MC particles;Δp_{T} (GeV/c);Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
       {"mDiffEta", "Δ#eta between selected MC particles;Δ#eta;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
       {"mADiffPhi", "Δ#phi between selected MC particles;Δ#phi;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
@@ -270,43 +274,44 @@ struct FactorialMoments {
     }
   }
   int chargeFromPDG(int pdg)
-{
-  if (pdg == 0) return 0;
-  TDatabasePDG* pdgDB = TDatabasePDG::Instance();
-  TParticlePDG* particle = pdgDB->GetParticle(pdg);
-  return particle ? int(particle->Charge() / 3.0) : 0;
-}
-template <typename T>
-void checkpT(const T& track)
-{
-  //int gIndex = track.globalIndex();
-  //if (usedIndices.find(gIndex) != usedIndices.end()) {
-   // return; // Already used this track
-  //}
-  //usedIndices.insert(gIndex); // Mark this track as used
+  {
+    if (pdg == 0)
+      return 0;
+    TDatabasePDG* pdgDB = TDatabasePDG::Instance();
+    TParticlePDG* particle = pdgDB->GetParticle(pdg);
+    return particle ? int(particle->Charge() / 3.0) : 0;
+  }
+  template <typename T>
+  void checkpT(const T& track)
+  {
+    // int gIndex = track.globalIndex();
+    // if (usedIndices.find(gIndex) != usedIndices.end()) {
+    //  return; // Already used this track
+    //}
+    // usedIndices.insert(gIndex); // Mark this track as used
 
-  for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-    if (track.pt() > confPtBins.value[2 * iPt] && track.pt() < confPtBins.value[2 * iPt + 1]) {
-      float iphi = track.phi();
-      iphi = gRandom->Gaus(iphi, TMath::TwoPi());
+    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
+      if (track.pt() > confPtBins.value[2 * iPt] && track.pt() < confPtBins.value[2 * iPt + 1]) {
+        float iphi = track.phi();
+        iphi = gRandom->Gaus(iphi, TMath::TwoPi());
 
-      if (iphi < 0) {
-        iphi += TMath::TwoPi();
-      } else if (iphi > TMath::TwoPi()) {
-        iphi -= TMath::TwoPi();
-      }
+        if (iphi < 0) {
+          iphi += TMath::TwoPi();
+        } else if (iphi > TMath::TwoPi()) {
+          iphi -= TMath::TwoPi();
+        }
 
-      mHistArrQA[iPt * 4]->Fill(track.eta());
-      mHistArrQA[iPt * 4 + 1]->Fill(track.pt());
-      mHistArrQA[iPt * 4 + 2]->Fill(track.phi());
-      countTracks[iPt]++;
+        mHistArrQA[iPt * 4]->Fill(track.eta());
+        mHistArrQA[iPt * 4 + 1]->Fill(track.pt());
+        mHistArrQA[iPt * 4 + 2]->Fill(track.phi());
+        countTracks[iPt]++;
 
-      for (auto iM = 0; iM < nBins; ++iM) {
-        mHistArrReset[iPt * nBins + iM]->Fill(track.eta(), track.phi());
+        for (auto iM = 0; iM < nBins; ++iM) {
+          mHistArrReset[iPt * nBins + iM]->Fill(track.eta(), track.phi());
+        }
       }
     }
   }
-}
 
   void calculateMoments(std::vector<std::shared_ptr<TH2>> hist)
   {
@@ -518,12 +523,12 @@ void checkpT(const T& track)
     calculateMoments(mHistArrReset);
   }
   PROCESS_SWITCH(FactorialMoments, processMCRec, "main process function", false);
-   
- void processMCgenr3(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
-{
-   
+
+  void processMCgenr3(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+
     // access MC truth information with mcCollision() and mcParticle() methods
-     
+
     if (reduceOutput < 2) {
       LOGF(info, "MC. vtx-z = %f", mcCollision.posZ());
       LOGF(info, "First: %d | Length: %d", mcParticles.begin().index(), mcParticles.size());
@@ -533,16 +538,16 @@ void checkpT(const T& track)
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     if (mcCollision.impactParameter() >= 3.5) {
-    return;
-  }
+      return;
+    }
     for (auto& mcParticle : mcParticles) {
-    int pdgCode = mcParticle.pdgCode();
-auto* pd = TDatabasePDG::Instance()->GetParticle(pdgCode);
-double charge = (pd != nullptr) ? pd->Charge() : 0.;
+      int pdgCode = mcParticle.pdgCode();
+      auto* pd = TDatabasePDG::Instance()->GetParticle(pdgCode);
+      double charge = (pd != nullptr) ? pd->Charge() : 0.;
       if (mcParticle.isPhysicalPrimary() && std::abs(mcParticle.eta()) < 0.8 && std::abs(charge) >= 1e-6) {
-         histos.fill(HIST("mEta"), mcParticle.eta());
-      histos.fill(HIST("mPt"), mcParticle.pt());
-      histos.fill(HIST("mPhi"), mcParticle.phi());
+        histos.fill(HIST("mEta"), mcParticle.eta());
+        histos.fill(HIST("mPt"), mcParticle.pt());
+        histos.fill(HIST("mPhi"), mcParticle.phi());
         count++;
         // Loop over mothers and daughters
         if (mcParticle.has_mothers()) {
@@ -561,9 +566,9 @@ double charge = (pd != nullptr) ? pd->Charge() : 0.;
             LOGF(debug, "D2 %d %d", mcParticle.globalIndex(), d.globalIndex());
           }
         }
-            checkpT(mcParticle);
-            }
-                histos1.fill(HIST("mPrimariesPerEvent"), count); 
+        checkpT(mcParticle);
+      }
+      histos1.fill(HIST("mPrimariesPerEvent"), count);
     }
     for (auto iPt = 0; iPt < confNumPt; ++iPt) {
       // if (countTracks[iPt] > 0)
@@ -576,159 +581,157 @@ double charge = (pd != nullptr) ? pd->Charge() : 0.;
     }
     calculateMoments(mHistArrReset);
   }
-PROCESS_SWITCH(FactorialMoments, processMCgenr3, "main process function", false);
-using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>;
+  PROCESS_SWITCH(FactorialMoments, processMCgenr3, "main process function", false);
+  using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>;
   using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using CollisionRecSim_Run2 = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run2>>::iterator;
-  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;  
-Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
- 
-void processMcRun2(CollisionRecSim_Run2 const& coll,
-                   aod::BCs const& bcs,
-                   TracksRecSim const& tracks,
-                   aod::McParticles const& mcParticles,
-                   aod::McCollisions const& mcCollisions,
-                   BCsWithRun2Info const& bcsInfo)
-{
-  auto bc = coll.bc_as<BCsWithRun2Info>();
-  if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
-    return;  // Skip event if it doesn't pass cuts
-  }
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  if (coll.centRun2V0M() < confCentCut.value[0] || coll.centRun2V0M() > confCentCut.value[1]) {
-    return;
-  }
-
-  /// Fill basic vertex and centrality histograms
-  histos.fill(HIST("mVertexX"), coll.posX());
-  histos.fill(HIST("mVertexY"), coll.posY());
-  histos.fill(HIST("mVertexZ"), coll.posZ());
-  histos.fill(HIST("mCentFT0M"), coll.centRun2V0M());
-
-  /// Reset histograms and counters
-  for (auto const& h : mHistArrReset) {
-    h->Reset();
-  }
-
-  countTracks = {0, 0, 0, 0, 0};
-  fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
-  binConEvent = {{{0, 0, 0, 0, 0}}};
-
-  /// Loop over reconstructed tracks
-  for (auto const& track : tracks) {
-    double recoCharge = (track.sign() != 0) ? track.sign() : 0.;
-    if (std::abs(track.eta()) < 0.8 && track.isGlobalTrack() && std::abs(recoCharge) >= 1e-6) {
-      histos.fill(HIST("mCollID"), track.collisionId());
-      
-      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-      histos.fill(HIST("mNClsITS"), track.itsNCls());
-      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-      histos.fill(HIST("mChi2TRD"), track.trdChi2());
-      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-    
-   checkpT(track);
+  void processMcRun2(CollisionRecSim_Run2 const& coll,
+                     aod::BCs const& bcs,
+                     TracksRecSim const& tracks,
+                     aod::McParticles const& mcParticles,
+                     aod::McCollisions const& mcCollisions,
+                     BCsWithRun2Info const& bcsInfo)
+  {
+    auto bc = coll.bc_as<BCsWithRun2Info>();
+    if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
+      return; // Skip event if it doesn't pass cuts
     }
-  }
 
-  /// Access associated mcCollision from index
-  auto mccollision = coll.mcCollision_as<aod::McCollisions>();
+    if (coll.centRun2V0M() < confCentCut.value[0] || coll.centRun2V0M() > confCentCut.value[1]) {
+      return;
+    }
 
-  /// Impact parameter can be used here if needed
-  float impactpar = mccollision.impactParameter();
-  // Optionally: fillMCCollision<false>(coll, mcParticles, impactpar);
+    /// Fill basic vertex and centrality histograms
+    histos.fill(HIST("mVertexX"), coll.posX());
+    histos.fill(HIST("mVertexY"), coll.posY());
+    histos.fill(HIST("mVertexZ"), coll.posZ());
+    histos.fill(HIST("mCentFT0M"), coll.centRun2V0M());
 
-  /// Now slice over selectedMCParticles using mcCollision
-  auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
+    /// Reset histograms and counters
+    for (auto const& h : mHistArrReset) {
+      h->Reset();
+    }
 
-for (auto const& mc : mcParts) {
-  int pdgCode = mc.pdgCode();
-auto* pd = TDatabasePDG::Instance()->GetParticle(pdgCode);
-double charge = (pd != nullptr) ? pd->Charge() : 0.;
+    countTracks = {0, 0, 0, 0, 0};
+    fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
+    binConEvent = {{{0, 0, 0, 0, 0}}};
+
+    /// Loop over reconstructed tracks
+    for (auto const& track : tracks) {
+      double recoCharge = (track.sign() != 0) ? track.sign() : 0.;
+      if (std::abs(track.eta()) < 0.8 && track.isGlobalTrack() && std::abs(recoCharge) >= 1e-6) {
+        histos.fill(HIST("mCollID"), track.collisionId());
+
+        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+        histos.fill(HIST("mNClsITS"), track.itsNCls());
+        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+        histos.fill(HIST("mChi2TRD"), track.trdChi2());
+        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+
+        checkpT(track);
+      }
+    }
+
+    /// Access associated mcCollision from index
+    auto mccollision = coll.mcCollision_as<aod::McCollisions>();
+
+    /// Impact parameter can be used here if needed
+    float impactpar = mccollision.impactParameter();
+    // Optionally: fillMCCollision<false>(coll, mcParticles, impactpar);
+
+    /// Now slice over selectedMCParticles using mcCollision
+    auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
+
+    for (auto const& mc : mcParts) {
+      int pdgCode = mc.pdgCode();
+      auto* pd = TDatabasePDG::Instance()->GetParticle(pdgCode);
+      double charge = (pd != nullptr) ? pd->Charge() : 0.;
       if (mc.isPhysicalPrimary() && std::abs(mc.eta()) < 0.8 && std::abs(charge) >= 1e-6) {
-      histos.fill(HIST("mEta"), mc.eta());
-      histos.fill(HIST("mPt"), mc.pt());
-      histos.fill(HIST("mPhi"), mc.phi());
+        histos.fill(HIST("mEta"), mc.eta());
+        histos.fill(HIST("mPt"), mc.pt());
+        histos.fill(HIST("mPhi"), mc.phi());
 
-  // Use charged MC particle here
-  //checkpT(mc);
-}
-}
+        // Use charged MC particle here
+        // checkpT(mc);
+      }
+    }
 
-  /// Apply cuts on tracks per pT bin
-  for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-    if (countTracks[iPt] > 0) {
-      mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
-    } else {
+    /// Apply cuts on tracks per pT bin
+    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
+      if (countTracks[iPt] > 0) {
+        mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
+      } else {
+        return;
+      }
+    }
+
+    /// Final calculation of normalized factorial moments
+    calculateMoments(mHistArrReset);
+  }
+
+  PROCESS_SWITCH(FactorialMoments, processMcRun2, "process MC Run2", true);
+
+  void processMcGenRun2(aod::McCollision const& coll, aod::McParticles const& mcParticles)
+  {
+    auto bc = coll.bc_as<BCsWithRun2Info>();
+    if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
       return;
     }
-  }
+    histos1.fill(HIST("mCentMCImpactFull"), coll.impactParameter());
+    // if (coll.impactParameter() >= 3.5) {
+    //  return;
+    //}
+    histos1.fill(HIST("mCentMCImpact005"), coll.impactParameter());
+    histos.fill(HIST("mVertexX"), coll.posX());
+    histos.fill(HIST("mVertexY"), coll.posY());
+    histos.fill(HIST("mVertexZ"), coll.posZ());
 
-  /// Final calculation of normalized factorial moments
-  calculateMoments(mHistArrReset);
-}
-
-PROCESS_SWITCH(FactorialMoments, processMcRun2, "process MC Run2", true);
-
-void processMcGenRun2(aod::McCollision const& coll, aod::McParticles const& mcParticles)
-{
-  auto bc = coll.bc_as<BCsWithRun2Info>();
-  if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
-    return;
-  }
-histos1.fill(HIST("mCentMCImpactFull"), coll.impactParameter());
-   //if (coll.impactParameter() >= 3.5) {
-   // return;
-  //}
- histos1.fill(HIST("mCentMCImpact005"), coll.impactParameter());
-  histos.fill(HIST("mVertexX"), coll.posX());
-  histos.fill(HIST("mVertexY"), coll.posY());
-  histos.fill(HIST("mVertexZ"), coll.posZ());
- 
-
-  for (auto const& h : mHistArrReset) {
-    h->Reset();
-  }
-
-  countTracks = {0, 0, 0, 0, 0};
-  fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
-  binConEvent = {{{0, 0, 0, 0, 0}}};
-  //using McParticle = std::decay_t<decltype(*particles.begin())>;
-  //std::vector<McParticle> selectedParticles;
- // if (counter > 1) return;
-  for (auto const& track : mcParticles) {
-    histos1.fill(HIST("hRecoPtBefore"), track.pt());    
-      histos1.fill(HIST("hRecoEtaBefore"), track.eta());  
-    histos1.fill(HIST("hRecoPhiBefore"), track.phi());        
-    if (std::abs(track.eta()) < 0.8 && track.isPhysicalPrimary()) {    
-    histos1.fill(HIST("hRecoPtAfter"), track.pt());
-    histos1.fill(HIST("hRecoEtaAfter"), track.eta());
-    histos1.fill(HIST("hRecoPhiAfter"), track.phi());   
-    checkpT(track);
+    for (auto const& h : mHistArrReset) {
+      h->Reset();
     }
-    histos.fill(HIST("mTrackSelected"), 1);
- 
-  }
-   
- //counter++;
-  for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-    if (countTracks[iPt] > 0) {
-      mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
-    } else {
-      return;
+
+    countTracks = {0, 0, 0, 0, 0};
+    fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
+    binConEvent = {{{0, 0, 0, 0, 0}}};
+    // using McParticle = std::decay_t<decltype(*particles.begin())>;
+    // std::vector<McParticle> selectedParticles;
+    // if (counter > 1) return;
+    for (auto const& track : mcParticles) {
+      histos1.fill(HIST("hRecoPtBefore"), track.pt());
+      histos1.fill(HIST("hRecoEtaBefore"), track.eta());
+      histos1.fill(HIST("hRecoPhiBefore"), track.phi());
+      if (std::abs(track.eta()) < 0.8 && track.isPhysicalPrimary()) {
+        histos1.fill(HIST("hRecoPtAfter"), track.pt());
+        histos1.fill(HIST("hRecoEtaAfter"), track.eta());
+        histos1.fill(HIST("hRecoPhiAfter"), track.phi());
+        checkpT(track);
+      }
+      histos.fill(HIST("mTrackSelected"), 1);
     }
+
+    // counter++;
+    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
+      if (countTracks[iPt] > 0) {
+        mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
+      } else {
+        return;
+      }
+    }
+
+    calculateMoments(mHistArrReset);
   }
 
-  calculateMoments(mHistArrReset);
-}
-
-PROCESS_SWITCH(FactorialMoments, processMcGenRun2, "process MC Run2", false);
+  PROCESS_SWITCH(FactorialMoments, processMcGenRun2, "process MC Run2", false);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& coll, TracksFMs const& tracks)
   {
