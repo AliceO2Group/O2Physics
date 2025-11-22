@@ -76,7 +76,7 @@ struct GammaGammaPair {
 
   bool isPi0 = false;
   bool isEta = false;
-  ushort reconstructionType;
+  ushort reconstructionType = photonpair::kNpair;
   void setReconstructionType(ushort type) { reconstructionType = type; }
 
   float m() const { return vGG.M(); }
