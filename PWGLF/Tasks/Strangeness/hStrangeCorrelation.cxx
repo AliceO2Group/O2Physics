@@ -124,7 +124,7 @@ struct HStrangeCorrelation {
     Configurable<float> maxPeakNSigma{"maxPeakNSigma", 5, "Peak region edge definition (in sigma)"};
     Configurable<float> minBgNSigma{"minBgNSigma", 5, "Bg region edge closest to peak (in sigma)"};
     Configurable<float> maxBgNSigma{"maxBgNSigma", 10, "Bg region edge furthest to peak (in sigma)"};
-    Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 1.5, "for Oemga analysis only, to check if candidate mass is around Xi"};
+    Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 1, "for Oemga analysis only, to check if candidate mass is around Xi"};
   } massWindowConfigurations; // allows for gap between peak and bg in case someone wants to
 
   // Implementation of on-the-spot efficiency correction
@@ -246,10 +246,8 @@ struct HStrangeCorrelation {
   TH1F* hPurityUncertaintyHadron;
   TH2F* hPurityUncertaintyHadronMult;
 
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypePP = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypePbPb = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  // std::variant<BinningType, BinningTypePbPb> colBinning;
-  BinningType colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
 
   // collision slicing for mixed events
   Preslice<aod::TriggerTracks> collisionSliceTracks = aod::triggerTracks::collisionId;
@@ -1696,6 +1694,8 @@ struct HStrangeCorrelation {
                                 aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                 TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+
     // ________________________________________________
     // skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
@@ -1776,9 +1776,12 @@ struct HStrangeCorrelation {
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                             V0DatasWithoutTrackX const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    if (!doPPAnalysis) {
-      BinningTypePbPb colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
-    }
+    std::variant<BinningTypePP, BinningTypePbPb> colBinning =
+      doPPAnalysis
+        ? std::variant<BinningTypePP, BinningTypePbPb>{
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     // ________________________________________________
     // skip if desired trigger not found
@@ -1793,7 +1796,10 @@ struct HStrangeCorrelation {
     }
     // ________________________________________________
     if (!doprocessSameEventHCascades && doMixingQAandEventQA) {
-      histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), cent}));
+      std::visit([&](auto const& binning) {
+        histos.fill(HIST("MixingQA/hSECollisionBins"), binning.getBin({collision.posZ(), cent}));
+      },
+                 colBinning);
       histos.fill(HIST("EventQA/hMult"), cent);
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
       histos.fill(HIST("EventQA/hMultFT0vsTPC"), cent, collision.multNTracksPVeta1());
@@ -1877,9 +1883,12 @@ struct HStrangeCorrelation {
                                  aod::AssocV0s const&, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                                  V0DatasWithoutTrackX const&, aod::CascDatas const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    if (!doPPAnalysis) {
-      BinningTypePbPb colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
-    }
+    std::variant<BinningTypePP, BinningTypePbPb> colBinning =
+      doPPAnalysis
+        ? std::variant<BinningTypePP, BinningTypePbPb>{
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
+
     double cent = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     // ________________________________________________
     // skip if desired trigger not found
@@ -1894,7 +1903,10 @@ struct HStrangeCorrelation {
     }
     // ________________________________________________
     if (doMixingQAandEventQA) {
-      histos.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({collision.posZ(), cent}));
+      std::visit([&](auto const& binning) {
+        histos.fill(HIST("MixingQA/hSECollisionBins"), binning.getBin({collision.posZ(), cent}));
+      },
+                 colBinning);
       histos.fill(HIST("EventQA/hMult"), cent);
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
@@ -1989,6 +2001,7 @@ struct HStrangeCorrelation {
                               soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     // ________________________________________________
     // skip if desired trigger not found
     if (triggerPresenceMap.size() > 0 && !TESTBIT(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
@@ -2053,6 +2066,7 @@ struct HStrangeCorrelation {
                                  aod::AssocHadrons const& assocHadrons, aod::TriggerTracks const& triggerTracks,
                                  TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
@@ -2098,103 +2112,118 @@ struct HStrangeCorrelation {
                              aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                              V0DatasWithoutTrackX const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    if (!doPPAnalysis) {
-      BinningTypePbPb colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
-    }
-    for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
-      double cent1 = doPPAnalysis ? collision1.centFT0M() : collision1.centFT0C();
-      double cent2 = doPPAnalysis ? collision2.centFT0M() : collision2.centFT0C();
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      auto bField = getMagneticField(bc.timestamp());
-      // ________________________________________________
-      if (efficiencyFlags.applyEfficiencyCorrection) {
-        initEfficiencyFromCCDB(bc);
-      }
-      // ________________________________________________
-      // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
-        continue;
-      }
+    std::variant<BinningTypePP, BinningTypePbPb> colBinning =
+      doPPAnalysis
+        ? std::variant<BinningTypePP, BinningTypePbPb>{
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
 
-      // Perform basic event selection on both collisions
-      if ((doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!doPPAnalysis && (!isCollisionSelectedPbPb(collision1, true) || (!isCollisionSelectedPbPb(collision2, true))))) {
-        continue;
-      }
-      if (cent1 > axisRanges[5][1] || cent1 < axisRanges[5][0])
-        continue;
-      if (cent2 > axisRanges[5][1] || cent2 < axisRanges[5][0])
-        continue;
-
-      if (!doprocessMixedEventHCascades && doMixingQAandEventQA) {
-        if (collision1.globalIndex() == collision2.globalIndex()) {
-          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
+    std::visit([&](auto const& binning) {
+      for (auto const& [collision1, collision2] : soa::selfCombinations(binning, mixingParameter, -1, collisions, collisions)) {
+        double cent1 = doPPAnalysis ? collision1.centFT0M() : collision1.centFT0C();
+        double cent2 = doPPAnalysis ? collision2.centFT0M() : collision2.centFT0C();
+        auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
+        auto bField = getMagneticField(bc.timestamp());
+        // ________________________________________________
+        if (efficiencyFlags.applyEfficiencyCorrection) {
+          initEfficiencyFromCCDB(bc);
         }
-        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
-        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
-        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), cent1}));
+        // ________________________________________________
+        // skip if desired trigger not found
+        if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+          continue;
+        }
+
+        // Perform basic event selection on both collisions
+        if ((doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!doPPAnalysis && (!isCollisionSelectedPbPb(collision1, true) || (!isCollisionSelectedPbPb(collision2, true))))) {
+          continue;
+        }
+        if (cent1 > axisRanges[5][1] || cent1 < axisRanges[5][0])
+          continue;
+        if (cent2 > axisRanges[5][1] || cent2 < axisRanges[5][0])
+          continue;
+
+        if (!doprocessMixedEventHCascades && doMixingQAandEventQA) {
+          if (collision1.globalIndex() == collision2.globalIndex()) {
+            histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
+          }
+          histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+          histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+          histos.fill(HIST("MixingQA/hMECollisionBins"), binning.getBin({collision1.posZ(), cent1}));
+        }
+        // ________________________________________________
+        // Do slicing
+        auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+        auto slicedAssocV0s = associatedV0s.sliceBy(collisionSliceV0s, collision2.globalIndex());
+        // ________________________________________________
+        // Do hadron - V0 correlations
+        if (doFullCorrelationStudy)
+          fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posX(), collision1.posY(), collision1.posZ(), cent1, bField);
       }
-      // ________________________________________________
-      // Do slicing
-      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
-      auto slicedAssocV0s = associatedV0s.sliceBy(collisionSliceV0s, collision2.globalIndex());
-      // ________________________________________________
-      // Do hadron - V0 correlations
-      if (doFullCorrelationStudy)
-        fillCorrelationsV0(slicedTriggerTracks, slicedAssocV0s, true, collision1.posX(), collision1.posY(), collision1.posZ(), cent1, bField);
-    }
+    },
+               colBinning);
   }
+
   void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults> const& collisions,
                                   aod::AssocV0s const&, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                                   V0DatasWithoutTrackX const&, aod::CascDatas const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    if (!doPPAnalysis) {
-      BinningTypePbPb colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
-    }
-    for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
-      double cent1 = doPPAnalysis ? collision1.centFT0M() : collision1.centFT0C();
-      double cent2 = doPPAnalysis ? collision2.centFT0M() : collision2.centFT0C();
-      // ________________________________________________
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      auto bField = getMagneticField(bc.timestamp());
-      if (efficiencyFlags.applyEfficiencyCorrection) {
-        initEfficiencyFromCCDB(bc);
-      }
-      // ________________________________________________
-      // skip if desired trigger not found
-      if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
-        continue;
-      }
+    std::variant<BinningTypePP, BinningTypePbPb> colBinning =
+      doPPAnalysis
+        ? std::variant<BinningTypePP, BinningTypePbPb>{
+            BinningTypePP{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}}
+        : std::variant<BinningTypePP, BinningTypePbPb>{BinningTypePbPb{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true}};
 
-      // Perform basic event selection on both collisions
-      if ((doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!doPPAnalysis && (!isCollisionSelectedPbPb(collision1, true) || (!isCollisionSelectedPbPb(collision2, true))))) {
-        continue;
-      }
-      if (cent1 > axisRanges[5][1] || cent1 < axisRanges[5][0])
-        continue;
-      if (cent2 > axisRanges[5][1] || cent2 < axisRanges[5][0])
-        continue;
-      if (doMixingQAandEventQA) {
-        if (collision1.globalIndex() == collision2.globalIndex()) {
-          histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
+    std::visit([&](auto const& binning) {
+      for (auto const& [collision1, collision2] : soa::selfCombinations(binning, mixingParameter, -1, collisions, collisions)) {
+        double cent1 = doPPAnalysis ? collision1.centFT0M() : collision1.centFT0C();
+        double cent2 = doPPAnalysis ? collision2.centFT0M() : collision2.centFT0C();
+        // ________________________________________________
+        auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
+        auto bField = getMagneticField(bc.timestamp());
+        if (efficiencyFlags.applyEfficiencyCorrection) {
+          initEfficiencyFromCCDB(bc);
         }
-        histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
-        histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
-        histos.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), cent1}));
+        // ________________________________________________
+        // skip if desired trigger not found
+        if (triggerPresenceMap.size() > 0 && (!TESTBIT(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !TESTBIT(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+          continue;
+        }
+
+        // Perform basic event selection on both collisions
+        if ((doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!doPPAnalysis && (!isCollisionSelectedPbPb(collision1, true) || (!isCollisionSelectedPbPb(collision2, true))))) {
+          continue;
+        }
+        if (cent1 > axisRanges[5][1] || cent1 < axisRanges[5][0])
+          continue;
+        if (cent2 > axisRanges[5][1] || cent2 < axisRanges[5][0])
+          continue;
+        if (doMixingQAandEventQA) {
+          if (collision1.globalIndex() == collision2.globalIndex()) {
+            histos.fill(HIST("MixingQA/hMixingQA"), 0.0f); // same-collision pair counting
+          }
+          histos.fill(HIST("MixingQA/hMEpvz1"), collision1.posZ());
+          histos.fill(HIST("MixingQA/hMEpvz2"), collision2.posZ());
+          histos.fill(HIST("MixingQA/hMECollisionBins"), binning.getBin({collision1.posZ(), cent1}));
+        }
+        // ________________________________________________
+        // Do slicing
+        auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
+        auto slicedAssocCascades = associatedCascades.sliceBy(collisionSliceCascades, collision2.globalIndex());
+        // ________________________________________________
+        // Do hadron - cascade correlations
+        if (doFullCorrelationStudy)
+          fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posX(), collision1.posY(), collision1.posZ(), cent1, bField);
       }
-      // ________________________________________________
-      // Do slicing
-      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision1.globalIndex());
-      auto slicedAssocCascades = associatedCascades.sliceBy(collisionSliceCascades, collision2.globalIndex());
-      // ________________________________________________
-      // Do hadron - cascade correlations
-      if (doFullCorrelationStudy)
-        fillCorrelationsCascade(slicedTriggerTracks, slicedAssocCascades, true, collision1.posX(), collision1.posY(), collision1.posZ(), cent1, bField);
-    }
+    },
+               colBinning);
   }
+
   void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
                                soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                                TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    BinningTypePP colBinning{{axesConfigurations.axisVtxZ, axesConfigurations.axisMult}, true};
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());

@@ -105,6 +105,11 @@ struct EseTableProducer {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  struct Config {
+    TH1D* mEfficiency = nullptr;
+    bool correctionsLoaded = false;
+  } cfg;
+
   Configurable<float> cfgVtxZ{"cfgVtxZ", 10.0f, "max z vertex position"};
   Configurable<float> cfgEta{"cfgEta", 0.8f, "max eta"};
   Configurable<float> cfgPtmin{"cfgPtmin", 0.2f, "min pt"};
@@ -112,6 +117,7 @@ struct EseTableProducer {
   Configurable<float> cfgChi2PrITSCls{"cfgChi2PrITSCls", 4.0f, "max chi2 per ITS cluster"};
   Configurable<float> cfgChi2PrTPCCls{"cfgChi2PrTPCCls", 2.5f, "max chi2 per TPC cluster"};
   Configurable<float> cfgDCAz{"cfgDCAz", 2.0f, "max DCAz cut"};
+  Configurable<std::string> cfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency object"};
 
   // o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
@@ -157,6 +163,14 @@ struct EseTableProducer {
       if (!eventShape)
         LOGF(fatal, "failed loading qSelection with ese flag");
       LOGF(info, "successfully loaded qSelection");
+    }
+    if (!cfgEfficiency.value.empty()) {
+      cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      if (cfg.mEfficiency == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
+      cfg.correctionsLoaded = true;
     }
   }
 
@@ -256,17 +270,32 @@ struct EseTableProducer {
   };
 
   template <typename TTracks, typename Cent>
-  double calculateMeanPt(TTracks const& tracks, Cent const& centrality)
+  std::pair<double, double> calculateMeanPt(TTracks const& tracks, Cent const& centrality)
   {
-    std::vector<double> meanPtEvent;
+    double meanPtEvent{0.0};
+    double effEvent{0.0};
     for (const auto& track : tracks) {
-      meanPtEvent.push_back(track.pt());
-      weightsFFit->fillPt(centrality, track.pt(), true);
+      double weff = getEfficiency(track);
+      effEvent += weff;
+      meanPtEvent += track.pt() * weff;
     }
-    if (meanPtEvent.empty())
-      return 0.0;
-    auto mean = std::accumulate(meanPtEvent.begin(), meanPtEvent.end(), 0.0) / meanPtEvent.size();
-    return mean;
+    if (meanPtEvent == 0.0)
+      return std::make_pair(0.0, 0.0);
+    double mean = meanPtEvent / effEvent;
+    weightsFFit->fillPt(centrality, mean, effEvent, true);
+    return std::make_pair(mean, effEvent);
+  }
+
+  template <typename TTrack>
+  double getEfficiency(TTrack track)
+  {
+    double eff = 1.;
+    if (cfg.mEfficiency)
+      eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
+    if (eff == 0)
+      return -1.;
+    else
+      return 1. / eff;
   }
 
   void processESE(CollWithMults::iterator const& collision, aod::BCsWithTimestamps const&, aod::FV0As const&, aod::FT0s const&)
@@ -319,11 +348,11 @@ struct EseTableProducer {
       registry.fill(HIST("hMeanPtStat"), 1.5);
     } else {
       const auto avgpt = eventShape->getPtMult(centrality);
-      if (mean == 0.0) {
+      if (mean.first == 0.0) {
         registry.fill(HIST("hMeanPtStat"), cfgMeanPt == Step1 ? 2.5 : 3.5);
       } else {
-        const auto binval = (mean - avgpt) / avgpt;
-        weightsFFit->fillPt(centrality, binval, false);
+        const auto binval = (mean.first - avgpt) / avgpt;
+        weightsFFit->fillPt(centrality, binval, mean.second, false);
         meanPt[0] = binval;
         if (cfgMeanPt == Step1) {
           registry.fill(HIST("hMeanPtStat"), 2.5);

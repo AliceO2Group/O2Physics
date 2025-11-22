@@ -25,7 +25,6 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -54,7 +53,6 @@
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <TH1.h>
-#include <TString.h>
 
 #include <array>
 #include <cmath>
@@ -72,15 +70,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
-
-enum QvecEstimator {
-  FT0M = 0,
-  FT0A = 1,
-  FT0C,
-  TPCPos,
-  TPCNeg,
-  TPCTot
-};
 
 enum CentralityEstimator {
   None = 0,
@@ -157,9 +146,12 @@ struct CalibTaskEmc {
     Configurable<int> cfgEMCminNCell{"cfgEMCminNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
     Configurable<std::vector<float>> cfgEMCTMEta{"cfgEMCTMEta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
     Configurable<std::vector<float>> cfgEMCTMPhi{"cfgEMCTMPhi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<std::vector<float>> emcSecTMEta{"emcSecTMEta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<std::vector<float>> emcSecTMPhi{"emcSecTMPhi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
     Configurable<float> cfgEMCEoverp{"cfgEMCEoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
     Configurable<bool> cfgEMCUseExoticCut{"cfgEMCUseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
     Configurable<bool> cfgEMCUseTM{"cfgEMCUseTM", true, "flag to use EMCal track matching cut or not"};
+    Configurable<bool> emcUseSecondaryTM{"emcUseSecondaryTM", false, "flag to use EMCal secondary track matching cut or not"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
   } emccuts;
 
@@ -292,16 +284,11 @@ struct CalibTaskEmc {
   void defineEMCCut()
   {
     fEMCCut = EMCPhotonCut("fEMCCut", "fEMCCut");
-    const float a = emccuts.cfgEMCTMEta->at(0);
-    const float b = emccuts.cfgEMCTMEta->at(1);
-    const float c = emccuts.cfgEMCTMEta->at(2);
+    fEMCCut.SetTrackMatchingEtaParams(emccuts.cfgEMCTMEta->at(0), emccuts.cfgEMCTMEta->at(1), emccuts.cfgEMCTMEta->at(2));
+    fEMCCut.SetTrackMatchingPhiParams(emccuts.cfgEMCTMPhi->at(0), emccuts.cfgEMCTMPhi->at(1), emccuts.cfgEMCTMPhi->at(2));
 
-    const float d = emccuts.cfgEMCTMPhi->at(0);
-    const float e = emccuts.cfgEMCTMPhi->at(1);
-    const float f = emccuts.cfgEMCTMPhi->at(2);
-    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
-    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
+    fEMCCut.SetSecTrackMatchingEtaParams(emccuts.emcSecTMEta->at(0), emccuts.emcSecTMEta->at(1), emccuts.emcSecTMEta->at(2));
+    fEMCCut.SetSecTrackMatchingPhiParams(emccuts.emcSecTMPhi->at(0), emccuts.emcSecTMPhi->at(1), emccuts.emcSecTMPhi->at(2));
     fEMCCut.SetMinEoverP(emccuts.cfgEMCEoverp);
 
     fEMCCut.SetMinE(emccuts.cfgEMCminE);
@@ -310,6 +297,8 @@ struct CalibTaskEmc {
     fEMCCut.SetTimeRange(emccuts.cfgEMCminTime, emccuts.cfgEMCmaxTime);
     fEMCCut.SetUseExoticCut(emccuts.cfgEMCUseExoticCut);
     fEMCCut.SetClusterizer(emccuts.clusterDefinition);
+    fEMCCut.SetUseTM(emccuts.cfgEMCUseTM.value);                // disables or enables TM
+    fEMCCut.SetUseSecondaryTM(emccuts.emcUseSecondaryTM.value); // disables or enables secondary TM
   }
 
   void DefinePCMCut()
@@ -347,7 +336,6 @@ struct CalibTaskEmc {
   {
     defineEMEventCut();
     defineEMCCut();
-    fEMCCut.SetUseTM(emccuts.cfgEMCUseTM); // disables TM
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
