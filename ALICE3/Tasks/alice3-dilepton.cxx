@@ -14,18 +14,21 @@
 /// \author  s.scheid@cern.ch, daiki.sekihata@cern.ch
 ///
 
-#include "Math/Vector4D.h"
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/Vector4D.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -127,6 +130,15 @@ struct Alice3Dilepton {
 
     registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSpp/");
     registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSnn/");
+
+    registry.add("ReconstructedFiltered/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
+    registry.add("ReconstructedFiltered/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
+    registry.add("ReconstructedFiltered/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
+    registry.add("ReconstructedFiltered/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
+    registry.add("ReconstructedFiltered/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
+    registry.addClone("ReconstructedFiltered/Pair/ULS/", "ReconstructedFiltered/Pair/LSpp/");
+    registry.addClone("ReconstructedFiltered/Pair/ULS/", "ReconstructedFiltered/Pair/LSnn/");
 
     HistogramConfigSpec hs_rec{HistType::kTHnSparseF, {axisM, axisPt, axisDCAxy}, 3};
     registry.add("Reconstructed/Pair/ULS/hs_rec", "", hs_rec);
@@ -287,6 +299,69 @@ struct Alice3Dilepton {
     return HFllType::kUndef;
   }
 
+  template <typename T1, typename T2>
+  ROOT::Math::PtEtaPhiMVector buildPairDCA(T1 const& t1, T2 const& t2, float& pair_dca_xy)
+  {
+
+    const float dcaXY_t1 = t1.dcaXY();
+    const float dcaXY_t2 = t2.dcaXY();
+    const float dcaXY_res_t1 = sqrt(t1.cYY());
+    const float dcaXY_res_t2 = sqrt(t2.cYY());
+
+    pair_dca_xy = sqrt((dcaXY_t2 * dcaXY_t2 / dcaXY_res_t2 + dcaXY_t1 * dcaXY_t1 / dcaXY_res_t1) / 2.);
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    return v12;
+  }
+
+  template <PairType pairtype, typename TTracks, typename TMCTracks>
+  void FillPairRecWithPrefilter(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& /*mcParticles*/)
+  {
+    std::vector<uint64_t> prefilteredTracks;
+    if constexpr (pairtype == PairType::kULS) {
+      for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
+          continue;
+        }
+
+        float pair_dca_xy = 999.f;
+        ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
+        // prefilter for low-mass pairs
+        if (v12.M() > 0.10) {
+          continue;
+        }
+        // prefilter small opening angle pairs
+        if (std::cos(t1.phi() - t2.phi()) < 0.99) {
+          continue;
+        }
+        prefilteredTracks.push_back(t1.globalIndex());
+        prefilteredTracks.push_back(t2.globalIndex());
+
+      } // end of unlike-sign pair loop
+
+      for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        // Skipping tracks that are in the prefiltered list
+        if (std::find(prefilteredTracks.begin(), prefilteredTracks.end(), t1.globalIndex()) != prefilteredTracks.end()) {
+          continue;
+        }
+        if (std::find(prefilteredTracks.begin(), prefilteredTracks.end(), t2.globalIndex()) != prefilteredTracks.end()) {
+          continue;
+        }
+
+        float pair_dca_xy = 999.f;
+        ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
+
+        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass"), v12.M());
+        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Pt"), v12.Pt());
+        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Eta"), v12.Eta());
+        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
+      }
+    }
+  }
+
   template <PairType pairtype, typename TTracks, typename TMCTracks>
   void FillPairRec(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& mcParticles)
   {
@@ -314,15 +389,8 @@ struct Alice3Dilepton {
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
-        // float dcaXY_t1 = t1.dcaXY();
-        // float dcaXY_t2 = t2.dcaXY();
-        // float dcaXY_res_t1 = sqrt(t1.cYY());
-        // float dcaXY_res_t2 = sqrt(t2.cYY());
-
-        float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float pair_dca_xy = 999.f;
+        ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
 
         registry.fill(HIST("Reconstructed/Pair/ULS/Mass"), v12.M());
         registry.fill(HIST("Reconstructed/Pair/ULS/Pt"), v12.Pt());
@@ -356,15 +424,8 @@ struct Alice3Dilepton {
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
-        // float dcaXY_t1 = t1.dcaXY();
-        // float dcaXY_t2 = t2.dcaXY();
-        // float dcaXY_res_t1 = sqrt(t1.cYY());
-        // float dcaXY_res_t2 = sqrt(t2.cYY());
-
-        float pair_dca_xy = sqrt((pow(t2.dcaXY() / sqrt(t2.cYY()), 2) + pow(t1.dcaXY() / sqrt(t1.cYY()), 2)) / 2.);
-        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
-        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float pair_dca_xy = 999.f;
+        ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
 
         if constexpr (pairtype == PairType::kLSpp) {
           registry.fill(HIST("Reconstructed/Pair/LSpp/Mass"), v12.M());
@@ -464,6 +525,7 @@ struct Alice3Dilepton {
       } // end of like-sign pair loop
     }
   }
+
   // Functions for pid
   template <typename TTrack>
   bool electronIDTOF(TTrack const& track)
@@ -545,11 +607,10 @@ struct Alice3Dilepton {
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracksMC> negTracks = o2::aod::track::signed1Pt < 0.f;
 
-  void processRec(
-    const o2::aod::Collisions& collisions,
-    MyFilteredTracksMC const& tracks,
-    const o2::aod::McCollisions&,
-    const aod::McParticles& mcParticles)
+  void processRec(const o2::aod::Collisions& collisions,
+                  MyFilteredTracksMC const& tracks,
+                  const o2::aod::McCollisions&,
+                  const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxX"), collision.posX());
