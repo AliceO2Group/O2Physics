@@ -55,6 +55,7 @@
 #include <TGraph.h>
 #include <TH1.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <map>
@@ -227,6 +228,7 @@ struct FlattenictyPikp {
   Configurable<bool> cfgFillNsigmaQAHist{"cfgFillNsigmaQAHist", false, "fill nsigma QA histograms"};
   Configurable<bool> cfgFillV0Hist{"cfgFillV0Hist", false, "fill V0 histograms"};
   Configurable<bool> cfgFillChrgType{"cfgFillChrgType", false, "fill histograms per charge types"};
+  Configurable<bool> cfgFillChrgTypeV0s{"cfgFillChrgTypeV0s", false, "fill V0s histograms per charge types"};
   Configurable<std::vector<float>> paramsFuncMIPpos{"paramsFuncMIPpos", std::vector<float>{-1.f}, "parameters of pol2"};
   Configurable<std::vector<float>> paramsFuncMIPneg{"paramsFuncMIPneg", std::vector<float>{-1.f}, "parameters of pol2"};
   Configurable<std::vector<float>> paramsFuncMIPall{"paramsFuncMIPall", std::vector<float>{-1.f}, "parameters of pol2"};
@@ -426,13 +428,13 @@ struct FlattenictyPikp {
       }
     };
     addVec(vecParamsMIP, "vecParamsMIP", true);
-    for (const auto& params : vecParamsMIP) {
-      fDeDxVsEta.emplace_back(setFuncPars(params));
-    }
+    std::transform(std::begin(vecParamsMIP), std::end(vecParamsMIP), std::back_inserter(fDeDxVsEta), [&](auto const& params) {
+      return setFuncPars(params);
+    });
     addVec(vecParamsPLA, "vecParamsPLA", false);
-    for (const auto& params : vecParamsPLA) {
-      fEDeDxVsEta.emplace_back(setFuncPars(params));
-    }
+    std::transform(std::begin(vecParamsPLA), std::end(vecParamsPLA), std::back_inserter(fEDeDxVsEta), [&](auto const& params) {
+      return setFuncPars(params);
+    });
 
     ccdb->setURL(ccdbConf.ccdbUrl.value);
     ccdb->setCaching(true);
@@ -791,7 +793,7 @@ struct FlattenictyPikp {
     if (applyCalibGain) {
       fullPathCalibGain = cfgGainEqCcdbPath;
       fullPathCalibGain += "/FV0";
-      auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPathCalibGain, timestamp, runnumber);
+      const auto* objfv0Gain = getForTsOrRun<std::vector<float>>(fullPathCalibGain, timestamp, runnumber);
       if (!objfv0Gain) {
         for (auto i{0u}; i < CnCellsFV0; i++) {
           fv0AmplCorr.push_back(1.);
@@ -812,7 +814,7 @@ struct FlattenictyPikp {
       fullPathCalibDeDxMip += "/MIP";
       fullPathCalibDeDxPlateau = cfgDeDxCalibCcdbPath;
       fullPathCalibDeDxPlateau += "/Plateau";
-      if (fullPathCalibDeDxMip.empty() == false) {
+      if (!fullPathCalibDeDxMip.empty()) {
         dedxcalib.lCalibObjects = getForTsOrRun<TList>(fullPathCalibDeDxMip, timestamp, runnumber);
         if (dedxcalib.lCalibObjects) {
           LOG(info) << "CCDB objects loaded successfully";
@@ -829,7 +831,7 @@ struct FlattenictyPikp {
           dedxcalib.lCalibLoaded = false;
         }
       }
-      if (fullPathCalibDeDxPlateau.empty() == false) {
+      if (!fullPathCalibDeDxPlateau.empty()) {
         dedxcalib.lCalibObjects = getForTsOrRun<TList>(fullPathCalibDeDxPlateau, timestamp, runnumber);
         if (dedxcalib.lCalibObjects) {
           LOG(info) << "CCDB objects loaded successfully";
@@ -1046,28 +1048,54 @@ struct FlattenictyPikp {
         float dEdxNeg = negTrack.tpcSignal();
 
         if (applyCalibDeDx) {
-          if (applyCalibDeDxFromCCDB) {
-            dEdxPos *= (50.0 / dedxcalib.hMIPcalibAll->GetBinContent(dedxcalib.hMIPcalibAll->FindBin(posTrack.eta())));
-            dEdxNeg *= (50.0 / dedxcalib.hMIPcalibAll->GetBinContent(dedxcalib.hMIPcalibAll->FindBin(negTrack.eta())));
+          if (cfgFillChrgTypeV0s) {
+            if (applyCalibDeDxFromCCDB) {
+              dEdxPos *= (50.0 / dedxcalib.hMIPcalibPos->GetBinContent(dedxcalib.hMIPcalibPos->FindBin(posTrack.eta())));
+              dEdxNeg *= (50.0 / dedxcalib.hMIPcalibNeg->GetBinContent(dedxcalib.hMIPcalibNeg->FindBin(negTrack.eta())));
+            } else {
+              dEdxPos *= (50.0 / getCalibration(fDeDxVsEta, posTrack));
+              dEdxNeg *= (50.0 / getCalibration(fDeDxVsEta, negTrack));
+            }
           } else {
-            dEdxPos *= (50.0 / getCalibration<false>(fDeDxVsEta, posTrack));
-            dEdxNeg *= (50.0 / getCalibration<false>(fDeDxVsEta, negTrack));
+            if (applyCalibDeDxFromCCDB) {
+              dEdxPos *= (50.0 / dedxcalib.hMIPcalibAll->GetBinContent(dedxcalib.hMIPcalibAll->FindBin(posTrack.eta())));
+              dEdxNeg *= (50.0 / dedxcalib.hMIPcalibAll->GetBinContent(dedxcalib.hMIPcalibAll->FindBin(negTrack.eta())));
+            } else {
+              dEdxPos *= (50.0 / getCalibration<false>(fDeDxVsEta, posTrack));
+              dEdxNeg *= (50.0 / getCalibration<false>(fDeDxVsEta, negTrack));
+            }
           }
         }
 
         if (selectTypeV0s(collision, v0, posTrack, negTrack) == kGa) { // Gamma selection
           if (applyCalibDeDx) {
-            if (applyCalibDeDxFromCCDB) {
-              const float dEdxPosGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(posTrack.eta()));
-              const float dEdxNegGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(negTrack.eta()));
-              if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
-                continue;
+            if (cfgFillChrgTypeV0s) {
+              if (applyCalibDeDxFromCCDB) {
+                const float dEdxPosGa = dedxcalib.hMIPcalibPos->GetBinContent(dedxcalib.hMIPcalibPos->FindBin(posTrack.eta()));
+                const float dEdxNegGa = dedxcalib.hMIPcalibNeg->GetBinContent(dedxcalib.hMIPcalibNeg->FindBin(negTrack.eta()));
+                if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
+                  continue;
+                }
+              } else {
+                const float dEdxPosGa = getCalibration(fEDeDxVsEta, posTrack);
+                const float dEdxNegGa = getCalibration(fEDeDxVsEta, negTrack);
+                if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
+                  continue;
+                }
               }
             } else {
-              const float dEdxPosGa = getCalibration<false>(fEDeDxVsEta, posTrack);
-              const float dEdxNegGa = getCalibration<false>(fEDeDxVsEta, negTrack);
-              if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
-                continue;
+              if (applyCalibDeDxFromCCDB) {
+                const float dEdxPosGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(posTrack.eta()));
+                const float dEdxNegGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(negTrack.eta()));
+                if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
+                  continue;
+                }
+              } else {
+                const float dEdxPosGa = getCalibration<false>(fEDeDxVsEta, posTrack);
+                const float dEdxNegGa = getCalibration<false>(fEDeDxVsEta, negTrack);
+                if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
+                  continue;
+                }
               }
             }
           }
@@ -1643,33 +1671,33 @@ struct FlattenictyPikp {
       iRing = Cfv0IndexPhi[4];
     } else if (i_ch == Cfv0IndexPhi[4] + 8) {
       iRing = i_ch - 7; // 33;
-    } else if (i_ch == Cfv0IndexPhi[4] - 3) {
+    } else if (i_ch == Cfv0IndexPhi[4] + 1) {
       iRing = i_ch + 1; // 34;
-    } else if (i_ch == Cfv0IndexPhi[4] + 5) {
-      iRing = i_ch - 6; // 35;
-    } else if (i_ch == Cfv0IndexPhi[4] - 2) {
-      iRing = i_ch + 2; // 36;
-    } else if (i_ch == Cfv0IndexPhi[4] + 6) {
-      iRing = i_ch - 5; // 37;
-    } else if (i_ch == Cfv0IndexPhi[4] - 1) {
-      iRing = i_ch + 3; // 38;
-    } else if (i_ch == Cfv0IndexPhi[4] + 7) {
-      iRing = i_ch - 4; // 39;
-    } else if (i_ch == Cfv0IndexPhi[4] + 11) {
-      iRing = i_ch + 7; // 40;
-    } else if (i_ch == Cfv0IndexPhi[4] + 3) {
-      iRing = i_ch + 2; // 41;
-    } else if (i_ch == Cfv0IndexPhi[4] + 10) {
-      iRing = i_ch - 4; // 42;
-    } else if (i_ch == Cfv0IndexPhi[4] + 1) {
-      iRing = i_ch + 5; // 43;
     } else if (i_ch == Cfv0IndexPhi[4] + 9) {
+      iRing = i_ch - 6; // 35;
+    } else if (i_ch == Cfv0IndexPhi[4] + 2) {
+      iRing = i_ch + 2; // 36;
+    } else if (i_ch == Cfv0IndexPhi[4] + 10) {
+      iRing = i_ch - 5; // 37;
+    } else if (i_ch == Cfv0IndexPhi[4] + 3) {
+      iRing = i_ch + 3; // 38;
+    } else if (i_ch == Cfv0IndexPhi[4] + 11) {
+      iRing = i_ch - 4; // 39;
+    } else if (i_ch == Cfv0IndexPhi[4] + 15) {
+      iRing = i_ch - 7; // 40;
+    } else if (i_ch == Cfv0IndexPhi[4] + 7) {
+      iRing = i_ch + 2; // 41;
+    } else if (i_ch == Cfv0IndexPhi[4] + 14) {
+      iRing = i_ch - 4; // 42;
+    } else if (i_ch == Cfv0IndexPhi[4] + 6) {
+      iRing = i_ch + 5; // 43;
+    } else if (i_ch == Cfv0IndexPhi[4] + 13) {
       iRing = i_ch - 1; // 44;
-    } else if (i_ch == Cfv0IndexPhi[4] + 1) {
+    } else if (i_ch == Cfv0IndexPhi[4] + 5) {
       iRing = i_ch + 8; // 45;
-    } else if (i_ch == Cfv0IndexPhi[4] + 8) {
+    } else if (i_ch == Cfv0IndexPhi[4] + 12) {
       iRing = i_ch + 2; // 46;
-    } else if (i_ch == Cfv0IndexPhi[4]) {
+    } else if (i_ch == Cfv0IndexPhi[4] + 4) {
       iRing = i_ch + 11; // 47;
     }
     return iRing;
@@ -1746,11 +1774,10 @@ struct FlattenictyPikp {
   {
     rhoLatticeFV0.fill(0);
     fv0AmplitudeWoCalib.fill(0);
-    bool isOkFV0OrA = false;
     if (collision.has_foundFV0()) {
       auto fv0 = collision.foundFV0();
       std::bitset<8> fV0Triggers = fv0.triggerMask();
-      isOkFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
+      bool isOkFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
       if (isOkFV0OrA) {
         for (std::size_t ich = 0; ich < fv0.channel().size(); ich++) {
           float amplCh = fv0.amplitude()[ich];

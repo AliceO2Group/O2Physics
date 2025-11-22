@@ -41,7 +41,7 @@ class FFitWeights : public TNamed
 
   void init();
   void fillWeights(float centrality, float qn, int nh, const char* pf = "");
-  void fillPt(float centrality, float pt, bool first);
+  void fillPt(float centrality, float pt, float weight, bool first);
   float getPtMult(float centrality);
   TObjArray* getDataArray() { return fW_data; }
 
