@@ -64,6 +64,11 @@ o2physics_add_dpl_workflow(alice3-multicharm
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-hf-task-3prong
+                    SOURCES alice3HfTask3Prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-efficiency
                     SOURCES alice3Efficiency.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

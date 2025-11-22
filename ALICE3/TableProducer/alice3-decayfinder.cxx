@@ -17,37 +17,42 @@
 //    HF decays. Work in progress: use at your own risk!
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "ALICE3/DataModel/OTFPIDTrk.h"
+#include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/RICH.h"
-#include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "ALICE3/Utils/utilsHfAlice3.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::constants::physics;
 using namespace o2::framework::expressions;
@@ -58,13 +63,8 @@ using std::array;
 #define bitoff(var, nbit) ((var) &= ~(static_cast<uint32_t>(1) << (nbit))) //((a) &= ~(1ULL<<(b)))
 // #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
-
 // For MC association in pre-selection
-using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
-using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
-using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA>;
+using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
 
 struct alice3decayFinder {
   SliceCache cache;
@@ -72,11 +72,24 @@ struct alice3decayFinder {
   Produces<aod::Alice3D0Meson> candidateD0meson; // contains D0 and D0bar selected candidates (separated, i.e. each row with a single mass hypothesis)
   Produces<aod::Alice3D0Sel> selectionOutcome;   // flags for isSelD0 and isSelD0bar
   Produces<aod::Alice3D0MCTruth> mcTruthOutcome; // contains MC truth info (is true D0, true D0bar, or bkg)
+  Produces<aod::Alice3Cand3Ps> candidate3Prong;  // contains Lc selected candidates
+  Produces<aod::Alice3McRecFlags> mcRecFlags;    // contains MC truth info (is true Lc, or bkg)
+  Produces<aod::Alice3PidLcs> pidInfoLcDaugs;    // contains PID info for Lc candidates
+  Produces<aod::Alice3McGenFlags> mcGenFlags;    // contains MC gen info for 3-prong candidates
 
+  // Vertexing
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 1e9, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> maxVtxChi2{"maxVtxChi2", 1e9, "reject (if>0) vtx. chi2 above this value"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // Operation and minimisation criteria
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
   Configurable<bool> doDCAplotsD{"doDCAplotsD", true, "do daughter prong DCA plots for D mesons"};
-  Configurable<bool> doDCAplotsLc{"doDCAplotsLc", true, "do daughter prong DCA plots for Lc baryons"};
+  Configurable<bool> doDCAplots3Prong{"doDCAplots3Prong", true, "do daughter prong DCA plots for Lc baryons"};
   Configurable<bool> doTopoPlotsForSAndB{"doTopoPlotsForSAndB", true, "do topological variable distributions for S and B separately"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
   Configurable<float> dcaDaughtersSelection{"dcaDaughtersSelection", 1000.0f, "DCA between daughters (cm)"};
@@ -127,6 +140,13 @@ struct alice3decayFinder {
   o2::vertexing::DCAFitterN<2> fitter;
   o2::vertexing::DCAFitterN<3> fitter3;
 
+  double bz{0.};
+  const float toMicrometers{10000.}; // from cm to µm
+  std::array<int, 3> daugsPdgCodes3Prong{{-1, -1, -1}};
+  std::array<float, 3> daughtersMasses3Prong{{-1.f, -1.f, -1.f}};
+  int motherPdgCode{-1};
+  int charmHadFlag{0};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Partition<aod::McParticles> trueD = aod::mcparticle::pdgCode == 421;
@@ -149,30 +169,30 @@ struct alice3decayFinder {
   static constexpr uint32_t trackSelectionPrMinusFromLc = 1 << kInnerTOFProton | 1 << kOuterTOFProton | 1 << kRICHProton | 1 << kTruePrMinusFromLc;
 
   // partitions for D mesons
-  Partition<alice3tracks> tracksPiPlusFromD =
+  Partition<Alice3TracksWPid> tracksPiPlusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromD) == trackSelectionPiPlusFromD) &&
     aod::track::signed1Pt > 0.0f &&
     nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksPiMinusFromD =
+  Partition<Alice3TracksWPid> tracksPiMinusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromD) == trackSelectionPiMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksKaPlusFromD =
+  Partition<Alice3TracksWPid> tracksKaPlusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromD) == trackSelectionKaPlusFromD) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksKaMinusFromD =
+  Partition<Alice3TracksWPid> tracksKaMinusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromD) == trackSelectionKaMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // partitions for Lc baryons
-  Partition<alice3tracks> tracksPiPlusFromLc =
+  Partition<Alice3TracksWPid> tracksPiPlusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromLc) == trackSelectionPiPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksKaPlusFromLc =
+  Partition<Alice3TracksWPid> tracksKaPlusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromLc) == trackSelectionKaPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksPrPlusFromLc =
+  Partition<Alice3TracksWPid> tracksPrPlusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPrPlusFromLc) == trackSelectionPrPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
   // partitions for Lc baryons
-  Partition<alice3tracks> tracksPiMinusFromLc =
+  Partition<Alice3TracksWPid> tracksPiMinusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromLc) == trackSelectionPiMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksKaMinusFromLc =
+  Partition<Alice3TracksWPid> tracksKaMinusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromLc) == trackSelectionKaMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<alice3tracks> tracksPrMinusFromLc =
+  Partition<Alice3TracksWPid> tracksPrMinusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPrMinusFromLc) == trackSelectionPrMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
@@ -202,7 +222,30 @@ struct alice3decayFinder {
     float pt;
     float phi;
     float eta;
-  } lcbaryon;
+    std::array<float, 3> Pdaug0;           // proton track
+    std::array<float, 3> Pdaug1;           // kaon track
+    std::array<float, 3> Pdaug2;           // pion track
+    std::array<float, 3> primaryVertex;    // primary vertex coordinates
+    std::array<double, 3> secondaryVertex; // secondary vertex coordinates
+    float impactParameterY0;               // impact parameters
+    float errorImpactParameterY0;          // impact parameters error
+    float impactParameterY1;               // impact parameters
+    float errorImpactParameterY1;          // impact parameters error
+    float impactParameterY2;               // impact parameters
+    float errorImpactParameterY2;          // impact parameters error
+    float impactParameterZ0;               // impact parameters
+    float errorImpactParameterZ0;          // impact parameters error
+    float impactParameterZ1;               // impact parameters
+    float errorImpactParameterZ1;          // impact parameters error
+    float impactParameterZ2;               // impact parameters
+    float errorImpactParameterZ2;          // impact parameters error
+    float errorDecayLength;                // normalized 3D decay length
+    float errorDecayLengthXY;              // normalized 3D decay length
+    float chi2PCA;                         // normalized 3D decay length
+    int flagMc;                            // 0 = bkg, CharmHadAlice3 otherwise
+    int origin;                            // 1 = prompt, 2 = non-prompt
+    float ptBMotherRec;                    // pT of the B hadron mother (reconstructed)
+  } cand3prong;
 
   template <typename TTrackType>
   bool buildDecayCandidateTwoBody(TTrackType const& posTrackRow, TTrackType const& negTrackRow, float posMass, float negMass, aod::McParticles const& mcParticles)
@@ -272,18 +315,23 @@ struct alice3decayFinder {
   }
 
   template <typename TTrackType>
-  bool buildDecayCandidateThreeBody(TTrackType const& prong0, TTrackType const& prong1, TTrackType const& prong2, float p0mass, float p1mass, float p2mass)
+  bool buildDecayCandidateThreeBody(aod::Collision const& collision, TTrackType const& prong0, TTrackType const& prong1, TTrackType const& prong2, aod::McParticles const& mcParticles)
   {
-    o2::track::TrackParCov t0 = getTrackParCov(prong0);
-    o2::track::TrackParCov t1 = getTrackParCov(prong1);
-    o2::track::TrackParCov t2 = getTrackParCov(prong2);
+    // get the collision primary vertex
+    auto primaryVertex = getPrimaryVertex(collision);
+    auto covMatrixPV = primaryVertex.getCov();
+
+    o2::track::TrackParCov trackParVar0 = getTrackParCov(prong0);
+    o2::track::TrackParCov trackParVar1 = getTrackParCov(prong1);
+    o2::track::TrackParCov trackParVar2 = getTrackParCov(prong2);
 
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
     // Move close to minima
     int nCand = 0;
     try {
-      nCand = fitter3.process(t0, t1, t2);
+      nCand = fitter3.process(trackParVar0, trackParVar1, trackParVar2);
     } catch (...) {
+      LOG(info) << "Second vertex fit failed";
       return false;
     }
     if (nCand == 0) {
@@ -291,25 +339,102 @@ struct alice3decayFinder {
     }
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
-    t0 = fitter3.getTrack(0);
-    t1 = fitter3.getTrack(1);
-    t2 = fitter3.getTrack(2);
-    std::array<float, 3> P0;
-    std::array<float, 3> P1;
-    std::array<float, 3> P2;
-    t0.getPxPyPzGlo(P0);
-    t1.getPxPyPzGlo(P1);
-    t2.getPxPyPzGlo(P2);
-
-    lcbaryon.dcaDau = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
-    if (lcbaryon.dcaDau > dcaDaughtersSelection)
+    auto covMatrixPCA = fitter3.calcPCACovMatrixFlat();
+    cand3prong.chi2PCA = fitter3.getChi2AtPCACandidate();
+    cand3prong.dcaDau = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
+    if (cand3prong.dcaDau > dcaDaughtersSelection) {
       return false;
+    }
+
+    cand3prong.primaryVertex = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
+    auto secondaryVertex = fitter3.getPCACandidate();
+    cand3prong.secondaryVertex = {secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]};
+
+    trackParVar0 = fitter3.getTrack(0);
+    trackParVar1 = fitter3.getTrack(1);
+    trackParVar2 = fitter3.getTrack(2);
+
+    std::array<float, 3> P0{};
+    std::array<float, 3> P1{};
+    std::array<float, 3> P2{};
+    trackParVar0.getPxPyPzGlo(P0);
+    trackParVar1.getPxPyPzGlo(P1);
+    trackParVar2.getPxPyPzGlo(P2);
+
+    o2::dataformats::DCA impactParameter0;
+    o2::dataformats::DCA impactParameter1;
+    o2::dataformats::DCA impactParameter2;
+    trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
+    trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
+    trackParVar2.propagateToDCA(primaryVertex, bz, &impactParameter2);
+    histos.fill(HIST("hDcaXYProngs"), prong0.pt(), impactParameter0.getY() * toMicrometers);
+    histos.fill(HIST("hDcaXYProngs"), prong1.pt(), impactParameter1.getY() * toMicrometers);
+    histos.fill(HIST("hDcaXYProngs"), prong2.pt(), impactParameter2.getY() * toMicrometers);
+    histos.fill(HIST("hDcaZProngs"), prong0.pt(), impactParameter0.getZ() * toMicrometers);
+    histos.fill(HIST("hDcaZProngs"), prong1.pt(), impactParameter1.getZ() * toMicrometers);
+    histos.fill(HIST("hDcaZProngs"), prong2.pt(), impactParameter2.getZ() * toMicrometers);
+
+    // get uncertainty of the decay length
+    double phi, theta;
+    getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+    cand3prong.errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+    cand3prong.errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+
+    cand3prong.impactParameterY0 = impactParameter0.getY();
+    cand3prong.errorImpactParameterY0 = impactParameter0.getSigmaY2();
+    cand3prong.impactParameterY1 = impactParameter1.getY();
+    cand3prong.errorImpactParameterY1 = impactParameter1.getSigmaY2();
+    cand3prong.impactParameterY2 = impactParameter2.getY();
+    cand3prong.errorImpactParameterY2 = impactParameter2.getSigmaY2();
+
+    cand3prong.impactParameterZ0 = impactParameter0.getZ();
+    cand3prong.errorImpactParameterZ0 = impactParameter0.getSigmaZ2();
+    cand3prong.impactParameterZ1 = impactParameter1.getZ();
+    cand3prong.errorImpactParameterZ1 = impactParameter1.getSigmaZ2();
+    cand3prong.impactParameterZ2 = impactParameter2.getZ();
+    cand3prong.errorImpactParameterZ2 = impactParameter2.getSigmaZ2();
 
     // return mass
-    lcbaryon.mass = RecoDecay::m(array{array{P0[0], P0[1], P0[2]}, array{P1[0], P1[1], P1[2]}, array{P2[0], P2[1], P2[2]}}, array{p0mass, p1mass, p2mass});
-    lcbaryon.pt = std::hypot(P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]);
-    lcbaryon.phi = RecoDecay::phi(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]});
-    lcbaryon.eta = RecoDecay::eta(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1], P0[2] + P1[2] + P2[2]});
+    cand3prong.mass = RecoDecay::m(array{array{P0[0], P0[1], P0[2]},
+                                         array{P1[0], P1[1], P1[2]},
+                                         array{P2[0], P2[1], P2[2]}},
+                                   daughtersMasses3Prong);
+
+    cand3prong.pt = std::hypot(P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]);
+    cand3prong.phi = RecoDecay::phi(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]});
+    cand3prong.eta = RecoDecay::eta(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1], P0[2] + P1[2] + P2[2]});
+    cand3prong.Pdaug0[0] = P0[0];
+    cand3prong.Pdaug0[1] = P0[1];
+    cand3prong.Pdaug0[2] = P0[2];
+    cand3prong.Pdaug1[0] = P1[0];
+    cand3prong.Pdaug1[1] = P1[1];
+    cand3prong.Pdaug1[2] = P1[2];
+    cand3prong.Pdaug2[0] = P2[0];
+    cand3prong.Pdaug2[1] = P2[1];
+    cand3prong.Pdaug2[2] = P2[2];
+
+    // MC truth check
+    cand3prong.flagMc = 0; // bkg
+    int8_t sign = 0;
+    auto arrayDaughters = std::array{prong0, prong1, prong2};
+    int indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, motherPdgCode, daugsPdgCodes3Prong, true, &sign, 2);
+    auto motherPart = mcParticles.rawIteratorAt(indexRec);
+    if (indexRec > -1) {
+      cand3prong.flagMc = motherPart.pdgCode() > 0 ? charmHadFlag : -charmHadFlag; // Particle
+    }
+
+    cand3prong.origin = 0;
+    if (indexRec > -1) {
+      auto motherParticle = mcParticles.rawIteratorAt(indexRec);
+      std::vector<int> idxBhadMothers{};
+      int origin = RecoDecay::getCharmHadronOrigin(mcParticles, motherParticle, false, &idxBhadMothers);
+      cand3prong.origin = origin;
+      cand3prong.ptBMotherRec = -1.f;
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        cand3prong.ptBMotherRec = bHadMother.pt();
+      }
+    }
     return true;
   }
 
@@ -339,25 +464,25 @@ struct alice3decayFinder {
   void init(InitContext&)
   {
     // initialize O2 2-prong fitter (only once)
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
-    fitter.setWeightedFinalPCA(false);
+    fitter.setPropagateToPCA(propagateToPCA);
+    fitter.setMaxR(maxR);
+    fitter.setMinParamChange(minParamChange);
+    fitter.setMinRelChi2Change(minRelChi2Change);
+    fitter.setMaxDZIni(maxDZIni);
+    fitter.setMaxChi2(maxVtxChi2);
+    fitter.setUseAbsDCA(useAbsDCA);
+    fitter.setWeightedFinalPCA(useWeightedFinalPCA);
     fitter.setBz(magneticField);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
-    fitter3.setPropagateToPCA(true);
-    fitter3.setMaxR(200.);
-    fitter3.setMinParamChange(1e-3);
-    fitter3.setMinRelChi2Change(0.9);
-    fitter3.setMaxDZIni(1e9);
-    fitter3.setMaxChi2(1e9);
-    fitter3.setUseAbsDCA(true);
-    fitter3.setWeightedFinalPCA(false);
+    fitter3.setPropagateToPCA(propagateToPCA);
+    fitter3.setMaxR(maxR);
+    fitter3.setMinParamChange(minParamChange);
+    fitter3.setMinRelChi2Change(minRelChi2Change);
+    fitter3.setMaxDZIni(maxDZIni);
+    fitter3.setMaxChi2(maxVtxChi2);
+    fitter3.setUseAbsDCA(useAbsDCA);
+    fitter3.setWeightedFinalPCA(useWeightedFinalPCA);
     fitter3.setBz(magneticField);
     fitter3.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
@@ -445,30 +570,37 @@ struct alice3decayFinder {
         }
       }
     }
-    if (doprocessFindLcBaryons) {
-      histos.add("h2dGenLc", "h2dGenLc", kTH2F, {axisPt, axisEta});
-      histos.add("h2dGenLcbar", "h2dGenLcbar", kTH2F, {axisPt, axisEta});
-      histos.add("h3dRecLc", "h2dRecLc", kTH3F, {axisPt, axisEta, axisLcMass});
-      histos.add("h3dRecLcbar", "h2dRecLcbar", kTH3F, {axisPt, axisEta, axisLcMass});
+    if (doprocessFindLc) {
+      histos.add("h2dGen3Prong", "h2dGen3Prong", kTH2F, {axisPt, axisEta});
+      histos.add("h2dGen3ProngBar", "h2dGen3ProngBar", kTH2F, {axisPt, axisEta});
+      histos.add("h3dRec3Prong", "h3dRec3Prong", kTH3F, {axisPt, axisEta, axisLcMass});
+      histos.add("hMass3Prong", "hMass3Prong", kTH1F, {axisLcMass});
 
-      histos.add("hMassLc", "hMassLc", kTH1F, {axisLcMass});
-      histos.add("hMassLcbar", "hMassLcbar", kTH1F, {axisLcMass});
-
-      if (doDCAplotsD) {
-        histos.add("hDCALcDaughters", "hDCALcDaughters", kTH1D, {axisDCADaughters});
-        histos.add("hDCALcbarDaughters", "hDCALcbarDaughters", kTH1D, {axisDCA});
-        histos.add("h2dDCAxyVsPtPiPlusFromLc", "h2dDCAxyVsPtPiPlusFromLc", kTH2F, {axisPt, axisDCA});
-        histos.add("h2dDCAxyVsPtPiMinusFromLc", "h2dDCAxyVsPtPiMinusFromLc", kTH2F, {axisPt, axisDCA});
-        histos.add("h2dDCAxyVsPtKaPlusFromLc", "h2dDCAxyVsPtKaPlusFromLc", kTH2F, {axisPt, axisDCA});
-        histos.add("h2dDCAxyVsPtKaMinusFromLc", "h2dDCAxyVsPtKaMinusFromLc", kTH2F, {axisPt, axisDCA});
-        histos.add("h2dDCAxyVsPtPrPlusFromLc", "h2dDCAxyVsPtPrPlusFromLc", kTH2F, {axisPt, axisDCA});
-        histos.add("h2dDCAxyVsPtPrMinusFromLc", "h2dDCAxyVsPtPrMinusFromLc", kTH2F, {axisPt, axisDCA});
+      if (doDCAplots3Prong) {
+        histos.add("hDCA3ProngDaughters", "hDCA3ProngDaughters", kTH1D, {axisDCADaughters});
+        histos.add("h2dDCAxyVsPtPiPlusFrom3P", "h2dDCAxyVsPtPiPlusFrom3P", kTH2F, {axisPt, axisDCA});
+        histos.add("h2dDCAxyVsPtPiMinusFrom3P", "h2dDCAxyVsPtPiMinusFrom3P", kTH2F, {axisPt, axisDCA});
+        histos.add("h2dDCAxyVsPtKaPlusFrom3P", "h2dDCAxyVsPtKaPlusFrom3P", kTH2F, {axisPt, axisDCA});
+        histos.add("h2dDCAxyVsPtKaMinusFrom3P", "h2dDCAxyVsPtKaMinusFrom3P", kTH2F, {axisPt, axisDCA});
+        histos.add("h2dDCAxyVsPtPrPlusFrom3P", "h2dDCAxyVsPtPrPlusFrom3P", kTH2F, {axisPt, axisDCA});
+        histos.add("h2dDCAxyVsPtPrMinusFrom3P", "h2dDCAxyVsPtPrMinusFrom3P", kTH2F, {axisPt, axisDCA});
+        histos.add("hDcaXYProngs", "DCAxy of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
+        histos.add("hDcaZProngs", "DCAz of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
       }
+    }
+
+    if (doprocessFindLc) {
+      daugsPdgCodes3Prong = {+kProton, -kKPlus, +kPiPlus};
+      motherPdgCode = o2::constants::physics::Pdg::kLambdaCPlus;
+      daughtersMasses3Prong = {o2::constants::physics::MassProton,
+                               o2::constants::physics::MassKaonCharged,
+                               o2::constants::physics::MassPionCharged};
+      charmHadFlag = CharmHadAlice3::Lc;
     }
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processGenerated(aod::McParticles const&)
+  void processGenerated(aod::McParticles const& mcParticles)
   {
     // no grouping for MC particles -> as intended
     if (doprocessFindDmesons) {
@@ -507,16 +639,31 @@ struct alice3decayFinder {
         }
       }
     }
-    if (doprocessFindLcBaryons) {
-      for (auto const& mcParticle : trueLc)
-        histos.fill(HIST("h2dGenLc"), mcParticle.pt(), mcParticle.eta());
-      for (auto const& mcParticle : trueLcbar)
-        histos.fill(HIST("h2dGenLcbar"), mcParticle.pt(), mcParticle.eta());
+    if (doprocessFindLc) {
+      for (auto const& mcParticle : mcParticles) {
+        if (std::abs(mcParticle.pdgCode()) != motherPdgCode) {
+          mcGenFlags(-1, -1, -1);
+          continue;
+        }
+        std::vector<int> idxBhadMothers{};
+        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false, &idxBhadMothers);
+        float ptBMotherGen{-1.f};
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+          ptBMotherGen = bHadMother.pt();
+        }
+        mcGenFlags(origin, ptBMotherGen, mcParticle.pdgCode() ? charmHadFlag : -charmHadFlag);
+        if (mcParticle.pdgCode() > 0) {
+          histos.fill(HIST("h2dGen3Prong"), mcParticle.pt(), mcParticle.eta());
+        } else {
+          histos.fill(HIST("h2dGen3ProngBar"), mcParticle.pt(), mcParticle.eta());
+        }
+      }
     }
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindDmesons(aod::Collision const& collision, alice3tracks const&, aod::McParticles const& mcParticles)
+  void processFindDmesons(aod::Collision const& collision, Alice3TracksWPid const&, aod::McParticles const& mcParticles)
   {
     // group with this collision
     auto tracksPiPlusFromDgrouped = tracksPiPlusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -635,7 +782,7 @@ struct alice3decayFinder {
           continue;
         if (decayLengthXY < DMinDecayLengthXY || decayLengthXY > DMaxDecayLengthXY)
           continue;
-        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, (double)DDecayLengthSquaredCut);
+        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, static_cast<double>(DDecayLengthSquaredCut));
         if (decayLength * decayLength < decayLengthSquaredCut * decayLengthSquaredCut)
           continue;
 
@@ -782,7 +929,7 @@ struct alice3decayFinder {
           continue;
         if (decayLengthXY < DMinDecayLengthXY || decayLengthXY > DMaxDecayLengthXY)
           continue;
-        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, (double)DDecayLengthSquaredCut);
+        auto decayLengthSquaredCut = std::min((std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2]) * 0.0066) + 0.01, static_cast<double>(DDecayLengthSquaredCut));
         if (decayLength * decayLength < decayLengthSquaredCut * decayLengthSquaredCut)
           continue;
 
@@ -831,62 +978,63 @@ struct alice3decayFinder {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindLcBaryons(aod::Collision const& collision, alice3tracks const&, aod::McParticles const&)
+  template <typename TProng>
+  void fillPidTable(TProng const& prong0, TProng const& prong1, TProng const& prong2)
   {
-    // group with this collision
-    auto tracksPiPlusFromLcgrouped = tracksPiPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto tracksKaPlusFromLcgrouped = tracksKaPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto tracksPrPlusFromLcgrouped = tracksPrPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    auto tracksPiMinusFromLcgrouped = tracksPiMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto tracksKaMinusFromLcgrouped = tracksKaMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto tracksPrMinusFromLcgrouped = tracksPrMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    if (doDCAplotsLc) {
-      for (auto const& track : tracksPiPlusFromLcgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtPiPlusFromLc"), track.pt(), track.dcaXY() * 1e+4);
-      for (auto const& track : tracksPiMinusFromLcgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtPiMinusFromLc"), track.pt(), track.dcaXY() * 1e+4);
-      for (auto const& track : tracksKaPlusFromLcgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtKaPlusFromLc"), track.pt(), track.dcaXY() * 1e+4);
-      for (auto const& track : tracksKaMinusFromLcgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtKaMinusFromLc"), track.pt(), track.dcaXY() * 1e+4);
-      for (auto const& track : tracksPrPlusFromLcgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtPrPlusFromLc"), track.pt(), track.dcaXY() * 1e+4);
-      for (auto const& track : tracksPrMinusFromLcgrouped)
-        histos.fill(HIST("h2dDCAxyVsPtPrMinusFromLc"), track.pt(), track.dcaXY() * 1e+4);
+    if (motherPdgCode == o2::constants::physics::Pdg::kLambdaCPlus) {
+      pidInfoLcDaugs(prong0.nSigmaTrkPr(), prong0.nSigmaProtonRich(), prong0.nSigmaProtonInnerTOF(), prong0.nSigmaProtonOuterTOF(),
+                     prong1.nSigmaTrkKa(), prong1.nSigmaKaonRich(), prong1.nSigmaKaonInnerTOF(), prong1.nSigmaKaonOuterTOF(),
+                     prong2.nSigmaTrkPi(), prong2.nSigmaPionRich(), prong2.nSigmaPionInnerTOF(), prong2.nSigmaPionOuterTOF());
+    } else {
+      LOG(fatal) << "3-prong candidate not implemented yet";
     }
+  }
 
-    // Lc+ baryons +4122 -> +2212 -321 +211
-    for (auto const& proton : tracksPrPlusFromLcgrouped) {
-      for (auto const& pion : tracksPiPlusFromLcgrouped) {
-        if (pion.globalIndex() == proton.globalIndex())
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  template <typename TProng>
+  void fill3ProngTable(aod::Collision const& collision, TProng const& prongs0, TProng const& prongs1, TProng const& prongs2, aod::McParticles const& mcParticles)
+  {
+    for (auto const& prong0 : prongs0) {
+      for (auto const& prong2 : prongs2) {
+        if (prong2.globalIndex() == prong0.globalIndex())
           continue; // avoid self
-        for (auto const& kaon : tracksKaMinusFromLcgrouped) {
-          if (mcSameMotherCheck && (!checkSameMother(proton, kaon) || !checkSameMother(proton, pion)))
+        for (auto const& prong1 : prongs1) {
+          if (mcSameMotherCheck && (!checkSameMother(prong0, prong1) || !checkSameMother(prong0, prong1))) {
             continue;
-          if (!buildDecayCandidateThreeBody(proton, kaon, pion, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
+          }
+          if (!buildDecayCandidateThreeBody(collision, prong0, prong1, prong2, mcParticles)) {
             continue;
-          histos.fill(HIST("hDCALcDaughters"), lcbaryon.dcaDau * 1e+4);
-          histos.fill(HIST("hMassLc"), lcbaryon.mass);
-          histos.fill(HIST("h3dRecLc"), lcbaryon.pt, lcbaryon.eta, lcbaryon.mass);
-        }
-      }
-    }
-    // Lc- baryons -4122 -> -2212 +321 -211
-    for (auto const& proton : tracksPrMinusFromLcgrouped) {
-      for (auto const& pion : tracksPiMinusFromLcgrouped) {
-        if (pion.globalIndex() == proton.globalIndex())
-          continue; // avoid self
-        for (auto const& kaon : tracksKaPlusFromLcgrouped) {
-          if (mcSameMotherCheck && (!checkSameMother(proton, kaon) || !checkSameMother(proton, pion)))
-            continue;
-          if (!buildDecayCandidateThreeBody(proton, kaon, pion, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
-            continue;
-          histos.fill(HIST("hDCALcbarDaughters"), lcbaryon.dcaDau * 1e+4);
-          histos.fill(HIST("hMassLcbar"), lcbaryon.mass);
-          histos.fill(HIST("h3dRecLcbar"), lcbaryon.pt, lcbaryon.eta, lcbaryon.mass);
+          }
+          histos.fill(HIST("hDCA3ProngDaughters"), cand3prong.dcaDau * 1e+4);
+          histos.fill(HIST("hMass3Prong"), cand3prong.mass);
+          histos.fill(HIST("h3dRec3Prong"), cand3prong.pt, cand3prong.eta, cand3prong.mass);
+
+          auto candPx = cand3prong.Pdaug0[0] + cand3prong.Pdaug1[0] + cand3prong.Pdaug2[0];
+          auto candPy = cand3prong.Pdaug0[1] + cand3prong.Pdaug1[1] + cand3prong.Pdaug2[1];
+          auto candPz = cand3prong.Pdaug0[2] + cand3prong.Pdaug1[2] + cand3prong.Pdaug2[2];
+
+          candidate3Prong(collision.globalIndex(),
+                          cand3prong.primaryVertex[0], cand3prong.primaryVertex[1], cand3prong.primaryVertex[2],
+                          cand3prong.secondaryVertex[0], cand3prong.secondaryVertex[1], cand3prong.secondaryVertex[2],
+                          cand3prong.errorDecayLength, cand3prong.errorDecayLengthXY,
+                          cand3prong.chi2PCA,
+                          cand3prong.eta,
+                          cand3prong.phi,
+                          cand3prong.pt,
+                          cand3prong.Pdaug2[0], cand3prong.Pdaug2[1], cand3prong.Pdaug2[2],
+                          cand3prong.Pdaug1[0], cand3prong.Pdaug1[1], cand3prong.Pdaug1[2],
+                          cand3prong.Pdaug0[0], cand3prong.Pdaug0[1], cand3prong.Pdaug0[2],
+                          cand3prong.impactParameterY0, cand3prong.impactParameterY1, cand3prong.impactParameterY2,
+                          std::sqrt(cand3prong.errorImpactParameterY0),
+                          std::sqrt(cand3prong.errorImpactParameterY1),
+                          std::sqrt(cand3prong.errorImpactParameterY2),
+                          cand3prong.impactParameterZ0, cand3prong.impactParameterZ1, cand3prong.impactParameterZ2,
+                          std::sqrt(cand3prong.errorImpactParameterZ0),
+                          std::sqrt(cand3prong.errorImpactParameterZ1),
+                          std::sqrt(cand3prong.errorImpactParameterZ2),
+                          candPx, candPy, candPz);
+          mcRecFlags(cand3prong.origin, cand3prong.ptBMotherRec, cand3prong.flagMc); // placeholder for prompt/non-prompt
+          fillPidTable(prong0, prong1, prong2);
         }
       }
     }
@@ -896,12 +1044,44 @@ struct alice3decayFinder {
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   PROCESS_SWITCH(alice3decayFinder, processGenerated, "fill MC-only histograms", true);
   PROCESS_SWITCH(alice3decayFinder, processFindDmesons, "find D mesons", true);
-  PROCESS_SWITCH(alice3decayFinder, processFindLcBaryons, "find Lc Baryons", true);
+
+  void processFindLc(aod::Collision const& collision,
+                     aod::McParticles const& mcParticles,
+                     Alice3TracksWPid const&)
+  {
+
+    auto tracksPiPlus = tracksPiPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksKaPlus = tracksKaPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksPrPlus = tracksPrPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksPiMinus = tracksPiMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksKaMinus = tracksKaMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksPrMinus = tracksPrMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    if (doDCAplots3Prong) {
+      for (auto const& track : tracksPiPlus)
+        histos.fill(HIST("h2dDCAxyVsPtPiPlusFrom3P"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& track : tracksPiMinus)
+        histos.fill(HIST("h2dDCAxyVsPtPiMinusFrom3P"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& track : tracksKaPlus)
+        histos.fill(HIST("h2dDCAxyVsPtKaPlusFrom3P"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& track : tracksKaMinus)
+        histos.fill(HIST("h2dDCAxyVsPtKaMinusFrom3P"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& track : tracksPrPlus)
+        histos.fill(HIST("h2dDCAxyVsPtPrPlusFrom3P"), track.pt(), track.dcaXY() * 1e+4);
+      for (auto const& track : tracksPrMinus)
+        histos.fill(HIST("h2dDCAxyVsPtPrMinusFrom3P"), track.pt(), track.dcaXY() * 1e+4);
+    }
+
+    // Particles
+    fill3ProngTable(collision, tracksPrPlus, tracksKaMinus, tracksPiPlus, mcParticles);
+    fill3ProngTable(collision, tracksPrMinus, tracksKaPlus, tracksPiMinus, mcParticles);
+  }
+  PROCESS_SWITCH(alice3decayFinder, processFindLc, "find Lc Baryons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<alice3decayFinder>(cfgc)};
+    adaptAnalysisTask<alice3decayFinder>(cfgc)}; // o2-linter: disable=name/o2-task (wrong hyphenation)
 }
