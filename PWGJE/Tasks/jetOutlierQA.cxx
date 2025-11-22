@@ -239,10 +239,16 @@ struct JetOutlierQATask {
       registry.add("h_track_pt_eta_same_collision", "track pt vs eta from same collision or different MB collision;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{200, 0, 200}, {100, -5, 5}}});
       registry.add("h_track_pt_phi_same_collision", "track pt vs phi from same collision or different MB collision;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{200, 0, 200}, {160, -1.0, 7.0}}});
       registry.add("h2_collision_ID_difference_same_collision", "difference in collision ID between outlier collision and analysed collision", {HistType::kTH2F, {{600, 0, 600}, {200, -100, 100}}});
+      registry.add("h_pt_hard_track_pt_same_collision", "Tracks vs pThard;#frac{p_{T}}{#hat{p}};p_{T}", {HistType::kTH2F, {pThatAxis, {200, 0, 200}}});
+      registry.add("h_track_pt_same_collision_cut_particle", "track pt from same collision or different MB collision;p_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0, 200}}});
+      registry.add("h_pt_hard_track_pt_same_collision_cut_particle", "Tracks vs pThard;#frac{p_{T}}{#hat{p}};p_{T}", {HistType::kTH2F, {pThatAxis, {200, 0, 200}}});
+      registry.add("h_track_pt_same_collision_rejected", "rejected track pt from same collision or different MB collision;p_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0, 200}}});
+
       registry.add("h_track_pt_no_JJ_different", "track pt from same collision or different MB collision;p_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0, 200}}});
       registry.add("h_track_pt_eta_no_JJ_different", "track pt vs eta from same collision or different MB collision;p_{T,track} (GeV/#it{c});#eta_{track};entries", {HistType::kTH2F, {{200, 0, 200}, {100, -5, 5}}});
       registry.add("h_track_pt_phi_no_JJ_different", "track pt vs phi from same collision or different MB collision;p_{T,track} (GeV/#it{c});#varphi_{track} (rad);entries", {HistType::kTH2F, {{200, 0, 200}, {160, -1.0, 7.0}}});
       registry.add("h2_collision_ID_difference_no_JJ_different", "difference in collision ID between outlier collision and analysed collision", {HistType::kTH2F, {{600, 0, 600}, {200, -100, 100}}});
+      registry.add("h_track_pt_no_JJ_different_rejected", "rejected track pt from same collision or different MB collision;p_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0, 200}}});
     }
   }
 
@@ -681,6 +687,18 @@ struct JetOutlierQATask {
           registry.fill(HIST("h_track_pt_eta_same_collision"), track.pt(), track.eta(), weight);
           registry.fill(HIST("h_track_pt_phi_same_collision"), track.pt(), track.phi(), weight);
           registry.fill(HIST("h2_collision_ID_difference_same_collision"), pTHat, float(outlierCollisionIDDifference));
+          registry.fill(HIST("h_pt_hard_track_pt_same_collision"), pTHat != 0.0 ? track.pt() / pTHat : 0.0, track.pt(), weight);
+
+          int mcCollisionIDcoll = collision.mcCollisionId(); // Get the corresponding MC collision ID from the reco collision
+          int mcCollisionIDOutlier = mcParticleOutlier.mcCollisionId();
+          // include selection on pThat of particle
+          if(mcParticleOutlier.pt() < pTHatMaxMCP * pTHat) {
+            registry.fill(HIST("h_track_pt_same_collision_cut_particle"), track.pt(), weight);
+            registry.fill(HIST("h_pt_hard_track_pt_same_collision_cut_particle"), pTHat != 0.0 ? track.pt() / pTHat : 0.0, track.pt(), weight);
+          }
+        }
+        else {
+          registry.fill(HIST("h_track_pt_same_collision_rejected"), track.pt(), weight);
         }
         // fill tracks for events which have no JJ outlier tracks from different events
         if (nJJdifferentSelected == 0) {
@@ -688,6 +706,9 @@ struct JetOutlierQATask {
           registry.fill(HIST("h_track_pt_eta_no_JJ_different"), track.pt(), track.eta(), weight);
           registry.fill(HIST("h_track_pt_phi_no_JJ_different"), track.pt(), track.phi(), weight);
           registry.fill(HIST("h2_collision_ID_difference_no_JJ_different"), pTHat, float(outlierCollisionIDDifference));
+        }
+        else {
+          registry.fill(HIST("h_track_pt_no_JJ_different_rejected"), track.pt(), weight);
         }
         // collision checks for all tracks
         for (auto const& collisionOutlier : collisions) { // find collisions closeby
