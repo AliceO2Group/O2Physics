@@ -35,13 +35,21 @@ struct filterEoI {
     kElectronFromDalitz = 0x8,
   };
   Produces<o2::aod::EMEoIs> emeoi;
-  // Configurable<int> minNElectrons{"minNElectrons", 1, "min number of e+ or e- at midrapidity"};
-  // Configurable<int> minNMuons{"minNMuons", 1, "min number of mu+ or mu- at forward rapidity"};
-  // Configurable<int> minNV0s{"minNV0s", 1, "min number of v0 photons at midrapidity"};
+  Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
+  Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
+  Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
 
   HistogramRegistry fRegistry{"output"};
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
+    if (inheritFromOtherTask.value) { // Inheriting from other task
+      getTaskOptionValue(initContext, "skimmer-primary-electron", "minNelectron", minNelectron.value, true);
+      getTaskOptionValue(initContext, "skimmer-primary-muon", "minNmuon", minNmuon.value, true);
+    }
+
+    LOGF(info, "minNelectron = %d", minNelectron.value);
+    LOGF(info, "minNmuon = %d", minNmuon.value);
+
     auto hEventCounter = fRegistry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{8, 0.5f, 8.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "event with electron");
@@ -71,14 +79,14 @@ struct filterEoI {
 
       if constexpr (static_cast<bool>(system & kElectron)) {
         auto electrons_coll = electrons.sliceBy(perCollision_el, collision.globalIndex());
-        if (electrons_coll.size() >= 1) {
+        if (electrons_coll.size() >= minNelectron) {
           does_electron_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 2);
         }
       }
       if constexpr (static_cast<bool>(system & kFwdMuon)) {
         auto muons_coll = muons.sliceBy(perCollision_mu, collision.globalIndex());
-        if (muons_coll.size() >= 1) {
+        if (muons_coll.size() >= minNmuon) {
           does_fwdmuon_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 3);
         }
