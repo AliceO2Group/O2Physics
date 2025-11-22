@@ -625,7 +625,33 @@ auto matchedHFParticleId(const T& candidate, const U& /*tracks*/, const V& /*par
 template <typename T, typename U, typename V>
 auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
 {
-  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+
+  const typename V::iterator candidateDaughterParticle;
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+    candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
+    candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
+    candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+    candidateDaughterParticle = candidate.template prong3_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+    candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
+    candidateDaughterParticle = candidate.template prong4_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::BplusToD0Pi) {
+    candidateDaughterParticle = candidate.template prong3_as<U>().template mcParticle_as<V>();
+  }
+  if (std::abs(candidate.flagMcMatchRec()) == o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
+    candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  }
+
   return candidateDaughterParticle.template mothers_first_as<V>();
 }
 
