@@ -283,17 +283,23 @@ struct StrangeCascTrack {
       return false;
     return true;
   }
-  // checks general selection criteria for cascades
+  // checks general selection criteria for cascades - from std casc
   template <typename TEvent, typename TCascade>
-  bool isValidCasc(TEvent collision, TCascade cascade, TString particle)
+  bool isValidCascGen(TEvent collision, TCascade cascade)
+  {
+    if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < selCuts.cutV0CosPA)
+      return false;
+    if (cascade.bachBaryonCosPA() < selCuts.cutBachCosPA)
+      return false;
+    return true;
+  }
+  // checks general selection criteria for cascades - from std or tracked casc
+  template <typename TCascade>
+  bool isValidCascSpec(TCascade cascade, TString particle)
   {
     if (cascade.dcaXYCascToPV() > selCuts.cutDCAtoPVxy)
       return false;
     if (cascade.dcaZCascToPV() > selCuts.cutDCAtoPVz)
-      return false;
-    if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < selCuts.cutV0CosPA)
-      return false;
-    if (cascade.bachBaryonCosPA() < selCuts.cutBachCosPA)
       return false;
     ROOT::Math::PxPyPzMVector momentum;
     if (particle == "xi")
@@ -603,11 +609,11 @@ struct StrangeCascTrack {
         }
       }
       if (doApplyGenCutsXi) {
-        if (!isValidCasc(collision, stdCasc, "xi"))
+        if (!isValidCascGen(collision, stdCasc) || !isValidCascSpec(cascade, "xi"))
           passedAllSelsXi = false;
       }
       if (doApplyGenCutsOmega) {
-        if (!isValidCasc(collision, stdCasc, "omega"))
+        if (!isValidCascGen(collision, stdCasc) || !isValidCascSpec(cascade, "omega"))
           passedAllSelsOmega = false;
       }
       // apply pt cuts
