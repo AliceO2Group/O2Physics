@@ -104,12 +104,12 @@ void FFitWeights::fillWeights(float centrality, float qn, int nh, const char* pf
   th2->Fill(centrality, qn);
 };
 
-void FFitWeights::fillPt(float centrality, float pt, bool first)
+void FFitWeights::fillPt(float centrality, float pt, float weight, bool first)
 {
   if (first) {
-    ptProfCent->Fill(centrality, pt);
+    ptProfCent->Fill(centrality, pt, weight);
   } else {
-    h2ptCent->Fill(centrality, pt);
+    h2ptCent->Fill(centrality, pt, weight);
   }
 };
 float FFitWeights::getPtMult(float centrality)
