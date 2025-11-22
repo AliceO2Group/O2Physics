@@ -46,7 +46,17 @@ o2physics_add_dpl_workflow(alice3-correlatorddbar
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-hf-selector-3prong
+                    SOURCES alice3HfSelector3Prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-hf-tree-creator-3prong
+                    SOURCES alice3HfTreeCreator3Prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-tracking-translator
                     SOURCES alice3TrackingTranslator.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
