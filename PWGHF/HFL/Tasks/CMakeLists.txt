@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(task-electron-weak-boson
                     SOURCES taskElectronWeakBoson.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-muon-charm-beauty-separation
