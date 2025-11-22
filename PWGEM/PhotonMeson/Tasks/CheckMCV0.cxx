@@ -9,27 +9,34 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file CheckMCV0.cxx
 /// \brief check the v0 phase-space
-/// \dependencies: o2-analysis-lf-lambdakzeromcfinder
 /// \author daiki.sekihata@cern.ch felix.schlepper@cern.ch
+/// \dependencies: o2-analysis-lf-lambdakzeromcfinder
 
-#include "TDatabasePDG.h"
-#include "TMath.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DetectorsBase/Propagator.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGEM/PhotonMeson/DataModel/mcV0Tables.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+//
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TDatabasePDG.h>
+#include <TMath.h>
+
+#include <cmath>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -343,7 +350,7 @@ struct CheckMCV0 {
         return;
       }
     } else if constexpr (idxCut == 2) {
-      if (!(abs(pos.z()) > 38.f && abs(pos.z()) < 46.f) && !(abs(ele.z()) > 38.f && abs(ele.z()) < 46.f)) {
+      if (!(std::abs(pos.z()) > 38.f && std::abs(pos.z()) < 46.f) && !(std::abs(ele.z()) > 38.f && std::abs(ele.z()) < 46.f)) {
         return;
       }
     }
@@ -419,15 +426,15 @@ struct CheckMCV0 {
       registry.fill(HIST("CheckV0Leg"), checkV0legEnum::PTMAX);
       return false;
     }
-    if (abs(track.eta()) > maxeta) {
+    if (std::abs(track.eta()) > maxeta) {
       registry.fill(HIST("CheckV0Leg"), checkV0legEnum::MAXETA);
       return false;
     }
-    if (abs(track.dcaXY()) < dcamin) {
+    if (std::abs(track.dcaXY()) < dcamin) {
       registry.fill(HIST("CheckV0Leg"), checkV0legEnum::DCAMIN);
       return false;
     }
-    if (abs(track.dcaXY()) > dcamax) {
+    if (std::abs(track.dcaXY()) > dcamax) {
       registry.fill(HIST("CheckV0Leg"), checkV0legEnum::DCAMAX);
       return false;
     }
