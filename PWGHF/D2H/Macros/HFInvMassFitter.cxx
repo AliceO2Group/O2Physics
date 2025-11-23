@@ -55,8 +55,6 @@
 
 using namespace RooFit;
 
-ClassImp(HFInvMassFitter);
-
 HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mFitOption("L,E"),
                                      mMinMass(0),

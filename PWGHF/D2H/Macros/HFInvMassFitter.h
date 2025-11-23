@@ -313,7 +313,7 @@ class HFInvMassFitter : public TNamed
   Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
   Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
 
-  ClassDef(HFInvMassFitter, 1);
+  ClassDefOverride(HFInvMassFitter, 1);
 };
 
 #endif // PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
