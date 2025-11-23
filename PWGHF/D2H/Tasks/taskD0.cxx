@@ -605,14 +605,12 @@ struct HfTaskD0 {
         const auto& zdc = bcForUPC.zdc();
         zdcEnergyZNA = zdc.energyCommonZNA();
         zdcEnergyZNC = zdc.energyCommonZNC();
+        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
+
       }
 
-      // Fill QA histograms using the UPC BC for both FIT and ZDC
-      if (hasZdc) {
-        registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
-        registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-        registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
-      }
+      registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+      registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
 
       if (hf_upc::isSingleSidedGap(gap)) {
         const auto thisCollId = collision.globalIndex();

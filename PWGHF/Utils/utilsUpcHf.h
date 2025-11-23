@@ -117,7 +117,7 @@ inline auto determineGapType(TCollision const& collision,
 /// \return true if single-sided gap, false otherwise
 constexpr bool isSingleSidedGap(int gap) noexcept
 {
-  return (gap == TrueGap::SingleGapA || gap == TrueGap::SingleGapC);
+  return (gap == TrueGap::SingleGapA || gap == TrueGap::SingleGapC || gap == TrueGap::DoubleGap || gap == TrueGap::BadDoubleGap || gap == TrueGap::TrkOutOfRange || gap == TrueGap::NoUpc);
 }
 
 /// \brief Get gap type name as string
