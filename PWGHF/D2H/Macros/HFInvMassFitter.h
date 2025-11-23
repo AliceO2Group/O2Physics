@@ -80,7 +80,7 @@ class HFInvMassFitter : public TNamed
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
-  void setFitOption(TString opt) { mFitOption = opt.Data(); }
+  void setFitOption(const std::string& opt) { mFitOption = opt; }
   RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1) const;
   RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
   RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
@@ -244,7 +244,7 @@ class HFInvMassFitter : public TNamed
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
 
   TH1* mHistoInvMass; // histogram to fit
-  TString mFitOption;
+  std::string mFitOption;
   double mMinMass;                 // lower mass limit
   double mMaxMass;                 // upper mass limit
   int mTypeOfBkgPdf;               // background fit function

@@ -51,7 +51,7 @@
 
 using namespace rapidjson;
 
-int runMassFitter(const TString& configFileName = "config_massfitter.json");
+int runMassFitter(const std::string& configFileName = "config_massfitter.json");
 
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
@@ -75,10 +75,10 @@ void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
 void divideCanvas(TCanvas* c, int nSliceVarBins);
 void setHistoStyle(TH1* histo, Color_t color = kBlack, Size_t markerSize = 1);
 
-int runMassFitter(const TString& configFileName)
+int runMassFitter(const std::string& configFileName)
 {
   // load config
-  FILE* configFile = fopen(configFileName.Data(), "r");
+  FILE* configFile = fopen(configFileName.c_str(), "r");
   if (configFile == nullptr) {
     throw std::runtime_error("ERROR: Missing configuration json file: " + configFileName);
   }
@@ -91,10 +91,10 @@ int runMassFitter(const TString& configFileName)
 
   bool const isMc = config["IsMC"].GetBool();
   bool const writeSignalPar = config["WriteSignalPar"].GetBool();
-  TString const particleName = config["Particle"].GetString();
-  TString const collisionSystem = config["CollisionSystem"].GetString();
-  TString const inputFileName = config["InFileName"].GetString();
-  TString const reflFileName = config["ReflFileName"].GetString();
+  std::string const particleName = config["Particle"].GetString();
+  std::string const collisionSystem = config["CollisionSystem"].GetString();
+  std::string const inputFileName = config["InFileName"].GetString();
+  std::string const reflFileName = config["ReflFileName"].GetString();
   TString outputFileName = config["OutFileName"].GetString();
 
   std::vector<std::string> inputHistoName;
@@ -219,23 +219,23 @@ int runMassFitter(const TString& configFileName)
     {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s} + c.c."}},
     {"Dstar", {"D^{0}pi^{+}", "D*+", "D^{*+} #rightarrow D^{0}#pi^{+} + c.c."}},
     {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+", "#Xi_{c}^{+} #rightarrow #Xi^{-}#pi^{+}#pi^{+} + c.c."}}};
-  if (particles.find(particleName.Data()) == particles.end()) {
+  if (particles.find(particleName.c_str()) == particles.end()) {
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
-  const auto& particleTuple = particles[particleName.Data()];
-  const TString massAxisTitle = "#it{M}(" + std::get<0>(particleTuple) + ") (GeV/#it{c}^{2})";
+  const auto& particleTuple = particles[particleName.c_str()];
+  const std::string massAxisTitle = "#it{M}(" + std::get<0>(particleTuple) + ") (GeV/#it{c}^{2})";
   const double massPDG = TDatabasePDG::Instance()->GetParticle(std::get<1>(particleTuple).c_str())->Mass();
-  const std::vector<std::string> plotLabels = {std::get<2>(particleTuple), collisionSystem.Data()};
+  const std::vector<std::string> plotLabels = {std::get<2>(particleTuple), collisionSystem.c_str()};
 
   // load inv-mass histograms
-  auto* inputFile = TFile::Open(inputFileName.Data());
+  auto* inputFile = TFile::Open(inputFileName.c_str());
   if ((inputFile == nullptr) || !inputFile->IsOpen()) {
     return -1;
   }
 
   TFile* inputFileRefl = nullptr;
   if (enableRefl) {
-    inputFileRefl = TFile::Open(reflFileName.Data());
+    inputFileRefl = TFile::Open(reflFileName.c_str());
     if ((inputFileRefl == nullptr) || !inputFileRefl->IsOpen()) {
       return -1;
     }
@@ -391,7 +391,7 @@ int runMassFitter(const TString& configFileName)
     TString const ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
-                                          ptTitle.Data(), massAxisTitle.Data(),
+                                          ptTitle.Data(), massAxisTitle.c_str(),
                                           hMassForFit[iSliceVar]->GetBinWidth(1) * 1000));
     hMassForFit[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
 
