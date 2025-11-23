@@ -789,27 +789,27 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 {
   RooAbsPdf* sgnPdf{nullptr};
   switch (mTypeOfSgnPdf) {
-    case 0: {
+    case SingleGaus: {
       sgnPdf = workspace->pdf("sgnFuncGaus");
       mRooSigmaSgn = workspace->var("sigma");
       mRooSecSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 1: {
+    case DoubleGaus: {
       sgnPdf = workspace->pdf("sgnFuncDoubleGaus");
       mRooSigmaSgn = workspace->var("sigma");
       mRooSecSigmaSgn = workspace->var("sigmaDoubleGaus");
       mRooMeanSgn = workspace->var("mean");
       mRooFracDoubleGaus = workspace->var("fracDoubleGaus");
     } break;
-    case 2: {
+    case DoubleGausSigmaRatioPar: {
       sgnPdf = workspace->pdf("sgnFuncGausRatio");
       mRooSigmaSgn = workspace->var("sigma");
       mRooSecSigmaSgn = workspace->var("sigmaDoubleGausRatio");
       mRooMeanSgn = workspace->var("mean");
       mRooFracDoubleGaus = workspace->var("fracDoubleGausRatio");
     } break;
-    case 3: {
+    case GausSec: {
       sgnPdf = workspace->pdf("sgnFuncDoublePeak");
       mRooSigmaSgn = workspace->var("sigma");
       mRooSecSigmaSgn = workspace->var("sigmaSec");
@@ -891,15 +891,13 @@ void HFInvMassFitter::calculateFitToDataRatio() const
 void HFInvMassFitter::setReflFuncFixed()
 {
   switch (mTypeOfReflPdf) {
-    case 0: // exponential
-    {
+    case SingleGausRefl: {
       RooRealVar* meanRefl = mWorkspace->var("meanRefl");
       RooRealVar* sigmaRefl = mWorkspace->var("sigmaRefl");
       meanRefl->setConstant(kTRUE);
       sigmaRefl->setConstant(kTRUE);
     } break;
-    case 1: // poly1
-    {
+    case DoubleGausRefl: {
       RooRealVar* meanRefl = mWorkspace->var("meanRefl");
       RooRealVar* sigmaRefl = mWorkspace->var("sigmaRefl");
       RooRealVar* meanReflDoubleGaus = mWorkspace->var("meanReflDoubleGaus");
@@ -911,31 +909,19 @@ void HFInvMassFitter::setReflFuncFixed()
       sigmaReflDoubleGaus->setConstant(kTRUE);
       fracRefl->setConstant(kTRUE);
     } break;
-    case 2: {
-      RooRealVar* polyReflParam0 = mWorkspace->var("polyReflParam0");
-      RooRealVar* polyReflParam1 = mWorkspace->var("polyReflParam1");
-      RooRealVar* polyReflParam2 = mWorkspace->var("polyReflParam2");
-      RooRealVar* polyReflParam3 = mWorkspace->var("polyReflParam3");
-      polyReflParam0->setConstant(kTRUE);
-      polyReflParam1->setConstant(kTRUE);
-      polyReflParam2->setConstant(kTRUE);
-      polyReflParam3->setConstant(kTRUE);
+    case Poly3Refl: {
+      std::array<RooRealVar*, 4> polyReflParam{nullptr};
+      for (int iPar = 0; iPar < 4; ++iPar) {
+        polyReflParam.at(iPar) = mWorkspace->var(Form("polyReflParam%d", iPar));
+        polyReflParam.at(iPar)->setConstant(kTRUE);
+      }
     } break;
-    case 3: {
-      RooRealVar* polyReflParam0 = mWorkspace->var("polyReflParam0");
-      RooRealVar* polyReflParam1 = mWorkspace->var("polyReflParam1");
-      RooRealVar* polyReflParam2 = mWorkspace->var("polyReflParam2");
-      RooRealVar* polyReflParam3 = mWorkspace->var("polyReflParam3");
-      RooRealVar* polyReflParam4 = mWorkspace->var("polyReflParam4");
-      RooRealVar* polyReflParam5 = mWorkspace->var("polyReflParam5");
-      RooRealVar* polyReflParam6 = mWorkspace->var("polyReflParam6");
-      polyReflParam0->setConstant(kTRUE);
-      polyReflParam1->setConstant(kTRUE);
-      polyReflParam2->setConstant(kTRUE);
-      polyReflParam3->setConstant(kTRUE);
-      polyReflParam4->setConstant(kTRUE);
-      polyReflParam5->setConstant(kTRUE);
-      polyReflParam6->setConstant(kTRUE);
+    case Poly6Refl: {
+      std::array<RooRealVar*, 6> polyReflParam{nullptr};
+      for (int iPar = 0; iPar < 6; ++iPar) {
+        polyReflParam.at(iPar) = mWorkspace->var(Form("polyReflParam%d", iPar));
+        polyReflParam.at(iPar)->setConstant(kTRUE);
+      }
     } break;
     default:
       break;
