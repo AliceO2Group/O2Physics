@@ -111,15 +111,15 @@ inline auto determineGapType(TCollision const& collision,
                           thresholds.ft0aThreshold.value,
                           thresholds.ft0cThreshold.value);
 }
-
+/*
 /// \brief Check if the gap type is a single-sided gap (SingleGapA or SingleGapC)
 /// \param gap TrueGap enum value
 /// \return true if single-sided gap, false otherwise
 constexpr bool isSingleSidedGap(int gap) noexcept
 {
-  return (gap == TrueGap::SingleGapA || gap == TrueGap::SingleGapC);
+  return (gap == TrueGap::SingleGapA || gap == TrueGap::SingleGapC || gap == TrueGap::DoubleGap || gap == TrueGap::BadDoubleGap || gap == TrueGap::TrkOutOfRange || gap == TrueGap::NoUpc);
 }
-
+*/
 /// \brief Get gap type name as string
 /// \param gap TrueGap enum value
 /// \return String representation of gap type
