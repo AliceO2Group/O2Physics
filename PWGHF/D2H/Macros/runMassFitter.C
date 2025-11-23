@@ -288,14 +288,22 @@ int runMassFitter(const TString& configFileName)
   auto* hRawYieldsSecSigma = new TH1D("hRawYieldsSecSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nSliceVarBins, sliceVarLimits.data());
   auto* hRawYieldsFracDoubleGaus = new TH1D("hRawYieldsFracDoubleGaus", ";" + sliceVarName + "(" + sliceVarUnit + ");fraction of double gaussian", nSliceVarBins, sliceVarLimits.data());
 
-  const Int_t nConfigsToSave = 6;
-  auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
-  const char* hFitConfigXLabel[nConfigsToSave] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
+  enum {
+    ConfigMassMin = 1,
+    ConfigMassMax,
+    ConfigNRebin,
+    ConfigFixSigma,
+    ConfigBkgFunc,
+    ConfigSgnFunc,
+    NConfigsToSave
+  };
+  auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nSliceVarBins, sliceVarLimits.data());
+  const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
   hFitConfig->SetStats(false);
   hFitConfig->LabelsDeflate("X");
   hFitConfig->LabelsDeflate("Y");
   hFitConfig->LabelsOption("v");
-  for (int i = 0; i < nConfigsToSave; i++) {
+  for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
 
@@ -574,18 +582,15 @@ int runMassFitter(const TString& configFileName)
       }
     }
 
-    hFitConfig->SetBinContent(1, iSliceVar + 1, massMin[iSliceVar]);
-    hFitConfig->SetBinContent(2, iSliceVar + 1, massMax[iSliceVar]);
-    hFitConfig->SetBinContent(3, iSliceVar + 1, nRebin[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigMassMin, iSliceVar + 1, massMin[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigMassMax, iSliceVar + 1, massMax[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigNRebin, iSliceVar + 1, nRebin[iSliceVar]);
     if (fixSigma) {
-      if (fixSigmaManual.empty()) {
-        hFitConfig->SetBinContent(4, iSliceVar + 1, hSigmaToFix->GetBinContent(iSliceVar + 1));
-      } else {
-        hFitConfig->SetBinContent(4, iSliceVar + 1, fixSigmaManual[iSliceVar]);
-      }
+      const auto valueToFix = fixSigmaManual.empty() ? hSigmaToFix->GetBinContent(iSliceVar + 1) : fixSigmaManual[iSliceVar];
+      hFitConfig->SetBinContent(ConfigFixSigma, iSliceVar + 1, valueToFix);
     }
-    hFitConfig->SetBinContent(5, iSliceVar + 1, bkgFuncConfig[iSliceVar]);
-    hFitConfig->SetBinContent(6, iSliceVar + 1, sgnFuncConfig[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigBkgFunc, iSliceVar + 1, bkgFuncConfig[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigSgnFunc, iSliceVar + 1, sgnFuncConfig[iSliceVar]);
   }
 
   // save output histograms
