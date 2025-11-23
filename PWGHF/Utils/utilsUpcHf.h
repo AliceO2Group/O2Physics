@@ -111,7 +111,7 @@ inline auto determineGapType(TCollision const& collision,
                           thresholds.ft0aThreshold.value,
                           thresholds.ft0cThreshold.value);
 }
-/* 
+/*
 /// \brief Check if the gap type is a single-sided gap (SingleGapA or SingleGapC)
 /// \param gap TrueGap enum value
 /// \return true if single-sided gap, false otherwise
