@@ -260,6 +260,9 @@ struct AntinucleiInJets {
       // Event counters
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "counter"}});
 
+      // Configuration
+      registryData.add("settingData", "settingData", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} (GeV/#it{c})"}, {20, 0.0, 1.0, "#it{R}_{jet}"}});
+
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
 
@@ -333,6 +336,9 @@ struct AntinucleiInJets {
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
       registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
+
+      // Configuration
+      registryMC.add("settingMC", "settingMC", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} (GeV/#it{c})"}, {20, 0.0, 1.0, "#it{R}_{jet}"}});
 
       // Reconstructed spectra of antiprotons
       registryMC.add("antiproton_rec_tpc_jet", "antiproton_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -936,6 +942,7 @@ struct AntinucleiInJets {
   {
     // Event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
+    registryData.fill(HIST("settingData"), minJetPt, rJet);
 
     // Retrieve the bunch crossing information with timestamps from the collision
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1962,6 +1969,9 @@ struct AntinucleiInJets {
 
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
+
+      // Configuration
+      registryMC.fill(HIST("settingMC"), minJetPt, rJet);
 
       // Increment event counter
       eventCounter++;
