@@ -36,6 +36,8 @@
 #include "ReconstructionDataFormats/Vertex.h"
 
 #include "Math/Vector4D.h"
+#include "TDatabasePDG.h"
+#include "TParticlePDG.h"
 
 #include <cmath>
 #include <memory>
@@ -124,10 +126,10 @@ struct NPCascCandidate {
   float bachPionTOFNSigma;
   bool sel8;
   float multFT0C;
-  float multFT0A;
+  float multFV0A;
   float multFT0M;
   float centFT0C;
-  float centFT0A;
+  float centFV0A;
   float centFT0M;
   int multNTracksGlobal;
   uint32_t toiMask;
@@ -180,8 +182,9 @@ struct NonPromptCascadeTask {
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
-  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::MultsGlobal>;
-  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionsWithLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsGlobal>;
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
@@ -205,9 +208,10 @@ struct NonPromptCascadeTask {
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
 
-  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult,fHighFt0Mult", "Triggers of interest, comma separated for Zorro"};
 
   Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
+  Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<float> cfgMinMult{"cfgMinMult", 3000.f, "Lower range of FT0M histo in zoomed histo"};
   Configurable<float> cfgMaxCent{"cfgMaxCent", 8.0025f, "Upper range of FT0M histo"};
 
@@ -227,13 +231,17 @@ struct NonPromptCascadeTask {
   std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCentZoom;
 
   int nBinsMult = cfgMaxMult;
+  int nBinsMultFV0 = cfgMaxMultFV0;
   int nBinsMultZoom = cfgMaxMult - cfgMinMult;
   int nBinsCentZoom = (cfgMaxCent + 0.0025) / 0.005;
+
   AxisSpec multAxis = {nBinsMult, 0, cfgMaxMult, "Multiplicity FT0M"};
+  AxisSpec multAxisFV0 = {nBinsMultFV0, 0, cfgMaxMultFV0, "Multiplicity FT0M"};
   AxisSpec centAxis = {101, -0.025, 101.025, "Centrality"};
   AxisSpec centAxisZoom = {nBinsCentZoom, -0.0025, cfgMaxCent, "Centrality"};
   AxisSpec multAxisZoom = {nBinsMultZoom, cfgMinMult, cfgMaxMult, "Multiplicity FT0M"};
   AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
+  AxisSpec nTracksAxisMC = {100, 0., 100., "NTracksMC"};
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -279,7 +287,10 @@ struct NonPromptCascadeTask {
     mRegistry.add("hMultVsCentZoom", "hMultVsCentZoom", HistType::kTH2F, {centAxisZoom, multAxisZoom});
     mRegistry.add("hNTracksVsCent", "hNTracksVsCent", HistType::kTH2F, {centAxis, nTracksAxis});
     mRegistry.add("hNTracksVsCentZoom", "hNTracksVsCentZoom", HistType::kTH2F, {centAxisZoom, nTracksAxis});
-
+    mRegistry.add("hMultFV0VshNTracks", "hMultFV0VshNTracks", HistType::kTH2F, {nTracksAxis, multAxisFV0});
+    mRegistry.add("hNTracksVsCentFV0A", "hNTracksVsCentFV0A", HistType::kTH2F, {nTracksAxis, centAxis});
+    mRegistry.add("hNTracksMCVsTracksReco", "hNTracksMCVsTracksReco", HistType::kTH2F, {nTracksAxisMC, nTracksAxis});
+    mRegistry.add("hNTracksMCNotInReco", "hNTracksMCNotInReco", HistType::kTH1F, {nTracksAxisMC});
     for (size_t iBin{0}; iBin < cutsNames.size(); ++iBin) {
       cutsOmega->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
       cutsXi->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
@@ -345,7 +356,8 @@ struct NonPromptCascadeTask {
       }
     }
   }
-  void fillMultHistos(const auto& collisions)
+  template <typename CollisionType>
+  void fillMultHistos(CollisionType const& collisions)
   {
     // std::cout << "Filling mult histos" << std::endl;
     for (const auto& coll : collisions) {
@@ -368,6 +380,8 @@ struct NonPromptCascadeTask {
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float)coll.multNTracksGlobal());
       mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), coll.multNTracksGlobal());
+      mRegistry.fill(HIST("hMultFV0VshNTracks"), coll.multNTracksGlobal(), coll.multFV0A());
+      mRegistry.fill(HIST("hNTracksVsCentFV0A"), coll.multNTracksGlobal(), coll.centFV0A());
     }
   };
 
@@ -590,7 +604,7 @@ struct NonPromptCascadeTask {
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachelor.hasTOF(),
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M(), collision.multNTracksGlobal(), toiMask, collision.selection_bit(aod::evsel::kNoSameBunchPileup)});
+                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFV0A(), collision.multFT0M(), collision.centFT0C(), collision.centFV0A(), collision.centFT0M(), collision.multNTracksGlobal(), toiMask, collision.selection_bit(aod::evsel::kNoSameBunchPileup)});
     }
   }
 
@@ -610,7 +624,7 @@ struct NonPromptCascadeTask {
                                   c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                                   c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                   c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                  c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
+                                  c.sel8, c.multFT0C, c.multFV0A, c.multFT0M, c.centFT0C, c.centFV0A, c.centFT0M, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
     }
   }
 
@@ -646,7 +660,7 @@ struct NonPromptCascadeTask {
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
+                                c.sel8, c.multFT0C, c.multFV0A, c.multFT0M, c.centFT0C, c.centFV0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
                                 mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
@@ -689,10 +703,11 @@ struct NonPromptCascadeTask {
   {
     fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
+    fillMultHistos<CollisionCandidatesRun3MC>(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
 
-  void processGenParticles(aod::McParticles const& mcParticles, aod::McCollisions const&)
+  void processGenParticles(aod::McParticles const& mcParticles)
   {
     for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
@@ -702,7 +717,6 @@ struct NonPromptCascadeTask {
       auto fromHF = isFromHF(p);
       int pdgCodeMom = p.has_mothers() ? p.template mothers_as<aod::McParticles>()[0].pdgCode() : 0;
       auto mcCollision = p.template mcCollision_as<aod::McCollisions>();
-
       int motherDecayDaughters{0};
       if (fromHF[0] || fromHF[1]) {
         auto mom = p.template mothers_as<aod::McParticles>()[0];
@@ -715,7 +729,6 @@ struct NonPromptCascadeTask {
           }
         }
       }
-
       NPCTableGen(p.pt(), p.eta(), p.phi(), p.pdgCode(), pdgCodeMom, mcCollision.posX() - p.vx(), mcCollision.posY() - p.vy(), mcCollision.posZ() - p.vz(), fromHF[0], fromHF[1], motherDecayDaughters);
     }
   }
@@ -741,9 +754,57 @@ struct NonPromptCascadeTask {
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
-    fillMultHistos(collisions);
+    fillMultHistos<CollisionCandidatesRun3>(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
+
+  int getMCMult(aod::McParticles const& mcParticles, int mcCollId)
+  {
+    int mult = 0;
+    for (auto const& mcp : mcParticles) {
+      if (mcp.mcCollisionId() == mcCollId) {
+        // multiplicity definition:
+        bool accept = mcp.isPhysicalPrimary();
+        accept = accept && (mcp.eta() < 0.5) && (mcp.eta() > -0.5);
+        int q = 0;
+        auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode());
+        if (pdgEntry) {
+          q = int(std::round(pdgEntry->Charge() / 3.0));
+        } else {
+          // LOG(warn) << "No pdg assuming neutral";
+        }
+        accept = accept && (q != 0);
+        if (accept) {
+          ++mult;
+        }
+      }
+    }
+    return mult;
+  }
+  void processNegMC(CollisionsWithLabel const& colls, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    // std::cout << "ProcNegMC" << std::endl;
+    std::vector<int> mcReconstructed(mcCollisions.size(), 0);
+    for (auto const& col : colls) {
+      int mcCollId = col.mcCollisionId(); // col.template mcCollision_as<aod::McCollisions>();
+      // auto mc = col.mcCollision();
+      // int mcId = mc.globalIndex();
+      // std::cout << "globalIndex:" << mcId << " colID:" << mcCollId << std::endl;
+      int mult = getMCMult(mcParticles, mcCollId);
+      mcReconstructed[mcCollId] = 1;
+      mRegistry.fill(HIST("hNTracksMCVsTracksReco"), mult, col.multNTracksGlobal());
+    }
+    for (auto const& mc : mcCollisions) {
+      int gindex = mc.globalIndex();
+      // std::cout << "mc globalIndex:" << gindex << std::endl;
+      if (!mcReconstructed[gindex]) {
+        int mult = getMCMult(mcParticles, gindex);
+        // std::cout << "===> unreconstructed:" << mult << std::endl;
+        mRegistry.fill(HIST("hNTracksMCNotInReco"), mult);
+      }
+    }
+  }
+  PROCESS_SWITCH(NonPromptCascadeTask, processNegMC, "process mc", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
