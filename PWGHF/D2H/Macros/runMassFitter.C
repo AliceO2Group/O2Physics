@@ -300,12 +300,12 @@ int runMassFitter(const TString& configFileName)
   auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nSliceVarBins, sliceVarLimits.data());
   const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
   hFitConfig->SetStats(false);
-  hFitConfig->LabelsDeflate("X");
-  hFitConfig->LabelsDeflate("Y");
-  hFitConfig->LabelsOption("v");
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
+  hFitConfig->LabelsDeflate("X");
+  hFitConfig->LabelsDeflate("Y");
+  hFitConfig->LabelsOption("v");
 
   setHistoStyle(hRawYieldsSignal);
   setHistoStyle(hRawYieldsSignalCounted);
