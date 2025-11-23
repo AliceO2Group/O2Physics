@@ -128,75 +128,75 @@ HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
   // default constructor
 }
 
-HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : mHistoInvMass(nullptr),
-                                                                                                                                    mFitOption("L,E"),
-                                                                                                                                    mMinMass(minValue),
-                                                                                                                                    mMaxMass(maxValue),
-                                                                                                                                    mTypeOfBkgPdf(fitTypeBkg),
-                                                                                                                                    mTypeOfSgnPdf(fitTypeSgn),
-                                                                                                                                    mTypeOfReflPdf(1),
-                                                                                                                                    mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
-                                                                                                                                    mMass(1.865),
-                                                                                                                                    mMassLowLimit(0),
-                                                                                                                                    mMassUpLimit(0),
-                                                                                                                                    mMassReflLowLimit(0),
-                                                                                                                                    mMassReflUpLimit(0),
-                                                                                                                                    mSecMass(1.969),
-                                                                                                                                    mSigmaSgn(0.012),
-                                                                                                                                    mSecSigma(0.006),
-                                                                                                                                    mNSigmaForSidebands(3.),
-                                                                                                                                    mNSigmaForSgn(3.),
-                                                                                                                                    mSigmaSgnErr(0.),
-                                                                                                                                    mSigmaSgnDoubleGaus(0.025),
-                                                                                                                                    mFixedMean(kFALSE),
-                                                                                                                                    mBoundMean(kFALSE),
-                                                                                                                                    mBoundReflMean(kFALSE),
-                                                                                                                                    mFixedSigma(kFALSE),
-                                                                                                                                    mFixedSigmaDoubleGaus(kFALSE),
-                                                                                                                                    mBoundSigma(kFALSE),
-                                                                                                                                    mSigmaValue(0.012),
-                                                                                                                                    mParamSgn(0.1),
-                                                                                                                                    mFracDoubleGaus(0.2),
-                                                                                                                                    mFixedRawYield(-1.),
-                                                                                                                                    mFixedFracDoubleGaus(kFALSE),
-                                                                                                                                    mRatioDoubleGausSigma(0.),
-                                                                                                                                    mFixedRatioDoubleGausSigma(kFALSE),
-                                                                                                                                    mReflOverSgn(0),
-                                                                                                                                    mEnableReflections(kFALSE),
-                                                                                                                                    mRawYield(0),
-                                                                                                                                    mRawYieldErr(0),
-                                                                                                                                    mRawYieldCounted(0),
-                                                                                                                                    mRawYieldCountedErr(0),
-                                                                                                                                    mBkgYield(0),
-                                                                                                                                    mBkgYieldErr(0),
-                                                                                                                                    mSignificance(0),
-                                                                                                                                    mSignificanceErr(0),
-                                                                                                                                    mChiSquareOverNdfTotal(0),
-                                                                                                                                    mChiSquareOverNdfBkg(0),
-                                                                                                                                    mFixReflOverSgn(kFALSE),
-                                                                                                                                    mRooMeanSgn(nullptr),
-                                                                                                                                    mRooSigmaSgn(nullptr),
-                                                                                                                                    mRooSecSigmaSgn(nullptr),
-                                                                                                                                    mRooFracDoubleGaus(nullptr),
-                                                                                                                                    mSgnPdf(nullptr),
-                                                                                                                                    mBkgPdf(nullptr),
-                                                                                                                                    mReflPdf(nullptr),
-                                                                                                                                    mRooNSgn(nullptr),
-                                                                                                                                    mRooNBkg(nullptr),
-                                                                                                                                    mRooNRefl(nullptr),
-                                                                                                                                    mTotalPdf(nullptr),
-                                                                                                                                    mInvMassFrame(nullptr),
-                                                                                                                                    mReflFrame(nullptr),
-                                                                                                                                    mReflOnlyFrame(nullptr),
-                                                                                                                                    mResidualFrame(nullptr),
-                                                                                                                                    mResidualFrameForCalculation(nullptr),
-                                                                                                                                    mWorkspace(nullptr),
-                                                                                                                                    mIntegralHisto(0),
-                                                                                                                                    mIntegralBkg(0),
-                                                                                                                                    mIntegralSgn(0),
-                                                                                                                                    mHistoTemplateRefl(nullptr),
-                                                                                                                                    mDrawBgPrefit(kFALSE),
-                                                                                                                                    mHighlightPeakRegion(kFALSE)
+HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg, int fitTypeSgn) : mHistoInvMass(nullptr),
+                                                                                                                            mFitOption("L,E"),
+                                                                                                                            mMinMass(minValue),
+                                                                                                                            mMaxMass(maxValue),
+                                                                                                                            mTypeOfBkgPdf(fitTypeBkg),
+                                                                                                                            mTypeOfSgnPdf(fitTypeSgn),
+                                                                                                                            mTypeOfReflPdf(1),
+                                                                                                                            mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
+                                                                                                                            mMass(1.865),
+                                                                                                                            mMassLowLimit(0),
+                                                                                                                            mMassUpLimit(0),
+                                                                                                                            mMassReflLowLimit(0),
+                                                                                                                            mMassReflUpLimit(0),
+                                                                                                                            mSecMass(1.969),
+                                                                                                                            mSigmaSgn(0.012),
+                                                                                                                            mSecSigma(0.006),
+                                                                                                                            mNSigmaForSidebands(3.),
+                                                                                                                            mNSigmaForSgn(3.),
+                                                                                                                            mSigmaSgnErr(0.),
+                                                                                                                            mSigmaSgnDoubleGaus(0.025),
+                                                                                                                            mFixedMean(kFALSE),
+                                                                                                                            mBoundMean(kFALSE),
+                                                                                                                            mBoundReflMean(kFALSE),
+                                                                                                                            mFixedSigma(kFALSE),
+                                                                                                                            mFixedSigmaDoubleGaus(kFALSE),
+                                                                                                                            mBoundSigma(kFALSE),
+                                                                                                                            mSigmaValue(0.012),
+                                                                                                                            mParamSgn(0.1),
+                                                                                                                            mFracDoubleGaus(0.2),
+                                                                                                                            mFixedRawYield(-1.),
+                                                                                                                            mFixedFracDoubleGaus(kFALSE),
+                                                                                                                            mRatioDoubleGausSigma(0.),
+                                                                                                                            mFixedRatioDoubleGausSigma(kFALSE),
+                                                                                                                            mReflOverSgn(0),
+                                                                                                                            mEnableReflections(kFALSE),
+                                                                                                                            mRawYield(0),
+                                                                                                                            mRawYieldErr(0),
+                                                                                                                            mRawYieldCounted(0),
+                                                                                                                            mRawYieldCountedErr(0),
+                                                                                                                            mBkgYield(0),
+                                                                                                                            mBkgYieldErr(0),
+                                                                                                                            mSignificance(0),
+                                                                                                                            mSignificanceErr(0),
+                                                                                                                            mChiSquareOverNdfTotal(0),
+                                                                                                                            mChiSquareOverNdfBkg(0),
+                                                                                                                            mFixReflOverSgn(kFALSE),
+                                                                                                                            mRooMeanSgn(nullptr),
+                                                                                                                            mRooSigmaSgn(nullptr),
+                                                                                                                            mRooSecSigmaSgn(nullptr),
+                                                                                                                            mRooFracDoubleGaus(nullptr),
+                                                                                                                            mSgnPdf(nullptr),
+                                                                                                                            mBkgPdf(nullptr),
+                                                                                                                            mReflPdf(nullptr),
+                                                                                                                            mRooNSgn(nullptr),
+                                                                                                                            mRooNBkg(nullptr),
+                                                                                                                            mRooNRefl(nullptr),
+                                                                                                                            mTotalPdf(nullptr),
+                                                                                                                            mInvMassFrame(nullptr),
+                                                                                                                            mReflFrame(nullptr),
+                                                                                                                            mReflOnlyFrame(nullptr),
+                                                                                                                            mResidualFrame(nullptr),
+                                                                                                                            mResidualFrameForCalculation(nullptr),
+                                                                                                                            mWorkspace(nullptr),
+                                                                                                                            mIntegralHisto(0),
+                                                                                                                            mIntegralBkg(0),
+                                                                                                                            mIntegralSgn(0),
+                                                                                                                            mHistoTemplateRefl(nullptr),
+                                                                                                                            mDrawBgPrefit(kFALSE),
+                                                                                                                            mHighlightPeakRegion(kFALSE)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
@@ -303,7 +303,7 @@ void HFInvMassFitter::doFit()
     // estimate signal yield
     RooAbsReal* bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkg")); // bkg integral
     mIntegralBkg = bkgIntegral->getValV();                                                  // fraction of BG's integral in "bkg" range out of that in "full" range (which is 1 by construction). Not an absolute value.
-    Double_t estimatedSignal;
+    double estimatedSignal;
     checkForSignal(estimatedSignal);              // SIG's absolute integral in "bkg" range
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
@@ -564,7 +564,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 }
 
 // draw fit output
-void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& plotLabels, Bool_t writeParInfo)
+void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& plotLabels, bool writeParInfo)
 {
   gStyle->SetOptStat(0);
   gStyle->SetCanvasColor(0);
@@ -674,10 +674,10 @@ void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Wi
   }
   double const yMin = plot->GetMinimum();
   double const yMax = plot->GetMaximum();
-  const Double_t mean = mRooMeanSgn->getVal();
-  const Double_t sigma = mRooSecSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const double mean = mRooMeanSgn->getVal();
+  const double sigma = mRooSecSigmaSgn->getVal();
+  const double minForSgn = mean - mNSigmaForSidebands * sigma;
+  const double maxForSgn = mean + mNSigmaForSidebands * sigma;
   auto* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
   auto* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
   for (const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
@@ -697,27 +697,27 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 }
 
 // calculate signal yield via bin counting
-void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
+void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
 {
-  const Double_t mean = mRooMeanSgn->getVal();
-  const Double_t sigma = mRooSecSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
-  const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
-  const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
-  const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
-  const Double_t binForMaxSgnLowerEdge = mHistoInvMass->GetBinLowEdge(binForMaxSgn);
-  const Double_t binForMinSgnFraction = (binForMinSgnUpperEdge - minForSgn) / mHistoInvMass->GetBinWidth(binForMinSgn);
-  const Double_t binForMaxSgnFraction = (maxForSgn - binForMaxSgnLowerEdge) / mHistoInvMass->GetBinWidth(binForMaxSgn);
+  const double mean = mRooMeanSgn->getVal();
+  const double sigma = mRooSecSigmaSgn->getVal();
+  const double minForSgn = mean - mNSigmaForSidebands * sigma;
+  const double maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const int binForMinSgn = mHistoInvMass->FindBin(minForSgn);
+  const int binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
+  const double binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
+  const double binForMaxSgnLowerEdge = mHistoInvMass->GetBinLowEdge(binForMaxSgn);
+  const double binForMinSgnFraction = (binForMinSgnUpperEdge - minForSgn) / mHistoInvMass->GetBinWidth(binForMinSgn);
+  const double binForMaxSgnFraction = (maxForSgn - binForMaxSgnLowerEdge) / mHistoInvMass->GetBinWidth(binForMaxSgn);
 
-  Double_t sum = 0;
+  double sum = 0;
   sum += mHistoInvMass->GetBinContent(binForMinSgn) * binForMinSgnFraction;
-  for (Int_t iBin = binForMinSgn + 1; iBin <= binForMaxSgn - 1; iBin++) {
+  for (int iBin = binForMinSgn + 1; iBin <= binForMaxSgn - 1; iBin++) {
     sum += mHistoInvMass->GetBinContent(iBin);
   }
   sum += mHistoInvMass->GetBinContent(binForMaxSgn) * binForMaxSgnFraction;
 
-  Double_t bkg, errBkg;
+  double bkg, errBkg;
   calculateBackground(bkg, errBkg);
 
   signal = sum - bkg;
@@ -725,46 +725,46 @@ void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
 }
 
 // calculate signal yield
-void HFInvMassFitter::calculateSignal(Double_t& signal, Double_t& errSignal) const
+void HFInvMassFitter::calculateSignal(double& signal, double& errSignal) const
 {
   signal = mRooNSgn->getVal();
   errSignal = mRooNSgn->getError();
 }
 
 // calculate background yield
-void HFInvMassFitter::calculateBackground(Double_t& bkg, Double_t& errBkg) const
+void HFInvMassFitter::calculateBackground(double& bkg, double& errBkg) const
 {
   bkg = mRooNBkg->getVal() * mIntegralBkg;
   errBkg = mRooNBkg->getError() * mIntegralBkg;
 }
 
 // calculate significance
-void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& errSignificance) const
+void HFInvMassFitter::calculateSignificance(double& significance, double& errSignificance) const
 {
-  Double_t signal, errSignal;
+  double signal, errSignal;
   calculateSignal(signal, errSignal);
-  Double_t bkg, errBkg;
+  double bkg, errBkg;
   calculateBackground(bkg, errBkg);
-  Double_t const sgnErrSquare = errSignal * errSignal;
-  Double_t const bkgErrSquare = errBkg * errBkg;
-  Double_t const totalSgnBkg = signal + bkg;
+  double const sgnErrSquare = errSignal * errSignal;
+  double const bkgErrSquare = errBkg * errBkg;
+  double const totalSgnBkg = signal + bkg;
   significance = signal / std::sqrt(signal + bkg);
   errSignificance = significance * std::sqrt((sgnErrSquare + bkgErrSquare) / (mNSigmaForSidebands * totalSgnBkg * totalSgnBkg) + (bkg / totalSgnBkg) * (sgnErrSquare / signal / signal));
 }
 
 // estimate Signal
-void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
+void HFInvMassFitter::checkForSignal(double& estimatedSignal)
 {
-  Double_t const minForSgn = mMass - 4 * mSigmaSgn;
-  Double_t const maxForSgn = mMass + 4 * mSigmaSgn;
-  Int_t const binForMinSgn = mHistoInvMass->FindBin(minForSgn);
-  Int_t const binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
+  double const minForSgn = mMass - 4 * mSigmaSgn;
+  double const maxForSgn = mMass + 4 * mSigmaSgn;
+  int const binForMinSgn = mHistoInvMass->FindBin(minForSgn);
+  int const binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 
-  Double_t sum = 0;
-  for (Int_t i = binForMinSgn; i <= binForMaxSgn; i++) {
+  double sum = 0;
+  for (int i = binForMinSgn; i <= binForMaxSgn; i++) {
     sum += mHistoInvMass->GetBinContent(i);
   }
-  Double_t bkg, errBkg;
+  double bkg, errBkg;
   calculateBackground(bkg, errBkg);
   estimatedSignal = sum - bkg;
 }

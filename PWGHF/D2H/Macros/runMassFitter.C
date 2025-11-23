@@ -89,8 +89,8 @@ int runMassFitter(const TString& configFileName)
   config.ParseStream(is);
   fclose(configFile);
 
-  Bool_t const isMc = config["IsMC"].GetBool();
-  Bool_t const writeSignalPar = config["WriteSignalPar"].GetBool();
+  bool const isMc = config["IsMC"].GetBool();
+  bool const writeSignalPar = config["WriteSignalPar"].GetBool();
   TString const particleName = config["Particle"].GetString();
   TString const collisionSystem = config["CollisionSystem"].GetString();
   TString const inputFileName = config["InFileName"].GetString();
@@ -351,14 +351,14 @@ int runMassFitter(const TString& configFileName)
   std::vector<TH1*> hMassForRefl(nSliceVarBins);
   std::vector<TH1*> hMassForSgn(nSliceVarBins);
 
-  Int_t canvasSize[2] = {1920, 1080};
+  int canvasSize[2] = {1920, 1080};
   if (nSliceVarBins == 1) {
     canvasSize[0] = 500;
     canvasSize[1] = 500;
   }
 
-  Int_t const nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
-  const Int_t nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
+  int const nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
+  const int nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
   std::vector<TCanvas*> canvasRatio(nCanvases);
@@ -385,7 +385,7 @@ int runMassFitter(const TString& configFileName)
   }
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
-    const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
+    const int iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
     TString const ptTitle =
@@ -400,7 +400,7 @@ int runMassFitter(const TString& configFileName)
       hMassForSgn[iSliceVar] = hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]);
     }
 
-    Double_t reflOverSgn = 0;
+    double reflOverSgn = 0;
 
     if (isMc) {
       HFInvMassFitter* massFitter;
@@ -420,16 +420,16 @@ int runMassFitter(const TString& configFileName)
 
       massFitter->drawFit(gPad, plotLabels, writeSignalPar);
 
-      const Double_t rawYield = massFitter->getRawYield();
-      const Double_t rawYieldErr = massFitter->getRawYieldError();
-      const Double_t rawYieldCounted = massFitter->getRawYieldCounted();
-      const Double_t rawYieldCountedErr = massFitter->getRawYieldCountedError();
-      const Double_t reducedChiSquareBkg = massFitter->getChiSquareOverNDFBkg();
-      const Double_t reducedChiSquareTotal = massFitter->getChiSquareOverNDFTotal();
-      const Double_t mean = massFitter->getMean();
-      const Double_t meanErr = massFitter->getMeanUncertainty();
-      const Double_t sigma = massFitter->getSigma();
-      const Double_t sigmaErr = massFitter->getSigmaUncertainty();
+      const double rawYield = massFitter->getRawYield();
+      const double rawYieldErr = massFitter->getRawYieldError();
+      const double rawYieldCounted = massFitter->getRawYieldCounted();
+      const double rawYieldCountedErr = massFitter->getRawYieldCountedError();
+      const double reducedChiSquareBkg = massFitter->getChiSquareOverNDFBkg();
+      const double reducedChiSquareTotal = massFitter->getChiSquareOverNDFTotal();
+      const double mean = massFitter->getMean();
+      const double meanErr = massFitter->getMeanUncertainty();
+      const double sigma = massFitter->getSigma();
+      const double sigmaErr = massFitter->getSigmaUncertainty();
 
       hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
       hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
@@ -445,14 +445,14 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
 
       if (sgnFunc[iSliceVar] != HFInvMassFitter::SingleGaus) {
-        const Double_t secSigma = massFitter->getSecSigma();
-        const Double_t secSigmaErr = massFitter->getSecSigmaUncertainty();
+        const double secSigma = massFitter->getSecSigma();
+        const double secSigmaErr = massFitter->getSecSigmaUncertainty();
         hRawYieldsSecSigma->SetBinContent(iSliceVar + 1, secSigma);
         hRawYieldsSecSigma->SetBinError(iSliceVar + 1, secSigmaErr);
       }
       if (sgnFunc[iSliceVar] == HFInvMassFitter::DoubleGaus || sgnFunc[iSliceVar] == HFInvMassFitter::DoubleGausSigmaRatioPar) {
-        const Double_t fracDoubleGaus = massFitter->getFracDoubleGaus();
-        const Double_t fracDoubleGausErr = massFitter->getFracDoubleGausUncertainty();
+        const double fracDoubleGaus = massFitter->getFracDoubleGaus();
+        const double fracDoubleGausErr = massFitter->getFracDoubleGausUncertainty();
         hRawYieldsFracDoubleGaus->SetBinContent(iSliceVar + 1, fracDoubleGaus);
         hRawYieldsFracDoubleGaus->SetBinError(iSliceVar + 1, fracDoubleGausErr);
       }
@@ -469,7 +469,7 @@ int runMassFitter(const TString& configFileName)
         massFitter->setUseLikelihoodFit();
       }
 
-      auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
+      auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(double)> setFunc, std::string const& var) -> void {
         if (isFix) {
           const auto valueToFix = fixManual.empty() ? histToFix->GetBinContent(iSliceVar + 1) : fixManual[iSliceVar];
           setFunc(valueToFix);
