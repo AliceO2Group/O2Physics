@@ -75,21 +75,21 @@ HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mNSigmaForSgn(3.),
                                      mSigmaSgnErr(0.),
                                      mSigmaSgnDoubleGaus(0.025),
-                                     mFixedMean(kFALSE),
-                                     mBoundMean(kFALSE),
-                                     mBoundReflMean(kFALSE),
-                                     mFixedSigma(kFALSE),
-                                     mFixedSigmaDoubleGaus(kFALSE),
-                                     mBoundSigma(kFALSE),
+                                     mFixedMean(false),
+                                     mBoundMean(false),
+                                     mBoundReflMean(false),
+                                     mFixedSigma(false),
+                                     mFixedSigmaDoubleGaus(false),
+                                     mBoundSigma(false),
                                      mSigmaValue(0.012),
                                      mParamSgn(0.1),
                                      mFracDoubleGaus(0.2),
                                      mFixedRawYield(-1.),
-                                     mFixedFracDoubleGaus(kFALSE),
+                                     mFixedFracDoubleGaus(false),
                                      mRatioDoubleGausSigma(0.),
-                                     mFixedRatioDoubleGausSigma(kFALSE),
+                                     mFixedRatioDoubleGausSigma(false),
                                      mReflOverSgn(0),
-                                     mEnableReflections(kFALSE),
+                                     mEnableReflections(false),
                                      mRawYield(0),
                                      mRawYieldErr(0),
                                      mRawYieldCounted(0),
@@ -100,7 +100,7 @@ HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mSignificanceErr(0),
                                      mChiSquareOverNdfTotal(0),
                                      mChiSquareOverNdfBkg(0),
-                                     mFixReflOverSgn(kFALSE),
+                                     mFixReflOverSgn(false),
                                      mRooMeanSgn(nullptr),
                                      mRooSigmaSgn(nullptr),
                                      mRooSecSigmaSgn(nullptr),
@@ -122,8 +122,8 @@ HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mIntegralBkg(0),
                                      mIntegralSgn(0),
                                      mHistoTemplateRefl(nullptr),
-                                     mDrawBgPrefit(kFALSE),
-                                     mHighlightPeakRegion(kFALSE)
+                                     mDrawBgPrefit(false),
+                                     mHighlightPeakRegion(false)
 {
   // default constructor
 }
@@ -148,21 +148,21 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, double minValue, double 
                                                                                                                             mNSigmaForSgn(3.),
                                                                                                                             mSigmaSgnErr(0.),
                                                                                                                             mSigmaSgnDoubleGaus(0.025),
-                                                                                                                            mFixedMean(kFALSE),
-                                                                                                                            mBoundMean(kFALSE),
-                                                                                                                            mBoundReflMean(kFALSE),
-                                                                                                                            mFixedSigma(kFALSE),
-                                                                                                                            mFixedSigmaDoubleGaus(kFALSE),
-                                                                                                                            mBoundSigma(kFALSE),
+                                                                                                                            mFixedMean(false),
+                                                                                                                            mBoundMean(false),
+                                                                                                                            mBoundReflMean(false),
+                                                                                                                            mFixedSigma(false),
+                                                                                                                            mFixedSigmaDoubleGaus(false),
+                                                                                                                            mBoundSigma(false),
                                                                                                                             mSigmaValue(0.012),
                                                                                                                             mParamSgn(0.1),
                                                                                                                             mFracDoubleGaus(0.2),
                                                                                                                             mFixedRawYield(-1.),
-                                                                                                                            mFixedFracDoubleGaus(kFALSE),
+                                                                                                                            mFixedFracDoubleGaus(false),
                                                                                                                             mRatioDoubleGausSigma(0.),
-                                                                                                                            mFixedRatioDoubleGausSigma(kFALSE),
+                                                                                                                            mFixedRatioDoubleGausSigma(false),
                                                                                                                             mReflOverSgn(0),
-                                                                                                                            mEnableReflections(kFALSE),
+                                                                                                                            mEnableReflections(false),
                                                                                                                             mRawYield(0),
                                                                                                                             mRawYieldErr(0),
                                                                                                                             mRawYieldCounted(0),
@@ -173,7 +173,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, double minValue, double 
                                                                                                                             mSignificanceErr(0),
                                                                                                                             mChiSquareOverNdfTotal(0),
                                                                                                                             mChiSquareOverNdfBkg(0),
-                                                                                                                            mFixReflOverSgn(kFALSE),
+                                                                                                                            mFixReflOverSgn(false),
                                                                                                                             mRooMeanSgn(nullptr),
                                                                                                                             mRooSigmaSgn(nullptr),
                                                                                                                             mRooSecSigmaSgn(nullptr),
@@ -195,8 +195,8 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, double minValue, double 
                                                                                                                             mIntegralBkg(0),
                                                                                                                             mIntegralSgn(0),
                                                                                                                             mHistoTemplateRefl(nullptr),
-                                                                                                                            mDrawBgPrefit(kFALSE),
-                                                                                                                            mHighlightPeakRegion(kFALSE)
+                                                                                                                            mDrawBgPrefit(false),
+                                                                                                                            mHighlightPeakRegion(false)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
@@ -310,7 +310,7 @@ void HFInvMassFitter::doFit()
     mRooNSgn = new RooRealVar("mNSgn", "number of signal", 0.3 * estimatedSignal, 0., 1.2 * estimatedSignal); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
-      mRooNSgn->setConstant(kTRUE);
+      mRooNSgn->setConstant(true);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
     // create reflection template and fit to reflection
@@ -330,7 +330,7 @@ void HFInvMassFitter::doFit()
       reflFuncTemp.plotOn(mReflOnlyFrame);
 
       mRooNRefl->setVal(mReflOverSgn * estimatedSignal);
-      mRooNRefl->setConstant(kTRUE);
+      mRooNRefl->setConstant(true);
       setReflFuncFixed(); // fix reflection pdf parameter
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal + reflection fit function", RooArgList(*bkgPdf, *sgnPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNRefl));
       if (strcmp(mFitOption.Data(), "Chi2") == 0) {
@@ -435,12 +435,12 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   // signal Gaussian
   if (mFixedMean) {
     mean.setVal(mMass);
-    mean.setConstant(kTRUE);
+    mean.setConstant(true);
   }
   RooRealVar sigma("sigma", "sigma for signal", mSigmaSgn, mSigmaSgn - 0.01, mSigmaSgn + 0.01);
   if (mFixedSigma) {
     sigma.setVal(mSigmaSgn);
-    sigma.setConstant(kTRUE);
+    sigma.setConstant(true);
   }
   if (mBoundSigma) {
     sigma.setMax(mSigmaSgn * (1 + mParamSgn));
@@ -457,18 +457,18 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   }
   if (mFixedSigma) {
     sigma.setVal(mSigmaSgn);
-    sigma.setConstant(kTRUE);
+    sigma.setConstant(true);
   }
   if (mFixedSigmaDoubleGaus) {
     sigmaDoubleGaus.setVal(mSigmaSgnDoubleGaus);
-    sigmaDoubleGaus.setConstant(kTRUE);
+    sigmaDoubleGaus.setConstant(true);
   }
   RooGaussian const gaus1("gaus1", "gaus1", mass, mean, sigma);
   RooGaussian const gaus2("gaus2", "gaus2", mass, mean, sigmaDoubleGaus);
   RooRealVar fracDoubleGaus("fracDoubleGaus", "frac of two gauss", mFracDoubleGaus, 0, 1.);
   if (mFixedFracDoubleGaus) {
     fracDoubleGaus.setVal(mFracDoubleGaus);
-    fracDoubleGaus.setConstant(kTRUE);
+    fracDoubleGaus.setConstant(true);
   }
   RooAbsPdf* sgnFuncDoubleGaus = new RooAddPdf("sgnFuncDoubleGaus", "signal pdf", RooArgList(gaus1, gaus2), fracDoubleGaus);
   workspace.import(*sgnFuncDoubleGaus);
@@ -477,11 +477,11 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar ratio("ratio", "ratio of sigma12", mRatioDoubleGausSigma, 0, 10);
   if (mFixedSigma) {
     sigma.setVal(mSigmaSgn);
-    sigma.setConstant(kTRUE);
+    sigma.setConstant(true);
   }
   if (mFixedRatioDoubleGausSigma) {
     ratio.setVal(mRatioDoubleGausSigma);
-    ratio.setConstant(kTRUE);
+    ratio.setConstant(true);
   }
   if (mBoundSigma) {
     sigma.setMax(mSigmaSgn * (1 + mParamSgn));
@@ -493,7 +493,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar fracDoubleGausRatio("fracDoubleGausRatio", "fraction of two gauss ratio", 0.5, 0, 1.);
   if (mFixedFracDoubleGaus) {
     fracDoubleGausRatio.setVal(mFracDoubleGaus);
-    fracDoubleGausRatio.setConstant(kTRUE);
+    fracDoubleGausRatio.setConstant(true);
   }
   RooAbsPdf* sgnFuncGausRatio = new RooAddPdf("sgnFuncGausRatio", "signal pdf", RooArgList(gausRatio1, gausRatio2), fracDoubleGausRatio);
   workspace.import(*sgnFuncGausRatio);
@@ -503,7 +503,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar sigmaSec("sigmaSec", "sigmaSec", mSecSigma, mSecSigma - 0.005, mSecSigma + 0.01);
   if (mFixedMean) {
     meanSec.setVal(mSecMass);
-    meanSec.setConstant(kTRUE);
+    meanSec.setConstant(true);
   }
   if (mBoundMean) {
     meanSec.setMax(mMassUpLimit);
@@ -511,7 +511,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   }
   if (mFixedSigma) {
     sigmaSec.setVal(mSecSigma);
-    sigmaSec.setConstant(kTRUE);
+    sigmaSec.setConstant(true);
   }
   if (mBoundSigma) {
     sigmaSec.setMax(mSecSigma * (1 + mParamSgn));
@@ -894,8 +894,8 @@ void HFInvMassFitter::setReflFuncFixed()
     case SingleGausRefl: {
       RooRealVar* meanRefl = mWorkspace->var("meanRefl");
       RooRealVar* sigmaRefl = mWorkspace->var("sigmaRefl");
-      meanRefl->setConstant(kTRUE);
-      sigmaRefl->setConstant(kTRUE);
+      meanRefl->setConstant(true);
+      sigmaRefl->setConstant(true);
     } break;
     case DoubleGausRefl: {
       RooRealVar* meanRefl = mWorkspace->var("meanRefl");
@@ -903,24 +903,24 @@ void HFInvMassFitter::setReflFuncFixed()
       RooRealVar* meanReflDoubleGaus = mWorkspace->var("meanReflDoubleGaus");
       RooRealVar* sigmaReflDoubleGaus = mWorkspace->var("sigmaReflDoubleGaus");
       RooRealVar* fracRefl = mWorkspace->var("fracRefl");
-      meanRefl->setConstant(kTRUE);
-      sigmaRefl->setConstant(kTRUE);
-      meanReflDoubleGaus->setConstant(kTRUE);
-      sigmaReflDoubleGaus->setConstant(kTRUE);
-      fracRefl->setConstant(kTRUE);
+      meanRefl->setConstant(true);
+      sigmaRefl->setConstant(true);
+      meanReflDoubleGaus->setConstant(true);
+      sigmaReflDoubleGaus->setConstant(true);
+      fracRefl->setConstant(true);
     } break;
     case Poly3Refl: {
       std::array<RooRealVar*, 4> polyReflParam{nullptr};
       for (int iPar = 0; iPar < 4; ++iPar) {
         polyReflParam.at(iPar) = mWorkspace->var(Form("polyReflParam%d", iPar));
-        polyReflParam.at(iPar)->setConstant(kTRUE);
+        polyReflParam.at(iPar)->setConstant(true);
       }
     } break;
     case Poly6Refl: {
       std::array<RooRealVar*, 6> polyReflParam{nullptr};
       for (int iPar = 0; iPar < 6; ++iPar) {
         polyReflParam.at(iPar) = mWorkspace->var(Form("polyReflParam%d", iPar));
-        polyReflParam.at(iPar)->setConstant(kTRUE);
+        polyReflParam.at(iPar)->setConstant(true);
       }
     } break;
     default:

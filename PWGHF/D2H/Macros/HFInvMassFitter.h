@@ -118,7 +118,7 @@ class HFInvMassFitter : public TNamed
   void setFixGaussianMean(double mean)
   {
     setInitialGaussianMean(mean);
-    mFixedMean = kTRUE;
+    mFixedMean = true;
   }
   void setBoundGaussianMean(double mean, double meanLowLimit, double meanUpLimit)
   {
@@ -129,7 +129,7 @@ class HFInvMassFitter : public TNamed
     setInitialGaussianMean(mean);
     mMassLowLimit = meanLowLimit;
     mMassUpLimit = meanUpLimit;
-    mBoundMean = kTRUE;
+    mBoundMean = true;
   }
   void setBoundReflGausMean(double mean, double meanLowLimit, double meanUpLimit)
   {
@@ -140,18 +140,18 @@ class HFInvMassFitter : public TNamed
     setInitialGaussianMean(mean);
     mMassReflLowLimit = meanLowLimit;
     mMassReflUpLimit = meanUpLimit;
-    mBoundReflMean = kTRUE;
+    mBoundReflMean = true;
   }
   void setFixGaussianSigma(double sigma)
   {
     setInitialGaussianSigma(sigma);
-    mFixedSigma = kTRUE;
+    mFixedSigma = true;
   }
   void setBoundGausSigma(double sigma, double sigmaLimit)
   {
     setInitialGaussianSigma(sigma);
     setSigmaLimit(sigma, sigmaLimit);
-    mBoundSigma = kTRUE;
+    mBoundSigma = true;
   }
   void setFixSecondGaussianSigma(double sigma)
   {
@@ -159,7 +159,7 @@ class HFInvMassFitter : public TNamed
       printf("Fit type should be 2Gaus!\n");
     }
     setInitialSecondGaussianSigma(sigma);
-    mFixedSigmaDoubleGaus = kTRUE;
+    mFixedSigmaDoubleGaus = true;
   }
   void setFixFrac2Gaus(double frac)
   {
@@ -168,7 +168,7 @@ class HFInvMassFitter : public TNamed
       printf("Fit type should be 2Gaus or 2GausSigmaRatio!\n");
     }
     setInitialFracDoubleGaus(frac);
-    mFixedFracDoubleGaus = kTRUE;
+    mFixedFracDoubleGaus = true;
   }
   void setFixRatioToGausSigma(double sigmaFrac)
   {
@@ -176,7 +176,7 @@ class HFInvMassFitter : public TNamed
       printf("Fit type should be set to k2GausSigmaRatioPar!\n");
     }
     setInitialRatioDoubleGausSigma(sigmaFrac);
-    mFixedRatioDoubleGausSigma = kTRUE;
+    mFixedRatioDoubleGausSigma = true;
   }
   void setFixSignalYield(double yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(double numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
@@ -188,12 +188,12 @@ class HFInvMassFitter : public TNamed
   void setFixReflOverSgn(double reflOverSgn)
   {
     setInitialReflOverSgn(reflOverSgn);
-    mFixReflOverSgn = kTRUE;
+    mFixReflOverSgn = true;
   }
   void setTemplateReflections(const TH1* histoRefl)
   {
     if (histoRefl == nullptr) {
-      mEnableReflections = kFALSE;
+      mEnableReflections = false;
       return;
     }
     mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));

@@ -664,7 +664,7 @@ int runMassFitter(const TString& configFileName)
 
 void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 {
-  histo->SetStats(kFALSE);
+  histo->SetStats(false);
   histo->SetMarkerSize(markerSize);
   histo->SetMarkerStyle(20);
   histo->SetLineWidth(2);
