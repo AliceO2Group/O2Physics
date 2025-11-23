@@ -707,9 +707,8 @@ struct NonPromptCascadeTask {
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
 
-  void processGenParticles(aod::McParticles const& mcParticles, aod::McCollisions const& collisions)
+  void processGenParticles(aod::McParticles const& mcParticles)
   {
-    // fillMultHistos<aod::McCollisions>(collisions)
     for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
       if (absCode != 3312 && absCode != 3334) {
@@ -766,7 +765,7 @@ struct NonPromptCascadeTask {
       if (mcp.mcCollisionId() == mcCollId) {
         // multiplicity definition:
         bool accept = mcp.isPhysicalPrimary();
-        accept *= (mcp.eta() < 0.5) && (mcp.eta() > -0.5);
+        accept = accept && (mcp.eta() < 0.5) && (mcp.eta() > -0.5);
         int q = 0;
         auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode());
         if (pdgEntry) {
@@ -774,7 +773,7 @@ struct NonPromptCascadeTask {
         } else {
           // LOG(warn) << "No pdg assuming neutral";
         }
-        accept *= (q != 0);
+        accept = accept && (q != 0);
         if (accept) {
           ++mult;
         }
