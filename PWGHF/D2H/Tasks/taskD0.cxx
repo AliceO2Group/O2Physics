@@ -606,7 +606,6 @@ struct HfTaskD0 {
         zdcEnergyZNA = zdc.energyCommonZNA();
         zdcEnergyZNC = zdc.energyCommonZNC();
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-
       }
 
       registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
