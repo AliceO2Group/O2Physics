@@ -463,17 +463,11 @@ int runMassFitter(const TString& configFileName)
 
       auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
         if (isFix) {
-          if (fixManual.empty()) {
-            setFunc(histToFix->GetBinContent(iSliceVar + 1));
-            printf("*****************************\n");
-            printf("FIXED %s: %f\n", var.data(), histToFix->GetBinContent(iSliceVar + 1));
-            printf("*****************************\n");
-          } else {
-            setFunc(fixManual[iSliceVar]);
-            printf("*****************************\n");
-            printf("FIXED %s: %f\n", var.data(), fixManual[iSliceVar]);
-            printf("*****************************\n");
-          }
+          const auto valueToFix = fixManual.empty() ? histToFix->GetBinContent(iSliceVar + 1) : fixManual[iSliceVar];
+          setFunc(valueToFix);
+          printf("*****************************\n");
+          printf("FIXED %s: %f\n", var.data(), valueToFix);
+          printf("*****************************\n");
         }
       };
 

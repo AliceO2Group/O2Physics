@@ -605,26 +605,13 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
     textSignalPar->SetFillStyle(0);
     textSignalPar->SetTextColor(kBlue);
     textSignalPar->SetTextAlign(13);
-    if (mFixedMean) {
-      textSignalPar->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
-    } else {
-      textSignalPar->AddText(Form("mean(free) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
-    }
+    const std::string fixMeanStatus = mFixedMean ? "fixed" : "free";
+    const std::string fixSigmaStatus = mFixedSigma ? "fixed" : "free";
+    const std::string fixSigmaDoubleGausStatus = mFixedSigmaDoubleGaus ? "fixed" : "free";
+    textSignalPar->AddText(Form("mean(%s) = %.3f #pm %.3f", fixMeanStatus.c_str(), mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+    textSignalPar->AddText(Form("sigma(%s) = %.3f #pm %.3f", fixSigmaStatus.c_str(), mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
     if (mTypeOfSgnPdf == DoubleGaus) {
-      if (mFixedSigma) {
-        textSignalPar->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
-      } else {
-        textSignalPar->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
-      }
-      if (mFixedSigmaDoubleGaus) {
-        textSignalPar->AddText(Form("sigma 2(fixed) = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
-      } else {
-        textSignalPar->AddText(Form("sigma 2(free) = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
-      }
-    } else if (mFixedSigma) {
-      textSignalPar->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
-    } else {
-      textSignalPar->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+      textSignalPar->AddText(Form("sigma 2(%s) = %.3f #pm %.3f", fixSigmaDoubleGausStatus.c_str(), mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
     }
     mInvMassFrame->addObject(textSignalPar);
   }
@@ -652,11 +639,9 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
   textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+  textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   if (mTypeOfSgnPdf == DoubleGaus) {
-    textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
     textInfo->AddText(Form("sigma 2 = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
-  } else {
-    textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   }
   mResidualFrame->addObject(textInfo);
   mResidualFrame->Draw();
