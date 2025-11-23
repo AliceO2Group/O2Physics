@@ -37,6 +37,7 @@
 
 #include "Math/Vector4D.h"
 
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <utility>
