@@ -942,7 +942,7 @@ struct AntinucleiInJets {
   {
     // Event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
-    registryData.fill(HIST("settingData"), minJetPt, rJet);
+    registryData.fill(HIST("settingData"), minJetPt.value, rJet.value);
 
     // Retrieve the bunch crossing information with timestamps from the collision
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1971,7 +1971,7 @@ struct AntinucleiInJets {
     for (const auto& collision : collisions) {
 
       // Configuration
-      registryMC.fill(HIST("settingMC"), minJetPt, rJet);
+      registryMC.fill(HIST("settingMC"), minJetPt.value, rJet.value);
 
       // Increment event counter
       eventCounter++;
