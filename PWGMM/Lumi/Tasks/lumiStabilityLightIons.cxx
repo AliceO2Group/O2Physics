@@ -225,6 +225,8 @@ struct LumiStabilityLightIons {
 
   void processZDCQA(MyBCs const& bcs, aod::Zdcs const&)
   {
+    const int maxTimeZDC = 50;     // Maximum time the histogram allows before setting a dummy value
+    const int dummyZDCTime = 42.f; // Time value to indicate missing ZDC time
     for (const auto& bc : bcs) {
 
       std::bitset<64> ctpInputMask(bc.inputMask());
@@ -234,18 +236,18 @@ struct LumiStabilityLightIons {
       if (!bc.has_zdc())
         continue;
 
-      mHistManager.fill(HIST("ZDCQA/ZNCTimeVsEnergy"), bc.zdc().energyCommonZNC() > -2 ? bc.zdc().energyCommonZNC() : -1, std::abs(bc.zdc().timeZNC()) < 50 ? bc.zdc().timeZNC() : 42.f);
+      mHistManager.fill(HIST("ZDCQA/ZNCTimeVsEnergy"), bc.zdc().energyCommonZNC() > -1 ? bc.zdc().energyCommonZNC() : -1, std::abs(bc.zdc().timeZNC()) < maxTimeZDC ? bc.zdc().timeZNC() : dummyZDCTime);
 
       float timeZNA = bc.zdc().timeZNA();
       float timeZNC = bc.zdc().timeZNC();
 
-      if (std::abs(timeZNA) > 50) {
-        timeZNA = 42.f; // set dummy value for missing ZDC times to be able to plot them
+      if (std::abs(timeZNA) > maxTimeZDC) {
+        timeZNA = dummyZDCTime; // set dummy value for missing ZDC times to be able to plot them
         mHistManager.fill(HIST("ZDCQA/ZNCTime"), timeZNC);
       }
-      if (std::abs(timeZNC) > 50) {
-        timeZNC = 42.f;      // set dummy value for missing ZDC times to be able to plot them
-        if (timeZNA != 42.f) // If ZNA and ZNC are both missing, do not fill the ZNA histogram with the dummy value
+      if (std::abs(timeZNC) > maxTimeZDC) {
+        timeZNC = dummyZDCTime;      // set dummy value for missing ZDC times to be able to plot them
+        if (timeZNA != dummyZDCTime) // If ZNA and ZNC are both missing, do not fill the ZNA histogram with the dummy value
           mHistManager.fill(HIST("ZDCQA/ZNATime"), timeZNA);
       }
 
