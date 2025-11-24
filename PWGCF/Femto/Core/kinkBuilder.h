@@ -88,7 +88,7 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("SigmaPlusBits");
   KINK_DEFAULT_BITS
   o2::framework::Configurable<std::vector<float>> chaDauTpcProton{"chaDauTpcProton", {5.f}, "Maximum |nsigma_Proton| TPC for charged daughter tracks"};
-  o2::framework::Configurable<std::vector<float>> chaDauTpctofProton{"chaDauTpctofProton", {5.f}, "Maximum combined |nsigma_Proton| (TPC+TOF) for charged daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> chaDauTofProton{"chaDauTofProton", {5.f}, "Maximum combined |nsigma_Proton| (TPC+TOF) for charged daughter tracks"};
   o2::framework::Configurable<float> pidThres{"pidThres", 0.75f, "Momentum threshold for using TOF/combined pid for daughter tracks (GeV/c)"};
 };
 
@@ -146,7 +146,7 @@ enum KinkSeles {
 
   kChaDaughTpcPion,
   kChaDaughTpcProton,
-  kChaDaughTpctofProton,
+  kChaDaughTofProton,
 
   kAlphaAPMin,
   kAlphaAPMax,
@@ -157,8 +157,10 @@ enum KinkSeles {
   kKinkSelsMax
 };
 
+constexpr char SigmaSelHistName[] = "hSigmaSelection";
+constexpr char SigmaPlusSelHistName[] = "hSigmaPlusSelection";
 const char kinkSelsName[] = "Kink selection object";
-const std::unordered_map<KinkSeles, std::string> kinkSelsToStrings = {
+const std::unordered_map<KinkSeles, std::string> kinkSelectionNames = {
   {kKinkTopoDcaMax, "kinkTopoDcaMax"},
   {kTransRadMin, "transRadMin"},
   {kTransRadMax, "transRadMax"},
@@ -167,7 +169,7 @@ const std::unordered_map<KinkSeles, std::string> kinkSelsToStrings = {
   {kMothDcaPvMax, "mothDcaPvMax"},
   {kChaDaughTpcPion, "chaDauTpcPion"},
   {kChaDaughTpcProton, "chaDauTpcProton"},
-  {kChaDaughTpctofProton, "chaDauTpctofProton"},
+  {kChaDaughTofProton, "chaDauTofProton"},
   {kAlphaAPMin, "alphaAPMin"},
   {kAlphaAPMax, "alphaAPMax"},
   {kQtAPMin, "qtAPMin"},
@@ -176,15 +178,15 @@ const std::unordered_map<KinkSeles, std::string> kinkSelsToStrings = {
 
 /// \class KinkCuts
 /// \brief Cut class to contain and execute all cuts applied to kinks
-template <modes::Kink kinkType>
+template <modes::Kink kinkType, const char* HistName>
 class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkMaskType, kKinkSelsMax>
 {
  public:
-  KinkSelection() {}
-  virtual ~KinkSelection() = default;
+  KinkSelection() = default;
+  ~KinkSelection() = default;
 
   template <typename T1, typename T2>
-  void configure(T1& config, T2& filter)
+  void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
   {
     mPtMin = filter.ptMin.value;
     mPtMax = filter.ptMax.value;
@@ -197,28 +199,30 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
       mMassSigmaLowerLimit = filter.massMinSigma.value;
       mMassSigmaUpperLimit = filter.massMaxSigma.value;
       // Only add PID selection if we need it - will be checked at runtime
-      this->addSelection(config.chaDauTpcPion.value, kChaDaughTpcPion, limits::kAbsUpperLimit, true, true);
+      this->addSelection(kChaDaughTpcPion, kinkSelectionNames.at(kChaDaughTpcPion), config.chaDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
     }
 
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
       mMassSigmaPlusLowerLimit = filter.massMinSigmaPlus.value;
       mMassSigmaPlusUpperLimit = filter.massMaxSigmaPlus.value;
       mPidThreshold = config.pidThres.value;
-      this->addSelection(config.chaDauTpcProton.value, kChaDaughTpcProton, limits::kAbsUpperLimit, true, true);
-      this->addSelection(config.chaDauTpctofProton.value, kChaDaughTpctofProton, limits::kUpperLimit, true, true);
+      this->addSelection(kChaDaughTpcProton, kinkSelectionNames.at(kChaDaughTpcProton), config.chaDauTpcProton.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kChaDaughTofProton, kinkSelectionNames.at(kChaDaughTofProton), config.chaDauTofProton.value, limits::kUpperLimit, false, false, true);
     }
 
-    this->addSelection(config.kinkTopoDcaMax.value, kKinkTopoDcaMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.transRadMin.value, kTransRadMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.transRadMax.value, kTransRadMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.dauAbsEtaMax.value, kDauAbsEtaMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.dauDcaPvMin.value, kDauDcaPvMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.mothDcaPvMax.value, kMothDcaPvMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.alphaAPMin.value, kAlphaAPMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.alphaAPMax.value, kAlphaAPMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.qtAPMin.value, kQtAPMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.qtAPMax.value, kQtAPMax, limits::kUpperLimit, true, true);
-    this->addSelection(config.cosPointingAngleMin.value, kCosPointingAngleMin, limits::kLowerLimit, true, true);
+    this->addSelection(kKinkTopoDcaMax, kinkSelectionNames.at(kKinkTopoDcaMax), config.kinkTopoDcaMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kTransRadMin, kinkSelectionNames.at(kTransRadMin), config.transRadMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kTransRadMax, kinkSelectionNames.at(kTransRadMax), config.transRadMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kDauAbsEtaMax, kinkSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kDauDcaPvMin, kinkSelectionNames.at(kDauDcaPvMin), config.dauDcaPvMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kMothDcaPvMax, kinkSelectionNames.at(kMothDcaPvMax), config.mothDcaPvMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kAlphaAPMin, kinkSelectionNames.at(kAlphaAPMin), config.alphaAPMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kAlphaAPMax, kinkSelectionNames.at(kAlphaAPMax), config.alphaAPMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kQtAPMin, kinkSelectionNames.at(kQtAPMin), config.qtAPMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kQtAPMax, kinkSelectionNames.at(kQtAPMax), config.qtAPMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kCosPointingAngleMin, kinkSelectionNames.at(kCosPointingAngleMin), config.cosPointingAngleMin.value, limits::kLowerLimit, true, true, false);
+
+    this->setupContainers<HistName>(registry);
   };
 
   template <typename T1, typename T2>
@@ -279,12 +283,14 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
         this->evaluateObservable(kChaDaughTpcProton, chaDaughter.tpcNSigmaPr());
       } else {
         if (chaDaughter.hasTOF()) {
-          this->evaluateObservable(kChaDaughTpctofProton, std::hypot(chaDaughter.tpcNSigmaPr(), chaDaughter.tofNSigmaPr()));
+          this->evaluateObservable(kChaDaughTofProton, std::abs(chaDaughter.tofNSigmaPr()));
+        } else {
+          this->evaluateObservable(kChaDaughTofProton, 999.f);
         }
       }
     }
 
-    this->assembleBitmask();
+    this->assembleBitmask<HistName>();
   };
 
   template <typename T>
@@ -305,7 +311,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
   }
 
   template <typename T>
-  bool checkHypothesis(T const& kinkCand) const
+  bool checkMass(T const& kinkCand) const
   {
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       float sigmaMass = kinkCand.mSigmaMinus();
@@ -354,17 +360,16 @@ struct ConfKinkTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceSigmaPlusExtras{"produceSigmaPlusExtras", -1, "Produce SigmaPlusExtras (-1: auto; 0 off; 1 on)"};
 };
 
-template <modes::Kink kinkType>
+template <modes::Kink kinkType, char const* HistName>
 class KinkBuilder
 {
  public:
-  KinkBuilder() {}
-  virtual ~KinkBuilder() = default;
+  KinkBuilder() = default;
+  ~KinkBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void init(T1& config, T2& filter, T3& table, T4& initContext)
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
   {
-    mKinkSelection.configure(config, filter);
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       LOG(info) << "Initialize femto Sigma builder...";
       mProduceSigmas = utils::enableTable("FSigmas_001", table.produceSigmas.value, initContext);
@@ -381,24 +386,20 @@ class KinkBuilder
 
     if (mProduceSigmas || mProduceSigmaMasks || mProduceSigmaExtras || mProduceSigmaPlus || mProduceSigmaPlusMasks || mProduceSigmaPlusExtras) {
       mFillAnyTable = true;
-      mKinkSelection.printSelections(kinkSelsName, kinkSelsToStrings);
-      if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
-        LOG(info) << "Sigma tables enabled: Sigmas=" << mProduceSigmas << " Masks=" << mProduceSigmaMasks << " Extras=" << mProduceSigmaExtras;
-      }
-      if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
-        LOG(info) << "SigmaPlus tables enabled: SigmaPlus=" << mProduceSigmaPlus << " Masks=" << mProduceSigmaPlusMasks << " Extras=" << mProduceSigmaPlusExtras;
-      }
     } else {
-      LOG(info) << "No tables configured";
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
     }
+    mKinkSelection.configure(registry, config, filter);
+    mKinkSelection.printSelections(kinkSelsName);
     LOG(info) << "Initialization done...";
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-  void fillKinks(T1& collisionProducts, T2& trackProducts, T3& kinkProducts, T4 const& kinks, T5 const& tracks, T6& trackBuilder, T7& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& kinkProducts, T6 const& kinks, T7 const& tracks, T8& trackBuilder, T9& indexMap)
   {
     if (!mFillAnyTable) {
-      LOG(info) << "KinkBuilder: No tables configured to be filled";
       return;
     }
     int64_t daughterIndex = 0;
@@ -408,7 +409,7 @@ class KinkBuilder
         continue;
       }
 
-      if (!mKinkSelection.checkHypothesis(kink)) {
+      if (!mKinkSelection.checkMass(kink)) {
         continue;
       }
 
@@ -419,7 +420,8 @@ class KinkBuilder
         continue;
       }
 
-      auto daughter = kink.template trackDaug_as<T5>();
+      auto daughter = kink.template trackDaug_as<T7>();
+      collisionBuilder.template fillCollision<system>(collisionProducts, col);
       daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionProducts, indexMap);
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
@@ -431,7 +433,7 @@ class KinkBuilder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillSigma(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int daughterIndex)
+  void fillSigma(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
     float mass = kink.mSigmaMinus();
 
@@ -488,7 +490,7 @@ class KinkBuilder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillSigmaPlus(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int daughterIndex)
+  void fillSigmaPlus(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
     float mass = kink.mSigmaPlus();
 
@@ -547,7 +549,7 @@ class KinkBuilder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  KinkSelection<kinkType> mKinkSelection;
+  KinkSelection<kinkType, HistName> mKinkSelection;
   bool mFillAnyTable = false;
   bool mProduceSigmas = false;
   bool mProduceSigmaMasks = false;

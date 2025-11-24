@@ -259,6 +259,11 @@ o2physics_add_dpl_workflow(phioo
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(kstar892-light-ion
+    SOURCES kstar892LightIon.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phispectrapbpbqa
     SOURCES phispectrapbpbqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

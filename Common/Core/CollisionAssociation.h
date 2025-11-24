@@ -80,7 +80,8 @@ class CollisionAssociation
           switch (mTrackSelection) {
             case o2::aod::track_association::TrackSelection::CentralBarrelRun2: {
               unsigned char itsClusterMap = track.itsClusterMap();
-              if (!(track.tpcNClsFound() >= 50 && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
+              int minTpcNClsFound{50};
+              if (!(track.tpcNClsFound() >= minTpcNClsFound && track.flags() & o2::aod::track::ITSrefit && track.flags() & o2::aod::track::TPCrefit && (TESTBIT(itsClusterMap, 0) || TESTBIT(itsClusterMap, 1)))) {
                 hasGoodQuality = false;
               }
               break;
@@ -127,7 +128,7 @@ class CollisionAssociation
                         TTracksUnfiltered const& tracksUnfiltered,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
-                        o2::aod::BCs const&,
+                        o2::aod::BCs const& bcs,
                         Assoc& association,
                         RevIndices& reverseIndices)
   {
@@ -151,6 +152,11 @@ class CollisionAssociation
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
+              // special check to avoid crashes (in particular on some MC datasets)
+              // related to shifts in ambiguous tracks association to bc slices (off by 1) - see https://mattermost.web.cern.ch/alice/pl/g9yaaf3tn3g4pgn7c1yex9copy
+              if (ambTrack.bcIds()[0] >= bcs.size() || ambTrack.bcIds()[1] >= bcs.size()) {
+                break;
+              }
               if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
                 break;
               }
@@ -194,7 +200,7 @@ class CollisionAssociation
       uint64_t collBC = collision.bc().globalBC();
 
       // This is done per block to allow optimization below. Within each block the globalBC increase continously
-      for (auto& iterationWindow : trackIterationWindows) {
+      for (auto& iterationWindow : trackIterationWindows) { // o2-linter: disable=const-ref-in-for-loop (iterationWindow is modified)
         bool iteratorMoved = false;
         const bool isAssignedTrackWindow = (iterationWindow.first != iterationWindow.second) ? iterationWindow.first.has_collision() : false;
         for (auto trackInWindow = iterationWindow.first; trackInWindow != iterationWindow.second; ++trackInWindow) {
