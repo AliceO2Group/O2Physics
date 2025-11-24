@@ -1214,22 +1214,28 @@ struct OnTheFlyTracker {
                                                    std::array{negP[0], negP[1], negP[2]}},
                                         std::array{o2::constants::physics::MassPionCharged,
                                                    o2::constants::physics::MassPionCharged});
-            } else
+            } else {
               thisV0.mK0 = -1;
+            }
+
             if (isLambda) {
               thisV0.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                        std::array{negP[0], negP[1], negP[2]}},
                                             std::array{o2::constants::physics::MassPionCharged,
                                                        o2::constants::physics::MassProton});
-            } else
+            } else {
               thisV0.mLambda = -1;
+            }
+
             if (isAntiLambda) {
               thisV0.mAntiLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                            std::array{negP[0], negP[1], negP[2]}},
                                                 std::array{o2::constants::physics::MassProton,
                                                            o2::constants::physics::MassPionCharged});
-            } else
+            } else {
               thisV0.mAntiLambda = -1;
+            }
+
             if (v0DecaySettings.doV0QA) {
               histos.fill(HIST("V0Building/hV0Building"), 4.0f);
 
