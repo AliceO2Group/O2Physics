@@ -1374,7 +1374,7 @@ struct TpcElIdMassSpectrum {
       mHistManager.add(Form("%s/h_MS_pp_v_pt_v_cent", categories[i]), Form("%s Mass e^{+}e^{+} vs momentum", titles[i]), HistType::kTH3F, {axisMassSpectrum, axisPt, axisCent});
     }
     if (isMC) {
-      for (int i = nDataCategories; i < std::size(categories); ++i) { // "True" and "PID_and_True" for MC only
+      for (std::size_t i = nDataCategories; i < std::size(categories); ++i) { // "True" and "PID_and_True" for MC only
         mHistManager.add(Form("%s/hTrackPt", categories[i]), Form("%s Track pt", titles[i]), HistType::kTH1F, {axisPtBig});
         mHistManager.add(Form("%s/hTPCspectra", categories[i]), Form("%s TPC dE/dx spectra", titles[i]), HistType::kTH2F, {axisPt, axisTPC});
         mHistManager.add(Form("%s/hTOFspectra", categories[i]), Form("%s TOF signal spectra", titles[i]), HistType::kTH2F, {axisPt, axisTOF});
@@ -1391,7 +1391,7 @@ struct TpcElIdMassSpectrum {
       const char* effCategories[] = {"PID", "True", "PID_and_True"};
       const char* effTitles[] = {"PID Tag", "True Tag", "PID and True Tag"};
 
-      for (int i = 0; i < std::size(effCategories); ++i) {
+      for (std::size_t i = 0; i < std::size(effCategories); ++i) {
         mHistManager.add(Form("TPCeff/%s/h_eh_pp_mass_spectra_v_pt_v_cent", effCategories[i]), Form("Mass e^{+}h^{+} vs momentum e^{+}h^{+} (%s)", effTitles[i]), HistType::kTH3F, {axisMassSpectrum, axisPtProbe, axisCent});
         mHistManager.add(Form("TPCeff/%s/h_ee_pp_mass_spectra_v_pt_v_cent", effCategories[i]), Form("Mass e^{+}e^{+} vs momentum e^{+}e^{+} (%s)", effTitles[i]), HistType::kTH3F, {axisMassSpectrum, axisPtProbe, axisCent});
         mHistManager.add(Form("TPCeff/%s/h_eh_mm_mass_spectra_v_pt_v_cent", effCategories[i]), Form("Mass e^{-}h^{-} vs momentum e^{-}h^{-} (%s)", effTitles[i]), HistType::kTH3F, {axisMassSpectrum, axisPtProbe, axisCent});
