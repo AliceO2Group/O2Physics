@@ -540,7 +540,7 @@ struct LFInJets {
     return true;
   }
 
-// Lambda selections
+  // Lambda selections
   template <typename Lambda, typename TrackPos, typename TrackNeg>
   bool passedLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
   {
@@ -677,7 +677,6 @@ struct LFInJets {
     }
     return true;
   }
-
 
   // V0s selections
   template <typename V0Type, typename TrackPos, typename TrackNeg>
@@ -1138,27 +1137,27 @@ struct LFInJets {
 
           // Fill table
           tableV0s(v0.pt(),
-                v0.mLambda(),
-                v0.mAntiLambda(),
-                v0.mK0Short(),
-                v0.v0radius(),
-                v0.v0cosPA(),
-                v0.dcapostopv(),
-                v0.dcanegtopv(),
-                v0.dcaV0daughters(),
-                neg.tpcNSigmaPr(),
-                pos.tpcNSigmaPr(),
-                neg.tpcNSigmaPi(),
-                pos.tpcNSigmaPi(),
-                collision.centFT0M(),
-                pos.tpcNClsCrossedRows(),
-                neg.tpcNClsCrossedRows(),
-                neg.tpcChi2NCl(),
-                neg.itsNCls(),
-                pos.tpcChi2NCl(),
-                pos.itsNCls(),
-                isUE,
-                isInJC);
+                   v0.mLambda(),
+                   v0.mAntiLambda(),
+                   v0.mK0Short(),
+                   v0.v0radius(),
+                   v0.v0cosPA(),
+                   v0.dcapostopv(),
+                   v0.dcanegtopv(),
+                   v0.dcaV0daughters(),
+                   neg.tpcNSigmaPr(),
+                   pos.tpcNSigmaPr(),
+                   neg.tpcNSigmaPi(),
+                   pos.tpcNSigmaPi(),
+                   collision.centFT0M(),
+                   pos.tpcNClsCrossedRows(),
+                   neg.tpcNClsCrossedRows(),
+                   neg.tpcChi2NCl(),
+                   neg.itsNCls(),
+                   pos.tpcChi2NCl(),
+                   pos.itsNCls(),
+                   isUE,
+                   isInJC);
         }
       }
 
@@ -1210,38 +1209,38 @@ struct LFInJets {
           }
 
           tableCascades(casc.pt(),
-                    casc.sign(),
-                    casc.mXi(),
-                    casc.mOmega(),
-                    casc.mLambda(),
-                    casc.cascradius(),
-                    casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    casc.v0radius(),
-                    casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    casc.dcapostopv(),
-                    casc.dcanegtopv(),
-                    casc.dcabachtopv(),
-                    casc.dcacascdaughters(),
-                    casc.dcaV0daughters(),
-                    casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
-                    neg.tpcNSigmaPr(),
-                    pos.tpcNSigmaPr(),
-                    neg.tpcNSigmaPi(),
-                    pos.tpcNSigmaPi(),
-                    bach.tpcNSigmaPi(),
-                    bach.tpcNSigmaKa(),
-                    collision.centFT0M(),
-                    pos.tpcNClsCrossedRows(),
-                    neg.tpcNClsCrossedRows(),
-                    bach.tpcNClsCrossedRows(),
-                    neg.tpcChi2NCl(),
-                    neg.itsNCls(),
-                    pos.tpcChi2NCl(),
-                    pos.itsNCls(),
-                    bach.tpcChi2NCl(),
-                    bach.itsNCls(),
-                    isUE,
-                    isInJC);
+                        casc.sign(),
+                        casc.mXi(),
+                        casc.mOmega(),
+                        casc.mLambda(),
+                        casc.cascradius(),
+                        casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
+                        casc.v0radius(),
+                        casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                        casc.dcapostopv(),
+                        casc.dcanegtopv(),
+                        casc.dcabachtopv(),
+                        casc.dcacascdaughters(),
+                        casc.dcaV0daughters(),
+                        casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                        neg.tpcNSigmaPr(),
+                        pos.tpcNSigmaPr(),
+                        neg.tpcNSigmaPi(),
+                        pos.tpcNSigmaPi(),
+                        bach.tpcNSigmaPi(),
+                        bach.tpcNSigmaKa(),
+                        collision.centFT0M(),
+                        pos.tpcNClsCrossedRows(),
+                        neg.tpcNClsCrossedRows(),
+                        bach.tpcNClsCrossedRows(),
+                        neg.tpcChi2NCl(),
+                        neg.itsNCls(),
+                        pos.tpcChi2NCl(),
+                        pos.itsNCls(),
+                        bach.tpcChi2NCl(),
+                        bach.itsNCls(),
+                        isUE,
+                        isInJC);
         }
       }
       if (enabledSignals.value[ParticleOfInterest::kPions] || enabledSignals.value[ParticleOfInterest::kKaons] || enabledSignals.value[ParticleOfInterest::kProtons]) {
