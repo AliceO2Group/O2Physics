@@ -74,6 +74,7 @@ struct PidFlowPtCorr {
     std::string prefix = "trkQualityOpts";
     // track selections
     O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
+    O2_DEFINE_CONFIGURABLE(cfgRangeEta, float, 0.4f, "Eta range for mean Pt")
     O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
     O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for ref tracks")
     // track quality selections for daughter track
@@ -432,7 +433,7 @@ struct PidFlowPtCorr {
     if (dnx == 0)
       return;
     val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-    
+
     if (std::fabs(val) < 1)
       registry.fill(tarName, cent, ptSum / nch, val, dnx);
     return;
@@ -618,8 +619,7 @@ struct PidFlowPtCorr {
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hEtaPhiVtxzREF"), track.phi(), track.eta(), vtxz, wacc);
       registry.fill(HIST("hPt"), track.pt());
-      // int ptbin = fPtAxis->FindBin(track.pt()) - 1;
-      if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value))) 
+      if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
         continue;
       fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
       if (track.tpcNSigmaPi() < cfgNSigma[0])
@@ -638,7 +638,7 @@ struct PidFlowPtCorr {
         th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), vtxz);
       }
 
-      if (std::fabs(track.eta()) < 0.4) {
+      if (std::fabs(track.eta()) < cfgRangeEta) {
         nch += weff;
         nchSquare += weff * weff;
         ptSum += weff * track.pt();
@@ -647,7 +647,7 @@ struct PidFlowPtCorr {
       }
     }
 
-    if (nch > 0){
+    if (nch > 0) {
       int centbin = 0;
       centbin = fMultAxis->FindBin(cent);
 
@@ -677,14 +677,14 @@ struct PidFlowPtCorr {
       fillProfile(corrconfigs.at(20), HIST("ka/c32"), cent);
       fillProfile(corrconfigs.at(21), HIST("pr/c32"), cent);
       fillProfile(corrconfigs.at(22), HIST("pr/c32"), cent);
-      
+
       fillProfile(corrconfigs.at(23), HIST("pi/c34"), cent);
       fillProfile(corrconfigs.at(24), HIST("pi/c34"), cent);
       fillProfile(corrconfigs.at(25), HIST("ka/c34"), cent);
       fillProfile(corrconfigs.at(26), HIST("ka/c34"), cent);
       fillProfile(corrconfigs.at(27), HIST("pr/c34"), cent);
       fillProfile(corrconfigs.at(28), HIST("pr/c34"), cent);
-      
+
       fillProfilevnpt(corrconfigs.at(0), HIST("covV2Pt"), cent, ptSum, nch, 0);
       fillProfilevnpt(corrconfigs.at(0), HIST("covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
       fillProfilevnpt(corrconfigs.at(29), HIST("pi/covV2Pt"), cent, ptSum, nch, 0);
