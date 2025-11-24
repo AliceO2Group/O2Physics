@@ -105,7 +105,7 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"};
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
-  Configurable<int> minNelectron{"minNelectron", 1, "min number of electron candidates per collision"};
+  Configurable<int> minNelectron{"minNelectron", 0, "min number of electron candidates per collision"};
 
   // configuration for PID ML
   Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
