@@ -575,52 +575,52 @@ struct OnTheFlyTracker {
   /// \param xiDecayVertex the address of the xi decay vertex
   /// \param laDecayVertex the address of the la decay vertex
   template <typename McParticleType>
-  void decayParticle(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& laDecayVertex)
+  void decayCascade(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& laDecayVertex)
   {
-    double u = rand.Uniform(0, 1);
-    double xi_mass = o2::constants::physics::MassXiMinus;
-    double la_mass = o2::constants::physics::MassLambda;
-    double pi_mass = o2::constants::physics::MassPionCharged;
-    double pr_mass = o2::constants::physics::MassProton;
+    const double uXi = rand.Uniform(0, 1);
+    const double ctauXi = 4.91; // cm
+    const double betaGammaXi = particle.p() / o2::constants::physics::MassXiMinus;
+    const double rxyzXi = (-betaGammaXi * ctauXi * std::log(1 - uXi));
 
-    double xi_gamma = 1 / std::sqrt(1 + (particle.p() * particle.p()) / (xi_mass * xi_mass));
-    double xi_ctau = 4.91 * xi_gamma;
-    double xi_rxyz = (-xi_ctau * std::log(1 - u));
     float sna, csa;
-    o2::math_utils::CircleXYf_t xi_circle;
-    track.getCircleParams(magneticField, xi_circle, sna, csa);
-    double xi_rxy = xi_rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
-    double theta = xi_rxy / xi_circle.rC;
-    double newX = ((particle.vx() - xi_circle.xC) * std::cos(theta) - (particle.vy() - xi_circle.yC) * std::sin(theta)) + xi_circle.xC;
-    double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
-    double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
-    double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+    o2::math_utils::CircleXYf_t circleXi;
+    track.getCircleParams(magneticField, circleXi, sna, csa);
+    const double rxyXi = rxyzXi / std::sqrt(1. + track.getTgl() * track.getTgl());
+    const double theta = rxyXi / circleXi.rC;
+    const double newX = ((particle.vx() - circleXi.xC) * std::cos(theta) - (particle.vy() - circleXi.yC) * std::sin(theta)) + circleXi.xC;
+    const double newY = ((particle.vy() - circleXi.yC) * std::cos(theta) + (particle.vx() - circleXi.xC) * std::sin(theta)) + circleXi.yC;
+    const double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
+    const double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+    const double newE = std::sqrt(o2::constants::physics::MassXiMinus * o2::constants::physics::MassXiMinus + newPx * newPx + newPy * newPy + particle.pz() * particle.pz());
+
     xiDecayVertex.push_back(newX);
     xiDecayVertex.push_back(newY);
-    xiDecayVertex.push_back(particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
+    xiDecayVertex.push_back(particle.vz() + rxyzXi * (particle.pz() / particle.p()));
 
-    std::vector<double> xiDaughters = {la_mass, pi_mass};
-    TLorentzVector xi(newPx, newPy, particle.pz(), particle.e());
+    std::vector<double> xiDaughters = {o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged};
+    TLorentzVector xi(newPx, newPy, particle.pz(), newE);
     TGenPhaseSpace xiDecay;
     xiDecay.SetDecay(xi, 2, xiDaughters.data());
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
     TLorentzVector la = *xiDecay.GetDecay(0);
 
-    double la_gamma = 1 / std::sqrt(1 + (la.P() * la.P()) / (la_mass * la_mass));
-    double la_ctau = 7.89 * la_gamma;
-    std::vector<double> laDaughters = {pi_mass, pr_mass};
-    double la_rxyz = (-la_ctau * std::log(1 - u));
-    laDecayVertex.push_back(xiDecayVertex[0] + la_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
-    laDecayVertex.push_back(xiDecayVertex[1] + la_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
-    laDecayVertex.push_back(xiDecayVertex[2] + la_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
+    const double uLa = rand.Uniform(0, 1);
+    const double ctauLa = 7.845; // cm
+    const double betaGammaLa = la.P() / o2::constants::physics::MassLambda;
+    const double rxyzLa = (-betaGammaLa * ctauLa * std::log(1 - uLa));
+    laDecayVertex.push_back(xiDecayVertex[0] + rxyzLa * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
+    laDecayVertex.push_back(xiDecayVertex[1] + rxyzLa * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
+    laDecayVertex.push_back(xiDecayVertex[2] + rxyzLa * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
 
+    std::vector<double> laDaughters = {o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton};
     TGenPhaseSpace laDecay;
     laDecay.SetDecay(la, 2, laDaughters.data());
     laDecay.Generate();
     decayDaughters.push_back(*laDecay.GetDecay(0));
     decayDaughters.push_back(*laDecay.GetDecay(1));
   }
+
   /// Function to decay the V0
   /// \param particle the particle to decay
   /// \param decayDaughters the address of resulting daughters
@@ -629,36 +629,36 @@ struct OnTheFlyTracker {
   void decayV0Particle(McParticleType particle, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& v0DecayVertex, int pdgCode)
   {
     double u = rand.Uniform(0, 1);
-    double v0_mass = -1.;
-    double negDau_mass = -1.;
-    double posDau_mass = -1.;
+    double v0Mass = -1.;
+    double negDauMass = -1.;
+    double posDauMass = -1.;
     double ctau = -1.;
+
     if (std::abs(pdgCode) == kK0Short) {
-      v0_mass = o2::constants::physics::MassK0Short;
-      negDau_mass = o2::constants::physics::MassPionCharged;
-      posDau_mass = o2::constants::physics::MassPionCharged;
+      v0Mass = o2::constants::physics::MassK0Short;
+      negDauMass = o2::constants::physics::MassPionCharged;
+      posDauMass = o2::constants::physics::MassPionCharged;
       ctau = 2.68;
     } else if (std::abs(pdgCode) == kLambda0) {
-      v0_mass = o2::constants::physics::MassLambda;
-      negDau_mass = o2::constants::physics::MassPionCharged;
-      posDau_mass = o2::constants::physics::MassProton;
+      v0Mass = o2::constants::physics::MassLambda;
+      negDauMass = o2::constants::physics::MassPionCharged;
+      posDauMass = o2::constants::physics::MassProton;
       ctau = 7.845;
     } else if (std::abs(pdgCode) == kLambda0Bar) {
-      v0_mass = o2::constants::physics::MassLambda;
-      negDau_mass = o2::constants::physics::MassProton;
-      posDau_mass = o2::constants::physics::MassPionCharged;
+      v0Mass = o2::constants::physics::MassLambda;
+      negDauMass = o2::constants::physics::MassProton;
+      posDauMass = o2::constants::physics::MassPionCharged;
       ctau = 7.845;
     }
 
-    double v0_gamma = 1 / std::sqrt(1 + (particle.p() * particle.p()) / (v0_mass * v0_mass));
-    double v0_ctau = ctau * v0_gamma;
-    double v0_rxyz = (-v0_ctau * std::log(1 - u));
+    const double v0BetaGamma = particle.p() / v0Mass;
+    const double v0rxyz = (-v0BetaGamma * ctau * std::log(1 - u));
     TLorentzVector v0(particle.px(), particle.py(), particle.pz(), particle.e());
 
-    v0DecayVertex.push_back(particle.vx() + v0_rxyz * (particle.px() / particle.p()));
-    v0DecayVertex.push_back(particle.vy() + v0_rxyz * (particle.py() / particle.p()));
-    v0DecayVertex.push_back(particle.vz() + v0_rxyz * (particle.pz() / particle.p()));
-    std::vector<double> v0Daughters = {negDau_mass, posDau_mass};
+    v0DecayVertex.push_back(particle.vx() + v0rxyz * (particle.px() / particle.p()));
+    v0DecayVertex.push_back(particle.vy() + v0rxyz * (particle.py() / particle.p()));
+    v0DecayVertex.push_back(particle.vz() + v0rxyz * (particle.pz() / particle.p()));
+    std::vector<double> v0Daughters = {negDauMass, posDauMass};
 
     TGenPhaseSpace v0Decay;
     v0Decay.SetDecay(v0, 2, v0Daughters.data());
@@ -744,7 +744,7 @@ struct OnTheFlyTracker {
         if (mcParticle.pdgCode() == kXiMinus) {
           o2::track::TrackParCov xiTrackParCov;
           o2::upgrade::convertMCParticleToO2Track(mcParticle, xiTrackParCov, pdgDB);
-          decayParticle(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
+          decayCascade(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
           xiDecayRadius2D = std::hypot(xiDecayVertex[0], xiDecayVertex[1]);
           laDecayRadius2D = std::hypot(laDecayVertex[0], laDecayVertex[1]);
         }
@@ -1214,22 +1214,28 @@ struct OnTheFlyTracker {
                                                    std::array{negP[0], negP[1], negP[2]}},
                                         std::array{o2::constants::physics::MassPionCharged,
                                                    o2::constants::physics::MassPionCharged});
-            } else
+            } else {
               thisV0.mK0 = -1;
+            }
+
             if (isLambda) {
               thisV0.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                        std::array{negP[0], negP[1], negP[2]}},
                                             std::array{o2::constants::physics::MassPionCharged,
                                                        o2::constants::physics::MassProton});
-            } else
+            } else {
               thisV0.mLambda = -1;
+            }
+
             if (isAntiLambda) {
               thisV0.mAntiLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                            std::array{negP[0], negP[1], negP[2]}},
                                                 std::array{o2::constants::physics::MassProton,
                                                            o2::constants::physics::MassPionCharged});
-            } else
+            } else {
               thisV0.mAntiLambda = -1;
+            }
+
             if (v0DecaySettings.doV0QA) {
               histos.fill(HIST("V0Building/hV0Building"), 4.0f);
 
