@@ -141,6 +141,7 @@ struct LumiFDDFT0 {
   Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
   Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
   Configurable<bool> useRelTimeStamp{"useRelTimeStamp", false, "timestamp info stored as relative to fttimestamp"};
+  Configurable<bool> cfgKeepOnlyNonZeroCTPMask{"cfgKeepOnlyNonZeroCTPMask", false, "Keep only events with non-zero CTP mask"};
 
   HistogramRegistry histos{
     "histos",
@@ -352,7 +353,7 @@ struct LumiFDDFT0 {
     for (const auto& bc : bcs) {
       if (!bc.timestamp())
         continue;
-      if (bc.inputMask() == 0) // No trigger inputs active
+      if (bc.inputMask() == 0 && cfgKeepOnlyNonZeroCTPMask) // No trigger inputs active
         continue;
 
       if (useRelTimeStamp) {
