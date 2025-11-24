@@ -293,7 +293,7 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
 using EMEoI = EMEoIs::iterator;
 
 DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>, o2::soa::Marker<1>);
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
@@ -936,6 +936,44 @@ using EMPrimaryTrackEMEventId = EMPrimaryTrackEMEventIds::iterator;
 DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIdsTMP, "AOD", "PRMTRKEVIDTMP", track::CollisionId); // To be joined with EMPrimaryTracks in associateDileptonToEMEvent
 // iterators
 using EMPrimaryTrackEMEventIdTMP = EMPrimaryTrackEMEventIdsTMP::iterator;
+
+namespace emthinevent
+{
+DECLARE_SOA_COLUMN(EP2, ep2, float); //!
+} // namespace emthinevent
+DECLARE_SOA_TABLE_VERSIONED(EMThinEvents_000, "AOD", "EMTHINEVENT", 0, //! Thin event information table
+                            o2::soa::Index<>, bc::RunNumber, bc::GlobalBC, timestamp::Timestamp, collision::PosZ,
+                            evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, cent::CentFT0C, emthinevent::EP2);
+using EMThinEvents = EMThinEvents_000;
+using EMThinEvent = EMThinEvents::iterator;
+
+DECLARE_SOA_TABLE(EMThinEventNormInfos, "AOD", "EMTHINEVENTNORM", //! event information for normalization
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, collision::PosZ, cent::CentFT0C, emevent::Sel8<evsel::Selection>, o2::soa::Marker<2>);
+using EMThinEventNormInfo = EMThinEventNormInfos::iterator;
+
+namespace emdilepton
+{
+DECLARE_SOA_INDEX_COLUMN(EMThinEvent, emthinevent); //!
+DECLARE_SOA_COLUMN(Pt1, pt1, float);                //!
+DECLARE_SOA_COLUMN(Eta1, eta1, float);              //!
+DECLARE_SOA_COLUMN(Phi1, phi1, float);              //!
+DECLARE_SOA_COLUMN(Sign1, sign1, short);            //!
+DECLARE_SOA_COLUMN(DCA1, dca1, float);              //! DCA in sigma. Users should decide 3D or XY or Z
+DECLARE_SOA_COLUMN(Pt2, pt2, float);                //!
+DECLARE_SOA_COLUMN(Eta2, eta2, float);              //!
+DECLARE_SOA_COLUMN(Phi2, phi2, float);              //!
+DECLARE_SOA_COLUMN(DCA2, dca2, float);              //! DCA in sigma. Users should decide 3D or XY or Z
+DECLARE_SOA_COLUMN(Sign2, sign2, short);            //!
+DECLARE_SOA_COLUMN(Weight, weight, float);          //! possible pair weight
+} // namespace emdilepton
+
+DECLARE_SOA_TABLE_VERSIONED(EMDileptons_000, "AOD", "EMDILEPTON", 0,
+                            o2::soa::Index<>, emdilepton::EMThinEventId,
+                            emdilepton::Pt1, emdilepton::Eta1, emdilepton::Phi1, emdilepton::Sign1, emdilepton::DCA1,
+                            emdilepton::Pt2, emdilepton::Eta2, emdilepton::Phi2, emdilepton::Sign2, emdilepton::DCA2,
+                            emdilepton::Weight);
+using EMDileptons = EMDileptons_000;
+using EMDilepton = EMDileptons::iterator;
 
 // Dummy data for MC
 namespace emdummydata
