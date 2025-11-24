@@ -40,8 +40,6 @@
 
 #include <array>
 #include <cmath>
-#include <iostream>
-#include <map>
 #include <vector>
 
 using namespace o2;
@@ -188,7 +186,7 @@ struct LumiFDDFT0 {
                    o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
                                  o2::aod::TracksExtra> const& unfiltered_tracks)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     Long64_t relTS = bc.timestamp() - fttimestamp;
     Long64_t globalBC = bc.globalBC();
     std::vector<int64_t> vec_globID_contr = {};
@@ -276,38 +274,38 @@ struct LumiFDDFT0 {
 
     // now get information for FDD
     if (collision.has_foundFDD()) {
-      auto fdd = collision.foundFDD();
+      const auto& fdd = collision.foundFDD();
       mTriggerFDD = fdd.triggerMask();
       timeaFDD = fdd.timeA();
       timecFDD = fdd.timeC();
-      for (auto amplitude : fdd.chargeA()) {
+      for (const auto& amplitude : fdd.chargeA()) {
         chargeaFDD += amplitude;
       }
-      for (auto amplitude : fdd.chargeC()) {
+      for (const auto& amplitude : fdd.chargeC()) {
         chargecFDD += amplitude;
       }
     } // fdd
 
     if (collision.has_foundFT0()) {
-      auto ft0 = collision.foundFT0();
+      const auto& ft0 = collision.foundFT0();
       mTriggerFT0 = ft0.triggerMask();
       timeaFT0 = ft0.timeA();
       timecFT0 = ft0.timeC();
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         chargeaFT0 += amplitude;
       }
 
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         chargecFT0 += amplitude;
       }
     } // ft0
 
     // FV0
     if (collision.has_foundFV0()) {
-      auto fv0 = collision.foundFV0();
+      const auto& fv0 = collision.foundFV0();
       mTriggerFV0 = fv0.triggerMask();
       timeaFV0 = fv0.time();
-      for (auto amplitude : fv0.amplitude()) {
+      for (const auto& amplitude : fv0.amplitude()) {
         chargeaFV0 += amplitude;
       }
     } // fv0
@@ -365,15 +363,15 @@ struct LumiFDDFT0 {
     }
 
     // Scan over the FDD table and store charge and time along with globalBC
-    for (auto& fdd : fdds) {
-      auto bc = fdd.bc_as<BCsWithTimestamps>();
+    for (const auto& fdd : fdds) {
+      const auto& bc = fdd.bc_as<BCsWithTimestamps>();
       if (!bc.timestamp())
         continue;
       if (mRunNumber != bc.runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
         if (grpo != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpo);
-          std::cout << "run " << bc.runNumber() << std::endl;
+          LOG(info) << "run " << bc.runNumber();
         } else {
           LOGF(fatal,
                "GRP object is not available in CCDB for run=%d at timestamp=%llu",
@@ -414,8 +412,8 @@ struct LumiFDDFT0 {
     } // end of fdd table
 
     // Scan over the FT0 table and store charge and time along with globalBC
-    for (auto& ft0 : ft0s) {
-      auto bc = ft0.bc_as<BCsWithTimestamps>();
+    for (const auto& ft0 : ft0s) {
+      const auto& bc = ft0.bc_as<BCsWithTimestamps>();
       if (!bc.timestamp())
         continue;
       Long64_t relTS = bc.timestamp() - fttimestamp;
@@ -424,17 +422,17 @@ struct LumiFDDFT0 {
       histoslite.fill(HIST("BCFT0"), localBC);
       double chargeaFT0 = 0.;
       double chargecFT0 = 0.;
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         chargeaFT0 += amplitude;
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         chargecFT0 += amplitude;
       }
       rowEventInfoft0(relTS, globalBC, bc.inputMask(), ft0.triggerMask(), ft0.timeA(), ft0.timeC(), chargeaFT0, chargecFT0);
     } // end of ft0 table
 
     // Scan over the FV0 table and store charge and time along with globalBC
-    for (auto& fv0 : fv0s) {
+    for (const auto& fv0 : fv0s) {
       auto bc = fv0.bc_as<BCsWithTimestamps>();
       if (!bc.timestamp())
         continue;
@@ -444,7 +442,7 @@ struct LumiFDDFT0 {
       histoslite.fill(HIST("BCFV0"), localBC);
 
       double chargeaFV0 = 0.;
-      for (auto amplitude : fv0.amplitude()) {
+      for (const auto& amplitude : fv0.amplitude()) {
         chargeaFV0 += amplitude;
       }
       rowEventInfofv0(relTS, globalBC, bc.inputMask(), fv0.triggerMask(), fv0.time(), chargeaFV0);
