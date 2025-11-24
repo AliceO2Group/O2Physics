@@ -638,7 +638,7 @@ struct PidFlowPtCorr {
         th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), vtxz);
       }
 
-      if (std::fabs(track.eta()) < cfgRangeEta) {
+      if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
         nch += weff;
         nchSquare += weff * weff;
         ptSum += weff * track.pt();
