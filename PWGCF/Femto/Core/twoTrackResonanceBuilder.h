@@ -320,7 +320,7 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     mPhi = RecoDecay::constrainAngle(vecResonance.Phi());
   }
 
-  bool checkCandidate() const
+  bool checkFilters() const
   {
     return ((mMass > mMassMin && mMass < mMassMax) &&
             (mPt > mPtMin && mPt < mPtMax) &&
@@ -526,10 +526,15 @@ class TwoTrackResonanceBuilder
   {
 
     mTwoTrackResonanceSelection.reconstructResonance(posDaughter, negDaughter);
-    if (!mTwoTrackResonanceSelection.checkCandidate()) {
+    if (!mTwoTrackResonanceSelection.checkFilters()) {
       return;
     }
     mTwoTrackResonanceSelection.applySelections(posDaughter, negDaughter); // for resonances selection are only applied to daughter tracks
+
+    if (!mTwoTrackResonanceSelection.passesAllRequiredSelections()) {
+      return;
+    }
+
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
 
