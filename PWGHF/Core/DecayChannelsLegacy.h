@@ -50,16 +50,6 @@ enum DecayType {
 };
 } // namespace hf_cand_dstar
 
-namespace hf_cand_sigmac
-{
-enum DecayType {
-  Sc0ToPKPiPi = 0,
-  ScplusplusToPKPiPi,
-  ScStar0ToPKPiPi,
-  ScStarPlusPlusToPKPiPi
-};
-} // namespace hf_cand_sigmac
-
 namespace hf_cand_b0
 {
 enum DecayType {

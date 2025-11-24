@@ -24,6 +24,7 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFInJets.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -207,6 +208,23 @@ struct StrangenessInJets {
     const AxisSpec dcaAxis{longLivedOptions.longLivedBinsDca, "DCA_{xy} (cm)"};
 
     // Histograms for real data
+    if (doprocessDerivedAnalysis) {
+      registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("AntiLambda_in_jet", "AntiLambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("Lambda_in_ue", "Lambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
+      registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
+      registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("XiNeg_in_ue", "XiNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("OmegaPos_in_jet", "OmegaPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+    }
+
     if (doprocessData) {
 
       // Event counters
@@ -1751,6 +1769,86 @@ struct StrangenessInJets {
     }
   }
   PROCESS_SWITCH(StrangenessInJets, processMCreconstructed, "process reconstructed events", false);
+
+  // Postprocessing
+  void processDerivedAnalysis(aod::V0InJets const& v0s, aod::CascInJets const& cascades)
+  {
+    for (auto& v0 : v0s) {
+
+      if (v0.v0negITSlayers() < minITSnCls || v0.v0posITSlayers() < minITSnCls)
+        continue;
+      if (v0.v0negtpcCrossedRows() < minNCrossedRowsTPC || v0.v0postpcCrossedRows() < minNCrossedRowsTPC)
+        continue;
+      if (v0.v0negTPCChi2() > maxChi2TPC || v0.v0posTPCChi2() > maxChi2TPC)
+        continue;
+      if (v0.v0cospa() < v0cospaMin)
+        continue;
+      if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+        continue;
+      if (std::fabs(v0.v0dcav0daughters()) > dcaV0DaughtersMax)
+        continue;
+      if (std::fabs(v0.v0dcapostopv()) < dcapostoPVmin)
+        continue;
+      if (std::fabs(v0.v0dcanegtopv()) < dcanegtoPVmin)
+        continue;
+
+      if (v0.isUE()) {
+        registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
+        registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
+        registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
+      } else if (v0.isJC()) {
+        registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
+        registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
+        registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
+      }
+    }
+
+    for (auto& casc : cascades) {
+
+      if (casc.v0negITSlayers() < minITSnCls || casc.v0posITSlayers() < minITSnCls || casc.bachITSlayers() < minITSnCls)
+        continue;
+      if (casc.v0negtpcCrossedRows() < minNCrossedRowsTPC || casc.v0postpcCrossedRows() < minNCrossedRowsTPC ||
+          casc.bachtpcCrossedRows() < minNCrossedRowsTPC)
+        continue;
+      if (casc.v0negTPCChi2() > maxChi2TPC || casc.v0posTPCChi2() > maxChi2TPC || casc.bachTPCChi2() > maxChi2TPC)
+        continue;
+      if (casc.v0cospa() < v0cospaMin)
+        continue;
+      if (casc.casccospa() < casccospaMin)
+        continue;
+      if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+        continue;
+      if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+        continue;
+      if (std::fabs(casc.v0dcav0daughters()) > dcaV0DaughtersMax)
+        continue;
+      if (std::fabs(casc.v0dcapostopv()) < dcapostoPVmin)
+        continue;
+      if (std::fabs(casc.v0dcanegtopv()) < dcanegtoPVmin)
+        continue;
+      if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+        continue;
+
+      if (casc.isUE()) {
+        if (casc.sign() < 0) {
+          registryData.fill(HIST("XiNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        } else if (casc.sign() > 0) {
+          registryData.fill(HIST("XiPos_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaPos_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        }
+      } else if (casc.isJC()) {
+        if (casc.sign() < 0) {
+          registryData.fill(HIST("XiNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        } else if (casc.sign() > 0) {
+          registryData.fill(HIST("XiPos_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaPos_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJets, processDerivedAnalysis, "Postprocessing for derived data analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

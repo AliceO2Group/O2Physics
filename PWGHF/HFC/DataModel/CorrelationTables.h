@@ -72,6 +72,7 @@ DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! D
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
+DECLARE_SOA_COLUMN(Cent, cent, float);                                     //! Centrality of Collision
 DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Check track origin
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, D0 Prompt or Non-Prompt
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
@@ -102,7 +103,8 @@ DECLARE_SOA_TABLE(D0HadronPair, "AOD", "D0HPAIR", //! D0-Hadrons pairs Informati
                   aod::hf_correlation_d0_hadron::PtD,
                   aod::hf_correlation_d0_hadron::PtHadron,
                   aod::hf_correlation_d0_hadron::PoolBin,
-                  aod::hf_correlation_d0_hadron::IsAutoCorrelated);
+                  aod::hf_correlation_d0_hadron::IsAutoCorrelated,
+                  aod::hf_correlation_d0_hadron::Cent);
 
 DECLARE_SOA_TABLE(D0HadronRecoInfo, "AOD", "D0HRECOINFO", //! D0-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_d0_hadron::MD,

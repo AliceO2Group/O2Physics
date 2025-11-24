@@ -50,13 +50,21 @@ class FlowPtContainer : public TNamed
   void initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
+  // initial pt-pt correlations with two subevents
+  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsub = 10);
+  void initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsub = 10);
+  void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsub = 10);
   void fill(const double& w, const double& pt);
+  void fillSub1(const double& w, const double& pt);
+  void fillSub2(const double& w, const double& pt);
   void fillArray(FillType a, FillType b, double c, double d);
   int getVectorIndex(const int i, const int j) { return j * (mpar + 1) + i; }                                              // index for 2d array for storing pt correlations
   int getVectorIndex(const int i, const int j, const int k, const int l) { return i + j * 3 + k * 3 * 3 + l * 3 * 3 * 5; } // index for 4d array for std vnpt correlation - size 3x3x3x3
   void calculateCorrelations();
+  void calculateSubeventCorrelations();
   void calculateCMTerms();
   void fillPtProfiles(const double& lMult, const double& rn);
+  void fillSubeventPtProfiles(const double& lMult, const double& rn);
   void fillVnPtCorrProfiles(const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnDeltaPtProfiles(const double& centmult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
   void fillVnPtCorrProfiles(const int configIndex, const double& lMult, const double& flowval, const double& flowtuples, const double& rn, uint8_t mask);
@@ -101,6 +109,7 @@ class FlowPtContainer : public TNamed
       fillVnPtCorrStdProfiles(centmult, rn);
   }
   void fillCMProfiles(const double& lMult, const double& rn);
+  void fillCMSubeventProfiles(const double& lMult, const double& rn);
   TList* getCorrList() { return fCorrList; }
   TList* getCMTermList() { return fCMTermList; }
   TList* getCovList() { return fCovList; }
@@ -125,8 +134,16 @@ class FlowPtContainer : public TNamed
   {
     sumP.clear();
     sumP.resize((mpar + 1) * (mpar + 1));
+    insub1.clear();
+    insub1.resize((mpar + 1) * (mpar + 1));
+    insub2.clear();
+    insub2.resize((mpar + 1) * (mpar + 1));
     cmVal.clear();
+    cmVal1.clear();
+    cmVal2.clear();
     cmDen.clear();
+    cmDen1.clear();
+    cmDen2.clear();
     fillCounter = 0;
     arr.clear();
     arr.resize(3 * 3 * 5 * 5, {0.0, 0.0});
@@ -137,6 +154,8 @@ class FlowPtContainer : public TNamed
   TList* fCMTermList;
   TList* fCorrList;
   TList* fCovList;
+  TList* fSubList;
+  TList* fSubCMList;
   TList* fCumulantList;
   TList* fCentralMomentList;
 
@@ -148,10 +167,20 @@ class FlowPtContainer : public TNamed
   void mergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
   std::vector<double> sumP;              //!
+  std::vector<double> insub1;            //!
+  std::vector<double> insub2;            //!
   std::vector<double> corrNum;           //!
+  std::vector<double> corrNum1;          //!
+  std::vector<double> corrNum2;          //!
   std::vector<double> corrDen;           //!
+  std::vector<double> corrDen1;          //!
+  std::vector<double> corrDen2;          //!
   std::vector<double> cmVal;             //!
+  std::vector<double> cmVal1;            //!
+  std::vector<double> cmVal2;            //!
   std::vector<double> cmDen;             //!
+  std::vector<double> cmDen1;            //!
+  std::vector<double> cmDen2;            //!
   std::vector<std::complex<double>> arr; //!
   std::vector<double> warr;              //!
   std::vector<int> fCovFirstIndex;       //!
