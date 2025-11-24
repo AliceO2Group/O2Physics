@@ -466,7 +466,7 @@ struct DileptonProducer {
   }
 
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const& tracks)
+  bool fillPairInfo(TCollision const&, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const& tracks)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
@@ -508,10 +508,9 @@ struct DileptonProducer {
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    // ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
     float dca1 = 999.f, dca2 = 999.f;
-    ;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       dca1 = dca3DinSigma(t1);
       dca2 = dca3DinSigma(t2);
@@ -580,7 +579,7 @@ struct DileptonProducer {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      float centrality = centralities[cfgCentEstimator];
+      // float centrality = centralities[cfgCentEstimator];
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
