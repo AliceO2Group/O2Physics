@@ -49,6 +49,9 @@ struct LumiStabilityLightIons {
   Configurable<bool> cfgDoBCC{"cfgDoBCC", false, "Create and fill histograms for the BCs of type C"};
   Configurable<bool> cfgDoBCE{"cfgDoBCE", false, "Create and fill histograms for the BCs of type E"};
   Configurable<bool> cfgDoBCL{"cfgDoBCL", false, "Create and fill histograms for leading BCs of type B"};
+  Configurable<bool> cfgDoBCSL{"cfgDoBCSL", false, "Create and fill histograms for super-leading BCs (no preceding FT0/FDD activity) of type B"};
+
+  Configurable<bool> cfgRequireNoT0ForSLBC{"cfgRequireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
 
   Configurable<int> cfgEmptyBCsBeforeLeadingBC{"cfgEmptyBCsBeforeLeadingBC", 5, "Minimum number of empty BCs before a leading BC to identify it as such"};
 
@@ -72,26 +75,28 @@ struct LumiStabilityLightIons {
                         kFT0CE = 2,
                         kFDD = 3,
                         k1ZNC = 4 };
-  const int nBCCategories = 5;
-  enum BCCategories { kBCA = 0,
-                      kBCB = 1,
-                      kBCC = 2,
-                      kBCE = 3,
-                      kBCL = 4 };
 
-  static constexpr std::string_view NBCsVsTimeHistNames[5][5] =
-    {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime"},
-     {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime"},
-     {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime"},
-     {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime"},
-     {"1ZNC/BC_A/nBCsVsTime", "1ZNC/BC_B/nBCsVsTime", "1ZNC/BC_C/nBCsVsTime", "1ZNC/BC_E/nBCsVsTime", "1ZNC/BC_L/nBCsVsTime"}};
+  const int nBCCategories = 6;
+  enum BCCategories { kBCA = 0,    // A side BCs (bunch-crossings that had beam only from A side)
+                      kBCB = 1,    // B type BCs (bunch-crossings that had beam from both sides)
+                      kBCC = 2,    // C side BCs (bunch-crossings that had beam only from C side)
+                      kBCE = 3,    // empty BCs (bunch-crossings that did not have beam from either side)
+                      kBCL = 4,    // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
+                      kBCSL = 5 }; // super-leading BCs (bunch-crossings that did not have FDD/FT0 activity for a configurable number of preceding BCs)
 
-  static constexpr std::string_view NBCsVsBCIDHistNames[5][5] =
-    {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID"},
-     {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID"},
-     {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID"},
-     {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID"},
-     {"1ZNC/BC_A/nBCsVsBCID", "1ZNC/BC_B/nBCsVsBCID", "1ZNC/BC_C/nBCsVsBCID", "1ZNC/BC_E/nBCsVsBCID", "1ZNC/BC_L/nBCsVsBCID"}};
+  static constexpr std::string_view NBCsVsTimeHistNames[5][6] =
+    {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime", "AllBCs/BC_SL/nBCsVsTime"},
+     {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime", "FT0VTx/BC_SL/nBCsVsTime"},
+     {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime", "FT0CE/BC_SL/nBCsVsTime"},
+     {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime", "FDD/BC_SL/nBCsVsTime"},
+     {"1ZNC/BC_A/nBCsVsTime", "1ZNC/BC_B/nBCsVsTime", "1ZNC/BC_C/nBCsVsTime", "1ZNC/BC_E/nBCsVsTime", "1ZNC/BC_L/nBCsVsTime", "1ZNC/BC_SL/nBCsVsTime"}};
+
+  static constexpr std::string_view NBCsVsBCIDHistNames[5][6] =
+    {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID", "AllBCs/BC_SL/nBCsVsBCID"},
+     {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID", "FT0VTx/BC_SL/nBCsVsBCID"},
+     {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_SL/nBCsVsBCID"},
+     {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_SL/nBCsVsBCID"},
+     {"1ZNC/BC_A/nBCsVsBCID", "1ZNC/BC_B/nBCsVsBCID", "1ZNC/BC_C/nBCsVsBCID", "1ZNC/BC_E/nBCsVsBCID", "1ZNC/BC_L/nBCsVsBCID", "1ZNC/BC_SL/nBCsVsBCID"}};
 
   int64_t bcSOR;
   int nBCsPerTF;
@@ -103,7 +108,7 @@ struct LumiStabilityLightIons {
 
     LOG(info) << "strLPMProductionTag: " << strLPMProductionTag;
 
-    AxisSpec timeAxis{1200, 0., 1200., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{3600, 0., 3600., "#bf{BC ID in orbit}"};
+    AxisSpec timeAxis{1440, 0., 1440., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{3600, 0., 3600., "#bf{BC ID in orbit}"};
 
     for (int iTrigger = 0; iTrigger < nTriggers; iTrigger++) {
       if ((iTrigger == kAllBCs) || (iTrigger == kFT0Vtx && cfgDoFT0Vtx) || (iTrigger == kFT0CE && cfgDoFT0CE) || (iTrigger == kFDD && cfgDoFDD) || (iTrigger == k1ZNC && cfgDo1ZNC)) {
@@ -113,12 +118,42 @@ struct LumiStabilityLightIons {
             mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
           }
         }
+        if (cfgDoBCSL && (iTrigger == kFT0Vtx || iTrigger == kFDD)) { // only for FT0Vtx and FDD fill super-leading BC histograms
+          mHistManager.add(Form("%s", std::string(NBCsVsTimeHistNames[iTrigger][5]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
+          mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][5]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
+        }
       }
+    }
+
+    if (cfgDoBCSL) {
+      mHistManager.add("FITQA/BCHasFT0", "Does the BC have FT0?;BC has FT0;TVX triggered according to CTP;#bf{#it{N}_{BC}}", HistType::kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFT0")).get()->GetYaxis()->SetBinLabel(1, "No CTP trigger");
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFT0")).get()->GetYaxis()->SetBinLabel(2, "CTP triggered");
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFT0")).get()->GetXaxis()->SetBinLabel(1, "No found FT0");
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFT0")).get()->GetXaxis()->SetBinLabel(2, "Found FT0");
+      mHistManager.add("FITQA/BCHasFDD", "Does the BC have FDD?;BC has FDD;FDD triggered according to CTP;#bf{#it{N}_{BC}}", HistType::kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFDD")).get()->GetYaxis()->SetBinLabel(1, "No CTP trigger");
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFDD")).get()->GetYaxis()->SetBinLabel(2, "CTP triggered");
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFDD")).get()->GetXaxis()->SetBinLabel(1, "No found FDD");
+      mHistManager.get<TH2>(HIST("FITQA/BCHasFDD")).get()->GetXaxis()->SetBinLabel(2, "Found FDD");
     }
 
     mHistManager.add("FT0Vtx_EvSel/nBCsVsTime", "Time of TVX triggered BCs since the start of fill;;#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
     mHistManager.add("nBCsVsBCID", "Time of TVX triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
     mHistManager.add("TFsPerMinute", "TFs seen in this minute (to account for failed jobs);#bf{t-t_{SOF} (min)};#bf{#it{N}_{TFs}}", HistType::kTH1D, {timeAxis});
+
+    if (cfgDo1ZNC) {
+      AxisSpec zdcTimeAxis{200, -50., 50.};
+      mHistManager.add("ZDCQA/BCHasZDC", "Does the BC have ZDC?;BC has ZDC;Has ZNC according to CTP;#bf{#it{N}_{BC}}", HistType::kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
+      mHistManager.get<TH2>(HIST("ZDCQA/BCHasZDC")).get()->GetYaxis()->SetBinLabel(1, "No CTP trigger");
+      mHistManager.get<TH2>(HIST("ZDCQA/BCHasZDC")).get()->GetYaxis()->SetBinLabel(2, "CTP triggered");
+      mHistManager.get<TH2>(HIST("ZDCQA/BCHasZDC")).get()->GetXaxis()->SetBinLabel(1, "No found ZDC");
+      mHistManager.get<TH2>(HIST("ZDCQA/BCHasZDC")).get()->GetXaxis()->SetBinLabel(2, "Good ZDC");
+      mHistManager.add("ZDCQA/ZNCTimeVsEnergy", "ZDC properties in BCs with found ZDC;Energy;#bf{ZNC arrival time (ns)};#bf{#it{N}_{BC}}", HistType::kTH2D, {{1501, -10, 1.5E4}, zdcTimeAxis});
+      mHistManager.add("ZDCQA/ZDCTimes", "Correlation between ZNA and ZNC timing;#bf{ZNC arrival time (ns)};#bf{ZNA arrival time (ns)}", HistType::kTH2D, {zdcTimeAxis, zdcTimeAxis});
+      mHistManager.add("ZDCQA/ZNATime", "Time of the ZNA signal;#bf{ZNA arrival time (ns)};#bf{#it{N}_{BC}}", HistType::kTH1D, {zdcTimeAxis});
+      mHistManager.add("ZDCQA/ZNCTime", "Time of the ZNC signal;#bf{ZNC arrival time (ns)};#bf{#it{N}_{BC}}", HistType::kTH1D, {zdcTimeAxis});
+    }
   }
 
   void setLHCIFData(const auto& bc)
@@ -188,6 +223,76 @@ struct LumiStabilityLightIons {
     mHistManager.fill(HIST(NBCsVsBCIDHistNames[iTrigger][iBCCategory]), localBC);
   }
 
+  void processZDCQA(MyBCs const& bcs, aod::Zdcs const&)
+  {
+    const int maxTimeZDC = 50;     // Maximum time the histogram allows before setting a dummy value
+    const int dummyZDCTime = 42.f; // Time value to indicate missing ZDC time
+    for (const auto& bc : bcs) {
+
+      std::bitset<64> ctpInputMask(bc.inputMask());
+
+      bool zdcHit = !bc.has_zdc() ? 0 : ((bc.zdc().energyCommonZNC() > -1 && std::abs(bc.zdc().timeZNC()) < 1E5) ? 1 : 0);
+      mHistManager.fill(HIST("ZDCQA/BCHasZDC"), zdcHit, ctpInputMask.test(25) ? 1 : 0);
+      if (!bc.has_zdc())
+        continue;
+
+      mHistManager.fill(HIST("ZDCQA/ZNCTimeVsEnergy"), bc.zdc().energyCommonZNC() > -1 ? bc.zdc().energyCommonZNC() : -1, std::abs(bc.zdc().timeZNC()) < maxTimeZDC ? bc.zdc().timeZNC() : dummyZDCTime);
+
+      float timeZNA = bc.zdc().timeZNA();
+      float timeZNC = bc.zdc().timeZNC();
+
+      if (std::abs(timeZNA) > maxTimeZDC) {
+        timeZNA = dummyZDCTime; // set dummy value for missing ZDC times to be able to plot them
+        mHistManager.fill(HIST("ZDCQA/ZNCTime"), timeZNC);
+      }
+      if (std::abs(timeZNC) > maxTimeZDC) {
+        timeZNC = dummyZDCTime;      // set dummy value for missing ZDC times to be able to plot them
+        if (timeZNA != dummyZDCTime) // If ZNA and ZNC are both missing, do not fill the ZNA histogram with the dummy value
+          mHistManager.fill(HIST("ZDCQA/ZNATime"), timeZNA);
+      }
+
+      mHistManager.fill(HIST("ZDCQA/ZDCTimes"), timeZNA, timeZNC);
+    }
+  }
+  PROCESS_SWITCH(LumiStabilityLightIons, processZDCQA, "process QA for the ZDC triggers (light ions and PbPb)", false);
+
+  void processSLBunches(MyBCs const& bcs, aod::FT0s const&, aod::FDDs const&)
+  {
+    int64_t globalBCIdOfLastBCWithActivity = 0;
+    for (const auto& bc : bcs) {
+      if (bc.timestamp() == 0)
+        continue;
+
+      setLHCIFData(bc);
+
+      std::bitset<64> ctpInputMask(bc.inputMask());
+
+      mHistManager.fill(HIST("FITQA/BCHasFT0"), bc.has_ft0(), ctpInputMask.test(2));
+      mHistManager.fill(HIST("FITQA/BCHasFDD"), bc.has_fdd(), ctpInputMask.test(15));
+
+      int64_t globalBC = bc.globalBC();
+
+      if (globalBC - globalBCIdOfLastBCWithActivity < cfgEmptyBCsBeforeLeadingBC)
+        continue; // not a super-leading BC
+
+      if (bc.has_fdd() || (cfgRequireNoT0ForSLBC && bc.has_ft0()))
+        globalBCIdOfLastBCWithActivity = globalBC;
+
+      float timeSinceSOF = getTimeSinceSOF(bc);
+
+      int localBC = globalBC % nBCsPerOrbit;
+
+      if (!bcPatternB[localBC])
+        continue;
+
+      if (ctpInputMask.test(2))
+        fillHistograms<kFT0Vtx, kBCSL>(timeSinceSOF, localBC);
+      if (ctpInputMask.test(15))
+        fillHistograms<kFDD, kBCSL>(timeSinceSOF, localBC);
+    }
+  }
+  PROCESS_SWITCH(LumiStabilityLightIons, processSLBunches, "process trigger counting of TVX and FDD for bunches without preceding single-arm activity", false);
+
   void process(MyBCs const& bcs, aod::FT0s const&)
   {
     for (const auto& bc : bcs) {
@@ -216,7 +321,7 @@ struct LumiStabilityLightIons {
 
       for (int iTrigger = 0; iTrigger < nTriggers; iTrigger++) {
         if ((iTrigger == kAllBCs) || (iTrigger == kFT0Vtx && cfgDoFT0Vtx) || (iTrigger == kFT0CE && cfgDoFT0CE) || (iTrigger == kFDD && cfgDoFDD) || (iTrigger == k1ZNC && cfgDo1ZNC)) {
-          for (int iBCCategory = 0; iBCCategory < nBCCategories; iBCCategory++) {
+          for (int iBCCategory = 0; iBCCategory < nBCCategories - 1; iBCCategory++) { // Don't do SL BCs here
             if ((iBCCategory == kBCA && cfgDoBCA) || (iBCCategory == kBCB && cfgDoBCB) || (iBCCategory == kBCC && cfgDoBCC) || (iBCCategory == kBCE && cfgDoBCE) || (iBCCategory == kBCL && cfgDoBCL)) {
               if (iTrigger == kAllBCs) {
                 if (iBCCategory == kBCA && bcPatternA[localBC])
