@@ -595,7 +595,7 @@ struct OnTheFlyTracker {
 
     xiDecayVertex.push_back(newX);
     xiDecayVertex.push_back(newY);
-    xiDecayVertex.push_back(particle.vz() + rxyXi * (particle.pz() / particle.p()));
+    xiDecayVertex.push_back(particle.vz() + rxyzXi * (particle.pz() / particle.p()));
 
     std::vector<double> xiDaughters = {o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged};
     TLorentzVector xi(newPx, newPy, particle.pz(), newE);
