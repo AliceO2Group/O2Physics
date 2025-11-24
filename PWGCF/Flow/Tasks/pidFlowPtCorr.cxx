@@ -245,10 +245,6 @@ struct PidFlowPtCorr {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(14, "after IRmaxcut");
     registry.add("hInteractionRate", "", {HistType::kTH1D, {{1000, 0, 1000}}});
 
-    // QA
-    if (cfgOutputQA) {
-    }
-
     // cumulant of flow
     registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c32", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
@@ -713,7 +709,6 @@ struct PidFlowPtCorr {
                       nchDiff);
       }
     }
-
   }
   PROCESS_SWITCH(PidFlowPtCorr, processData, "", true);
 };
