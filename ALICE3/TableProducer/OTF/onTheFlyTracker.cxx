@@ -312,8 +312,11 @@ struct OnTheFlyTracker {
         // strip from leading/trailing spaces
         lutFile.erase(0, lutFile.find_first_not_of(" "));
         lutFile.erase(lutFile.find_last_not_of(" ") + 1);
+        if (lutFile.empty()) {
+          LOG(fatal) << "Empty LUT file passed for pdg " << pdg << ", if you don't want to use a LUT remove the entry from the JSON config.";
+        }
         bool success = mSmearer[icfg]->loadTable(pdg, lutFile.c_str());
-        if (!success && !lutFile.empty()) {
+        if (!success) {
           LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
         }
 
