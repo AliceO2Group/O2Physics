@@ -89,7 +89,7 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxChi2GL{"maxChi2GL", 10, "max. chi2 for global muon"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
-  Configurable<int> minNmuon{"minNmuon", 1, "min number of muon candidates per collision"};
+  Configurable<int> minNmuon{"minNmuon", 0, "min number of muon candidates per collision"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
