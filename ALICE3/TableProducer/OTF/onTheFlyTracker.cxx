@@ -112,15 +112,15 @@ struct OnTheFlyTracker {
 
   struct : ConfigurableGroup {
     std::string prefix = "lookUpTables"; // JSON group name
-    Configurable<std::vector<std::string>> lutEl{"lutEl", std::vector<std::string>{"lutCovm.el.dat"}, "LUT for electrons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutMu{"lutMu", std::vector<std::string>{"lutCovm.mu.dat"}, "LUT for muons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutPi{"lutPi", std::vector<std::string>{"lutCovm.pi.dat"}, "LUT for pions (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutKa{"lutKa", std::vector<std::string>{"lutCovm.ka.dat"}, "LUT for kaons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutPr{"lutPr", std::vector<std::string>{"lutCovm.pr.dat"}, "LUT for protons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutDe{"lutDe", std::vector<std::string>{""}, "LUT for deuterons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutTr{"lutTr", std::vector<std::string>{""}, "LUT for tritons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutHe3{"lutHe3", std::vector<std::string>{""}, "LUT for Helium-3 (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutAl{"lutAl", std::vector<std::string>{""}, "LUT for Alphas (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutEl{"lutEl", std::vector<std::string>{"lutCovm.el.dat                                "}, "LUT for electrons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutMu{"lutMu", std::vector<std::string>{"lutCovm.mu.dat                                "}, "LUT for muons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutPi{"lutPi", std::vector<std::string>{"lutCovm.pi.dat                                "}, "LUT for pions (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutKa{"lutKa", std::vector<std::string>{"lutCovm.ka.dat                                "}, "LUT for kaons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutPr{"lutPr", std::vector<std::string>{"lutCovm.pr.dat                                "}, "LUT for protons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutDe{"lutDe", std::vector<std::string>{"                                              "}, "LUT for deuterons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutTr{"lutTr", std::vector<std::string>{"                                              "}, "LUT for tritons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutHe3{"lutHe3", std::vector<std::string>{"                                              "}, "LUT for Helium-3 (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutAl{"lutAl", std::vector<std::string>{"                                              "}, "LUT for Alphas (if emtpy no LUT is taken)"};
   } lookUpTables;
 
   struct : ConfigurableGroup {
@@ -308,9 +308,15 @@ struct OnTheFlyTracker {
     if (enablePrimarySmearing) {
       auto loadLUT = [&](int icfg, int pdg, const std::vector<std::string>& tables) {
         const bool foundNewCfg = static_cast<size_t>(icfg) < tables.size();
-        const std::string& lutFile = foundNewCfg ? tables[icfg] : tables.front();
+        std::string lutFile = foundNewCfg ? tables[icfg] : tables.front();
+        // strip from leading/trailing spaces
+        lutFile.erase(0, lutFile.find_first_not_of(" "));
+        lutFile.erase(lutFile.find_last_not_of(" ") + 1);
+        if (lutFile.empty()) {
+          LOG(fatal) << "Empty LUT file passed for pdg " << pdg << ", if you don't want to use a LUT remove the entry from the JSON config.";
+        }
         bool success = mSmearer[icfg]->loadTable(pdg, lutFile.c_str());
-        if (!success && !lutFile.empty()) {
+        if (!success) {
           LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
         }
 
