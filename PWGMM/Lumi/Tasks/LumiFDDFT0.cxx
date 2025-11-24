@@ -65,7 +65,7 @@ DECLARE_SOA_COLUMN(NContrib, nContrib, int);
 DECLARE_SOA_COLUMN(InputMask, inputMask, uint64_t); //! CTP input mask
 
 // Information for FDD
-DECLARE_SOA_COLUMN(isFDD, isfdd, bool);
+DECLARE_SOA_COLUMN(IsFDD, isfdd, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFDD, tcmTriggerfdd, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFDD, timeAfdd, double);
 DECLARE_SOA_COLUMN(TimeCFDD, timeCfdd, double);
@@ -75,7 +75,7 @@ DECLARE_SOA_COLUMN(ChargeAFDD, chargeAfdd, double);
 DECLARE_SOA_COLUMN(ChargeCFDD, chargeCfdd, double);
 
 // Information for FT0
-DECLARE_SOA_COLUMN(isFT0, isft0, bool);
+DECLARE_SOA_COLUMN(IsFT0, isft0, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFT0, tcmTriggerft0, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFT0, timeAft0, double);
 DECLARE_SOA_COLUMN(TimeCFT0, timeCft0, double);
@@ -83,7 +83,7 @@ DECLARE_SOA_COLUMN(ChargeAFT0, chargeAft0, double);
 DECLARE_SOA_COLUMN(ChargeCFT0, chargeCft0, double);
 
 // information for FV0
-DECLARE_SOA_COLUMN(isFV0, isfv0, bool);
+DECLARE_SOA_COLUMN(IsFV0, isfv0, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFV0, tcmTriggerfv0, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFV0, timeAfv0, double);     // Only FV0-A time
 DECLARE_SOA_COLUMN(ChargeAFV0, chargeAfv0, double); // Only FV0-A charge
@@ -92,12 +92,12 @@ DECLARE_SOA_COLUMN(ChargeAFV0, chargeAfv0, double); // Only FV0-A charge
 DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::InputMask, full::VertexX,
                   full::VertexY, full::VertexZ, full::GlobalBC,
                   full::VertexChi2, full::NContrib,
-                  full::isFDD, full::TCMTriggerFDD,
+                  full::IsFDD, full::TCMTriggerFDD,
                   full::TimeAFDD, full::TimeCFDD,
                   full::ChargeAFDD, full::ChargeCFDD,
-                  full::isFT0, full::TCMTriggerFT0,
+                  full::IsFT0, full::TCMTriggerFT0,
                   full::TimeAFT0, full::TimeCFT0,
-                  full::ChargeAFT0, full::ChargeCFT0, full::isFV0,
+                  full::ChargeAFT0, full::ChargeCFT0, full::IsFV0,
                   full::TCMTriggerFV0, full::TimeAFV0, full::ChargeAFV0);
 
 DECLARE_SOA_TABLE(EventInfoFDD, "AOD", "EventInfoFDD",
@@ -465,6 +465,6 @@ struct LumiFDDFT0 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec w{adaptAnalysisTask<LumiFDDFT0>(cfgc, TaskName{"LumiFDDFT0"})};
+  WorkflowSpec w{adaptAnalysisTask<LumiFDDFT0>(cfgc)};
   return w;
 }
