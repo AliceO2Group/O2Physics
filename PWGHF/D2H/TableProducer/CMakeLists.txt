@@ -75,6 +75,13 @@ o2physics_add_dpl_workflow(data-creator-charm-reso-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+# Workaround for assembler symbol length overflow caused by deeply nested template types
+# causing "Error: expected comma after name" and compilation failure.
+target_compile_options(O2Physicsexe-analysis-hf-data-creator-charm-reso-reduced PRIVATE
+  -g0                    # Disable debug info to reduce symbol complexity
+  -fno-ident             # Remove compiler identification strings
+)
+
 o2physics_add_dpl_workflow(data-creator-jpsi-had-reduced
                     SOURCES dataCreatorJpsiHadReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
