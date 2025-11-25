@@ -271,7 +271,7 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
   };
 
   template <typename T>
-  bool checkCandidate(const T& cascade) const
+  bool checkFilters(const T& cascade) const
   {
     // check kinematics
     const bool kinematicsOK =
@@ -390,24 +390,25 @@ class CascadeBuilder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& cascade : fullCascades) {
-      if (!mCascadeSelection.checkCandidate(cascade)) {
+      if (!mCascadeSelection.checkFilters(cascade)) {
         continue;
       }
       mCascadeSelection.applySelections(cascade, fullTracks, col);
-      if (mCascadeSelection.passesAllRequiredSelections()) {
-
-        auto bachelor = cascade.template bachelor_as<T7>();
-        auto posDaughter = cascade.template posTrack_as<T7>();
-        auto negDaughter = cascade.template negTrack_as<T7>();
-
-        collisionBuilder.template fillCollision<system>(collisionProducts, col);
-
-        bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts, indexMap);
-        posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
-        negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts, indexMap);
-
-        fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+      if (!mCascadeSelection.passesAllRequiredSelections()) {
+        continue;
       }
+
+      auto bachelor = cascade.template bachelor_as<T7>();
+      auto posDaughter = cascade.template posTrack_as<T7>();
+      auto negDaughter = cascade.template negTrack_as<T7>();
+
+      collisionBuilder.template fillCollision<system>(collisionProducts, col);
+
+      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts, indexMap);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts, indexMap);
+
+      fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
     }
   }
 

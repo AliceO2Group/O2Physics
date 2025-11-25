@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file strangenessInJets.cxx
+/// \file lfinjets.cxx
 ///
 /// \brief task for analysis of strangeness in jets
 /// \author Alberto Calivà (alberto.caliva@cern.ch)
@@ -19,12 +19,13 @@
 ///
 /// \since May 22, 2024
 
+#include "PWGLF/DataModel/LFInJets.h"
+
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGLF/DataModel/LFInJets.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -84,7 +85,10 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
 
-struct StrangenessInJets {
+struct LFInJets {
+
+  Produces<aod::V0InJets> tableV0s;
+  Produces<aod::CascInJets> tableCascades;
 
   // Instantiate the CCDB service and API interface
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -208,23 +212,6 @@ struct StrangenessInJets {
     const AxisSpec dcaAxis{longLivedOptions.longLivedBinsDca, "DCA_{xy} (cm)"};
 
     // Histograms for real data
-    if (doprocessDerivedAnalysis) {
-      registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("AntiLambda_in_jet", "AntiLambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("Lambda_in_ue", "Lambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
-      registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
-      registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
-      registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("XiNeg_in_ue", "XiNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
-      registryData.add("OmegaPos_in_jet", "OmegaPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-      registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-      registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-      registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
-    }
-
     if (doprocessData) {
 
       // Event counters
@@ -691,6 +678,71 @@ struct StrangenessInJets {
     return true;
   }
 
+  // V0s selections
+  template <typename V0Type, typename TrackPos, typename TrackNeg>
+  bool passedV0Selection(const V0Type& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
+  {
+    // Single-Track Selections
+    if (!passedSingleTrackSelection(ptrack) || !passedSingleTrackSelection(ntrack))
+      return false;
+
+    // Momentum of K0s daughters
+    TVector3 pionPos(v0.pxpos(), v0.pypos(), v0.pzpos());
+    TVector3 pionNeg(v0.pxneg(), v0.pyneg(), v0.pzneg());
+
+    // V0 selections
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+      return false;
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+
+    return true;
+  }
+
+  template <typename Cascade, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
+  bool passedCascadeSelection(const Cascade& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
+  {
+    // Single-track selections on cascade daughters
+    if (!passedSingleTrackSelection(ptrack))
+      return false;
+    if (!passedSingleTrackSelection(ntrack))
+      return false;
+    if (!passedSingleTrackSelection(btrack))
+      return false;
+
+    // V0 selections
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+      return false;
+    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+      return false;
+    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+    if (std::fabs(casc.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(casc.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+
+    // Cascade selections
+    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+      return false;
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+      return false;
+    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+      return false;
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
+      return false;
+    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
+      return false;
+
+    return true;
+  }
+
   // Xi Selections
   template <typename Xi, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
   bool passedXiSelection(const Xi& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
@@ -1059,33 +1111,53 @@ struct StrangenessInJets {
           const float deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
           const float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          // K0s
-          if (passedK0ShortSelection(v0, pos, neg)) {
-            if (deltaRjet < rJet) {
+          bool isUE = false, isInJC = false;
+
+          if (deltaRjet < rJet && passedV0Selection(v0, pos, neg)) {
+
+            if (passedK0ShortSelection(v0, pos, neg))
               registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
-            }
-          }
-          // Lambda
-          if (passedLambdaSelection(v0, pos, neg)) {
-            if (deltaRjet < rJet) {
+            if (passedLambdaSelection(v0, pos, neg))
               registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
-            }
-          }
-          // AntiLambda
-          if (passedAntiLambdaSelection(v0, pos, neg)) {
-            if (deltaRjet < rJet) {
+            if (passedAntiLambdaSelection(v0, pos, neg))
               registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
+
+            isInJC = true;
+          } else if ((deltaRue1 < rJet || deltaRue2 < rJet) && passedV0Selection(v0, pos, neg)) {
+
+            if (passedK0ShortSelection(v0, pos, neg))
+              registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
+            if (passedLambdaSelection(v0, pos, neg))
+              registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
+            if (passedAntiLambdaSelection(v0, pos, neg))
               registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
-            }
+
+            isUE = true;
           }
+
+          // Fill table
+          tableV0s(v0.pt(),
+                   v0.mLambda(),
+                   v0.mAntiLambda(),
+                   v0.mK0Short(),
+                   v0.v0radius(),
+                   v0.v0cosPA(),
+                   v0.dcapostopv(),
+                   v0.dcanegtopv(),
+                   v0.dcaV0daughters(),
+                   neg.tpcNSigmaPr(),
+                   pos.tpcNSigmaPr(),
+                   neg.tpcNSigmaPi(),
+                   pos.tpcNSigmaPi(),
+                   collision.centFT0M(),
+                   pos.tpcNClsCrossedRows(),
+                   neg.tpcNClsCrossedRows(),
+                   neg.tpcChi2NCl(),
+                   neg.itsNCls(),
+                   pos.tpcChi2NCl(),
+                   pos.itsNCls(),
+                   isUE,
+                   isInJC);
         }
       }
 
@@ -1108,42 +1180,67 @@ struct StrangenessInJets {
           const double deltaPhiUe2 = getDeltaPhi(cascadeDir.Phi(), ue2[i].Phi());
           const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          // Xi+
-          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-            if (deltaRjet < rJet) {
+          bool isUE = false, isInJC = false;
+
+          if (deltaRjet < rJet && passedCascadeSelection(casc, pos, neg, bach, collision)) {
+
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0)
               registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
-            }
-          }
-          // Xi-
-          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-            if (deltaRjet < rJet) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0)
               registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
-            }
-          }
-          // Omega+
-          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-            if (deltaRjet < rJet) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0)
               registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
-            }
-          }
-          // Omega-
-          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-            if (deltaRjet < rJet) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0)
               registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
+
+            isInJC = true;
+          } else if ((deltaRue1 < rJet || deltaRue2 < rJet) && passedCascadeSelection(casc, pos, neg, bach, collision)) {
+
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0)
+              registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0)
+              registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0)
+              registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0)
               registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
-            }
+
+            isUE = true;
           }
+
+          tableCascades(casc.pt(),
+                        casc.sign(),
+                        casc.mXi(),
+                        casc.mOmega(),
+                        casc.mLambda(),
+                        casc.cascradius(),
+                        casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
+                        casc.v0radius(),
+                        casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                        casc.dcapostopv(),
+                        casc.dcanegtopv(),
+                        casc.dcabachtopv(),
+                        casc.dcacascdaughters(),
+                        casc.dcaV0daughters(),
+                        casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                        neg.tpcNSigmaPr(),
+                        pos.tpcNSigmaPr(),
+                        neg.tpcNSigmaPi(),
+                        pos.tpcNSigmaPi(),
+                        bach.tpcNSigmaPi(),
+                        bach.tpcNSigmaKa(),
+                        collision.centFT0M(),
+                        pos.tpcNClsCrossedRows(),
+                        neg.tpcNClsCrossedRows(),
+                        bach.tpcNClsCrossedRows(),
+                        neg.tpcChi2NCl(),
+                        neg.itsNCls(),
+                        pos.tpcChi2NCl(),
+                        pos.itsNCls(),
+                        bach.tpcChi2NCl(),
+                        bach.itsNCls(),
+                        isUE,
+                        isInJC);
         }
       }
       if (enabledSignals.value[ParticleOfInterest::kPions] || enabledSignals.value[ParticleOfInterest::kKaons] || enabledSignals.value[ParticleOfInterest::kProtons]) {
@@ -1189,7 +1286,7 @@ struct StrangenessInJets {
       }
     }
   }
-  PROCESS_SWITCH(StrangenessInJets, processData, "Process data", true);
+  PROCESS_SWITCH(LFInJets, processData, "Process data", true);
 
   // Define per-collision preslices for V0s, cascades, MC particles, and daughter tracks
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
@@ -1467,7 +1564,7 @@ struct StrangenessInJets {
       }
     }
   }
-  PROCESS_SWITCH(StrangenessInJets, processMCgenerated, "process generated events", false);
+  PROCESS_SWITCH(LFInJets, processMCgenerated, "process generated events", false);
 
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
@@ -1768,90 +1865,10 @@ struct StrangenessInJets {
       }
     }
   }
-  PROCESS_SWITCH(StrangenessInJets, processMCreconstructed, "process reconstructed events", false);
-
-  // Postprocessing
-  void processDerivedAnalysis(aod::V0InJets const& v0s, aod::CascInJets const& cascades)
-  {
-    for (auto& v0 : v0s) {
-
-      if (v0.v0negITSlayers() < minITSnCls || v0.v0posITSlayers() < minITSnCls)
-        continue;
-      if (v0.v0negtpcCrossedRows() < minNCrossedRowsTPC || v0.v0postpcCrossedRows() < minNCrossedRowsTPC)
-        continue;
-      if (v0.v0negTPCChi2() > maxChi2TPC || v0.v0posTPCChi2() > maxChi2TPC)
-        continue;
-      if (v0.v0cospa() < v0cospaMin)
-        continue;
-      if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
-        continue;
-      if (std::fabs(v0.v0dcav0daughters()) > dcaV0DaughtersMax)
-        continue;
-      if (std::fabs(v0.v0dcapostopv()) < dcapostoPVmin)
-        continue;
-      if (std::fabs(v0.v0dcanegtopv()) < dcanegtoPVmin)
-        continue;
-
-      if (v0.isUE()) {
-        registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
-        registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
-        registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
-      } else if (v0.isJC()) {
-        registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
-        registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
-        registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
-      }
-    }
-
-    for (auto& casc : cascades) {
-
-      if (casc.v0negITSlayers() < minITSnCls || casc.v0posITSlayers() < minITSnCls || casc.bachITSlayers() < minITSnCls)
-        continue;
-      if (casc.v0negtpcCrossedRows() < minNCrossedRowsTPC || casc.v0postpcCrossedRows() < minNCrossedRowsTPC ||
-          casc.bachtpcCrossedRows() < minNCrossedRowsTPC)
-        continue;
-      if (casc.v0negTPCChi2() > maxChi2TPC || casc.v0posTPCChi2() > maxChi2TPC || casc.bachTPCChi2() > maxChi2TPC)
-        continue;
-      if (casc.v0cospa() < v0cospaMin)
-        continue;
-      if (casc.casccospa() < casccospaMin)
-        continue;
-      if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
-        continue;
-      if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
-        continue;
-      if (std::fabs(casc.v0dcav0daughters()) > dcaV0DaughtersMax)
-        continue;
-      if (std::fabs(casc.v0dcapostopv()) < dcapostoPVmin)
-        continue;
-      if (std::fabs(casc.v0dcanegtopv()) < dcanegtoPVmin)
-        continue;
-      if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
-        continue;
-
-      if (casc.isUE()) {
-        if (casc.sign() < 0) {
-          registryData.fill(HIST("XiNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
-          registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
-        } else if (casc.sign() > 0) {
-          registryData.fill(HIST("XiPos_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
-          registryData.fill(HIST("OmegaPos_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
-        }
-      } else if (casc.isJC()) {
-        if (casc.sign() < 0) {
-          registryData.fill(HIST("XiNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
-          registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
-        } else if (casc.sign() > 0) {
-          registryData.fill(HIST("XiPos_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
-          registryData.fill(HIST("OmegaPos_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(StrangenessInJets, processDerivedAnalysis, "Postprocessing for derived data analysis", false);
+  PROCESS_SWITCH(LFInJets, processMCreconstructed, "process reconstructed events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<StrangenessInJets>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LFInJets>(cfgc)};
 }
