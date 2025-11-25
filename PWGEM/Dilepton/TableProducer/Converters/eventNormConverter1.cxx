@@ -14,10 +14,11 @@
 // This code runs loop over ULS ee pars for virtual photon QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -25,31 +26,22 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct eventConverter2 {
-  Produces<aod::EMEvents_002> event_002;
+struct eventNormConverter1 {
+  Produces<aod::EMEventNormInfos_001> event_001;
 
-  void process(aod::EMEvents_001 const& collisions)
+  void process(aod::EMEventNormInfos_000 const& collisions)
   {
-    for (auto& collision : collisions) {
-      event_002(
-        collision.globalIndex(),
-        collision.runNumber(),
-        collision.globalBC(),
-        collision.alias_raw(),
+    for (const auto& collision : collisions) {
+      event_001(
         collision.selection_raw(),
-        0,
-        collision.timestamp(),
-        collision.posX(),
-        collision.posY(),
+        collision.rct_raw(),
         collision.posZ(),
-        collision.numContrib(),
-        collision.trackOccupancyInTimeRange(),
-        collision.ft0cOccupancyInTimeRange());
+        collision.centFT0C());
     } // end of collision loop
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<eventConverter2>(cfgc, TaskName{"event-converter2"})};
+  return WorkflowSpec{adaptAnalysisTask<eventNormConverter1>(cfgc, TaskName{"event-norm-converter1"})};
 }
