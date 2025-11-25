@@ -709,7 +709,7 @@ struct qVectorsCorrection {
       }
     }
   }
-  void process(MyCollisions::iterator const& qVec, MyTracks const& tracks)
+  void processDefault(MyCollisions::iterator const& qVec, MyTracks const& tracks)
   {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
     if (cfgAddEvtSel) {
@@ -756,7 +756,7 @@ struct qVectorsCorrection {
       }
     }
   }
-  PROCESS_SWITCH(qVectorsCorrection, process, "default process", true);
+  PROCESS_SWITCH(qVectorsCorrection, processDefault, "default process", true);
 
   void processWithSC(MyCollisionsWithSC::iterator const& qVec, MyTracks const& tracks)
   {
