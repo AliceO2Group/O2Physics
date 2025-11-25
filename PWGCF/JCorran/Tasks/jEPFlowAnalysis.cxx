@@ -309,7 +309,7 @@ struct jEPFlowAnalysis {
           auto coeffshiftxRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refAId + 0.5, ishift - 0.5));
           auto coeffshiftyRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refAId + 1.5, ishift - 0.5));
           auto coeffshiftxRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refBId + 0.5, ishift - 0.5));
-          auto coeffshiftyRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refBId + 1.5, ishift - 0.5)); 
+          auto coeffshiftyRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refBId + 1.5, ishift - 0.5));
 
           deltapsiDet += ((2. / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i + 2) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i + 2) * eps[0]))) / static_cast<float>(i + 2);
           deltapsiRefA += ((2. / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i + 2) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i + 2) * eps[1]))) / static_cast<float>(i + 2);
