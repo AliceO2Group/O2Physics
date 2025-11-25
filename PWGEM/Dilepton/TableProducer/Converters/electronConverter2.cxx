@@ -14,10 +14,11 @@
 // This code runs loop over ULS ee pars for virtual photon QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -30,7 +31,7 @@ struct electronConverter2 {
 
   void process(aod::EMPrimaryElectrons_001 const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       track_002(track.collisionId(),
                 track.trackId(),
                 track.sign(),
