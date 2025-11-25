@@ -17,7 +17,6 @@
 #include <TH1F.h>
 
 #include <array>
-#include <iostream>
 // O2 includes
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -36,11 +35,15 @@
 #include "TDatabasePDG.h"
 #include <TPDGCode.h>
 
+#include <string>
 #include <unordered_set>
+#include <vector>
 using std::array;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+using namespace std;
 
 TH1D* tmpFqErr[6][5][52];
 
@@ -406,10 +409,7 @@ struct FactorialMoments {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : tracks) {
-      if (track.hasTPC())
-      // if (track.hasITS())
-      // if (track.isGlobalTrack())
-      {
+      if (track.hasTPC()) {
         histos.fill(HIST("mCollID"), track.collisionId());
         histos.fill(HIST("mEta"), track.eta());
         histos.fill(HIST("mPt"), track.pt());
@@ -434,7 +434,6 @@ struct FactorialMoments {
       }
     }
     for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      // if (countTracks[iPt] > 0)
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
@@ -486,9 +485,6 @@ struct FactorialMoments {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : colltracks) {
-      // if (track.hasITS())
-      // if (track.hasTPC())
-      // if (track.isGlobalTrack()) {
       histos.fill(HIST("mCollID"), track.collisionId());
       histos.fill(HIST("mEta"), track.eta());
       histos.fill(HIST("mPt"), track.pt());
@@ -510,10 +506,8 @@ struct FactorialMoments {
       histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
       histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
       checkpT(track);
-      //}
     }
     for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      // if (countTracks[iPt] > 0)countTracks = {0, 0, 0, 0, 0};
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
@@ -571,7 +565,6 @@ struct FactorialMoments {
       histos1.fill(HIST("mPrimariesPerEvent"), count);
     }
     for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      // if (countTracks[iPt] > 0)
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
@@ -703,9 +696,6 @@ struct FactorialMoments {
     countTracks = {0, 0, 0, 0, 0};
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
-    // using McParticle = std::decay_t<decltype(*particles.begin())>;
-    // std::vector<McParticle> selectedParticles;
-    // if (counter > 1) return;
     for (auto const& track : mcParticles) {
       histos1.fill(HIST("hRecoPtBefore"), track.pt());
       histos1.fill(HIST("hRecoEtaBefore"), track.eta());
