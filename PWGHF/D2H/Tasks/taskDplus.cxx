@@ -230,7 +230,7 @@ struct HfTaskDplus {
       if (storeIR) {
         axes.push_back(thnAxisIR);
       }
-      if (doprocessDataWithMlWithUpc) {
+      if (doprocessDataWithMlWithUpc || doprocessDataWithUpc) {
         axes.push_back(thnAxisGapType);
         axes.push_back(thnAxisFT0A);
         axes.push_back(thnAxisFT0C);
