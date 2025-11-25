@@ -9,6 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(tree-creator-electron-ml
                     SOURCES treeCreatorElectronML.cxx

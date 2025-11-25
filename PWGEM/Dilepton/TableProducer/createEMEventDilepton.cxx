@@ -108,7 +108,7 @@ struct CreateEMEventDilepton {
       if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         // const auto& collisions_perBC = collisions.sliceBy(perBC, bc.globalIndex());
         // embc(bc.selection_bit(o2::aod::evsel::kIsTriggerTVX), bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), static_cast<bool>(collisions_perBC.size() > 0)); // TVX is fired.
-        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+        embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
       }
     } // end of bc loop
 
@@ -124,11 +124,11 @@ struct CreateEMEventDilepton {
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), collision.centFT0C());
         } else {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
         }
       }
 
@@ -150,7 +150,7 @@ struct CreateEMEventDilepton {
 
       registry.fill(HIST("hEventCounter"), 2);
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
             collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 

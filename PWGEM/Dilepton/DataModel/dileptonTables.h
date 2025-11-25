@@ -66,7 +66,7 @@ const std::unordered_map<std::string, int> aliasLabels = {
 } // namespace pwgem::dilepton::swt
 
 DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct);
+                  o2::soa::Index<>, evsel::Selection, evsel::Rct);
 using EMBC = EMBCs::iterator;
 
 namespace emevent
@@ -174,8 +174,17 @@ DECLARE_SOA_TABLE_VERSIONED(EMEvents_003, "AOD", "EMEVENT", 3, //!   Main event 
                             collision::PosZ,
                             collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
 
-using EMEvents = EMEvents_003;
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_004, "AOD", "EMEVENT", 4, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Selection, evsel::Rct, timestamp::Timestamp,
+                            collision::PosZ,
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
+
+using EMEvents = EMEvents_004;
 using EMEvent = EMEvents::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventsAlias_000, "AOD", "EMEVENTALIAS", 0, evsel::Alias) //! joinable to EMEvents
+using EMEventsAlias = EMEventsAlias_000;
+using EMEventAlias = EMEventsAlias::iterator;
 
 DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", emevent::PosX, emevent::PosY); // joinable to EMEvents, only for treeCreatetorML.cxx
 using EMEventXY = EMEventsXY::iterator;
@@ -201,8 +210,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_000, "AOD", "EMEVENTQVEC", 0, //!   eve
                             emevent::Q2xBPos, emevent::Q2yBPos, emevent::Q2xBNeg, emevent::Q2yBNeg, emevent::Q2xBTot, emevent::Q2yBTot,
                             emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
                             emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
-                            // emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
-                            // emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
 
                             // Dynamic columns
                             emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
@@ -217,12 +224,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_000, "AOD", "EMEVENTQVEC", 0, //!   eve
                             emevent::EP3BPos<emevent::Q3xBPos, emevent::Q3yBPos>,
                             emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
                             emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
-// emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
-// emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
-// emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
-// emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
-// emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
-// emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_001, "AOD", "EMEVENTQVEC", 1, //!   Main event information table
                             emevent::Q2xFT0M, emevent::Q2yFT0M, emevent::Q2xFT0A, emevent::Q2yFT0A, emevent::Q2xFT0C, emevent::Q2yFT0C,
@@ -231,8 +232,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_001, "AOD", "EMEVENTQVEC", 1, //!   Mai
                             emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
                             emevent::Q3xFV0A, emevent::Q3yFV0A,
                             emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
-                            // emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
-                            // emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
 
                             // Dynamic columns
                             emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
@@ -292,8 +291,12 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
                   emevent::IsEoI);
 using EMEoI = EMEoIs::iterator;
 
-DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>, o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_000, "AOD", "EMEVENTNORMINFO", 0, //! event information for normalization
+                            o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_001, "AOD", "EMEVENTNORMINFO", 1, //! event information for normalization
+                            o2::soa::Index<>, evsel::Selection, evsel::Rct, collision::PosZ, cent::CentFT0C, emevent::Sel8<evsel::Selection>);
+using EMEventNormInfos = EMEventNormInfos_001;
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
@@ -948,7 +951,7 @@ using EMThinEvents = EMThinEvents_000;
 using EMThinEvent = EMThinEvents::iterator;
 
 DECLARE_SOA_TABLE(EMThinEventNormInfos, "AOD", "EMTHINEVENTNORM", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, collision::PosZ, cent::CentFT0C, emevent::Sel8<evsel::Selection>, o2::soa::Marker<2>);
+                  o2::soa::Index<>, evsel::Selection, evsel::Rct, collision::PosZ, cent::CentFT0C, emevent::Sel8<evsel::Selection>, o2::soa::Marker<2>);
 using EMThinEventNormInfo = EMThinEventNormInfos::iterator;
 
 namespace emdilepton

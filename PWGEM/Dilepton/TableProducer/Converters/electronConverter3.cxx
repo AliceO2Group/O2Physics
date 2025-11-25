@@ -31,7 +31,7 @@ struct electronConverter3 {
 
   void process(aod::EMPrimaryElectrons_002 const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       track_003(track.collisionId(),
                 track.trackId(),
                 track.sign(),

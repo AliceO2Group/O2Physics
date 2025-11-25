@@ -69,10 +69,10 @@ using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils;
 using o2::constants::math::TwoPI;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMMCEventLabels>;
+using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMMCEventLabels>;
 using MyCollisionMC = MyCollisionsMC::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts, aod::MostProbableEMEventIdsInMC>;
