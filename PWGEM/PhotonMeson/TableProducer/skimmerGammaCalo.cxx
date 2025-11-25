@@ -122,6 +122,26 @@ struct SkimmerGammaCalo {
   template <typename TCollision, typename TClusters, typename TClusterCells, typename TTracks, typename TMatchedTracks, typename TMatchedSecondaries = std::nullptr_t>
   void runAnalysis(TCollision const& collision, TClusters const& emcclusters, TClusterCells const& emcclustercells, TMatchedTracks const& emcmatchedtracks, TTracks const& /*tracks*/, TMatchedSecondaries const& secondaries = nullptr)
   {
+    const size_t NMaxMatchedTracks = 10;
+    // Skimmed matched tracks table
+    std::vector<float> vEta;
+    std::vector<float> vPhi;
+    std::vector<float> vP;
+    std::vector<float> vPt;
+    vEta.reserve(NMaxMatchedTracks);
+    vPhi.reserve(NMaxMatchedTracks);
+    vP.reserve(NMaxMatchedTracks);
+    vPt.reserve(NMaxMatchedTracks);
+
+    std::vector<float> vEtaSecondaries = {};
+    std::vector<float> vPhiSecondaries = {};
+    std::vector<float> vPSecondaries = {};
+    std::vector<float> vPtSecondaries = {};
+    vEtaSecondaries.reserve(NMaxMatchedTracks);
+    vPhiSecondaries.reserve(NMaxMatchedTracks);
+    vPSecondaries.reserve(NMaxMatchedTracks);
+    vPtSecondaries.reserve(NMaxMatchedTracks);
+
     if (!collision.isSelected()) {
       return;
     }
@@ -168,17 +188,7 @@ struct SkimmerGammaCalo {
       for (const auto& emcclustercell : groupedCells) {
         tableCellEMCReco(emcclustercell.emcalclusterId(), emcclustercell.caloId());
       }
-
-      // Skimmed matched tracks table
-      std::vector<float> vEta;
-      std::vector<float> vPhi;
-      std::vector<float> vP;
-      std::vector<float> vPt;
       auto groupedMTs = emcmatchedtracks.sliceBy(psMTperCluster, emccluster.globalIndex());
-      vEta.reserve(groupedMTs.size());
-      vPhi.reserve(groupedMTs.size());
-      vP.reserve(groupedMTs.size());
-      vPt.reserve(groupedMTs.size());
       for (const auto& emcmatchedtrack : groupedMTs) {
         historeg.fill(HIST("hCaloTrackFilter"), 0);
         historeg.fill(HIST("MTEtaPhiBeforeTM"), emcmatchedtrack.deltaEta(), emcmatchedtrack.deltaPhi());
@@ -199,17 +209,8 @@ struct SkimmerGammaCalo {
         vPt.emplace_back(emcmatchedtrack.template track_as<aod::FullTracks>().pt());
       }
 
-      std::vector<float> vEtaSecondaries = {};
-      std::vector<float> vPhiSecondaries = {};
-      std::vector<float> vPSecondaries = {};
-      std::vector<float> vPtSecondaries = {};
-
       if constexpr (HasSecondaries<TMatchedSecondaries>) {
         auto groupedMatchedSecondaries = secondaries.sliceBy(psMSperCluster, emccluster.globalIndex());
-        vEta.reserve(groupedMatchedSecondaries.size());
-        vPhi.reserve(groupedMatchedSecondaries.size());
-        vP.reserve(groupedMatchedSecondaries.size());
-        vPt.reserve(groupedMatchedSecondaries.size());
         for (const auto& emcMatchedSecondary : groupedMatchedSecondaries) {
           historeg.fill(HIST("hCaloSecondaryTrackFilter"), 0);
           historeg.fill(HIST("MSTEtaPhiBeforeTM"), emcMatchedSecondary.deltaEta(), emcMatchedSecondary.deltaPhi());
@@ -219,10 +220,10 @@ struct SkimmerGammaCalo {
           }
           historeg.fill(HIST("hCaloSecondaryTrackFilter"), 3);
           historeg.fill(HIST("MSTEtaPhiAfterTM"), emcMatchedSecondary.deltaEta(), emcMatchedSecondary.deltaPhi());
-          vEta.emplace_back(emcMatchedSecondary.deltaEta());
-          vPhi.emplace_back(emcMatchedSecondary.deltaPhi());
-          vP.emplace_back(emcMatchedSecondary.template track_as<aod::FullTracks>().p());
-          vPt.emplace_back(emcMatchedSecondary.template track_as<aod::FullTracks>().pt());
+          vEtaSecondaries.emplace_back(emcMatchedSecondary.deltaEta());
+          vPhiSecondaries.emplace_back(emcMatchedSecondary.deltaPhi());
+          vPSecondaries.emplace_back(emcMatchedSecondary.template track_as<aod::FullTracks>().p());
+          vPtSecondaries.emplace_back(emcMatchedSecondary.template track_as<aod::FullTracks>().pt());
         }
       }
 
@@ -233,6 +234,14 @@ struct SkimmerGammaCalo {
 
       tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
                         emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vPhi, vEta, vP, vPt, vPhiSecondaries, vEtaSecondaries, vPSecondaries, vPtSecondaries);
+      vEta.clear();
+      vPhi.clear();
+      vP.clear();
+      vPt.clear();
+      vPhiSecondaries.clear();
+      vEtaSecondaries.clear();
+      vPSecondaries.clear();
+      vPtSecondaries.clear();
     }
   }
 

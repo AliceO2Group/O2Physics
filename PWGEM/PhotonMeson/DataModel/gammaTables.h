@@ -597,6 +597,24 @@ DECLARE_SOA_TABLE_VERSIONED(SkimEMCClusters_001, "AOD", "SKIMEMCCLUSTER", 1, //!
 using SkimEMCClusters = SkimEMCClusters_001;
 using SkimEMCCluster = SkimEMCClusters_001::iterator;
 
+// DECLARE_SOA_TABLE_VERSIONED(EmEmcClusters_000, "AOD", "EMEMCCLUSTER", 0, //! table of skimmed EMCal clusters
+//                             o2::soa::Index<>, skimmedcluster::CollisionId, emccluster::Definition, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
+//                             skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+
+// using EmEmcClusters = EmEmcClusters_000;
+// using EmEmcCluster = EmEmcClusters_000::iterator;
+
+// namespace trackmatching
+// {
+// DECLARE_SOA_INDEX_COLUMN(EmEmcCluster, emEmcCluster); //!
+// } // namespace trackmatching
+
+// DECLARE_SOA_TABLE(EmEmcMTracks, "AOD", "EMEMCMTRACK", //!
+//                   o2::soa::Index<>, trackmatching::EmEmcClusterId, emccluster::DeltaPhi, emccluster::DeltaEta, emccluster::TrackP, emccluster::TrackPt);
+
+// DECLARE_SOA_TABLE(EmEmcMSTracks, "AOD", "EMEMCMSTRACK", //!
+//                   o2::soa::Index<>, trackmatching::EmEmcClusterId, emccluster::DeltaPhiSec, emccluster::DeltaEtaSec, emccluster::TrackPSec, emccluster::TrackPtSec);
+
 DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.
 // iterators
 using EMCEMEventId = EMCEMEventIds::iterator;
