@@ -11,5 +11,5 @@
 
 o2physics_add_dpl_workflow(pinucleifemto
           SOURCES PiNucleiFemto.cxx
-          PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+          PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)
