@@ -156,10 +156,6 @@ struct FlowZdcTask {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<ccdb::BasicCCDBManager> ccdb;
-  OutputObj<TProfile> pZNvsFT0Ccent{TProfile("pZNvsFT0Ccent", "ZN Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
-  OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
-  OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
-  OutputObj<TProfile> pZPratiovscent{TProfile("pZPratiovscent", "Ratio ZPC/ZPA vs FT0C Centrality", 100, 0, 100, 0, 5)};
 
   void init(InitContext const&)
   {
@@ -307,10 +303,6 @@ struct FlowZdcTask {
       histos.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
       histos.add("ZPAvsCent", ";centFT0C;ZPA", kTH2F, {{{axisCent}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPCvsCent", ";centFT0C;ZPC", kTH2F, {{{axisCent}, {nBinsZDC, -0.5, maxZp}}});
-      histos.add("pZPAvsFT0Ccent", ";FT0C centrality;ZPA Amplitude", kTProfile, {{nBinsCent, minT0CcentCut, maxT0CcentCut}});
-      histos.add("pZPCvsFT0Ccent", ";FT0C centrality;ZPC Amplitude", kTProfile, {{nBinsCent, minT0CcentCut, maxT0CcentCut}});
-      histos.add("pZPAvsGlbTrack", ";Global Tracks (ITS + TPC);ZPA Amplitude", kTProfile, {{nBinsNch, minNch, maxNch}});
-      histos.add("pZPCvsGlbTrack", ";Global Tracks (ITS + TPC);ZPC Amplitude", kTProfile, {{nBinsNch, minNch, maxNch}});
       histos.add("hZPASectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZPA Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZp}}});
       histos.add("hZPCSectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZPC Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZp}}});
       histos.add("hZNASectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZNA Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
@@ -340,8 +332,6 @@ struct FlowZdcTask {
       histos.add("ZpaVsTdc", "ZPAvsTDC; ZPA Amp; ZPA TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("Zem1VsTdc", "ZEM1vsTDC; ZEM1 Amp; ZEM1 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
       histos.add("Zem2VsTdc", "ZEM2vsTDC; ZEM2 Amp; ZEM2 TDC", kTH2F, {{{480, -13.5, 11.45}, {nBinsZDC, -0.5, maxZem}}});
-      histos.add("ZnaZpaTdc", "ZNAvsZPAvsTDC; ZNA Amp; ZPA Amp; ZPA TDC", kTH3F, {{{nBinsZDC, -0.5, maxZn}, {nBinsZDC, -0.5, maxZp}, {480, -13.5, 11.45}}});
-      histos.add("ZncZpcTdc", "ZNCvsZPCvsTDC; ZNC Amp; ZPC Amp; ZPC TDC", kTH3F, {{{nBinsZDC, -0.5, maxZn}, {nBinsZDC, -0.5, maxZp}, {480, -13.5, 11.45}}});
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -646,13 +636,9 @@ struct FlowZdcTask {
       histos.fill(HIST("ZPAvsCent"), cent, zpA);
       histos.fill(HIST("ZPCvsCent"), cent, zpC);
       if (std::isfinite(zpA) && !std::isnan(zpA) && cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
-        histos.fill(HIST("pZPAvsFT0Ccent"), cent, zpA);
-        histos.fill(HIST("pZPAvsGlbTrack"), glbTracks, zpA);
         histos.fill(HIST("hZPASectorvsGlbTrack"), glbTracks, sumZPA);
       }
       if (std::isfinite(zpC) && !std::isnan(zpC) && cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
-        histos.fill(HIST("pZPCvsFT0Ccent"), cent, zpC);
-        histos.fill(HIST("pZPCvsGlbTrack"), glbTracks, zpC);
         histos.fill(HIST("hZPCSectorvsGlbTrack"), glbTracks, sumZPC);
       }
       histos.fill(HIST("hZNASectorvsGlbTrack"), glbTracks, sumZNA);
@@ -856,13 +842,6 @@ struct FlowZdcTask {
     histos.fill(HIST("T0MVsZN"), normT0M, sumZNs);
     histos.fill(HIST("T0MVsZP"), normT0M, sumZPs);
     histos.fill(HIST("NchUncorrected"), glbTracks);
-
-    float ratioZN = sumZNC / sumZNA;
-    float ratioZP = sumZPC / sumZPA;
-    pZNratiovscent->Fill(cent, ratioZN);
-    pZPratiovscent->Fill(cent, ratioZP);
-    pZNvsFT0Ccent->Fill(cent, sumZN);
-    pZPvsFT0Ccent->Fill(cent, sumZP);
     histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
   }
 
@@ -934,8 +913,6 @@ struct FlowZdcTask {
         histos.fill(HIST("ZnaVsTdc"), zdc.timeZNA(), znA);
         histos.fill(HIST("ZpcVsTdc"), zdc.timeZPC(), zpC);
         histos.fill(HIST("ZpaVsTdc"), zdc.timeZPA(), zpA);
-        histos.fill(HIST("ZnaZpaTdc"), znA, zpA, zdc.timeZPA());
-        histos.fill(HIST("ZncZpcTdc"), znC, zpC, zdc.timeZPC());
         histos.fill(HIST("Zem1VsTdc"), zdc.timeZEM1(), aZEM1);
         histos.fill(HIST("Zem2VsTdc"), zdc.timeZEM2(), aZEM2);
       }
