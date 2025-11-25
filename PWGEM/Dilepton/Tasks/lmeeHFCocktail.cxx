@@ -15,16 +15,18 @@
 /// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, SMI Vienna
 
-#include <vector>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
-#include "Math/Vector4D.h"
-#include "MathUtils/Utils.h"
-#include "Framework/Task.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "Framework/Task.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include "Math/Vector4D.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -74,14 +76,15 @@ const char* stageNames[Nstages] = {"gen", "meas", "meas_and_acc"};
 // meas_acc: normal, efficiency weights and acceptance cuts applied
 
 template <typename T>
-void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, float etaMax, int pdg)
+void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, float ptMax, float etaMax, int pdg)
 {
   float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
   float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
-  float cut_pt[Nstages] = {0., 0., ptMin};
-  float cut_eta[Nstages] = {9999., 99999., etaMax};
+  float cut_ptMin[Nstages] = {0., 0., ptMin};
+  float cut_ptMax[Nstages] = {99999., 99999., ptMax};
+  float cut_eta[Nstages] = {99999., 99999., etaMax};
   for (int i = 0; i < Nstages; i++) {
-    if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
+    if (pt[i] > cut_ptMin[i] && pt[i] < cut_ptMax[i] && fabs(eta[i]) < cut_eta[i]) {
       if (pdg == 4)
         hRapQuark[i]->Fill(p.cQuarkRap());
       else if (pdg == 5)
@@ -93,15 +96,16 @@ void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, flo
 }
 
 template <typename T>
-void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::shared_ptr<TH1>> hPt, std::vector<std::shared_ptr<TH2>> hPtEta, float ptMin, float etaMax)
+void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::shared_ptr<TH1>> hPt, std::vector<std::shared_ptr<TH2>> hPtEta, float ptMin, float ptMax, float etaMax)
 {
   float weight[Nstages] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
   float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
   float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
-  float cut_pt[Nstages] = {0., 0., ptMin};
-  float cut_eta[Nstages] = {9999., 99999., etaMax};
+  float cut_ptMin[Nstages] = {0., 0., ptMin};
+  float cut_ptMax[Nstages] = {99999., 99999., ptMax};
+  float cut_eta[Nstages] = {99999., 99999., etaMax};
   for (int i = 0; i < Nstages; i++) {
-    if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
+    if (pt[i] > cut_ptMin[i] && pt[i] < cut_ptMax[i] && fabs(eta[i]) < cut_eta[i]) {
       hEta[i]->Fill(eta[i], weight[i]);
       hPt[i]->Fill(pt[i], weight[i]);
       hPtEta[i]->Fill(pt[i], eta[i], weight[i]);
@@ -110,7 +114,7 @@ void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::sha
 }
 
 template <typename T>
-void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<std::shared_ptr<TH2>> hMeePtee, float ptMin, float etaMax, bool apply_detadphi, float min_deta, float min_dphi)
+void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<std::shared_ptr<TH2>> hMeePtee, float ptMin, float ptMax, float etaMax, bool apply_detadphi, float min_deta, float min_dphi)
 {
 
   ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
@@ -127,8 +131,9 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   float eta1[Nstages] = {p1.eta(), p1.etaSmeared(), p1.etaSmeared()};
   float eta2[Nstages] = {p2.eta(), p2.etaSmeared(), p2.etaSmeared()};
   float weight[Nstages] = {p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight()};
-  float cut_pt[Nstages] = {0., 0., ptMin};
-  float cut_eta[Nstages] = {9999., 99999., etaMax};
+  float cut_ptMin[Nstages] = {0., 0., ptMin};
+  float cut_ptMax[Nstages] = {99999., 99999., ptMax};
+  float cut_eta[Nstages] = {99999., 99999., etaMax};
 
   float deta = v1.Eta() - v2.Eta();
   float dphi = v1.Phi() - v2.Phi();
@@ -138,7 +143,7 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   }
 
   for (int i = 0; i < Nstages; i++) {
-    if (pt1[i] > cut_pt[i] && pt2[i] > cut_pt[i] && fabs(eta1[i]) < cut_eta[i] && fabs(eta2[i]) < cut_eta[i]) {
+    if (pt1[i] > cut_ptMin[i] && pt2[i] > cut_ptMin[i] && pt1[i] < cut_ptMax[i] && pt2[i] < cut_ptMax[i] && fabs(eta1[i]) < cut_eta[i] && fabs(eta2[i]) < cut_eta[i]) {
       hMee[i]->Fill(mass[i], weight[i]);
       hMeePtee[i]->Fill(mass[i], pt[i], weight[i]);
     }
@@ -147,6 +152,7 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
 
 struct MyConfigs : ConfigurableGroup {
   Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT of single electrons"};
+  Configurable<float> fConfigPtMax{"cfgPtMax", 99999., "max. pT of single electrons"};
   Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta| of single electrons"};
   ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "single electron pT binning"};
   ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "single electron eta binning"};
@@ -353,8 +359,8 @@ struct lmeehfcocktailbeauty {
   {
     for (auto const& p : mcParticles) {
       int from_quark = p.isHF() - 2;
-      doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
-      doQuark(p, hRapQuark[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, 5);
+      doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax);
+      doQuark(p, hRapQuark[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, 5);
     }
 
     for (auto const& collision : collisions) {
@@ -370,11 +376,11 @@ struct lmeehfcocktailbeauty {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
 
         if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
       }
       // LS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
@@ -383,11 +389,11 @@ struct lmeehfcocktailbeauty {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
 
         if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
 
@@ -395,11 +401,11 @@ struct lmeehfcocktailbeauty {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
 
         if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
       }
     }
   }
@@ -480,8 +486,8 @@ struct lmeehfcocktailcharm {
   void processCharm(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles)
   {
     for (auto const& p : mcParticles) {
-      doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
-      doQuark(p, hRapQuark, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, 4);
+      doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax);
+      doQuark(p, hRapQuark, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, 4);
     }
 
     for (auto const& collision : collisions) {
@@ -497,11 +503,11 @@ struct lmeehfcocktailcharm {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
 
         if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
       }
       // LS
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
@@ -510,11 +516,11 @@ struct lmeehfcocktailcharm {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
 
         if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
 
@@ -522,11 +528,11 @@ struct lmeehfcocktailcharm {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
 
         if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigPtMax, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
       }
     }
   }
