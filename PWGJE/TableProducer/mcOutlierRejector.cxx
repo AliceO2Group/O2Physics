@@ -72,7 +72,7 @@ struct McOutlierRejectorTask {
               auto mcCollision = mcCollisions.sliceBy(perColParticle, mcParticle.mcCollisionId());
               int subGenID = mcCollision.begin().subGeneratorId();
               int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
-              if (subGenID == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
+              if (subGenID != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
                   diffCollisionID != 0) {
                 isTrueOutlier = true;
               } else {
