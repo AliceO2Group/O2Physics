@@ -307,13 +307,20 @@ struct OnTheFlyTracker {
 
     if (enablePrimarySmearing) {
       auto loadLUT = [&](int icfg, int pdg, const std::vector<std::string>& tables) {
+        LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided tables with size " << tables.size();
+        if (tables.empty()) {
+          LOG(debug) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          return false;
+        }
         const bool foundNewCfg = static_cast<size_t>(icfg) < tables.size();
         std::string lutFile = foundNewCfg ? tables[icfg] : tables.front();
+        LOG(info) << "Loading LUT for pdg " << pdg << " from file " << lutFile << " for config " << icfg;
         // strip from leading/trailing spaces
         lutFile.erase(0, lutFile.find_first_not_of(" "));
         lutFile.erase(lutFile.find_last_not_of(" ") + 1);
         if (lutFile.empty()) {
-          LOG(fatal) << "Empty LUT file passed for pdg " << pdg << ", if you don't want to use a LUT remove the entry from the JSON config.";
+          LOG(debug) << "Empty LUT file name for pdg " << pdg << ", skipping.";
+          return false;
         }
         bool success = mSmearer[icfg]->loadTable(pdg, lutFile.c_str());
         if (!success) {
