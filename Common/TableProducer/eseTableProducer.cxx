@@ -36,8 +36,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TF1.h>
+#include <TMath.h>
 
 #include <chrono>
 #include <cstddef>
@@ -149,18 +149,18 @@ struct EseTableProducer {
   Configurable<bool> cfgIsGoodZvtxFT0vsPV{"cfgIsGoodZvtxFT0vsPV", true, "kIsGoodZvtxFT0vsPV"};
   Configurable<bool> cfgNoCollInTimeRangeStandard{"cfgNoCollInTimeRangeStandard", true, "kNoCollInTimeRangeStandard"};
   Configurable<bool> cfgIsVertexITSTPC{"cfgIsVertexITSTPC", true, "Selects collisions with at least one ITS-TPC track"};
-  Configurable<bool> cfgIsGoodITSLayersAll{"cfgIsGoodITSLayersAll", true, "kIsGoodITSLayersAll"}; 
+  Configurable<bool> cfgIsGoodITSLayersAll{"cfgIsGoodITSLayersAll", true, "kIsGoodITSLayersAll"};
   Configurable<std::string> cfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency object"};
 
   // Cut Configurables
-   Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
+  Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
   Configurable<std::vector<double>> cfgMultPVCutPars{"cfgMultPVCutPars", std::vector<double>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}, "PV vs FT0C multiplicity cut parameter values"};
   Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.223013, 0.715849, 0.664242, 0.0829653, -0.000503733, 1.21185e-06}, "Global vs PV multiplicity cut parameter values"};
   Configurable<std::string> cfgMultCorrHighCutFunction{"cfgMultCorrHighCutFunction", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut"};
   Configurable<std::string> cfgMultCorrLowCutFunction{"cfgMultCorrLowCutFunction", "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut"};
   Configurable<std::string> cfgMultGlobalPVCorrCutFunction{"cfgMultGlobalPVCorrCutFunction", "[0] + [1]*x + 3*([2] + [3]*x + [4]*x*x + [5]*x*x*x)", "Functional for global vs pv multiplicity correlation cut"};
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgMultGlobalASideCorrCutFunction{"cfgMultGlobalASideCorrCutFunction","[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + [10]*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", "Functional for global vs V0A multiplicity low correlation cut"};
+    Configurable<std::string> cfgMultGlobalASideCorrCutFunction{"cfgMultGlobalASideCorrCutFunction", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + [10]*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", "Functional for global vs V0A multiplicity low correlation cut"};
     Configurable<std::vector<double>> cfgMultGlobalV0ACutPars{"cfgMultGlobalV0ACutPars", std::vector<double>{567.785, 172.715, 0.77888, -0.00693466, 1.40564e-05, 679.853, 66.8068, -0.444332, 0.00115002, -4.92064e-07}, "Global vs FV0A multiplicity cut parameter values"};
     Configurable<std::vector<double>> cfgMultGlobalT0ACutPars{"cfgMultGlobalT0ACutPars", std::vector<double>{241.618, 61.8402, 0.348049, -0.00306078, 6.20357e-06, 315.235, 29.1491, -0.188639, 0.00044528, -9.08912e-08}, "Global vs FT0A multiplicity cut parameter values"};
     Configurable<float> cfgGlobalV0ALowSigma{"cfgGlobalV0ALowSigma", -3.0f, "Number of sigma deviations below expected value in global vs V0A correlation"};
@@ -189,7 +189,6 @@ struct EseTableProducer {
     EseTableProducer::multGlobalV0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalV0ACutPars;
     EseTableProducer::multGlobalT0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalT0ACutPars;
     EseTableProducer::multGlobalPVCorrCutPars = cfgMultGlobalPVCutPars;
-    
 
     AxisSpec t0cAxis = {1000, 0, 10000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {300, 0, 30000, "N_{ch} (T0A)"};
@@ -449,7 +448,7 @@ struct EseTableProducer {
     float centrality;
     int64_t multiplicity;
   };
-  
+
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
   {
@@ -546,11 +545,11 @@ struct EseTableProducer {
         return;
       }
     }
-  
+
     const XAxis xaxis{collision.centFT0C(), tracks.size()};
     if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality))
       return;
-    
+
     registry.fill(HIST("hMeanPtStat"), 0.5);
     const auto centrality = collision.centFT0C();
     const auto mean = calculateMeanPt(tracks, centrality);
