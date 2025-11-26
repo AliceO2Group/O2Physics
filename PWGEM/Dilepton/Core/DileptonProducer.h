@@ -758,16 +758,14 @@ struct DileptonProducer {
   }
   PROCESS_SWITCH(DileptonProducer, processAnalysis, "run dilepton analysis", true);
 
-  Filter collisionFilter_centrality_norm = cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax;
-  using FilteredNormInfos = soa::Filtered<aod::EMEventNormInfos>;
-  void processNorm(FilteredNormInfos const& collisions)
+  void processNorm(aod::EMEventNormInfos const& collisions)
   {
     for (const auto& collision : collisions) {
       if (collision.centFT0C() < cfgCentMin || cfgCentMax < collision.centFT0C()) {
         continue;
       }
 
-      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZ(), collision.centFT0C());
+      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZint16(), collision.centFT0Cuint16());
 
     } // end of collision loop
   }

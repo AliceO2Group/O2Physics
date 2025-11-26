@@ -18,7 +18,7 @@
 #include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-#include "PWGEM/Dilepton/Utils/EventHistograms.h"
+// #include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
@@ -26,10 +26,10 @@
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
+// #include "DataFormatsParameters/GRPMagField.h"
+// #include "DataFormatsParameters/GRPObject.h"
+// #include "DetectorsBase/GeometryManager.h"
+// #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -64,19 +64,19 @@ using MyEMH_pair = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tupl
 struct DileptonPolarization {
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  // Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  Configurable<int> cfgPairType{"cfgPairType", 0, "0:dielectron:0, 1:dimuon"};
+  Configurable<int> cfgPairType{"cfgPairType", 0, "0:dielectron, 1:dimuon"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  Configurable<int> ndepth{"ndepth", 1000, "depth for event mixing"};
   Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
+  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
+  ConfigurableAxis ConfEPBins{"ConfEPBins", {1, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
   Configurable<int> cfgPolarizationFrame{"cfgPolarizationFrame", 0, "frame of polarization. 0:CS, 1:HX, else:FATAL"};
 
@@ -134,7 +134,7 @@ struct DileptonPolarization {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
-  float d_bz;
+  // float d_bz;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   // static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
@@ -163,7 +163,7 @@ struct DileptonPolarization {
   void init(InitContext& /*context*/)
   {
     mRunNumber = 0;
-    d_bz = 0;
+    // d_bz = 0;
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -334,39 +334,38 @@ struct DileptonPolarization {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
-      o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
-      }
-      o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = collision.runNumber();
-      return;
-    }
+    // // In case override, don't proceed, please - no CCDB access required
+    // if (d_bz_input > -990) {
+    //   d_bz = d_bz_input;
+    //   o2::parameters::GRPMagField grpmag;
+    //   if (std::fabs(d_bz) > 1e-5) {
+    //     grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+    //   }
+    //   o2::base::Propagator::initFieldFromGRP(&grpmag);
+    //   mRunNumber = collision.runNumber();
+    //   return;
+    // }
 
-    auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kG";
-    }
-    mRunNumber = collision.runNumber();
+    // auto run3grp_timestamp = collision.timestamp();
+    // o2::parameters::GRPObject* grpo = 0x0;
+    // o2::parameters::GRPMagField* grpmag = 0x0;
+    // if (!skipGRPOquery)
+    //   grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    // if (grpo) {
+    //   o2::base::Propagator::initFieldFromGRP(grpo);
+    //   // Fetch magnetic field from ccdb for current collision
+    //   d_bz = grpo->getNominalL3Field();
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kG";
+    // } else {
+    //   grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+    //   if (!grpmag) {
+    //     LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+    //   }
+    //   o2::base::Propagator::initFieldFromGRP(grpmag);
+    //   // Fetch magnetic field from ccdb for current collision
+    //   d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kG";
+    // }
 
     auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", collision.timestamp());
     int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
@@ -380,6 +379,8 @@ struct DileptonPolarization {
     beamP1 = std::sqrt(std::pow(beamE1, 2) - std::pow(beamM1, 2));
     beamP2 = std::sqrt(std::pow(beamE2, 2) - std::pow(beamM2, 2));
     LOGF(info, "beamZ1 = %d, beamZ2 = %d, beamA1 = %d, beamA2 = %d, beamE1 = %f (GeV), beamE2 = %f (GeV), beamM1 = %f (GeV), beamM2 = %f (GeV), beamP1 = %f (GeV), beamP2 = %f (GeV)", beamZ1, beamZ2, beamA1, beamA2, beamE1, beamE2, beamM1, beamM2, beamP1, beamP2);
+
+    mRunNumber = collision.runNumber();
   }
 
   ~DileptonPolarization()
