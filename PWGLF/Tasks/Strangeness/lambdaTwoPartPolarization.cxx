@@ -375,7 +375,7 @@ struct lambdaTwoPartPolarization {
         }
 
         histos.fill(HIST("Ana/Signal"), v01.pt(), v02.pt(), v01.yLambda() - v02.yLambda(), dphi, centrality, costhetastar1 * costhetastar2 * weight);
-		histos.fill(HIST("Ana/SignalCos2"), v01.pt(), v02.pt(), v01.yLambda() - v02.yLambda(), dphi, centrality, costhetastar1 * costhetastar2 * std::cos(2.0 * dphi) * weight);
+        histos.fill(HIST("Ana/SignalCos2"), v01.pt(), v02.pt(), v01.yLambda() - v02.yLambda(), dphi, centrality, costhetastar1 * costhetastar2 * std::cos(2.0 * dphi) * weight);
       }
     }
   }
