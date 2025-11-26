@@ -514,6 +514,7 @@ struct Dilepton {
 
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
+      fRegistry.add("Event/norm/hZvtx", "hZvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
     }
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value.data());
@@ -1892,15 +1893,13 @@ struct Dilepton {
   }
   PROCESS_SWITCH(Dilepton, processTriggerAnalysis, "run dilepton analysis on triggered data", false);
 
-  Filter collisionFilter_centrality_norm = cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax;
-  using FilteredNormInfos = soa::Filtered<aod::EMEventNormInfos>;
-
-  void processNorm(FilteredNormInfos const& collisions)
+  void processNorm(aod::EMEventNormInfos const& collisions)
   {
     for (const auto& collision : collisions) {
       if (collision.centFT0C() < cfgCentMin || cfgCentMax < collision.centFT0C()) {
         continue;
       }
+      fRegistry.fill(HIST("Event/norm/hZvtx"), collision.posZ());
 
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {

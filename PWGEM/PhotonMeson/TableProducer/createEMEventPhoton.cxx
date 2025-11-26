@@ -176,12 +176,20 @@ struct CreateEMEventPhoton {
       }
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        int16_t posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
+        if (posZint16 == 0.f) {
+          if (collision.posZ() < 0) {
+            posZint16 = -1;
+          } else {
+            posZint16 = +1;
+          }
+        }
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), collision.centFT0C());
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(collision.centFT0C() * 500.f));
         } else {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
         }
       }
 
