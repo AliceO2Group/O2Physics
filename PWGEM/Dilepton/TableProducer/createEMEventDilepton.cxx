@@ -106,8 +106,6 @@ struct CreateEMEventDilepton {
   {
     for (const auto& bc : bcs) {
       if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        // const auto& collisions_perBC = collisions.sliceBy(perBC, bc.globalIndex());
-        // embc(bc.selection_bit(o2::aod::evsel::kIsTriggerTVX), bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), static_cast<bool>(collisions_perBC.size() > 0)); // TVX is fired.
         embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
       }
     } // end of bc loop
@@ -123,12 +121,20 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        int16_t posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
+        if (posZint16 == 0) {
+          if (collision.posZ() < 0.f) {
+            posZint16 = -1;
+          } else {
+            posZint16 = +1;
+          }
+        }
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), collision.centFT0C());
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(collision.centFT0C() * 500.f));
         } else {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
         }
       }
 
