@@ -89,7 +89,6 @@ struct HfCandidateCreatorCascade {
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
@@ -384,7 +383,7 @@ struct HfCandidateCreatorCascade {
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true); // Hz
+      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), hfEvSel.irSource, true); // Hz
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
@@ -403,7 +402,7 @@ struct HfCandidateCreatorCascade {
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true); // Hz
+      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), hfEvSel.irSource, true); // Hz
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
@@ -422,7 +421,7 @@ struct HfCandidateCreatorCascade {
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true); // Hz
+      const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), hfEvSel.irSource, true); // Hz
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
