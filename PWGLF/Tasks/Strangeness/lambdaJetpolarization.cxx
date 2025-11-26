@@ -15,7 +15,6 @@
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -150,7 +149,7 @@ struct LfMyV0s {
     const AxisSpec axisPy{100, -10, 10, "#py (GeV/c)"};
     const AxisSpec axisPz{100, -10, 10, "#pz (GeV/c)"};
     const AxisSpec axisPT{200, 0, 50, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisPhi{100, -3.14, 3.14, "#Phi"};
+    const AxisSpec axisPhi{100, -TMath::Pi(), TMath::Pi(), "#Phi"};
     const AxisSpec axisTheta{100, -TMath::Pi(), TMath::Pi(), "#Theta"};
     const AxisSpec axisMass{100, 0.9, 1.0, "Mass(GeV/c^{2})"};
     const AxisSpec axisCostheta{100, -1, 1, "Cos(#theta^{*}_{p})"};
@@ -304,6 +303,11 @@ struct LfMyV0s {
     registryData.add("hprotonThetaInV0", "hprotonThetaInV0", kTH1F, {axisTheta});
     registryData.add("hprotonThetaInJetV0", "hprotonThetaInJetV0", kTH1F, {axisTheta});
 
+    registryData.add("TH2FLambdaMassPhiInJet", "TH2FLambdaMassPhiInJet", kTH2F, {{200, -TMath::Pi(), TMath::Pi()}, {200, 0.9, 1.2}});
+    registryData.add("TH2FprotonCosThetaInJetV0", "TH2FprotonCosThetaInJetV0", kTH2F, {{200, 0.9, 1.2}, {200, -1.0, 1.0}});
+    registryData.add("TProfile1DprotonCosThetaInJetV0", "TProfile1DprotonCosThetaInJetV0", {HistType::kTProfile, {{200, -1.0, 1.0}}});
+    registryData.add("TProfile2DprotonCosThetaInJetV0", "TProfile2DprotonCosThetaInJetV0", kTProfile2D, {TProfile2DaxisMass, axisPhi});
+
     registryData.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
@@ -368,6 +372,7 @@ struct LfMyV0s {
     matrixLabToLambda(3, 3) = 1 + Alpha * Lambdapz * Lambdapz;
     return matrixLabToLambda;
   }
+  // The direction of jet is z axis, y is perpendicular to jet and lambda momentum
   TMatrixD MyTMatrixTranslationToJet(double Jetpx, double Jetpy, double Jetpz, double Lambdapx, double Lambdapy, double Lambdapz)
   {
     TVector3 UnitX(1.0, 0.0, 0.0);
@@ -381,6 +386,39 @@ struct LfMyV0s {
     TVector3 y_hat = vortex_y.Unit();
     TVector3 x_hat1 = y_hat.Cross(z_hat);
     TVector3 x_hat = x_hat1.Unit();
+
+    TMatrixD matrixLabToJet(4, 4);
+    matrixLabToJet(0, 0) = 1;
+    matrixLabToJet(0, 1) = 0.0;
+    matrixLabToJet(0, 2) = 0.0;
+    matrixLabToJet(0, 3) = 0.0;
+    matrixLabToJet(1, 0) = 0.0;
+    matrixLabToJet(1, 1) = x_hat.X();
+    matrixLabToJet(1, 2) = x_hat.Y();
+    matrixLabToJet(1, 3) = x_hat.Z();
+    matrixLabToJet(2, 0) = 0.0;
+    matrixLabToJet(2, 1) = y_hat.X();
+    matrixLabToJet(2, 2) = y_hat.Y();
+    matrixLabToJet(2, 3) = y_hat.Z();
+    matrixLabToJet(3, 0) = 0.0;
+    matrixLabToJet(3, 1) = z_hat.X();
+    matrixLabToJet(3, 2) = z_hat.Y();
+    matrixLabToJet(3, 3) = z_hat.Z();
+    return matrixLabToJet;
+  }
+  // New transformation: The direction of jet is x axis, z is perpendicular to jet and lambda momentum
+  TMatrixD TMatrixTranslationToJet(double Jetpx, double Jetpy, double Jetpz, double Lambdapx, double Lambdapy, double Lambdapz)
+  {
+    TVector3 UnitX(1.0, 0.0, 0.0);
+    TVector3 UnitY(0.0, 1.0, 0.0);
+    TVector3 UnitZ(0.0, 0.0, 1.0);
+    TVector3 JetP(Jetpx, Jetpy, Jetpz);
+    TVector3 V0LambdaP(Lambdapx, Lambdapy, Lambdapz);
+    TVector3 vortex_z = (JetP.Cross(V0LambdaP));
+
+    TVector3 x_hat = JetP.Unit();
+    TVector3 z_hat = vortex_z.Unit();
+    TVector3 y_hat = z_hat.Cross(x_hat);
 
     TMatrixD matrixLabToJet(4, 4);
     matrixLabToJet(0, 0) = 1;
@@ -1159,7 +1197,6 @@ struct LfMyV0s {
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-    auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
     // jet selection
     bool isAtLeastOneJetSelected = false;
@@ -1180,7 +1217,6 @@ struct LfMyV0s {
       registryData.fill(HIST("FJphiHistogram"), jet.phi());
       registryData.fill(HIST("FJptHistogram"), jet.pt());
       // jet must be fully contained in the acceptance
-      fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
       if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge)) {
         continue;
       }
@@ -1496,7 +1532,7 @@ struct LfMyV0s {
       }
     }
   }
-  PROCESS_SWITCH(LfMyV0s, processData, "processData", true);
+  PROCESS_SWITCH(LfMyV0s, processData, "processData", false);
 
   // V0Collisions
   // SelCollisions
@@ -1544,6 +1580,379 @@ struct LfMyV0s {
     }
   }
   PROCESS_SWITCH(LfMyV0s, processLongitudinalPolarization, "processLongitudinalPolarization", true);
+
+  void processLambdaJetPolarization(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
+  {
+    registryData.fill(HIST("hNEvents"), 0.5);
+    if (!AcceptEvent(collision)) {
+      return;
+    }
+    registryData.fill(HIST("hNEvents"), 8.5);
+    // event selection
+    // loop over reconstructed tracks
+    std::vector<fastjet::PseudoJet> fjParticles;
+    for (auto const& track : tracks) {
+      registryData.fill(HIST("h_track_pt"), track.pt());
+      registryData.fill(HIST("h_track_eta"), track.eta());
+      registryData.fill(HIST("h_track_phi"), track.phi());
+      if (ispassdTrackSelectionForJetReconstruction && !passedTrackSelectionForJetReconstruction(track)) {
+        continue;
+      }
+      registryData.fill(HIST("h_track_pt_sel"), track.pt());
+      registryData.fill(HIST("h_track_eta_sel"), track.eta());
+      registryData.fill(HIST("h_track_phi_sel"), track.phi());
+
+      // 4-momentum representation of a particle
+      fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
+      fjParticles.emplace_back(fourMomentum);
+    }
+    // reject empty events
+    if (fjParticles.size() < 1)
+      return;
+    // cluster particles using the anti-kt algorithm
+    fastjet::RecombinationScheme recombScheme = fastjet::E_scheme;
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet, recombScheme);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+    fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+    std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+    // jet selection
+    bool isAtLeastOneJetSelected = false;
+    int nJets = 0;
+    int nJetssel = 0;
+    // select most large momentum jet
+    float maxJetpx = 0;
+    float maxJetpy = 0;
+    float maxJetpz = 0;
+    float maxJeteta = 0;
+    float maxJetphi = 0;
+    float maxJetE = 0;
+    float maxJetpT = 0;
+    float maxJetPt = -999;
+    for (auto& jet : jets) {
+      nJets++;
+      registryData.fill(HIST("FJetaHistogram"), jet.eta());
+      registryData.fill(HIST("FJphiHistogram"), jet.phi());
+      registryData.fill(HIST("FJptHistogram"), jet.pt());
+      // jet must be fully contained in the acceptance
+      if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge)) {
+        continue;
+      }
+
+      if (jet.pt() < cfgjetPtMin)
+        continue;
+      nJetssel++;
+      registryData.fill(HIST("FJetaHistogramsel"), jet.eta());
+      registryData.fill(HIST("FJphiHistogramsel"), jet.phi());
+      registryData.fill(HIST("FJptHistogramsel"), jet.pt());
+
+      if (jet.pt() > maxJetPt) {
+        maxJetpx = jet.px();
+        maxJetpy = jet.py();
+        maxJetpz = jet.pz();
+        maxJeteta = jet.eta();
+        maxJetE = jet.E();
+        maxJetphi = jet.phi();
+        maxJetpT = jet.pt();
+        maxJetPt = maxJetpT;
+      }
+    }
+    if (maxJetpT > 0) {
+      registryData.fill(HIST("FLeadingJetaHistogramsel"), maxJeteta);
+      registryData.fill(HIST("FLeadingJphiHistogramsel"), maxJetphi);
+      registryData.fill(HIST("FLeadingJptHistogramsel"), maxJetpT);
+    }
+    registryData.fill(HIST("nJetsPerEvent"), nJets);
+    registryData.fill(HIST("nJetsPerEventsel"), nJetssel);
+    isAtLeastOneJetSelected = true;
+    if (!isAtLeastOneJetSelected) {
+      return;
+    }
+
+    // Event multiplicity
+    const float multiplicity = collision.centFT0M();
+    registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
+    // v0 loop
+    int V0Numbers = 0;
+    int AntiV0Numbers = 0;
+    for (const auto& v0 : fullV0s) {
+      const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
+      const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
+      TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+      if (registryDataAcceptV0Lambda(v0, pos, neg, collision)) {
+        V0Numbers = V0Numbers + 1;
+        registryData.fill(HIST("LambdaPtMass"), v0.pt(), v0.mLambda());
+      }
+      if (registryDataAcceptV0AntiLambda(v0, pos, neg, collision)) {
+        AntiV0Numbers = AntiV0Numbers + 1;
+        registryData.fill(HIST("AntiLambdaPtMass"), v0.pt(), v0.mAntiLambda());
+      }
+    }
+    registryData.fill(HIST("nV0sPerEvent"), V0Numbers);
+
+    // calculate lambda polarization induced by jet
+
+    if (V0Numbers == 0 && AntiV0Numbers == 0) {
+      return;
+    }
+    if (maxJetpx == 0) {
+      return;
+    }
+    double protonsinPhiInJetV0frame = 0;
+    double AntiprotonsinPhiInJetV0frame = 0;
+    cout << maxJetpx << endl;
+    for (const auto& candidate : fullV0s) {
+      const auto& pos = candidate.posTrack_as<StrHadronDaughterTracks>();
+      const auto& neg = candidate.negTrack_as<StrHadronDaughterTracks>();
+      TVector3 v0dir(candidate.px(), candidate.py(), candidate.pz());
+
+      if (registryDataAcceptV0Lambda(candidate, pos, neg, collision)) {
+        registryData.fill(HIST("hMassLambda"), candidate.mLambda());
+        registryData.fill(HIST("V0pTInLab"), candidate.pt());
+        registryData.fill(HIST("V0pxInLab"), candidate.px());
+        registryData.fill(HIST("V0pyInLab"), candidate.py());
+        registryData.fill(HIST("V0pzInLab"), candidate.pz());
+        registryData.fill(HIST("protonQA/V0protonpxInLab"), pos.px());
+        registryData.fill(HIST("protonQA/V0protonpyInLab"), pos.py());
+        registryData.fill(HIST("protonQA/V0protonpzInLab"), pos.pz());
+
+        double PLambda = sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py() + candidate.pz() * candidate.pz());
+        double ELambda = sqrt(candidate.mLambda() * candidate.mLambda() + PLambda * PLambda);
+        double protonE = sqrt(massPr * massPr + pos.px() * pos.px() + pos.py() * pos.py() + pos.pz() * pos.pz());
+
+        TMatrixD pLabJet(4, 1);
+        pLabJet(0, 0) = maxJetE;
+        pLabJet(1, 0) = maxJetpx;
+        pLabJet(2, 0) = maxJetpy;
+        pLabJet(3, 0) = maxJetpz;
+
+        TMatrixD pLabV0(4, 1);
+        pLabV0(0, 0) = ELambda;
+        pLabV0(1, 0) = candidate.px();
+        pLabV0(2, 0) = candidate.py();
+        pLabV0(3, 0) = candidate.pz();
+
+        TMatrixD V0InV0(4, 1);
+        V0InV0 = LorentzTransInV0frame(ELambda, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
+        registryData.fill(HIST("V0pxInRest_frame"), V0InV0(1, 0));
+        registryData.fill(HIST("V0pyInRest_frame"), V0InV0(2, 0));
+        registryData.fill(HIST("V0pzInRest_frame"), V0InV0(3, 0));
+
+        TMatrixD lambdaInJet(4, 1);
+        lambdaInJet = TMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
+
+        registryData.fill(HIST("TH2FLambdaMassPhiInJet"), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), candidate.mLambda());
+
+        registryData.fill(HIST("V0pxInJetframe"), lambdaInJet(1, 0));
+        registryData.fill(HIST("V0pyInJetframe"), lambdaInJet(2, 0));
+        registryData.fill(HIST("V0pzInJetframe"), lambdaInJet(3, 0));
+
+        TMatrixD lambdaInJetV0(4, 1);
+        lambdaInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
+        registryData.fill(HIST("V0LambdapxInJetV0frame"), lambdaInJetV0(1, 0));
+        registryData.fill(HIST("V0LambdapyInJetV0frame"), lambdaInJetV0(2, 0));
+        registryData.fill(HIST("V0LambdapzInJetV0frame"), lambdaInJetV0(3, 0));
+
+        TMatrixD pLabproton(4, 1);
+        pLabproton(0, 0) = protonE;
+        pLabproton(1, 0) = pos.px();
+        pLabproton(2, 0) = pos.py();
+        pLabproton(3, 0) = pos.pz();
+        double protonsinPhiInLab = pLabproton(2, 0) / sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0));
+        double protoncosthetaInLab = pLabproton(3, 0) / sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));
+        double protonPtInLab = sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0));
+        double protonPInLab = sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));
+        double protonsinThetaInLab = protonPtInLab / protonPInLab;
+        double protonMassInLab = sqrt(pLabproton(0, 0) * pLabproton(0, 0) - pLabproton(1, 0) * pLabproton(1, 0) - pLabproton(2, 0) * pLabproton(2, 0) - pLabproton(3, 0) * pLabproton(3, 0));
+        double jettheta = maxJetpz / sqrt(pLabJet(1, 0) * pLabJet(1, 0) + pLabJet(2, 0) * pLabJet(2, 0) + pLabJet(3, 0) * pLabJet(3, 0));
+        double jetphi = maxJetpy / sqrt(pLabJet(1, 0) * pLabJet(1, 0) + pLabJet(2, 0) * pLabJet(2, 0));
+        double jetptInLab = sqrt(pLabJet(1, 0) * pLabJet(1, 0) + pLabJet(2, 0) * pLabJet(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInLab"), TMath::ASin(jettheta));
+        registryData.fill(HIST("JetQA/JetphiInLab"), TMath::ASin(jetphi));
+        registryData.fill(HIST("JetQA/JetpxInLab"), pLabJet(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInLab"), pLabJet(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInLab"), pLabJet(3, 0));
+        registryData.fill(HIST("JetQA/JetptInLab"), jetptInLab);
+
+        registryData.fill(HIST("protonQA/V0protonphiInLab"), TMath::ASin(protonsinPhiInLab));
+        registryData.fill(HIST("protonQA/V0protonthetaInLab"), TMath::ACos(protoncosthetaInLab));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInLab"), protoncosthetaInLab);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInLab"), candidate.mLambda(), protonsinThetaInLab);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInLab"), candidate.mLambda(), protonsinPhiInLab);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInLab"), candidate.mLambda(), protoncosthetaInLab * protoncosthetaInLab);
+        registryData.fill(HIST("protonQA/V0protonMassInLab"), protonMassInLab);
+
+        TMatrixD protonInV0(4, 1);
+        protonInV0 = LorentzTransInV0frame(ELambda, candidate.px(), candidate.py(), candidate.pz()) * pLabproton;
+        double protonMassInV0 = sqrt(protonInV0(0, 0) * protonInV0(0, 0) - protonInV0(1, 0) * protonInV0(1, 0) - protonInV0(2, 0) * protonInV0(2, 0) - protonInV0(3, 0) * protonInV0(3, 0));
+        double protonPInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
+        double protonPtInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0));
+        double protonsinThetaInV0 = protonPtInV0 / protonPInV0;
+
+        TMatrixD JetInV0(4, 1);
+        JetInV0 = LorentzTransInV0frame(ELambda, candidate.px(), candidate.py(), candidate.pz()) * pLabJet;
+        double jetthetaInV0 = JetInV0(3, 0) / sqrt(JetInV0(1, 0) * JetInV0(1, 0) + JetInV0(2, 0) * JetInV0(2, 0) + JetInV0(3, 0) * JetInV0(3, 0));
+        double jetphiInV0 = JetInV0(2, 0) / sqrt(JetInV0(1, 0) * JetInV0(1, 0) + JetInV0(2, 0) * JetInV0(2, 0));
+        double jetptInV0 = sqrt(JetInV0(1, 0) * JetInV0(1, 0) + JetInV0(2, 0) * JetInV0(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInV0"), TMath::ASin(jetthetaInV0));
+        registryData.fill(HIST("JetQA/JetphiInV0"), TMath::ASin(jetphiInV0));
+        registryData.fill(HIST("JetQA/JetpxInV0"), JetInV0(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInV0"), JetInV0(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInV0"), JetInV0(3, 0));
+        registryData.fill(HIST("JetQA/JetptInV0"), jetptInV0);
+
+        registryData.fill(HIST("protonQA/V0protonMassInRest_frame"), protonMassInV0);
+        registryData.fill(HIST("protonQA/V0protonpxInRest_frame"), protonInV0(1, 0));
+        registryData.fill(HIST("protonQA/V0protonpyInRest_frame"), protonInV0(2, 0));
+        registryData.fill(HIST("protonQA/V0protonpzInRest_frame"), protonInV0(3, 0));
+        double protonsinPhiInV0frame = protonInV0(2, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0));
+        double protoncosthetaInV0frame = protonInV0(3, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
+        registryData.fill(HIST("protonQA/V0protonphiInRest_frame"), TMath::ASin(protonsinPhiInV0frame));
+        registryData.fill(HIST("protonQA/V0protonthetaInRest_frame"), TMath::ACos(protoncosthetaInV0frame));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInV0frame"), protoncosthetaInV0frame);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInV0frame"), candidate.mLambda(), protonsinThetaInV0);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInV0frame"), candidate.mLambda(), protonsinPhiInV0frame);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInV0frame"), candidate.mLambda(), protoncosthetaInV0frame * protoncosthetaInV0frame);
+
+        TMatrixD protonInJet(4, 1);
+        protonInJet = TMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabproton;
+        double protoncosthetaInJet = protonInJet(3, 0) / sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0) + protonInJet(3, 0) * protonInJet(3, 0));
+        double protonsinPhiInJet = protonInJet(2, 0) / sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0));
+        double protonPtinJet = sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0));
+        double protonPinJet = sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0) + protonInJet(3, 0) * protonInJet(3, 0));
+        double protonSinThetainJet = protonPtinJet / protonPinJet;
+        double protonMassInJetframe = sqrt(protonInJet(0, 0) * protonInJet(0, 0) - protonInJet(1, 0) * protonInJet(1, 0) - protonInJet(2, 0) * protonInJet(2, 0) - protonInJet(3, 0) * protonInJet(3, 0));
+
+        TMatrixD pInJet(4, 1);
+        pInJet = TMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabJet;
+        double jetthetaInJet = pInJet(3, 0) / sqrt(pInJet(1, 0) * pInJet(1, 0) + pInJet(2, 0) * pInJet(2, 0) + pInJet(3, 0) * pInJet(3, 0));
+        double jetphiInJet = pInJet(2, 0) / sqrt(pInJet(1, 0) * pInJet(1, 0) + pInJet(2, 0) * pInJet(2, 0));
+        double jetptInJet = sqrt(pInJet(1, 0) * pInJet(1, 0) + pInJet(2, 0) * pInJet(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInJetframe"), TMath::ASin(jetthetaInJet));
+        registryData.fill(HIST("JetQA/JetphiInJetframe"), TMath::ASin(jetphiInJet));
+        registryData.fill(HIST("JetQA/JetpxInJetframe"), pInJet(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInJetframe"), pInJet(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInJetframe"), pInJet(3, 0));
+        registryData.fill(HIST("JetQA/JetptInJetframe"), jetptInJet);
+
+        registryData.fill(HIST("protonQA/V0protonpxInJetframe"), protonInJet(1, 0));
+        registryData.fill(HIST("protonQA/V0protonpyInJetframe"), protonInJet(2, 0));
+        registryData.fill(HIST("protonQA/V0protonpzInJetframe"), protonInJet(3, 0));
+        registryData.fill(HIST("protonQA/V0protonphiInJetframe"), TMath::ASin(protonsinPhiInJet));
+        registryData.fill(HIST("protonQA/V0protonthetaInJetframe"), TMath::ACos(protoncosthetaInJet));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInJetframe"), protoncosthetaInJet);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInJetframe"), candidate.mLambda(), protonSinThetainJet);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInJetframe"), candidate.mLambda(), protonsinPhiInJet);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInJetframe"), candidate.mLambda(), protoncosthetaInJet * protoncosthetaInJet);
+        registryData.fill(HIST("protonQA/V0protonMassInJetframe"), protonMassInJetframe);
+
+        TMatrixD protonInJetV0(4, 1);
+        protonInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * TMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabproton;
+        double protoncosthetaInJetV0 = protonInJetV0(3, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0) + protonInJetV0(3, 0) * protonInJetV0(3, 0));
+        double protonsinphiInJetV0 = protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+        double protonPtinJetV0 = sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+        double protonPinJetV0 = sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0) + protonInJetV0(3, 0) * protonInJetV0(3, 0));
+        double protonSinThetainJetV0 = protonPtinJetV0 / protonPinJetV0;
+        double protonMassInJetV0frame = sqrt(protonInJetV0(0, 0) * protonInJetV0(0, 0) - protonInJetV0(1, 0) * protonInJetV0(1, 0) - protonInJetV0(2, 0) * protonInJetV0(2, 0) - protonInJetV0(3, 0) * protonInJetV0(3, 0));
+
+        TMatrixD JetInJetV0(4, 1);
+        JetInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * TMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabJet;
+        double jetthetaInJetV0 = JetInJetV0(3, 0) / sqrt(JetInJetV0(1, 0) * JetInJetV0(1, 0) + JetInJetV0(2, 0) * JetInJetV0(2, 0) + JetInJetV0(3, 0) * JetInJetV0(3, 0));
+        double jetphiInJetV0 = JetInJetV0(2, 0) / sqrt(JetInJetV0(1, 0) * JetInJetV0(1, 0) + JetInJetV0(2, 0) * JetInJetV0(2, 0));
+        double jetptInJetV0 = sqrt(JetInJetV0(1, 0) * JetInJetV0(1, 0) + JetInJetV0(2, 0) * JetInJetV0(2, 0));
+        registryData.fill(HIST("JetQA/JetthetaInJetV0frame"), TMath::ASin(jetthetaInJetV0));
+        registryData.fill(HIST("JetQA/JetphiInJetV0frame"), TMath::ASin(jetphiInJetV0));
+        registryData.fill(HIST("JetQA/JetpxInJetV0frame"), JetInJetV0(1, 0));
+        registryData.fill(HIST("JetQA/JetpyInJetV0frame"), JetInJetV0(2, 0));
+        registryData.fill(HIST("JetQA/JetpzInJetV0frame"), JetInJetV0(3, 0));
+        registryData.fill(HIST("JetQA/JetptInJetV0frame"), jetptInJetV0);
+
+        registryData.fill(HIST("protonQA/V0protonpxInJetV0frame"), protonInJetV0(1, 0));
+        registryData.fill(HIST("protonQA/V0protonpyInJetV0frame"), protonInJetV0(2, 0));
+        registryData.fill(HIST("protonQA/V0protonpzInJetV0frame"), protonInJetV0(3, 0));
+        registryData.fill(HIST("protonQA/V0protonphiInJetV0frame"), TMath::ASin(protonsinphiInJetV0));
+        registryData.fill(HIST("protonQA/V0protonthetaInJetV0frame"), TMath::ACos(protoncosthetaInJetV0));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInJetV0"), protoncosthetaInJetV0);
+        registryData.fill(HIST("protonQA/V0protonMassInJetV0frame"), protonMassInJetV0frame);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInJetV0frame"), candidate.mLambda(), protonSinThetainJetV0);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInJetV0frame"), candidate.mLambda(), protonsinphiInJetV0);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInJetV0frame"), candidate.mLambda(), protoncosthetaInJetV0 * protoncosthetaInJetV0);
+
+        double protonCosThetainJetV0 = protonInJetV0(3, 0) / protonPinJetV0;
+
+        protonsinPhiInJetV0frame = protonsinPhiInJetV0frame + protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+
+        registryData.fill(HIST("hprotonsinphiInJetV0frame"), protonsinPhiInJetV0frame);
+
+        registryData.fill(HIST("TProfile2DLambdaPtMassSinPhi"), candidate.mLambda(), candidate.pt(), protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0)));
+        registryData.fill(HIST("TProfile2DLambdaPtMassSintheta"), candidate.mLambda(), candidate.pt(), (4.0 / TMath::Pi()) * protonSinThetainJetV0);
+        registryData.fill(HIST("TProfile2DLambdaPtMassCosSquareTheta"), candidate.mLambda(), candidate.pt(), 3.0 * protonCosThetainJetV0 * protonCosThetainJetV0);
+        registryData.fill(HIST("TProfile2DLambdaMassDeltaPhi"), TMath::ASin(protonsinPhiInJetV0frame), candidate.mLambda(), protonsinPhiInJetV0frame);
+        registryData.fill(HIST("hprotonPhi"), TMath::ASin(protonsinPhiInJetV0frame));
+
+        double protonCosThetaInLab = pLabproton(3, 0) / sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));     // cos(theta) of lambda in lab frame
+        double protonCosThetaInV0frame = protonInV0(3, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0)); // cos(theta) of lambda in V0 frame
+        double protonCosThetaInJetV0frame = protonCosThetainJetV0;
+
+        registryData.fill(HIST("hprotonThetaInLab"), TMath::ACos(protonCosThetaInLab));
+        registryData.fill(HIST("hprotonThetaInV0"), TMath::ACos(protonCosThetaInV0frame));
+        registryData.fill(HIST("hprotonThetaInJetV0"), TMath::ACos(protonCosThetaInJetV0frame));
+
+        registryData.fill(HIST("TH2FprotonCosThetaInJetV0"), candidate.mLambda(), protonCosThetaInJetV0frame);
+        registryData.fill(HIST("TProfile1DprotonCosThetaInJetV0"), candidate.mLambda(), protonCosThetaInJetV0frame);
+        registryData.fill(HIST("TProfile2DprotonCosThetaInJetV0"), candidate.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame);
+      }
+      if (registryDataAcceptV0AntiLambda(candidate, pos, neg, collision)) {
+        registryData.fill(HIST("hMassAntiLambda"), candidate.mAntiLambda());
+        double PAntiLambda = sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py() + candidate.pz() * candidate.pz());
+        double EAntiLambda = sqrt(candidate.mAntiLambda() * candidate.mAntiLambda() + PAntiLambda * PAntiLambda);
+        double AntiprotonE = sqrt(massPr * massPr + neg.px() * neg.px() + neg.py() * neg.py() + neg.pz() * neg.pz());
+        TMatrixD pLabAntiV0(4, 1);
+        pLabAntiV0(0, 0) = EAntiLambda;
+        pLabAntiV0(1, 0) = candidate.px();
+        pLabAntiV0(2, 0) = candidate.py();
+        pLabAntiV0(3, 0) = candidate.pz();
+
+        TMatrixD AntilambdaInJet(4, 1);
+        AntilambdaInJet = MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabAntiV0;
+
+        TMatrixD pLabAntiproton(4, 1);
+        pLabAntiproton(0, 0) = AntiprotonE;
+        pLabAntiproton(1, 0) = neg.px();
+        pLabAntiproton(2, 0) = neg.py();
+        pLabAntiproton(3, 0) = neg.pz();
+        TMatrixD AntiprotonInJetV0(4, 1);
+        AntiprotonInJetV0 = LorentzTransInV0frame(EAntiLambda, AntilambdaInJet(1, 0), AntilambdaInJet(2, 0), AntilambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabAntiproton;
+        AntiprotonsinPhiInJetV0frame = AntiprotonsinPhiInJetV0frame + AntiprotonInJetV0(2, 0) / sqrt(AntiprotonInJetV0(1, 0) * AntiprotonInJetV0(1, 0) + AntiprotonInJetV0(2, 0) * AntiprotonInJetV0(2, 0));
+        TMatrixD AntiprotonInV0(4, 1);
+        AntiprotonInV0 = LorentzTransInV0frame(EAntiLambda, candidate.px(), candidate.py(), candidate.pz()) * pLabAntiproton;
+        double AntiprotonPinJetV0 = sqrt(AntiprotonInJetV0(1, 0) * AntiprotonInJetV0(1, 0) + AntiprotonInJetV0(2, 0) * AntiprotonInJetV0(2, 0) + AntiprotonInJetV0(3, 0) * AntiprotonInJetV0(3, 0));
+        double AntiprotonPtinJetV0 = sqrt(AntiprotonInJetV0(1, 0) * AntiprotonInJetV0(1, 0) + AntiprotonInJetV0(2, 0) * AntiprotonInJetV0(2, 0));
+        double AntiprotonCosThetainJetV0 = AntiprotonInJetV0(3, 0) / AntiprotonPinJetV0;
+        double AntiprotonSinThetainJetV0 = AntiprotonPtinJetV0 / AntiprotonPinJetV0;
+        registryData.fill(HIST("TProfile2DAntiLambdaPtMassSinPhi"), candidate.mAntiLambda(), candidate.pt(), AntiprotonInJetV0(2, 0) / sqrt(AntiprotonInJetV0(1, 0) * AntiprotonInJetV0(1, 0) + AntiprotonInJetV0(2, 0) * AntiprotonInJetV0(2, 0)));
+        registryData.fill(HIST("TProfile2DAntiLambdaPtMassSintheta"), candidate.mAntiLambda(), candidate.pt(), (4.0 / TMath::Pi()) * AntiprotonSinThetainJetV0);
+        registryData.fill(HIST("TProfile2DAntiLambdaPtMassCosSquareTheta"), candidate.mAntiLambda(), candidate.pt(), 3.0 * AntiprotonCosThetainJetV0 * AntiprotonCosThetainJetV0);
+        registryData.fill(HIST("TProfile2DAntiLambdaMassDeltaPhi"), TMath::ASin(AntiprotonsinPhiInJetV0frame), candidate.mAntiLambda(), AntiprotonsinPhiInJetV0frame);
+        registryData.fill(HIST("hantiprotonPhi"), TMath::ASin(AntiprotonsinPhiInJetV0frame));
+      }
+    }
+
+    for (const auto& candidate : fullV0s) {
+      const auto& pos = candidate.posTrack_as<StrHadronDaughterTracks>();
+      const auto& neg = candidate.negTrack_as<StrHadronDaughterTracks>();
+      if (passedLambdaSelection(candidate, pos, neg)) {
+        registryData.fill(HIST("hLambdamassandSinPhi"), candidate.mLambda(), protonsinPhiInJetV0frame / V0Numbers);
+        registryData.fill(HIST("hLambdaPhiandSinPhi"), TMath::ASin(protonsinPhiInJetV0frame / V0Numbers), protonsinPhiInJetV0frame / V0Numbers);
+        registryData.fill(HIST("V0LambdaprotonPhi"), TMath::ASin(protonsinPhiInJetV0frame / V0Numbers));
+        registryData.fill(HIST("profileLambda"), candidate.mLambda(), protonsinPhiInJetV0frame / V0Numbers);
+      }
+      if (passedAntiLambdaSelection(candidate, pos, neg)) {
+        registryData.fill(HIST("hAntiLambdamassandSinPhi"), candidate.mAntiLambda(), AntiprotonsinPhiInJetV0frame / AntiV0Numbers);
+        registryData.fill(HIST("profileAntiLambda"), candidate.mAntiLambda(), AntiprotonsinPhiInJetV0frame / AntiV0Numbers);
+      }
+    }
+  }
+  PROCESS_SWITCH(LfMyV0s, processLambdaJetPolarization, "processLambdaJetPolarization", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
