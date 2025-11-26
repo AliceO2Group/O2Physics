@@ -18,7 +18,6 @@
 #include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-// #include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
@@ -111,8 +110,8 @@ struct DileptonPolarization {
 
   struct : ConfigurableGroup {
     std::string prefix = "dileptoncut_group";
-    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass"};
+    Configurable<float> cfg_min_pair_mass{"cfg_min_pair_mass", 0.0, "min pair mass"};
+    Configurable<float> cfg_max_pair_mass{"cfg_max_pair_mass", 1e+10, "max pair mass"};
     Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min pair pT"};
     Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max pair pT"};
     Configurable<float> cfg_min_pair_y{"cfg_min_pair_y", -0.9, "min pair rapidity"};
@@ -463,6 +462,14 @@ struct DileptonPolarization {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt1(), dilepton.eta1(), dilepton.phi1(), leptonM1);
     ROOT::Math::PtEtaPhiMVector v2(dilepton.pt2(), dilepton.eta2(), dilepton.phi2(), leptonM2);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+    if (v12.M() < dileptoncuts.cfg_min_pair_mass || dileptoncuts.cfg_max_pair_mass < v12.M()) {
+      return false;
+    }
+
+    if (v12.Pt() < dileptoncuts.cfg_min_pair_pt || dileptoncuts.cfg_max_pair_pt < v12.Pt()) {
+      return false;
+    }
 
     if (v12.Rapidity() < dileptoncuts.cfg_min_pair_y || dileptoncuts.cfg_max_pair_y < v12.Rapidity()) {
       return false;
