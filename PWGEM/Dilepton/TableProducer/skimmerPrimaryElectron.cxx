@@ -636,8 +636,9 @@ struct skimmerPrimaryElectron {
 
     for (const auto& collision : collisions) {
       int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("Track/hNe"), count_electrons);
-
+      if (fillQAHistogram) {
+        fRegistry.fill(HIST("Track/hNe"), count_electrons);
+      }
       if (count_electrons >= minNelectron) {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
@@ -684,8 +685,9 @@ struct skimmerPrimaryElectron {
 
     for (const auto& collision : collisions) {
       int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("Track/hNe"), count_electrons);
-
+      if (fillQAHistogram) {
+        fRegistry.fill(HIST("Track/hNe"), count_electrons);
+      }
       if (count_electrons >= minNelectron) {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
@@ -735,8 +737,9 @@ struct skimmerPrimaryElectron {
 
     for (const auto& collision : collisions) {
       int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("Track/hNe"), count_electrons);
-
+      if (fillQAHistogram) {
+        fRegistry.fill(HIST("Track/hNe"), count_electrons);
+      }
       if (count_electrons >= minNelectron) {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
@@ -786,8 +789,9 @@ struct skimmerPrimaryElectron {
 
     for (const auto& collision : collisions) {
       int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("Track/hNe"), count_electrons);
-
+      if (fillQAHistogram) {
+        fRegistry.fill(HIST("Track/hNe"), count_electrons);
+      }
       if (count_electrons >= minNelectron) {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
@@ -840,8 +844,9 @@ struct skimmerPrimaryElectron {
 
     for (const auto& collision : collisions) {
       int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("Track/hNe"), count_electrons);
-
+      if (fillQAHistogram) {
+        fRegistry.fill(HIST("Track/hNe"), count_electrons);
+      }
       if (count_electrons >= minNelectron) {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
@@ -891,8 +896,9 @@ struct skimmerPrimaryElectron {
 
     for (const auto& collision : collisions) {
       int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("Track/hNe"), count_electrons);
-
+      if (fillQAHistogram) {
+        fRegistry.fill(HIST("Track/hNe"), count_electrons);
+      }
       if (count_electrons >= minNelectron) {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
