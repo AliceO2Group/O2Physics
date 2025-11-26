@@ -17,6 +17,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-pr-message: 'This PR has not been updated in the last 30 days. Is it still needed? Unless further action is taken, it will be closed in 5 days.'
+          stale-issue-message: 'This issue has not been updated in the last 30 days. Is it still needed? Unless further action is taken, it will be closed in 5 days.'
           stale-pr-label: stale
           days-before-stale: 30
           days-before-close: 5
+          exempt-issue-labels: bug,enhancement
