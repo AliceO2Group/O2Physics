@@ -65,8 +65,9 @@ using MyCollisionsMCCent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT
 using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
-  Produces<o2::aod::EMBCs> embc;
+  // Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEventsAlias> eventalias;
   // Produces<o2::aod::EMEventsCov> eventCov;
   Produces<o2::aod::EMEventsMult> eventMult;
   Produces<o2::aod::EMEventsCent> eventCent;
@@ -149,13 +150,13 @@ struct CreateEMEventPhoton {
   }
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
+  void skimEvent(TCollisions const& collisions, TBCs const&)
   {
-    for (const auto& bc : bcs) {
-      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
-      }
-    } // end of bc loop
+    // for (const auto& bc : bcs) {
+    //   if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    //     embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+    //   }
+    // } // end of bc loop
 
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
@@ -176,11 +177,11 @@ struct CreateEMEventPhoton {
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), collision.centFT0C());
         } else {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), collision.posZ(), 105.f);
         }
       }
 
@@ -208,9 +209,10 @@ struct CreateEMEventPhoton {
         registry.fill(HIST("hEventCounter"), 2);
       }
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
             collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      eventalias(collision.alias_raw());
 
       // eventCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 

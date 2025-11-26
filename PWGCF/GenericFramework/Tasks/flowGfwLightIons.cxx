@@ -111,7 +111,9 @@ struct FlowGfwLightIons {
   O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgEta, float, 0.8, "eta cut");
-  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
+  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations used in subevent vn-pt");
+  O2_DEFINE_CONFIGURABLE(cfgEtaPtPtGap, float, 0.4, "eta gap for subevent pt-pt correlations");
+  O2_DEFINE_CONFIGURABLE(cfgEtaPtPtFull, float, 0.8, "eta cut for pure pt-pt correlations");
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
@@ -130,12 +132,14 @@ struct FlowGfwLightIons {
   O2_DEFINE_CONFIGURABLE(cfgUseDensityDependentCorrection, bool, false, "Use density dependent efficiency correction based on Run 2 measurements");
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
-  Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
-  Configurable<std::vector<double>> cfgMultPVCutPars{"cfgMultPVCutPars", std::vector<double>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}, "PV vs FT0C multiplicity cut parameter values"};
-  Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.223013, 0.715849, 0.664242, 0.0829653, -0.000503733, 1.21185e-06}, "Global vs PV multiplicity cut parameter values"};
-  O2_DEFINE_CONFIGURABLE(cfgMultCorrHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
-  O2_DEFINE_CONFIGURABLE(cfgMultCorrLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
-  O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCorrCutFunction, std::string, "[0] + [1]*x + 3*([2] + [3]*x + [4]*x*x + [5]*x*x*x)", "Functional for global vs pv multiplicity correlation cut");
+  struct : ConfigurableGroup {
+    Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
+    Configurable<std::vector<double>> cfgMultPVCutPars{"cfgMultPVCutPars", std::vector<double>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}, "PV vs FT0C multiplicity cut parameter values"};
+    Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.223013, 0.715849, 0.664242, 0.0829653, -0.000503733, 1.21185e-06}, "Global vs PV multiplicity cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgMultCorrHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultCorrLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCorrCutFunction, std::string, "[0] + [1]*x + 3*([2] + [3]*x + [4]*x*x + [5]*x*x*x)", "Functional for global vs pv multiplicity correlation cut");
+  } cfgMultCorrCuts;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalASideCorrCutFunction, std::string, "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + [10]*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", "Functional for global vs V0A multiplicity low correlation cut");
     Configurable<std::vector<double>> cfgMultGlobalV0ACutPars{"cfgMultGlobalV0ACutPars", std::vector<double>{567.785, 172.715, 0.77888, -0.00693466, 1.40564e-05, 679.853, 66.8068, -0.444332, 0.00115002, -4.92064e-07}, "Global vs FV0A multiplicity cut parameter values"};
@@ -163,8 +167,10 @@ struct FlowGfwLightIons {
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   OutputObj<FlowPtContainer> fFCpt{FlowPtContainer("FlowPtContainer")};
+  OutputObj<FlowPtContainer> fFCptFull{FlowPtContainer("FlowPtContainerFull")};
   OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
   OutputObj<FlowPtContainer> fFCptgen{FlowPtContainer("FlowPtContainer_gen")};
+  OutputObj<FlowPtContainer> fFCptgenFull{FlowPtContainer("FlowPtContainer_gen")};
   HistogramRegistry registry{"registry"};
 
   // QA outputs
@@ -198,6 +204,8 @@ struct FlowGfwLightIons {
     kCentNGlobal,
     kCentMFT
   };
+  std::map<int, std::string> centNamesMap = {{kCentFT0C, "FT0C"}, {kCentFT0CVariant1, "FT0C variant1"}, {kCentFT0M, "FT0M"}, {kCentFV0A, "FV0A"}, {kCentNTPV, "NTPV"}, {kCentNGlobal, "NGlobal"}, {kCentMFT, "MFT"}};
+
   enum EventSelFlags {
     kFilteredEvent = 1,
     kSel8,
@@ -299,9 +307,9 @@ struct FlowGfwLightIons {
     o2::analysis::gfw::nchup = cfgGFWBinning->GetNchMax();
     o2::analysis::gfw::centbinning = cfgGFWBinning->GetCentBinning();
     cfgGFWBinning->Print();
-    o2::analysis::gfw::multGlobalCorrCutPars = cfgMultGlobalCutPars;
-    o2::analysis::gfw::multPVCorrCutPars = cfgMultPVCutPars;
-    o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultGlobalPVCutPars;
+    o2::analysis::gfw::multGlobalCorrCutPars = cfgMultCorrCuts.cfgMultGlobalCutPars;
+    o2::analysis::gfw::multPVCorrCutPars = cfgMultCorrCuts.cfgMultPVCutPars;
+    o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultCorrCuts.cfgMultGlobalPVCutPars;
     o2::analysis::gfw::multGlobalV0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalV0ACutPars;
     o2::analysis::gfw::multGlobalT0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalT0ACutPars;
     o2::analysis::gfw::firstRunsOfFill = cfgFirstRunsOfFill;
@@ -314,34 +322,7 @@ struct FlowGfwLightIons {
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
     AxisSpec ptAxis = {o2::analysis::gfw::ptbinning, "#it{p}_{T} GeV/#it{c}"};
-    std::string sCentralityEstimator;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        sCentralityEstimator = "FT0C";
-        break;
-      case kCentFT0CVariant1:
-        sCentralityEstimator = "FT0C variant 1";
-        break;
-      case kCentFT0M:
-        sCentralityEstimator = "FT0M";
-        break;
-      case kCentFV0A:
-        sCentralityEstimator = "FV0A";
-        break;
-      case kCentNTPV:
-        sCentralityEstimator = "NTPV";
-        break;
-      case kCentNGlobal:
-        sCentralityEstimator = "NGlobals";
-        break;
-      case kCentMFT:
-        sCentralityEstimator = "MFT";
-        break;
-      default:
-        sCentralityEstimator = "FT0C";
-        break;
-    }
-    sCentralityEstimator += " centrality (%)";
+    std::string sCentralityEstimator = centNamesMap[cfgCentEstimator] + " centrality (%)";
     AxisSpec centAxis = {o2::analysis::gfw::centbinning, sCentralityEstimator.c_str()};
     std::vector<double> nchbinning;
     int nchskip = (o2::analysis::gfw::nchup - o2::analysis::gfw::nchlow) / o2::analysis::gfw::nchbins;
@@ -478,23 +459,31 @@ struct FlowGfwLightIons {
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
     fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCptFull->setUseCentralMoments(cfgUseCentralMoments);
+    fFCptFull->setUseGapMethod(true);
+    fFCptFull->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCptFull->initialiseSubevent(multAxis, cfgMpar, cfgNbootstrap);
     fFCptgen->setUseCentralMoments(cfgUseCentralMoments);
     fFCptgen->setUseGapMethod(true);
     fFCptgen->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCptgenFull->setUseCentralMoments(cfgUseCentralMoments);
+    fFCptgenFull->setUseGapMethod(true);
+    fFCptgenFull->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCptgenFull->initialiseSubevent(multAxis, cfgMpar, cfgNbootstrap);
 
     fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxy->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgDCAxyNSigma);
     LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgDCAxy->c_str()));
     if (cfgUseAdditionalEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
+      fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultPVCutLow->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", cfgMultCorrHighCutFunction->c_str(), 0, 100);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
       fMultPVCutHigh->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
-      fMultCutLow = new TF1("fMultCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
+      fMultCutLow = new TF1("fMultCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultCutLow->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
-      fMultCutHigh = new TF1("fMultCutHigh", cfgMultCorrHighCutFunction->c_str(), 0, 100);
+      fMultCutHigh = new TF1("fMultCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
       fMultCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
-      fMultPVGlobalCutHigh = new TF1("fMultPVGlobalCutHigh", cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
+      fMultPVGlobalCutHigh = new TF1("fMultPVGlobalCutHigh", cfgMultCorrCuts.cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
       fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalPVCorrCutPars[0]));
 
       LOGF(info, "Global V0A function: %s in range 0-%g", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), v0aAxis.binEdges.back());
@@ -816,9 +805,28 @@ struct FlowGfwLightIons {
   template <DataType dt>
   void fillOutputContainers(const float& centmult, const double& rndm, const int& run = 0)
   {
-    (dt == kGen) ? fFCptgen->calculateCorrelations() : fFCpt->calculateCorrelations();
-    (dt == kGen) ? fFCptgen->fillPtProfiles(centmult, rndm) : fFCpt->fillPtProfiles(centmult, rndm);
-    (dt == kGen) ? fFCptgen->fillCMProfiles(centmult, rndm) : fFCpt->fillCMProfiles(centmult, rndm);
+    if (dt == kGen) {
+      fFCptgen->calculateCorrelations();
+      fFCptgenFull->calculateCorrelations();
+      fFCptgenFull->calculateSubeventCorrelations();
+    } else {
+      fFCpt->calculateCorrelations();
+      fFCptFull->calculateCorrelations();
+      fFCptFull->calculateSubeventCorrelations();
+    }
+    if (dt == kGen) {
+      fFCptgen->fillPtProfiles(centmult, rndm);
+      fFCptgen->fillCMProfiles(centmult, rndm);
+      fFCptgenFull->fillPtProfiles(centmult, rndm);
+      fFCptgenFull->fillCMProfiles(centmult, rndm);
+      fFCptgenFull->fillSubeventPtProfiles(centmult, rndm);
+    } else {
+      fFCpt->fillPtProfiles(centmult, rndm);
+      fFCpt->fillCMProfiles(centmult, rndm);
+      fFCptFull->fillPtProfiles(centmult, rndm);
+      fFCptFull->fillSubeventPtProfiles(centmult, rndm);
+      fFCptFull->fillCMProfiles(centmult, rndm);
+    }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
@@ -883,7 +891,13 @@ struct FlowGfwLightIons {
       th1sList[run][hCent]->Fill(xaxis.centrality);
     }
     fGFW->Clear();
-    (dt == kGen) ? fFCptgen->clearVector() : fFCpt->clearVector();
+    if (dt == kGen) {
+      fFCptgen->clearVector();
+      fFCptgenFull->clearVector();
+    } else {
+      fFCpt->clearVector();
+      fFCptFull->clearVector();
+    }
 
     float lRandom = fRndm->Rndm();
 
@@ -1081,12 +1095,32 @@ struct FlowGfwLightIons {
   template <DataType dt, typename TTrack>
   inline void fillPtSums(TTrack track)
   {
+    if (track.pt() < o2::analysis::gfw::ptreflow || track.pt() > o2::analysis::gfw::ptrefup)
+      return;
+
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
       return;
-    if (std::abs(track.eta()) < cfgEtaPtPt && track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup) {
-      (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
+
+    // Fill pt-pt correlations used in vn-pt correlations (gapped)
+    if (std::abs(track.eta()) < cfgEtaPtPt) {
+      if (dt == kGen) {
+        fFCptgen->fill(1., track.pt());
+      } else {
+        fFCpt->fill(weff, track.pt());
+      }
     }
+
+    // Fill pt-pt correlations for entire eta range
+    if (std::abs(track.eta()) < cfgEtaPtPtFull)
+      (dt == kGen) ? fFCptgenFull->fill(1., track.pt()) : fFCptFull->fill(weff, track.pt());
+
+    // Fill pt-pt correlations in subevents
+    if (track.eta() < -cfgEtaPtPtGap && track.eta() > -cfgEtaPtPtFull)
+      (dt == kGen) ? fFCptgenFull->fillSub1(weff, track.pt()) : fFCptFull->fillSub1(weff, track.pt());
+    if (track.eta() > cfgEtaPtPtGap && track.eta() < cfgEtaPtPtFull)
+      (dt == kGen) ? fFCptgenFull->fillSub2(weff, track.pt()) : fFCptFull->fillSub2(weff, track.pt());
+    return;
   }
 
   template <DataType dt, QAFillTime ft, typename TTrack>

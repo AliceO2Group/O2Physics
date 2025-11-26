@@ -31,7 +31,7 @@ struct eventConverter3 {
 
   void process(aod::EMEvents_002 const& collisions)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       event_003(
         collision.globalIndex(),
         collision.runNumber(),
