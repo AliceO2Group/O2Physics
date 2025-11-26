@@ -23,7 +23,7 @@ jobs:
     steps:
       # Git Checkout
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # Checkout the HEAD of the PR instead of the merge commit.
           ref: ${{ github.event.pull_request.head.sha }}
