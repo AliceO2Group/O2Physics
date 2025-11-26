@@ -1,0 +1,65 @@
+#include "PWGJE/DataModel/SlimTables.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisHelpers.h"
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+struct SlimTablesProducer {
+
+  void init(InitContext&)
+  {
+  }
+
+  Produces<o2::aod::SlimCollisions> slimCollisions;
+  Produces<o2::aod::SlimMcCollisions> slimMcCollisions;
+  Produces<o2::aod::SlimTracks> slimTracks;
+  Produces<o2::aod::SlimParticles> slimParticles;
+
+  void processCollision(aod::SlimCollisions const& collisions)
+  {
+    for (auto& coll : collisions) {
+      slimCollisions(coll.posZ(), coll.centFT0C(), coll.centFT0M(), coll.weight(), coll.eventSel(), coll.trackOccupancyInTimeRange());
+    }
+  }
+  PROCESS_SWITCH(SlimTablesProducer, processCollision,"Produce slim collision table", true);
+
+  void processMcCollision(aod::SlimMcCollisions const& mccollisions)
+  {
+    for (auto& mccoll : mccollisions) {
+      slimMcCollisions(mccoll.posZ(), mccoll.centFT0M(), mccoll.weight(), mccoll.accepted(), mccoll.ptHard());
+    }
+  }
+  PROCESS_SWITCH(SlimTablesProducer, processMcCollision,"Produce slim mc collision table", true);
+
+
+  void processTracks(aod::SlimTracks const& tracks)
+  {
+    for (auto& trk : tracks) {
+      slimTracks(trk.collisionId(), trk.pt() , trk.eta(), trk.phi(), trk.dcaXY());
+    }
+  }
+  PROCESS_SWITCH(SlimTablesProducer, processTracks,"Produce slim track table", true);
+
+  void processParticles(aod::McParticles const& parts)
+  {
+    for (auto& p : parts) {
+      slimParticles(p.mcCollisionId(), p.pt(), p.eta(), p.phi());
+    }
+  }
+  PROCESS_SWITCH(SlimTablesProducer, processParticles, "produce slim particles", true);
+
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<SlimTablesProducer>(cfgc, TaskName{"slim-tables-producer"})
+  };
+}

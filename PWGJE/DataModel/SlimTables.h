@@ -1,0 +1,124 @@
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details.
+
+#ifndef PWGJE_DATAMODEL_SLIMTABLES_H_
+#define PWGJE_DATAMODEL_SLIMTABLES_H_
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+
+
+namespace o2::aod
+{
+
+namespace slimcollision
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
+}
+
+DECLARE_SOA_TABLE(SlimCollisions, "AOD", "SlimCollisions",
+                    o2::soa::Index<>,
+                    slimcollision::PosZ,
+                    slimcollision::CentFT0C,
+                    slimcollision::CentFT0M,
+                    slimcollision::Weight,
+                    slimcollision::EventSel,
+                    slimcollision::TrackOccupancyInTimeRange);
+
+namespace slimmccollision
+{
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
+DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(Accepted, accepted, uint64_t);
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);
+}
+
+DECLARE_SOA_TABLE(SlimMcCollisions, "AOD", "SlimMcCollisions",
+                    o2::soa::Index<>,
+                    slimmccollision::PosZ,
+                    slimmccollision::CentFT0M,
+                    slimmccollision::Weight,
+                    slimmccollision::Accepted,
+                    slimmccollision::PtHard);
+
+
+namespace slimtracks
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collisionId);
+DECLARE_SOA_INDEX_COLUMN(Track, track);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
+                           [](float pt, float phi) -> float { return pt * std::cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
+                           [](float pt, float phi) -> float { return pt * std::sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
+                           [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float pt, float eta) -> float { return std::sqrt((pt * std::cosh(eta) * pt * std::cosh(eta)) + (jetderiveddatautilities::mPion * jetderiveddatautilities::mPion)); });
+
+
+}
+DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
+                  o2::soa::Index<>,
+                  slimtracks::CollisionId,
+                  slimtracks::Pt,
+                  slimtracks::Eta,
+                  slimtracks::Phi,
+                  slimtracks::DCAXY,
+                  slimtracks::Px<slimtracks::Pt, slimtracks::Phi>,
+                  slimtracks::Py<slimtracks::Pt, slimtracks::Phi>,
+                  slimtracks::Pz<slimtracks::Pt, slimtracks::Eta>,
+                  slimtracks::Energy<slimtracks::Pt, slimtracks::Eta>);
+
+
+namespace slimparticles
+{
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollisionId);
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
+                           [](float pt, float phi) -> float { return pt * std::cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
+                           [](float pt, float phi) -> float { return pt * std::sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
+                           [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float e) -> float { return e; });
+}
+
+DECLARE_SOA_TABLE(SlimParticles, "AOD", "SlimParticles",
+                    o2::soa::Index<>,
+                    slimparticles::McCollisionId,
+                    slimparticles::Pt,
+                    slimparticles::Eta,
+                    slimparticles::Phi,
+                    slimparticles::Px<slimparticles::Pt, slimparticles::Phi>,
+                    slimparticles::Py<slimparticles::Pt, slimparticles::Phi>,
+                    slimparticles::Pz<slimparticles::Pt, slimparticles::Eta>,
+                    slimparticles::Energy<slimparticles::Pt, slimparticles::Eta>
+                  );
+
+} // namespace o2::aod
+
+#endif // PWGJE_DATAMODEL_SLIMTABLES_H_
