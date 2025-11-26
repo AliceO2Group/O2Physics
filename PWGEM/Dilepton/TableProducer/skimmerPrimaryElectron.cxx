@@ -678,6 +678,7 @@ struct skimmerPrimaryElectron {
           continue;
         }
         mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
 
@@ -727,6 +728,7 @@ struct skimmerPrimaryElectron {
           continue;
         }
         mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
 
     } // end of collision loop
@@ -778,6 +780,7 @@ struct skimmerPrimaryElectron {
           continue;
         }
         mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
 
@@ -831,6 +834,7 @@ struct skimmerPrimaryElectron {
           continue;
         }
         mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
 
@@ -881,6 +885,7 @@ struct skimmerPrimaryElectron {
           continue;
         }
         mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
 
