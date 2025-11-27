@@ -35,7 +35,7 @@ struct eventNormConverter1 {
       event_001(
         collision.selection_raw(),
         collision.rct_raw(),
-        static_cast<int16_t>(collision.posZ() * 100.f),
+        static_cast<int16_t>(collision.posZint16() * 10.f),
         static_cast<uint16_t>(collision.centFT0C() * 500.f));
     } // end of collision loop
   }
