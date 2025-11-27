@@ -11,6 +11,7 @@
 ///
 /// \brief Derived Data table for LF in jets analysis
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
+/// \author Sara Pucillo (sara.pucillo@cern.ch)
 
 #ifndef PWGLF_DATAMODEL_LFINJETS_H_
 #define PWGLF_DATAMODEL_LFINJETS_H_
@@ -23,8 +24,8 @@ namespace o2::aod
 namespace lfinjets
 {
 
-DECLARE_SOA_COLUMN(Sign, sign, int);
 DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Sign, sign, int);
 DECLARE_SOA_COLUMN(MassLambda, masslambda, float);
 DECLARE_SOA_COLUMN(MassAntiLambda, massantilambda, float);
 DECLARE_SOA_COLUMN(MassK0Short, massk0short, float);
@@ -37,6 +38,10 @@ DECLARE_SOA_COLUMN(NTPCSigmaNegPr, ntpcsigmanegpr, float);
 DECLARE_SOA_COLUMN(NTPCSigmaPosPr, ntpcsigmapospr, float);
 DECLARE_SOA_COLUMN(NTPCSigmaNegPi, ntpcsigmanegpi, float);
 DECLARE_SOA_COLUMN(NTPCSigmaPosPi, ntpcsigmapospi, float);
+DECLARE_SOA_COLUMN(NTOFSigmaNegPr, ntofsigmanegpr, float);
+DECLARE_SOA_COLUMN(NTOFSigmaPosPr, ntofsigmapospr, float);
+DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
+DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
 DECLARE_SOA_COLUMN(MultFT0M, multft0m, float);
 DECLARE_SOA_COLUMN(V0PosTPCCrossedRows, v0postpcCrossedRows, float);
 DECLARE_SOA_COLUMN(V0NegTPCCrossedRows, v0negtpcCrossedRows, float);
@@ -46,7 +51,6 @@ DECLARE_SOA_COLUMN(V0PosTPCChi2, v0posTPCChi2, float);
 DECLARE_SOA_COLUMN(V0PosITSlayers, v0posITSlayers, int);
 DECLARE_SOA_COLUMN(MassXi, massxi, float);
 DECLARE_SOA_COLUMN(MassOmega, massomega, float);
-DECLARE_SOA_COLUMN(MassLambdaDau, masslambdadau, float);
 DECLARE_SOA_COLUMN(CascRadius, cascradius, float);
 DECLARE_SOA_COLUMN(CascCosPA, casccospa, float);
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);
@@ -54,6 +58,8 @@ DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float);
 DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);
 DECLARE_SOA_COLUMN(NTPCSigmaBachPi, ntpcsigmabachpi, float);
 DECLARE_SOA_COLUMN(NTPCSigmaBachKa, ntpcsigmabachka, float);
+DECLARE_SOA_COLUMN(NTOFSigmaBachPi, ntofsigmabachpi, float);
+DECLARE_SOA_COLUMN(NTOFSigmaBachKa, ntofsigmabachka, float);
 DECLARE_SOA_COLUMN(BachTPCCrossedRows, bachtpcCrossedRows, float);
 DECLARE_SOA_COLUMN(BachTPCChi2, bachTPCChi2, float);
 DECLARE_SOA_COLUMN(BachITSlayers, bachITSlayers, int);
@@ -67,17 +73,20 @@ DECLARE_SOA_TABLE(V0InJets, "AOD", "V0INJETS",
                   lfinjets::V0Radius, lfinjets::V0CosPA, lfinjets::V0DCAPosToPV,
                   lfinjets::V0DCANegToPV, lfinjets::V0DCAV0Daughters,
                   lfinjets::NTPCSigmaNegPr, lfinjets::NTPCSigmaPosPr, lfinjets::NTPCSigmaNegPi, lfinjets::NTPCSigmaPosPi,
+                  lfinjets::NTOFSigmaNegPr, lfinjets::NTOFSigmaPosPr, lfinjets::NTOFSigmaNegPi, lfinjets::NTOFSigmaPosPi,
                   lfinjets::MultFT0M, lfinjets::V0PosTPCCrossedRows, lfinjets::V0NegTPCCrossedRows,
                   lfinjets::V0NegTPCChi2, lfinjets::V0NegITSlayers, lfinjets::V0PosTPCChi2, lfinjets::V0PosITSlayers,
                   lfinjets::IsUE, lfinjets::IsJC);
 
 DECLARE_SOA_TABLE(CascInJets, "AOD", "CASCINJETS",
-                  lfinjets::Pt, lfinjets::Sign, lfinjets::MassXi, lfinjets::MassOmega, lfinjets::MassLambdaDau,
+                  lfinjets::Pt, lfinjets::Sign, lfinjets::MassXi, lfinjets::MassOmega, lfinjets::MassLambda,
                   lfinjets::CascRadius, lfinjets::CascCosPA, lfinjets::V0Radius, lfinjets::V0CosPA,
                   lfinjets::V0DCAPosToPV, lfinjets::V0DCANegToPV, lfinjets::DCABachToPV,
                   lfinjets::DCACascDaughters, lfinjets::V0DCAV0Daughters, lfinjets::DCAV0ToPV,
                   lfinjets::NTPCSigmaNegPr, lfinjets::NTPCSigmaPosPr, lfinjets::NTPCSigmaNegPi, lfinjets::NTPCSigmaPosPi,
-                  lfinjets::NTPCSigmaBachPi, lfinjets::NTPCSigmaBachKa, lfinjets::MultFT0M,
+                  lfinjets::NTPCSigmaBachPi, lfinjets::NTPCSigmaBachKa,
+                  lfinjets::NTOFSigmaNegPr, lfinjets::NTOFSigmaPosPr, lfinjets::NTOFSigmaNegPi, lfinjets::NTOFSigmaPosPi,
+                  lfinjets::NTOFSigmaBachPi, lfinjets::NTOFSigmaBachKa, lfinjets::MultFT0M,
                   lfinjets::V0PosTPCCrossedRows, lfinjets::V0NegTPCCrossedRows, lfinjets::BachTPCCrossedRows,
                   lfinjets::V0NegTPCChi2, lfinjets::V0NegITSlayers, lfinjets::V0PosTPCChi2, lfinjets::V0PosITSlayers,
                   lfinjets::BachTPCChi2, lfinjets::BachITSlayers,
