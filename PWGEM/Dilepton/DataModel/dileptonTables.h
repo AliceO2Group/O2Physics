@@ -295,7 +295,8 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
 using EMEoI = EMEoIs::iterator;
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_000, "AOD", "EMEVENTNORMINFO", 0, //! event information for normalization
-                            o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
+                            o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C,
+                            emevent::Sel8<evsel::Selection>);
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_001, "AOD", "EMEVENTNORMINFO", 1, //! event information for normalization
                             o2::soa::Index<>, evsel::Selection, evsel::Rct, emevent::PosZint16, emevent::CentFT0Cuint16,
