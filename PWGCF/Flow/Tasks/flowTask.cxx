@@ -459,10 +459,24 @@ struct FlowTask {
     fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN00", -0.8, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN02", -0.8, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN04", -0.8, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN06", -0.8, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN08", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN12", -0.8, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN14", -0.8, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN00", -0.8, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN02", -0.8, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN04", -0.8, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN06", -0.8, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN08", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN12", -0.8, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN14", -0.8, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -514,8 +528,13 @@ struct FlowTask {
           LOGF(fatal, "The names you provided are more than configurations. userDefineGFWName.size(): %d > userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
           break;
         }
-        LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
-        corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
+        if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
+          LOGF(info, "%d: enable pt-Diff for %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
+          corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kTRUE));
+        } else {
+          LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
+          corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
+        }
       }
     }
 
