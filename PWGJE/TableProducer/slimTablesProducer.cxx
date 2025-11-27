@@ -13,8 +13,8 @@
 /// \brief Task to produce a reduced version of Tables for tracks, collisions, mcparticles and mccollisions.
 /// \author Millot Louise <louise.millot@cern.ch>
 
-
 #include "PWGJE/DataModel/SlimTables.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
@@ -53,7 +53,6 @@ struct SlimTablesProducer {
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processMcCollision, "Produce slim mc collision table", true);
-
 
   void processTracks(aod::SlimTracks const& tracks)
   {
