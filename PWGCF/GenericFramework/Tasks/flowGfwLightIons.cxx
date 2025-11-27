@@ -829,16 +829,21 @@ struct FlowGfwLightIons {
     }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
+        uint8_t vnptmask = o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind];
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
-        if (dnx == 0)
+        if (dnx == 0) {
+          (dt == kGen) ? fFCptgen->skipVnPtProfiles(vnptmask) : fFCpt->skipVnPtProfiles(vnptmask);
           continue;
+        }
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
           (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
-          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
+          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, vnptmask) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, vnptmask);
           if (cfgRunByRun && cfgFillFlowRunByRun && dt != kGen && l_ind == 0) {
             tpfsList[run][pfCorr22]->Fill(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
           }
+        } else {
+          (dt == kGen) ? fFCptgen->skipVnPtProfiles(vnptmask) : fFCpt->skipVnPtProfiles(vnptmask);
         }
         continue;
       }
