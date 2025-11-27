@@ -468,6 +468,7 @@ struct HfTaskLc {
           auto fillTHnRecSig = [&](bool isPKPi) {
             const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
+            std::vector<double> valuesToFill;
             if constexpr (FillMl) {
               const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
               if (mlProb.size() == NumberOfMlClasses) {
@@ -476,22 +477,21 @@ struct HfTaskLc {
                 outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                valuesToFill.push_back(occ);
-              }
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
+              valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->GetNdimensions());
+              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)});
+            } else {
+              valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVars"))->GetNdimensions());
+              valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)});
+            }
+            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+              valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
+            }
+            if constexpr (FillMl) {
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
             } else {
-              std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                valuesToFill.push_back(occ);
-              }
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
               registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
             }
           };
@@ -661,6 +661,7 @@ struct HfTaskLc {
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
 
+          std::vector<double> valuesToFill;
           if constexpr (FillMl) {
             const auto& mlProb = isPKPi ? candidate.mlProbLcToPKPi() : candidate.mlProbLcToPiKP();
             if (mlProb.size() == NumberOfMlClasses) {
@@ -669,22 +670,21 @@ struct HfTaskLc {
               outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
+            valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->GetNdimensions());
+            valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)});
+          } else {
+            valuesToFill.reserve(registry.get<THnSparse>(HIST("hnLcVars"))->GetNdimensions());
+            valuesToFill.insert(valuesToFill.end(), {massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)});
+          }
+          if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+            valuesToFill.push_back(occ);
+          }
+          if (storeProperLifetime) {
+            valuesToFill.push_back(properLifetime);
+          }
+          if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
           } else {
-            std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
             registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
           }
         };
