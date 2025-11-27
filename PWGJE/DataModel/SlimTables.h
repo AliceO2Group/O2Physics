@@ -71,7 +71,7 @@ DECLARE_SOA_TABLE(SlimMcCollisions, "AOD", "SlimMcCollisions",
 
 namespace slimtracks
 {
-DECLARE_SOA_INDEX_COLUMN(SlimCollision, collision);
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -88,7 +88,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
 } // namespace slimtracks
 DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
                   o2::soa::Index<>,
-                  slimtracks::SlimCollisionId,
+                  slimtracks::Collision,
                   slimtracks::Pt,
                   slimtracks::Eta,
                   slimtracks::Phi,
@@ -100,7 +100,6 @@ DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
 
 namespace slimparticles
 {
-DECLARE_SOA_INDEX_COLUMN(SlimMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -118,7 +117,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
 
 DECLARE_SOA_TABLE(SlimParticles, "AOD", "SlimParticles",
                   o2::soa::Index<>,
-                  slimparticles::SlimMcCollisionId,
                   slimparticles::Pt,
                   slimparticles::Eta,
                   slimparticles::Phi,

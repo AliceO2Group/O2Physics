@@ -57,7 +57,7 @@ struct SlimTablesProducer {
   void processTracks(aod::SlimTracks const& tracks)
   {
     for (const auto& trk : tracks) {
-      slimTracks(trk.collisionId(), trk.pt(), trk.eta(), trk.phi(), trk.dcaXY());
+      slimTracks(trk.collision(), trk.pt(), trk.eta(), trk.phi(), trk.dcaXY());
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processTracks, "Produce slim track table", true);
@@ -65,7 +65,7 @@ struct SlimTablesProducer {
   void processParticles(aod::McParticles const& parts)
   {
     for (const auto& p : parts) {
-      slimParticles(p.mcCollisionId(), p.pt(), p.eta(), p.phi());
+      slimParticles(p.pt(), p.eta(), p.phi());
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processParticles, "Produce slim particles", true);
