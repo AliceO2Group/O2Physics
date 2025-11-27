@@ -74,5 +74,5 @@ struct SlimTablesProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-        adaptAnalysisTask<SlimTablesProducer>(cfgc, TaskName{"slim-tables-producer"})};
+        adaptAnalysisTask<SlimTablesProducer>(cfgc, TaskName{"slim-tables-producer"})}; // o2-linter: disable=name/o2-task
 }
