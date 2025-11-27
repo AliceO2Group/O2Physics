@@ -107,6 +107,6 @@ o2physics_add_dpl_workflow(emcal-cluster-hadronic-correction-task
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(slim-tables-producer
-                    SOURCES SlimTablesProducer.cxx
+                    SOURCES slimTablesProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
