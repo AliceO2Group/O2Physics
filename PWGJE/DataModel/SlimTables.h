@@ -20,13 +20,13 @@
 #define PWGJE_DATAMODEL_SLIMTABLES_H_
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
 #include <Rtypes.h>
 
 #include <cstdint>
-
 
 namespace o2::aod
 {
