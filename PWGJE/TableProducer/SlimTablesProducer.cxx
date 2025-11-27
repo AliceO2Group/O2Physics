@@ -40,7 +40,7 @@ struct SlimTablesProducer {
 
   void processCollision(aod::SlimCollisions const& collisions)
   {
-    for (auto& coll : collisions) {
+    for (const auto& coll : collisions) {
       slimCollisions(coll.posZ(), coll.centFT0C(), coll.centFT0M(), coll.weight(), coll.eventSel(), coll.trackOccupancyInTimeRange());
     }
   }
@@ -48,7 +48,7 @@ struct SlimTablesProducer {
 
   void processMcCollision(aod::SlimMcCollisions const& mccollisions)
   {
-    for (auto& mccoll : mccollisions) {
+    for (const auto& mccoll : mccollisions) {
       slimMcCollisions(mccoll.posZ(), mccoll.centFT0M(), mccoll.weight(), mccoll.accepted(), mccoll.ptHard());
     }
   }
@@ -57,7 +57,7 @@ struct SlimTablesProducer {
 
   void processTracks(aod::SlimTracks const& tracks)
   {
-    for (auto& trk : tracks) {
+    for (const auto& trk : tracks) {
       slimTracks(trk.collisionId(), trk.pt() , trk.eta(), trk.phi(), trk.dcaXY());
     }
   }
@@ -65,7 +65,7 @@ struct SlimTablesProducer {
 
   void processParticles(aod::McParticles const& parts)
   {
-    for (auto& p : parts) {
+    for (const auto& p : parts) {
       slimParticles(p.mcCollisionId(), p.pt(), p.eta(), p.phi());
     }
   }
@@ -76,6 +76,6 @@ struct SlimTablesProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SlimTablesProducer>(cfgc, TaskName{"slim-tables-producer"})
+    adaptAnalysisTask<SlimTablesProducer>(cfgc)
   };
 }
