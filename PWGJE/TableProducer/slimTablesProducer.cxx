@@ -65,7 +65,7 @@ struct SlimTablesProducer {
   void processParticles(aod::McParticles const& parts)
   {
     for (const auto& p : parts) {
-      slimParticles(p.pt(), p.eta(), p.phi());
+      slimParticles(p.mcCollision(), p.pt(), p.eta(), p.phi());
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processParticles, "Produce slim particles", true);
