@@ -74,5 +74,5 @@ struct SlimTablesProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SlimTablesProducer>(cfgc)};
+        adaptAnalysisTask<SlimTablesProducer>(cfgc, TaskName{"slim-tables-producer"})};
 }
