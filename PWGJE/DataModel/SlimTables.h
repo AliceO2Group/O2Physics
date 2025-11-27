@@ -71,7 +71,7 @@ DECLARE_SOA_TABLE(SlimMcCollisions, "AOD", "SlimMcCollisions",
 
 namespace slimtracks
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collisionId);
+DECLARE_SOA_INDEX_COLUMN(Collision, collisionId); // o2-linter: disable=name/o2-column
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -100,7 +100,7 @@ DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
 
 namespace slimparticles
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollisionId);
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollisionId); // o2-linter: disable=name/o2-column
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
