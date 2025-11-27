@@ -531,8 +531,7 @@ struct FlowTask {
         if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
           LOGF(info, "%d: enable pt-Diff for %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
           corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kTRUE));
-        }
-        else {
+        } else {
           LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
           corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
         }
