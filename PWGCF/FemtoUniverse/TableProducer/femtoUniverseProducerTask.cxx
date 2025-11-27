@@ -2650,7 +2650,7 @@ struct FemtoUniverseProducerTask {
     aod::McParticles const& mcParticles,
     soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
-    soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
+    soa::Join<o2::aod::V0Datas, aod::V0TOFNSigmas, aod::McV0Labels> const& fullV0s,
     aod::BCsWithTimestamps const& bcs)
   {
     processTruthAndFullMC(mccols, mcParticles, collisions, tracks, fullV0s, bcs, perCollisionV0s);
@@ -2663,7 +2663,7 @@ struct FemtoUniverseProducerTask {
     aod::McParticles const& mcParticles,
     soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
-    soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades,
+    soa::Join<o2::aod::CascDatas, aod::CascTOFNSigmas, aod::McCascLabels> const& fullCascades,
     aod::BCsWithTimestamps const& bcs)
   {
     processTruthAndFullMC(mccols, mcParticles, collisions, tracks, fullCascades, bcs, perCollisionCascs);
