@@ -88,7 +88,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
 } // namespace slimtracks
 DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
                   o2::soa::Index<>,
-                  slimtracks::CollisionId,
+                  slimtracks::CollisionId, // o2-linter: disable=name/o2-column
                   slimtracks::Pt,
                   slimtracks::Eta,
                   slimtracks::Phi,
@@ -118,7 +118,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
 
 DECLARE_SOA_TABLE(SlimParticles, "AOD", "SlimParticles",
                   o2::soa::Index<>,
-                  slimparticles::McCollisionId,
+                  slimparticles::McCollisionId, // o2-linter: disable=name/o2-column
                   slimparticles::Pt,
                   slimparticles::Eta,
                   slimparticles::Phi,
