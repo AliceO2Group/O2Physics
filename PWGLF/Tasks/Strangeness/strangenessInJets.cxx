@@ -1871,8 +1871,8 @@ struct StrangenessInJets {
         continue;
       if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
         continue;
-      //Xi
-      // Xi+ selection (Xi+ -> antiL + pi+)
+      // Xi
+      //  Xi+ selection (Xi+ -> antiL + pi+)
       if (casc.sign() > 0) {
         // PID selections (TPC)
         if (casc.ntpcsigmanegpr() < nsigmaTPCmin || casc.ntpcsigmanegpr() > nsigmaTPCmax)
@@ -1915,14 +1915,14 @@ struct StrangenessInJets {
           continue;
       }
       //  V0 mass window
-        if (std::fabs(casc.masslambda() - o2::constants::physics::MassLambda0) > deltaMassLambda)
-          continue;
+      if (std::fabs(casc.masslambda() - o2::constants::physics::MassLambda0) > deltaMassLambda)
+        continue;
       // Reject candidates compatible with Omega
       if (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega)
         continue;
 
-      //Omega
-      // Omega+ selection (Omega+ -> antiL + K+)
+      // Omega
+      //  Omega+ selection (Omega+ -> antiL + K+)
       if (casc.sign() > 0) {
         // PID selections (TPC)
         if (casc.ntpcsigmanegpr() < nsigmaTPCmin || casc.ntpcsigmanegpr() > nsigmaTPCmax)
