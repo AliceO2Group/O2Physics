@@ -40,7 +40,7 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
-}// namespace slimcollision
+} // namespace slimcollision
 
 DECLARE_SOA_TABLE(SlimCollisions, "AOD", "SlimCollisions",
                   o2::soa::Index<>,
@@ -59,7 +59,7 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(Accepted, accepted, uint64_t);
 DECLARE_SOA_COLUMN(PtHard, ptHard, float);
-}// namespace slimmccollision
+} // namespace slimmccollision
 
 DECLARE_SOA_TABLE(SlimMcCollisions, "AOD", "SlimMcCollisions",
                   o2::soa::Index<>,
@@ -68,7 +68,6 @@ DECLARE_SOA_TABLE(SlimMcCollisions, "AOD", "SlimMcCollisions",
                   slimmccollision::Weight,
                   slimmccollision::Accepted,
                   slimmccollision::PtHard);
-
 
 namespace slimtracks
 {
@@ -86,9 +85,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
                            [](float pt, float eta) -> float { return std::sqrt((pt * std::cosh(eta) * pt * std::cosh(eta)) + (jetderiveddatautilities::mPion * jetderiveddatautilities::mPion)); });
-
-
-}// namespace slimtracks
+} // namespace slimtracks
 DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
                   o2::soa::Index<>,
                   slimtracks::CollisionId,
@@ -100,7 +97,6 @@ DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
                   slimtracks::Py<slimtracks::Pt, slimtracks::Phi>,
                   slimtracks::Pz<slimtracks::Pt, slimtracks::Eta>,
                   slimtracks::Energy<slimtracks::Pt, slimtracks::Eta>);
-
 
 namespace slimparticles
 {
@@ -118,7 +114,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
                            [](float e) -> float { return e; });
-}// namespace slimparticles
+} // namespace slimparticles
 
 DECLARE_SOA_TABLE(SlimParticles, "AOD", "SlimParticles",
                   o2::soa::Index<>,
