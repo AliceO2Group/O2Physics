@@ -820,12 +820,14 @@ struct FlowGfwLightIons {
       fFCptgenFull->fillPtProfiles(centmult, rndm);
       fFCptgenFull->fillCMProfiles(centmult, rndm);
       fFCptgenFull->fillSubeventPtProfiles(centmult, rndm);
+      fFCptgenFull->fillCMSubeventProfiles(centmult, rndm);
     } else {
       fFCpt->fillPtProfiles(centmult, rndm);
       fFCpt->fillCMProfiles(centmult, rndm);
       fFCptFull->fillPtProfiles(centmult, rndm);
       fFCptFull->fillSubeventPtProfiles(centmult, rndm);
       fFCptFull->fillCMProfiles(centmult, rndm);
+      fFCptFull->fillCMSubeventProfiles(centmult, rndm);
     }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
