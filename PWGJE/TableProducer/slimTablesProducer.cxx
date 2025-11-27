@@ -16,8 +16,8 @@
 
 #include "PWGJE/DataModel/SlimTables.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
@@ -44,7 +44,7 @@ struct SlimTablesProducer {
       slimCollisions(coll.posZ(), coll.centFT0C(), coll.centFT0M(), coll.weight(), coll.eventSel(), coll.trackOccupancyInTimeRange());
     }
   }
-  PROCESS_SWITCH(SlimTablesProducer, processCollision,"Produce slim collision table", true);
+  PROCESS_SWITCH(SlimTablesProducer, processCollision, "Produce slim collision table", true);
 
   void processMcCollision(aod::SlimMcCollisions const& mccollisions)
   {
@@ -52,16 +52,16 @@ struct SlimTablesProducer {
       slimMcCollisions(mccoll.posZ(), mccoll.centFT0M(), mccoll.weight(), mccoll.accepted(), mccoll.ptHard());
     }
   }
-  PROCESS_SWITCH(SlimTablesProducer, processMcCollision,"Produce slim mc collision table", true);
+  PROCESS_SWITCH(SlimTablesProducer, processMcCollision, "Produce slim mc collision table", true);
 
 
   void processTracks(aod::SlimTracks const& tracks)
   {
     for (const auto& trk : tracks) {
-      slimTracks(trk.collisionId(), trk.pt() , trk.eta(), trk.phi(), trk.dcaXY());
+      slimTracks(trk.collisionId(), trk.pt(), trk.eta(), trk.phi(), trk.dcaXY());
     }
   }
-  PROCESS_SWITCH(SlimTablesProducer, processTracks,"Produce slim track table", true);
+  PROCESS_SWITCH(SlimTablesProducer, processTracks, "Produce slim track table", true);
 
   void processParticles(aod::McParticles const& parts)
   {
@@ -69,13 +69,11 @@ struct SlimTablesProducer {
       slimParticles(p.mcCollisionId(), p.pt(), p.eta(), p.phi());
     }
   }
-  PROCESS_SWITCH(SlimTablesProducer, processParticles, "produce slim particles", true);
-
+  PROCESS_SWITCH(SlimTablesProducer, processParticles, "Produce slim particles", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SlimTablesProducer>(cfgc)
-  };
+    adaptAnalysisTask<SlimTablesProducer>(cfgc)};
 }
