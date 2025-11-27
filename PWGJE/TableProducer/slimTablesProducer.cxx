@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file SlimTablesProducer.cxx
+/// \file slimTablesProducer.cxx
 /// \brief Task to produce a reduced version of Tables for tracks, collisions, mcparticles and mccollisions.
 /// \author Millot Louise <louise.millot@cern.ch>
 
@@ -74,5 +74,5 @@ struct SlimTablesProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-        adaptAnalysisTask<SlimTablesProducer>(cfgc, TaskName{"slim-tables-producer"})}; // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<SlimTablesProducer>(cfgc)};
 }
