@@ -257,10 +257,10 @@ struct lambdaspincorrderived {
     if (candidate.dcaBetweenDaughter() > dcaDaughters) {
       return false;
     }
-    if (candidate.v0Status() == 0 && std::abs(candidate.dcaPositive()) < dcaProton && std::abs(candidate.dcaNegative()) < dcaPion) {
+    if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < dcaProton || std::abs(candidate.dcaNegative()) < dcaPion)) {
       return false;
     }
-    if (candidate.v0Status() == 1 && std::abs(candidate.dcaPositive()) < dcaPion && std::abs(candidate.dcaNegative()) < dcaProton) {
+    if (candidate.v0Status() == 1 && (std::abs(candidate.dcaPositive()) < dcaPion || std::abs(candidate.dcaNegative()) < dcaProton)) {
       return false;
     }
     if (candidate.lambdaPt() < ptMin) {

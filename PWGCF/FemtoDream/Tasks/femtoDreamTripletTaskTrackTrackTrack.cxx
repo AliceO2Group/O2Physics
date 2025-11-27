@@ -77,7 +77,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                               (aod::femtodreamparticle::pt < ConfMaxpT) &&
                                               (aod::femtodreamparticle::pt > ConfMinpT) &&
-                                              ifnode(ConfDCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+                                              ifnode(ConfDCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.004f + (0.013f / aod::femtodreamparticle::pt)),
                                                      ((aod::femtodreamparticle::tempFitVar >= ConfMinDCAxy) &&
                                                       (aod::femtodreamparticle::tempFitVar <= ConfMaxDCAxy)));
   ;
@@ -87,7 +87,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
                                                                             (aod::femtodreamparticle::pt < ConfMaxpT) &&
                                                                             (aod::femtodreamparticle::pt > ConfMinpT) &&
-                                                                            ifnode(ConfDCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+                                                                            ifnode(ConfDCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.004f + (0.013f / aod::femtodreamparticle::pt)),
                                                                                    ((aod::femtodreamparticle::tempFitVar >= ConfMinDCAxy) &&
                                                                                     (aod::femtodreamparticle::tempFitVar <= ConfMaxDCAxy)));
   ;

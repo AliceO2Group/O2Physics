@@ -330,27 +330,25 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
     }
     std::tie(baseToTagMatchingGeoIndex, tagToBaseMatchingGeoIndex) = MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance); // change max distnace to a function call
     int jetBaseIndex = 0;
+    int jetTagIndex = 0;
     for (const auto& jetBase : jetsBasePerCollision) {
       if (std::round(jetBase.r()) != std::round(jetR)) {
         continue;
       }
-      int jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
-      int jetTagGlobalIndex;
+      jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
       if (jetTagIndex > -1 && jetTagIndex < jetsTagPerCollision.size()) {
-        jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
+        int jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
         baseToTagMatchingGeo[jetBase.globalIndex()].push_back(jetTagGlobalIndex);
       }
       jetBaseIndex++;
     }
-    int jetTagIndex = 0;
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetTag.r()) != std::round(jetR)) {
         continue;
       }
-      int jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
-      int jetBaseGlobalIndex;
+      jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
       if (jetBaseIndex > -1 && jetBaseIndex < jetsBasePerCollision.size()) {
-        jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
+        int jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
         tagToBaseMatchingGeo[jetTag.globalIndex()].push_back(jetBaseGlobalIndex);
       }
       jetTagIndex++;

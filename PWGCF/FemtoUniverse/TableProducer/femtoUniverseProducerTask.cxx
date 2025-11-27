@@ -33,6 +33,8 @@
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -40,8 +42,6 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -160,6 +160,8 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confIsUsePileUp{"confIsUsePileUp", true, "Required for choosing whether to run the pile-up cuts"};
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
     Configurable<bool> confIsGoodITSLayersAll{"confIsGoodITSLayersAll", true, "Require IsGoodITSLayersAll selection on Events."};
+    Configurable<bool> confNoITSROFrameBorder{"confNoITSROFrameBorder", true, "Require NoITSROFrameBorder selection on Events."};
+    Configurable<bool> confNoTimeFrameBorder{"confNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection on Events."};
     Configurable<bool> confNoCollInRofStandard{"confNoCollInRofStandard", true, "Require NoCollInRofStandard selection on Events."};
     Configurable<bool> confNoHighMultCollInPrevRof{"confNoHighMultCollInPrevRof", true, "Require NoHighMultCollInPrevRof selection on Events."};
     Configurable<bool> confNoCollInTimeRangeStandard{"confNoCollInTimeRangeStandard", true, "Require NoCollInTimeRangeStandard selection on Events."};
@@ -1169,7 +1171,9 @@ struct FemtoUniverseProducerTask {
           (!ConfGeneral.confNoCollInRofStandard || col.selection_bit(aod::evsel::kNoCollInRofStandard)) &&
           (!ConfGeneral.confNoHighMultCollInPrevRof || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) &&
           (!ConfGeneral.confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC)) &&
-          (!ConfGeneral.confNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))) {
+          (!ConfGeneral.confNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) &&
+          (!ConfGeneral.confNoITSROFrameBorder || col.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+          (!ConfGeneral.confNoTimeFrameBorder || col.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
       } else {

@@ -504,7 +504,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowKfCandidateFull.reserve(candidates.size());
+    rowKfCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       fillKfCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, -1.);
     }
@@ -560,7 +560,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowKfCandidateFull.reserve(candidates.size());
+    rowKfCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       auto collision = candidate.collision_as<CollsWithFT0M>();
       float centFt0m = o2::hf_centrality::getCentralityColl(collision);
@@ -600,7 +600,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
+    rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
@@ -620,7 +620,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
+    rowKfCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
@@ -665,7 +665,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
+    rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;
@@ -688,7 +688,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
+    rowKfCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
         continue;

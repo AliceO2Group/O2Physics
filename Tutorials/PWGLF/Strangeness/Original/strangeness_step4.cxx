@@ -16,7 +16,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

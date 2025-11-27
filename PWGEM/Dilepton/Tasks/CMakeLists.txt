@@ -9,7 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(efficiency-ee
                     SOURCES emEfficiencyEE.cxx
@@ -173,5 +172,10 @@ o2physics_add_dpl_workflow(study-dcafitter
 
 o2physics_add_dpl_workflow(evaluate-acceptance
                     SOURCES evaluateAcceptance.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dilepton-polarization
+                    SOURCES dileptonPolarization.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

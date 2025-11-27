@@ -356,15 +356,6 @@ struct Pi0EtaToGammaGammaMC {
 
   void DefineEMCCut()
   {
-    const float a = emccuts.EMC_TM_Eta->at(0);
-    const float b = emccuts.EMC_TM_Eta->at(1);
-    const float c = emccuts.EMC_TM_Eta->at(2);
-
-    const float d = emccuts.EMC_TM_Phi->at(0);
-    const float e = emccuts.EMC_TM_Phi->at(1);
-    const float f = emccuts.EMC_TM_Phi->at(2);
-    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
-
     fEMCCut = EMCPhotonCut("fEMCCut", "fEMCCut");
 
     fEMCCut.SetClusterizer(emccuts.clusterDefinition);
@@ -373,8 +364,8 @@ struct Pi0EtaToGammaGammaMC {
     fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
     fEMCCut.SetTimeRange(emccuts.EMC_minTime, emccuts.EMC_maxTime);
 
-    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
+    fEMCCut.SetTrackMatchingEtaParams(emccuts.EMC_TM_Eta->at(0), emccuts.EMC_TM_Eta->at(1), emccuts.EMC_TM_Eta->at(2));
+    fEMCCut.SetTrackMatchingPhiParams(emccuts.EMC_TM_Phi->at(0), emccuts.EMC_TM_Phi->at(1), emccuts.EMC_TM_Phi->at(2));
 
     fEMCCut.SetMinEoverP(emccuts.EMC_Eoverp);
     fEMCCut.SetUseExoticCut(emccuts.EMC_UseExoticCut);
@@ -410,7 +401,7 @@ struct Pi0EtaToGammaGammaMC {
       }
 
       float weight = 1.f;
-      if constexpr (std::is_same_v<std::decay_t<TCollisions>, o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>>) {
+      if constexpr (std::is_same_v<std::decay_t<TCollisions>, o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>>) {
         weight = collision.weight();
       }
 
@@ -637,7 +628,7 @@ struct Pi0EtaToGammaGammaMC {
   }
 
   o2::framework::PresliceUnsorted<o2::aod::EMMCParticles> perMcCollision = o2::aod::emmcparticle::emmceventId;
-  o2::framework::PresliceUnsorted<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>> rec_perMcCollision = o2::aod::emmceventlabel::emmceventId;
+  o2::framework::PresliceUnsorted<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>> rec_perMcCollision = o2::aod::emmceventlabel::emmceventId;
 
   template <typename TCollisions, typename TMCCollisions, typename TMCParticles>
   void runGenInfo(TCollisions const& collisions, TMCCollisions const& mccollisions, TMCParticles const& /*mcparticles*/)
@@ -657,7 +648,7 @@ struct Pi0EtaToGammaGammaMC {
       }
 
       float weight = 1.f;
-      if constexpr (std::is_same_v<std::decay_t<TCollisions>, o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>>) {
+      if constexpr (std::is_same_v<std::decay_t<TCollisions>, o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>>>) {
         weight = collision.weight();
       }
 
@@ -690,7 +681,7 @@ struct Pi0EtaToGammaGammaMC {
   o2::framework::expressions::Filter prefilter_pcm = ifnode(pcmcuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::v0photonkf::pfbderived == static_cast<uint16_t>(0), true);
   o2::framework::expressions::Filter prefilter_primaryelectron = ifnode(dileptoncuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::emprimaryelectron::pfbderived == static_cast<uint16_t>(0), true);
 
-  void processAnalysis(o2::soa::Filtered<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>> const& collisions, o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts> const& mccollisions, o2::aod::EMMCParticles const& mcparticles, Types const&... args)
+  void processAnalysis(o2::soa::Filtered<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>> const& collisions, o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts> const& mccollisions, o2::aod::EMMCParticles const& mcparticles, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
@@ -730,7 +721,7 @@ struct Pi0EtaToGammaGammaMC {
   PROCESS_SWITCH(Pi0EtaToGammaGammaMC, processAnalysis, "process pair analysis", true);
 
   // using FilteredMyCollisionsWithJJMC = o2::soa::Filtered<o2::soa::Join<o2::soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>, aod::EMEventsWeight>>;
-  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>> const& collisions, o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts> const& mccollisions, o2::aod::EMMCParticles const& mcparticles, Types const&... args)
+  void processAnalysisJJMC(o2::soa::Filtered<o2::soa::Join<o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMMCEventLabels>, o2::aod::EMEventsWeight>> const& collisions, o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts> const& mccollisions, o2::aod::EMMCParticles const& mcparticles, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
