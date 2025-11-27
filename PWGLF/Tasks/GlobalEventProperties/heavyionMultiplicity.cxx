@@ -105,7 +105,6 @@ enum {
 enum {
   kRecTrkTypebegin = 0,
   kRecoAll = 1,
-  kRecoPrimary,
   kRecoPion,
   kRecoKaon,
   kRecoProton,
@@ -997,7 +996,7 @@ struct HeavyionMultiplicity {
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
-          histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup);
+          histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTup);
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown);
         }
         int pid = 0;
@@ -1043,7 +1042,6 @@ struct HeavyionMultiplicity {
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("etaResolution"), Rectrack.eta(), Rectrack.eta() - mcpart.eta());
           if (mcpart.isPhysicalPrimary()) {
-            pid = kRecoPrimary;
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;
