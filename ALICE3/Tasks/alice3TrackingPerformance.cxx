@@ -88,7 +88,7 @@ struct alice3TrackingPerformance {
 
     for (const auto& mcParticle : mcParticles) {
       if (!isParticleSelected(mcParticle)) {
-         continue;
+        continue;
       }
       particlePdgCodes->Fill(Form("%d", mcParticle.pdgCode()), 1);
       particlePtDistribution[0]->Fill(mcParticle.pt());
