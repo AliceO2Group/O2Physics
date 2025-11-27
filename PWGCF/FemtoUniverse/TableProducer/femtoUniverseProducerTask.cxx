@@ -2644,7 +2644,7 @@ struct FemtoUniverseProducerTask {
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3, "Provide both MC truth and reco for tracks in Pb-Pb", false);
 
-  Preslice<soa::Join<o2::aod::V0Datas, aod::McV0Labels>> perCollisionV0s = aod::track::collisionId;
+  Preslice<soa::Join<o2::aod::V0Datas, aod::V0TOFNSigmas, aod::McV0Labels>> perCollisionV0s = aod::track::collisionId;
   void processTruthAndFullMCV0(
     aod::McCollisions const& mccols,
     aod::McParticles const& mcParticles,
@@ -2657,7 +2657,7 @@ struct FemtoUniverseProducerTask {
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCV0, "Provide both MC truth and reco for tracks and V0s", false);
 
-  Preslice<soa::Join<o2::aod::CascDatas, aod::McCascLabels>> perCollisionCascs = aod::track::collisionId;
+  Preslice<soa::Join<o2::aod::CascDatas, aod::CascTOFNSigmas, aod::McCascLabels>> perCollisionCascs = aod::track::collisionId;
   void processTruthAndFullMCCasc(
     aod::McCollisions const& mccols,
     aod::McParticles const& mcParticles,
