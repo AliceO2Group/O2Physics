@@ -27,6 +27,7 @@
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -109,6 +110,7 @@ struct HfCandidateCreatorCascade {
 
   std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -141,7 +143,7 @@ struct HfCandidateCreatorCascade {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
 
     massP = MassProton;
     massK0s = MassK0Short;

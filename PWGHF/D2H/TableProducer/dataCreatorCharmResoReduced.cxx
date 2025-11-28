@@ -27,6 +27,7 @@
 #include "PWGHF/Utils/utilsMcMatching.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -283,6 +284,7 @@ struct HfDataCreatorCharmResoReduced {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext& initContext)
   {
@@ -381,7 +383,7 @@ struct HfDataCreatorCharmResoReduced {
     fitter.setWeightedFinalPCA(false);
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {

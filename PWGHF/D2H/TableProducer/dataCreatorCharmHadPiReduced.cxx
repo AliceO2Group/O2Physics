@@ -32,6 +32,7 @@
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -272,6 +273,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
   std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus, hCandidatesDs, hCandidatesLc, hCandidatesD0FromDstar;
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   std::array<int, 2> arrPDGResonantDsPhiPi = {kPhi, kPiPlus};      // Ds± → Phi π±
   std::array<int, 2> arrPDGResonantDKstarK = {kK0Star892, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
@@ -394,7 +396,7 @@ struct HfDataCreatorCharmHadPiReduced {
     setLabelHistoCands(hCandidatesD0FromDstar);
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
     if (doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiMc || doprocessDsPiMcWithMl ||
         doprocessD0PiMc || doprocessD0PiMcWithMl ||

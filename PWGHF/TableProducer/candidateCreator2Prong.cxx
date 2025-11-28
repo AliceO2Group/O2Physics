@@ -35,6 +35,7 @@
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -131,6 +132,7 @@ struct HfCandidateCreator2Prong {
   ConfigurableAxis axisMass{"axisMass", {500, 1.6, 2.1}, "axis for mass (GeV/c^2)"};
 
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -187,7 +189,7 @@ struct HfCandidateCreator2Prong {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
 
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
