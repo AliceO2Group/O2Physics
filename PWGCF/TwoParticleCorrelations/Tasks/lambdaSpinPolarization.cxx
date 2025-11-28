@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file lambdaSpinPolarization.cxx
-/// \brief Task to study the Lmabda spin polarization
+/// \brief Task to study the Lambda spin polarization
 /// \author Yash Patley <yash.patley@cern.ch>, Subhadeep Roy <subhadeep.roy@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
