@@ -293,7 +293,7 @@ struct UpcRhoAnalysis {
     rSystem.addClone("system/selected/AnAn/", "system/selected/0nXn/");
     rSystem.addClone("system/selected/AnAn/", "system/selected/XnXn/");
 
-    if (context.mOptions.get<bool>("processMCdata")) {
+    if (context.mOptions.get<bool>("processMCdata") || context.mOptions.get<bool>("processMCdataWithBCs")) {
       // MC
       // collisions
       rMC.add("MC/collisions/hPosXY", ";vertex #it{x} (cm);vertex #it{y} (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});

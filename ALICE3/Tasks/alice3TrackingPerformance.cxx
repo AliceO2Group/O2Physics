@@ -40,7 +40,7 @@ std::map<int, std::shared_ptr<TH2>> invPtResolutionVsPt;
 std::map<int, std::shared_ptr<TH2>> dcaXyResolutionVsPt;
 std::map<int, std::shared_ptr<TH2>> dcaZResolutionVsPt;
 
-struct alice3TrackingPerformance {
+struct Alice3TrackingPerformance {
   Configurable<std::vector<int>> pdgCodes{"pdgCodes", {0, 211}, "List of PDG codes to consider for efficiency calculation. (0 means all)"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<std::pair<float, float>> etaRange{"etaRange", {-5.f, 5.f}, "Eta range for efficiency calculation"};
@@ -54,7 +54,7 @@ struct alice3TrackingPerformance {
     const AxisSpec axisDcaXy{100, -1, 1, "DCA_{xy} (cm)"};
     const AxisSpec axisDcaZ{100, -1, 1, "DCA_{z} (cm)"};
     particlePdgCodes = histos.add<TH1>("particlePdgCodes", "", kTH1D, {AxisSpec{100, -0.5, 99.5, "PDG Code"}});
-    for (int pdg : pdgCodes.value) {
+    for (const int& pdg : pdgCodes.value) {
       std::string tag = Form("_%d", pdg);
       if (pdg < 0) {
         tag = Form("_m%d", -pdg);
@@ -88,9 +88,9 @@ struct alice3TrackingPerformance {
 
     for (const auto& mcParticle : mcParticles) {
       particlePdgCodes->Fill(Form("%d", mcParticle.pdgCode()), 1);
-      // if (!isParticleSelected(mcParticle)) {
-      //   continue;
-      // }
+      if (!isParticleSelected(mcParticle)) {
+        continue;
+      }
       particlePtDistribution[0]->Fill(mcParticle.pt());
       particleEtaDistribution[0]->Fill(mcParticle.eta());
       if (particlePtDistribution.find(mcParticle.pdgCode()) == particlePtDistribution.end()) {
@@ -126,5 +126,5 @@ struct alice3TrackingPerformance {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& ctx)
 {
-  return WorkflowSpec{adaptAnalysisTask<alice3TrackingPerformance>(ctx)};
+  return WorkflowSpec{adaptAnalysisTask<Alice3TrackingPerformance>(ctx)};
 }
