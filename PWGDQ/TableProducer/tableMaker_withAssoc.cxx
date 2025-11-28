@@ -804,6 +804,7 @@ struct TableMaker {
     // NOTE: So far, collisions are filtered based on the user specified analysis cuts AND the filterPP or Zorro event filter.
     //      The collision-track associations which point to an event that is not selected for writing are discarded!
 
+    VarManager::FillTimeFrame(collisions);
     fCollIndexMap.clear();
     int multTPC = -1.0;
     float multFV0A = -1.0;
