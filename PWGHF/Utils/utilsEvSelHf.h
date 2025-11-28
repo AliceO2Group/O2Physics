@@ -18,21 +18,20 @@
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
-
 #include "PWGHF/Core/CentralityEstimation.h"
 //
 #include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/DeviceSpec.h>
@@ -272,7 +271,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     // we initialise IR fetcher
     if (!irSource.value.empty()) {
-      irSourceForCptFetcher = irSource.value; 
+      irSourceForCptFetcher = irSource.value;
     }
   }
 
