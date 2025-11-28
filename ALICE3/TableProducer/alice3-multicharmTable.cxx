@@ -398,10 +398,7 @@ struct alice3multicharmTable {
   template <typename TTrackType>
   bool checkSameLUTConf(TTrackType const& track1, const int track2)
   {
-    if (track1.lutConfigId() == track2) {
-      return true;
-    }
-    return false;
+    return track1.lutConfigId() == track2;
   }
 
   void init(InitContext&)

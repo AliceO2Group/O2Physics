@@ -889,7 +889,7 @@ struct EbyeMaker {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -898,7 +898,7 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
-      auto centrality = collision.centFT0M();
+      auto centrality = collision.centFT0C();
       if (centrality > kCentCutMax)
         continue;
 
@@ -1070,7 +1070,7 @@ struct EbyeMaker {
   }
   PROCESS_SWITCH(EbyeMaker, processMiniRun2, "process mini tables(Run 2)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1079,7 +1079,7 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
-      auto centrality = collision.centFT0M();
+      auto centrality = collision.centFT0C();
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
