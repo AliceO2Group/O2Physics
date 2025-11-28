@@ -33,6 +33,7 @@
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -165,6 +166,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaK, hFitterStatusToXiPi, hFitterStatusToOmegaPi, hFitterStatusToOmegaK, hCandidateCounterToXiPi, hCandidateCounterToOmegaPi, hCandidateCounterToOmegaK, hCascadesCounterToXiPi, hCascadesCounterToOmegaPi, hCascadesCounterToOmegaK;
 
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   // Helper struct to pass  information
   struct {
     float chi2GeoV0;
@@ -365,7 +368,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     }
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
