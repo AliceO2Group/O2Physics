@@ -66,7 +66,6 @@ using namespace o2::framework::expressions;
 
 using multiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmPID>;
 using multiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MCharmExtra>;
-#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
 struct alice3multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
