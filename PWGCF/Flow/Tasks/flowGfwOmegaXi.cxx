@@ -1435,7 +1435,6 @@ struct FlowGfwOmegaXi {
         }
       }
     }
-  
     delete hLocalDensity;
     // Filling cumulant with ROOT TProfile and loop for all ptBins
     fillProfile(corrconfigs.at(20), HIST("c22"), cent);
