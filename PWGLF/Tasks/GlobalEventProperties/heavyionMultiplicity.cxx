@@ -311,7 +311,9 @@ struct HeavyionMultiplicity {
       auto hstat = histos.get<TH1>(HIST("MCEventHist"));
       auto* x = hstat->GetXaxis();
       x->SetBinLabel(1, "All MC events");
-      x->SetBinLabel(2, "MC events with atleast one reco event");
+      x->SetBinLabel(2, "MC events with reco event after event selection");
+      x->SetBinLabel(3, "MC events with no reco events");
+      histos.add("hImpactParameterGenwithNoreco", "Impact parameter of generated MC events, with no recoevent", kTH1F, {impactParAxis});
       histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {axisCent, impactParAxis});
@@ -914,6 +916,11 @@ struct HeavyionMultiplicity {
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
     histos.fill(HIST("hImpactParameterGen"), mcCollision.impactParameter());
+
+    if (RecCols.size() == 0) {
+      histos.fill(HIST("MCEventHist"), 3);
+      histos.fill(HIST("hImpactParameterGenwithNoreco"), mcCollision.impactParameter());
+    }
 
     bool atLeastOne = false;
     auto centrality = -999.;
