@@ -1679,7 +1679,7 @@ struct LambdaSpinPolarization {
 
   void processDummy(LambdaCollisions::iterator const&) {}
 
-  PROCESS_SWITCH(lambdaSpinPolarization, processDummy, "Dummy process", true);
+  PROCESS_SWITCH(LambdaSpinPolarization, processDummy, "Dummy process", true);
 
   void processDataReco(LambdaCollisions::iterator const& collision, LambdaTracks const&)
   {
@@ -1697,7 +1697,7 @@ struct LambdaSpinPolarization {
     analyzePairs<kAntiLambdaAntiLambda, true>(antiLambdaTracks, antiLambdaTracks);
   }
 
-  PROCESS_SWITCH(lambdaSpinPolarization, processDataReco, "Process for Data and MCReco", true);
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", true);
 };
 
 struct LambdaMixWriter {
