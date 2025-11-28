@@ -1539,7 +1539,7 @@ struct LambdaTracksExtProducer {
   }
 };
 
-struct lambdaSpinPolarization {
+struct LambdaSpinPolarization {
 
   // Global Configurables
   Configurable<int> cNPtBins{"cNPtBins", 30, "N pT Bins"};
@@ -1747,6 +1747,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
   return WorkflowSpec{
     adaptAnalysisTask<LambdaTableProducer>(cfg),
     adaptAnalysisTask<LambdaTracksExtProducer>(cfg),
-    adaptAnalysisTask<lambdaSpinPolarization>(cfg),
+    adaptAnalysisTask<LambdaSpinPolarization>(cfg),
     adaptAnalysisTask<LambdaMixWriter>(cfg)};
 }
