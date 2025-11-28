@@ -79,7 +79,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 /// Creation of D-V0 pairs
 struct HfDataCreatorCharmResoToDplusReduced {
 
