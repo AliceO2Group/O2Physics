@@ -50,6 +50,7 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfV0TempFitVarMomentumBins{"ConfV0TempFitVarMomentumBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfBinmult{"ConfBinmult", {1, 0, 1}, "multiplicity Binning"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
+  Configurable<bool> isMC{"isMC", false, "flag to enable or disable MC"};
 
   Configurable<int> ConfV0TempFitVarMomentum{"ConfV0TempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
 
@@ -69,16 +70,23 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsV0 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
+
+  using FilteredMCCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
+  using FilteredMCCollision = FilteredMCCollisions::iterator;
+
+  using FDMCParts = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDExtMCParticles, aod::FDMCLabels, aod::FDExtMCLabels>; // aod::FdMCParticles,
+  using FDMCPart = FDMCParts::iterator;
+
+  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
-  Partition<FemtoFullParticles> partsK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
+  Partition<FDMCParts> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
 
   /// Histogramming
   FemtoDreamEventHisto eventHisto;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> negChildHistos;
-  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0> motherHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0> V0Histos;
 
   /// Histogram output
   HistogramRegistry EventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -86,19 +94,19 @@ struct femtoDreamDebugV0 {
 
   void init(InitContext&)
   {
-    eventHisto.init(&EventRegistry, false);
-    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildNeg_PDGCode, true);
-    motherHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_PDGCode.value, true);
+    eventHisto.init(&EventRegistry, isMC);
+    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, isMC, ConfV01_ChildPos_PDGCode.value, true);
+    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, isMC, ConfV01_ChildNeg_PDGCode, true);
+    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, isMC, ConfV01_PDGCode.value, true);
     V0Registry.add("hArmenterosPodolanski/hArmenterosPodolanskiPlot", "; #alpha; p_{T} (MeV/#it{c})", kTH2F, {{100, -1, 1}, {500, -0.3, 2}});
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
-  template <typename CollisionType, typename PartType, typename PartitionType>
-  void processDebug(CollisionType const& col, PartType const& parts, PartitionType const& Partition)
+  template <bool isMC, typename Collision, typename TableTracks, typename PartitionType>
+  void process(Collision const& col, TableTracks const& parts, PartitionType& Partition)
   {
-    auto groupPartsOne = Partition.sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    eventHisto.fillQA<false>(col);
+    auto groupPartsOne = Partition->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+
     for (auto& part : groupPartsOne) {
       if (!part.has_children()) {
         continue;
@@ -134,26 +142,39 @@ struct femtoDreamDebugV0 {
 
         V0Registry.fill(HIST("hArmenterosPodolanski/hArmenterosPodolanskiPlot"), alpha, qtarm);
 
-        motherHistos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        if constexpr (isMC) {
+
+          V0Histos.fillQA<true, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+          posChildHistos.fillQA<true, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+          negChildHistos.fillQA<true, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+
+        } else {
+
+          V0Histos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+          posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+          negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        }
       }
     }
   }
 
-  void processV0(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
+  void processDebug(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
   {
-    processDebug(col, parts, partsV0);
+
+    eventHisto.fillQA<false>(col);
+    process<false>(col, parts, partsOne);
   }
 
-  PROCESS_SWITCH(femtoDreamDebugV0, processV0, "Enable processing Lambda", true);
+  PROCESS_SWITCH(femtoDreamDebugV0, processDebug, "Enable processing Debug v0", true);
 
-  void processK0Short(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
+  void processDebugMC(FilteredMCCollision const& col, o2::aod::FDMCCollisions const&, FDMCParts const& parts, o2::aod::FDMCParticles const&)
   {
-    processDebug(col, parts, partsK0Short);
+
+    eventHisto.fillQA<true>(col);
+    process<true>(col, parts, partsOneMC);
   }
 
-  PROCESS_SWITCH(femtoDreamDebugV0, processK0Short, "Enable processing K0Short", false);
+  PROCESS_SWITCH(femtoDreamDebugV0, processDebugMC, "Enable processing Debug v0 - MC", false);
 };
 
 WorkflowSpec
