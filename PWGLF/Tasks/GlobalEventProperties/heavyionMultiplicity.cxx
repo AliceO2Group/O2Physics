@@ -313,7 +313,7 @@ struct HeavyionMultiplicity {
       x->SetBinLabel(1, "All MC events");
       x->SetBinLabel(2, "MC events with reco event after event selection");
       x->SetBinLabel(3, "MC events with no reco events");
-      histos.add("hImpactParameterGenwithNoreco", "hImpactParameterGenwithNoreco", "Impact parameter of generated MC events, with no recoevent", kTH1F, {impactParAxis});
+      histos.add("hImpactParameterGenwithNoreco", "Impact parameter of generated MC events, with no recoevent", kTH1F, {impactParAxis});
       histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {axisCent, impactParAxis});
