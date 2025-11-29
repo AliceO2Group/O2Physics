@@ -448,18 +448,18 @@ struct HolderCcdb {
   std::vector<std::int32_t> runNumbers;
   std::vector<std::int32_t> runNumbersBad;
 
-  TH3* hCentralityPtEtaShiftTpcNSigmaPiP;
-  TH3* hCentralityPtEtaShiftTpcNSigmaPiM;
-  TH3* hCentralityPtEtaShiftTpcNSigmaKaP;
-  TH3* hCentralityPtEtaShiftTpcNSigmaKaM;
-  TH3* hCentralityPtEtaShiftTpcNSigmaPrP;
-  TH3* hCentralityPtEtaShiftTpcNSigmaPrM;
-  TH3* hCentralityPtEtaShiftTofNSigmaPiP;
-  TH3* hCentralityPtEtaShiftTofNSigmaPiM;
-  TH3* hCentralityPtEtaShiftTofNSigmaKaP;
-  TH3* hCentralityPtEtaShiftTofNSigmaKaM;
-  TH3* hCentralityPtEtaShiftTofNSigmaPrP;
-  TH3* hCentralityPtEtaShiftTofNSigmaPrM;
+  TH3* hCentralityPtEtaShiftTpcNSigmaPiP = nullptr;
+  TH3* hCentralityPtEtaShiftTpcNSigmaPiM = nullptr;
+  TH3* hCentralityPtEtaShiftTpcNSigmaKaP = nullptr;
+  TH3* hCentralityPtEtaShiftTpcNSigmaKaM = nullptr;
+  TH3* hCentralityPtEtaShiftTpcNSigmaPrP = nullptr;
+  TH3* hCentralityPtEtaShiftTpcNSigmaPrM = nullptr;
+  TH3* hCentralityPtEtaShiftTofNSigmaPiP = nullptr;
+  TH3* hCentralityPtEtaShiftTofNSigmaPiM = nullptr;
+  TH3* hCentralityPtEtaShiftTofNSigmaKaP = nullptr;
+  TH3* hCentralityPtEtaShiftTofNSigmaKaM = nullptr;
+  TH3* hCentralityPtEtaShiftTofNSigmaPrP = nullptr;
+  TH3* hCentralityPtEtaShiftTofNSigmaPrM = nullptr;
 
   std::vector<TProfile3D*> pCentralityPtEtaEfficiencyTpcPiP;
   std::vector<TProfile3D*> pCentralityPtEtaEfficiencyTpcPiM;
@@ -630,6 +630,7 @@ struct PartNumFluc {
                                            kFT0C,
                                            kNIndices };
 
+  Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "https://alice-ccdb.cern.ch", "Url of CCDB"};
   Configurable<std::string> cfgCcdbPath{"cfgCcdbPath", "Users/f/fasi/test", "Path in CCDB"};
 
   Configurable<bool> cfgFlagQaRun{"cfgFlagQaRun", false, "Run QA flag"};
@@ -740,7 +741,7 @@ struct PartNumFluc {
       LOG(info) << "Enabling MC data process.";
     }
 
-    ccdb->setURL("https://alice-ccdb.cern.ch");
+    ccdb->setURL(cfgCcdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(true);
@@ -1191,6 +1192,30 @@ struct PartNumFluc {
     }
   }
 
+  double getShiftNSigmaPid(const bool flagRecalibrationNSigmaPid, const TH3* const hCentralityPtEtaShiftNSigmaPidP, const TH3* const hCentralityPtEtaShiftNSigmaPidM)
+  {
+    const TH3* const hCentralityPtEtaShiftNSigmaPid = [&]() -> const TH3* {
+      switch (static_cast<std::int32_t>(flagRecalibrationNSigmaPid) * holderTrack.sign) {
+        case 1:
+          return hCentralityPtEtaShiftNSigmaPidP;
+        case -1:
+          return hCentralityPtEtaShiftNSigmaPidM;
+        default:
+          return nullptr;
+      }
+    }();
+    return hCentralityPtEtaShiftNSigmaPid ? hCentralityPtEtaShiftNSigmaPid->Interpolate(std::max(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(1), std::min(holderEvent.centrality, hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsX()))), std::max(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(1), std::min(holderTrack.pt, hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsY()))), std::max(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(1), std::min(holderTrack.eta, hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsZ())))) : 0.;
+  }
+
+  template <bool doProcessingMc>
+  double getEfficiency(const std::vector<TProfile3D*>& pCentralityPtEtaEfficiency)
+  {
+    if constexpr (doProcessingMc) {
+      return pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetBinContent(pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderMcParticle.pt), pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderMcParticle.eta));
+    }
+    return pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetBinContent(pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), pCentralityPtEtaEfficiency[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+  }
+
   template <bool doRequiringTof, bool doRejectingOthers>
   std::int32_t isPi()
   {
@@ -1272,18 +1297,18 @@ struct PartNumFluc {
   template <bool doProcessingMc>
   bool isGoodMomentum()
   {
-    if constexpr (!doProcessingMc) {
-      if (!(cfgCutMinPt.value < holderTrack.pt && holderTrack.pt < cfgCutMaxPt.value)) {
-        return false;
-      }
-      if (!(std::fabs(holderTrack.eta) < cfgCutMaxAbsEta.value)) {
-        return false;
-      }
-    } else {
+    if constexpr (doProcessingMc) {
       if (!(cfgCutMinPt.value < holderMcParticle.pt && holderMcParticle.pt < cfgCutMaxPt.value)) {
         return false;
       }
       if (!(std::fabs(holderMcParticle.eta) < cfgCutMaxAbsEta.value)) {
+        return false;
+      }
+    } else {
+      if (!(cfgCutMinPt.value < holderTrack.pt && holderTrack.pt < cfgCutMaxPt.value)) {
+        return false;
+      }
+      if (!(std::fabs(holderTrack.eta) < cfgCutMaxAbsEta.value)) {
         return false;
       }
     }
@@ -1365,49 +1390,13 @@ struct PartNumFluc {
     holderTrack.rapidityKa = track.rapidity(constants::physics::MassKPlus);
     holderTrack.rapidityPr = track.rapidity(constants::physics::MassProton);
     holderTrack.hasTpcPid = (track.hasTPC() && track.tpcSignal() > 0.);
+    holderTrack.tpcNSigmaPi = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi() - getShiftNSigmaPid(cfgFlagRecalibrationNSigmaPi.value, holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP, holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM));
+    holderTrack.tpcNSigmaKa = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa() - getShiftNSigmaPid(cfgFlagRecalibrationNSigmaKa.value, holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP, holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM));
+    holderTrack.tpcNSigmaPr = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr() - getShiftNSigmaPid(cfgFlagRecalibrationNSigmaPr.value, holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP, holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM));
     holderTrack.hasTofPid = (track.hasTOF() && track.beta() > 0.);
-    switch (static_cast<std::int32_t>(cfgFlagRecalibrationNSigmaPi.value) * holderTrack.sign) {
-      case 1:
-        holderTrack.tpcNSigmaPi = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi() - holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        holderTrack.tofNSigmaPi = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi() - holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        break;
-      case -1:
-        holderTrack.tpcNSigmaPi = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi() - holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        holderTrack.tofNSigmaPi = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi() - holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        break;
-      default:
-        holderTrack.tpcNSigmaPi = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPi());
-        holderTrack.tofNSigmaPi = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi());
-        break;
-    }
-    switch (static_cast<std::int32_t>(cfgFlagRecalibrationNSigmaKa.value) * holderTrack.sign) {
-      case 1:
-        holderTrack.tpcNSigmaKa = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa() - holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        holderTrack.tofNSigmaKa = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa() - holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        break;
-      case -1:
-        holderTrack.tpcNSigmaKa = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa() - holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        holderTrack.tofNSigmaKa = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa() - holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        break;
-      default:
-        holderTrack.tpcNSigmaKa = HolderTrack::truncateNSigmaPid(track.tpcNSigmaKa());
-        holderTrack.tofNSigmaKa = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa());
-        break;
-    }
-    switch (static_cast<std::int32_t>(cfgFlagRecalibrationNSigmaPr.value) * holderTrack.sign) {
-      case 1:
-        holderTrack.tpcNSigmaPr = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr() - holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        holderTrack.tofNSigmaPr = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr() - holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        break;
-      case -1:
-        holderTrack.tpcNSigmaPr = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr() - holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        holderTrack.tofNSigmaPr = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr() - holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM->Interpolate(holderEvent.centrality, holderTrack.pt, holderTrack.eta));
-        break;
-      default:
-        holderTrack.tpcNSigmaPr = HolderTrack::truncateNSigmaPid(track.tpcNSigmaPr());
-        holderTrack.tofNSigmaPr = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr());
-        break;
-    }
+    holderTrack.tofNSigmaPi = HolderTrack::truncateNSigmaPid(track.tofNSigmaPi() - getShiftNSigmaPid(cfgFlagRecalibrationNSigmaPi.value, holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP, holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM));
+    holderTrack.tofNSigmaKa = HolderTrack::truncateNSigmaPid(track.tofNSigmaKa() - getShiftNSigmaPid(cfgFlagRecalibrationNSigmaKa.value, holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP, holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM));
+    holderTrack.tofNSigmaPr = HolderTrack::truncateNSigmaPid(track.tofNSigmaPr() - getShiftNSigmaPid(cfgFlagRecalibrationNSigmaPr.value, holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP, holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM));
     holderTrack.tpcTofNSigmaPi = HolderTrack::truncateNSigmaPid(std::sqrt(std::pow(holderTrack.tpcNSigmaPi, 2.) + std::pow(holderTrack.tofNSigmaPi, 2.)));
     holderTrack.tpcTofNSigmaKa = HolderTrack::truncateNSigmaPid(std::sqrt(std::pow(holderTrack.tpcNSigmaKa, 2.) + std::pow(holderTrack.tofNSigmaKa, 2.)));
     holderTrack.tpcTofNSigmaPr = HolderTrack::truncateNSigmaPid(std::sqrt(std::pow(holderTrack.tpcNSigmaPr, 2.) + std::pow(holderTrack.tofNSigmaPr, 2.)));
@@ -1742,16 +1731,17 @@ struct PartNumFluc {
     return true;
   }
 
+  template <bool doProcessingMc>
   void calculateFluctuation()
   {
-    if (isGoodMomentum<false>() && holderTrack.hasTpcPid) {
+    if (isGoodMomentum<doProcessingMc>() && holderTrack.hasTpcPid) {
       if (cfgFlagCalculationFluctuationCh.value) {
         if (holderTrack.pt < cfgThresholdPtTofPi.value) {
           switch (isPi<false, true>()) {
             case 1: {
               holderEvent.nChP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcPiP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcPiP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcPiP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcPiP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcPiP);
 
               fluctuationCalculatorTrackChP->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1760,7 +1750,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nChM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcPiM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcPiM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcPiM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcPiM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcPiM);
 
               fluctuationCalculatorTrackChM->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1772,7 +1762,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nChP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiP);
 
               fluctuationCalculatorTrackChP->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1781,7 +1771,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nChM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPiM);
 
               fluctuationCalculatorTrackChM->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1794,7 +1784,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nChP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcKaP);
 
               fluctuationCalculatorTrackChP->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1803,7 +1793,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nChM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcKaM);
 
               fluctuationCalculatorTrackChM->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1815,7 +1805,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nChP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP);
 
               fluctuationCalculatorTrackChP->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1824,7 +1814,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nChM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM);
 
               fluctuationCalculatorTrackChM->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1837,7 +1827,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nChP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcPrP);
 
               fluctuationCalculatorTrackChP->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1846,7 +1836,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nChM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcPrM);
 
               fluctuationCalculatorTrackChM->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1858,7 +1848,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nChP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP);
 
               fluctuationCalculatorTrackChP->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1867,7 +1857,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nChM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM);
 
               fluctuationCalculatorTrackChM->fill(1., efficiency);
               fluctuationCalculatorTrackChT->fill(1., efficiency);
@@ -1883,7 +1873,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nKaP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcKaP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcKaP);
 
               fluctuationCalculatorTrackKaP->fill(1., efficiency);
               fluctuationCalculatorTrackKaT->fill(1., efficiency);
@@ -1892,7 +1882,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nKaM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcKaM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcKaM);
 
               fluctuationCalculatorTrackKaM->fill(1., efficiency);
               fluctuationCalculatorTrackKaT->fill(1., efficiency);
@@ -1904,7 +1894,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nKaP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaP);
 
               fluctuationCalculatorTrackKaP->fill(1., efficiency);
               fluctuationCalculatorTrackKaT->fill(1., efficiency);
@@ -1913,7 +1903,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nKaM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofKaM);
 
               fluctuationCalculatorTrackKaM->fill(1., efficiency);
               fluctuationCalculatorTrackKaT->fill(1., efficiency);
@@ -1929,7 +1919,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nPrP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcPrP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcPrP);
 
               fluctuationCalculatorTrackPrP->fill(1., efficiency);
               fluctuationCalculatorTrackPrT->fill(1., efficiency);
@@ -1938,7 +1928,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nPrM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcPrM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcPrM);
 
               fluctuationCalculatorTrackPrM->fill(1., efficiency);
               fluctuationCalculatorTrackPrT->fill(1., efficiency);
@@ -1950,7 +1940,7 @@ struct PartNumFluc {
             case 1: {
               holderEvent.nPrP++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrP);
 
               fluctuationCalculatorTrackPrP->fill(1., efficiency);
               fluctuationCalculatorTrackPrT->fill(1., efficiency);
@@ -1959,7 +1949,7 @@ struct PartNumFluc {
             case -1: {
               holderEvent.nPrM++;
 
-              const double efficiency = holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetBinContent(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetXaxis()->FindBin(holderEvent.centrality), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetYaxis()->FindBin(holderTrack.pt), holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM[holderEvent.vzBinIndex]->GetZaxis()->FindBin(holderTrack.eta));
+              const double efficiency = getEfficiency<doProcessingMc>(holderCcdb.pCentralityPtEtaEfficiencyTpcTofPrM);
 
               fluctuationCalculatorTrackPrM->fill(1., efficiency);
               fluctuationCalculatorTrackPrT->fill(1., efficiency);
@@ -2009,7 +1999,7 @@ struct PartNumFluc {
       }
 
       if (cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationKa.value || cfgFlagCalculationFluctuationPr.value) {
-        calculateFluctuation();
+        calculateFluctuation<false>();
       }
     }
 
@@ -2176,9 +2166,7 @@ struct PartNumFluc {
             continue;
           }
 
-          initMcParticle(mcParticle);
-
-          if (!initTrack<true, false>(track)) {
+          if (!initTrack<true, false>(track) || !initMcParticle(mcParticle)) {
             continue;
           }
 
@@ -2252,8 +2240,8 @@ struct PartNumFluc {
             }
           }
 
-          if ((cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationKa.value || cfgFlagCalculationFluctuationPr.value) && isGoodMcParticle(mcParticle)) {
-            calculateFluctuation();
+          if ((cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationKa.value || cfgFlagCalculationFluctuationPr.value)) {
+            calculateFluctuation<true>();
           }
         }
 
