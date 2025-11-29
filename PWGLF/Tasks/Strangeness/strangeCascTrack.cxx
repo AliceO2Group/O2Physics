@@ -756,16 +756,18 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 0.5);
           if (fillTruthXi)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 0.5);
-        } else
+        } else {
           passedAllSelsXi = false;
+        }
       }
       if (doApplyPtCutsOmega) {
         if (isValidPt(cascade, "Omega", Type)) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 0.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 0.5);
-        } else
+        } else {
           passedAllSelsOmega = false;
+        }
       }
       // apply general cascade cuts
       if (doApplyGenCutsXi) {
@@ -781,8 +783,9 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 1.5);
           if (fillTruthXi)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 1.5);
-        } else
+        } else {
           passedAllSelsXi = false;
+        }
       }
       if (doApplyGenCutsOmega) {
         auto genSels = isValidCasc(collision, cascade, stdCasc, "Omega");
@@ -797,8 +800,9 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 1.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 1.5);
-        } else
+        } else {
           passedAllSelsOmega = false;
+        }
       }
       // apply tpc pid
       if (doApplyTPCPIDXi) {
@@ -806,16 +810,18 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 2.5);
           if (fillTruthXi)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 2.5);
-        } else
+        } else {
           passedAllSelsXi = false;
+        }
       }
       if (doApplyTPCPIDOmega) {
         if (passesTPC(stdCasc, "Omega")) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 2.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 2.5);
-        } else
+        } else {
           passedAllSelsOmega = false;
+        }
       }
       // apply tof pid
       if (doApplyTOFPIDXi) {
@@ -823,16 +829,18 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 3.5);
           if (fillTruthXi)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 3.5);
-        } else
+        } else {
           passedAllSelsXi = false;
+        }
       }
       if (doApplyTOFPIDOmega) {
         if (passesTOF(stdCasc, "Omega")) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 3.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 3.5);
-        } else
+        } else {
           passedAllSelsOmega = false;
+        }
       }
       // apply competing mass rej
       if (doCompetingMassRej) {
@@ -840,8 +848,9 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 4.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 4.5);
-        } else
+        } else {
           passedAllSelsOmega = false;
+        }
       }
 
       // fil rec histograms
