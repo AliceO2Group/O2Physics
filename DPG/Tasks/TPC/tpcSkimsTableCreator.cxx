@@ -120,6 +120,7 @@ struct TreeWriterTpcV0 {
     double maxPt4dwnsmplTsalis{UndefValueDouble};
     double tpcNSigma{UndefValueDouble};
     double tofNSigma{UndefValueDouble};
+    double itsNSigma{UndefValueDouble};
     double tpcExpSignal{UndefValueDouble};
     o2::track::PID::ID id{0};
     double dwnSmplFactor{UndefValueDouble};
@@ -165,13 +166,13 @@ struct TreeWriterTpcV0 {
   {
     switch (daughterId) {
       case DaughterElectron:
-        return V0Daughter{downsamplingTsalisElectrons, MassElectron, maxPt4dwnsmplTsalisElectrons, track.tpcNSigmaEl(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalEl(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidElectron, dwnSmplFactorEl, NSigmaTofElectorn + 1.f, false};
+        return V0Daughter{downsamplingTsalisElectrons, MassElectron, maxPt4dwnsmplTsalisElectrons, track.tpcNSigmaEl(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.itsNSigmaEl(), track.tpcExpSignalEl(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidElectron, dwnSmplFactorEl, NSigmaTofElectorn + 1.f, false};
       case DaughterPion:
-        return V0Daughter{downsamplingTsalisPions, MassPiPlus, maxPt4dwnsmplTsalisPions, track.tpcNSigmaPi(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidPion, dwnSmplFactorPi, nSigmaTofDauTrackPi, rejectNoTofDauTrackPi};
+        return V0Daughter{downsamplingTsalisPions, MassPiPlus, maxPt4dwnsmplTsalisPions, track.tpcNSigmaPi(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.itsNSigmaPi(), track.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidPion, dwnSmplFactorPi, nSigmaTofDauTrackPi, rejectNoTofDauTrackPi};
       case DaughterProton:
-        return V0Daughter{downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons, track.tpcNSigmaPr(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidProton, dwnSmplFactorPr, nSigmaTofDauTrackPr, rejectNoTofDauTrackPr};
+        return V0Daughter{downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons, track.tpcNSigmaPr(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.itsNSigmaPr(), track.tpcExpSignalPr(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidProton, dwnSmplFactorPr, nSigmaTofDauTrackPr, rejectNoTofDauTrackPr};
       case DaughterKaon:
-        return V0Daughter{downsamplingTsalisKaons, MassKPlus, maxPt4dwnsmplTsalisKaons, track.tpcNSigmaKa(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidKaon, dwnSmplFactorKa, nSigmaTofDauTrackKa, rejectNoTofDauTrackKa};
+        return V0Daughter{downsamplingTsalisKaons, MassKPlus, maxPt4dwnsmplTsalisKaons, track.tpcNSigmaKa(), getStrangenessTofNSigma(v0Casc, motherId, daughterId, isPositive), track.itsNSigmaKa(), track.tpcExpSignalKa(tpcSignalGeneric<IsCorrectedDeDx>(track)), PidKaon, dwnSmplFactorKa, nSigmaTofDauTrackKa, rejectNoTofDauTrackKa};
       default: {
         LOGP(fatal, "createV0Daughter: unknown daughterId");
         return V0Daughter();
@@ -232,7 +233,7 @@ struct TreeWriterTpcV0 {
   }
 
   template <bool DoUseCorrectedDeDx, int ModeId, typename T, typename C, typename V0Casc>
-  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame)
+  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame)
   {
     const double ncl = track.tpcNClsFound();
     const double nclPID = track.tpcNClsFindableMinusPID();
@@ -275,6 +276,7 @@ struct TreeWriterTpcV0 {
                    id,
                    nSigmaTPC,
                    nSigmaTOF,
+                   nSigmaITS,
                    runnumber,
                    trackOcc,
                    ft0Occ,
@@ -302,6 +304,7 @@ struct TreeWriterTpcV0 {
                                 id,
                                 nSigmaTPC,
                                 nSigmaTOF,
+                                nSigmaITS,
                                 runnumber,
                                 trackOcc,
                                 ft0Occ,
@@ -330,6 +333,7 @@ struct TreeWriterTpcV0 {
                             id,
                             nSigmaTPC,
                             nSigmaTOF,
+                            nSigmaITS,
                             runnumber,
                             trackOcc,
                             ft0Occ,
@@ -389,16 +393,18 @@ struct TreeWriterTpcV0 {
     constexpr bool IsWithTrackQa = ModeId != ModeStandard;
 
     std::vector<int64_t> labelTrack2TrackQA;
-    if (IsWithTrackQa) {
-      // this action should not be under constexpr, otherwise the processStandard() function crashes when it is subscribed for myTracks but they're not used
-      labelTrack2TrackQA.resize(myTracks.size(), -1);
-    }
     if constexpr (IsWithTrackQa) {
+      labelTrack2TrackQA.resize(myTracks.size(), -1);
       for (const auto& trackQA : tracksQA) {
         const int64_t trackId = trackQA.trackId();
         labelTrack2TrackQA.at(trackId) = trackQA.globalIndex();
       }
     }
+
+    const auto& tracksWithITSPid = soa::Attach<TrksType,
+                                               aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
+                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
+
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
@@ -430,7 +436,7 @@ struct TreeWriterTpcV0 {
         const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < NSigmaTofUnmatchedEqualityTolerance;
         const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > NSigmaTofUnmatchedEqualityTolerance;
         if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
-          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
       };
 
@@ -457,12 +463,17 @@ struct TreeWriterTpcV0 {
         const auto& posTrack = v0.posTrack_as<TrksType>();
         const auto& negTrack = v0.negTrack_as<TrksType>();
 
+        const auto posTrackId = posTrack.globalIndex();
+        const auto& posTrackWithITSPid = tracksWithITSPid.rawIteratorAt(posTrackId);
+        const auto negTrackId = negTrack.globalIndex();
+        const auto& negTrackWithITSPid = tracksWithITSPid.rawIteratorAt(negTrackId);
+
         const auto& [posTrackQA, existPosTrkQA] = getTrackQA(posTrack);
         const auto& [negTrackQA, existNegTrkQA] = getTrackQA(negTrack);
 
         const V0Mother v0Mother = createV0Mother(v0Id);
-        const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrack, v0Id, v0Mother.posDaughterId, true);
-        const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(v0, negTrack, v0Id, v0Mother.negDaughterId, false);
+        const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrackWithITSPid, v0Id, v0Mother.posDaughterId, true);
+        const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(v0, negTrackWithITSPid, v0Id, v0Mother.negDaughterId, false);
 
         fillDaughterTrack(v0, posTrack, posDaughter, posTrackQA, existPosTrkQA);
         fillDaughterTrack(v0, negTrack, negDaughter, negTrackQA, existNegTrkQA);
@@ -475,7 +486,9 @@ struct TreeWriterTpcV0 {
           continue;
         }
         const auto& bachTrack = casc.bachelor_as<TrksType>();
-        const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrack, cascId, DaughterKaon);
+        const auto bachTrackId = bachTrack.globalIndex();
+        const auto& bachTrackWithITSPid = tracksWithITSPid.rawIteratorAt(bachTrackId);
+        const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrackWithITSPid, cascId, DaughterKaon);
         const auto& [bachTrackQA, existBachTrkQA] = getTrackQA(bachTrack);
         // Omega and antiomega
         fillDaughterTrack(casc, bachTrack, bachDaughter, bachTrackQA, existBachTrkQA);
@@ -694,11 +707,11 @@ struct TreeWriterTpcTof {
                       id,
                       nSigmaTPC,
                       nSigmaTOF,
+                      nSigmaITS,
                       runnumber,
                       trackOcc,
                       ft0Occ,
-                      hadronicRate,
-                      nSigmaITS);
+                      hadronicRate);
       } else if constexpr (ModeId == ModeWithdEdxTrkQA) {
         rowTPCTOFTreeWithdEdxTrkQA(usedEdx,
                                    1. / dEdxExp,
@@ -716,11 +729,11 @@ struct TreeWriterTpcTof {
                                    id,
                                    nSigmaTPC,
                                    nSigmaTOF,
+                                   nSigmaITS,
                                    runnumber,
                                    trackOcc,
                                    ft0Occ,
                                    hadronicRate,
-                                   nSigmaITS,
                                    existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       } else if constexpr (ModeId == ModeWithTrkQA) {
         rowTPCTOFTreeWithTrkQA(usedEdx,
@@ -739,11 +752,11 @@ struct TreeWriterTpcTof {
                                id,
                                nSigmaTPC,
                                nSigmaTOF,
+                               nSigmaITS,
                                runnumber,
                                trackOcc,
                                ft0Occ,
                                hadronicRate,
-                               nSigmaITS,
                                bcGlobalIndex,
                                bcTimeFrameId,
                                bcBcInTimeFrame,
@@ -780,9 +793,8 @@ struct TreeWriterTpcTof {
         continue;
       }
       const auto& tracksWithITSPid = soa::Attach<TrksType,
-                                                 aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
-                                                 aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
-                                                 aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
+                                                 aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr,
+                                                 aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr>(tracks);
 
       const auto& bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();

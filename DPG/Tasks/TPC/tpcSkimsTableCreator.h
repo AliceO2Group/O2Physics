@@ -72,6 +72,7 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::PidIndex,            \
     tpcskims::NSigTPC,             \
     tpcskims::NSigTOF,             \
+    tpcskims::NSigITS,             \
     tpcskims::RunNumber,           \
     tpcskims::TrackOcc,            \
     tpcskims::Ft0Occ,              \
@@ -87,8 +88,7 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::GammaPsiPair
 
 #define TPCSKIMS_COLUMNS_TOF \
-  TPCSKIMS_COLUMNS_BASE,     \
-    tpcskims::NSigITS
+  TPCSKIMS_COLUMNS_BASE
 
 #define TPCSKIMS_COLUMNS_TRACK_QA         \
   tpcskims::BcGlobalIndex,                \
