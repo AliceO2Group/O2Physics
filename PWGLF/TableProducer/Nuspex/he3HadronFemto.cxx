@@ -532,22 +532,22 @@ struct he3HadronFemto {
   bool selectionPIDHadron(const Ttrack& candidate)
   {
     auto tpcNSigmaHad = computeTPCNSigmaHadron(candidate);
-    mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaHad);
+    mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), candidate.sign() * candidate.tpcInnerParam(), tpcNSigmaHad);
     if (candidate.hasTOF() && candidate.pt() > settingCutPtMinTOFHad) {
       auto tofNSigmaHad = computeTOFNSigmaHadron(candidate);
 
       if (std::abs(tpcNSigmaHad) > settingCutNsigmaTPC) {
         return false;
       }
-      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), candidate.pt(), tofNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), candidate.sign() * candidate.pt(), tofNSigmaHad);
       if (std::abs(tofNSigmaHad) > settingCutNsigmaTOF) {
         return false;
       }
-      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC"), candidate.pt(), tpcNSigmaHad);
-      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF"), candidate.pt(), tofNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC"), candidate.sign() * candidate.pt(), tpcNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF"), candidate.sign() * candidate.pt(), tofNSigmaHad);
       return true;
     } else if (std::abs(tpcNSigmaHad) < settingCutNsigmaTPC) {
-      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC"), candidate.pt(), tpcNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC"), candidate.sign() * candidate.pt(), tpcNSigmaHad);
       return true;
     }
     return false;
@@ -1322,11 +1322,11 @@ struct he3HadronFemto {
         mQaRegistry.fill(HIST("Had/hHadronPt"), track.pt());
 
         const float tpcNSigmaHad = computeTPCNSigmaHadron(track);
-        mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), track.tpcInnerParam(), tpcNSigmaHad);
+        mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), track.sign() * track.tpcInnerParam(), tpcNSigmaHad);
 
         if (track.hasTOF()) {
           const float tofNSigmaHad = computeTOFNSigmaHadron(track);
-          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.pt(), tofNSigmaHad);
+          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
         }
       }
 
