@@ -772,7 +772,7 @@ struct StrangeCascTrack {
       // apply general cascade cuts
       if (doApplyGenCutsXi) {
         auto genSels = isValidCasc(collision, cascade, stdCasc, "Xi");
-        for (int i = 0; i < std::size(genSels); ++i) {
+        for (size_t i = 0; i < std::size(genSels); ++i) {
           if (genSels[i]) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenFiltersXi"), (i + 0.5));
             if (fillTruthXi)
@@ -789,7 +789,7 @@ struct StrangeCascTrack {
       }
       if (doApplyGenCutsOmega) {
         auto genSels = isValidCasc(collision, cascade, stdCasc, "Omega");
-        for (int i = 0; i < std::size(genSels); ++i) {
+        for (size_t i = 0; i < std::size(genSels); ++i) {
           if (genSels[i]) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenFiltersOmega"), (i + 0.5));
             if (fillTruthOmega)
