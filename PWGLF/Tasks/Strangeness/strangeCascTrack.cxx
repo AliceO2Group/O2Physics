@@ -772,14 +772,14 @@ struct StrangeCascTrack {
       // apply general cascade cuts
       if (doApplyGenCutsXi) {
         auto genSels = isValidCasc(collision, cascade, stdCasc, "Xi");
-        for (int i = 0; i < sizeof(genSels); ++i) {
+        for (int i = 0; i < std::size(genSels); ++i) {
           if (genSels[i]) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenFiltersXi"), (i + 0.5));
             if (fillTruthXi)
               histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenFiltersXi"), (i + 0.5));
           }
         }
-        if (genSels[sizeof(genSels) - 1]) {
+        if (genSels[std::size(genSels) - 1]) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 1.5);
           if (fillTruthXi)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 1.5);
@@ -789,14 +789,14 @@ struct StrangeCascTrack {
       }
       if (doApplyGenCutsOmega) {
         auto genSels = isValidCasc(collision, cascade, stdCasc, "Omega");
-        for (int i = 0; i < sizeof(genSels); ++i) {
+        for (int i = 0; i < std::size(genSels); ++i) {
           if (genSels[i]) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenFiltersOmega"), (i + 0.5));
             if (fillTruthOmega)
               histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenFiltersOmega"), (i + 0.5));
           }
         }
-        if (genSels[sizeof(genSels) - 1]) {
+        if (genSels[std::size(genSels) - 1]) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 1.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 1.5);
