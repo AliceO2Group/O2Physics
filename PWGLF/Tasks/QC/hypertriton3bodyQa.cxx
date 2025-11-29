@@ -13,35 +13,36 @@
 /// \brief QA for MC productions which contain hypertriton 3body decay process, including special checks for TOF PID
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <unordered_set>
-
 #include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/pidTOFGeneric.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
-#include "CommonDataFormat/IRFrame.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "CommonConstants/PhysicsConstants.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "CommonDataFormat/IRFrame.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,7 +59,6 @@ namespace
 {
 constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 } // namespace
-
 
 template <class TMCTrackTo, typename TMCParticle>
 bool is3bodyDecayedH3L(TMCParticle const& particle)
@@ -328,7 +328,7 @@ struct Hypertriton3bodyQa {
       }
       registry.fill(HIST("hEventCounter"), 2.5);
 
-      std::vector<int> indicesProton, indicesPion, indicesDeuteron;                     // indices for daughter tracks
+      std::vector<int> indicesProton, indicesPion, indicesDeuteron;               // indices for daughter tracks
       std::unordered_set<int64_t> globalIDProton, globalIDPion, globalIDDeuteron; // check duplicated daughters
       int itrack = -1;
 
@@ -815,16 +815,15 @@ struct Hypertriton3bodyMcParticleCheck {
           if (isMatter) {
             registry.fill(HIST("hMcHypertritonCounter"), 3.5);
             registry.fill(HIST("hMcHypertritonCounter"), 4.5);
-          }
-          else {
+          } else {
             registry.fill(HIST("hMcHypertritonCounter"), 3.5);
             registry.fill(HIST("hMcHypertritonCounter"), 5.5);
           }
           double hypertritonMCMass = RecoDecay::m(std::array{std::array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, std::array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, std::array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
           registry.fill(HIST("hMcRecoInvMass"), hypertritonMCMass);
 
-            mcLifetime = RecoDecay::sqrtSumOfSquares(dauDeuteronPos[0] - mcparticle.vx(), dauDeuteronPos[1] - mcparticle.vy(), dauDeuteronPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
-            registry.fill(HIST("h3dMCDecayedHypertriton"), mcparticle.y(), mcparticle.pt(), mcLifetime);
+          mcLifetime = RecoDecay::sqrtSumOfSquares(dauDeuteronPos[0] - mcparticle.vx(), dauDeuteronPos[1] - mcparticle.vy(), dauDeuteronPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
+          registry.fill(HIST("h3dMCDecayedHypertriton"), mcparticle.y(), mcparticle.pt(), mcLifetime);
 
           double diffTrackR = dauDeuteronTrackR - std::min(dauPionTrackR, dauProtonTrackR);
           registry.fill(HIST("hDiffDaughterR"), diffTrackR);
