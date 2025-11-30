@@ -266,7 +266,7 @@ struct Hypertriton3bodyQa {
     registry.get<TH1>(HIST("hParticleCounter"))->GetXaxis()->SetBinLabel(7, "McisDeuteron");
 
     std::vector<TString> trackCounterbinLabel = {"hasMom", "FromHypertriton"};
-    for (auto i = 0; i < trackCounterbinLabel.size(); i++) {
+    for (size_t i = 0; i < trackCounterbinLabel.size(); i++) {
       registry.get<TH1>(HIST("hProtonCounter"))->GetXaxis()->SetBinLabel(i + 1, trackCounterbinLabel[i]);
       registry.get<TH1>(HIST("hPionCounter"))->GetXaxis()->SetBinLabel(i + 1, trackCounterbinLabel[i]);
       registry.get<TH1>(HIST("hDeuteronCounter"))->GetXaxis()->SetBinLabel(i + 1, trackCounterbinLabel[i]);
