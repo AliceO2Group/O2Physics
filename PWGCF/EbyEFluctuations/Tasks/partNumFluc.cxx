@@ -44,6 +44,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <ranges>
 #include <string>
@@ -561,11 +562,12 @@ struct HolderTrack {
   static constexpr double truncateNSigmaPid(const double value) { return (!(std::abs(value) < TruncationAbsNSigmaPid) ? -TruncationAbsNSigmaPid : value); }
 
   std::int32_t sign = 0;
+  double p = 0.;
   double pt = 0.;
   double eta = 0.;
   double phi = 0.;
-  double ptOverQ = 0.;
   double pOverQ = 0.;
+  double ptOverQ = 0.;
   double rapidityPi = 0.;
   double rapidityKa = 0.;
   double rapidityPr = 0.;
@@ -585,11 +587,12 @@ struct HolderTrack {
   void clear()
   {
     sign = 0;
+    p = 0.;
     pt = 0.;
     eta = 0.;
     phi = 0.;
-    ptOverQ = 0.;
     pOverQ = 0.;
+    ptOverQ = 0.;
     rapidityPi = 0.;
     rapidityKa = 0.;
     rapidityPr = 0.;
@@ -974,33 +977,48 @@ struct PartNumFluc {
 
     if (doprocessMc.value) {
       if (cfgFlagCalculationPurityPi.value || cfgFlagCalculationPurityKa.value || cfgFlagCalculationPurityPr.value) {
-        HistogramConfigSpec hcsCalculationPurity(HistType::kTProfile3D, {{20, 0., 100., "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {24, -1.2, 1.2, "#it{#eta}"}});
+        AxisSpec asQaCentrality(20, 0., 100., "Centrality (%)");
+        AxisSpec asEta(24, -1.2, 1.2, "#it{#eta}");
+        HistogramConfigSpec hcsCalculationPurityP(HistType::kTProfile3D, {asQaCentrality, {35, 0., 3.5, "#it{p} (GeV/#it{c})"}, asEta});
+        HistogramConfigSpec hcsCalculationPurityPt(HistType::kTProfile3D, {asQaCentrality, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, asEta});
 
         if (cfgFlagCalculationPurityPi.value) {
           LOG(info) << "Enabling pion purity calculation.";
 
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPiP", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPiM", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPiP", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPiM", "", hcsCalculationPurity);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcPiP", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcPiM", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcTofPiP", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcTofPiM", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPiP", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPiM", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPiP", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPiM", "", hcsCalculationPurityPt);
         }
 
         if (cfgFlagCalculationPurityKa.value) {
           LOG(info) << "Enabling kaon purity calculation.";
 
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcKaP", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcKaM", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofKaP", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofKaM", "", hcsCalculationPurity);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcKaP", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcKaM", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcTofKaP", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcTofKaM", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcKaP", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcKaM", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofKaP", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofKaM", "", hcsCalculationPurityPt);
         }
 
         if (cfgFlagCalculationPurityPr.value) {
           LOG(info) << "Enabling (anti)proton purity calculation.";
 
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPrP", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPrM", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPrP", "", hcsCalculationPurity);
-          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPrM", "", hcsCalculationPurity);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcPrP", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcPrM", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcTofPrP", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPEtaPurityTpcTofPrM", "", hcsCalculationPurityP);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPrP", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcPrM", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPrP", "", hcsCalculationPurityPt);
+          hrCalculationPurity.add("CalculationPurity/pCentralityPtEtaPurityTpcTofPrM", "", hcsCalculationPurityPt);
         }
       }
 
@@ -1204,7 +1222,7 @@ struct PartNumFluc {
           return nullptr;
       }
     }();
-    return hCentralityPtEtaShiftNSigmaPid ? hCentralityPtEtaShiftNSigmaPid->Interpolate(std::max(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(1), std::min(holderEvent.centrality, hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsX()))), std::max(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(1), std::min(holderTrack.pt, hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsY()))), std::max(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(1), std::min(holderTrack.eta, hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsZ())))) : 0.;
+    return hCentralityPtEtaShiftNSigmaPid ? hCentralityPtEtaShiftNSigmaPid->Interpolate(std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderEvent.centrality, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsX()), -std::numeric_limits<double>::infinity()))), std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderTrack.pt, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsY()), -std::numeric_limits<double>::infinity()))), std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderTrack.eta, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsZ()), -std::numeric_limits<double>::infinity())))) : 0.;
   }
 
   template <bool doProcessingMc>
@@ -1381,11 +1399,12 @@ struct PartNumFluc {
   {
     holderTrack.clear();
     holderTrack.sign = track.sign();
+    holderTrack.p = track.p();
     holderTrack.pt = track.pt();
     holderTrack.eta = track.eta();
     holderTrack.phi = track.phi();
+    holderTrack.pOverQ = holderTrack.p / holderTrack.sign;
     holderTrack.ptOverQ = holderTrack.pt / holderTrack.sign;
-    holderTrack.pOverQ = track.p() / holderTrack.sign;
     holderTrack.rapidityPi = track.rapidity(constants::physics::MassPiPlus);
     holderTrack.rapidityKa = track.rapidity(constants::physics::MassKPlus);
     holderTrack.rapidityPr = track.rapidity(constants::physics::MassProton);
@@ -2174,9 +2193,11 @@ struct PartNumFluc {
             if (cfgFlagCalculationPurityPi.value) {
               switch (isPi<false, true>()) {
                 case 1:
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcPiP"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiPlus ? 1. : 0.);
                   hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiPlus ? 1. : 0.);
                   break;
                 case -1:
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcPiM"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiMinus ? 1. : 0.);
                   hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiMinus ? 1. : 0.);
                   break;
               }
@@ -2185,9 +2206,11 @@ struct PartNumFluc {
             if (cfgFlagCalculationPurityKa.value) {
               switch (isKa<false, true>()) {
                 case 1:
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcKaP"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKPlus ? 1. : 0.);
                   hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKPlus ? 1. : 0.);
                   break;
                 case -1:
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcKaM"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKMinus ? 1. : 0.);
                   hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKMinus ? 1. : 0.);
                   break;
               }
@@ -2196,9 +2219,11 @@ struct PartNumFluc {
             if (cfgFlagCalculationPurityPr.value) {
               switch (isPr<false, true>()) {
                 case 1:
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcPrP"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProton ? 1. : 0.);
                   hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProton ? 1. : 0.);
                   break;
                 case -1:
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcPrM"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProtonBar ? 1. : 0.);
                   hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProtonBar ? 1. : 0.);
                   break;
               }
@@ -2208,9 +2233,11 @@ struct PartNumFluc {
               if (cfgFlagCalculationPurityPi.value) {
                 switch (isPi<true, true>()) {
                   case 1:
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcTofPiP"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiPlus ? 1. : 0.);
                     hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiPlus ? 1. : 0.);
                     break;
                   case -1:
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcTofPiM"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiMinus ? 1. : 0.);
                     hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiMinus ? 1. : 0.);
                     break;
                 }
@@ -2219,9 +2246,11 @@ struct PartNumFluc {
               if (cfgFlagCalculationPurityKa.value) {
                 switch (isKa<true, true>()) {
                   case 1:
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcTofKaP"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKPlus ? 1. : 0.);
                     hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKPlus ? 1. : 0.);
                     break;
                   case -1:
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcTofKaM"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKMinus ? 1. : 0.);
                     hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKMinus ? 1. : 0.);
                     break;
                 }
@@ -2230,9 +2259,11 @@ struct PartNumFluc {
               if (cfgFlagCalculationPurityPr.value) {
                 switch (isPr<true, true>()) {
                   case 1:
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcTofPrP"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProton ? 1. : 0.);
                     hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProton ? 1. : 0.);
                     break;
                   case -1:
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPEtaPurityTpcTofPrM"), holderEvent.centrality, holderTrack.p, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProtonBar ? 1. : 0.);
                     hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProtonBar ? 1. : 0.);
                     break;
                 }
