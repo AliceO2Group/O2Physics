@@ -1003,8 +1003,8 @@ struct StrangeCascTrack {
     histos.add("MC/Gen/Xi", "Xi", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});                        // generated Xis
     histos.add("MC/Gen/Omega", "Omega", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});                  // generated Omegas
     histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Xis
-    histos.add("MC/Gen/PrimaryOmega", "Omega primaries in |y|", kTH2F, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas
-    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmega", "Omega primaries in |y|", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});         // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});              // generated primary Xis in selected rapidity range
     histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2F, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
     // label filter statistic bins for standard cascs
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
@@ -1161,15 +1161,15 @@ struct StrangeCascTrack {
           if (isValidPDG(casc, "Omega"))
             histos.fill(HIST("MC/Gen/Omega"), cascPt, cascMult);
           if (casc.isPhysicalPrimary()) {
-            if (isValidPDG(casc, "Xi"))
-            {
+            if (isValidPDG(casc, "Xi")) {
               histos.fill(HIST("MC/Gen/PrimaryXi"), cascPt, cascMult);
-              if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity) histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), cascPt, cascMult);
+              if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
+                histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), cascPt, cascMult);
             }
-            if (isValidPDG(casc, "Omega"))
-            {
+            if (isValidPDG(casc, "Omega")) {
               histos.fill(HIST("MC/Gen/PrimaryOmega"), cascPt, cascMult);
-              if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity) histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), cascPt, cascMult);
+              if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
+                histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), cascPt, cascMult);
             }
           }
         }
