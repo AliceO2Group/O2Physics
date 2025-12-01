@@ -52,7 +52,6 @@
 
 #include <array>
 #include <cmath>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -127,12 +126,12 @@ struct FlowCumulantsUpc {
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
   // Added UPC Cuts
-  // SGSelector sgSelector;
-  // Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
-  // Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
-  // Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
-  // Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
-  // Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
+  SGSelector sgSelector;
+  Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
+  Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
+  Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
+  Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
+  Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -432,7 +431,6 @@ struct FlowCumulantsUpc {
     fGFWMC->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
-    fGFWMC->CreateRegions();
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
@@ -526,9 +524,11 @@ struct FlowCumulantsUpc {
         }
         LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
         corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
+        corrconfigsmc.push_back(fGFWMC->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
       }
     }
     fGFW->CreateRegions();
+    fGFWMC->CreateRegions();
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -643,6 +643,8 @@ struct FlowCumulantsUpc {
     }
     return;
   }
+
+  // ... 其余代码保持不变 ...
 
   void loadCorrections(uint64_t timestamp, int runNumber)
   {
@@ -941,16 +943,16 @@ struct FlowCumulantsUpc {
   //-----------------------------------------------------------------------------------------------------------------------
   void processSim(aod::UDMcCollisions const& mcCollisions, aod::UDMcParticles const& mcParticles)
   {
-    std::cout << "Processing MC collision======================== " << std::endl;
+    LOG(info) << "Processing MC collision======================== " << std::endl;
 
     // std::cout << mcParicles::IndexudmcCollisions.is_sorted();
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       auto groupedUDMcParticles = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
       registry.fill(HIST("eventCounterMC"), 0.5);
 
       // registry.fill(HIST("hEventCount"), 1.5);
-      float cent = 100;
+      float cent = 50;
       float vtxz = 0;
 
       vtxz = mcCollision.posZ();
@@ -974,11 +976,11 @@ struct FlowCumulantsUpc {
         independent = static_cast<float>(groupedUDMcParticles.size());
       }
 
-      std::cout << "mcParticles.size() = " << groupedUDMcParticles.size() << std::endl;
+      LOG(info) << "mcParticles.size() = " << groupedUDMcParticles.size() << std::endl;
 
       for (const auto& mcParticle : groupedUDMcParticles) {
 
-        std::cout << "filling mc particle px: " << mcParticle.px() << ", py: " << mcParticle.py() << ", pz: " << mcParticle.pz() << std::endl;
+        LOG(info) << "filling mc particle px: " << mcParticle.px() << ", py: " << mcParticle.py() << ", pz: " << mcParticle.pz() << std::endl;
 
         // output information from mcparticles
         registry.fill(HIST("hPxMc"), mcParticle.px());
@@ -987,16 +989,17 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hweightMc"), mcParticle.weight());
 
         if (!mcParticle.isPhysicalPrimary()) {
-          std::cout << "mcParticle.isPhysicalPrimary() = " << mcParticle.isPhysicalPrimary() << std::endl;
+          LOG(info) << "mcParticle.isPhysicalPrimary() = " << mcParticle.isPhysicalPrimary() << std::endl;
           continue;
         }
+
         std::array<double, 3> momentum = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
         double energy = std::sqrt(momentum[0] * momentum[0] + momentum[1] * momentum[1] + momentum[2] * momentum[2] + massPion * massPion);
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> protoMC(momentum[0], momentum[1], momentum[2], energy);
         constexpr double kEtaCut = 0.8;
         constexpr double kPtCut = 0.1;
         if (!(std::fabs(protoMC.Eta()) < kEtaCut && protoMC.Pt() > kPtCut)) {
-          std::cout << "protoMC.Eta() = " << protoMC.Eta() << ", protoMC.Pt() = " << protoMC.Pt() << std::endl;
+          LOG(info) << "protoMC.Eta() = " << protoMC.Eta() << ", protoMC.Pt() = " << protoMC.Pt() << std::endl;
           continue;
         }
         // auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
@@ -1036,11 +1039,12 @@ struct FlowCumulantsUpc {
         if (withinPtPOI && withinPtRef) {
           fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
         }
+        LOG(info) << "successfully filled" << std::endl;
       }
       registry.fill(HIST("hTrackCorrection2dMC"), mcParticles.size(), nTracksCorrected);
       // Filling Flow Container
       for (uint l_ind = 0; l_ind < corrconfigsmc.size(); l_ind++) {
-        std::cout << "filling flow container for MC" << std::endl;
+        LOG(info) << "filling flow container for MC" << std::endl;
         fillFCMC(corrconfigsmc.at(l_ind), independent, lRandomMc);
       }
     }
