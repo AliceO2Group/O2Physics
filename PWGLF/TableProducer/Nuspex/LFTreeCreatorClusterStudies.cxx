@@ -203,10 +203,10 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> cascsetting_cascCosPA{"cascsetting_cascCosPA", 0.99f, "Minimum cCosine of the pointing angle of the cascade"};
   Configurable<float> cascsetting_v0cosPA{"cascsetting_v0cosPA", 0.97f, "Minimum cCosine of the pointing angle of the v0"};
   Configurable<float> cascsetting_dcaMaxBachelorToV0{"cascsetting_dcaMaxBachelorToV0", 0.8f, "DCA of the bachelor to V0"};
-  //Configurable<float> cascsetting_dcaMinBachelorToProton{"cascsetting_dcaMinBachelorToProton", 0.015f, "DCA of the bachelor to proton"};
+  // Configurable<float> cascsetting_dcaMinBachelorToProton{"cascsetting_dcaMinBachelorToProton", 0.015f, "DCA of the bachelor to proton"};
   Configurable<float> cascsetting_radiusV0{"cascsetting_radiusV0", 1.2f, "Minimum radius of the V0 accepted"};
   Configurable<float> cascsetting_radiusCasc{"cascsetting_radiusCasc", 0.5f, "Minimum radius of the cascade accepted"};
-  
+
   Configurable<float> cascsetting_massWindowOmega{"cascsetting_massWindowOmega", 0.01f, "Mass window for the Omega"};
   Configurable<float> cascsetting_massWindowXi{"cascsetting_massWindowXi", 0.01f, "Mass window for the Xi"};
   Configurable<float> cascsetting_nsigmatpc{"cascsetting_nsigmaTPC", 3.f, "Number of sigmas for the TPC PID"};
@@ -243,34 +243,35 @@ struct LfTreeCreatorClusterStudies {
 
   HistogramRegistry m_hAnalysis{
     "LFTreeCreator",
-    {{"collision_selections", "Collision selection; selection; counts", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
-     {"v0_selections", "V0 selection; selection; counts", {HistType::kTH1F, {{V0Selections::kV0All, -0.5, static_cast<double>(V0Selections::kV0All) - 0.5}}}},
-     {"casc_selections", "Cascade selection; selection; counts", {HistType::kTH1F, {{CascSelections::kCascAll, -0.5, static_cast<double>(CascSelections::kCascAll) - 0.5}}}},
-     {"e_selections", "e^{#pm} selection; selection; counts", {HistType::kTH1F, {{ESelections::kEAll, -0.5, static_cast<double>(ESelections::kEAll) - 0.5}}}},
-     {"v0_type", "Selected V0; particle; counts", {HistType::kTH1F, {{V0Type::V0TypeAll, -0.5, static_cast<double>(V0Type::V0TypeAll) - 0.5}}}},
-     {"radiusV0", "Decay radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"massLambda", "#Lambda invariant mass; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
-     {"massLambdaMc", "#Lambda invariant mass (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
-     {"Lambda_vs_K0s", "Mass #Lambda vs K^{0}_s; #it{m}_{K^{0}_{s}} (GeV/#it{c}^{2}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 0.f, 1.f}, {70, 0.6f, 2.f}}}},
-     {"armenteros_plot_before_selections", "Armenteros-Podolanski plot; #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"armenteros_plot", "Armenteros-Podolanski plot; #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"armenteros_plot_lambda", "Armenteros-Podolanski plot (#Lambda only); #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"armenteros_plot_gamma", "Armenteros-Podolanski plot (#gamma only); #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
-     {"photon_radiusV0", "Photon conversion radius (xy) V0; #it{r} (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"photon_conversion_position", "Photon conversion position; #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
-     {"photon_conversion_position_layer", "Photon conversion position (ITS layers); #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
-     {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCA_{#it{xy}} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
-     {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); #it{m}_#Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
-     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
-     {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
-     {"massPi0", "Mass #pi^{0}; #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-     {"massPi0Mc", "Mass #pi^{0} (MC); #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-     {"massPi0WithBkg", "Mass #pi^{0} with Background; #it{m}_{#pi^{0}} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-     {"zVtx", "Binning for the vertex z in cm; #it{z}_{vertex} (cm)", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
-     {"isPositive", "is the candidate positive?; isPositive; counts", {HistType::kTH1F, {{2, -0.5f, 1.5f}}}},
+    {
+      {"collision_selections", "Collision selection; selection; counts", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
+      {"v0_selections", "V0 selection; selection; counts", {HistType::kTH1F, {{V0Selections::kV0All, -0.5, static_cast<double>(V0Selections::kV0All) - 0.5}}}},
+      {"casc_selections", "Cascade selection; selection; counts", {HistType::kTH1F, {{CascSelections::kCascAll, -0.5, static_cast<double>(CascSelections::kCascAll) - 0.5}}}},
+      {"e_selections", "e^{#pm} selection; selection; counts", {HistType::kTH1F, {{ESelections::kEAll, -0.5, static_cast<double>(ESelections::kEAll) - 0.5}}}},
+      {"v0_type", "Selected V0; particle; counts", {HistType::kTH1F, {{V0Type::V0TypeAll, -0.5, static_cast<double>(V0Type::V0TypeAll) - 0.5}}}},
+      {"radiusV0", "Decay radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
+      {"massLambda", "#Lambda invariant mass; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
+      {"massLambdaMc", "#Lambda invariant mass (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
+      {"Lambda_vs_K0s", "Mass #Lambda vs K^{0}_s; #it{m}_{K^{0}_{s}} (GeV/#it{c}^{2}); #it{m}_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 0.f, 1.f}, {70, 0.6f, 2.f}}}},
+      {"armenteros_plot_before_selections", "Armenteros-Podolanski plot; #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+      {"armenteros_plot", "Armenteros-Podolanski plot; #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+      {"armenteros_plot_lambda", "Armenteros-Podolanski plot (#Lambda only); #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+      {"armenteros_plot_gamma", "Armenteros-Podolanski plot (#gamma only); #alpha; #it{q}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
+      {"photon_radiusV0", "Photon conversion radius (xy) V0; #it{r} (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
+      {"photon_conversion_position", "Photon conversion position; #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
+      {"photon_conversion_position_layer", "Photon conversion position (ITS layers); #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
+      {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCA_{#it{xy}} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
+      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); #it{m}_#Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
+      {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
+      {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
+      {"massPi0", "Mass #pi^{0}; #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0Mc", "Mass #pi^{0} (MC); #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0WithBkg", "Mass #pi^{0} with Background; #it{m}_{#pi^{0}} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"zVtx", "Binning for the vertex z in cm; #it{z}_{vertex} (cm)", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
+      {"isPositive", "is the candidate positive?; isPositive; counts", {HistType::kTH1F, {{2, -0.5f, 1.5f}}}},
 
-     {"electron/DCAxyBeforeSelection", "DCA (xy) for cascade daughter pairs; DCA_{#it{xy}} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
-     {"electron/DCAzBeforeSelection", "DCA (z) for cascade daughter pairs; DCA_{#it{z}} (cm); counts", {HistType::kTH1F, {{200, -0.2, 0.2}}}},
+      {"electron/DCAxyBeforeSelection", "DCA (xy) for cascade daughter pairs; DCA_{#it{xy}} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
+      {"electron/DCAzBeforeSelection", "DCA (z) for cascade daughter pairs; DCA_{#it{z}} (cm); counts", {HistType::kTH1F, {{200, -0.2, 0.2}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false};
@@ -381,7 +382,7 @@ struct LfTreeCreatorClusterStudies {
   }
 
   template <typename Track>
-  bool selectPidV0Daughters(Candidate& candidatePos, Candidate& candidateNeg, 
+  bool selectPidV0Daughters(Candidate& candidatePos, Candidate& candidateNeg,
                             aod::V0Datas::iterator const& v0, const Track& posTrack, const Track& negTrack, uint8_t v0Bitmask)
   {
     if (TESTBIT(v0Bitmask, Lambda)) {
@@ -785,7 +786,7 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0Topology);
 
     std::array<float, 3> momPos{v0.pxpos(), v0.pypos(), v0.pzpos()},
-                         momNeg{v0.pxneg(), v0.pyneg(), v0.pzneg()};
+      momNeg{v0.pxneg(), v0.pyneg(), v0.pzneg()};
 
     m_hAnalysis.fill(HIST("armenteros_plot_before_selections"), v0.alpha(), v0.qtarm());
     m_hAnalysis.fill(HIST("Lambda_vs_K0s"), v0.mK0Short(), v0.mAntiLambda());
@@ -850,7 +851,7 @@ struct LfTreeCreatorClusterStudies {
     const float& massXi = cascade.mXi();
     const float& massOmega = cascade.mOmega();
     m_hAnalysis.fill(HIST("Xi_vs_Omega"), massOmega, massXi);
-    
+
     if (std::abs(massXi - o2::constants::physics::MassXiMinus) < cascsetting_massWindowXi) {
       return;
     }
@@ -1094,7 +1095,7 @@ struct LfTreeCreatorClusterStudies {
 
   // =========================================================================================================
 
-  void processDataV0Casc(CollisionsCustom::iterator const& collision/*s*/, TracksFullIU const& tracks, aod::V0Datas const& v0s, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&)
+  void processDataV0Casc(CollisionsCustom::iterator const& collision /*s*/, TracksFullIU const& tracks, aod::V0Datas const& v0s, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&)
   {
     if (!collisionSelection(collision)) {
       return;
@@ -1184,7 +1185,7 @@ struct LfTreeCreatorClusterStudies {
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataPKPi, "process Data p, K, pi", false);
 
-  void processMcV0Casc(CollisionsCustomMc::iterator const& collision/*s*/, TracksFullIUMc const& tracks, aod::V0Datas const& v0s, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
+  void processMcV0Casc(CollisionsCustomMc::iterator const& collision /*s*/, TracksFullIUMc const& tracks, aod::V0Datas const& v0s, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
   {
     if (!collisionSelection(collision)) {
       return;
