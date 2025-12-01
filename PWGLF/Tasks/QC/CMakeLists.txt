@@ -144,3 +144,8 @@ o2physics_add_dpl_workflow(systematics-mapping
     SOURCES systematicsMapping.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3body-qa
+    SOURCES hypertriton3bodyQa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
+    COMPONENT_NAME Analysis)
