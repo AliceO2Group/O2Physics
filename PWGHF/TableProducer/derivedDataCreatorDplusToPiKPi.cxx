@@ -203,8 +203,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
         candidate.tpcTofNSigmaPi0(),
         candidate.tpcTofNSigmaKa1(),
-        candidate.tpcTofNSigmaPi2()
-      );
+        candidate.tpcTofNSigmaPi2());
     }
     if (fillCandidateMl) {
       rowCandidateMl(
