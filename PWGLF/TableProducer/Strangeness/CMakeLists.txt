@@ -58,7 +58,7 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 
 o2physics_add_dpl_workflow(double-casc-tree-creator
     SOURCES doubleCascTreeCreator.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::EventFilteringUtils
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzerobuilder
@@ -166,3 +166,10 @@ o2physics_add_dpl_workflow(lambdaspincorrelation
     SOURCES lambdaspincorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+if(FastJet_FOUND)
+    o2physics_add_dpl_workflow(lfinjets
+        SOURCES lfinjets.cxx
+        PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
+        COMPONENT_NAME Analysis)
+endif()

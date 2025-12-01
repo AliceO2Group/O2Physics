@@ -275,14 +275,19 @@ DECLARE_SOA_TABLE(JMcParticleSubs, "AOD", "JMcPartSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleSub = JMcParticleSubs::iterator;
 
@@ -310,14 +315,19 @@ DECLARE_SOA_TABLE(JMcParticleD0Subs, "AOD", "JMcPartD0Subs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleD0Sub = JMcParticleD0Subs::iterator;
 
@@ -345,14 +355,19 @@ DECLARE_SOA_TABLE(JMcParticleDplusSubs, "AOD", "JMcPartDPSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleDplusSub = JMcParticleDplusSubs::iterator;
 
@@ -380,14 +395,19 @@ DECLARE_SOA_TABLE(JMcParticleDsSubs, "AOD", "JMcPartDSSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleDsSub = JMcParticleDsSubs::iterator;
 
@@ -415,14 +435,19 @@ DECLARE_SOA_TABLE(JMcParticleDstarSubs, "AOD", "JMcPartDSTSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleDstarSub = JMcParticleDstarSubs::iterator;
 
@@ -450,14 +475,19 @@ DECLARE_SOA_TABLE(JMcParticleLcSubs, "AOD", "JMcPartLCSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleLcSub = JMcParticleLcSubs::iterator;
 
@@ -485,14 +515,19 @@ DECLARE_SOA_TABLE(JMcParticleB0Subs, "AOD", "JMcPartB0Subs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleB0Sub = JMcParticleB0Subs::iterator;
 
@@ -520,14 +555,19 @@ DECLARE_SOA_TABLE(JMcParticleBplusSubs, "AOD", "JMcPartBPSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleBplusSub = JMcParticleBplusSubs::iterator;
 
@@ -555,14 +595,19 @@ DECLARE_SOA_TABLE(JMcParticleXicToXiPiPiSubs, "AOD", "JMcPartXICXPPCSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleXicToXiPiPiSub = JMcParticleXicToXiPiPiSubs::iterator;
 
@@ -590,14 +635,19 @@ DECLARE_SOA_TABLE(JMcParticleDielectronSubs, "AOD", "JMcPartDIELSubs",
                   jmcparticle::Y,
                   jmcparticle::E,
                   jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::StatusCode,
+                  jmcparticle::Flags,
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::Energy<jmcparticle::E>);
+                  jmcparticle::Energy<jmcparticle::E>,
+                  jmcparticle::ProducedByGenerator<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::FromBackgroundEvent<jmcparticle::Flags>,                         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetProcess<jmcparticle::Flags, jmcparticle::StatusCode>,         // this will give a nonsensical value and should not be used
+                  jmcparticle::GetGenStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>,   // this will give a nonsensical value and should not be used
+                  jmcparticle::GetHepMCStatusCode<jmcparticle::Flags, jmcparticle::StatusCode>, // this will give a nonsensical value and should not be used
+                  jmcparticle::IsPhysicalPrimary<jmcparticle::Flags>);
 
 using JMcParticleDielectronSub = JMcParticleDielectronSubs::iterator;
 

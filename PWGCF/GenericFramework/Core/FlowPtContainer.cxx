@@ -21,6 +21,8 @@
 FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      fCorrList(0),
                                      fCovList(0),
+                                     fSubList(0),
+                                     fSubCMList(0),
                                      fCumulantList(0),
                                      fCentralMomentList(0),
                                      mpar(0),
@@ -29,10 +31,20 @@ FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      fUseCentralMoments(true),
                                      fUseGap(false),
                                      sumP(),
+                                     insub1(),
+                                     insub2(),
                                      corrNum(),
+                                     corrNum1(),
+                                     corrNum2(),
                                      corrDen(),
+                                     corrDen1(),
+                                     corrDen2(),
                                      cmVal(),
+                                     cmVal1(),
+                                     cmVal2(),
                                      cmDen(),
+                                     cmDen1(),
+                                     cmDen2(),
                                      arr(),
                                      warr() {}
 FlowPtContainer::~FlowPtContainer()
@@ -40,11 +52,17 @@ FlowPtContainer::~FlowPtContainer()
   delete fCMTermList;
   delete fCorrList;
   delete fCovList;
+  delete fSubList;
+  delete fSubCMList;
+  delete fCumulantList;
+  delete fCentralMomentList;
 };
 FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      fCMTermList(0),
                                                      fCorrList(0),
                                                      fCovList(0),
+                                                     fSubList(0),
+                                                     fSubCMList(0),
                                                      fCumulantList(0),
                                                      fCentralMomentList(0),
                                                      mpar(0),
@@ -53,16 +71,28 @@ FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      fUseCentralMoments(true),
                                                      fUseGap(false),
                                                      sumP(),
+                                                     insub1(),
+                                                     insub2(),
                                                      corrNum(),
+                                                     corrNum1(),
+                                                     corrNum2(),
                                                      corrDen(),
+                                                     corrDen1(),
+                                                     corrDen2(),
                                                      cmVal(),
+                                                     cmVal1(),
+                                                     cmVal2(),
                                                      cmDen(),
+                                                     cmDen1(),
+                                                     cmDen2(),
                                                      arr(),
                                                      warr() {}
 FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(name, title),
                                                                         fCMTermList(0),
                                                                         fCorrList(0),
                                                                         fCovList(0),
+                                                                        fSubList(0),
+                                                                        fSubCMList(0),
                                                                         fCumulantList(0),
                                                                         fCentralMomentList(0),
                                                                         mpar(0),
@@ -71,10 +101,20 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         fUseCentralMoments(true),
                                                                         fUseGap(false),
                                                                         sumP(),
+                                                                        insub1(),
+                                                                        insub2(),
                                                                         corrNum(),
+                                                                        corrNum1(),
+                                                                        corrNum2(),
                                                                         corrDen(),
+                                                                        corrDen1(),
+                                                                        corrDen2(),
                                                                         cmVal(),
+                                                                        cmVal1(),
+                                                                        cmVal2(),
                                                                         cmDen(),
+                                                                        cmDen1(),
+                                                                        cmDen2(),
                                                                         arr(),
                                                                         warr() {}
 void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
@@ -351,10 +391,192 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
+void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsub)
+{
+  if (!mpar)
+    mpar = m;
+  std::vector<double> multiBins = axis.binEdges;
+  int nMultiBins = axis.nBins.value_or(0);
+  if (nMultiBins <= 0)
+    nMultiBins = multiBins.size() - 1;
+  if (nMultiBins <= 0) {
+    LOGF(warning, "Multiplicity axis does not exist");
+    return;
+  }
+
+  if (fSubList)
+    delete fSubList;
+  fSubList = new TList();
+  fSubList->SetOwner(kTRUE);
+  for (int subEv = 0; subEv < 2; ++subEv) {
+    for (int m = 0; m < mpar; ++m) {
+      fSubList->Add(new BootstrapProfile(Form("mpt_sub%i_%ipar", subEv + 1, m + 1), this->GetTitle(), nMultiBins, &multiBins[0]));
+    }
+  }
+  for (int m = 2; m <= mpar; ++m) {
+    for (int k = 0; k < m - 1; ++k) {
+      fSubList->Add(new BootstrapProfile(Form("mpt_%isub1_%isub2_%ipar", m - k - 1, k + 1, m), this->GetTitle(), nMultiBins, &multiBins[0]));
+    }
+  }
+
+  if (fSubCMList)
+    delete fSubCMList;
+  fSubCMList = new TList();
+  fSubCMList->SetOwner(kTRUE);
+  for (int subEv = 0; subEv < 2; ++subEv) {
+    for (int m = 0; m < 4; ++m) {
+      for (int i = 0; i <= m; ++i) {
+        fSubCMList->Add(new BootstrapProfile(Form("cm%i_sub%i_Mpt%i", m + 1, subEv + 1, i), this->GetTitle(), nMultiBins, &multiBins[0]));
+      }
+    }
+  }
+  for (int m = 2; m <= 4; ++m) {
+    for (int first = 1; first < m; ++first) {
+      for (int second = first; second < m; ++second) {
+        if (first > second)
+          continue;
+        int fourth = m - second;
+        for (int third = 1; third < m; ++third) {
+          if (third > fourth)
+            continue;
+          fSubCMList->Add(new BootstrapProfile(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth), this->GetTitle(), nMultiBins, &multiBins[0]));
+        }
+      }
+    }
+  }
+
+  if (nsub) {
+    for (int i = 0; i < fSubList->GetEntries(); ++i)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(i))->InitializeSubsamples(nsub);
+    for (int i = 0; i < fSubCMList->GetEntries(); ++i)
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(i))->InitializeSubsamples(nsub);
+  }
+  LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
+}
+void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsub)
+{
+  if (!mpar)
+    mpar = m;
+
+  if (fSubList)
+    delete fSubList;
+  fSubList = new TList();
+  fSubList->SetOwner(kTRUE);
+  for (int subEv = 0; subEv < 2; ++subEv) {
+    for (int m = 0; m < mpar; ++m) {
+      fSubList->Add(new BootstrapProfile(Form("mpt_sub%i_%ipar", subEv + 1, m + 1), this->GetTitle(), nbinsx, xbins));
+    }
+  }
+  for (int m = 2; m <= mpar; ++m) {
+    for (int k = 0; k < m - 1; ++k) {
+      fSubList->Add(new BootstrapProfile(Form("mpt_%isub1_%isub2_%ipar", m - k - 1, k + 1, m), this->GetTitle(), nbinsx, xbins));
+    }
+  }
+
+  if (fSubCMList)
+    delete fSubCMList;
+  fSubCMList = new TList();
+  fSubCMList->SetOwner(kTRUE);
+  for (int subEv = 0; subEv < 2; ++subEv) {
+    for (int m = 0; m < 4; ++m) {
+      for (int i = 0; i <= m; ++i) {
+        fSubCMList->Add(new BootstrapProfile(Form("cm%i_sub%i_Mpt%i", m + 1, subEv + 1, i), this->GetTitle(), nbinsx, xbins));
+      }
+    }
+  }
+  for (int m = 2; m <= 4; ++m) {
+    for (int first = 1; first < m; ++first) {
+      for (int second = first; second < m; ++second) {
+        if (first > second)
+          continue;
+        int fourth = m - second;
+        for (int third = 1; third < m; ++third) {
+          if (third > fourth)
+            continue;
+          fSubCMList->Add(new BootstrapProfile(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth), this->GetTitle(), nbinsx, xbins));
+        }
+      }
+    }
+  }
+
+  if (nsub) {
+    for (int i = 0; i < fSubList->GetEntries(); ++i)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(i))->InitializeSubsamples(nsub);
+    for (int i = 0; i < fSubCMList->GetEntries(); ++i)
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(i))->InitializeSubsamples(nsub);
+  }
+  LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
+}
+void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsub)
+{
+  if (!mpar)
+    mpar = m;
+  if (fSubList)
+    delete fSubList;
+  fSubList = new TList();
+  fSubList->SetOwner(kTRUE);
+  for (int subEv = 0; subEv < 2; ++subEv) {
+    for (int m = 0; m < mpar; ++m) {
+      fSubList->Add(new BootstrapProfile(Form("mpt_sub%i_%ipar", subEv + 1, m + 1), this->GetTitle(), nbinsx, xlow, xhigh));
+    }
+  }
+  for (int m = 2; m <= mpar; ++m) {
+    for (int k = 0; k < m - 1; ++k) {
+      fSubList->Add(new BootstrapProfile(Form("mpt_%isub1_%isub2_%ipar", m - k - 1, k + 1, m), this->GetTitle(), nbinsx, xlow, xhigh));
+    }
+  }
+
+  if (fSubCMList)
+    delete fSubCMList;
+  fSubCMList = new TList();
+  fSubCMList->SetOwner(kTRUE);
+  for (int subEv = 0; subEv < 2; ++subEv) {
+    for (int m = 0; m < 4; ++m) {
+      for (int i = 0; i <= m; ++i) {
+        fSubCMList->Add(new BootstrapProfile(Form("cm%i_sub%i_Mpt%i", m + 1, subEv + 1, i), this->GetTitle(), nbinsx, xlow, xhigh));
+      }
+    }
+  }
+  for (int m = 2; m <= 4; ++m) {
+    for (int first = 1; first < m; ++first) {
+      for (int second = first; second < m; ++second) {
+        if (first > second)
+          continue;
+        int fourth = m - second;
+        for (int third = 1; third < m; ++third) {
+          if (third > fourth)
+            continue;
+          fSubCMList->Add(new BootstrapProfile(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth), this->GetTitle(), nbinsx, xlow, xhigh));
+        }
+      }
+    }
+  }
+  if (nsub) {
+    for (int i = 0; i < fSubList->GetEntries(); ++i)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(i))->InitializeSubsamples(nsub);
+    for (int i = 0; i < fSubCMList->GetEntries(); ++i)
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(i))->InitializeSubsamples(nsub);
+  }
+  LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
+}
 void FlowPtContainer::fill(const double& w, const double& pt)
 {
   for (size_t i = 0; i < sumP.size(); ++i) {
     sumP[i] += std::pow(w, i % (mpar + 1)) * std::pow(pt, i / (mpar + 1));
+  }
+  return;
+}
+void FlowPtContainer::fillSub1(const double& w, const double& pt)
+{
+  for (size_t i = 0; i < insub1.size(); ++i) {
+    insub1[i] += std::pow(w, i % (mpar + 1)) * std::pow(pt, i / (mpar + 1));
+  }
+  return;
+}
+void FlowPtContainer::fillSub2(const double& w, const double& pt)
+{
+  for (size_t i = 0; i < insub2.size(); ++i) {
+    insub2[i] += std::pow(w, i % (mpar + 1)) * std::pow(pt, i / (mpar + 1));
   }
   return;
 }
@@ -385,11 +607,79 @@ void FlowPtContainer::calculateCorrelations()
   }
   return;
 }
+void FlowPtContainer::calculateSubeventCorrelations()
+{
+  corrNum1.clear();
+  corrNum1.resize(mpar + 1, 0);
+  corrNum1[0] = 1.0;
+  corrDen1.clear();
+  corrDen1.resize(mpar + 1, 0);
+  corrDen1[0] = 1.0;
+  corrNum2.clear();
+  corrNum2.resize(mpar + 1, 0);
+  corrNum2[0] = 1.0;
+  corrDen2.clear();
+  corrDen2.resize(mpar + 1, 0);
+  corrDen2[0] = 1.0;
+
+  double sumNum1 = 0;
+  double sumDenum1 = 0;
+  std::vector<double> valNum1;
+  std::vector<double> valDenum1;
+  double sumNum2 = 0;
+  double sumDenum2 = 0;
+  std::vector<double> valNum2;
+  std::vector<double> valDenum2;
+
+  for (int m(1); m <= mpar; ++m) {
+    for (int k(1); k <= m; ++k) {
+      // correlations in subevent 1
+      valNum1.push_back(SignArray[k - 1] * corrNum1[m - k] * (FactorialArray[m - 1] / FactorialArray[m - k]) * insub1[getVectorIndex(k, k)]);
+      valDenum1.push_back(SignArray[k - 1] * corrDen1[m - k] * (FactorialArray[m - 1] / FactorialArray[m - k]) * insub1[getVectorIndex(k, 0)]);
+      // correlations in subevent 2
+      valNum2.push_back(SignArray[k - 1] * corrNum2[m - k] * (FactorialArray[m - 1] / FactorialArray[m - k]) * insub2[getVectorIndex(k, k)]);
+      valDenum2.push_back(SignArray[k - 1] * corrDen2[m - k] * (FactorialArray[m - 1] / FactorialArray[m - k]) * insub2[getVectorIndex(k, 0)]);
+    }
+    sumNum1 = orderedAddition(valNum1);
+    sumDenum1 = orderedAddition(valDenum1);
+    sumNum2 = orderedAddition(valNum2);
+    sumDenum2 = orderedAddition(valDenum2);
+    valNum1.clear();
+    valDenum1.clear();
+    valNum2.clear();
+    valDenum2.clear();
+    corrNum1[m] = sumNum1;
+    corrDen1[m] = sumDenum1;
+    corrNum2[m] = sumNum2;
+    corrDen2[m] = sumDenum2;
+  }
+  return;
+}
 void FlowPtContainer::fillPtProfiles(const double& centmult, const double& rn)
 {
   for (int m = 1; m <= mpar; ++m) {
     if (corrDen[m] != 0) {
       dynamic_cast<BootstrapProfile*>(fCorrList->At(m - 1))->FillProfile(centmult, corrNum[m] / corrDen[m], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : corrDen[m], rn);
+    }
+  }
+  return;
+}
+void FlowPtContainer::fillSubeventPtProfiles(const double& centmult, const double& rn)
+{
+  // Fill the correlations within subevents, requires that the CalculateSubeventCorrelations have been called with the correct input vectors right before
+  for (int m = 1; m <= mpar; ++m) {
+    if (corrDen1[m] != 0)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(m - 1))->FillProfile(centmult, corrNum1[m] / corrDen1[m], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : corrDen1[m], rn);
+    // subevent 2 profiles offset by mpar positions
+    if (corrDen2[m] != 0)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(mpar + m - 1))->FillProfile(centmult, corrNum2[m] / corrDen2[m], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : corrDen2[m], rn);
+  }
+
+  // Fill the cross-subevent correlations
+  for (int m = 2; m <= mpar; ++m) {
+    for (int k = 0; k < m - 1; ++k) {
+      if (corrDen1[m - k - 1] != 0 && corrDen2[k + 1] != 0)
+        dynamic_cast<BootstrapProfile*>(fSubList->FindObject(Form("mpt_%isub1_%isub2_%ipar", m - k - 1, k + 1, m)))->FillProfile(centmult, corrNum1[m - k - 1] / corrDen1[m - k - 1] * corrNum2[k + 1] / corrDen2[k + 1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : corrDen1[m - k - 1] * corrDen2[k + 1], rn);
     }
   }
   return;
@@ -582,6 +872,116 @@ void FlowPtContainer::fillCMProfiles(const double& centmult, const double& rn)
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, cmVal[9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
   cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 0)] + 3 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(2, 0)] + 2 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(3, 0)] + 6 * sumP[getVectorIndex(3, 1)] * sumP[getVectorIndex(1, 0)] - 6 * sumP[getVectorIndex(4, 1)]));
   dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, cmVal[10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
+  return;
+}
+void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const double& rn)
+{
+  // do I need to add an extra return statement here to match fillCMProfiles?
+  if (mpar < 1)
+    return;
+
+  int indOffset = 0;
+  for (int im = 1; im <= mpar; im++) {
+    indOffset += im;
+  }
+  // 0th order correlation
+  cmDen1.push_back(1.);
+  cmVal1.push_back(1.);
+  cmDen2.push_back(1.);
+  cmVal2.push_back(1.);
+
+  cmDen1.push_back(insub1[getVectorIndex(1, 0)]);
+  cmDen1.push_back(insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - insub1[getVectorIndex(2, 0)]);
+  cmDen1.push_back(insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - 3 * insub1[getVectorIndex(2, 0)] * insub1[getVectorIndex(1, 0)] + 2 * insub1[getVectorIndex(3, 0)]);
+  cmDen1.push_back(insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - 6 * insub1[getVectorIndex(2, 0)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] + 8 * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(3, 0)] + 3 * insub1[getVectorIndex(2, 0)] * insub1[getVectorIndex(2, 0)] - 6 * insub1[getVectorIndex(4, 0)]);
+
+  cmDen2.push_back(insub2[getVectorIndex(1, 0)]);
+  cmDen2.push_back(insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - insub2[getVectorIndex(2, 0)]);
+  cmDen2.push_back(insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - 3 * insub2[getVectorIndex(2, 0)] * insub2[getVectorIndex(1, 0)] + 2 * insub2[getVectorIndex(3, 0)]);
+  cmDen2.push_back(insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - 6 * insub2[getVectorIndex(2, 0)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] + 8 * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(3, 0)] + 3 * insub2[getVectorIndex(2, 0)] * insub2[getVectorIndex(2, 0)] - 6 * insub2[getVectorIndex(4, 0)]);
+
+  if (cmDen1[1] != 0) {
+    cmVal1.push_back(insub1[getVectorIndex(1, 1)] / cmDen1[1]);
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(0))->FillProfile(centmult, cmVal1[1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[1], rn);
+  }
+  if (cmDen2[1] != 0) {
+    cmVal2.push_back(insub2[getVectorIndex(1, 1)] / cmDen2[1]);
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 0))->FillProfile(centmult, cmVal2[1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[1], rn);
+  }
+
+  if (mpar < 2)
+    return;
+  if (insub1[getVectorIndex(2, 0)] != 0 && cmDen1[2] != 0) {
+    cmVal1.push_back(1 / cmDen1[2] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] - insub1[getVectorIndex(2, 2)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(1))->FillProfile(centmult, cmVal1[2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[2], rn);
+    cmVal1.push_back(1 / cmDen1[2] * (insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 1)] - insub1[getVectorIndex(2, 1)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(2))->FillProfile(centmult, cmVal1[3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[2], rn);
+  }
+  if (insub2[getVectorIndex(2, 0)] != 0 && cmDen2[2] != 0) {
+    cmVal2.push_back(1 / cmDen2[2] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] - insub2[getVectorIndex(2, 2)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 1))->FillProfile(centmult, cmVal2[2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[2], rn);
+    cmVal2.push_back(1 / cmDen2[2] * (insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 1)] - insub2[getVectorIndex(2, 1)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 2))->FillProfile(centmult, cmVal2[3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[2], rn);
+  }
+
+  if (mpar < 3)
+    return;
+  if (insub1[getVectorIndex(3, 0)] != 0 && cmDen1[3] != 0) {
+    cmVal1.push_back(1 / cmDen1[3] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] - 3 * insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(1, 1)] + 2 * insub1[getVectorIndex(3, 3)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(3))->FillProfile(centmult, cmVal1[4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[3], rn);
+    cmVal1.push_back(1 / cmDen1[3] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] - 2 * insub1[getVectorIndex(2, 1)] * insub1[getVectorIndex(1, 1)] + 2 * insub1[getVectorIndex(3, 2)] - insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(1, 0)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(4))->FillProfile(centmult, cmVal1[5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[3], rn);
+    cmVal1.push_back(1 / cmDen1[3] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - 2 * insub1[getVectorIndex(2, 1)] * insub1[getVectorIndex(1, 0)] + 2 * insub1[getVectorIndex(3, 1)] - insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(2, 0)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(5))->FillProfile(centmult, cmVal1[6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[3], rn);
+  }
+  if (insub2[getVectorIndex(3, 0)] != 0 && cmDen2[3] != 0) {
+    cmVal2.push_back(1 / cmDen2[3] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] - 3 * insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(1, 1)] + 2 * insub2[getVectorIndex(3, 3)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 3))->FillProfile(centmult, cmVal2[4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[3], rn);
+    cmVal2.push_back(1 / cmDen2[3] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] - 2 * insub2[getVectorIndex(2, 1)] * insub2[getVectorIndex(1, 1)] + 2 * insub2[getVectorIndex(3, 2)] - insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(1, 0)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 4))->FillProfile(centmult, cmVal2[5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[3], rn);
+    cmVal2.push_back(1 / cmDen2[3] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - 2 * insub2[getVectorIndex(2, 1)] * insub2[getVectorIndex(1, 0)] + 2 * insub2[getVectorIndex(3, 1)] - insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(2, 0)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 5))->FillProfile(centmult, cmVal2[6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[3], rn);
+  }
+
+  if (mpar < 4)
+    return;
+  if (insub1[getVectorIndex(4, 0)] != 0 && cmDen1[4] != 0) {
+    cmVal1.push_back(1 / cmDen1[4] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] - 6 * insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] + 3 * insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(2, 2)] + 8 * insub1[getVectorIndex(3, 3)] * insub1[getVectorIndex(1, 1)] - 6 * insub1[getVectorIndex(4, 4)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(6))->FillProfile(centmult, cmVal1[7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[4], rn);
+    cmVal1.push_back(1 / cmDen1[4] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] - 3 * insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] - 3 * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(2, 1)] + 3 * insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(2, 1)] + 6 * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(3, 2)] - 6 * insub1[getVectorIndex(4, 3)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(7))->FillProfile(centmult, cmVal1[8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[4], rn);
+    cmVal1.push_back(1 / cmDen1[4] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - insub1[getVectorIndex(2, 2)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - insub1[getVectorIndex(2, 0)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 1)] + insub1[getVectorIndex(2, 0)] * insub1[getVectorIndex(2, 2)] - 4 * insub1[getVectorIndex(2, 1)] * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] + 4 * insub1[getVectorIndex(3, 2)] * insub1[getVectorIndex(1, 0)] + 4 * insub1[getVectorIndex(3, 1)] * insub1[getVectorIndex(1, 1)] + 2 * insub1[getVectorIndex(2, 1)] * insub1[getVectorIndex(2, 1)] - 6 * insub1[getVectorIndex(4, 2)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(8))->FillProfile(centmult, cmVal1[9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[4], rn);
+    cmVal1.push_back(1 / cmDen1[4] * (insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - 3 * insub1[getVectorIndex(2, 1)] * insub1[getVectorIndex(1, 0)] * insub1[getVectorIndex(1, 0)] - 3 * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(2, 0)] * insub1[getVectorIndex(1, 0)] + 3 * insub1[getVectorIndex(2, 1)] * insub1[getVectorIndex(2, 0)] + 2 * insub1[getVectorIndex(1, 1)] * insub1[getVectorIndex(3, 0)] + 6 * insub1[getVectorIndex(3, 1)] * insub1[getVectorIndex(1, 0)] - 6 * insub1[getVectorIndex(4, 1)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(9))->FillProfile(centmult, cmVal1[10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[4], rn);
+  }
+  if (insub2[getVectorIndex(4, 0)] != 0 && cmDen2[4] != 0) {
+    cmVal2.push_back(1 / cmDen2[4] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] - 6 * insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] + 3 * insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(2, 2)] + 8 * insub2[getVectorIndex(3, 3)] * insub2[getVectorIndex(1, 1)] - 6 * insub2[getVectorIndex(4, 4)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 6))->FillProfile(centmult, cmVal2[7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[4], rn);
+    cmVal2.push_back(1 / cmDen2[4] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] - 3 * insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] - 3 * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(2, 1)] + 3 * insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(2, 1)] + 6 * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(3, 2)] - 6 * insub2[getVectorIndex(4, 3)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 7))->FillProfile(centmult, cmVal2[8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[4], rn);
+    cmVal2.push_back(1 / cmDen2[4] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - insub2[getVectorIndex(2, 2)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - insub2[getVectorIndex(2, 0)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 1)] + insub2[getVectorIndex(2, 0)] * insub2[getVectorIndex(2, 2)] - 4 * insub2[getVectorIndex(2, 1)] * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] + 4 * insub2[getVectorIndex(3, 2)] * insub2[getVectorIndex(1, 0)] + 4 * insub2[getVectorIndex(3, 1)] * insub2[getVectorIndex(1, 1)] + 2 * insub2[getVectorIndex(2, 1)] * insub2[getVectorIndex(2, 1)] - 6 * insub2[getVectorIndex(4, 2)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 8))->FillProfile(centmult, cmVal2[9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[4], rn);
+    cmVal2.push_back(1 / cmDen2[4] * (insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - 3 * insub2[getVectorIndex(2, 1)] * insub2[getVectorIndex(1, 0)] * insub2[getVectorIndex(1, 0)] - 3 * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(2, 0)] * insub2[getVectorIndex(1, 0)] + 3 * insub2[getVectorIndex(2, 1)] * insub2[getVectorIndex(2, 0)] + 2 * insub2[getVectorIndex(1, 1)] * insub2[getVectorIndex(3, 0)] + 6 * insub2[getVectorIndex(3, 1)] * insub2[getVectorIndex(1, 0)] - 6 * insub2[getVectorIndex(4, 1)]));
+    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 9))->FillProfile(centmult, cmVal2[10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen2[4], rn);
+  }
+
+  // Fill cross terms
+  for (int m = 2; m <= 4; ++m) {
+    for (int first = 1; first < m; ++first) {
+      for (int second = first; second < m; ++second) {
+        if (first > second)
+          continue;
+        int fourth = m - second;
+        for (int third = 1; third < m; ++third) {
+          if (third > fourth)
+            continue;
+          if (insub1[getVectorIndex(m, 0)] != 0 && insub2[getVectorIndex(m, 0)] != 0 && cmDen1[m] * cmDen2[m] != 0)
+            dynamic_cast<BootstrapProfile*>(fSubCMList->FindObject(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth)))->FillProfile(centmult, cmVal1[second * (second - 1) / 2 + second - first + 1] * cmVal2[fourth * (fourth - 1) / 2 + fourth - third + 1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen1[m] * cmDen2[m], rn);
+        }
+      }
+    }
+  }
   return;
 }
 void FlowPtContainer::fillArray(FillType a, FillType b, double c, double d)
@@ -1237,6 +1637,14 @@ void FlowPtContainer::rebinMulti(int nbins)
     for (int i = 0; i < fCovList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->RebinMulti(nbins);
   }
+  if (fSubList) {
+    for (int i = 0; i < fSubList->GetEntries(); i++)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(i))->RebinMulti(nbins);
+  }
+  if (fSubCMList) {
+    for (int i = 0; i < fSubCMList->GetEntries(); i++)
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(i))->RebinMulti(nbins);
+  }
   return;
 }
 void FlowPtContainer::rebinMulti(int nbins, double* binedges)
@@ -1252,6 +1660,14 @@ void FlowPtContainer::rebinMulti(int nbins, double* binedges)
   if (fCovList) {
     for (int i = 0; i < fCovList->GetEntries(); i++)
       dynamic_cast<BootstrapProfile*>(fCovList->At(i))->RebinMulti(nbins, binedges);
+  }
+  if (fSubList) {
+    for (int i = 0; i < fSubList->GetEntries(); i++)
+      dynamic_cast<BootstrapProfile*>(fSubList->At(i))->RebinMulti(nbins, binedges);
+  }
+  if (fSubCMList) {
+    for (int i = 0; i < fSubCMList->GetEntries(); i++)
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(i))->RebinMulti(nbins, binedges);
   }
   return;
 }
@@ -1359,6 +1775,8 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
     TList* tCMTerm = lPTC->fCMTermList;
     TList* tCorr = lPTC->fCorrList;
     TList* tCov = lPTC->fCovList;
+    TList* tSub = lPTC->fSubList;
+    TList* tSubCM = lPTC->fSubCMList;
     TList* tCum = lPTC->fCumulantList;
     TList* tCM = lPTC->fCentralMomentList;
     if (tCMTerm) {
@@ -1391,6 +1809,18 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
         fCentralMomentList = dynamic_cast<TList*>(tCM->Clone());
       else
         mergeBSLists(fCentralMomentList, tCM);
+    }
+    if (tSub) {
+      if (!fSubList)
+        fSubList = dynamic_cast<TList*>(tSub->Clone());
+      else
+        mergeBSLists(fSubList, tSub);
+    }
+    if (tSubCM) {
+      if (!fSubCMList)
+        fSubCMList = dynamic_cast<TList*>(tSubCM->Clone());
+      else
+        mergeBSLists(fSubCMList, tSubCM);
     }
   }
   return nmerged;

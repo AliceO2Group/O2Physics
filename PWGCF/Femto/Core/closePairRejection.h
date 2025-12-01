@@ -63,6 +63,8 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
+  o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
+  o2::framework::Configurable<float> dphistarCenter{"dphistarCenter", 0.f, "Center of dphistar cut"};
   o2::framework::Configurable<float> kstarMin{"kstarMin", -1.f, "Minimum kstar of pair for plotting (Set to negative value to turn off the cut)"};
   o2::framework::Configurable<float> kstarMax{"kstarMax", -1.f, "Maximum kstar of pair for plotting (Set to negative value to turn off the cut)"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
@@ -157,6 +159,9 @@ class CloseTrackRejection
       LOG(fatal) << "Limits for Close Pair Rejection are invalid (0 or negative). Breaking...";
     }
 
+    mDetaCenter = confCpr.detaCenter.value;
+    mDphistarCenter = confCpr.dphistarCenter.value;
+
     mChargeAbsTrack1 = std::abs(chargeAbsTrack1);
     mChargeAbsTrack2 = std::abs(chargeAbsTrack2);
 
@@ -217,7 +222,11 @@ class CloseTrackRejection
       }
     }
     // for small momemeta the calculation of phistar might fail, if the particle did not reach a certain radius
-    mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
+    if (count > 0) {
+      mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
+    } else {
+      mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
+    }
   }
 
   void fill(float kstar)
@@ -280,7 +289,7 @@ class CloseTrackRejection
     bool isCloseAnyRadius = false;
 
     if (mCutAverage) {
-      isCloseAverage = std::hypot(mAverageDphistar / mDphistarMax, mDeta / mDetaMax) < 1.f;
+      isCloseAverage = std::hypot((mAverageDphistar - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
     }
 
     if (mCutAnyRadius) {
@@ -289,7 +298,7 @@ class CloseTrackRejection
           break;
         }
         if (mDphistarMask.at(i)) {
-          isCloseAnyRadius = std::hypot(mDphistar.at(i) / mDphistarMax, mDeta / mDetaMax) < 1.f;
+          isCloseAnyRadius = std::hypot((mDphistar.at(i) - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
         }
       }
     }
@@ -316,6 +325,8 @@ class CloseTrackRejection
   float mMagField = 0.f;
   float mDetaMax = 0.f;
   float mDphistarMax = 0.f;
+  float mDetaCenter = 0.f;
+  float mDphistarCenter = 0.f;
 
   float mAverageDphistar = 0.f;
   float mDeta = 0.f;

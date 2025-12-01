@@ -21,20 +21,22 @@
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFInJets.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -206,6 +208,23 @@ struct StrangenessInJets {
     const AxisSpec dcaAxis{longLivedOptions.longLivedBinsDca, "DCA_{xy} (cm)"};
 
     // Histograms for real data
+    if (doprocessDerivedAnalysis) {
+      registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("AntiLambda_in_jet", "AntiLambda_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("Lambda_in_ue", "Lambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("AntiLambda_in_ue", "AntiLambda_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassLambdaAxis});
+      registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
+      registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassK0sAxis});
+      registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("XiNeg_in_ue", "XiNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassXiAxis});
+      registryData.add("OmegaPos_in_jet", "OmegaPos_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+      registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, ptAxis, invMassOmegaAxis});
+    }
+
     if (doprocessData) {
 
       // Event counters
@@ -409,17 +428,17 @@ struct StrangenessInJets {
       return false;
 
     // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
-    static constexpr int kCharmQuark = 4;
-    static constexpr int kBottomQuark = 5;
-    static constexpr int hundreds = 100;
-    static constexpr int thousands = 1000;
+    static constexpr int CharmQuark = 4;
+    static constexpr int BottomQuark = 5;
+    static constexpr int Hundreds = 100;
+    static constexpr int Thousands = 1000;
 
     // Check if particle is from heavy-flavor decay
     bool fromHF = false;
     if (particle.has_mothers()) {
       auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
       int motherPdg = std::abs(mother.pdgCode());
-      fromHF = (motherPdg / hundreds == kCharmQuark || motherPdg / hundreds == kBottomQuark || motherPdg / thousands == kCharmQuark || motherPdg / thousands == kBottomQuark);
+      fromHF = (motherPdg / Hundreds == CharmQuark || motherPdg / Hundreds == BottomQuark || motherPdg / Thousands == CharmQuark || motherPdg / Thousands == BottomQuark);
     }
 
     // Select only physical primary particles or from heavy-flavor
@@ -973,7 +992,7 @@ struct StrangenessInJets {
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-    auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
+    auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
     // Jet selection
     bool isAtLeastOneJetSelected = false;
@@ -1236,8 +1255,8 @@ struct StrangenessInJets {
           continue;
 
         // Build 4-momentum assuming charged pion mass
-        static constexpr float kMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
-        const double energy = std::sqrt(particle.p() * particle.p() + kMassPionChargedSquared);
+        static constexpr float MassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+        const double energy = std::sqrt(particle.p() * particle.p() + MassPionChargedSquared);
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
@@ -1253,7 +1272,7 @@ struct StrangenessInJets {
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
 
       // Estimate background energy density (rho) in perpendicular cone
-      auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
       // Loop over clustered jets
       for (const auto& jet : jets) {
@@ -1519,7 +1538,7 @@ struct StrangenessInJets {
       // Cluster particles using the anti-kt algorithm
       fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-      auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
       // Jet selection
       bool isAtLeastOneJetSelected = false;
@@ -1750,6 +1769,230 @@ struct StrangenessInJets {
     }
   }
   PROCESS_SWITCH(StrangenessInJets, processMCreconstructed, "process reconstructed events", false);
+
+  // Postprocessing
+  void processDerivedAnalysis(aod::V0InJets const& v0s, aod::CascInJets const& cascades)
+  {
+    for (const auto& v0 : v0s) {
+
+      if (v0.v0negITSlayers() < minITSnCls || v0.v0posITSlayers() < minITSnCls)
+        continue;
+      if (v0.v0negtpcCrossedRows() < minNCrossedRowsTPC || v0.v0postpcCrossedRows() < minNCrossedRowsTPC)
+        continue;
+      if (v0.v0negTPCChi2() > maxChi2TPC || v0.v0posTPCChi2() > maxChi2TPC)
+        continue;
+      if (v0.v0cospa() < v0cospaMin)
+        continue;
+      if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+        continue;
+      if (std::fabs(v0.v0dcav0daughters()) > dcaV0DaughtersMax)
+        continue;
+      if (std::fabs(v0.v0dcapostopv()) < dcapostoPVmin)
+        continue;
+      if (std::fabs(v0.v0dcanegtopv()) < dcanegtoPVmin)
+        continue;
+      // PID selections (TPC) -- K0s
+      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
+        continue;
+      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF) -- K0s
+      if (requireTOF) {
+        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
+          continue;
+        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
+          continue;
+      }
+      // PID selections (TPC): positive track = proton, negative track = pion -- Lam
+      if (v0.ntpcsigmapospr() < nsigmaTPCmin || v0.ntpcsigmapospr() > nsigmaTPCmax)
+        continue;
+      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF): positive track = proton, negative track = pion -- Lam
+      if (requireTOF) {
+        if (v0.ntofsigmapospr() < nsigmaTOFmin || v0.ntofsigmapospr() > nsigmaTOFmax)
+          continue;
+        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
+          continue;
+      }
+      // PID selections (TPC): negative track = proton, positive track = pion --- ALam
+      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
+        continue;
+      if (v0.ntpcsigmanegpr() < nsigmaTPCmin || v0.ntpcsigmanegpr() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF): negative track = proton, positive track = pion --- ALam
+      if (requireTOF) {
+        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
+          continue;
+        if (v0.ntofsigmanegpr() < nsigmaTOFmin || v0.ntofsigmanegpr() > nsigmaTOFmax)
+          continue;
+      }
+
+      if (v0.isUE()) {
+        registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
+        registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
+        registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
+      } else if (v0.isJC()) {
+        registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
+        registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
+        registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
+      }
+    }
+
+    for (const auto& casc : cascades) {
+
+      if (casc.v0negITSlayers() < minITSnCls || casc.v0posITSlayers() < minITSnCls || casc.bachITSlayers() < minITSnCls)
+        continue;
+      if (casc.v0negtpcCrossedRows() < minNCrossedRowsTPC || casc.v0postpcCrossedRows() < minNCrossedRowsTPC ||
+          casc.bachtpcCrossedRows() < minNCrossedRowsTPC)
+        continue;
+      if (casc.v0negTPCChi2() > maxChi2TPC || casc.v0posTPCChi2() > maxChi2TPC || casc.bachTPCChi2() > maxChi2TPC)
+        continue;
+      if (casc.v0cospa() < v0cospaMin)
+        continue;
+      if (casc.casccospa() < casccospaMin)
+        continue;
+      if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+        continue;
+      if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+        continue;
+      if (std::fabs(casc.v0dcav0daughters()) > dcaV0DaughtersMax)
+        continue;
+      if (std::fabs(casc.v0dcapostopv()) < dcapostoPVmin)
+        continue;
+      if (std::fabs(casc.v0dcanegtopv()) < dcanegtoPVmin)
+        continue;
+      if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+        continue;
+      if (std::fabs(casc.dcav0topv()) < dcaV0topvMin)
+        continue;
+      if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
+        continue;
+      // Xi
+      //  Xi+ selection (Xi+ -> antiL + pi+)
+      if (casc.sign() > 0) {
+        // PID selections (TPC)
+        if (casc.ntpcsigmanegpr() < nsigmaTPCmin || casc.ntpcsigmanegpr() > nsigmaTPCmax)
+          continue;
+        if (casc.ntpcsigmapospi() < nsigmaTPCmin || casc.ntpcsigmapospi() > nsigmaTPCmax)
+          continue;
+
+        // PID selections (TOF)
+        if (requireTOF) {
+          if (casc.ntofsigmanegpr() < nsigmaTOFmin || casc.ntofsigmanegpr() > nsigmaTOFmax)
+            continue;
+          if (casc.ntofsigmapospi() < nsigmaTOFmin || casc.ntofsigmapospi() > nsigmaTOFmax)
+            continue;
+        }
+      }
+      // Xi- selection (Xi- -> L + pi-)
+      if (casc.sign() < 0) {
+        // PID selections (TPC)
+        if (casc.ntpcsigmapospr() < nsigmaTPCmin || casc.ntpcsigmapospr() > nsigmaTPCmax)
+          continue;
+        if (casc.ntpcsigmanegpi() < nsigmaTPCmin || casc.ntpcsigmanegpi() > nsigmaTPCmax)
+          continue;
+
+        // PID selections (TOF)
+        if (requireTOF) {
+          if (casc.ntofsigmapospr() < nsigmaTOFmin || casc.ntofsigmapospr() > nsigmaTOFmax)
+            continue;
+          if (casc.ntofsigmanegpi() < nsigmaTOFmin || casc.ntofsigmanegpi() > nsigmaTOFmax)
+            continue;
+        }
+      }
+
+      // PID selection on bachelor
+      if (casc.ntpcsigmabachpi() < nsigmaTPCmin || casc.ntpcsigmabachpi() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF)
+      if (requireTOF) {
+        if (casc.ntofsigmabachpi() < nsigmaTOFmin || casc.ntofsigmabachpi() > nsigmaTOFmax)
+          continue;
+      }
+      //  V0 mass window
+      if (std::fabs(casc.masslambda() - o2::constants::physics::MassLambda0) > deltaMassLambda)
+        continue;
+      // Reject candidates compatible with Omega
+      if (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega)
+        continue;
+
+      // Omega
+      //  Omega+ selection (Omega+ -> antiL + K+)
+      if (casc.sign() > 0) {
+        // PID selections (TPC)
+        if (casc.ntpcsigmanegpr() < nsigmaTPCmin || casc.ntpcsigmanegpr() > nsigmaTPCmax)
+          continue;
+        if (casc.ntpcsigmapospi() < nsigmaTPCmin || casc.ntpcsigmapospi() > nsigmaTPCmax)
+          continue;
+
+        // PID selections (TOF)
+        if (requireTOF) {
+          if (casc.ntofsigmanegpr() < nsigmaTOFmin || casc.ntofsigmanegpr() > nsigmaTOFmax)
+            continue;
+          if (casc.ntofsigmapospi() < nsigmaTOFmin || casc.ntofsigmapospi() > nsigmaTOFmax)
+            continue;
+        }
+      }
+
+      // Omega- selection (Omega- -> L + K-)
+      if (casc.sign() < 0) {
+        // PID selections (TPC)
+        if (casc.ntpcsigmapospr() < nsigmaTPCmin || casc.ntpcsigmapospr() > nsigmaTPCmax)
+          continue;
+        if (casc.ntpcsigmanegpi() < nsigmaTPCmin || casc.ntpcsigmanegpi() > nsigmaTPCmax)
+          continue;
+
+        // PID selections (TOF)
+        if (requireTOF) {
+          if (casc.ntofsigmapospr() < nsigmaTOFmin || casc.ntofsigmapospr() > nsigmaTOFmax)
+            continue;
+          if (casc.ntofsigmanegpi() < nsigmaTOFmin || casc.ntofsigmanegpi() > nsigmaTOFmax)
+            continue;
+        }
+      }
+
+      // PID selection on bachelor
+      if (casc.ntpcsigmabachka() < nsigmaTPCmin || casc.ntpcsigmabachka() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF)
+      if (requireTOF) {
+        if (casc.ntofsigmabachka() < nsigmaTOFmin || casc.ntofsigmabachka() > nsigmaTOFmax)
+          continue;
+      }
+      //  V0 mass window
+      if (std::fabs(casc.masslambda() - o2::constants::physics::MassLambda0) > deltaMassLambda)
+        continue;
+
+      // Reject candidates compatible with Xi
+      if (std::fabs(casc.massxi() - o2::constants::physics::MassXiMinus) < deltaMassXi)
+        continue;
+
+      if (casc.isUE()) {
+        if (casc.sign() < 0) {
+          registryData.fill(HIST("XiNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        } else if (casc.sign() > 0) {
+          registryData.fill(HIST("XiPos_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaPos_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        }
+      } else if (casc.isJC()) {
+        if (casc.sign() < 0) {
+          registryData.fill(HIST("XiNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        } else if (casc.sign() > 0) {
+          registryData.fill(HIST("XiPos_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+          registryData.fill(HIST("OmegaPos_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJets, processDerivedAnalysis, "Postprocessing for derived data analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

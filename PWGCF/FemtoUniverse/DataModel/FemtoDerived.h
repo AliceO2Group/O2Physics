@@ -16,15 +16,17 @@
 #ifndef PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 
-#include <cmath>
-#include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
-#include "Framework/DataTypes.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Expressions.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Expressions.h"
+#include "MathUtils/Utils.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -64,6 +66,7 @@ enum ParticleType {
   kV0,              //! V0
   kV0Child,         //! Child track of a V0
   kCascade,         //! Cascade
+  kCascadeV0Child,  //! Child track of a V0 coming from a cascade
   kCascadeBachelor, //! Bachelor track of a cascade
   kPhi,             //! Phi meson
   kPhiChild,        //! Child track of a Phi meson
@@ -72,7 +75,7 @@ enum ParticleType {
   kNParticleTypes   //! Number of particle types
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeV0Child", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
 static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy", "/hInvMass", "/hDCAxy"};
 
 using CutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
