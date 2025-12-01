@@ -505,7 +505,7 @@ struct OnTheFlyTracker {
       histos.add("V0Building_Configuration_0/Lambda/hMass", "hMass", kTH2F, {axes.axisLambdaMass, axes.axisMomentum});
       histos.add("V0Building_Configuration_0/AntiLambda/hMass", "hMass", kTH2F, {axes.axisLambdaMass, axes.axisMomentum});
       if (static_cast<int>(fastTrackerSettings.alice3geo->size()) > 1) {
-        if(fastTrackerSettings.alice3geo->size()>4){
+        if (fastTrackerSettings.alice3geo->size() > 4) {
           LOG(warn) << "More than 4 FastTracker configurations found. Only first 4 will have V0 QA histograms filled.";
         }
         for (int icfg = 1; icfg < static_cast<int>(fastTrackerSettings.alice3geo->size()); icfg++) {
