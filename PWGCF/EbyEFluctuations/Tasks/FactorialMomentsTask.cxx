@@ -23,6 +23,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,9 +32,6 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-
-#include "TDatabasePDG.h"
-#include <TPDGCode.h>
 
 #include <unordered_set>
 using std::array;
@@ -222,12 +220,7 @@ struct FactorialMoments {
       if (track.pt() > confPtBins.value[2 * iPt] && track.pt() < confPtBins.value[2 * iPt + 1]) {
         float iphi = track.phi();
         iphi = gRandom->Gaus(iphi, TMath::TwoPi());
-
-        if (iphi < 0) {
-          iphi += TMath::TwoPi();
-        } else if (iphi > TMath::TwoPi()) {
-          iphi -= TMath::TwoPi();
-        }
+        iphi = RecoDecay::constrainAngle(iphi);
 
         mHistArrQA[iPt * 4]->Fill(track.eta());
         mHistArrQA[iPt * 4 + 1]->Fill(track.pt());
