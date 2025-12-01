@@ -152,12 +152,12 @@ struct HfResoConfigSingleTrackCuts : o2::framework::ConfigurableGroup {
 struct HfResoConfigQaPlots : o2::framework::ConfigurableGroup {
   std::string prefix = "qaPlots"; // JSON group name
   o2::framework::Configurable<bool> applyCutsForQaHistograms{"applyCutsForQaHistograms", true, "flag to apply cuts to QA histograms"};
-  o2::framework::Configurable<float> cutMassDMin{"cutMassDMin", 1.83, "minimum mass for D0 and Dplus candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassDMax{"cutMassDMax", 1.92, "maximum mass for D0 and Dplus candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
+  o2::framework::Configurable<float> cutMassDMin{"cutMassDMin", 1.83, "minimum mass for D0 and Dplus candidates"};   // o2-linter: disable=pdg/explicit-mass (false positive)
+  o2::framework::Configurable<float> cutMassDMax{"cutMassDMax", 1.92, "maximum mass for D0 and Dplus candidates"};   // o2-linter: disable=pdg/explicit-mass (false positive)
   o2::framework::Configurable<float> cutMassDstarMin{"cutMassDstarMin", 0.139, "minimum mass for Dstar candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
   o2::framework::Configurable<float> cutMassDstarMax{"cutMassDstarMax", 0.175, "maximum mass for Dstar candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassK0sMin{"cutMassK0sMin", 0.485, "minimum mass for K0s candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassK0sMax{"cutMassK0sMax", 0.509, "maximum mass for K0s candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
+  o2::framework::Configurable<float> cutMassK0sMin{"cutMassK0sMin", 0.485, "minimum mass for K0s candidates"};       // o2-linter: disable=pdg/explicit-mass (false positive)
+  o2::framework::Configurable<float> cutMassK0sMax{"cutMassK0sMax", 0.509, "maximum mass for K0s candidates"};       // o2-linter: disable=pdg/explicit-mass (false positive)
   o2::framework::Configurable<float> cutMassLambdaMin{"cutMassLambdaMin", 1.11, "minimum mass for Lambda candidates"};
   o2::framework::Configurable<float> cutMassLambdaMax{"cutMassLambdaMax", 1.12, "maximum mass for Lambda candidates"};
 };
