@@ -67,7 +67,7 @@ class HFInvMassFitter : public TNamed
     NTypesOfReflPdf
   };
   std::array<std::string, NTypesOfReflPdf> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
-  HFInvMassFitter();
+  HFInvMassFitter() = delete;
   HFInvMassFitter(const TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus);
   ~HFInvMassFitter() override;
   void setHistogramForFit(const TH1* histoToFit)
