@@ -162,7 +162,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
 
   void init(InitContext& initContext)
   {
-  
+
     // histograms
     if (doprocessD0V0MC || doprocessD0TrackMC || doprocessD0V0AndTrackMC || doprocessD0V0MCWithMl || doprocessD0TrackMCWithMl || doprocessD0V0AndTrackMCWithMl) {
       addHistograms<true, DMesonType::D0>(registry);
