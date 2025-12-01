@@ -476,7 +476,7 @@ struct PidFlowPtCorr {
   {
     if (correctionsLoaded)
       return;
-    int nspecies = 1;
+    int nspecies = 5;
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
       for (int i = 0; i <= nspecies - 1; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
@@ -502,7 +502,7 @@ struct PidFlowPtCorr {
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
   {
     float eff = 1.;
-    int nspecies = 1;
+    int nspecies = 5;
     if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
@@ -671,9 +671,10 @@ struct PidFlowPtCorr {
       if (cfgDoAccEffCorr) {
         if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
           continue;
-        if (cfgDoLocDenCorr) {
-          bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
-          if (withinPtRef) {
+      }
+      if (cfgDoLocDenCorr) {
+        bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
+        if (withinPtRef) {
           double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
           fphi = (1 + 2 * fphi);
           int pTBinForEff = hFindPtBin->FindBin(track.pt());
@@ -685,7 +686,6 @@ struct PidFlowPtCorr {
             }
           }
         }
-      }
       }
       if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
