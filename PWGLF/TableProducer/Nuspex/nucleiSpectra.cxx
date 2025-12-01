@@ -51,9 +51,10 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "Math/Vector4D.h"
-#include "TRandom3.h"
+#include <Math/Vector4D.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>   // for PDG codes
+#include <TRandom3.h>
 
 #include <algorithm>
 #include <cmath>
@@ -331,7 +332,7 @@ struct nucleiSpectra {
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "/Users/m/mpuccio/EventFiltering/OTS/", "path to the zorro ccdb objects"};
+  Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "EventFiltering/Zorro/", "path to the zorro ccdb objects"};
   int mRunNumber = 0;
   float mBz = 0.f;
 
@@ -356,7 +357,7 @@ struct nucleiSpectra {
     float dauVtx[3]{0.f, 0.f, 0.f};
     auto daughters = particle.daughters_as<aod::McParticles>();
     for (const auto& dau : daughters) {
-      if (abs(dau.pdgCode()) != 22 && abs(dau.pdgCode()) != 11) {
+      if (std::abs(dau.pdgCode()) != PDG_t::kGamma && std::abs(dau.pdgCode()) != PDG_t::kElectron) {
         dauVtx[0] = dau.vx();
         dauVtx[1] = dau.vy();
         dauVtx[2] = dau.vz();
@@ -510,14 +511,14 @@ struct nucleiSpectra {
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
 
-    for (int iC{0}; iC < 2; ++iC) {
+    for (unsigned int iC{0}; iC < nuclei::matter.size(); ++iC) {
       nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
 
       for (int iS{0}; iS < nuclei::species; ++iS) {
         nuclei::hNsigma[0][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], nSigmaAxes[0]});
         nuclei::hNsigmaEta[0][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigmaEta{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {} vs #eta", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {etaAxis, ptAxes[iS], nSigmaAxes[0]});
 
-        for (int iPID{0}; iPID < 2; ++iPID) {
+        for (unsigned int iPID{0}; iPID < nuclei::matter.size(); ++iPID) {
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaxyAxes[iS]});
           nuclei::hDCAz[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAz{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAz {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcazAxes[iS]});
         }
@@ -540,7 +541,7 @@ struct nucleiSpectra {
     }
 
     for (int iS{0}; iS < nuclei::species; ++iS) {
-      for (int iMax{0}; iMax < 2; ++iMax) {
+      for (unsigned int iMax{0}; iMax < nuclei::pidName.size(); ++iMax) {
         nuclei::pidCuts[0][iS][iMax] = cfgNsigmaTPC->get(iS, iMax);
       }
     }
@@ -548,7 +549,7 @@ struct nucleiSpectra {
     if (doprocessMatching) {
       std::vector<double> occBins{-0.5, 499.5, 999.5, 1999.5, 2999.5, 3999.5, 4999.5, 10000., 50000.};
       AxisSpec occAxis{occBins, "Occupancy"};
-      for (int iC{0}; iC < 2; ++iC) {
+      for (unsigned int iC{0}; iC < nuclei::matter.size(); ++iC) {
         nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
         nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type; Occupancy", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}, occAxis});
       }
@@ -605,7 +606,7 @@ struct nucleiSpectra {
       {nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[4], nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[4]}};
 
     int nGloTracks[2]{0, 0}, nTOFTracks[2]{0, 0};
-    for (auto& track : tracks) { // start loop over tracks
+    for (const auto& track : tracks) { // start loop over tracks
       if (std::abs(track.eta()) > cfgCutEta ||
           track.tpcInnerParam() < cfgCutTpcMom ||
           track.itsNCls() < cfgCutNclusITS ||
@@ -683,7 +684,7 @@ struct nucleiSpectra {
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
-        for (int iPID{0}; iPID < 2; ++iPID) { /// 0 TPC, 1 TOF
+        for (unsigned int iPID{0}; iPID < nuclei::pidName.size(); ++iPID) { /// 0 TPC, 1 TOF
           if (selectedTPC[iS]) {
             if (iPID && !track.hasTOF()) {
               continue;
@@ -857,7 +858,7 @@ struct nucleiSpectra {
         }
       }
     }
-    for (auto& c : nuclei::candidates_flow) {
+    for (const auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.psiFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.qFT0A, c.qFT0C, c.qTPC, c.qTPCl, c.qTPCr);
     }
   }
@@ -874,7 +875,7 @@ struct nucleiSpectra {
       return;
     }
     fillDataInfo(collision, tracks);
-    for (auto& c : nuclei::candidates) {
+    for (const auto& c : nuclei::candidates) {
       if (c.fillTree) {
         nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS);
       }
@@ -886,7 +887,7 @@ struct nucleiSpectra {
         }
       }
     }
-    for (auto& c : nuclei::candidates_flow) {
+    for (const auto& c : nuclei::candidates_flow) {
       nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.psiFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.qFT0A, c.qFT0C, c.qTPC, c.qTPCl, c.qTPCr);
     }
   }
@@ -896,11 +897,11 @@ struct nucleiSpectra {
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
-    for (auto& c : mcCollisions) {
+    for (const auto& c : mcCollisions) {
       spectra.fill(HIST("hGenVtxZ"), c.posZ());
     }
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if (!eventSelection(collision)) {
         continue;
       }
@@ -948,7 +949,7 @@ struct nucleiSpectra {
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
         if (particle.has_mothers()) {
-          for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+          for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
             if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
               c.flags |= kIsSecondaryFromWeakDecay;
               motherPdgCode = motherparticle.pdgCode();
@@ -959,7 +960,7 @@ struct nucleiSpectra {
         }
       } else if (particle.has_mothers()) {
         c.flags |= kIsSecondaryFromWeakDecay;
-        for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+        for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
           motherPdgCode = motherparticle.pdgCode();
           motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
         }
@@ -973,7 +974,7 @@ struct nucleiSpectra {
     }
 
     int index{0};
-    for (auto& particle : particlesMC) {
+    for (const auto& particle : particlesMC) {
       int pdg{std::abs(particle.pdgCode())};
       for (int iS{0}; iS < nuclei::species; ++iS) {
         if (pdg != nuclei::codes[iS]) {
@@ -1005,7 +1006,7 @@ struct nucleiSpectra {
             continue; // skip secondaries from weak decay without mothers
           }
           flags |= kIsSecondaryFromWeakDecay;
-          for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+          for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
             motherPdgCode = motherparticle.pdgCode();
             motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
           }
@@ -1062,7 +1063,7 @@ struct nucleiSpectra {
   {
     nuclei::candidates.clear();
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if (!eventSelection(collision)) {
         continue;
       }
@@ -1085,7 +1086,7 @@ struct nucleiSpectra {
         if (particle.isPhysicalPrimary()) {
           c.flags |= kIsPhysicalPrimary;
           if (particle.has_mothers()) {
-            for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
               if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
                 c.flags |= kIsSecondaryFromWeakDecay;
                 motherPdgCode = motherparticle.pdgCode();
@@ -1096,7 +1097,7 @@ struct nucleiSpectra {
           }
         } else if (particle.has_mothers()) {
           c.flags |= kIsSecondaryFromWeakDecay;
-          for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+          for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
             motherPdgCode = motherparticle.pdgCode();
             motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
           }
