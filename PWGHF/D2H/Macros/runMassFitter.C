@@ -191,12 +191,12 @@ int runMassFitter(const std::string& configFileName)
   const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
   const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
 
-  const unsigned int nSliceVarBins = sliceVarMin.size();
+  const int nSliceVarBins = static_cast<int>(sliceVarMin.size());
   std::vector<int> bkgFunc(nSliceVarBins);
   std::vector<int> sgnFunc(nSliceVarBins);
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
@@ -245,7 +245,7 @@ int runMassFitter(const std::string& configFileName)
   std::vector<TH1*> hMassRefl(nSliceVarBins);
   std::vector<TH1*> hMass(nSliceVarBins);
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
       hMass[iSliceVar] = inputFile->Get<TH1>(inputHistoName[iSliceVar].data());
       if (enableRefl) {
@@ -331,7 +331,7 @@ int runMassFitter(const std::string& configFileName)
         const std::string histName = "hRawYields" + var;
         histToFix = fixInputFile->Get<TH1>(histName.data());
         histToFix->SetDirectory(nullptr);
-        if (static_cast<unsigned int>(histToFix->GetNbinsX()) != nSliceVarBins) {
+        if (histToFix->GetNbinsX() != nSliceVarBins) {
           throw std::runtime_error("Different number of bins for this analysis and histo for fixed " + var);
         }
         fixInputFile->Close();
@@ -357,7 +357,7 @@ int runMassFitter(const std::string& configFileName)
     canvasSize[1] = 500;
   }
 
-  int const nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
+  int constexpr nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
   const int nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
@@ -384,7 +384,7 @@ int runMassFitter(const std::string& configFileName)
     }
   }
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     const int iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
@@ -606,7 +606,7 @@ int runMassFitter(const std::string& configFileName)
     }
   }
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     hMass[iSliceVar]->Write();
   }
   hRawYieldsSignal->Write();
