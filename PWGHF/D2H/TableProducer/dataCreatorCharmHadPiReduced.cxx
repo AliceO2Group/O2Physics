@@ -987,7 +987,7 @@ struct HfDataCreatorCharmHadPiReduced {
           RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDstarIndex, std::array{0}, 1);
           if (arrDaughDstarIndex.size() == NDaughtersDstar) {
             bool matchD0{false};
-            for (const int iProng : arrDaughDstarIndex) {
+            for (const int iProng : arrDaughDstarIndex) { // o2-linter: disable=const-ref-in-for-loop (it is preferable to copy values in case of simple variables)
               auto daughI = particlesMc.rawIteratorAt(iProng);
               if (std::abs(daughI.pdgCode()) == Pdg::kD0) {
                 matchD0 = RecoDecay::isMatchedMCGen(particlesMc, daughI, +Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD, 2);
