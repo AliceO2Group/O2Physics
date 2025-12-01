@@ -552,6 +552,13 @@ struct FlowTask {
     for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
       corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
     }
+    if (doprocessMCGen) {
+      fFCptgen->setUseCentralMoments(cfgUseCentralMoments);
+      fFCptgen->setUseGapMethod(true);
+      fFCptgen->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
+      if (cfgEtaGapPtPtEnabled)
+        fFCptgen->initialiseSubevent(axisIndependent, cfgMpar, cfgNbootstrap);
+    }
     fGFW->CreateRegions();
 
     if (cfgEvSelMultCorrelation) {
