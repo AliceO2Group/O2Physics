@@ -53,7 +53,7 @@
 
 #include <Math/Vector4D.h>
 #include <TMCProcess.h>
-#include <TPDGCode.h>   // for PDG codes
+#include <TPDGCode.h> // for PDG codes
 #include <TRandom3.h>
 
 #include <algorithm>
