@@ -64,7 +64,6 @@ namespace
 constexpr int kNpart = 2;
 constexpr float kTrackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
 constexpr float kDcaSelsParam[3][3]{{-1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32}};
-constexpr float kDcaSels[3]{10., 10., 10.};
 constexpr double kBetheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double kBetheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 constexpr double kEstimatorsCorrelationCoef[2]{-0.669108, 1.04489};
@@ -195,7 +194,7 @@ struct EbyeMaker {
   const AxisSpec centAxis{106, 0, 106, "centrality"};
   const AxisSpec zVtxAxis{100, -20.f, 20.f, "vertex z in cm"};
   const AxisSpec nTpcAxis{160, 0, 160, "N TPC"};
-  const AxisSpec dcaAxis{600, -3., 3., "DCA in cm"};
+  const AxisSpec dcaAxis{2000, -1., 1., "DCA in cm"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -258,7 +257,6 @@ struct EbyeMaker {
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
-  Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {kDcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
   Configurable<LabeledArray<float>> cfgDcaSelsParam{"cfgDcaSelsParam", {kDcaSelsParam[0], 3, 3, dcaSelsNames, dcaParNames}, "DCA threshold settings"};
 
   std::array<float, kNpart> ptMin;
@@ -509,8 +507,8 @@ struct EbyeMaker {
 
     // tracking variables QA
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
-    histos.add<TH1>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH1>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
@@ -563,7 +561,7 @@ struct EbyeMaker {
       auto trackEta = trackParCov.getEta();
       histos.fill(HIST("QA/dcaxyVsPt"), track.pt(), dcaInfo[0]);
       histos.fill(HIST("QA/dcazVsPt"), track.pt(), dcaInfo[1]);
-      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") * dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz") * dcaSigma(track.pt(), "dcaz") || dca > cfgDcaSels->get("dca") * dcaSigma(track.pt(), "dca")) { // dcaxy
+      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca")) { // dcaxy
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
@@ -891,7 +889,7 @@ struct EbyeMaker {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -900,7 +898,7 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
-      auto centrality = collision.centFT0M();
+      auto centrality = collision.centFT0C();
       if (centrality > kCentCutMax)
         continue;
 
@@ -1072,7 +1070,7 @@ struct EbyeMaker {
   }
   PROCESS_SWITCH(EbyeMaker, processMiniRun2, "process mini tables(Run 2)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1081,7 +1079,7 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
-      auto centrality = collision.centFT0M();
+      auto centrality = collision.centFT0C();
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 

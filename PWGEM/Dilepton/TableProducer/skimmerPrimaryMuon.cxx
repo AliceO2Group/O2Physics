@@ -562,9 +562,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -635,9 +636,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -712,9 +714,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -782,9 +785,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -857,9 +861,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -936,9 +941,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -1007,9 +1013,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -1085,9 +1092,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {
@@ -1167,9 +1175,10 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       int count_samuons = multiMapSAMuonsPerCollision.count(collision.globalIndex());
       int count_glmuons = multiMapGLMuonsPerCollision.count(collision.globalIndex());
-      fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
-      fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
-
+      if (fillQAHistograms) {
+        fRegistry.fill(HIST("MCHMID/hNmu"), count_samuons);
+        fRegistry.fill(HIST("MFTMCHMID/hNmu"), count_glmuons);
+      }
       if (count_samuons >= minNmuon) {
         auto range_samuons = multiMapSAMuonsPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_samuons.first; it != range_samuons.second; it++) {

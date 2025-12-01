@@ -232,7 +232,7 @@ struct jEPFlowAnalysis {
   }
   PROCESS_SWITCH(jEPFlowAnalysis, processWithSC, "process with shift-corrected qvectors", false);
 
-  void process(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
+  void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
     if (cfgAddEvtSel) {
       if (std::abs(coll.posZ()) > cfgVertexZ)
@@ -304,12 +304,12 @@ struct jEPFlowAnalysis {
       if (cfgShiftCorr) {
         constexpr int kShiftBins = 10;
         for (int ishift = 1; ishift <= kShiftBins; ishift++) {
-          auto coeffshiftxDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 0.5, ishift - 0.5));
-          auto coeffshiftyDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 1.5, ishift - 0.5));
-          auto coeffshiftxRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.5, ishift - 0.5));
-          auto coeffshiftyRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 3.5, ishift - 0.5));
-          auto coeffshiftxRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 4.5, ishift - 0.5));
-          auto coeffshiftyRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 5.5, ishift - 0.5)); // currently only FT0C/TPCpos/TPCneg
+          auto coeffshiftxDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * detId + 0.5, ishift - 0.5));
+          auto coeffshiftyDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * detId + 1.5, ishift - 0.5));
+          auto coeffshiftxRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refAId + 0.5, ishift - 0.5));
+          auto coeffshiftyRefA = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refAId + 1.5, ishift - 0.5));
+          auto coeffshiftxRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refBId + 0.5, ishift - 0.5));
+          auto coeffshiftyRefB = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * refBId + 1.5, ishift - 0.5));
 
           deltapsiDet += ((2. / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i + 2) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i + 2) * eps[0]))) / static_cast<float>(i + 2);
           deltapsiRefA += ((2. / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i + 2) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i + 2) * eps[1]))) / static_cast<float>(i + 2);
@@ -359,7 +359,7 @@ struct jEPFlowAnalysis {
       }
     }
   }
-  PROCESS_SWITCH(jEPFlowAnalysis, process, "default process", true);
+  PROCESS_SWITCH(jEPFlowAnalysis, processDefault, "default process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
