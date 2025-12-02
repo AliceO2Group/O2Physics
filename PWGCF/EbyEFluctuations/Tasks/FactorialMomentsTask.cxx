@@ -134,6 +134,7 @@ struct FactorialMoments {
     OutputObjHandlingPolicy::AnalysisObject,
     true};
   static const Int_t nBins = 52;
+  constexpr double kMinCharge = 1e-6;
   static const Int_t nfqOrder = 6;
   Int_t countSamples = 0;
   Int_t testc1 = 0, testc2 = 0, testc3 = 0;
@@ -392,7 +393,7 @@ struct FactorialMoments {
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (Int_t const& track : tracks) {
       double recoCharge = (track.sign() != 0) ? track.sign() : 0.;
-      if (std::abs(track.eta()) centralEta && track.isGlobalTrack() && std::abs(recoCharge) >= 1e-6) {
+      if (std::abs(track.eta()) centralEta && track.isGlobalTrack() && std::abs(recoCharge) >= kMinCharge) {
         histos.fill(HIST("mCollID"), track.collisionId());
         histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
         histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
@@ -423,7 +424,7 @@ struct FactorialMoments {
       double charge = pdgInfo->Charge();
       double physCharge = charge / 3.0;
       histos.fill(HIST("mChargeBefore"), physCharge);
-      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) centralEta && std::abs(physCharge) >= 1e-6) {
+      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) centralEta && std::abs(physCharge) >= kMinCharge) {
         histos.fill(HIST("mChargeAfter"), physCharge);
         histos.fill(HIST("mEta"), mc.eta());
         histos.fill(HIST("mPt"), mc.pt());
