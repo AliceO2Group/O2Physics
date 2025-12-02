@@ -34,38 +34,38 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <unordered_set>
-using std::array;
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 TH1D* tmpFqErr[6][5][52];
 struct FactorialMoments {
-  Configurable<bool> ApplyCheckPtForRec{"ApplyCheckPtForRec", false, "Apply checkpT for reconstructed tracks"};
-  Configurable<bool> ApplyCheckPtForMC{"ApplyCheckPtForMC", true, "Apply checkpT for MC-generated tracks"};
-  Configurable<Float_t> confEta{"centralEta", 0.9, "eta limit for tracks"};
-  Configurable<Int_t> confNumPt{"numPt", 5, "number of pT bins"};
-  Configurable<Float_t> confPtMin{"ptMin", 0.2f, "lower pT cut"};
-  Configurable<Float_t> confDCAxy{"dcaXY", 2.4f, "DCA xy cut"};
-  Configurable<Float_t> confDCAz{"dcaZ", 2.0f, "DCA z cut"};
-  Configurable<Float_t> confMinTPCCls{"minTPCCls", 70.0f, "minimum number of TPC clusters"};
-  Configurable<std::vector<Int_t>> confCentCut{"centLimits", {0, 5}, "centrality min and max"};
-  Configurable<std::vector<Float_t>> confVertex{"vertexXYZ", {0.3f, 0.4f, 10.0f}, "vertex cuts"};
-  Configurable<std::vector<Float_t>> confPtBins{"ptCuts", {0.2f, 2.0f}, "pT cuts"};
-  Configurable<bool> IsApplySameBunchPileup{"IsApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
-  Configurable<bool> IsApplyGoodZvtxFT0vsPV{"IsApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
-  Configurable<bool> IsApplyVertexITSTPC{"IsApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
-  Configurable<bool> IsApplyVertexTOFmatched{"IsApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
-  Configurable<bool> IsApplyVertexTRDmatched{"IsApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
-  Configurable<bool> IsApplyExtraCorrCut{"IsApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
-  Configurable<bool> IsApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> applyCheckPtForRec{"applyCheckPtForRec", false, "Apply checkpT for reconstructed tracks"};
+  Configurable<bool> applyCheckPtForMC{"applyCheckPtForMC", true, "Apply checkpT for MC-generated tracks"};
+  Configurable<Float_t> centralEta{"centralEta", 0.9, "eta limit for tracks"};
+  Configurable<Int_t> numPt{"numPt", 5, "number of pT bins"};
+  Configurable<Float_t> ptMin{"ptMin", 0.2f, "lower pT cut"};
+  Configurable<Float_t> dcaXY{"dcaXY", 2.4f, "DCA xy cut"};
+  Configurable<Float_t> dcaZ{"dcaZ", 2.0f, "DCA z cut"};
+  Configurable<Float_t> minTPCCls{"minTPCCls", 70.0f, "minimum number of TPC clusters"};
+  Configurable<std::vector<Int_t>> centLimits{"centLimits", {0, 5}, "centrality min and max"};
+  Configurable<std::vector<Float_t>> vertexXYZ{"vertexXYZ", {0.3f, 0.4f, 10.0f}, "vertex cuts"};
+  Configurable<std::vector<Float_t>> ptCuts{"ptCuts", {0.2f, 2.0f}, "pT cuts"};
+  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
+  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", true, "Enable VertexITSTPC cut"};
+  Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", true, "Enable VertexTOFmatched cut"};
+  Configurable<bool> isApplyVertexTRDmatched{"isApplyVertexTRDmatched", true, "Enable VertexTRDmatched cut"};
+  Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
+  Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
   Configurable<bool> includeGlobalTracks{"includeGlobalTracks", false, "Enable Global Tracks"};
   Configurable<bool> includeTPCTracks{"includeTPCTracks", false, "TPC Tracks"};
   Configurable<bool> includeITSTracks{"includeITSTracks", false, "ITS Tracks"};
-  Configurable<int> confSamplesize{"samplesize", 100, "Sample size"};
-  Configurable<bool> confUseMC{"useMC", false, "Use MC information"};
-  Configurable<int> reduceOutput{"reduce-output", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
-  Filter filterTracks = (nabs(aod::track::eta) < confEta) && (aod::track::pt >= confPtMin) && (nabs(aod::track::dcaXY) < confDCAxy) && (nabs(aod::track::dcaZ) < confDCAz);
-  Filter filterCollisions = (nabs(aod::collision::posZ) < confVertex.value[2]) && (nabs(aod::collision::posX) < confVertex.value[0]) && (nabs(aod::collision::posY) < confVertex.value[1]);
+  Configurable<int> samplesize{"samplesize", 100, "Sample size"};
+  Configurable<bool> useMC{"useMC", false, "Use MC information"};
+  Configurable<int> reduceOutput{"reduceOutput", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
+  Filter filterTracks = (nabs(aod::track::eta) < centralEta) && (aod::track::pt >= ptMin) && (nabs(aod::track::dcaXY) < dcaXY) && (nabs(aod::track::dcaZ) < dcaZ);
+  Filter filterCollisions = (nabs(aod::collision::posZ) < vertexXYZ.value[2]) && (nabs(aod::collision::posX) < vertexXYZ.value[0]) && (nabs(aod::collision::posY) < vertexXYZ.value[1]);
   Service<o2::framework::O2DatabasePDG> pdg;
   // Histograms
   HistogramRegistry histos1{
@@ -138,13 +138,13 @@ struct FactorialMoments {
   static const Int_t nBins = 52;
   Int_t countSamples = 0;
   Int_t testc1 = 0, testc2 = 0, testc3 = 0;
-  array<Int_t, nBins> binningM;
-  array<Int_t, 5> countTracks{0, 0, 0, 0, 0};
-  array<array<array<Double_t, nBins>, 5>, 6> fqEvent;
-  array<array<array<Double_t, nBins>, 5>, 6> fqEventSampled;
-  array<array<Double_t, nBins>, 5> binConEvent;
-  array<array<array<Double_t, nBins>, 5>, 6> binConEventSampled;
-  array<array<array<Double_t, nBins>, 5>, 6> errorFq = {{{{{0, 0, 0, 0, 0}}}}};
+  std::array<Int_t, nBins> binningM;
+  std::array<Int_t, 5> countTracks{0, 0, 0, 0, 0};
+  std::array<std::array<std::array<Double_t, nBins>, 5>, 6> fqEvent;
+  std::array<std::array<std::array<Double_t, nBins>, 5>, 6> fqEventSampled;
+  std::array<std::array<Double_t, nBins>, 5> binConEvent;
+  std::array<std::array<std::array<Double_t, nBins>, 5>, 6> binConEventSampled;
+  std::array<std::array<std::array<Double_t, nBins>, 5>, 6> errorFq = {{{{{0, 0, 0, 0, 0}}}}};
   std::vector<std::shared_ptr<TH2>> mHistArrReset;
   std::vector<std::shared_ptr<TH1>> mHistArrQA;
   std::vector<std::shared_ptr<TH1>> mFqBinFinal;
@@ -153,18 +153,18 @@ struct FactorialMoments {
   std::vector<std::shared_ptr<TH1>> mBinConFinalSampled;
   std::vector<std::shared_ptr<TH1>> mFqError;
   // max number of bins restricted to 5
-  static constexpr array<std::string_view, 5>
+  static constexpr std::array<std::string_view, 5>
     mbinNames{"bin1/", "bin2/", "bin3/", "bin4/", "bin5/"};
   void init(o2::framework::InitContext&)
   {
     // NOTE: check to make number of pt and the vector consistent
-    if (confNumPt != static_cast<int>(confPtBins.value.size()) / 2) {
-      for (int i = confNumPt; i < static_cast<int>(confPtBins.value.size() / 2); i++) {
-        confPtBins.value[2 * i] = 0;
-        confPtBins.value[2 * i + 1] = 0;
+    if (numPt != static_cast<int>(ptCuts.value.size()) / 2) {
+      for (int i = numPt; i < static_cast<int>(ptCuts.value.size() / 2); i++) {
+        ptCuts.value[2 * i] = 0;
+        ptCuts.value[2 * i + 1] = 0;
       }
     }
-    AxisSpec axisPt[5] = {{100, -0.01, 3 * confPtBins.value[1], ""}, {100, -0.01, 3 * confPtBins.value[3], ""}, {100, -0.01, 3 * confPtBins.value[5], ""}, {100, -0.01, 3 * confPtBins.value[7], ""}, {100, -0.01, 3 * confPtBins.value[9], ""}}; // pT axis
+    AxisSpec axisPt[5] = {{100, -0.01, 3 * ptCuts.value[1], ""}, {100, -0.01, 3 * ptCuts.value[3], ""}, {100, -0.01, 3 * ptCuts.value[5], ""}, {100, -0.01, 3 * ptCuts.value[7], ""}, {100, -0.01, 3 * ptCuts.value[9], ""}}; // pT axis
     auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{8, 0.5, 8.5}}));
     mEventSelected->GetXaxis()->SetBinLabel(1, "all");
     mEventSelected->GetXaxis()->SetBinLabel(2, "sel8");
@@ -180,35 +180,35 @@ struct FactorialMoments {
     mTrackSelected->GetXaxis()->SetBinLabel(3, "PIDs");
     mTrackSelected->GetXaxis()->SetBinLabel(4, "Pids exclude pions");
     mTrackSelected->GetXaxis()->SetBinLabel(5, "Pids exclude pions + kions");
-    if (confUseMC) {
+    if (useMC) {
       auto mMcTrackSelected = std::get<std::shared_ptr<TH1>>(histos.add("mMcTrackSelected", "mcTrackSelection", HistType::kTH1D, {{5, 0.5, 5.5}}));
     }
-    for (auto iM = 0; iM < nBins; ++iM) {
+    for (Int_t iM = 0; iM < nBins; ++iM) {
       binningM[iM] = 2 * (iM + 2);
     }
-    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mEta", iPt + 1), Form("#eta for bin %.2f-%.2f;#eta", confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{1000, -2, 2}})));
-      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPt", iPt + 1), Form("pT for bin %.2f-%.2f;pT", confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {axisPt[iPt]})));
-      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPhi", iPt + 1), Form("#phi for bin %.2f-%.2f;#phi", confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, 2 * TMath::Pi()}})));
-      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mMultiplicity", iPt + 1), Form("Multiplicity for bin %.2f-%.2f;Multiplicity", confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, 15000}})));
-      for (auto iM = 0; iM < nBins; ++iM) {
-        auto mHistsR = std::get<std::shared_ptr<TH2>>(histos.add(Form("bin%i/Reset/mEtaPhi%i", iPt + 1, iM), Form("#eta#phi_%i for bin %.2f-%.2f;#eta;#phi", iM, confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH2F, {{binningM[iM], -0.8, 0.8}, {binningM[iM], 0, 2 * TMath::Pi()}}));
+    for (Int_t iPt = 0; iPt < numPt; ++iPt) {
+      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mEta", iPt + 1), Form("#eta for bin %.2f-%.2f;#eta", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, -2, 2}})));
+      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPt", iPt + 1), Form("pT for bin %.2f-%.2f;pT", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {axisPt[iPt]})));
+      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPhi", iPt + 1), Form("#phi for bin %.2f-%.2f;#phi", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, 2 * TMath::Pi()}})));
+      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mMultiplicity", iPt + 1), Form("Multiplicity for bin %.2f-%.2f;Multiplicity", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, 15000}})));
+      for (Int_t iM = 0; iM < nBins; ++iM) {
+        auto mHistsR = std::get<std::shared_ptr<TH2>>(histos.add(Form("bin%i/Reset/mEtaPhi%i", iPt + 1, iM), Form("#eta#phi_%i for bin %.2f-%.2f;#eta;#phi", iM, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH2F, {{binningM[iM], -0.8, 0.8}, {binningM[iM], 0, 2 * TMath::Pi()}}));
         mHistArrReset.push_back(mHistsR);
-        for (auto iq = 0; iq < 6; ++iq) {
+        for (Int_t iq = 0; iq < 6; ++iq) {
           tmpFqErr[iq][iPt][iM] = new TH1D(Form("tmpFqErr%i%i%i", iq, iPt, iM), Form("tmpFqErr%i%i%i", iq, iPt, iM), 100, 0, 10);
         }
       }
-      for (auto i = 0; i < 6; ++i) {
-        auto mHistFq = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalFq%i_bin%i", i + 2, iPt + 1), Form("Final F_%i for bin %.2f-%.2f;M", i + 2, confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
+      for (Int_t i = 0; i < 6; ++i) {
+        auto mHistFq = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalFq%i_bin%i", i + 2, iPt + 1), Form("Final F_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
         mFqBinFinal.push_back(mHistFq);
-        auto mHistAv = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalAvBin%i_bin%i", i + 2, iPt + 1), Form("Final AvBin_%i for bin %.2f-%.2f;M", i + 2, confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
+        auto mHistAv = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalAvBin%i_bin%i", i + 2, iPt + 1), Form("Final AvBin_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
         mBinConFinal.push_back(mHistAv);
-        auto mHistFqSampled = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalFq%iSampled_bin%i", i + 2, iPt + 1), Form("Final F_%i for bin %.2f-%.2f;M", i + 2, confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
+        auto mHistFqSampled = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalFq%iSampled_bin%i", i + 2, iPt + 1), Form("Final F_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
         mFqBinFinalSampled.push_back(mHistFqSampled);
-        auto mHistAvSampled = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalAvBin%iSampled_bin%i", i + 2, iPt + 1), Form("Final AvBin_%i for bin %.2f-%.2f;M", i + 2, confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
+        auto mHistAvSampled = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalAvBin%iSampled_bin%i", i + 2, iPt + 1), Form("Final AvBin_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
         mBinConFinalSampled.push_back(mHistAvSampled);
 
-        auto mHistError = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFqError%i_bin%i", i + 2, iPt + 1), Form("Error for F_%i for bin %.2f-%.2f;M", i + 2, confPtBins.value[2 * iPt], confPtBins.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
+        auto mHistError = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFqError%i_bin%i", i + 2, iPt + 1), Form("Error for F_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
         mFqError.push_back(mHistError);
       }
     }
@@ -216,8 +216,8 @@ struct FactorialMoments {
   template <typename T>
   void checkpT(const T& track)
   {
-    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      if (track.pt() > confPtBins.value[2 * iPt] && track.pt() < confPtBins.value[2 * iPt + 1]) {
+    for (Int_t iPt = 0; iPt < numPt; ++iPt) {
+      if (track.pt() > ptCuts.value[2 * iPt] && track.pt() < ptCuts.value[2 * iPt + 1]) {
         float iphi = track.phi();
         iphi = gRandom->Gaus(iphi, TMath::TwoPi());
         iphi = RecoDecay::constrainAngle(iphi);
@@ -227,7 +227,7 @@ struct FactorialMoments {
         mHistArrQA[iPt * 4 + 2]->Fill(track.phi());
         countTracks[iPt]++;
 
-        for (auto iM = 0; iM < nBins; ++iM) {
+        for (Int_t iM = 0; iM < nBins; ++iM) {
           mHistArrReset[iPt * nBins + iM]->Fill(track.eta(), track.phi());
         }
       }
@@ -239,22 +239,22 @@ struct FactorialMoments {
     Double_t binContent = 0;
     countSamples++;
     Bool_t compSample = kFALSE;
-    if (countSamples == confSamplesize) {
+    if (countSamples == samplesize) {
       compSample = kTRUE;
       countSamples = 0;
     }
     // Calculate the normalized factorial moments
-    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
-      for (auto iM = 0; iM < nBins; ++iM) {
+    for (Int_t iPt = 0; iPt < numPt; ++iPt) {
+      for (Int_t iM = 0; iM < nBins; ++iM) {
         binContent = 0;
         Double_t sumfqBin[6] = {0};
 
-        for (auto iEta = 1; iEta <= hist[iPt * nBins + iM]->GetNbinsX(); ++iEta) {
-          for (auto iPhi = 1; iPhi <= hist[iPt * nBins + iM]->GetNbinsY(); ++iPhi) {
+        for (Int_t iEta = 1; iEta <= hist[iPt * nBins + iM]->GetNbinsX(); ++iEta) {
+          for (Int_t iPhi = 1; iPhi <= hist[iPt * nBins + iM]->GetNbinsY(); ++iPhi) {
             double binconVal = 0;
             binconVal = hist[iPt * nBins + iM]->GetBinContent(iEta, iPhi);
             binContent += binconVal;
-            for (auto iq = 0; iq < 6; ++iq) {
+            for (Int_t iq = 0; iq < 6; ++iq) {
               Double_t fqBin = 0;
               if (binconVal >= iq + 2) {
                 fqBin = TMath::Factorial(binconVal) / (TMath::Factorial(binconVal - (iq + 2)));
@@ -267,7 +267,7 @@ struct FactorialMoments {
           }
         }
         binConEvent[iPt][iM] = binContent / (TMath::Power(binningM[iM], 2));
-        for (auto iq = 0; iq < 6; ++iq) {
+        for (Int_t iq = 0; iq < 6; ++iq) {
           if (sumfqBin[iq] > 0) {
             fqEvent[iq][iPt][iM] = sumfqBin[iq] / (TMath::Power(binningM[iM], 2));
             fqEventSampled[iq][iPt][iM] += fqEvent[iq][iPt][iM];
@@ -276,12 +276,12 @@ struct FactorialMoments {
           mFqBinFinal[iPt * 6 + iq]->Fill(iM, fqEvent[iq][iPt][iM]);
           mBinConFinal[iPt * 6 + iq]->Fill(iM, binConEvent[iPt][iM]);
           if (compSample) {
-            mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, binConEventSampled[iq][iPt][iM] / confSamplesize);
+            mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, binConEventSampled[iq][iPt][iM] / samplesize);
 
-            double tmp = (fqEventSampled[iq][iPt][iM] / (confSamplesize)) / (pow(binConEventSampled[iq][iPt][iM] / (confSamplesize), (iq + 2)));
+            double tmp = (fqEventSampled[iq][iPt][iM] / (samplesize)) / (pow(binConEventSampled[iq][iPt][iM] / (samplesize), (iq + 2)));
             mFqBinFinalSampled[iPt * 6 + iq]->Fill(iM, tmp);
             tmpFqErr[iq][iPt][iM]->Fill(tmp);
-            errorFq[iq][iPt][iM] += TMath::Power(fqEventSampled[iq][iPt][iM] / (confSamplesize), 2);
+            errorFq[iq][iPt][iM] += TMath::Power(fqEventSampled[iq][iPt][iM] / (samplesize), 2);
             mFqError[iPt * 6 + iq]->SetBinContent(iM + 1, 0);
             mFqError[iPt * 6 + iq]->Fill(iM, tmpFqErr[iq][iPt][iM]->GetStdDev());
 
@@ -301,16 +301,16 @@ struct FactorialMoments {
     if (!coll.sel8()) {
       return;
     }
-    if (IsApplySameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (isApplySameBunchPileup && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return;
     }
-    if (IsApplyGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (isApplyGoodZvtxFT0vsPV && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
-    if (IsApplyVertexITSTPC && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    if (isApplyVertexITSTPC && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return;
     }
-    if (coll.centFT0C() < confCentCut.value[0] || coll.centFT0C() > confCentCut.value[1]) {
+    if (coll.centFT0C() < centLimits.value[0] || coll.centFT0C() > centLimits.value[1]) {
       return;
     }
     histos.fill(HIST("mVertexX"), coll.posX());
@@ -320,13 +320,13 @@ struct FactorialMoments {
     histos.fill(HIST("mCentFV0A"), coll.centFV0A());
     histos.fill(HIST("mCentFT0A"), coll.centFT0A());
     histos.fill(HIST("mCentFT0C"), coll.centFT0C());
-    for (auto const& h : mHistArrReset) {
+    for (Int_t const& h : mHistArrReset) {
       h->Reset();
     }
     countTracks = {0, 0, 0, 0, 0};
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
-    for (auto const& track : tracks) {
+    for (Int_t const& track : tracks) {
       if (track.hasTPC())
       // if (track.hasITS())
       // if (track.isGlobalTrack())
@@ -354,7 +354,7 @@ struct FactorialMoments {
         checkpT(track);
       }
     }
-    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
+    for (Int_t iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
@@ -378,20 +378,20 @@ struct FactorialMoments {
     if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
       return;
     }
-    if (coll.centRun2V0M() < confCentCut.value[0] || coll.centRun2V0M() > confCentCut.value[1]) {
+    if (coll.centRun2V0M() < centLimits.value[0] || coll.centRun2V0M() > centLimits.value[1]) {
       return;
     }
     histos.fill(HIST("mVertexX"), coll.posX());
     histos.fill(HIST("mVertexY"), coll.posY());
     histos.fill(HIST("mVertexZ"), coll.posZ());
     histos.fill(HIST("mCentFT0M"), coll.centRun2V0M());
-    for (auto const& h : mHistArrReset) {
+    for (Int_t const& h : mHistArrReset) {
       h->Reset();
     }
     countTracks = {0, 0, 0, 0, 0};
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
-    for (auto const& track : tracks) {
+    for (Int_t const& track : tracks) {
       double recoCharge = (track.sign() != 0) ? track.sign() : 0.;
       if (std::abs(track.eta()) < 0.8 && track.isGlobalTrack() && std::abs(recoCharge) >= 1e-6) {
         histos.fill(HIST("mCollID"), track.collisionId());
@@ -407,7 +407,7 @@ struct FactorialMoments {
         histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
         histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
         histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-        if (ApplyCheckPtForRec && !ApplyCheckPtForMC) {
+        if (applyCheckPtForRec && !applyCheckPtForMC) {
           checkpT(track);
         }
       }
@@ -415,7 +415,7 @@ struct FactorialMoments {
 
     auto mccollision = coll.mcCollision_as<aod::McCollisions>();
     auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
-    for (auto const& mc : mcParts) {
+    for (Int_t const& mc : mcParts) {
       int pdgCode = mc.pdgCode();
       auto pdgInfo = pdg->GetParticle(pdgCode);
       if (!pdgInfo) {
@@ -429,13 +429,13 @@ struct FactorialMoments {
         histos.fill(HIST("mEta"), mc.eta());
         histos.fill(HIST("mPt"), mc.pt());
         histos.fill(HIST("mPhi"), mc.phi());
-        if (ApplyCheckPtForMC && !ApplyCheckPtForRec) {
+        if (applyCheckPtForMC && !applyCheckPtForRec) {
           checkpT(mc);
         }
       }
     }
 
-    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
+    for (Int_t iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       } else {
@@ -452,7 +452,7 @@ struct FactorialMoments {
     if ((!coll.alias_bit(kINT7)) || (!coll.sel7())) {
       return;
     }
-    if (coll.centRun2V0M() < confCentCut.value[0] || coll.centRun2V0M() > confCentCut.value[1]) {
+    if (coll.centRun2V0M() < centLimits.value[0] || coll.centRun2V0M() > centLimits.value[1]) {
       return;
     }
     histos.fill(HIST("mVertexX"), coll.posX());
@@ -460,14 +460,14 @@ struct FactorialMoments {
     histos.fill(HIST("mVertexZ"), coll.posZ());
     histos.fill(HIST("mCentFT0M"), coll.centRun2V0M());
 
-    for (auto const& h : mHistArrReset) {
+    for (Int_t const& h : mHistArrReset) {
       h->Reset();
     }
     countTracks = {0, 0, 0, 0, 0};
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
-    for (auto const& track : tracks) {
-      if ((track.pt() < confPtMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < confMinTPCCls)) {
+    for (Int_t const& track : tracks) {
+      if ((track.pt() < ptMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < minTPCCls)) {
         continue;
       }
       histos.fill(HIST("mCollID"), track.collisionId());
@@ -492,7 +492,7 @@ struct FactorialMoments {
       histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
       checkpT(track);
     }
-    for (auto iPt = 0; iPt < confNumPt; ++iPt) {
+    for (Int_t iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       } else {
