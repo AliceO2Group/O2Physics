@@ -37,7 +37,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 TH1D* tmpFqErr[6][5][52];
-struct factorial-moments{
+struct FactorialMomentsTask{
   Configurable<bool> applyCheckPtForRec{"applyCheckPtForRec", false, "Apply checkpT for reconstructed tracks"};
   Configurable<bool> applyCheckPtForMC{"applyCheckPtForMC", true, "Apply checkpT for MC-generated tracks"};
   Configurable<Float_t> centralEta{"centralEta", 0.9, "eta limit for tracks"};
@@ -361,7 +361,7 @@ struct factorial-moments{
     }
     calculateMoments(mHistArrReset);
   }
-  PROCESS_SWITCH(factorial-moments, processRun3, "main process function", false);
+  PROCESS_SWITCH(FactorialMomentsTask, processRun3, "main process function", false);
   using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>;
   using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using CollisionRecSim_Run2 = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run2>>::iterator;
@@ -446,7 +446,7 @@ struct factorial-moments{
     calculateMoments(mHistArrReset);
   }
 
-  PROCESS_SWITCH(factorial-moments, processMcRun2, "process MC Run2", true);
+  PROCESS_SWITCH(FactorialMomentsTask, processMcRun2, "process MC Run2", true);
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& coll, TracksFMs const& tracks)
   {
     if ((!coll.alias_bit(kINT7)) || (!coll.sel7())) {
@@ -502,11 +502,11 @@ struct factorial-moments{
     // Calculate the normalized factorial moments
     calculateMoments(mHistArrReset);
   }
-  PROCESS_SWITCH(factorial-moments, processRun2, "for RUN2", false);
+  PROCESS_SWITCH(FactorialMomentsTask, processRun2, "for RUN2", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<factorial-moments>(cfgc),
+    adaptAnalysisTask<FactorialMomentsTask>(cfgc),
   };
 }
