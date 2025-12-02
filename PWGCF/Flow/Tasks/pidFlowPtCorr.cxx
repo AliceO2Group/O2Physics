@@ -281,18 +281,18 @@ struct PidFlowPtCorr {
     registry.add("pi/c34", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("ka/c34", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("pr/c34", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pi/c22PiPi", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("ka/c22KaKa", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pr/c22PrPr", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pi/c32PiPi", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("ka/c32KaKa", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pr/c32PrPr", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("pi/c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("ka/c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("pr/c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("pi/c24TrackWeight", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("ka/c24TrackWeight", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("pr/c24TrackWeight", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("pi/c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("ka/c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("pr/c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("pi/c34TrackWeight", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("ka/c34TrackWeight", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("pr/c34TrackWeight", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
 
     // vn-pt corr
     registry.add("covV2Pt", ";Centrality  (%) ; cov(v_{2}^{2}{2}, P_{T}) ", {HistType::kTProfile, {axisMultiplicity}});
@@ -383,12 +383,12 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {3 3} refP {-3 -3}", "Prot0gap34a", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPaP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "Pion08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {2} poiPiN08 {-2}", "Pion08gap22b", kFALSE)); // 30
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "Kaon08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {2} poiKaN08 {-2}", "Kaon08gap22b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "Prot08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {2} poiPrN08 {-2}", "Prot08gap22b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", kFALSE)); // 30
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "PrPr08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", kFALSE));
 
     fGFW->CreateRegions(); // finalize the initialization
 
@@ -765,39 +765,26 @@ struct PidFlowPtCorr {
       fillProfile(corrconfigs.at(27), HIST("pr/c34"), cent);
       fillProfile(corrconfigs.at(28), HIST("pr/c34"), cent);
 
+      fillProfile(corrconfigs.at(29), HIST("pi/c22PiPi"), cent);
+      fillProfile(corrconfigs.at(30), HIST("ka/c22KaKa"), cent);
+      fillProfile(corrconfigs.at(31), HIST("pr/c22PrPr"), cent);
+      fillProfile(corrconfigs.at(32), HIST("pi/c32PiPi"), cent);
+      fillProfile(corrconfigs.at(33), HIST("ka/c32KaKa"), cent);
+      fillProfile(corrconfigs.at(34), HIST("pr/c32PrPr"), cent);
+
       fillProfilevnpt(corrconfigs.at(0), HIST("c22TrackWeight"), cent, nch, nch, 0);
       fillProfilevnpt(corrconfigs.at(1), HIST("c24TrackWeight"), cent, nch, nch, 0);
       fillProfilevnpt(corrconfigs.at(2), HIST("c22FullTrackWeight"), cent, nch, nch, 0);
       fillProfilevnpt(corrconfigs.at(3), HIST("c32TrackWeight"), cent, nch, nch, 0);
       fillProfilevnpt(corrconfigs.at(4), HIST("c34TrackWeight"), cent, nch, nch, 0);
 
-      fillProfilevnpt(corrconfigs.at(5), HIST("pi/c22TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(6), HIST("pi/c22TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(7), HIST("ka/c22TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(8), HIST("ka/c22TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(9), HIST("pr/c22TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(10), HIST("pr/c22TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(29), HIST("pi/c22TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(30), HIST("ka/c22TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(31), HIST("pr/c22TrackWeight"), cent, nch, nch, 0);
 
-      fillProfilevnpt(corrconfigs.at(11), HIST("pi/c24TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(12), HIST("pi/c24TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(13), HIST("ka/c24TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(14), HIST("ka/c24TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(15), HIST("pr/c24TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(16), HIST("pr/c24TrackWeight"), cent, nch, nch, 0);
-
-      fillProfilevnpt(corrconfigs.at(17), HIST("pi/c32TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(18), HIST("pi/c32TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(19), HIST("ka/c32TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(20), HIST("ka/c32TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(21), HIST("pr/c32TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(22), HIST("pr/c32TrackWeight"), cent, nch, nch, 0);
-
-      fillProfilevnpt(corrconfigs.at(23), HIST("pi/c34TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(24), HIST("pi/c34TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(25), HIST("ka/c34TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(26), HIST("ka/c34TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(27), HIST("pr/c34TrackWeight"), cent, nch, nch, 0);
-      fillProfilevnpt(corrconfigs.at(28), HIST("pr/c34TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(32), HIST("pi/c32TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(33), HIST("ka/c32TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(34), HIST("pr/c32TrackWeight"), cent, nch, nch, 0);
 
       fillProfilevnpt(corrconfigs.at(0), HIST("covV2Pt"), cent, ptSum, nch, 0);
       fillProfilevnpt(corrconfigs.at(0), HIST("covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
@@ -807,6 +794,15 @@ struct PidFlowPtCorr {
       fillProfilevnpt(corrconfigs.at(30), HIST("ka/covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
       fillProfilevnpt(corrconfigs.at(31), HIST("pr/covV2Pt"), cent, ptSum, nch, 0);
       fillProfilevnpt(corrconfigs.at(31), HIST("pr/covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+
+      fillProfilevnpt(corrconfigs.at(3), HIST("covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(3), HIST("covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+      fillProfilevnpt(corrconfigs.at(32), HIST("pi/covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(32), HIST("pi/covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+      fillProfilevnpt(corrconfigs.at(33), HIST("ka/covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(33), HIST("ka/covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+      fillProfilevnpt(corrconfigs.at(34), HIST("pr/covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(34), HIST("pr/covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
 
       fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22dmeanpt"), cent, ptSum, nch);
       fillProfilePOIvnpt(corrconfigs.at(5), HIST("pi/c22dmeanpt"), cent, ptSum, nch);
