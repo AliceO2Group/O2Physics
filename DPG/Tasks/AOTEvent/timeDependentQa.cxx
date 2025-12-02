@@ -262,8 +262,8 @@ struct TimeDependentQaTask {
         histos.add("multDistributions/hSecondsDistrZNACdiffNormAmpl", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
 
         // 2D vs time
-        histos.add("multDistributions/hSecondsNPVvsZNAampl", "", kTH3F, {axisSecondsVeryWideBins, {200, -0.5, maxNtracks - 0.5, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
-        histos.add("multDistributions/hSecondsNPVvsZNCampl", "", kTH3F, {axisSecondsVeryWideBins, {200, -0.5, maxNtracks - 0.5, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
+        histos.add("multDistributions/hSecondsNPVvsZNAampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
+        histos.add("multDistributions/hSecondsNPVvsZNCampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
 
         // now histos after kNoSameBunchPileup cut:
         histos.add("multDistributionsNoPileup/hSecondsDistrPVtracks", "", kTH2D, {axisSecondsVeryWideBins, {maxNtracks, -0.5, maxNtracks - 0.5, "n PV tracks"}});
@@ -280,8 +280,8 @@ struct TimeDependentQaTask {
         histos.add("multDistributionsNoPileup/hSecondsDistrZNACdiffNormAmpl", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
 
         // 2D vs time
-        histos.add("multDistributionsNoPileup/hSecondsNPVvsZNAampl", "", kTH3F, {axisSecondsSuperWideBins, {200, -0.5, 500 - 0.5, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
-        histos.add("multDistributionsNoPileup/hSecondsNPVvsZNCampl", "", kTH3F, {axisSecondsSuperWideBins, {200, -0.5, 500 - 0.5, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
+        histos.add("multDistributionsNoPileup/hSecondsNPVvsZNAampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
+        histos.add("multDistributionsNoPileup/hSecondsNPVvsZNCampl", "", kTH3F, {axisSecondsSuperWideBins, {200, 0, 500, "n PV tracks"}, {200, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
       }
 
       // ### QA event selection bits
