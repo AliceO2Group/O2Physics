@@ -37,7 +37,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 TH1D* tmpFqErr[6][5][52];
-struct FactorialMoments {
+struct factorial-moments {
   Configurable<bool> applyCheckPtForRec{"applyCheckPtForRec", false, "Apply checkpT for reconstructed tracks"};
   Configurable<bool> applyCheckPtForMC{"applyCheckPtForMC", true, "Apply checkpT for MC-generated tracks"};
   Configurable<Float_t> centralEta{"centralEta", 0.9, "eta limit for tracks"};
