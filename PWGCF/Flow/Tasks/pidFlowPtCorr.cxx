@@ -80,6 +80,7 @@ struct PidFlowPtCorr {
     // track quality selections for daughter track
     O2_DEFINE_CONFIGURABLE(cfgITSNCls, int, 5, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgTPCNCls, int, 50, "check minimum number of TPC hits")
+    O2_DEFINE_CONFIGURABLE(cfgTPCCrossedRows, int, 70, "check minimum number of TPC crossed rows")
     O2_DEFINE_CONFIGURABLE(cfgITSChi2NDF, double, 2.5, "check ITS Chi2NDF")
     O2_DEFINE_CONFIGURABLE(cfgCheckGlobalTrack, bool, false, "check global track")
   } trkQualityOpts;
@@ -94,7 +95,8 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgDoNoCollInTimeRangeStandard, bool, true, "check kNoCollInTimeRangeStandard")
     O2_DEFINE_CONFIGURABLE(cfgDoIsGoodITSLayersAll, bool, true, "check kIsGoodITSLayersAll")
     O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 3000, "High cut on TPC occupancy")
-    O2_DEFINE_CONFIGURABLE(cfgMultPVCut, int, 5, "Use apassX MultPVCut function or not (-1)")
+    O2_DEFINE_CONFIGURABLE(cfgDoMultPVCut, bool, true, "do multNTracksPV vs cent cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultPVCut, std::vector<float>, (std::vector<float>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}), "Used MultPVCut function parameter")
     O2_DEFINE_CONFIGURABLE(cfgDoV0AT0Acut, bool, true, "do V0A-T0A cut")
     O2_DEFINE_CONFIGURABLE(cfgCutminIR, float, -1, "cut min IR")
     O2_DEFINE_CONFIGURABLE(cfgCutmaxIR, float, 3000, "cut max IR")
@@ -121,8 +123,10 @@ struct PidFlowPtCorr {
   ConfigurableAxis cfgaxisMeanPt{"cfgaxisMeanPt", {300, 0, 3}, "pt (GeV)"};
   ConfigurableAxis cfgaxisNch{"cfgaxisNch", {3000, 0.5, 3000.5}, "Nch"};
   ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
+  Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
 
-  AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
+  AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -146,6 +150,7 @@ struct PidFlowPtCorr {
   std::vector<GFW::CorrConfig> corrconfigs;
   std::vector<std::string> cfgAcceptance;
   std::vector<std::string> cfgEfficiency;
+  std::vector<float> cfgMultPVCutPara;
   std::vector<float> cfgNSigma;
   std::vector<float> cfgMeanPt;
   std::vector<int> runNumbers;
@@ -178,6 +183,12 @@ struct PidFlowPtCorr {
 
   TAxis* fMultAxis = nullptr;
 
+  std::vector<TF1*> funcEff;
+  TH1D* hFindPtBin;
+  TF1* funcV2;
+  TF1* funcV3;
+  TF1* funcV4;
+
   void init(InitContext const&) // Initialization
   {
     ccdb->setURL(cfgurl.value);
@@ -188,6 +199,7 @@ struct PidFlowPtCorr {
     cfgEfficiency = cfgEfficiencyPath;
     cfgNSigma = cfgNSigmapid;
     cfgMeanPt = cfgMeanPtcent;
+    cfgMultPVCutPara = evtSeleOpts.cfgMultPVCut;
 
     // Set the pt, mult and phi Axis;
     o2::framework::AxisSpec axisPt = cfgaxisPt;
@@ -212,7 +224,7 @@ struct PidFlowPtCorr {
     registry.add("MC/hCentvsMultTPCMC", "", {HistType::kTH2D, {{18, 0, 90}, cfgaxisNch}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
-    registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{500, 0, 500}, axisMultiplicity}});
+    registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
 
     if (cfgOutputrunbyrun) {
       runNumbers = cfgRunNumbers;
@@ -251,6 +263,11 @@ struct PidFlowPtCorr {
     registry.add("c24", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c34", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c22Full", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("c24TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("c34TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("c22FullTrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
 
     registry.add("pi/c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("ka/c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
@@ -264,6 +281,18 @@ struct PidFlowPtCorr {
     registry.add("pi/c34", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("ka/c34", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("pr/c34", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pi/c22PiPi", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("ka/c22KaKa", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pr/c22PrPr", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pi/c32PiPi", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("ka/c32KaKa", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pr/c32PrPr", ";Centrality  (%) ; C_{2}{4} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pi/c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("ka/c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pr/c22TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pi/c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("ka/c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("pr/c32TrackWeight", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
 
     // vn-pt corr
     registry.add("covV2Pt", ";Centrality  (%) ; cov(v_{2}^{2}{2}, P_{T}) ", {HistType::kTProfile, {axisMultiplicity}});
@@ -354,30 +383,20 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {3 3} refP {-3 -3}", "Prot0gap34a", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPaP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "Pion08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {2} poiPiN08 {-2}", "Pion08gap22b", kFALSE)); // 30
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "Kaon08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {2} poiKaN08 {-2}", "Kaon08gap22b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "Prot08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {2} poiPrN08 {-2}", "Prot08gap22b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", kFALSE)); // 30
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "PrPr08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", kFALSE));
 
     fGFW->CreateRegions(); // finalize the initialization
 
     // used for event selection
-    int caseapass4 = 4;
-    int caseapass5 = 5;
-    if (evtSeleOpts.cfgMultPVCut.value == caseapass4) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
-    }
-    if (evtSeleOpts.cfgMultPVCut.value == caseapass5) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05);
-    }
+    fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    fMultPVCutLow->SetParameters(cfgMultPVCutPara[0], cfgMultPVCutPara[1], cfgMultPVCutPara[2], cfgMultPVCutPara[3], cfgMultPVCutPara[4], cfgMultPVCutPara[5], cfgMultPVCutPara[6], cfgMultPVCutPara[7], cfgMultPVCutPara[8], cfgMultPVCutPara[9]);
+    fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    fMultPVCutHigh->SetParameters(cfgMultPVCutPara[0], cfgMultPVCutPara[1], cfgMultPVCutPara[2], cfgMultPVCutPara[3], cfgMultPVCutPara[4], cfgMultPVCutPara[5], cfgMultPVCutPara[6], cfgMultPVCutPara[7], cfgMultPVCutPara[8], cfgMultPVCutPara[9]);
 
     fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
     fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
@@ -389,6 +408,23 @@ struct PidFlowPtCorr {
       fWeightsREF->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
       fWeightsREF->init(true, false);
     }
+
+    std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
+    hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+    funcEff.resize(pTEffBins.size() - 1);
+    // LHC24g3 Eff
+    std::vector<double> f1p0 = cfgTrackDensityP0;
+    std::vector<double> f1p1 = cfgTrackDensityP1;
+    for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+      funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
+      funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc]);
+    }
+    funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+    funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+    funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+    funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+    funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+    funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
   }
 
   // input HIST("name")
@@ -401,9 +437,10 @@ struct PidFlowPtCorr {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
+      if (std::fabs(val) < 1) {
         registry.fill(tarName, cent, val, dnx);
-      return;
+        return;
+      }
     }
     return;
   }
@@ -537,10 +574,9 @@ struct PidFlowPtCorr {
 
     if (std::fabs(vtxz) > cfgCutVertex)
       return false;
-    int caseapass4 = 4;
-    int caseapass5 = 5;
+
     registry.fill(HIST("hNTracksPVvsCentrality"), multNTracksPV, centrality);
-    if (evtSeleOpts.cfgMultPVCut.value == caseapass4 || evtSeleOpts.cfgMultPVCut.value == caseapass5) {
+    if (evtSeleOpts.cfgDoMultPVCut.value) {
       if (multNTracksPV < fMultPVCutLow->Eval(centrality))
         return false;
       if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
@@ -597,6 +633,32 @@ struct PidFlowPtCorr {
     registry.fill(HIST("hMultTPC"), nMultTPC);
     registry.fill(HIST("hCent"), cent);
 
+    double psi2Est = 0, psi3Est = 0, psi4Est = 0;
+    float wEPeff = 1;
+    double v2 = 0, v3 = 0, v4 = 0;
+    if (cfgDoLocDenCorr) {
+      double q2x = 0, q2y = 0;
+      double q3x = 0, q3y = 0;
+      double q4x = 0, q4y = 0;
+      for (const auto& track : tracks) {
+        bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value); // within RF pT rang
+        if (withinPtRef) {
+          q2x += std::cos(2 * track.phi());
+          q2y += std::sin(2 * track.phi());
+          q3x += std::cos(3 * track.phi());
+          q3y += std::sin(3 * track.phi());
+          q4x += std::cos(4 * track.phi());
+          q4y += std::sin(4 * track.phi());
+        }
+      }
+      psi2Est = std::atan2(q2y, q2x) / 2.;
+      psi3Est = std::atan2(q3y, q3x) / 3.;
+      psi4Est = std::atan2(q4y, q4x) / 4.;
+      v2 = funcV2->Eval(cent);
+      v3 = funcV3->Eval(cent);
+      v4 = funcV4->Eval(cent);
+    }
+
     float weff = 1;
     float wacc = 1;
     double ptSum = 0;
@@ -610,6 +672,28 @@ struct PidFlowPtCorr {
         if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
           continue;
       }
+      if (cfgDoLocDenCorr) {
+        bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
+        if (withinPtRef) {
+          double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
+          fphi = (1 + 2 * fphi);
+          int pTBinForEff = hFindPtBin->FindBin(track.pt());
+          if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
+            wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
+            if (wEPeff > 0.) {
+              wEPeff = 1. / wEPeff;
+              weff *= wEPeff;
+            }
+          }
+        }
+      }
+      if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        continue;
+      if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+        continue;
+      if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+        continue;
+
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
       registry.fill(HIST("hEta"), track.eta());
@@ -645,7 +729,7 @@ struct PidFlowPtCorr {
 
     if (nch > 0) {
       int centbin = 0;
-      centbin = fMultAxis->FindBin(cent);
+      centbin = fMultAxis->FindBin(cent) - 1;
 
       fillProfile(corrconfigs.at(0), HIST("c22"), cent);
       fillProfile(corrconfigs.at(1), HIST("c24"), cent);
@@ -681,6 +765,27 @@ struct PidFlowPtCorr {
       fillProfile(corrconfigs.at(27), HIST("pr/c34"), cent);
       fillProfile(corrconfigs.at(28), HIST("pr/c34"), cent);
 
+      fillProfile(corrconfigs.at(29), HIST("pi/c22PiPi"), cent);
+      fillProfile(corrconfigs.at(30), HIST("ka/c22KaKa"), cent);
+      fillProfile(corrconfigs.at(31), HIST("pr/c22PrPr"), cent);
+      fillProfile(corrconfigs.at(32), HIST("pi/c32PiPi"), cent);
+      fillProfile(corrconfigs.at(33), HIST("ka/c32KaKa"), cent);
+      fillProfile(corrconfigs.at(34), HIST("pr/c32PrPr"), cent);
+
+      fillProfilevnpt(corrconfigs.at(0), HIST("c22TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(1), HIST("c24TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(2), HIST("c22FullTrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(3), HIST("c32TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(4), HIST("c34TrackWeight"), cent, nch, nch, 0);
+
+      fillProfilevnpt(corrconfigs.at(29), HIST("pi/c22TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(30), HIST("ka/c22TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(31), HIST("pr/c22TrackWeight"), cent, nch, nch, 0);
+
+      fillProfilevnpt(corrconfigs.at(32), HIST("pi/c32TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(33), HIST("ka/c32TrackWeight"), cent, nch, nch, 0);
+      fillProfilevnpt(corrconfigs.at(34), HIST("pr/c32TrackWeight"), cent, nch, nch, 0);
+
       fillProfilevnpt(corrconfigs.at(0), HIST("covV2Pt"), cent, ptSum, nch, 0);
       fillProfilevnpt(corrconfigs.at(0), HIST("covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
       fillProfilevnpt(corrconfigs.at(29), HIST("pi/covV2Pt"), cent, ptSum, nch, 0);
@@ -689,6 +794,15 @@ struct PidFlowPtCorr {
       fillProfilevnpt(corrconfigs.at(30), HIST("ka/covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
       fillProfilevnpt(corrconfigs.at(31), HIST("pr/covV2Pt"), cent, ptSum, nch, 0);
       fillProfilevnpt(corrconfigs.at(31), HIST("pr/covV2Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+
+      fillProfilevnpt(corrconfigs.at(3), HIST("covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(3), HIST("covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+      fillProfilevnpt(corrconfigs.at(32), HIST("pi/covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(32), HIST("pi/covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+      fillProfilevnpt(corrconfigs.at(33), HIST("ka/covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(33), HIST("ka/covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
+      fillProfilevnpt(corrconfigs.at(34), HIST("pr/covV3Pt"), cent, ptSum, nch, 0);
+      fillProfilevnpt(corrconfigs.at(34), HIST("pr/covV3Pt_diffpt"), cent, ptSum, nch, cfgMeanPt[centbin]);
 
       fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22dmeanpt"), cent, ptSum, nch);
       fillProfilePOIvnpt(corrconfigs.at(5), HIST("pi/c22dmeanpt"), cent, ptSum, nch);
