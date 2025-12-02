@@ -87,6 +87,12 @@ enum D0Sel : uint8_t {
   ND0Sel
 };
 
+enum TrackSel : uint8_t {
+  GlobalTrack = 0,
+  GlobalTrackWoDca,
+  QualityTrackITS
+};
+
 // Helper structs to pass D and V0 informations
 
 struct HfResoCandidateV0 {
@@ -152,12 +158,12 @@ struct HfResoConfigSingleTrackCuts : o2::framework::ConfigurableGroup {
 struct HfResoConfigQaPlots : o2::framework::ConfigurableGroup {
   std::string prefix = "qaPlots"; // JSON group name
   o2::framework::Configurable<bool> applyCutsForQaHistograms{"applyCutsForQaHistograms", true, "flag to apply cuts to QA histograms"};
-  o2::framework::Configurable<float> cutMassDMin{"cutMassDMin", 1.83, "minimum mass for D0 and Dplus candidates"};   // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassDMax{"cutMassDMax", 1.92, "maximum mass for D0 and Dplus candidates"};   // o2-linter: disable=pdg/explicit-mass (false positive)
+  o2::framework::Configurable<float> cutMassDMin{"cutMassDMin", 1.83, "minimum mass for D0 and Dplus candidates"};
+  o2::framework::Configurable<float> cutMassDMax{"cutMassDMax", 1.92, "maximum mass for D0 and Dplus candidates"};
   o2::framework::Configurable<float> cutMassDstarMin{"cutMassDstarMin", 0.139, "minimum mass for Dstar candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassDstarMax{"cutMassDstarMax", 0.175, "maximum mass for Dstar candidates"}; // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassK0sMin{"cutMassK0sMin", 0.485, "minimum mass for K0s candidates"};       // o2-linter: disable=pdg/explicit-mass (false positive)
-  o2::framework::Configurable<float> cutMassK0sMax{"cutMassK0sMax", 0.509, "maximum mass for K0s candidates"};       // o2-linter: disable=pdg/explicit-mass (false positive)
+  o2::framework::Configurable<float> cutMassDstarMax{"cutMassDstarMax", 0.175, "maximum mass for Dstar candidates"};
+  o2::framework::Configurable<float> cutMassK0sMin{"cutMassK0sMin", 0.485, "minimum mass for K0s candidates"};
+  o2::framework::Configurable<float> cutMassK0sMax{"cutMassK0sMax", 0.509, "maximum mass for K0s candidates"};
   o2::framework::Configurable<float> cutMassLambdaMin{"cutMassLambdaMin", 1.11, "minimum mass for Lambda candidates"};
   o2::framework::Configurable<float> cutMassLambdaMax{"cutMassLambdaMax", 1.12, "maximum mass for Lambda candidates"};
 };
@@ -167,14 +173,14 @@ struct HfResoConfigQaPlots : o2::framework::ConfigurableGroup {
 template <bool DoMc, DMesonType DType>
 void addHistograms(o2::framework::HistogramRegistry& registry)
 {
-  constexpr uint8_t kNBinsEvents = EventType::NEventType;
-  std::string labels[kNBinsEvents];
+  constexpr uint8_t NumBinsEvents = EventType::NEventType;
+  std::string labels[NumBinsEvents];
   labels[EventType::Processed] = "processed";
   labels[EventType::NoDV0Selected] = "without DV0 pairs";
   labels[EventType::DV0Selected] = "with DV0 pairs";
-  const o2::framework::AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+  const o2::framework::AxisSpec axisEvents = {NumBinsEvents, 0.5, NumBinsEvents + 0.5, ""};
   registry.add("hEvents", "Events;;entries", o2::framework::HistType::kTH1D, {axisEvents});
-  for (auto iBin{0u}; iBin < kNBinsEvents; iBin++) {
+  for (auto iBin{0u}; iBin < NumBinsEvents; iBin++) {
     registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
   }
 
@@ -275,7 +281,7 @@ bool selectV0Daughter(Tr const& track, const std::array<int, 3>& dDaughtersIds, 
 /// \return alphaAP
 float alphaAP(std::array<float, 3> const& momV0, std::array<float, 3> const& momDau0, std::array<float, 3> const& momDau1)
 {
-  float const momTot = std::sqrt(std::pow(momV0[0], 2.) + std::pow(momV0[1], 2.) + std::pow(momV0[2], 2.));
+  float const momTot = std::hypot(momV0[0], momV0[1], momV0[2]);
   float const lQlPos = (momDau0[0] * momV0[0] + momDau0[1] * momV0[1] + momDau0[2] * momV0[2]) / momTot;
   float const lQlNeg = (momDau1[0] * momV0[0] + momDau1[1] * momV0[1] + momDau1[2] * momV0[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
@@ -294,7 +300,7 @@ float alphaAP(std::array<float, 3> const& momV0, std::array<float, 3> const& mom
 /// \return the DCA
 float calculateDCAStraightToPV(float x, float y, float z, float px, float py, float pz, float pvX, float pvY, float pvZ)
 {
-  return std::sqrt((std::pow((pvY - y) * pz - (pvZ - z) * py, 2) + std::pow((pvX - x) * pz - (pvZ - z) * px, 2) + std::pow((pvX - x) * py - (pvY - y) * px, 2)) / (px * px + py * py + pz * pz));
+  return std::hypot((pvY - y) * pz - (pvZ - z) * py, (pvX - x) * pz - (pvZ - z) * px, (pvX - x) * py - (pvY - y) * px) / (px * px + py * py + pz * pz);
 }
 
 /// Basic selection of V0 candidates
@@ -440,17 +446,17 @@ bool isTrackSelected(const Tr& track, const std::array<int, 3>& dDaughtersIds, c
     return false;
   }
   switch (cfgSingleTrackCuts.setTrackSelections.value) {
-    case 1:
-      if (!track.isGlobalTrackWoDCA()) {
-        return false;
-      }
-      break;
-    case 2:
+    case TrackSel::GlobalTrack:
       if (!track.isGlobalTrack()) {
         return false;
       }
       break;
-    case 3:
+    case TrackSel::GlobalTrackWoDca:
+      if (!track.isGlobalTrackWoDCA()) {
+        return false;
+      }
+      break;
+    case TrackSel::QualityTrackITS:
       if (!track.isQualityTrackITS()) {
         return false;
       }
