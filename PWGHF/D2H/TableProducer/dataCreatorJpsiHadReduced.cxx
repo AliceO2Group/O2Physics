@@ -264,14 +264,14 @@ struct HfDataCreatorJpsiHadReduced {
       registry.get<TH2>(HIST("hSelectionsJpsi"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    constexpr int kNBinsEvents = NEvent;
-    std::string labelsEvents[kNBinsEvents];
+    constexpr int NumBinsEvents = NEvent;
+    std::string labelsEvents[NumBinsEvents];
     labelsEvents[Event::Processed] = "processed";
     labelsEvents[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
     labelsEvents[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
-    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+    static const AxisSpec axisEvents = {NumBinsEvents, 0.5, NumBinsEvents + 0.5, ""};
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
+    for (int iBin = 0; iBin < NumBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labelsEvents[iBin].data());
     }
 

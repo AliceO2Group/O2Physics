@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dataCreatorCharmResoReduced.cxx
+/// \file dataCreatorCharmResoToDplusReduced.cxx
 /// \brief Creation of D+ V0 and D+ track pairs
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
