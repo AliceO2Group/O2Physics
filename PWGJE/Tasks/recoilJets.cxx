@@ -106,12 +106,12 @@ struct RecoilJets {
   Configurable<std::vector<float>> phiRestrTTSelection{"phiRestrTTSelection", {0., 6.3}, "Restriction on phi angle (min, max) to search for TT"};
 
   // Leading track and associated track
-  Configurable<std::vector<float>> pTLeadTrack{"pTLeadTrack", {1., 3.}, "Transverse momenturm range (min, max) for leading tracks"};
-  Configurable<std::vector<float>> pTAssociatTrack{"pTAssociatTrack", {1., 3.}, "Transverse momenturm range (min, max) for associated tracks"};
+  Configurable<std::vector<float>> pTLeadTrack{"pTLeadTrack", {4., 6.}, "Transverse momenturm range (min, max) for leading tracks"};
+  Configurable<float> pTAssociatTrackMin{"pTAssociatTrackMin", 2., "Min transverse momenturm for associated tracks"};
 
   // List of configurable parameters for histograms
   Configurable<uint16_t> histJetPt{"histJetPt", 100, "Maximum value of jet pT stored in histograms"};
-  Configurable<uint16_t> histMultBins{"histMultBins", 1000, "Number of bins for scaled FT0M multiplicity"};
+  Configurable<uint16_t> histMultBins{"histMultBins", 600, "Number of bins for scaled FT0M multiplicity"};
   Configurable<uint16_t> histZDCTimeBins{"histZDCTimeBins", 240, "Number of bins for ZDC timing histograms"};
 
   // Axes specification
@@ -502,8 +502,12 @@ struct RecoilJets {
     }
 
     if (doprocessLeadingAndAssociatedTracksTask) {
-      spectra.add("hScaledFT0C_Correlation_LeadTrack_AssociatTracks", Form("Leading track #it{p}_{T} #in (%.2f, %.2f); Associated track #it{p}_{T} #in (%.2f, %.2f)", pTLeadTrack->at(0), pTLeadTrack->at(1), pTAssociatTrack->at(0), pTAssociatTrack->at(1)), kTH2F, {{multFT0CThresh, nameFT0Caxis}, {120, -1.28, 5.0, "#it{#varphi} (rad)"}});
-      spectra.add("hScaledFT0M_Correlation_LeadTrack_AssociatTracks", Form("Leading track #it{p}_{T} #in (%.2f, %.2f); Associated track #it{p}_{T} #in (%.2f, %.2f)", pTLeadTrack->at(0), pTLeadTrack->at(1), pTAssociatTrack->at(0), pTAssociatTrack->at(1)), kTH2F, {{multFT0MThresh, nameFT0Maxis}, {120, -1.28, 5.0, "#it{#varphi} (rad)"}});
+
+      spectra.add("hScaledFT0C_NleadTracks", "Total number of selected leading tracks vs scaled FT0C", kTH2F, {{scaledFT0C}, {1, 0.0, 1.}});
+      spectra.add("hScaledFT0M_NleadTracks", "Total number of selected leading tracks vs scaled FT0M", kTH2F, {{scaledFT0M}, {1, 0.0, 1.}});
+
+      spectra.add("hScaledFT0C_Correlation_LeadTrack_AssociatTracks", Form("Leading track #it{p}_{T} #in (%.2f, %.2f); Associated track #it{p}_{T} #in (%.2f, #it{p}_{T, lead. trk})", pTLeadTrack->at(0), pTLeadTrack->at(1), pTAssociatTrackMin.value), kTH2F, {{scaledFT0C}, {160, -1.28, 5.0, "#it{#varphi} (rad)"}});
+      spectra.add("hScaledFT0M_Correlation_LeadTrack_AssociatTracks", Form("Leading track #it{p}_{T} #in (%.2f, %.2f); Associated track #it{p}_{T} #in (%.2f, #it{p}_{T, lead. trk})", pTLeadTrack->at(0), pTLeadTrack->at(1), pTAssociatTrackMin.value), kTH2F, {{scaledFT0M}, {160, -1.28, 5.0, "#it{#varphi} (rad)"}});
     }
   }
 
@@ -1001,38 +1005,49 @@ struct RecoilJets {
   void fillLeadingAndAssociatedTracksTask(JCollision const& collision, JTracks const& tracks, float weight = 1.)
   {
     std::vector<double> vPhiOfLeadingTracks;
+    std::vector<double> vPtOfLeadingTracks;
     std::vector<double> vPhiOfAssociatedTracks;
 
     float scaledFT0C = getScaledFT0(collision.multFT0C(), meanFT0C);
     float scaledFT0M = getScaledFT0M(getScaledFT0(collision.multFT0A(), meanFT0A), scaledFT0C);
 
+    // Search for leading tracks
     for (const auto& track : tracks) {
       if (skipTrack(track))
         continue;
 
       float trackPt = track.pt();
-      float trackPhi = track.phi();
 
-      // Search for leading tracks
       if (trackPt > pTLeadTrack->at(0) && trackPt < pTLeadTrack->at(1)) {
-        vPhiOfLeadingTracks.push_back(trackPhi);
-      }
-
-      // Search for associated tracks
-      if (trackPt > pTAssociatTrack->at(0) && trackPt < pTAssociatTrack->at(1)) {
-        vPhiOfAssociatedTracks.push_back(trackPhi);
+        vPhiOfLeadingTracks.push_back(track.phi());
+        vPtOfLeadingTracks.push_back(trackPt);
       }
     }
 
     int nLeadingTracks = vPhiOfLeadingTracks.size();
 
     if (nLeadingTracks > 0) {
-      double phiLeadingTrack = getPhiTT(vPhiOfLeadingTracks);
+      auto indexLeadTrack = rand->Integer(nLeadingTracks);
 
-      for (const auto& phiAssociatTrack : vPhiOfAssociatedTracks) {
-        double dphi = RecoDecay::constrainAngle(phiLeadingTrack - phiAssociatTrack, -1.3);
-        spectra.fill(HIST("hScaledFT0C_Correlation_LeadTrack_AssociatTracks"), scaledFT0C, dphi, weight);
-        spectra.fill(HIST("hScaledFT0M_Correlation_LeadTrack_AssociatTracks"), scaledFT0M, dphi, weight);
+      double phiLeadingTrack = vPhiOfLeadingTracks[indexLeadTrack];
+      double pTLeadingTrack = vPtOfLeadingTracks[indexLeadTrack];
+
+      spectra.fill(HIST("hScaledFT0C_NleadTracks"), scaledFT0C, 0.5, weight);
+      spectra.fill(HIST("hScaledFT0M_NleadTracks"), scaledFT0M, 0.5, weight);
+
+      for (const auto& track : tracks) {
+        if (skipTrack(track))
+          continue;
+
+        float trackPt = track.pt();
+        float trackPhi = track.phi();
+
+        // Search for associated tracks
+        if (trackPt > pTAssociatTrackMin && trackPt < pTLeadingTrack) {
+          double dphi = RecoDecay::constrainAngle(phiLeadingTrack - trackPhi, -1.3);
+          spectra.fill(HIST("hScaledFT0C_Correlation_LeadTrack_AssociatTracks"), scaledFT0C, dphi, weight);
+          spectra.fill(HIST("hScaledFT0M_Correlation_LeadTrack_AssociatTracks"), scaledFT0M, dphi, weight);
+        }
       }
     }
   }
