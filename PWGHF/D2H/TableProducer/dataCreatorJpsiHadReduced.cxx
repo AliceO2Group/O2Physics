@@ -252,15 +252,15 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     // Set up the histogram registry
-    constexpr int kNBinsSelections = 2 + aod::SelectionStep::RecoPID;
-    std::string labels[kNBinsSelections];
+    constexpr int NumBinsEvents = 2 + aod::SelectionStep::RecoPID;
+    std::string labels[NumBinsEvents];
     labels[0] = "No selection";
     labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
     labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
     labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-    static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+    static const AxisSpec axisSelections = {NumBinsEvents, 0.5, NumBinsEvents + 0.5, ""};
     registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+    for (int iBin = 0; iBin < NumBinsEvents; ++iBin) {
       registry.get<TH2>(HIST("hSelectionsJpsi"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
