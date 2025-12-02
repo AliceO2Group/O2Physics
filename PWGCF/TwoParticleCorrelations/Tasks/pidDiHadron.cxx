@@ -170,6 +170,7 @@ struct PidDiHadron {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisNsigmaITS{"axisNsigmaITS", {80, -5, 5}, "nsigmaITS axis"};
+  ConfigurableAxis axisTpcSignal{"axisTpcSignal", {250, 0, 250}, "dEdx axis for TPC"};
 
   Configurable<LabeledArray<int>> cfgUseEventCuts{"cfgUseEventCuts", {LongArrayInt[0], 15, 1, {"Filtered Events", "Sel8", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kNoCollInTimeRangeStandard", "kIsGoodITSLayersAll", "kNoCollInRofStandard", "kNoHighMultCollInPrevRof", "Occupancy", "Multcorrelation", "T0AV0ACut", "kIsVertexITSTPC", "kTVXinTRD"}, {"EvCuts"}}, "Labeled array (int) for various cuts on resonances"};
   Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
@@ -498,6 +499,9 @@ struct PidDiHadron {
             histos.add("TofItsNsigma_before", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPt}}});
             histos.add("TofItsNsigma_after", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPt}}});
           }
+
+          histos.add("TpcdEdx_ptwise", "", {HistType::kTH2D, {{axisTpcSignal, axisPt}}});
+          histos.add("TpcdEdx_ptwise_afterCut", "", {HistType::kTH2D, {{axisTpcSignal, axisPt}}});
         }
       }
 
@@ -835,11 +839,17 @@ struct PidDiHadron {
           histos.fill(HIST("TofItsNsigma_before"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
       }
 
+      if (cfgGetNsigmaQA)
+        histos.fill(HIST("TpcdEdx_ptwise"), track1.tpcSignal(), track1.pt());
+
       if (cfgPIDParticle && getNsigmaPID(track1) != cfgPIDParticle)
         continue; // if PID is selected, check if the track has the right PID
 
       if (cfgGetNsigmaQA)
         fillNsigmaAfterCut(track1, cfgPIDParticle);
+
+      if (cfgGetNsigmaQA)
+        histos.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.tpcSignal(), track1.pt());
 
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
