@@ -15,8 +15,6 @@
 #include "TRandom.h"
 #include <TH1F.h>
 
-#include <array>
-#include <iostream>
 // O2 includes
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -71,10 +69,10 @@ struct FactorialMoments {
   HistogramRegistry histos1{
     "histos1",
     {
-      {"hRecoPtBefore", "Reco pT before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-      {"hGenPtBefore", "Gen pT before cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-      {"hRecoPtAfter", "Reco pT after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
-      {"hGenPtAfter", "Gen pT after cuts;p_{T} (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hRecoPtBefore", "Reco pT before cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hGenPtBefore", "Gen pT before cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hRecoPtAfter", "Reco pT after cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
+      {"hGenPtAfter", "Gen pT after cuts;pt (GeV/c);Counts", {HistType::kTH1F, {{1000, 0.0, 20.0}}}},
       {"hRecoEtaBefore", "Reco #eta before cuts;#eta;Counts", {HistType::kTH1F, {{200, -2.0, 2.0}}}},
       {"mCentMCImpactFull", "Impact Parameter (MC All Events);Impact Parameter b [fm];Counts", {HistType::kTH1F, {{200, 0.0, 50.0}}}},
       {"mCentMCImpact005", "Impact Parameter (MC 0–5%);Impact Parameter b [fm];Counts", {HistType::kTH1F, {{200, 0.0, 20.0}}}},
@@ -87,13 +85,13 @@ struct FactorialMoments {
       {"hGenCharge", "Gen particle charge;Charge;Counts", {HistType::kTH1F, {{13, -6.5, 6.5}}}},
       {"hGenPhiAfter", "Gen #phi after cuts;#phi;Counts", {HistType::kTH1F, {{100, 0, 6.3}}}},
       {"mChargeDist", "MC particle charge;Charge;Counts", {HistType::kTH1F, {{9, -4.5, 4.5}}}},
-      {"mDiffPhi", "Δ#phi between selected MC particles;Δ#phi;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
+      {"mDiffPhi", "dphi between selected MC particles;dphi;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
       {"mPrimariesPerEvent", "Primary MC particles per event;N_{primaries};Counts", {HistType::kTH1I, {{20000, 0, 20000}}}},
-      {"mDiffPt", "Δp_{T} between selected MC particles;Δp_{T} (GeV/c);Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
-      {"mDiffEta", "Δ#eta between selected MC particles;Δ#eta;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
-      {"mADiffPhi", "Δ#phi between selected MC particles;Δ#phi;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
-      {"mADiffPt", "Δp_{T} between selected MC particles;Δp_{T} (GeV/c);Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
-      {"mADiffEta", "Δ#eta between selected MC particles;Δ#eta;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
+      {"mDiffPt", "dpt between selected MC particles;dpt (GeV/c);Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
+      {"mDiffEta", "deta between selected MC particles;deta;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
+      {"mADiffPhi", "dphi between selected MC particles;dphi;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
+      {"mADiffPt", "dpt between selected MC particles;dpt (GeV/c);Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
+      {"mADiffEta", "deta between selected MC particles;deta;Counts", {HistType::kTH1F, {{2000, -0.01, 0.01}}}},
     },
   };
 
@@ -136,6 +134,7 @@ struct FactorialMoments {
     OutputObjHandlingPolicy::AnalysisObject,
     true};
   static const Int_t nBins = 52;
+  static const Int_t nfqOrder = 6;
   Int_t countSamples = 0;
   Int_t testc1 = 0, testc2 = 0, testc3 = 0;
   std::array<Int_t, nBins> binningM;
@@ -194,11 +193,11 @@ struct FactorialMoments {
       for (Int_t iM = 0; iM < nBins; ++iM) {
         auto mHistsR = std::get<std::shared_ptr<TH2>>(histos.add(Form("bin%i/Reset/mEtaPhi%i", iPt + 1, iM), Form("#eta#phi_%i for bin %.2f-%.2f;#eta;#phi", iM, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH2F, {{binningM[iM], -0.8, 0.8}, {binningM[iM], 0, 2 * TMath::Pi()}}));
         mHistArrReset.push_back(mHistsR);
-        for (Int_t iq = 0; iq < 6; ++iq) {
+        for (Int_t iq = 0; iq nfqOrder; ++iq) {
           tmpFqErr[iq][iPt][iM] = new TH1D(Form("tmpFqErr%i%i%i", iq, iPt, iM), Form("tmpFqErr%i%i%i", iq, iPt, iM), 100, 0, 10);
         }
       }
-      for (Int_t i = 0; i < 6; ++i) {
+      for (Int_t i = 0; i nfqOrder; ++i) {
         auto mHistFq = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalFq%i_bin%i", i + 2, iPt + 1), Form("Final F_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
         mFqBinFinal.push_back(mHistFq);
         auto mHistAv = std::get<std::shared_ptr<TH1>>(histos.add(Form("mFinalAvBin%i_bin%i", i + 2, iPt + 1), Form("Final AvBin_%i for bin %.2f-%.2f;M", i + 2, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}}));
@@ -254,7 +253,7 @@ struct FactorialMoments {
             double binconVal = 0;
             binconVal = hist[iPt * nBins + iM]->GetBinContent(iEta, iPhi);
             binContent += binconVal;
-            for (Int_t iq = 0; iq < 6; ++iq) {
+            for (Int_t iq = 0; iq nfqOrder; ++iq) {
               Double_t fqBin = 0;
               if (binconVal >= iq + 2) {
                 fqBin = TMath::Factorial(binconVal) / (TMath::Factorial(binconVal - (iq + 2)));
@@ -267,7 +266,7 @@ struct FactorialMoments {
           }
         }
         binConEvent[iPt][iM] = binContent / (TMath::Power(binningM[iM], 2));
-        for (Int_t iq = 0; iq < 6; ++iq) {
+        for (Int_t iq = 0; iq nfqOrder; ++iq) {
           if (sumfqBin[iq] > 0) {
             fqEvent[iq][iPt][iM] = sumfqBin[iq] / (TMath::Power(binningM[iM], 2));
             fqEventSampled[iq][iPt][iM] += fqEvent[iq][iPt][iM];
@@ -278,7 +277,7 @@ struct FactorialMoments {
           if (compSample) {
             mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, binConEventSampled[iq][iPt][iM] / samplesize);
 
-            double tmp = (fqEventSampled[iq][iPt][iM] / (samplesize)) / (pow(binConEventSampled[iq][iPt][iM] / (samplesize), (iq + 2)));
+            double tmp = (fqEventSampled[iq][iPt][iM] / (samplesize)) / (TMath::Power(binConEventSampled[iq][iPt][iM] / (samplesize), (iq + 2)));
             mFqBinFinalSampled[iPt * 6 + iq]->Fill(iM, tmp);
             tmpFqErr[iq][iPt][iM]->Fill(tmp);
             errorFq[iq][iPt][iM] += TMath::Power(fqEventSampled[iq][iPt][iM] / (samplesize), 2);
@@ -393,7 +392,7 @@ struct FactorialMoments {
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (Int_t const& track : tracks) {
       double recoCharge = (track.sign() != 0) ? track.sign() : 0.;
-      if (std::abs(track.eta()) < 0.8 && track.isGlobalTrack() && std::abs(recoCharge) >= 1e-6) {
+      if (std::abs(track.eta()) centralEta && track.isGlobalTrack() && std::abs(recoCharge) >= 1e-6) {
         histos.fill(HIST("mCollID"), track.collisionId());
         histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
         histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
@@ -424,7 +423,7 @@ struct FactorialMoments {
       double charge = pdgInfo->Charge();
       double physCharge = charge / 3.0;
       histos.fill(HIST("mChargeBefore"), physCharge);
-      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) < 0.8 && std::abs(physCharge) >= 1e-6) {
+      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) centralEta && std::abs(physCharge) >= 1e-6) {
         histos.fill(HIST("mChargeAfter"), physCharge);
         histos.fill(HIST("mEta"), mc.eta());
         histos.fill(HIST("mPt"), mc.pt());
