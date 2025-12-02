@@ -125,7 +125,7 @@ struct DetLayer {
   TGraph* mDeadPhiRegions = nullptr;
 
   // layer type
-  int type;                              // 0: undefined/inert, 1: silicon, 2: gas/tpc
+  int type; // 0: undefined/inert, 1: silicon, 2: gas/tpc
 };
 
 } // namespace o2::fastsim
