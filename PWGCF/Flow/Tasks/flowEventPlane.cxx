@@ -163,8 +163,8 @@ struct FlowEventPlane {
   // Container for histograms
   struct CorrectionHistContainer {
     std::array<TH2F*, 2> hGainCalib;
-    std::array<std::array<THnSparseF*, 1>, 4> vCoarseCorrHist;
-    std::array<std::array<TProfile*, 4>, 4> vFineCorrHist;
+    std::array<std::array<std::array<THnSparseF*, 1>, 4>, 6> vCoarseCorrHist;
+    std::array<std::array<std::array<TProfile*, 4>, 4>, 6> vFineCorrHist;
   } CorrectionHistContainer;
 
   // Run number
@@ -429,13 +429,13 @@ struct FlowEventPlane {
     }
   }
 
-  std::vector<float> getAvgCorrFactors(CorrectionType const& corrType, std::array<float, 4> const& vCollParam)
+  std::vector<float> getAvgCorrFactors(int const& itr, CorrectionType const& corrType, std::array<float, 4> const& vCollParam)
   {
     std::vector<float> vAvgOutput = {0., 0., 0., 0.};
     int binarray[4];
     if (corrType == kCoarseCorr) {
       int cntrx = 0;
-      for (auto const& v : CorrectionHistContainer.vCoarseCorrHist) {
+      for (auto const& v : CorrectionHistContainer.vCoarseCorrHist[itr]) {
         for (auto const& h : v) {
           binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent] + 0.0001);
           binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx] + 0.0001);
@@ -447,7 +447,7 @@ struct FlowEventPlane {
       }
     } else {
       int cntrx = 0;
-      for (auto const& v : CorrectionHistContainer.vFineCorrHist) {
+      for (auto const& v : CorrectionHistContainer.vFineCorrHist[itr]) {
         int cntry = 0;
         for (auto const& h : v) {
           vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry] + 0.0001));
@@ -467,6 +467,7 @@ struct FlowEventPlane {
     CorrectionType corrType = kFineCorr;
     std::string ccdbPath;
 
+    // Correction iterations
     for (int i = 0; i < nitr; ++i) {
       // Don't correct if corrFlag != 1
       if (vCorrFlags[i] != 1) {
@@ -501,9 +502,9 @@ struct FlowEventPlane {
           int cntry = 0;
           for (auto const& y : x) {
             if (corrType == kFineCorr) {
-              CorrectionHistContainer.vFineCorrHist[cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+              CorrectionHistContainer.vFineCorrHist[i][cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
             } else {
-              CorrectionHistContainer.vCoarseCorrHist[cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
+              CorrectionHistContainer.vCoarseCorrHist[i][cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
             }
             ++cntry;
           }
@@ -512,7 +513,7 @@ struct FlowEventPlane {
       }
 
       // Get averages
-      std::vector<float> vAvg = getAvgCorrFactors(corrType, inputParam);
+      std::vector<float> vAvg = getAvgCorrFactors(i, corrType, inputParam);
 
       // Apply correction
       outputParam[kXa] -= vAvg[kXa];
