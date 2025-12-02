@@ -131,14 +131,20 @@ std::string DetLayer::toString() const
   out.append(std::to_string(eff));
   out.append(" | type: ");
   switch (type) {
-    case layerInert:
+    case kLayerInert:
       out.append("Inert");
       break;
-    case layerSilicon:
+    case kLayerSilicon:
       out.append("Silicon");
       break;
-    case layerGas:
+    case kLayerGas:
       out.append("Gas/TPC");
+      break;
+    case kLayerTOF:
+      out.append("TOF");
+      break;
+    case kLayerVertex:
+      out.append("Vertex");
       break;
     default:
       out.append("Unknown");

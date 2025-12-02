@@ -33,7 +33,7 @@ struct DetLayer {
   DetLayer() = default;
   // Parametric constructor
   DetLayer(const TString& name_, float r_, float z_, float x0_, float xrho_,
-           float resRPhi_ = 0.0f, float resZ_ = 0.0f, float eff_ = 0.0f, int type_ = layerInert);
+           float resRPhi_ = 0.0f, float resZ_ = 0.0f, float eff_ = 0.0f, int type_ = kLayerInert);
   // Copy constructor
   DetLayer(const DetLayer& other);
 
@@ -72,9 +72,12 @@ struct DetLayer {
   const TGraph* getDeadPhiRegions() const { return mDeadPhiRegions; }
 
   // Check layer type
-  bool isInert() const { return type == layerInert; }
-  bool isSilicon() const { return type == layerSilicon; }
-  bool isGas() const { return type == layerGas; }
+  bool isInert() const { return type == kLayerInert; }
+  bool isSilicon() const { return type == kLayerSilicon; }
+  bool isGas() const { return type == kLayerGas; }
+  bool isTOF() const { return type == kLayerTOF; }
+  bool isVertex() const { return type == kLayerVertex; }
+  bool isActive() const { return type != kLayerInert; } // active layers are not inert
 
   // Utilities
   std::string toString() const;
@@ -92,6 +95,12 @@ struct DetLayer {
       return false;
     return mDeadPhiRegions->Eval(phi) > 1.f;
   };
+
+  static constexpr int kLayerVertex = -1; // vertex layer type (not used in tracking)
+  static constexpr int kLayerInert = 0;   // inert/undefined layer
+  static constexpr int kLayerSilicon = 1; // silicon layer
+  static constexpr int kLayerGas = 2;     // gas/tpc layer
+  static constexpr int kLayerTOF = 3;     // TOF layer type (not used in tracking)
 
  private:
   // TString for holding name
@@ -117,9 +126,6 @@ struct DetLayer {
 
   // layer type
   int type;                              // 0: undefined/inert, 1: silicon, 2: gas/tpc
-  static constexpr int layerInert = 0;   // inert/undefined layer
-  static constexpr int layerSilicon = 1; // silicon layer
-  static constexpr int layerGas = 2;     // gas/tpc layer
 };
 
 } // namespace o2::fastsim
