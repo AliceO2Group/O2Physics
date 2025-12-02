@@ -85,7 +85,6 @@ struct JetCrossSectionEfficiency {
   int binSplit = 3;
   int binZvtx = -1;
   int binCentrality = -1;
-  int binOccupancy = -1;
 
   const char* getStageLabel(int bit)
   {
@@ -167,7 +166,6 @@ struct JetCrossSectionEfficiency {
 
     binZvtx = nextEventSelectionBin++;
     binCentrality = nextEventSelectionBin++;
-    binOccupancy = nextEventSelectionBin++;
 
     AxisSpec jetPtAxis = {200, 0., jetPtMax, "#it{p}_{T} (GeV/#it{c})"};
     int totalEventSelectionBins = nextEventSelectionBin - 1;
@@ -189,7 +187,6 @@ struct JetCrossSectionEfficiency {
       }
       histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binZvtx, "zvtx");
       histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binCentrality, "centralitycut");
-      histJetPtVsEventSelection->GetYaxis()->SetBinLabel(binOccupancy, "occupancycut");
     }
 
     if (doprocessCrossSectionEfficiency) {
@@ -208,7 +205,6 @@ struct JetCrossSectionEfficiency {
       }
       histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binZvtx, "zvtx");
       histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binCentrality, "centralitycut");
-      histMcCollisionsEventSelection->GetXaxis()->SetBinLabel(binOccupancy, "occupancycut");
     }
 
     if (doprocessCrossSectionEfficiencyWeighted) {
@@ -227,7 +223,6 @@ struct JetCrossSectionEfficiency {
       }
       histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binZvtx, "zvtx");
       histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binCentrality, "centralitycut");
-      histMcCollisionsEventSelectionWeighted->GetXaxis()->SetBinLabel(binOccupancy, "occupancycut");
     }
   }
 
@@ -271,10 +266,29 @@ struct JetCrossSectionEfficiency {
     bool passesZvtxCut = (std::abs(mccollision.posZ()) <= vertexZCut);
     bool passesSplitCollCut = !(acceptSplitCollisions == NonSplitOnly && collisions.size() > 1);
 
+    if (hasRecoColl) {
+      bool occupancyIsGood = false;
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
+        auto const& collision = collisions.begin();
+        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
+          occupancyIsGood = true;
+        }
+      } else {
+        for (auto const& collision : collisions) {
+          if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
+            occupancyIsGood = true;
+            break;
+          }
+        }
+      }
+      if (!occupancyIsGood) {
+        return;
+      }
+    }
+
     std::vector<bool> stagePassed(activeStages.size(), false);
     bool hasCustomEventSel = false;
     bool centralityIsGood = false;
-    bool occupancyIsGood = false;
     float centrality = mccollision.centFT0M();
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
       if (hasRecoColl) {
@@ -286,9 +300,6 @@ struct JetCrossSectionEfficiency {
         }
         if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
           hasCustomEventSel = true;
-        }
-        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-          occupancyIsGood = true;
         }
       }
       if ((centralityMin < centrality) && (centrality < centralityMax)) {
@@ -303,9 +314,6 @@ struct JetCrossSectionEfficiency {
         }
         if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
           hasCustomEventSel = true;
-        }
-        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-          occupancyIsGood = true;
         }
         float centrality = -1.0;
         checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
@@ -340,11 +348,6 @@ struct JetCrossSectionEfficiency {
         goto endEventCounter;
       }
       registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binCentrality));
-
-      if (!occupancyIsGood) {
-        goto endEventCounter;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection"), static_cast<double>(binOccupancy));
     }
 
   endEventCounter:
@@ -391,11 +394,6 @@ struct JetCrossSectionEfficiency {
       }
       registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binCentrality));
 
-      if (!occupancyIsGood) {
-        goto nextJetUnweighted;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binOccupancy));
-
     nextJetUnweighted:;
     }
   }
@@ -410,10 +408,29 @@ struct JetCrossSectionEfficiency {
     bool passesZvtxCut = (std::abs(mccollision.posZ()) <= vertexZCut);
     bool passesSplitCollCut = !(acceptSplitCollisions == NonSplitOnly && collisions.size() > 1);
 
+    if (hasRecoColl) {
+      bool occupancyIsGood = false;
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
+        auto const& collision = collisions.begin();
+        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
+          occupancyIsGood = true;
+        }
+      } else {
+        for (auto const& collision : collisions) {
+          if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
+            occupancyIsGood = true;
+            break;
+          }
+        }
+      }
+      if (!occupancyIsGood) {
+        return;
+      }
+    }
+
     std::vector<bool> stagePassed(activeStages.size(), false);
     bool hasCustomEventSel = false;
     bool centralityIsGood = false;
-    bool occupancyIsGood = false;
     float centrality = mccollision.centFT0M();
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
       if (hasRecoColl) {
@@ -425,9 +442,6 @@ struct JetCrossSectionEfficiency {
         }
         if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
           hasCustomEventSel = true;
-        }
-        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-          occupancyIsGood = true;
         }
       }
       if ((centralityMin < centrality) && (centrality < centralityMax)) {
@@ -442,9 +456,6 @@ struct JetCrossSectionEfficiency {
         }
         if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
           hasCustomEventSel = true;
-        }
-        if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
-          occupancyIsGood = true;
         }
         float centrality = -1.0;
         checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
@@ -481,11 +492,6 @@ struct JetCrossSectionEfficiency {
         goto endEventCounterWeighted;
       }
       registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binCentrality), eventWeight);
-
-      if (!occupancyIsGood) {
-        goto endEventCounterWeighted;
-      }
-      registry.fill(HIST("h_mccollisions_eventselection_weighted"), static_cast<double>(binOccupancy), eventWeight);
     }
 
   endEventCounterWeighted:
@@ -536,11 +542,6 @@ struct JetCrossSectionEfficiency {
         goto nextJetWeighted;
       }
       registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binCentrality), eventWeight);
-
-      if (!occupancyIsGood) {
-        goto nextJetWeighted;
-      }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), static_cast<double>(binOccupancy), eventWeight);
 
     nextJetWeighted:;
     }
