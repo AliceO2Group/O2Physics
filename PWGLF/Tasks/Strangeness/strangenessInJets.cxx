@@ -1561,7 +1561,7 @@ struct StrangenessInJets {
             continue;
           if (!motherPos.isPhysicalPrimary())
             continue;
-                
+
           // K0s
           if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short) {
             registryMC.fill(HIST("K0s_reconstructed_fullevent"), multiplicity, v0.pt());
@@ -1704,7 +1704,7 @@ struct StrangenessInJets {
             if (motherPos != motherNeg)
               continue;
             bool isPhysPrim = motherPos.isPhysicalPrimary());
-              
+
             // Compute distance from jet and UE axes
             double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
             double deltaPhiJet = getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
