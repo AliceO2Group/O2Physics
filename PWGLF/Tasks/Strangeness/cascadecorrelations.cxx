@@ -54,6 +54,7 @@
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::constants::math;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
@@ -306,7 +307,7 @@ struct CascadeSelector {
     if (!gen.isPhysicalPrimary())
       return;
     int genpdg = gen.pdgCode();
-    if ((flag < 3 && std::abs(genpdg) == 3312) || (flag > 1 && std::abs(genpdg) == 3334)) {
+    if ((flag < 3 && std::abs(genpdg) == kXiMinus) || (flag > 1 && std::abs(genpdg) == kOmegaMinus)) {
       // if casc is consistent with Xi and has matched gen Xi OR cand is consistent with Omega and has matched gen omega
       // have to do this in case we reco true Xi with only Omega hypothesis (or vice versa) (very unlikely)
       registry.fill(HIST("truerec/hV0Radius"), rec.v0radius());
@@ -333,16 +334,16 @@ struct CascadeSelector {
       registry.fill(HIST("truerec/hTPCChi2Neg"), rec.negTrack_as<FullTracksExtIUWithPID>().tpcChi2NCl());
       registry.fill(HIST("truerec/hTPCChi2Bach"), rec.bachelor_as<FullTracksExtIUWithPID>().tpcChi2NCl());
       switch (genpdg) { // is matched so we can use genpdg
-        case 3312:
+        case kXiMinus:
           registry.fill(HIST("truerec/hXiMinus"), rec.pt(), rec.yXi());
           break;
-        case -3312:
+        case kXiPlusBar:
           registry.fill(HIST("truerec/hXiPlus"), rec.pt(), rec.yXi());
           break;
-        case 3334:
+        case kOmegaMinus:
           registry.fill(HIST("truerec/hOmegaMinus"), rec.pt(), rec.yOmega());
           break;
-        case -3334:
+        case kOmegaPlusBar:
           registry.fill(HIST("truerec/hOmegaPlus"), rec.pt(), rec.yOmega());
           break;
       }
@@ -417,7 +418,7 @@ struct CascadeSelector {
         casc.v0cosPA(pvx, pvy, pvz) < v0setting_cospa ||
         casc.casccosPA(pvx, pvy, pvz) < cascadesetting_cospa ||
         std::abs(casc.dcav0topv(pvx, pvy, pvz)) < cascadesetting_mindcav0topv ||
-        std::abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow ||
+        std::abs(casc.mLambda() - o2::constants::physics::MassLambda) > cascadesetting_v0masswindow ||
         std::abs(casc.dcapostopv()) < v0setting_dcapostopv ||
         std::abs(casc.dcanegtopv()) < v0setting_dcanegtopv ||
         casc.dcaV0daughters() > v0setting_dcav0dau ||
@@ -464,7 +465,7 @@ struct CascadeSelector {
     int flag = 0;
     if (std::abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor)
       flag = 1;
-    if (std::abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor && (!doCompetingMassCut || std::abs(pdgDB->Mass(3312) - casc.mXi()) > competingMassWindow))
+    if (std::abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor && (!doCompetingMassCut || std::abs(o2::constants::physics::MassXiMinus - casc.mXi()) > competingMassWindow))
       flag = 3 - flag; // 3 if only consistent with omega, 2 if consistent with both
 
     switch (flag) {
@@ -517,16 +518,16 @@ struct CascadeSelector {
         continue;
 
       switch (mcPart.pdgCode()) {
-        case 3312:
+        case kXiMinus:
           registry.fill(HIST("gen/hXiMinus"), mcPart.pt(), mcPart.y());
           break;
-        case -3312:
+        case kXiPlusBar:
           registry.fill(HIST("gen/hXiPlus"), mcPart.pt(), mcPart.y());
           break;
-        case 3334:
+        case kOmegaMinus:
           registry.fill(HIST("gen/hOmegaMinus"), mcPart.pt(), mcPart.y());
           break;
-        case -3334:
+        case kOmegaPlusBar:
           registry.fill(HIST("gen/hOmegaPlus"), mcPart.pt(), mcPart.y());
           break;
       }
@@ -554,16 +555,16 @@ struct CascadeSelector {
             continue;
 
           switch (mcPart.pdgCode()) {
-            case 3312:
+            case kXiMinus:
               registry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y());
               break;
-            case -3312:
+            case kXiPlusBar:
               registry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y());
               break;
-            case 3334:
+            case kOmegaMinus:
               registry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y());
               break;
-            case -3334:
+            case kOmegaPlusBar:
               registry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.y());
               break;
           }
@@ -685,8 +686,8 @@ struct CascadeCorrelations {
   bool autoCorrelation(std::array<int, 3> triggerTracks, std::array<int, 3> assocTracks)
   {
     // function that loops over 2 arrays of track indices, checking for common elements
-    for (int triggerTrack : triggerTracks) {
-      for (int assocTrack : assocTracks) {
+    for (const int triggerTrack : triggerTracks) {
+      for (const int assocTrack : assocTracks) {
         if (triggerTrack == assocTrack)
           return true;
       }
@@ -1003,7 +1004,7 @@ struct CascadeCorrelations {
   } // process mixed events
 
   Configurable<float> etaGenCascades{"etaGenCascades", 0.8, "min/max of eta for generated cascades"};
-  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == 3312;
+  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == (int) kXiMinus;
 
   void processMC(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
   {
@@ -1030,7 +1031,7 @@ struct CascadeCorrelations {
     }
 
     // QA
-    for (auto& casc : genCascades) {
+    for (const auto& casc : genCascades) {
       if (!casc.isPhysicalPrimary())
         continue;
       registry.fill(HIST("MC/hPhi"), casc.phi());
