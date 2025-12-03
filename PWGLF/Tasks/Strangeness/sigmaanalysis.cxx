@@ -134,7 +134,7 @@ struct sigmaanalysis {
 
   // Analysis strategy:
   Configurable<bool> doMCAssociation{"doMCAssociation", false, "Flag to process only signal candidates. Use only with processMonteCarlo!"};
-  Configurable<bool> selRecoFromGenerator{"selRecoFromGenerator", false, "Flag to process only signal candidates from generator"};  
+  Configurable<bool> selRecoFromGenerator{"selRecoFromGenerator", false, "Flag to process only signal candidates from generator"};
 
   // For Selection:
   //// Lambda criteria::
@@ -155,7 +155,7 @@ struct sigmaanalysis {
     Configurable<float> LambdaMaxAlpha{"LambdaMaxAlpha", 1.0, "Max lambda alpha absolute value (AP plot)"};
     Configurable<float> LambdaMinv0cospa{"LambdaMinv0cospa", 0.95, "Min V0 CosPA"};
     Configurable<float> LambdaMaxLifeTime{"LambdaMaxLifeTime", 30, "Max lifetime"};
-    Configurable<float> LambdaWindow{"LambdaWindow", 0.015, "Mass window around expected (in GeV/c2)"};      
+    Configurable<float> LambdaWindow{"LambdaWindow", 0.015, "Mass window around expected (in GeV/c2)"};
     Configurable<float> LambdaMinRapidity{"LambdaMinRapidity", -0.5, "v0 min rapidity"};
     Configurable<float> LambdaMaxRapidity{"LambdaMaxRapidity", 0.5, "v0 max rapidity"};
     Configurable<float> LambdaMinDauEta{"LambdaMinDauEta", -0.8, "Min pseudorapidity of daughter tracks"};
@@ -183,7 +183,7 @@ struct sigmaanalysis {
     Configurable<float> PhotonMinTPCNSigmas{"PhotonMinTPCNSigmas", -7, "Min TPC NSigmas for daughters"};
     Configurable<float> PhotonMaxTPCNSigmas{"PhotonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
     Configurable<float> PhotonMinPt{"PhotonMinPt", 0.0, "Min photon pT (GeV/c)"};
-    Configurable<float> PhotonMaxPt{"PhotonMaxPt", 50.0, "Max photon pT (GeV/c)"};        
+    Configurable<float> PhotonMaxPt{"PhotonMaxPt", 50.0, "Max photon pT (GeV/c)"};
     Configurable<float> PhotonMinRapidity{"PhotonMinRapidity", -0.5, "v0 min rapidity"};
     Configurable<float> PhotonMaxRapidity{"PhotonMaxRapidity", 0.5, "v0 max rapidity"};
     Configurable<float> PhotonMinDauEta{"PhotonMinDauEta", -0.8, "Min pseudorapidity of daughter tracks"};
@@ -205,7 +205,7 @@ struct sigmaanalysis {
   } photonSelections;
 
   struct : ConfigurableGroup {
-    std::string prefix = "sigma0Selections"; // JSON group name    
+    std::string prefix = "sigma0Selections"; // JSON group name
     Configurable<float> Sigma0MinRapidity{"Sigma0MinRapidity", -0.5, "sigma0 min rapidity"};
     Configurable<float> Sigma0MaxRapidity{"Sigma0MaxRapidity", 0.5, "sigma0 max rapidity"};
     Configurable<float> Sigma0MaxRadius{"Sigma0MaxRadius", 200, "Max sigma0 decay radius"};
@@ -214,7 +214,7 @@ struct sigmaanalysis {
   } sigma0Selections;
 
   struct : ConfigurableGroup {
-    std::string prefix = "pi0Selections"; // JSON group name    
+    std::string prefix = "pi0Selections"; // JSON group name
     Configurable<float> Pi0MinRapidity{"Pi0MinRapidity", -0.5, "pi0 min rapidity"};
     Configurable<float> Pi0MaxRapidity{"Pi0MaxRapidity", 0.5, "pi0 max rapidity"};
     Configurable<float> Pi0MaxRadius{"Pi0MaxRadius", 200, "Max sigma0 decay radius"};
@@ -319,7 +319,7 @@ struct sigmaanalysis {
     if (doprocessRealData || doprocessMonteCarlo) {
       for (const auto& histodir : DirList) {
 
-        if (fillSelhistos){
+        if (fillSelhistos) {
           histos.add(histodir + "/Photon/hTrackCode", "hTrackCode", kTH1D, {{11, 0.5f, 11.5f}});
           histos.add(histodir + "/Photon/hV0Type", "hV0Type", kTH1D, {{8, 0.5f, 8.5f}});
           histos.add(histodir + "/Photon/hDCANegToPV", "hDCANegToPV", kTH1D, {axisDCAtoPV});
@@ -373,7 +373,6 @@ struct sigmaanalysis {
           histos.add(histodir + "/Lambda/hAntiLambdaMass", "hAntiLambdaMass", kTH1D, {axisLambdaMass});
           histos.add(histodir + "/Lambda/h3dAntiLambdaMass", "h3dAntiLambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
         }
-        
 
         histos.add(histodir + "/h2dArmenteros", "h2dArmenteros", kTH2D, {axisAPAlpha, axisAPQt});
 
@@ -402,7 +401,7 @@ struct sigmaanalysis {
         // Process MC
         if (doprocessMonteCarlo) {
 
-          if (fillSelhistos){
+          if (fillSelhistos) {
             histos.add(histodir + "/MC/Photon/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
             histos.add(histodir + "/MC/Photon/hPt", "hPt", kTH1D, {axisPt});
             histos.add(histodir + "/MC/Photon/hMCPt", "hMCPt", kTH1D, {axisPt});
@@ -495,7 +494,7 @@ struct sigmaanalysis {
         histos.add("BkgStudy/h2dFakeDaughtersMatrix", "h2dFakeDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
       }
 
-      if (fillSelhistos){
+      if (fillSelhistos) {
         for (size_t i = 0; i < PhotonSels.size(); ++i) {
           const auto& sel = PhotonSels[i];
 
@@ -554,16 +553,16 @@ struct sigmaanalysis {
     }
 
     // Sigma0 QA
-    if (fdoSigma0QA){
+    if (fdoSigma0QA) {
       histos.add("Sigma0QA/h2dAllSigma0CandMCRapVsRecoRap", "h2dAllSigma0CandMCRapVsRecoRap", kTH2D, {axisRapidity, axisRapidity});
       histos.add("Sigma0QA/h2dSigma0MCRapVsRecoRap", "h2dSigma0MCRapVsRecoRap", kTH2D, {axisRapidity, axisRapidity});
       histos.add("Sigma0QA/h2dASigma0MCRapVsRecoRap", "h2dASigma0MCRapVsRecoRap", kTH2D, {axisRapidity, axisRapidity});
 
       histos.add("Sigma0QA/hDuplicates", "hDuplicates", kTH1D, {{10, -0.5f, +9.5f}});
       histos.add("Sigma0QA/hSigma0Duplicates", "hSigma0Duplicates", kTH1D, {{10, -0.5f, +9.5f}});
-      histos.add("Sigma0QA/hASigma0Duplicates", "hASigma0Duplicates", kTH1D, {{10, -0.5f, +9.5f}});    
+      histos.add("Sigma0QA/hASigma0Duplicates", "hASigma0Duplicates", kTH1D, {{10, -0.5f, +9.5f}});
     }
-    
+
     // inspect histogram sizes, please
     histos.print();
   }
@@ -809,11 +808,10 @@ struct sigmaanalysis {
       float centrality = 100.5f;
 
       // Has MC collision
-      if (!genParticle.has_straMCCollision()){
+      if (!genParticle.has_straMCCollision()) {
         histos.fill(HIST("Gen/hGenParticlesNoMCColl"), 1);
         continue;
       }
-        
 
       // Selection on the source (generator/transport)
       if (!genParticle.producedByGenerator() && mc_keepOnlyFromGenerator)
@@ -1009,7 +1007,7 @@ struct sigmaanalysis {
     float photonRZLineCut = TMath::Abs(sigma.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-photonSelections.PhotonMaxDauEta))) - photonSelections.PhotonLineCutZ0;
     float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
 
-    if (fillSelhistos){
+    if (fillSelhistos) {
       //_______________________________________
       // Photon
       histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hTrackCode"), GammaTrkCode);
@@ -1052,7 +1050,6 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hPosChi2PerNc"), sigma.lambdaPosChi2PerNcl());
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hNegChi2PerNc"), sigma.lambdaNegChi2PerNcl());
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hLifeTime"), sigma.lambdaLifeTime());
-
     }
 
     //_______________________________________
@@ -1061,7 +1058,7 @@ struct sigmaanalysis {
     histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
     if (sigma.lambdaAlpha() > 0) {
-      if (fillSelhistos){
+      if (fillSelhistos) {
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_LambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma());
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_LambdaPi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma());
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hLambdaDCANegToPV"), sigma.lambdaDCANegPV());
@@ -1077,12 +1074,12 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hRadius"), sigma.radius());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hDCAPairDau"), sigma.dcadaughters());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dPhotonYMass"), sigma.photonY(), sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dPhotonRadiusMass"), sigma.photonRadius(), sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());
     } else {
-      if (fillSelhistos){
+      if (fillSelhistos) {
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_ALambdaPr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma());
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_ALambdaPi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma());
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hALambdaDCANegToPV"), sigma.lambdaDCANegPV());
@@ -1109,7 +1106,7 @@ struct sigmaanalysis {
     if (doprocessMonteCarlo) {
       if constexpr (requires { sigma.lambdaPDGCode(); sigma.photonPDGCode(); }) {
 
-        if (fillSelhistos){
+        if (fillSelhistos) {
           //_______________________________________
           // Gamma MC association
           if (sigma.photonPDGCode() == 22) {
@@ -1232,32 +1229,33 @@ struct sigmaanalysis {
   // Sigma0 QA analysis function
   template <typename TSigma0s>
   void doSigma0QA(TSigma0s const& fullSigma0s)
-  {    
+  {
     std::unordered_map<int, int> sigma0Counts;
     std::unordered_map<int, int> sigma0Index;
 
-		for (const auto& sigma0 : fullSigma0s){
-      // Crosscheck reco rapidity and MC rapidity        
-      histos.fill(HIST("Sigma0QA/h2dAllSigma0CandMCRapVsRecoRap"), sigma0.sigma0MCY(), sigma0.sigma0Y()); 
+    for (const auto& sigma0 : fullSigma0s) {
+      // Crosscheck reco rapidity and MC rapidity
+      histos.fill(HIST("Sigma0QA/h2dAllSigma0CandMCRapVsRecoRap"), sigma0.sigma0MCY(), sigma0.sigma0Y());
 
-      if (sigma0.isSigma0()) 
-        histos.fill(HIST("Sigma0QA/h2dSigma0MCRapVsRecoRap"), sigma0.sigma0MCY(), sigma0.sigma0Y()); 
+      if (sigma0.isSigma0())
+        histos.fill(HIST("Sigma0QA/h2dSigma0MCRapVsRecoRap"), sigma0.sigma0MCY(), sigma0.sigma0Y());
       if (sigma0.isAntiSigma0())
-        histos.fill(HIST("Sigma0QA/h2dASigma0MCRapVsRecoRap"), sigma0.sigma0MCY(), sigma0.sigma0Y()); 
-      
-      //grouping per mcparticle
-      if (sigma0.has_mcParticle()){
-        sigma0Counts[sigma0.mcParticleId()] += 1;           // duplicate count
-        sigma0Index[sigma0.mcParticleId()] = sigma0.globalIndex();           // saving index     	  
-      }            
+        histos.fill(HIST("Sigma0QA/h2dASigma0MCRapVsRecoRap"), sigma0.sigma0MCY(), sigma0.sigma0Y());
+
+      // grouping per mcparticle
+      if (sigma0.has_mcParticle()) {
+        sigma0Counts[sigma0.mcParticleId()] += 1;                  // duplicate count
+        sigma0Index[sigma0.mcParticleId()] = sigma0.globalIndex(); // saving index
+      }
     }
-    for (const auto& [mcid, NDuplicates] : sigma0Counts) {         
-      auto sigma0mc = fullSigma0s.rawIteratorAt(sigma0Index[mcid]);          
+    for (const auto& [mcid, NDuplicates] : sigma0Counts) {
+      auto sigma0mc = fullSigma0s.rawIteratorAt(sigma0Index[mcid]);
       histos.fill(HIST("Sigma0QA/hDuplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
 
-      if (sigma0mc.isSigma0()){}     
-        histos.fill(HIST("Sigma0QA/hSigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed        
-            
+      if (sigma0mc.isSigma0()) {
+      }
+      histos.fill(HIST("Sigma0QA/hSigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
+
       if (sigma0mc.isAntiSigma0())
         histos.fill(HIST("Sigma0QA/hASigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
     }
@@ -1294,7 +1292,7 @@ struct sigmaanalysis {
     if ((cand.photonPt() < photonSelections.PhotonMinPt) || (cand.photonPt() > photonSelections.PhotonMaxPt))
       return false;
 
-    fillSelHistos<6>(cand, 22);    
+    fillSelHistos<6>(cand, 22);
     if ((cand.photonY() < photonSelections.PhotonMinRapidity) || (cand.photonY() > photonSelections.PhotonMaxRapidity))
       return false;
     if ((cand.photonPosEta() < photonSelections.PhotonMinDauEta) || (cand.photonPosEta() > photonSelections.PhotonMaxDauEta))
@@ -1363,7 +1361,7 @@ struct sigmaanalysis {
     fillSelHistos<3>(cand, 3122);
     if (cand.lambdaCosPA() < lambdaSelections.LambdaMinv0cospa)
       return false;
-    
+
     fillSelHistos<4>(cand, 3122);
     if ((cand.lambdaY() < lambdaSelections.LambdaMinRapidity) || (cand.lambdaY() > lambdaSelections.LambdaMaxRapidity))
       return false;
@@ -1459,10 +1457,10 @@ struct sigmaanalysis {
       return false;
 
     // Sigma0 specific selections
-    float sigma0Y = cand.sigma0Y();    
+    float sigma0Y = cand.sigma0Y();
     if constexpr (requires { cand.sigma0MCY(); }) { // If MC
       sigma0Y = cand.sigma0MCY();
-    } 
+    }
 
     // Rapidity
     if ((sigma0Y < sigma0Selections.Sigma0MinRapidity) || (sigma0Y > sigma0Selections.Sigma0MaxRapidity))
@@ -1486,7 +1484,7 @@ struct sigmaanalysis {
   // Main analysis function
   template <typename TCollisions, typename TSigma0s>
   void analyzeRecoeSigma0s(TCollisions const& collisions, TSigma0s const& fullSigma0s)
-  {        
+  {
     // Custom grouping
     std::vector<std::vector<int>> sigma0grouped(collisions.size());
 
@@ -1506,7 +1504,7 @@ struct sigmaanalysis {
         auto sigma0 = fullSigma0s.rawIteratorAt(sigma0grouped[coll.globalIndex()][i]);
 
         // if MC
-        if constexpr (requires { sigma0.isSigma0(); sigma0.isAntiSigma0(); }) {          
+        if constexpr (requires { sigma0.isSigma0(); sigma0.isAntiSigma0(); }) {
           if (doMCAssociation && !(sigma0.isSigma0() || sigma0.isAntiSigma0()))
             continue;
 
@@ -1527,7 +1525,7 @@ struct sigmaanalysis {
     }
 
     // Optionally run QA analysis for reco sigma0
-    //if (fdoSigma0QA) doSigma0QA(fullSigma0s); // TODO: improve this to run sigma0 QA
+    // if (fdoSigma0QA) doSigma0QA(fullSigma0s); // TODO: improve this to run sigma0 QA
   }
 
   // Apply selections in sigma0 candidates
@@ -1569,8 +1567,8 @@ struct sigmaanalysis {
         ((cand.photon2Pt() < photonSelections.PhotonMinPt) ||
          (cand.photon2Pt() > photonSelections.PhotonMaxPt)))
       return false;
-    
-      // Rapidity selection
+
+    // Rapidity selection
     if ((cand.photon1Y() < photonSelections.PhotonMinRapidity) || (cand.photon1Y() > photonSelections.PhotonMaxRapidity))
       return false;
     if ((cand.photon1PosEta() < photonSelections.PhotonMinDauEta) || (cand.photon1PosEta() > photonSelections.PhotonMaxDauEta))
@@ -1609,10 +1607,10 @@ struct sigmaanalysis {
       return false;
 
     // Pi0 specific selections
-    float pi0Y = cand.pi0Y();    
+    float pi0Y = cand.pi0Y();
     if constexpr (requires { cand.pi0MCY(); }) { // If MC
       pi0Y = cand.pi0MCY();
-    } 
+    }
 
     // Rapidity
     if ((pi0Y < pi0Selections.Pi0MinRapidity) || (pi0Y > pi0Selections.Pi0MaxRapidity))
@@ -1711,7 +1709,7 @@ struct sigmaanalysis {
   // _____________________________________________________
   PROCESS_SWITCH(sigmaanalysis, processRealData, "Do real data analysis", true);
   PROCESS_SWITCH(sigmaanalysis, processMonteCarlo, "Do Monte-Carlo-based analysis", false);
-  PROCESS_SWITCH(sigmaanalysis, processGeneratedRun3, "process MC generated Run 3", false);  
+  PROCESS_SWITCH(sigmaanalysis, processGeneratedRun3, "process MC generated Run 3", false);
   PROCESS_SWITCH(sigmaanalysis, processPi0RealData, "Do real data analysis for pi0 QA", false);
   PROCESS_SWITCH(sigmaanalysis, processPi0MonteCarlo, "Do Monte-Carlo-based analysis for pi0 QA", false);
   PROCESS_SWITCH(sigmaanalysis, processPi0GeneratedRun3, "process MC generated Run 3 for pi0 QA", false);
@@ -1721,4 +1719,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigmaanalysis>(cfgc)};
 }
-

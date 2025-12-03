@@ -435,7 +435,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCPhi, lambdaMCPhi, //! Phi in the range [0, 2p
 
 } // namespace sigma0MCCore
 
-DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",                       
+DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
 
                   // Basic properties
                   sigma0MCCore::MCradius, sigma0MCCore::PDGCode, sigma0MCCore::PDGCodeMother, sigma0MCCore::MCprocess, sigma0MCCore::IsProducedByGenerator,
@@ -475,8 +475,8 @@ DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
 
 namespace sigma0MCCore
 {
-  DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                                               //! MC particle for Sigma0
-}                  
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Sigma0
+}
 namespace sigma0Gen
 {
 DECLARE_SOA_COLUMN(IsSigma0, isSigma0, bool); // true: sigma0, false: antisigma0
@@ -497,7 +497,7 @@ DECLARE_SOA_TABLE(SigmaIndices, "AOD", "SIGMAINDEX", //! index table when using 
                   o2::soa::Index<>, sigma0Core::PhotonV0Id, sigma0Core::LambdaV0Id, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(SigmaMCLabels, "AOD", "SIGMAMCLABEL", //! optional table to refer to mcparticles
-                  o2::soa::Index<>, sigma0MCCore::McParticleId);                
+                  o2::soa::Index<>, sigma0MCCore::McParticleId);
 
 DECLARE_SOA_TABLE(SigmaGenCollRef, "AOD", "SIGMAGENCOLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraMCCollisionId);
@@ -872,4 +872,3 @@ DECLARE_SOA_TABLE(Pi0GenCollRef, "AOD", "PI0GENCOLLREF", //! optional table to r
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSIGMATABLES_H_
-
