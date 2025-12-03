@@ -138,6 +138,7 @@ struct CascadeSelector {
   ConfigurableAxis ptAxis = {"ptAxis", {150, 0, 15}, "#it{p}_{T}"};
   ConfigurableAxis rapidityAxis{"rapidityAxis", {100, -1.f, 1.f}, "y"};
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis chi2Axis{"chi2Axis", {100, 0.f, 10.f}, "Chi2"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
   AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
   HistogramRegistry registry{
@@ -148,10 +149,10 @@ struct CascadeSelector {
       {"hCascRadius", "hCascRadius", {HistType::kTH3F, {radiusAxis, invXiMassAxis, ptAxis}}},
       {"hV0CosPA", "hV0CosPA", {HistType::kTH3F, {cpaAxis, invXiMassAxis, ptAxis}}},
       {"hCascCosPA", "hCascCosPA", {HistType::kTH3F, {cpaAxis, invXiMassAxis, ptAxis}}},
-      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
-      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
-      {"hDCABachToPV", "hDCABachToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
-      {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
+      {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
+      {"hDCANegToPV", "hDCANegToPV", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
+      {"hDCABachToPV", "hDCABachToPV", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
+      {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
       {"hDCACascDau", "hDCACascDau", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
       {"hLambdaMass", "hLambdaMass", {HistType::kTH3F, {invLambdaMassAxis, invXiMassAxis, ptAxis}}},
@@ -161,14 +162,6 @@ struct CascadeSelector {
       {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH3F, {invOmegaMassAxis, ptAxis, rapidityAxis}}},
       {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH3F, {invOmegaMassAxis, ptAxis, rapidityAxis}}},
 
-      // // invariant mass per cut, start with Xi
-      // {"hMassXi0", "Xi inv mass before selections", {HistType::kTH2F, {invMassAxis, ptAxis}}},
-      // {"hMassXi1", "Xi inv mass after TPCnCrossedRows cut", {HistType::kTH2F, {invMassAxis, ptAxis}}},
-      // {"hMassXi2", "Xi inv mass after ITSnClusters cut", {HistType::kTH2F, {invMassAxis, ptAxis}}},
-      // {"hMassXi3", "Xi inv mass after topo cuts", {HistType::kTH2F, {invMassAxis, ptAxis}}},
-      // {"hMassXi4", "Xi inv mass after V0 daughters PID cut", {HistType::kTH2F, {invMassAxis, ptAxis}}},
-      // {"hMassXi5", "Xi inv mass after bachelor PID cut", {HistType::kTH2F, {invMassAxis, ptAxis}}},
-
       // ITS & TPC clusters, with Xi inv mass
       {"hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", {HistType::kTH3F, {tpcRowsAxis, invXiMassAxis, ptAxis}}},
       {"hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", {HistType::kTH3F, {tpcRowsAxis, invXiMassAxis, ptAxis}}},
@@ -176,12 +169,12 @@ struct CascadeSelector {
       {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
       {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
       {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
-      {"hTPCChi2Pos", "hTPCChi2Pos", {HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Pos"}}}},
-      {"hTPCChi2Neg", "hTPCChi2Neg", {HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Neg"}}}},
-      {"hTPCChi2Bach", "hTPCChi2Bach", {HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Bach"}}}},
-      {"hITSChi2Pos", "hITSChi2Pos", {HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Pos"}}}},
-      {"hITSChi2Neg", "hITSChi2Neg", {HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Neg"}}}},
-      {"hITSChi2Bach", "hITSChi2Bach", {HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Bach"}}}},
+      {"hTPCChi2Pos", "hTPCChi2Pos", {HistType::kTH1F, {chi2Axis}}},
+      {"hTPCChi2Neg", "hTPCChi2Neg", {HistType::kTH1F, {chi2Axis}}},
+      {"hTPCChi2Bach", "hTPCChi2Bach", {HistType::kTH1F, {chi2Axis}}},
+      {"hITSChi2Pos", "hITSChi2Pos", {HistType::kTH1F, {chi2Axis}}},
+      {"hITSChi2Neg", "hITSChi2Neg", {HistType::kTH1F, {chi2Axis}}},
+      {"hITSChi2Bach", "hITSChi2Bach", {HistType::kTH1F, {chi2Axis}}},
 
       {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
     },
@@ -193,7 +186,7 @@ struct CascadeSelector {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
 
-    auto h = registry.add<TH1>("hSelectionStatus", "hSelectionStatus", HistType::kTH1I, {{10, 0, 10, "status"}});
+    auto h = registry.add<TH1>("hSelectionStatus", "hSelectionStatus", HistType::kTH1F, {{10, 0, 10, "status"}});
     h->GetXaxis()->SetBinLabel(1, "All");
     h->GetXaxis()->SetBinLabel(2, "nTPC OK");
     h->GetXaxis()->SetBinLabel(3, "nITS OK");
@@ -204,7 +197,7 @@ struct CascadeSelector {
     h->GetXaxis()->SetBinLabel(8, "V0 PID OK");
     h->GetXaxis()->SetBinLabel(9, "Bach PID OK");
 
-    auto hEventSel = registry.add<TH1>("hEventSel", "hEventSel", HistType::kTH1I, {{10, 0, 10, "selection criteria"}});
+    auto hEventSel = registry.add<TH1>("hEventSel", "hEventSel", HistType::kTH1F, {{10, 0, 10, "selection criteria"}});
     hEventSel->GetXaxis()->SetBinLabel(1, "All");
     hEventSel->GetXaxis()->SetBinLabel(2, "sel8");
     hEventSel->GetXaxis()->SetBinLabel(3, "INEL0");
@@ -218,10 +211,10 @@ struct CascadeSelector {
       registry.add("truerec/hCascRadius", "hCascRadius", HistType::kTH1F, {radiusAxis});
       registry.add("truerec/hV0CosPA", "hV0CosPA", HistType::kTH1F, {cpaAxis});
       registry.add("truerec/hCascCosPA", "hCascCosPA", HistType::kTH1F, {cpaAxis});
-      registry.add("truerec/hDCAPosToPV", "hDCAPosToPV", HistType::kTH1F, {vertexAxis});
-      registry.add("truerec/hDCANegToPV", "hDCANegToPV", HistType::kTH1F, {vertexAxis});
-      registry.add("truerec/hDCABachToPV", "hDCABachToPV", HistType::kTH1F, {vertexAxis});
-      registry.add("truerec/hDCAV0ToPV", "hDCAV0ToPV", HistType::kTH1F, {vertexAxis});
+      registry.add("truerec/hDCAPosToPV", "hDCAPosToPV", HistType::kTH1F, {dcaAxis});
+      registry.add("truerec/hDCANegToPV", "hDCANegToPV", HistType::kTH1F, {dcaAxis});
+      registry.add("truerec/hDCABachToPV", "hDCABachToPV", HistType::kTH1F, {dcaAxis});
+      registry.add("truerec/hDCAV0ToPV", "hDCAV0ToPV", HistType::kTH1F, {dcaAxis});
       registry.add("truerec/hDCAV0Dau", "hDCAV0Dau", HistType::kTH1F, {dcaAxis});
       registry.add("truerec/hDCACascDau", "hDCACascDau", HistType::kTH1F, {dcaAxis});
       registry.add("truerec/hLambdaMass", "hLambdaMass", HistType::kTH1F, {invLambdaMassAxis});
@@ -231,12 +224,12 @@ struct CascadeSelector {
       registry.add("truerec/hITSnClustersPos", "hITSnClustersPos", HistType::kTH1F, {itsClustersAxis});
       registry.add("truerec/hITSnClustersNeg", "hITSnClustersNeg", HistType::kTH1F, {itsClustersAxis});
       registry.add("truerec/hITSnClustersBach", "hITSnClustersBach", HistType::kTH1F, {itsClustersAxis});
-      registry.add("truerec/hTPCChi2Pos", "hTPCChi2Pos", HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Pos"}});
-      registry.add("truerec/hTPCChi2Neg", "hTPCChi2Neg", HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Neg"}});
-      registry.add("truerec/hTPCChi2Bach", "hTPCChi2Bach", HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Bach"}});
-      registry.add("truerec/hITSChi2Pos", "hITSChi2Pos", HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Pos"}});
-      registry.add("truerec/hITSChi2Neg", "hITSChi2Neg", HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Neg"}});
-      registry.add("truerec/hITSChi2Bach", "hITSChi2Bach", HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Bach"}});
+      registry.add("truerec/hTPCChi2Pos", "hTPCChi2Pos", HistType::kTH1F, {chi2Axis});
+      registry.add("truerec/hTPCChi2Neg", "hTPCChi2Neg", HistType::kTH1F, {chi2Axis});
+      registry.add("truerec/hTPCChi2Bach", "hTPCChi2Bach", HistType::kTH1F, {chi2Axis});
+      registry.add("truerec/hITSChi2Pos", "hITSChi2Pos", HistType::kTH1F, {chi2Axis});
+      registry.add("truerec/hITSChi2Neg", "hITSChi2Neg", HistType::kTH1F, {chi2Axis});
+      registry.add("truerec/hITSChi2Bach", "hITSChi2Bach", HistType::kTH1F, {chi2Axis});
       registry.add("truerec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("truerec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("truerec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
@@ -423,8 +416,13 @@ struct CascadeSelector {
         casc.cascradius() < cascadesetting_cascradius ||
         casc.v0cosPA(pvx, pvy, pvz) < v0setting_cospa ||
         casc.casccosPA(pvx, pvy, pvz) < cascadesetting_cospa ||
-        casc.dcav0topv(pvx, pvy, pvz) < cascadesetting_mindcav0topv ||
-        std::abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow)
+        std::abs(casc.dcav0topv(pvx, pvy, pvz)) < cascadesetting_mindcav0topv ||
+        std::abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow ||
+        std::abs(casc.dcapostopv()) < v0setting_dcapostopv ||
+        std::abs(casc.dcanegtopv()) < v0setting_dcanegtopv ||
+        casc.dcaV0daughters() > v0setting_dcav0dau ||
+        std::abs(casc.dcabachtopv()) < cascadesetting_dcabachtopv ||
+        casc.dcacascdaughters() > cascadesetting_dcacascdau)
       return 0; // It failed at least one topo selection
 
     registry.fill(HIST("hSelectionStatus"), 4); // passes topo
@@ -625,6 +623,7 @@ struct CascadeCorrelations {
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "Users/r/rspijker/test/EffTest", "Path of the efficiency corrections"};
   Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "Switch to apply TimeframeBorderCut event selection"};
   Configurable<bool> doSel8{"doSel8", true, "Switch to apply sel8 event selection"};
+  Configurable<int> INEL{"INEL", 0, "Number of charged tracks within |eta| < 1 has to be greater than value"}; // used in MC closure
 
   ConfigurableAxis radiusAxis = {"radiusAxis", {100, 0.0f, 50.0f}, "cm"};
   ConfigurableAxis cpaAxis = {"cpaAxis", {100, 0.95f, 1.0f}, "CPA"};
@@ -1006,25 +1005,28 @@ struct CascadeCorrelations {
   Configurable<float> etaGenCascades{"etaGenCascades", 0.8, "min/max of eta for generated cascades"};
   Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == 3312;
 
-  void processMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
+  void processMC(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
   {
+    // apply evsel
+    if (INEL >= 0 && !pwglf::isINELgtNmc(mcParticles, INEL, pdgDB))
+      return;
+    if (std::abs(mcCollision.posZ()) > zVertexCut)
+      return;
+
     // Let's do some logic on matched reconstructed collisions - if there less or more than one, fill some QA and skip the rest
     double FT0mult = -1; // non-sensible default value just in case
-    double vtxz = -999.; // non-sensible default value just in case
+    double vtxz = mcCollision.posZ(); 
     if (collisions.size() < 1) {
       registry.fill(HIST("MC/hSplitEvents"), 0);
       registry.fill(HIST("MC/hGenMultNoReco"), mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles));
-      return;
     } else if (collisions.size() == 1) {
       registry.fill(HIST("MC/hSplitEvents"), 1);
       registry.fill(HIST("MC/hGenMultOneReco"), mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles));
       for (auto const& collision : collisions) { // not really a loop, as there is only one collision
         FT0mult = collision.centFT0M();
-        vtxz = collision.posZ();
       }
     } else if (collisions.size() > 1) {
       registry.fill(HIST("MC/hSplitEvents"), collisions.size());
-      return;
     }
 
     // QA
