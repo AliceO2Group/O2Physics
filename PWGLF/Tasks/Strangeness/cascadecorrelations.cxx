@@ -1015,7 +1015,7 @@ struct CascadeCorrelations {
 
     // Let's do some logic on matched reconstructed collisions - if there less or more than one, fill some QA and skip the rest
     double FT0mult = -1; // non-sensible default value just in case
-    double vtxz = mcCollision.posZ(); 
+    double vtxz = mcCollision.posZ();
     if (collisions.size() < 1) {
       registry.fill(HIST("MC/hSplitEvents"), 0);
       registry.fill(HIST("MC/hGenMultNoReco"), mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles));
