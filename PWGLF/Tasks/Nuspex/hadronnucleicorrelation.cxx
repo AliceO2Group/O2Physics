@@ -59,7 +59,7 @@ struct hadronnucleicorrelation {
   static constexpr int pdgProton = 2212;
   static constexpr int pdgDeuteron = 1000010020;
 
-  Configurable<int> mode{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p"};
+  Configurable<int> mode{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p, 7: p-antip"};
 
   Configurable<bool> dorapidity{"dorapidity", false, "do rapidity dependent analysis"};
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
@@ -222,6 +222,8 @@ struct hadronnucleicorrelation {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "events with #bar{p}");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "events with p");
 
+    registry.add("hNtrig_total", "hNtrig_total", {HistType::kTH1D, {ptBinnedAxis}});
+
     nBinspT = pTBins.value.size() - 1;
 
     if (isMCGen) {
@@ -363,6 +365,9 @@ struct hadronnucleicorrelation {
       case 6:
         name = "PrPr";
         break;
+      case 7:
+        name = "PrAntiPr";
+        break;
     }
 
     if (!isMC) {
@@ -379,7 +384,6 @@ struct hadronnucleicorrelation {
           auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
           hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
           hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
-
         } else {
 
           auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
@@ -690,13 +694,25 @@ struct hadronnucleicorrelation {
           continue;
         }
 
+        float mass1 = 0.f, mass2 = 0.f;
+
+        if (mode < 4) {
+          // Deuteron-Proton combinations
+          mass1 = o2::constants::physics::MassDeuteron;
+          mass2 = o2::constants::physics::MassProton;
+        } else {
+          // Proton-Proton combinations
+          mass1 = o2::constants::physics::MassProton;
+          mass2 = o2::constants::physics::MassProton;
+        }
+
         // Calculate Delta-eta Delta-phi (reco)
-        float deltaEta = it2->eta() - it1->eta();
-        float deltaRap = it2->rapidity() - it1->rapidity();
+        float deltaEta = it1->eta() - it2->eta();
+        float deltaRap = it1->rapidity(mass1) - it2->rapidity(mass2);
         if (dorapidity) {
           deltaEta = deltaRap;
         }
-        float deltaPhi = it2->phi() - it1->phi();
+        float deltaPhi = it1->phi() - it2->phi();
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
 
         for (int k = 0; k < nBinspT; k++) {
@@ -735,6 +751,10 @@ struct hadronnucleicorrelation {
                   corr1 = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
                   corr2 = hEffpTEta_proton->Interpolate(it2->pt(), it2->eta());
                   break;
+                case 7:
+                  corr1 = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
+                  break;
               }
             }
 
@@ -760,9 +780,9 @@ struct hadronnucleicorrelation {
     for (auto const& it1 : particles1) {
       for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
-        float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
-        float deltaRapGen = it2->y() - it1->y();
+        float deltaEtaGen = it1->eta() - it2->eta();
+        float deltaPhiGen = RecoDecay::constrainAngle(it1->phi() - it2->phi(), -1 * o2::constants::math::PIHalf);
+        float deltaRapGen = it1->y() - it2->y();
         if (dorapidity) {
           deltaEtaGen = deltaRapGen;
         }
@@ -806,9 +826,9 @@ struct hadronnucleicorrelation {
     for (auto const& it1 : particles1) {
       for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
-        float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
-        float deltaRapGen = it2->y() - it1->y();
+        float deltaEtaGen = it1->eta() - it2->eta();
+        float deltaPhiGen = RecoDecay::constrainAngle(it1->phi() - it2->phi(), -1 * o2::constants::math::PIHalf);
+        float deltaRapGen = it1->y() - it2->y();
         if (dorapidity) {
           deltaEtaGen = deltaRapGen;
         }
@@ -933,6 +953,9 @@ struct hadronnucleicorrelation {
       // Deuterons Fill & QA
       if (isAntiDe) {
         selectedtracks_antid[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+        if (mode == 0 || mode == 2) {
+          registry.fill(HIST("hNtrig_total"), track.pt());
+        }
 
         if (doQA) {
           QA.fill(HIST("QA/hEtaAntiDe"), track.eta());
@@ -943,6 +966,10 @@ struct hadronnucleicorrelation {
       }
       if (isDe) {
         selectedtracks_d[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+
+        if (mode == 1 || mode == 3) {
+          registry.fill(HIST("hNtrig_total"), track.pt());
+        }
 
         if (doQA) {
           QA.fill(HIST("QA/hEtaDe"), track.eta());
@@ -956,6 +983,10 @@ struct hadronnucleicorrelation {
       if (isPr) {
         selectedtracks_p[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
+        if (mode == 6 || mode == 7) {
+          registry.fill(HIST("hNtrig_total"), track.pt());
+        }
+
         if (doQA) {
           QA.fill(HIST("QA/hEtaPr"), track.eta());
           QA.fill(HIST("QA/hPhiPr"), track.phi());
@@ -964,6 +995,10 @@ struct hadronnucleicorrelation {
         }
       } else if (isAntiPr) {
         selectedtracks_antip[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+
+        if (mode == 4 || mode == 5) {
+          registry.fill(HIST("hNtrig_total"), track.pt());
+        }
 
         if (doQA) {
           QA.fill(HIST("QA/hEtaAntiPr"), track.eta());
@@ -1227,6 +1262,37 @@ struct hadronnucleicorrelation {
 
             if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
               mixTracks<1>(selectedtracks_p[col1->index()], selectedtracks_p[col2->index()], 1, dorapidity); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 7 && !mixbins_p.empty()) {
+
+      for (auto i = mixbins_p.begin(); i != mixbins_p.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+            mixTracks<0>(selectedtracks_p[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
+              mixTracks<1>(selectedtracks_p[col1->index()], selectedtracks_antip[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
