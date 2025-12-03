@@ -576,7 +576,6 @@ struct HfTaskFlowCharmHadrons {
     float yQVec = qVecs[1];
     float const amplQVec = qVecs[2];
     float const evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
-    int nProngs = 3;
 
     for (const auto& candidate : candidates) {
       float massCand = 0.;
@@ -611,7 +610,6 @@ struct HfTaskFlowCharmHadrons {
           }
         }
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
-        nProngs = 2;
         switch (Channel) {
           case DecayChannel::D0ToPiK:
             massCand = HfHelper::invMassD0ToPiK(candidate);
