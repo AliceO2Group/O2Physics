@@ -261,7 +261,10 @@ struct PiNucleiFemto {
      {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-     {"hSinglePiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hPiPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
+     {"hSingleNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+
      {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
      {"hHe3P", "Pin distribution; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHe3P_preselected", "Pin distribution_preselected; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -291,8 +294,7 @@ struct PiNucleiFemto {
      {"hkStaVsmT_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hkStaVsmT_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hkStaVsmT_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
-     {"hCollIDVsCentEachPion", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
-     {"hCollIDVsCentEachDe", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
+
      {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -815,9 +817,8 @@ struct PiNucleiFemto {
   }
 
   template <typename Ttrack>
-  void pairTracksSameEvent(const Ttrack& tracks, float cent)
+  void pairTracksSameEvent(const Ttrack& tracks, float /*cent*/)
   {
-    bool filledAllOnce = false;
     // LOG(info) << "Number of tracks: " << tracks.size();
     for (const auto& track0 : tracks) {
 
@@ -833,7 +834,7 @@ struct PiNucleiFemto {
       }
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
       mQaRegistry.fill(HIST("hSingleNuPt"), track0.pt() * track0.sign());
-      mQaRegistry.fill(HIST("hCollIDVsCentEachDe"), track0.collisionId(), cent);
+      mQaRegistry.fill(HIST("hSingleNuPin"), track0.tpcInnerParam() * track0.sign());
 
       for (const auto& track1 : tracks) {
         if (track0 == track1) {
@@ -853,11 +854,6 @@ struct PiNucleiFemto {
           continue;
         }
 
-        if (!filledAllOnce) {
-          mQaRegistry.fill(HIST("hCollIDVsCentEachPion"), track1.collisionId(), cent);
-          mQaRegistry.fill(HIST("hSinglePiPt"), track1.pt() * track1.sign());
-        }
-
         SVCand trackPair;
         trackPair.tr0Idx = track0.globalIndex();
         trackPair.tr1Idx = track1.globalIndex();
@@ -866,7 +862,6 @@ struct PiNucleiFemto {
         trackPair.collBracket = collBracket;
         mTrackPairs.push_back(trackPair);
       }
-      filledAllOnce = true;
     }
   }
 
@@ -952,6 +947,10 @@ struct PiNucleiFemto {
   void fillTable(const PiNucandidate& piNucand, const Tcoll& collision)
   {
     mOutputDataTable(
+      piNucand.recoPtPi(),
+      piNucand.recoPtNu(),
+      piNucand.momPiTPC,
+      piNucand.momNuTPC,
       piNucand.trackIDPi,
       piNucand.trackIDNu);
     if (settingFillMultiplicity) {
@@ -1007,6 +1006,8 @@ struct PiNucleiFemto {
   {
     mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
     mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
+    mQaRegistry.fill(HIST("hNuPin"), piNucand.momNuTPC * piNucand.signNu);
+    mQaRegistry.fill(HIST("hPiPin"), piNucand.momPiTPC * piNucand.signPi);
     mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
     mQaRegistry.fill(HIST("hPiEta"), piNucand.recoEtaPi());
     mQaRegistry.fill(HIST("hNuPhi"), piNucand.recoPhiNu());
