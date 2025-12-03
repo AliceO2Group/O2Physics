@@ -56,22 +56,22 @@ DetLayer::DetLayer(const DetLayer& other)
 
 void DetLayer::addDeadPhiRegion(float phiStart, float phiEnd)
 {
-  static constexpr float kDefaultValue = 2.f;
-  static constexpr float kPhiTolerance = 1e-4f;
+  static constexpr float DefaultValue = 2.f;
+  static constexpr float PhiTolerance = 1e-4f;
   if (mDeadPhiRegions == nullptr) {
     mDeadPhiRegions = new TGraph();
     mDeadPhiRegions->SetNameTitle(Form("deadPhiRegions_%s", mName.Data()), Form("Dead phi regions for layer %s", mName.Data()));
-    mDeadPhiRegions->AddPoint(0, kDefaultValue);
-    mDeadPhiRegions->AddPoint(o2::constants::math::TwoPI, kDefaultValue);
+    mDeadPhiRegions->AddPoint(0, DefaultValue);
+    mDeadPhiRegions->AddPoint(o2::constants::math::TwoPI, DefaultValue);
   }
   if (phiStart < 0 || phiStart >= o2::constants::math::TwoPI || phiEnd < 0 || phiEnd >= o2::constants::math::TwoPI) {
     LOG(fatal) << "Cannot add dead phi region with invalid range [" << phiStart << ", " << phiEnd << "] to layer " << mName;
     return;
   }
-  mDeadPhiRegions->AddPoint(phiStart, kDefaultValue);
-  mDeadPhiRegions->AddPoint(phiEnd, kDefaultValue);
-  mDeadPhiRegions->AddPoint(phiStart + kPhiTolerance, 0.f);
-  mDeadPhiRegions->AddPoint(phiEnd - kPhiTolerance, 0.f);
+  mDeadPhiRegions->AddPoint(phiStart, DefaultValue);
+  mDeadPhiRegions->AddPoint(phiEnd, DefaultValue);
+  mDeadPhiRegions->AddPoint(phiStart + PhiTolerance, 0.f);
+  mDeadPhiRegions->AddPoint(phiEnd - PhiTolerance, 0.f);
   mDeadPhiRegions->Sort();
 }
 
@@ -101,7 +101,9 @@ void DetLayer::setDeadPhiRegions(TGraph* graph)
       if (x < 0 || x > o2::constants::math::TwoPI) {
         LOG(fatal) << "Dead phi regions graph for layer " << mName << " has invalid x value " << x << " at point " << i;
       }
-      if (y != 0.f && y != 2.f) {
+      static constexpr float EffValidLowValue = 0.f;
+      static constexpr float EffValidHighValue = 2.f;
+      if (y != EffValidLowValue && y != EffValidHighValue) {
         LOG(fatal) << "Dead phi regions graph for layer " << mName << " has invalid y value " << y << " at point " << i << ", should be 0 or 2";
       }
     }
