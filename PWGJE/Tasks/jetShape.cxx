@@ -403,6 +403,10 @@ struct JetShapeTask {
 
   void processReco(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const& mcParticles)
   {
+
+    (void)mcCollision;
+    (void)mcParticles;
+
     registry.fill(HIST("eventCounter"), 0.5);
     float centrality = collision.centFT0M();
 
