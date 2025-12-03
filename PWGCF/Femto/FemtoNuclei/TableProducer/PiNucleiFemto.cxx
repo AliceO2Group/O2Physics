@@ -817,7 +817,7 @@ struct PiNucleiFemto {
   }
 
   template <typename Ttrack>
-  void pairTracksSameEvent(const Ttrack& tracks, float cent)
+  void pairTracksSameEvent(const Ttrack& tracks, float /*cent*/)
   {
     // LOG(info) << "Number of tracks: " << tracks.size();
     for (const auto& track0 : tracks) {
