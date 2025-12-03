@@ -264,7 +264,7 @@ struct PiNucleiFemto {
      {"hNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
      {"hSingleNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-     
+
      {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
      {"hHe3P", "Pin distribution; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHe3P_preselected", "Pin distribution_preselected; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -294,7 +294,7 @@ struct PiNucleiFemto {
      {"hkStaVsmT_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hkStaVsmT_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hkStaVsmT_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
-     
+
      {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -1006,8 +1006,8 @@ struct PiNucleiFemto {
   {
     mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
     mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
-    mQaRegistry.fill(HIST("hNuPin"), piNucand.momNuTPC *piNucand.signNu);
-    mQaRegistry.fill(HIST("hPiPin"), piNucand.momPiTPC* piNucand.signPi);
+    mQaRegistry.fill(HIST("hNuPin"), piNucand.momNuTPC * piNucand.signNu);
+    mQaRegistry.fill(HIST("hPiPin"), piNucand.momPiTPC * piNucand.signPi);
     mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
     mQaRegistry.fill(HIST("hPiEta"), piNucand.recoEtaPi());
     mQaRegistry.fill(HIST("hNuPhi"), piNucand.recoPhiNu());
