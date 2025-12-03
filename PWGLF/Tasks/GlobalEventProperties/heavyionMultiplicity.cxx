@@ -131,6 +131,7 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
 AxisSpec axisEvent{10, 0.5, 10.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
+AxisSpec axisEtaExtended{100, -5, 5, "#eta", "EtaAxisExtended"};
 AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf, o2::constants::math::PIQuarter * 3., o2::constants::math::PI, o2::constants::math::PIQuarter * 5., o2::constants::math::PIHalf * 3., o2::constants::math::PIQuarter * 7., o2::constants::math::TwoPI}, "#phi", "PhiAxis"};
 AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
@@ -313,6 +314,8 @@ struct HeavyionMultiplicity {
       x->SetBinLabel(1, "All MC events");
       x->SetBinLabel(2, "MC events with reco event after event selection");
       x->SetBinLabel(3, "MC events with no reco events");
+      histos.add("hgendndetaVscentGenwithNOreco", "dndeta vs impact parameter, gen events with no reco", kTH2F, {axisEtaExtended, impactParAxis});
+      histos.add("hgendndetaVscentGenwithReco"  , "dndeta vs impact parameter, gen events with at least one reco", kTH2F, {axisEtaExtended, impactParAxis});
       histos.add("hImpactParameterGenwithNoreco", "Impact parameter of generated MC events, with no recoevent", kTH1F, {impactParAxis});
       histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
@@ -949,6 +952,12 @@ struct HeavyionMultiplicity {
     }
 
     for (const auto& particle : GenParticles) {
+      
+      if (RecCols.size() == 0) {
+	histos.fill(HIST("hgendndetaVscentGenwithNOreco"), particle.eta(), mcCollision.impactParameter());
+      } else {
+	histos.fill(HIST("hgendndetaVscentGenwithReco"), particle.eta(), mcCollision.impactParameter());
+      }
 
       if (!isGenTrackSelected(particle)) {
         continue;
