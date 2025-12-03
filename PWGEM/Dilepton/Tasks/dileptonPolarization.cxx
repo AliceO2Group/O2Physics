@@ -127,9 +127,9 @@ struct DileptonPolarization {
   struct : ConfigurableGroup {
     std::string prefix = "accBins";
     Configurable<float> cfgRelDM{"cfgRelDM", 0.01, "rel. dm for lorentz boost"};
-    Configurable<float> cfgRelDPx{"cfgRelDPx", 0.01, "rel. dpx for lorentz boost"};
-    Configurable<float> cfgRelDPy{"cfgRelDPy", 0.01, "rel. dpy for lorentz boost"};
-    Configurable<float> cfgRelDPz{"cfgRelDPz", 0.01, "rel. dpz for lorentz boost"};
+    Configurable<float> cfgRelDPt{"cfgRelDPt", 0.1, "rel. dpT for lorentz boost"};
+    Configurable<float> cfgDEta{"cfgDEta", 0.1, "deta for lorentz boost"};
+    Configurable<float> cfgDPhi{"cfgDPhi", 0.087, "dphi (rad.) for lorentz boost"};
   } accBins;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -382,9 +382,6 @@ struct DileptonPolarization {
     fRegistry.addClone("Pair/same/", "Pair/mix/");
     fRegistry.add("Pair/same/uls/hEta", "#eta_{ll}", kTH1D, {{2000, -10, 10}}, true);
     fRegistry.add("Pair/mix/uls/hBeta", "#beta for Lorentz boost;#beta^{same};(#beta^{mix} - #beta^{same})/#beta^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
-    fRegistry.add("Pair/mix/uls/hBetaX", "#beta_{X} for Lorentz boost;#beta_{x}^{same};(#beta_{x}^{mix} - #beta_{x}^{same})/#beta_{x}^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
-    fRegistry.add("Pair/mix/uls/hBetaY", "#beta_{Y} for Lorentz boost;#beta_{y}^{same};(#beta_{y}^{mix} - #beta_{y}^{same})/#beta_{y}^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
-    fRegistry.add("Pair/mix/uls/hBetaZ", "#beta_{Z} for Lorentz boost;#beta_{z}^{same};(#beta_{z}^{mix} - #beta_{z}^{same})/#beta_{z}^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
   }
 
   template <int ev_id, typename TCollision, typename TDilepton>
@@ -481,7 +478,7 @@ struct DileptonPolarization {
           auto v_pos = empair1.getPositiveLeg(); // pt, eta, phi, M
           auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1};
 
-          auto pairs_from_col2_sliced = std::views::filter(pairs_from_col2, [&](EMPair t) { return std::fabs(t.mass() - empair1.mass()) / empair1.mass() < accBins.cfgRelDM && std::fabs((t.px() - empair1.px()) / empair1.px()) < accBins.cfgRelDPx && std::fabs((t.py() - empair1.py()) / empair1.py()) < accBins.cfgRelDPy && std::fabs((t.pz() - empair1.pz()) / empair1.pz()) < accBins.cfgRelDPz; });
+          auto pairs_from_col2_sliced = std::views::filter(pairs_from_col2, [&](EMPair t) { return std::fabs(t.mass() - empair1.mass()) / empair1.mass() < accBins.cfgRelDM && std::fabs(t.pt() - empair1.pt()) / empair1.pt() < accBins.cfgRelDPt && std::fabs(t.eta() - empair1.eta()) < accBins.cfgDEta && std::fabs(RecoDecay::constrainAngle(t.phi() - empair1.phi(), -o2::constants::math::PI, 1U)) < accBins.cfgDPhi; });
           for (const auto& empair2 : pairs_from_col2_sliced) {
             auto arrM = std::array<float, 4>{static_cast<float>(empair2.px()), static_cast<float>(empair2.py()), static_cast<float>(empair2.pz()), static_cast<float>(empair2.mass())};
             // LOGF(info, "[col1, col2] : empair1.mass() = %f, empair1.pt() = %f, empair1.eta() = %f, empair1.phi() = %f, empair2.mass() = %f, empair2.pt() = %f, empair2.eta() = %f, empair2.phi() = %f", empair1.mass(), empair1.pt(), empair1.eta(), empair1.phi(), empair2.mass(), empair2.pt(), empair2.eta(), empair2.phi());
@@ -500,9 +497,6 @@ struct DileptonPolarization {
             }
             fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
             fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBetaX"), empair1.px() / empair1.e(), (empair2.px() / empair2.e() - empair1.px() / empair1.e()) / (empair1.px() / empair1.e()));
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBetaY"), empair1.py() / empair1.e(), (empair2.py() / empair2.e() - empair1.py() / empair1.e()) / (empair1.py() / empair1.e()));
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBetaZ"), empair1.pz() / empair1.e(), (empair2.pz() / empair2.e() - empair1.pz() / empair1.e()) / (empair1.pz() / empair1.e()));
           }
         }
 
@@ -510,7 +504,7 @@ struct DileptonPolarization {
           auto v_pos = empair2.getPositiveLeg(); // pt, eta, phi, M
           auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM2};
 
-          auto pairs_from_col1_sliced = std::views::filter(pairs_from_col1, [&](EMPair t) { return std::fabs(t.mass() - empair2.mass()) / empair2.mass() < accBins.cfgRelDM && std::fabs((t.px() - empair2.px()) / empair2.px()) < accBins.cfgRelDPx && std::fabs((t.py() - empair2.py()) / empair2.py()) < accBins.cfgRelDPy && std::fabs((t.pz() - empair2.pz()) / empair2.pz()) < accBins.cfgRelDPz; });
+          auto pairs_from_col1_sliced = std::views::filter(pairs_from_col1, [&](EMPair t) { return std::fabs(t.mass() - empair2.mass()) / empair2.mass() < accBins.cfgRelDM && std::fabs(t.pt() - empair2.pt()) / empair2.pt() < accBins.cfgRelDPt && std::fabs(t.eta() - empair2.eta()) < accBins.cfgDEta && std::fabs(RecoDecay::constrainAngle(t.phi() - empair2.phi(), -o2::constants::math::PI, 1U)) < accBins.cfgDPhi; });
           for (const auto& empair1 : pairs_from_col1_sliced) {
             auto arrM = std::array<float, 4>{static_cast<float>(empair1.px()), static_cast<float>(empair1.py()), static_cast<float>(empair1.pz()), static_cast<float>(empair2.mass())};
             // LOGF(info, "[col2, col1] : empair2.mass() = %f, empair2.pt() = %f, empair2.eta() = %f, empair2.phi() = %f, empair1.mass() = %f, empair1.pt() = %f, empair1.eta() = %f, empair1.phi() = %f", empair2.mass(), empair2.pt(), empair2.eta(), empair2.phi(), empair1.mass(), empair1.pt(), empair1.eta(), empair1.phi());
@@ -529,9 +523,6 @@ struct DileptonPolarization {
             }
             fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair2.mass(), empair2.pt(), empair2.getPairDCA(), empair2.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
             fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair2.p() / empair2.e(), (empair1.p() / empair1.e() - empair2.p() / empair2.e()) / (empair2.p() / empair2.e()));
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBetaX"), empair2.px() / empair2.e(), (empair1.px() / empair1.e() - empair2.px() / empair2.e()) / (empair2.px() / empair2.e()));
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBetaY"), empair2.py() / empair2.e(), (empair1.py() / empair1.e() - empair2.py() / empair2.e()) / (empair2.py() / empair2.e()));
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBetaZ"), empair2.pz() / empair2.e(), (empair1.pz() / empair1.e() - empair2.pz() / empair2.e()) / (empair2.pz() / empair2.e()));
           }
         }
 
