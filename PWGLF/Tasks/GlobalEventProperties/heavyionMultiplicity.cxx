@@ -105,7 +105,6 @@ enum {
 enum {
   kRecTrkTypebegin = 0,
   kRecoAll = 1,
-  kRecoPrimary,
   kRecoPion,
   kRecoKaon,
   kRecoProton,
@@ -312,7 +311,9 @@ struct HeavyionMultiplicity {
       auto hstat = histos.get<TH1>(HIST("MCEventHist"));
       auto* x = hstat->GetXaxis();
       x->SetBinLabel(1, "All MC events");
-      x->SetBinLabel(2, "MC events with atleast one reco event");
+      x->SetBinLabel(2, "MC events with reco event after event selection");
+      x->SetBinLabel(3, "MC events with no reco events");
+      histos.add("hImpactParameterGenwithNoreco", "Impact parameter of generated MC events, with no recoevent", kTH1F, {impactParAxis});
       histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {axisCent, impactParAxis});
@@ -916,6 +917,11 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("MCEventHist"), 1);
     histos.fill(HIST("hImpactParameterGen"), mcCollision.impactParameter());
 
+    if (RecCols.size() == 0) {
+      histos.fill(HIST("MCEventHist"), 3);
+      histos.fill(HIST("hImpactParameterGenwithNoreco"), mcCollision.impactParameter());
+    }
+
     bool atLeastOne = false;
     auto centrality = -999.;
     auto numcontributors = -999;
@@ -997,7 +1003,7 @@ struct HeavyionMultiplicity {
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
-          histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup);
+          histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTup);
           histos.fill(HIST("hGenMCAssoRecdndeta"), mcCollision.posZ(), gencent, genoccu, particle.eta(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown);
         }
         int pid = 0;
@@ -1043,7 +1049,6 @@ struct HeavyionMultiplicity {
           auto mcpart = Rectrack.mcParticle();
           histos.fill(HIST("etaResolution"), Rectrack.eta(), Rectrack.eta() - mcpart.eta());
           if (mcpart.isPhysicalPrimary()) {
-            pid = kRecoPrimary;
             switch (std::abs(mcpart.pdgCode())) {
               case PDG_t::kPiPlus:
                 pid = kRecoPion;

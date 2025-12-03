@@ -268,7 +268,7 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
   }
 
   template <typename T>
-  bool checkCandidate(const T& v0) const
+  bool checkFilters(const T& v0) const
   {
     // check kinematics first
     const bool kinematicsOK =
@@ -371,8 +371,8 @@ class V0Builder
     LOG(info) << "Initialization done...";
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-  void fillV0s(T1& collisionProducts, T2& trackProducts, T3& v0products, T4 const& v0s, T5 const& tracks, T6& trackBuilder, T7& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0products, T6 const& v0s, T7 const& tracks, T8& trackBuilder, T9& indexMap)
   {
     if (!mFillAnyTable) {
       return;
@@ -380,30 +380,35 @@ class V0Builder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& v0 : v0s) {
-      if (!mV0Selection.checkCandidate(v0)) {
+      if (!mV0Selection.checkFilters(v0)) {
         continue;
       }
       mV0Selection.applySelections(v0, tracks);
-      if (mV0Selection.passesAllRequiredSelections()) {
-        auto posDaughter = v0.template posTrack_as<T5>();
-        auto negDaughter = v0.template negTrack_as<T5>();
-        posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
-        negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts, indexMap);
-        if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-          fillLambda(collisionProducts, v0products, v0, 1.f, posDaughterIndex, negDaughterIndex);
-        }
-        if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-          fillLambda(collisionProducts, v0products, v0, -1.f, posDaughterIndex, negDaughterIndex);
-        }
-        if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
-          fillK0short(collisionProducts, v0products, v0, posDaughterIndex, negDaughterIndex);
-        }
+      if (!mV0Selection.passesAllRequiredSelections()) {
+        continue;
+      }
+      auto posDaughter = v0.template posTrack_as<T7>();
+      auto negDaughter = v0.template negTrack_as<T7>();
+
+      collisionBuilder.template fillCollision<system>(collisionProducts, col);
+
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts, indexMap);
+
+      if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
+        fillLambda(collisionProducts, v0products, v0, 1.f, posDaughterIndex, negDaughterIndex);
+      }
+      if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
+        fillLambda(collisionProducts, v0products, v0, -1.f, posDaughterIndex, negDaughterIndex);
+      }
+      if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
+        fillK0short(collisionProducts, v0products, v0, posDaughterIndex, negDaughterIndex);
       }
     }
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int32_t posDaughterIndex, int32_t negDaughterIndex)
+  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     float mass, massAnti;
     if (sign > 0.f) {
@@ -439,7 +444,7 @@ class V0Builder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillK0short(T1& collisionProducts, T2& v0products, T3 const& v0, int posDaughterIndex, int negDaughterIndex)
+  void fillK0short(T1& collisionProducts, T2& v0products, T3 const& v0, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     if (mProduceK0shorts) {
       v0products.producedK0shorts(collisionProducts.producedCollision.lastIndex(),

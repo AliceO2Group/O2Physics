@@ -135,6 +135,8 @@ struct PidDiHadron {
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultMultV0ACutEnabled, bool, false, "Enable global multiplicity vs V0A multiplicity cut")
     Configurable<std::vector<double>> cfgMultMultV0ACutPars{"cfgMultMultV0ACutPars", std::vector<double>{534.893, 184.344, 0.423539, -0.00331436, 5.34622e-06, 871.239, 53.3735, -0.203528, 0.000122758, 5.41027e-07}, "Global multiplicity vs V0A multiplicity cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
     std::vector<double> multT0CCutPars;
     std::vector<double> multPVT0CCutPars;
     std::vector<double> multGlobalPVCutPars;
@@ -149,6 +151,7 @@ struct PidDiHadron {
     TF1* fMultMultV0ACutHigh = nullptr;
     TF1* fT0AV0AMean = nullptr;
     TF1* fT0AV0ASigma = nullptr;
+    TF1* fPtDepDCAxy = nullptr;
   } cfgFuncParas;
 
   SliceCache cache;
@@ -167,6 +170,7 @@ struct PidDiHadron {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisNsigmaITS{"axisNsigmaITS", {80, -5, 5}, "nsigmaITS axis"};
+  ConfigurableAxis axisTpcSignal{"axisTpcSignal", {250, 0, 250}, "dEdx axis for TPC"};
 
   Configurable<LabeledArray<int>> cfgUseEventCuts{"cfgUseEventCuts", {LongArrayInt[0], 15, 1, {"Filtered Events", "Sel8", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kNoCollInTimeRangeStandard", "kIsGoodITSLayersAll", "kNoCollInRofStandard", "kNoHighMultCollInPrevRof", "Occupancy", "Multcorrelation", "T0AV0ACut", "kIsVertexITSTPC", "kTVXinTRD"}, {"EvCuts"}}, "Labeled array (int) for various cuts on resonances"};
   Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
@@ -211,12 +215,12 @@ struct PidDiHadron {
     kPhi
   };
   enum PiKpArrayIndex {
-    kPionUp = 0,
-    kKaonUp,
-    kProtonUp,
-    kPionLow,
-    kKaonLow,
-    kProtonLow
+    iPionUp = 0,
+    iKaonUp,
+    iProtonUp,
+    iPionLow,
+    iKaonLow,
+    iProtonLow
   };
   enum ResoArrayIndex {
     iK0 = 0,
@@ -304,26 +308,26 @@ struct PidDiHadron {
     readMatrix(resonanceSwitches->getData(), resoSwitchVals, kUseCosPA, kNParticleSwitches, iK0, NResoParticles);
     readMatrix(cfgUseEventCuts->getData(), eventCuts, kFilteredEvents, kNEventCuts, kEvCut1, kNEvCutTypes);
 
-    tpcNsigmaCut[kPionUp] = nSigmas->getData()[kPionUp][kTPC];
-    tpcNsigmaCut[kKaonUp] = nSigmas->getData()[kKaonUp][kTPC];
-    tpcNsigmaCut[kProtonUp] = nSigmas->getData()[kProtonUp][kTPC];
-    tpcNsigmaCut[kPionLow] = nSigmas->getData()[kPionLow][kTPC];
-    tpcNsigmaCut[kKaonLow] = nSigmas->getData()[kKaonLow][kTPC];
-    tpcNsigmaCut[kProtonLow] = nSigmas->getData()[kProtonLow][kTPC];
+    tpcNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTPC];
+    tpcNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTPC];
+    tpcNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTPC];
+    tpcNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kTPC];
+    tpcNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kTPC];
+    tpcNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kTPC];
 
-    tofNsigmaCut[kPionUp] = nSigmas->getData()[kPionUp][kTOF];
-    tofNsigmaCut[kKaonUp] = nSigmas->getData()[kKaonUp][kTOF];
-    tofNsigmaCut[kProtonUp] = nSigmas->getData()[kProtonUp][kTOF];
-    tofNsigmaCut[kPionLow] = nSigmas->getData()[kPionLow][kTOF];
-    tofNsigmaCut[kKaonLow] = nSigmas->getData()[kKaonLow][kTOF];
-    tofNsigmaCut[kProtonLow] = nSigmas->getData()[kProtonLow][kTOF];
+    tofNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTOF];
+    tofNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTOF];
+    tofNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTOF];
+    tofNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kTOF];
+    tofNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kTOF];
+    tofNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kTOF];
 
-    itsNsigmaCut[kPionUp] = nSigmas->getData()[kPionUp][kITS];
-    itsNsigmaCut[kKaonUp] = nSigmas->getData()[kKaonUp][kITS];
-    itsNsigmaCut[kProtonUp] = nSigmas->getData()[kProtonUp][kITS];
-    itsNsigmaCut[kPionLow] = nSigmas->getData()[kPionLow][kITS];
-    itsNsigmaCut[kKaonLow] = nSigmas->getData()[kKaonLow][kITS];
-    itsNsigmaCut[kProtonLow] = nSigmas->getData()[kProtonLow][kITS];
+    itsNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kITS];
+    itsNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kITS];
+    itsNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kITS];
+    itsNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kITS];
+    itsNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kITS];
+    itsNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kITS];
 
     AxisSpec axisK0Mass = {resoSwitchVals[kMassBins][iK0], resoCutVals[kMassMin][iK0], resoCutVals[kMassMax][iK0]};
     AxisSpec axisLambdaMass = {resoSwitchVals[kMassBins][iLambda], resoCutVals[kMassMin][iLambda], resoCutVals[kMassMax][iLambda]};
@@ -462,6 +466,10 @@ struct PidDiHadron {
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
+    cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 100);
+    cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
+
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
     // Make histograms to check the distributions after cuts
     if (doprocessSame || doprocessSameReso) {
@@ -491,6 +499,9 @@ struct PidDiHadron {
             histos.add("TofItsNsigma_before", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPt}}});
             histos.add("TofItsNsigma_after", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPt}}});
           }
+
+          histos.add("TpcdEdx_ptwise", "", {HistType::kTH2D, {{axisTpcSignal, axisPt}}});
+          histos.add("TpcdEdx_ptwise_afterCut", "", {HistType::kTH2D, {{axisTpcSignal, axisPt}}});
         }
       }
 
@@ -578,6 +589,8 @@ struct PidDiHadron {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+      return false;
     return ((track.tpcNClsFound() >= cfgTpcCluster) && (track.tpcNClsCrossedRows() >= cfgTpcCrossRows) && (track.itsNCls() >= cfgITScluster));
   }
 
@@ -594,11 +607,11 @@ struct PidDiHadron {
       return 0;
 
     if (cfgUseOnlyTPC) {
-      if (pid == kPionUp && std::abs(track.tpcNSigmaPi()) > cfgTpcCut)
+      if (pid == kPions && std::abs(track.tpcNSigmaPi()) > cfgTpcCut)
         return false;
-      if (pid == kKaonUp && std::abs(track.tpcNSigmaKa()) > cfgTpcCut)
+      if (pid == kKaons && std::abs(track.tpcNSigmaKa()) > cfgTpcCut)
         return false;
-      if (pid == kProtonUp && std::abs(track.tpcNSigmaPr()) > cfgTpcCut)
+      if (pid == kProtons && std::abs(track.tpcNSigmaPr()) > cfgTpcCut)
         return false;
     } else {
       int partIndex = getNsigmaPID(track);
@@ -623,13 +636,13 @@ struct PidDiHadron {
     std::array<float, 6> detectorNsigmaCut = cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
 
     bool isPion, isKaon, isProton;
-    bool isDetectedPion = nSigmaToUse[kPionUp] < detectorNsigmaCut[kPionUp] && nSigmaToUse[kPionUp] > detectorNsigmaCut[kPionLow];
-    bool isDetectedKaon = nSigmaToUse[kKaonUp] < detectorNsigmaCut[kKaonUp] && nSigmaToUse[kKaonUp] > detectorNsigmaCut[kKaonLow];
-    bool isDetectedProton = nSigmaToUse[kProtonUp] < detectorNsigmaCut[kProtonUp] && nSigmaToUse[kProtonUp] > detectorNsigmaCut[kProtonLow];
+    bool isDetectedPion = nSigmaToUse[iPionUp] < detectorNsigmaCut[iPionUp] && nSigmaToUse[iPionUp] > detectorNsigmaCut[iPionLow];
+    bool isDetectedKaon = nSigmaToUse[iKaonUp] < detectorNsigmaCut[iKaonUp] && nSigmaToUse[iKaonUp] > detectorNsigmaCut[iKaonLow];
+    bool isDetectedProton = nSigmaToUse[iProtonUp] < detectorNsigmaCut[iProtonUp] && nSigmaToUse[iProtonUp] > detectorNsigmaCut[iProtonLow];
 
-    bool isTofPion = nSigmaTOF[kPionUp] < tofNsigmaCut[kPionUp] && nSigmaTOF[kPionUp] > tofNsigmaCut[kPionLow];
-    bool isTofKaon = nSigmaTOF[kKaonUp] < tofNsigmaCut[kKaonUp] && nSigmaTOF[kKaonUp] > tofNsigmaCut[kKaonLow];
-    bool isTofProton = nSigmaTOF[kProtonUp] < tofNsigmaCut[kProtonUp] && nSigmaTOF[kProtonUp] > tofNsigmaCut[kProtonLow];
+    bool isTofPion = nSigmaTOF[iPionUp] < tofNsigmaCut[iPionUp] && nSigmaTOF[iPionUp] > tofNsigmaCut[iPionLow];
+    bool isTofKaon = nSigmaTOF[iKaonUp] < tofNsigmaCut[iKaonUp] && nSigmaTOF[iKaonUp] > tofNsigmaCut[iKaonLow];
+    bool isTofProton = nSigmaTOF[iProtonUp] < tofNsigmaCut[iProtonUp] && nSigmaTOF[iProtonUp] > tofNsigmaCut[iProtonLow];
 
     if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -826,11 +839,17 @@ struct PidDiHadron {
           histos.fill(HIST("TofItsNsigma_before"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
       }
 
+      if (cfgGetNsigmaQA)
+        histos.fill(HIST("TpcdEdx_ptwise"), track1.tpcSignal(), track1.pt());
+
       if (cfgPIDParticle && getNsigmaPID(track1) != cfgPIDParticle)
         continue; // if PID is selected, check if the track has the right PID
 
       if (cfgGetNsigmaQA)
         fillNsigmaAfterCut(track1, cfgPIDParticle);
+
+      if (cfgGetNsigmaQA)
+        histos.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.tpcSignal(), track1.pt());
 
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;

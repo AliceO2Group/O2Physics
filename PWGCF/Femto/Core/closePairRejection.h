@@ -222,7 +222,11 @@ class CloseTrackRejection
       }
     }
     // for small momemeta the calculation of phistar might fail, if the particle did not reach a certain radius
-    mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
+    if (count > 0) {
+      mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
+    } else {
+      mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
+    }
   }
 
   void fill(float kstar)
