@@ -455,7 +455,7 @@ struct HfTaskFlowCharmHadrons {
       values.push_back(cosDeltaPhi);
     }
 
-    if (storeMl && outputMl.size() >= 2) {
+    if (storeMl) {
       values.push_back(outputMl[0]);
       values.push_back(outputMl[1]);
     }
