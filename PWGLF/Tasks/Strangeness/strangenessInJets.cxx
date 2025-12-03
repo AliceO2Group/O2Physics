@@ -1703,7 +1703,7 @@ struct StrangenessInJets {
             auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
             if (motherPos != motherNeg)
               continue;
-            bool isPhysPrim = motherPos.isPhysicalPrimary());
+            bool isPhysPrim = motherPos.isPhysicalPrimary();
 
             // Compute distance from jet and UE axes
             double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
@@ -1746,7 +1746,7 @@ struct StrangenessInJets {
 
             // Fill inclusive spectra
             // K0s
-            if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
+            if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1755,7 +1755,7 @@ struct StrangenessInJets {
               }
             }
             // Lambda
-            if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
+            if (passedLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1764,7 +1764,7 @@ struct StrangenessInJets {
               }
             }
             // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
+            if (passedAntiLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0Bar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
