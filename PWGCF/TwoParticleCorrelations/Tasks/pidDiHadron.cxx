@@ -515,13 +515,17 @@ struct PidDiHadron {
       histos.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     }
     if (doprocessMC) {
+      histos.add("hNsigmaPionTruePositives", "hNsigmaPionTruePositives", {HistType::kTH1D, {axisPt}});     // Fraction of particles that are pions and selected as pions
+      histos.add("hNsigmaKaonTruePositives", "hNsigmaKaonTruePositives", {HistType::kTH1D, {axisPt}});     // Fraction of particles that are kaons and selected as kaons
+      histos.add("hNsigmaProtonTruePositives", "hNsigmaProtonTruePositives", {HistType::kTH1D, {axisPt}}); // Fraction of particles that are protons and selected as protons
+
       histos.add("hNsigmaPionSelected", "hNsigmaPionSelected", {HistType::kTH1D, {axisPt}});
       histos.add("hNsigmaKaonSelected", "hNsigmaKaonSelected", {HistType::kTH1D, {axisPt}});
       histos.add("hNsigmaProtonSelected", "hNsigmaProtonSelected", {HistType::kTH1D, {axisPt}});
 
-      histos.add("hNsigmaPionTrue", "hNsigmaPionTrue", {HistType::kTH1D, {axisPt}});
-      histos.add("hNsigmaKaonTrue", "hNsigmaKaonTrue", {HistType::kTH1D, {axisPt}});
-      histos.add("hNsigmaProtonTrue", "hNsigmaProtonTrue", {HistType::kTH1D, {axisPt}});
+      histos.add("hNsigmaPionTrue", "hNsigmaPionTrue", {HistType::kTH1D, {axisPt}});     // All true pions from MC
+      histos.add("hNsigmaKaonTrue", "hNsigmaKaonTrue", {HistType::kTH1D, {axisPt}});     // All true kaons from MC
+      histos.add("hNsigmaProtonTrue", "hNsigmaProtonTrue", {HistType::kTH1D, {axisPt}}); // All true protons from MC
     }
 
     histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -1502,12 +1506,20 @@ struct PidDiHadron {
 
       int pidIndex = getNsigmaPID(track);
 
+      // Fill Counts for selection through Nsigma cuts
+      if (pidIndex == kPions)
+        histos.fill(HIST("hNsigmaPionSelected"), track.pt());
+      if (pidIndex == kKaons)
+        histos.fill(HIST("hNsigmaKaonSelected"), track.pt());
+      if (pidIndex == kProtons)
+        histos.fill(HIST("hNsigmaProtonSelected"), track.pt());
+
       // Check the PDG code for the particles (MC truth) and match with analysed Nsigma PID
       if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kPiPlus) {
         histos.fill(HIST("hNsigmaPionTrue"), track.pt());
 
         if (pidIndex == kPions) {
-          histos.fill(HIST("hNsigmaPionSelected"), track.pt());
+          histos.fill(HIST("hNsigmaPionTruePositives"), track.pt());
         }
       } // Pion condition
 
@@ -1515,7 +1527,7 @@ struct PidDiHadron {
         histos.fill(HIST("hNsigmaKaonTrue"), track.pt());
 
         if (pidIndex == kKaons) {
-          histos.fill(HIST("hNsigmaKaonSelected"), track.pt());
+          histos.fill(HIST("hNsigmaKaonTruePositives"), track.pt());
         }
       } // Kaon condition
 
@@ -1523,7 +1535,7 @@ struct PidDiHadron {
         histos.fill(HIST("hNsigmaProtonTrue"), track.pt());
 
         if (pidIndex == kProtons) {
-          histos.fill(HIST("hNsigmaProtonSelected"), track.pt());
+          histos.fill(HIST("hNsigmaProtonTruePositives"), track.pt());
         }
       } // Proton condition
 
