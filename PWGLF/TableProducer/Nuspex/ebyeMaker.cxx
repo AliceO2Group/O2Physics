@@ -434,7 +434,7 @@ struct EbyeMaker {
       float outerPID = tk.pt() > antipPtTof ? tk.tofNSigmaPr() : -999.f;
       candidateTrack.itsnsigma = nSigmaITS;
       candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-      int selMask = getTrackSelMask(candidateTrack);
+      selMask = getTrackSelMask(candidateTrack);
       if (candidateTrack.outerPID < outerPIDMin)
         return;
       if (isMc && candidateTrack.pdgcodemoth > 0)
