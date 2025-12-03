@@ -1004,7 +1004,7 @@ struct CascadeCorrelations {
   } // process mixed events
 
   Configurable<float> etaGenCascades{"etaGenCascades", 0.8, "min/max of eta for generated cascades"};
-  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == (int) kXiMinus;
+  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == (int)kXiMinus;
 
   void processMC(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
   {
