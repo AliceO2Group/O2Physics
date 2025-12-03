@@ -328,8 +328,16 @@ struct OnTheFlyTracker {
 
       return foundNewCfg;
     };
+    int nGeometries = static_cast<int>(fastTrackerSettings.alice3geo->size());
+    if (enablePrimarySmearing)
+      nGeometries = static_cast<int>(lookUpTables.lutPi->size());
+    if (enablePrimarySmearing && enableSecondarySmearing) {
+      if (static_cast<int>(lookUpTables.lutPi->size()) != static_cast<int>(fastTrackerSettings.alice3geo->size())) {
+        LOG(fatal) << "When enabling both primary and secondary smearing, the number of LUTs provided must match the number of geometries provided!";
+      }
+    }
 
-    for (int icfg = 0; icfg < static_cast<int>(fastTrackerSettings.alice3geo->size()); ++icfg) {
+    for (int icfg = 0; icfg < nGeometries; ++icfg) {
       std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
