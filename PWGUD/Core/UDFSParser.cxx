@@ -14,6 +14,9 @@
 #include "CommonDataFormat/BunchFilling.h"
 #include "UDFSParser.h"
 
+#include <vector>
+#include <string>
+
 // -----------------------------------------------------------------------------
 UDFSParser::UDFSParser(const char* filename)
 {

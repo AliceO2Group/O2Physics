@@ -11,6 +11,8 @@
 
 #include "DGCutparHolder.h"
 
+#include <vector>
+
 // setter
 void DGCutparHolder::SetNDtcoll(int ndtcoll)
 {

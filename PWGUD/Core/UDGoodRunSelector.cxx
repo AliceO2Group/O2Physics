@@ -15,6 +15,10 @@
 #include "rapidjson/filereadstream.h"
 #include "PWGUD/Core/UDGoodRunSelector.h"
 
+#include <vector>
+#include <string>
+#include <cstdio>
+
 class TFile;
 
 using namespace rapidjson;
