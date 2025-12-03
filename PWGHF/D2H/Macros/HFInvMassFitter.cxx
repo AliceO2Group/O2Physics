@@ -203,7 +203,10 @@ void HFInvMassFitter::doFit()
     mIntegralSgn = signalIntegralMc->getValV();
     calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
-  } else {                                           // data
+    // Fit to data ratio
+    mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
+    calculateFitToDataRatio();
+  } else { // data
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
