@@ -426,7 +426,8 @@ struct EbyeMaker {
   }
 
   template <const bool isMc, class T>
-  void fillTableMiniTrack(CandidateTrack& candidateTrack, T const& tk, float const& nSigmaITS = -999.f){
+  void fillTableMiniTrack(CandidateTrack& candidateTrack, T const& tk, float const& nSigmaITS = -999.f)
+  {
     int selMask = -1;
     if ((isMc && candidateTrack.isreco) || !isMc) {
       float outerPID = -999.f;
