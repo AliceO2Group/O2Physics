@@ -809,7 +809,7 @@ struct OnTheFlyTracker {
       }
       if (v0DecaySettings.doV0QA && isV0) {
         static_for<0, 11>([&](auto i) {
-          constexpr int Index = i.value % 3;
+          constexpr int Index = i.value / 4;
           constexpr int IndexCnfg = i.value % 4;
           if (pdg == v0PDGs[Index] && icfg == IndexCnfg) {
 
@@ -1175,7 +1175,7 @@ struct OnTheFlyTracker {
         }
         if (v0DecaySettings.doV0QA) {
           static_for<0, 11>([&](auto i) {
-            constexpr int Index = i.value % 3;
+            constexpr int Index = i.value / 4;
             constexpr int IndexCnfg = i.value % 4;
             if (pdg == v0PDGs[Index] && icfg == IndexCnfg) {
               if (isReco[0] && isReco[1]) {
