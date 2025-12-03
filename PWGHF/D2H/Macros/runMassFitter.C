@@ -368,8 +368,7 @@ int runMassFitter(const std::string& configFileName)
   std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
     const int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
-    canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas),
-                                      canvasSize[0], canvasSize[1]);
+    canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas), canvasSize[0], canvasSize[1]);
     divideCanvas(canvasMass[iCanvas], nPads);
 
     canvasResiduals[iCanvas] = new TCanvas(Form("canvasResiduals%d", iCanvas), Form("canvasResiduals%d", iCanvas), canvasSize[0], canvasSize[1]);
@@ -560,30 +559,13 @@ int runMassFitter(const std::string& configFileName)
   TString outputFileRatio = outputFileName;
   outputFileRatio.ReplaceAll(".pdf", "_Ratio.pdf");
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
-    if (iCanvas == 0 && nCanvases > 1) {
-      canvasMass[iCanvas]->SaveAs(Form("%s[", outputFileName.Data()));
-    }
-    canvasMass[iCanvas]->SaveAs(outputFileName.Data());
-    if (iCanvas == nCanvases - 1 && nCanvases > 1) {
-      canvasMass[iCanvas]->SaveAs(Form("%s]", outputFileName.Data()));
-    }
+    const std::string printingBracket = nCanvases == 1 ? "" : iCanvas == 0             ? "("
+                                                            : iCanvas == nCanvases - 1 ? ")"
+                                                                                       : "";
+    canvasMass[iCanvas]->Print(Form("%s%s", outputFileName.Data(), printingBracket.c_str()), "pdf");
+    canvasRatio[iCanvas]->Print(Form("%s%s", outputFileRatio.Data(), printingBracket.c_str()), "pdf");
     if (!isMc) {
-      // residuals
-      if (iCanvas == 0 && nCanvases > 1) {
-        canvasResiduals[iCanvas]->SaveAs(Form("%s[", outputFileNameResidual.Data()));
-      }
-      canvasResiduals[iCanvas]->SaveAs(outputFileNameResidual.Data());
-      if (iCanvas == nCanvases - 1 && nCanvases > 1) {
-        canvasResiduals[iCanvas]->SaveAs(Form("%s]", outputFileNameResidual.Data()));
-      }
-    }
-    // ratio
-    if (iCanvas == 0 && nCanvases > 1) {
-      canvasRatio[iCanvas]->SaveAs(Form("%s[", outputFileRatio.Data()));
-    }
-    canvasRatio[iCanvas]->SaveAs(outputFileRatio.Data());
-    if (iCanvas == nCanvases - 1 && nCanvases > 1) {
-      canvasRatio[iCanvas]->SaveAs(Form("%s]", outputFileRatio.Data()));
+      canvasResiduals[iCanvas]->Print(Form("%s%s", outputFileNameResidual.Data(), printingBracket.c_str()), "pdf");
     }
   }
   return 0;
