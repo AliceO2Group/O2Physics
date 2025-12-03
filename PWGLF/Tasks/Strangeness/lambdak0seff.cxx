@@ -432,7 +432,7 @@ struct lambdak0seff {
         int lambdacounter = 0;
         int antilambdacounter = 0;
         int k0scounter = 0;
-     
+
         for (const auto& kCurrentDaughter : kDaughters) {
           if (std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kPiPlus) {
             continue;
