@@ -410,6 +410,11 @@ int runMassFitter(const std::string& configFileName)
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
+      if (useLikelihood) {
+        massFitter->setUseLikelihoodFit();
+      } else {
+        massFitter->setUseChi2Fit();
+      }
       massFitter->doFit();
 
       if (nSliceVarBins > 1) {
@@ -467,6 +472,8 @@ int runMassFitter(const std::string& configFileName)
       massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
       if (useLikelihood) {
         massFitter->setUseLikelihoodFit();
+      } else {
+        massFitter->setUseChi2Fit();
       }
 
       auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(double)> setFunc, std::string const& var) -> void {
