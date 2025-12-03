@@ -54,7 +54,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime>;
 using TracksFullPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFPr>;
 using TracksFullIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFPr>;
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
@@ -267,7 +266,6 @@ struct EbyeMaker {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Preslice<TracksFull> perCollisionTracksFull = o2::aod::track::collisionId;
   Preslice<TracksFullPID> perCollisionTracksFullPID = o2::aod::track::collisionId;
   Preslice<TracksFullIUPID> perCollisionTracksFullIUPID = o2::aod::track::collisionId;
   Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
@@ -427,12 +425,41 @@ struct EbyeMaker {
     return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }
 
-  template <class T>
-  float getOuterPID(T const& track)
-  {
-    if (!(doprocessRun2 || doprocessMcRun2) && track.hasTOF() && track.pt() > antipPtTof)
-      return track.tofNSigmaPr();
-    return -999.f;
+  template <const bool isMc, class T>
+  void fillTableMiniTrack(CandidateTrack& candidateTrack, T const& tk, float const& nSigmaITS = -999.f){
+    int selMask = -1;
+    if ((isMc && candidateTrack.isreco) || !isMc) {
+      float outerPID = -999.f;
+      if (!(doprocessRun2 || doprocessMcRun2) && tk.hasTOF() && tk.pt() > antipPtTof) // TODO: remove the process-dependent conditional if all have the tof table
+        outerPID = tk.tofNSigmaPr();
+      candidateTrack.itsnsigma = nSigmaITS;
+      candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
+      int selMask = getTrackSelMask(candidateTrack);
+      if (candidateTrack.outerPID < outerPIDMin)
+        return;
+      if (isMc && candidateTrack.pdgcodemoth > 0)
+        selMask |= candidateTrack.pdgcodemoth;
+    } else if (isMc && candidateTrack.pdgcodemoth > 0) {
+      selMask = candidateTrack.pdgcodemoth;
+    }
+    if (isMc && selMask >= 0) {
+      mcMiniTrkTable(
+        miniCollTable.lastIndex(),
+        candidateTrack.pt,
+        static_cast<int8_t>(candidateTrack.eta * 100),
+        selMask,
+        candidateTrack.outerPID,
+        candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
+        static_cast<int8_t>(candidateTrack.geneta * 100),
+        candidateTrack.isreco);
+    } else if (!isMc) {
+      miniTrkTable(
+        miniCollTable.lastIndex(),
+        candidateTrack.pt,
+        static_cast<int8_t>(candidateTrack.eta * 100),
+        selMask,
+        candidateTrack.outerPID);
+    }
   }
 
   template <class T>
@@ -523,8 +550,6 @@ struct EbyeMaker {
   {
     if (doprocessRun3 || doprocessMcRun3)
       return tracksAll.sliceBy(perCollisionTracksFullIUPID, collId);
-    else if (doprocessRun2 || doprocessMcRun2)
-      return tracksAll.sliceBy(perCollisionTracksFull, collId);
     else
       return tracksAll.sliceBy(perCollisionTracksFullPID, collId);
   }
@@ -915,24 +940,13 @@ struct EbyeMaker {
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-        float outerPID = getOuterPID(tk);
-        candidateTrack.itsnsigma = -999.f;
-        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-        int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < outerPIDMin)
-          continue;
-        miniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID);
+        fillTableMiniTrack<false>(candidateTrack, tk);
       }
     }
   }
   PROCESS_SWITCH(EbyeMaker, processRun3, "process (Run 3)", false);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFullPID const& tracks, aod::V0s const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1051,20 +1065,9 @@ struct EbyeMaker {
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-        float outerPID = getOuterPID(tk);
         auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
         histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
-        candidateTrack.itsnsigma = nSigmaITS;
-        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-        int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < outerPIDMin)
-          continue;
-        miniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID);
+        fillTableMiniTrack<false>(candidateTrack, tk, nSigmaITS);
       }
     }
   }
@@ -1093,35 +1096,14 @@ struct EbyeMaker {
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
-        int selMask = -1;
-        if (candidateTrack.isreco) {
-          auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-          float outerPID = getOuterPID(tk);
-          candidateTrack.itsnsigma = -999.f;
-          candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-          selMask = getTrackSelMask(candidateTrack);
-          if (candidateTrack.pdgcodemoth > 0)
-            selMask |= candidateTrack.pdgcodemoth;
-        } else if (candidateTrack.pdgcodemoth > 0) {
-          selMask = candidateTrack.pdgcodemoth;
-        }
-        if (selMask < 0)
-          continue;
-        mcMiniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID,
-          candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          static_cast<int8_t>(candidateTrack.geneta * 100),
-          candidateTrack.isreco);
+        auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
+        fillTableMiniTrack<true>(candidateTrack, tk);
       }
     }
   }
   PROCESS_SWITCH(EbyeMaker, processMcRun3, "process MC (Run 3)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1208,31 +1190,11 @@ struct EbyeMaker {
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
-        int selMask = -1;
-        if (candidateTrack.isreco) {
-          auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-          float outerPID = getOuterPID(tk);
-          auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
+        auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
+        auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
+        if (candidateTrack.isreco)
           histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
-          candidateTrack.itsnsigma = nSigmaITS;
-          candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-          selMask = getTrackSelMask(candidateTrack);
-          if (candidateTrack.pdgcodemoth > 0)
-            selMask |= candidateTrack.pdgcodemoth;
-        } else if (candidateTrack.pdgcodemoth > 0) {
-          selMask = candidateTrack.pdgcodemoth;
-        }
-        if (selMask < 0)
-          continue;
-        mcMiniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID,
-          candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          static_cast<int8_t>(candidateTrack.geneta * 100),
-          candidateTrack.isreco);
+        fillTableMiniTrack<true>(candidateTrack, tk, nSigmaITS);
       }
     }
   }
