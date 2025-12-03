@@ -439,41 +439,46 @@ struct HfTaskFlowCharmHadrons {
                const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
   {
     auto hSparse = registry.get<THnSparse>(HIST("hSparseFlowCharm"));
+    const int ndim = hSparse->GetNdimensions();
 
-    std::array<double, 32> values{};
-    int n = 0;
+    std::vector<double> values;
+    values.reserve(ndim);
 
-    values[n++] = mass;
-    values[n++] = pt;
-    values[n++] = cent;
-    values[n++] = sp;
+    values.push_back(mass);
+    values.push_back(pt);
+    values.push_back(cent);
+    values.push_back(sp);
 
     if (storeEP) {
-      values[n++] = cosNPhi;
-      values[n++] = sinNPhi;
-      values[n++] = cosDeltaPhi;
-    }
-    if (storeMl) {
-      values[n++] = outputMl[0];
-      values[n++] = outputMl[1];
-    }
-    if (storeCandEta) {
-      values[n++] = eta;
-    }
-    if (occEstimator != 0) {
-      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevselflag);
-      values[n++] = occupancy;
-      values[n++] = evtSelFlags[0];
-      values[n++] = evtSelFlags[1];
-      values[n++] = evtSelFlags[2];
-      values[n++] = evtSelFlags[3];
-      values[n++] = evtSelFlags[4];
+      values.push_back(cosNPhi);
+      values.push_back(sinNPhi);
+      values.push_back(cosDeltaPhi);
     }
 
-    const int ndim = hSparse->GetNdimensions();
-    if (n != ndim) {
-      LOGF(error, "hSparseFlowCharm: filled %d dims but THn has %d dims", n, ndim);
-      return;
+    if (storeMl && outputMl.size() >= 2) {
+      values.push_back(outputMl[0]);
+      values.push_back(outputMl[1]);
+    }
+
+    if (storeCandEta) {
+      values.push_back(eta);
+    }
+
+    if (occEstimator != 0) {
+      auto evtSelFlags = getEventSelectionFlags(hfevselflag);
+      values.push_back(occupancy);
+      values.push_back(evtSelFlags[0]);
+      values.push_back(evtSelFlags[1]);
+      values.push_back(evtSelFlags[2]);
+      values.push_back(evtSelFlags[3]);
+      values.push_back(evtSelFlags[4]);
+    }
+
+    if (static_cast<int>(values.size()) != ndim) {
+      LOGF(fatal,
+           "hSparseFlowCharm: number of filled dimensions (%d) "
+           "does not match THnSparse dimensionality (%d).",
+           static_cast<int>(values.size()), ndim);
     }
 
     hSparse->Fill(values.data());
