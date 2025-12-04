@@ -108,6 +108,7 @@ struct TreeWriterTpcV0 {
   };
 
   enum {
+    DaughterUndef = -1,
     DaughterElectron = 0,
     DaughterPion,
     DaughterKaon,
@@ -193,6 +194,10 @@ struct TreeWriterTpcV0 {
         return V0Mother{DaughterProton, DaughterPion};
       case MotherAntiLambda:
         return V0Mother{DaughterPion, DaughterProton};
+      case MotherOmega:
+        return V0Mother{DaughterUndef, DaughterKaon};
+      case MotherAntiOmega:
+        return V0Mother{DaughterKaon, DaughterUndef};
       default: {
         LOGP(fatal, "createV0Mother: unknown motherId");
         return V0Mother();
@@ -399,6 +404,18 @@ struct TreeWriterTpcV0 {
     return casc.cascradius();
   }
 
+  /// Evaluate add id of the v0
+  double getAddId(V0sWithID::iterator const& v0)
+  {
+    return v0.v0addid();
+  }
+
+  /// Evaluate add id of the cascade
+  double getAddId(CascsWithID::iterator const& casc)
+  {
+    return casc.cascaddid();
+  }
+
   template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType>
   void runV0(Colls const& collisions, TrksType const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, TrkQAType const& tracksQA)
   {
@@ -442,20 +459,6 @@ struct TreeWriterTpcV0 {
         rowTPCTreeWithTrkQA.reserve(2 * v0s.size() + cascs.size());
       }
 
-      auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const V0Daughter& daughter, const aod::TracksQA& trackQAInstance, const bool existTrkQA) {
-        const bool passTrackSelection = isTrackSelected(dauTrack, trackSelection);
-        const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
-        const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < NSigmaTofUnmatchedEqualityTolerance;
-        const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > NSigmaTofUnmatchedEqualityTolerance;
-        if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
-          occupancyValues occValues{};
-          if constexpr (ModeId == ModeWithTrkQA) {
-            evaluateOccupancyVariables(dauTrack, occValues);
-          }
-          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues);
-        }
-      };
-
       auto getTrackQA = [&](const TrksType::iterator& track) {
         if constexpr (!IsWithTrackQa) {
           return std::make_pair(aod::TracksQA{}, false);
@@ -470,6 +473,28 @@ struct TreeWriterTpcV0 {
         }
       };
 
+      auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const auto& v0, const bool isPositive) {
+        const auto [trackQAInstance, existTrkQA] = getTrackQA(dauTrack);
+        const auto trackId = dauTrack.globalIndex();
+        const auto& dauTrackWithITSPid = tracksWithITSPid.rawIteratorAt(trackId);
+        const auto v0Id = getAddId(v0);
+        const V0Mother v0Mother = createV0Mother(v0Id);
+        const auto daighterId = isPositive ? v0Mother.posDaughterId : v0Mother.negDaughterId;
+        const V0Daughter daughter = createV0Daughter<IsCorrectedDeDx>(v0, dauTrackWithITSPid, v0Id, daighterId, isPositive);
+
+        const bool passTrackSelection = isTrackSelected(dauTrack, trackSelection);
+        const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
+        const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < NSigmaTofUnmatchedEqualityTolerance;
+        const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > NSigmaTofUnmatchedEqualityTolerance;
+        if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
+          occupancyValues occValues{};
+          if constexpr (ModeId == ModeWithTrkQA) {
+            evaluateOccupancyVariables(dauTrack, occValues);
+          }
+          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues);
+        }
+      };
+
       /// Loop over v0 candidates
       for (const auto& v0 : v0s) {
         const auto v0Id = v0.v0addid();
@@ -479,20 +504,8 @@ struct TreeWriterTpcV0 {
         const auto& posTrack = v0.posTrack_as<TrksType>();
         const auto& negTrack = v0.negTrack_as<TrksType>();
 
-        const auto posTrackId = posTrack.globalIndex();
-        const auto& posTrackWithITSPid = tracksWithITSPid.rawIteratorAt(posTrackId);
-        const auto negTrackId = negTrack.globalIndex();
-        const auto& negTrackWithITSPid = tracksWithITSPid.rawIteratorAt(negTrackId);
-
-        const auto& [posTrackQA, existPosTrkQA] = getTrackQA(posTrack);
-        const auto& [negTrackQA, existNegTrkQA] = getTrackQA(negTrack);
-
-        const V0Mother v0Mother = createV0Mother(v0Id);
-        const V0Daughter posDaughter = createV0Daughter<IsCorrectedDeDx>(v0, posTrackWithITSPid, v0Id, v0Mother.posDaughterId, true);
-        const V0Daughter negDaughter = createV0Daughter<IsCorrectedDeDx>(v0, negTrackWithITSPid, v0Id, v0Mother.negDaughterId, false);
-
-        fillDaughterTrack(v0, posTrack, posDaughter, posTrackQA, existPosTrkQA);
-        fillDaughterTrack(v0, negTrack, negDaughter, negTrackQA, existNegTrkQA);
+        fillDaughterTrack(v0, posTrack, v0, true);
+        fillDaughterTrack(v0, negTrack, v0, false);
       }
 
       /// Loop over cascade candidates
@@ -502,12 +515,9 @@ struct TreeWriterTpcV0 {
           continue;
         }
         const auto& bachTrack = casc.bachelor_as<TrksType>();
-        const auto bachTrackId = bachTrack.globalIndex();
-        const auto& bachTrackWithITSPid = tracksWithITSPid.rawIteratorAt(bachTrackId);
-        const V0Daughter bachDaughter = createV0Daughter<IsCorrectedDeDx>(casc, bachTrackWithITSPid, cascId, DaughterKaon);
-        const auto& [bachTrackQA, existBachTrkQA] = getTrackQA(bachTrack);
         // Omega and antiomega
-        fillDaughterTrack(casc, bachTrack, bachDaughter, bachTrackQA, existBachTrkQA);
+        const auto isDaughterPositive = cascId == MotherAntiOmega ? true : false;
+        fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive);
       }
     }
   } /// runV0
