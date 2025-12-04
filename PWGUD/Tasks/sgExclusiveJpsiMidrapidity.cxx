@@ -91,48 +91,48 @@ struct SgExclusiveJpsiMidrapidity {
 
 numSelectionCuts] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "rapCut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
 
-    for (int i = 0; i < numSelectionCuts; i++) {
-      hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCuts[i].Data());
-    }
-    // tracks
-    registry.add("hTracks", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
-    registry.add("hTracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
-    registry.add("TwoPion/h2TracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
+for (int i = 0; i < numSelectionCuts; i++) {
+  hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCuts[i].Data());
+}
+// tracks
+registry.add("hTracks", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
+registry.add("hTracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
+registry.add("TwoPion/h2TracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
 
-    registry.add("hdEdx", "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {100, 0.0, 200.0}});
-    registry.add("hdEdxPion", "p_{#pi} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {100, 0.0, 200.0}});
+registry.add("hdEdx", "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {100, 0.0, 200.0}});
+registry.add("hdEdxPion", "p_{#pi} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {100, 0.0, 200.0}});
 
-    registry.add("TwoPion/hNsigPi1vsPi2", "NSigmaPi(t1) vs NSigmapi (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigEl1vsEl2", "NSigmaEl(t1) vs NSigmaEl (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigPivsPt1", "Pt vs NSigmaPi (t1);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigPivsPt2", "Pt vs NSigmaPi (t2);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigElvsPt1", "Pt vs NSigmaEl (t1);#it{p_{t}}, GeV/c;n#sigma_{#e}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigElvsPt2", "Pt vs NSigmaEl (t2);#it{p_{t}}, GeV/c;n#sigma_{#e}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigMuvsPt1", "Pt vs NSigmaMu (t1);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
-    registry.add("TwoPion/hNsigMuvsPt2", "Pt vs NSigmaMu (t2);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
+registry.add("TwoPion/hNsigPi1vsPi2", "NSigmaPi(t1) vs NSigmapi (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
+registry.add("TwoPion/hNsigEl1vsEl2", "NSigmaEl(t1) vs NSigmaEl (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
+registry.add("TwoPion/hNsigPivsPt1", "Pt vs NSigmaPi (t1);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
+registry.add("TwoPion/hNsigPivsPt2", "Pt vs NSigmaPi (t2);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
+registry.add("TwoPion/hNsigElvsPt1", "Pt vs NSigmaEl (t1);#it{p_{t}}, GeV/c;n#sigma_{#e}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
+registry.add("TwoPion/hNsigElvsPt2", "Pt vs NSigmaEl (t2);#it{p_{t}}, GeV/c;n#sigma_{#e}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
+registry.add("TwoPion/hNsigMuvsPt1", "Pt vs NSigmaMu (t1);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
+registry.add("TwoPion/hNsigMuvsPt2", "Pt vs NSigmaMu (t2);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
 
-    registry.add("TwoPion/hPtsingle_track1", "Pt t1;#it{p_{t}}, GeV/c;", kTH1F, {{600, 0., 3.}});
-    registry.add("TwoPion/hPtsingle_track2", "Pt t2;#it{p_{t}}, GeV/c;", kTH1F, {{600, 0., 3.}});
-    registry.add("TwoPion/hEta_t1", "Eta of t1;#it{#eta};", kTH1F, {{100, -5., 5.}});
-    registry.add("TwoPion/hEta_t2", "Eta of t2;#it{#eta};", kTH1F, {{100, -5., 5.}});
-    registry.add("TwoPion/hP1", "P vs TPC signal;#it{P_{track}}, GeV/c; signal_{TPC} t1", kTH2F, {{100, 0., 2.}, {300, 0, 150}});
-    registry.add("TwoPion/hTPCsig", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0., 150.}, {300, 0, 150}});
-    registry.add("TwoPion/hP2", "P vs TPC signal;#it{P_{track}}, GeV/c; signal_{TPC} t1", kTH2F, {{100, 0., 2.}, {300, 0, 150}});
-    registry.add("TwoPion/hTPCsig1", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0, 150.}, {300, 0, 150}});
+registry.add("TwoPion/hPtsingle_track1", "Pt t1;#it{p_{t}}, GeV/c;", kTH1F, {{600, 0., 3.}});
+registry.add("TwoPion/hPtsingle_track2", "Pt t2;#it{p_{t}}, GeV/c;", kTH1F, {{600, 0., 3.}});
+registry.add("TwoPion/hEta_t1", "Eta of t1;#it{#eta};", kTH1F, {{100, -5., 5.}});
+registry.add("TwoPion/hEta_t2", "Eta of t2;#it{#eta};", kTH1F, {{100, -5., 5.}});
+registry.add("TwoPion/hP1", "P vs TPC signal;#it{P_{track}}, GeV/c; signal_{TPC} t1", kTH2F, {{100, 0., 2.}, {300, 0, 150}});
+registry.add("TwoPion/hTPCsig", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0., 150.}, {300, 0, 150}});
+registry.add("TwoPion/hP2", "P vs TPC signal;#it{P_{track}}, GeV/c; signal_{TPC} t1", kTH2F, {{100, 0., 2.}, {300, 0, 150}});
+registry.add("TwoPion/hTPCsig1", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0, 150.}, {300, 0, 150}});
 
-    registry.add("TwoPion/hMassLike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
-    registry.add("TwoPion/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
-    registry.add("TwoPion/Coherent/hMassUnlikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
-    registry.add("TwoPion/Coherent/hMassLikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
-    registry.add("TwoPion/Incoherent/hMassUnlikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
-    registry.add("TwoPion/Incoherent/hMassLikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+registry.add("TwoPion/hMassLike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+registry.add("TwoPion/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+registry.add("TwoPion/Coherent/hMassUnlikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+registry.add("TwoPion/Coherent/hMassLikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+registry.add("TwoPion/Incoherent/hMassUnlikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
+registry.add("TwoPion/Incoherent/hMassLikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
 
-    registry.add("TwoPion/hPt", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
-    registry.add("TwoPion/hPtLike", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
-    registry.add("TwoPion/hEta", "Eta;#it{#eta};", kTH1F, {{500, -10., 10.}});
-    registry.add("TwoPion/hRap", "Rapidity;#it{y};", kTH1F, {{500, -10., 10.}});
-    registry.add("TwoPion/hPhiSystem", "Phi;#it{#Phi};", kTH1F, {{250, 0., o2::constants::math::TwoPI}});
-    registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 10.}, {100, 0., 10.}});
+registry.add("TwoPion/hPt", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
+registry.add("TwoPion/hPtLike", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
+registry.add("TwoPion/hEta", "Eta;#it{#eta};", kTH1F, {{500, -10., 10.}});
+registry.add("TwoPion/hRap", "Rapidity;#it{y};", kTH1F, {{500, -10., 10.}});
+registry.add("TwoPion/hPhiSystem", "Phi;#it{#Phi};", kTH1F, {{250, 0., o2::constants::math::TwoPI}});
+registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 10.}, {100, 0., 10.}});
   }
 
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
