@@ -22,6 +22,7 @@
 #include <Framework/AnalysisDataModel.h>
 
 #include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {

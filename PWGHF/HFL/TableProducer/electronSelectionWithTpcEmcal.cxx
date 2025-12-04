@@ -46,6 +46,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
