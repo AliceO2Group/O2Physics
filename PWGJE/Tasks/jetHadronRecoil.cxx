@@ -983,7 +983,7 @@ struct JetHadronRecoil {
       }
     }
     registry.fill(HIST("hZvtxSelected"), mccollision.posZ());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, 0.0, collision.mcCollision().ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, 0.0, mccollision.ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWithRhoSubtraction, "process MC matched (inc jets) with rho subtraction", false);
 
@@ -1015,7 +1015,7 @@ struct JetHadronRecoil {
       }
     }
     registry.fill(HIST("hZvtxSelected"), mccollision.posZ(), mccollision.weight());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, mccollision.weight(), 0.0, mccollision.ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights (inc jets)", false);
 
@@ -1047,7 +1047,7 @@ struct JetHadronRecoil {
       }
     }
     registry.fill(HIST("hZvtxSelected"), mccollision.posZ(), mccollision.weight());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, mccollision.weight(), collision.rho(), mccollision.ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeightedWithRhoSubtraction, "process MC matched with event weights (inc jets) and rho subtraction", false);
 
