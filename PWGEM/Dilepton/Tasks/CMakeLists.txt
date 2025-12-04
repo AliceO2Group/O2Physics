@@ -45,11 +45,6 @@ o2physics_add_dpl_workflow(table-reader-barrel
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(bc-counter
-                    SOURCES bcCounter.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(event-qc
                     SOURCES eventQC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
@@ -63,16 +58,6 @@ o2physics_add_dpl_workflow(single-electron-qc
 o2physics_add_dpl_workflow(single-electron-qc-mc
                     SOURCES singleElectronQCMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(vp-pair-qc
-                    SOURCES vpPairQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(vp-pair-qc-mc
-                    SOURCES vpPairQCMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(single-muon-qc
@@ -105,21 +90,6 @@ o2physics_add_dpl_workflow(dimuon-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(photon-hbt-pcmpcm
-                    SOURCES PhotonHBTPCMPCM.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(photon-hbt-eeee
-                    SOURCES PhotonHBTEEEE.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(photon-hbt-pcmee
-                    SOURCES PhotonHBTPCMEE.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(prefilter-dielectron
                     SOURCES prefilterDielectron.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
@@ -143,11 +113,6 @@ o2physics_add_dpl_workflow(matching-mft
 o2physics_add_dpl_workflow(tagging-hfe
                     SOURCES taggingHFE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(qvector-dummy-otf
-                    SOURCES qVectorDummyOTF.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dielectron-hadron-mpc
