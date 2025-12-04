@@ -26,7 +26,9 @@
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h" // -> Added to test removal of strangeness builder workflow
 
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -80,20 +82,58 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   // Configurables
   struct : ConfigurableGroup {
     // Switch for filling histograms
+    // -----------------------------
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill validation plots"};
     // Magnetic field setting from CCDB
+    // --------------------------------
     Configurable<bool> isRun2{"isRun2", false, "enable Run2 or Run3 GRP objects for magnetic field"};
     Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb object"};
     Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parameterization"};
     Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "path of the group file (Run2)"};
     Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run3)"};
-    // Cascade preselection
+
+    // Options for V0 building
+    // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
+    // ---------------------------------------------------------------------
+    Configurable<int> minCrossedRowsForV0Building{"minCrossedRowsV0", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
+    Configurable<float> dcanegtopvForV0Building{"dcanegtopvForV0Building", .1, "DCV Neg to PV"};
+    Configurable<float> dcapostopvForV0Building{"dcanegtopvForV0Building", .1, "DCV Pos To PV"};
+    Configurable<double> v0cospaForV0Buiding{"v0cospaForV0Building", 0.95, "V0 CosPA"};
+    Configurable<float> dcav0dauForV0Building{"dcav0dauForV0Building", 1.0, "DCA V0 Daughters"};
+    Configurable<float> v0radiusForV0Building{"v0radiusForV0Building", 0.9, "v0radius"};
+    Configurable<float> maxDaughterEtaForV0Building{"maxDaughterEtaForV0Building", 5.0, "Maximun daughter eta (in abs value)"};
+
+    // Options for internal cascade building
+    // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
+    // --------------------------------------------------------------------
+    Configurable<int> minCrossedRowsForCascadeBuilding{"minCrossedRowsCascade", 50, "minimun TPC crossed rows for daughter tracks. Used for internal Cascade Building"};
+    Configurable<float> dcabachtopvForCascadeBuilding{"dcabachtopvForCascadeBuilding", .1, "DCV Bach to PV"};
+    Configurable<float> cascradiusForCascadeBuilding{"cascradiusForCascadeBuilding", .1, "DCV Bach to PV"};
+    Configurable<float> casccospaForCascadeBuiding{"casccospaForCascadeBuilding", 0.95, "Cascade CosPA"};
+    Configurable<float> dcacascdauForCascadeBuilding{"dcacascdauForCascadeBuilding", 1.0, "DCA cascade daughters"};
+    Configurable<float> lambdaMassWindowForCascadeBuilding{"lambdaMassWindowForCascadeBuilding", 0.10, "Distance from Lambda mass(does not apply to KF path)"};
+    Configurable<float> maxDaughterEtaForCascadeBuilding{"maxDaughterEtaForCascadeBuilding", 5.0, "Maximun daughter eta (in abs value)"};
+
+    // Options for internal cascade building - KF Building specifics
+    // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
+    // --------------------------------------------------------------------
+    Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from omega fit instread of Xi fit(=default)"};
+    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "2 : Daughter particle masses stay fixed in construction process"};
+    Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF : Use Lambda mass constraint"};
+    Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF : Use Cascade mass constraint - WARNING : Not adequate for inv mass analysis of Xi"};
+    Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for V0"};
+    Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
+
+    // Cascade pre selection
+    // --------------------
     Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
     Configurable<double> massToleranceCascade{"massToleranceCascade", 0.01, "Invariant mass tolerance for cascades"};
     Configurable<float> dcaXYToPVCascadeMax{"dcaXYToPVCascadeMax", 3, "Max cascade DCA to PV in XY plane"};
     Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0, "Max DCA of V0 daughter"};
     Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 1.0, "Max DCA of cascade daughter"};
-    // DCAFitter
+
+    // Options for DCAFitter
+    // ---------------------
     Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
     Configurable<double> maxR{"maxR", 200., "Reject PCA's above this radius"};
     Configurable<double> maxDZIni{"maxDZIni", 4., "Reject (if>0) PCA candidate if tracks DZ exceeds this threshold"};
@@ -101,18 +141,20 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iteration if Chi2/Chi2old > this"};
     Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariance, effective only if useAbsDCA is true"};
-    // KFParticle
-    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "2 : Daughter particle masses stay fixed in construction process"};
+
+    // Options for KFParticle
+    // ----------------------
     Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks comming from different collisions(effective only for KFParticle w/o derived data)"};
     Configurable<bool> kfDoCascadePreselection{"kfDoCascadePreselection", false, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
-    Configurable<bool> kfConstrainInvMassV0{"kfConstrainInvMassV0", false, "KF : Use Lambda mass constraint"};
     // Configurable<bool> kfConstrainTopoV0ToCasc{"kfConstrainTopoV0ToCasc", false, "KF : Use Lambda topo constraint"}; // -> Not sure if this will be used...
     Configurable<bool> kfConstrainInvMassCasc{"kfConstrainInvMassCasc", true, "use mass constraint for cascade"};
     // Configurable<bool> kfConstrainTopoCascToCharmBaryon{"kfConstrainTopoCascToCharmBaryon", true, "use topo constraint for cascade"};
     Configurable<bool> kfConstrainInvMassCharmBaryon{"kfConstrainInvMassCharmBaryon", false, "constrain invariant mass of charm baryon candidate"};
     // Configurable<bool> constrainTopoCascToChramBaryon{"constrainTopoCascToChramBaryon", false, "constrain Casc to Charm Baryon"};
     // Configurable<bool> kfConstrainTopoCharmBaryon{"kfConstrainTopoCharmBaryon", false, "constrain charm baryon candidate to decay vertex"};
-    //  configurbles for histogram binning
+
+    // Options for histogram binning
+    // -----------------------------
     Configurable<int> nBinXiMass{"nBinXiMass", 1000, "nBinXiMass"};
     Configurable<float> xiMassMin{"xiMassMin", 1.0, "xiMassMin"};
     Configurable<float> xiMassMax{"xiMassMax", 2.0, "xiMassMax"};
@@ -146,27 +188,36 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
   int runNumber{0};
   double bz{0.};
-  float massCharmBaryonCand{0.};
+  // float massCharmBaryonCand{0.};
 
   enum CharmBaryonCandCounter { All = 0,
                                 HfFlagPass,
                                 CascPreSel,
                                 VertexFit };
 
+  // Collision table
   using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  // Track table
+  using TracksWCovDcaExtraPidPrPiKa = soa::Join<aod::TracksWCovDcaExtra, aod::TracksPidPr, aod::TracksPidPi, aod::TracksPidKa>;
+
+  // ------- Will be removed after internal cascade building is fully implemented -------
   // Tracked cascades
   using TrackedCascFull = soa::Join<aod::TraCascDatas, aod::TraCascCovs>;
   using TrackedCascLinked = soa::Join<aod::Cascades, aod::TraCascDataLink>;
-  // For DCAFitter
+  // Cascade table
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using CascadesLinked = soa::Join<aod::Cascades, aod::CascDataLink>;
   // For KFParticle
   using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
-  using TracksWCovDcaExtraPidPrPiKa = soa::Join<aod::TracksWCovDcaExtra, aod::TracksPidPr, aod::TracksPidPi, aod::TracksPidKa>;
+  // ------------------------------------------------------------------------------------
 
   HistogramRegistry registry{"hists"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   HfEventSelection hfEvSel;
+
+  // For cascade building
+  o2::pwglf::strangenesBuilderHelper straHelper;
 
   // For candidate reconstruction in different PID hypothesis
   // Each decay channel assgined by following hf_cand_casc_lf_DecayType2Prong enum
@@ -230,7 +281,68 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Add histogram to indicate which sv method was used
     registry.add("hVertexerType", "Use KF of DCAFitterN;Vertexer type;entries", {kTH1F, {{2, -0.5, 1.5}}});
 
+    // initialize ccdb
+    // ---------------
+    ccdb->setURL(configs.ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(configs.ccdbPathLut));
+    straHelper.fitter.lut = lut;
+    runNumber = 0;
+
+    // Initilization for strangeness builder helper
+    // --------------------------------------------
+
+    // Settings for internal V0 building
+    straHelper.v0selections.minCrossedRows = configs.minCrossedRowsForV0Building;
+    straHelper.v0selections.dcanegtopv = configs.dcanegtopvForV0Building;
+    straHelper.v0selections.dcapostopv = configs.dcapovtopvForV0Building;
+    straHelper.v0selections.v0cospa = configs.v0cospaForV0Building;
+    straHelper.v0selections.dcav0dau = configs.dcav0dauForV0Building;
+    straHelper.v0selections.v0radius = configs.v0radiusForV0Building;
+    straHelper.v0selections.maxDaughterEta = configs.maxDaughterEtaForV0Building;
+
+    // Settings for internal Cascade building
+    straHelper.cascadeSelections.minCrossedRows = configs.minCrossedRowsForCascadeBuilding;
+    straHelper.cascadeSelections.dcabachtopv = configs.dcabachtopvForCascadeBuilding;
+    straHelper.cascadeSelections.cascradius = configs.cascradiusForCascadeBuilding;
+    straHelper.cascadeSelections.casccospa = configs.casccospaForCascadeBuilding;
+    straHelper.cascadeSelections.dcacascdau = configs.dcacascdauForCascadeBuilding;
+    straHelper.cascadeSelections.lambdaMassWindow = configs.lambdaMassWindowForCascadeBuilding;
+    straHelper.cascadeSelections.maxDaughterEta = configs.maxDaughterEtaForCascadeBuilding;
+
+    // Fitter setting
+    straHelper.fitter.setPropagateToPCA(configs.propagteToPCA);
+    straHelper.fitter.setMaxR(configs.maxR);
+    straHelper.fitter.setMaxDZIni(configs.maxDZIni);
+    straHelper.fitter.setMinParamChange(configs.minParamChange);
+    straHelper.fitter.setUseAbsDCA(configs.useAbsDCA);
+    straHelper.fitter.setWeightedFinalPCA(configs.useWeightedFinalPCA);
+
+    // Extra initialization for DCAFitter
+    // ----------------------------------
+    if (xipiEnabledDca == 1 || omegapiEnabledDca == 1 || omegakaEnabledDca == 1) {
+      registry.get<TH1>(HIST("hVertexerType"))->Fill(aod::hf_cand::VertexerType::DCAFitter);
+      df.setPropagateToPCA(configs.propagateToPCA);
+      df.setMaxR(configs.maxR);
+      df.setMaxDZIni(configs.maxDZIni);
+      df.setMinParamChange(configs.minParamChange);
+      df.setUseAbsDCA(configs.useAbsDCA);
+      df.setWeightedFinalPCA(configs.useWeightedFinalPCA);
+    }
+
+    // Extra initialization for KFParticle
+    // -----------------------------------
+    if (xipiEnabledKf == 1 || omegapiEnabledKf == 1 || omegakaEnabledKf == 1) {
+      registry.get<TH1>(HIST("hVertexerType"))->Fill(aod::hf_cand::VertexerType::KfParticle);
+    }
+
+    // initailize HF event selection helper
+    // ------------------------------------
+    hfEvSel.init(registry, zorroSummary);
+
     // Histograms for QA
+    // -----------------
     hInvMassCharmBaryonToXiPi = registry.add<TH1>("hInvMassCharmBaryonToXiPi", "Charm baryon invariant mass - #Xi #pi decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.2, 3.1}}});
     hInvMassCharmBaryonToOmegaPi = registry.add<TH1>("hInvMassCharmBaryonToOmegaPi", "Charm baryon invariant mass - #Omega #pi decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.2, 3.1}}});
     hInvMassCharmBaryonToOmegaKa = registry.add<TH1>("hInvMassCharmBaryonToOmegaKa", "Charm baryon invariant mass - #Omega K decay;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.2, 3.1}}});
@@ -252,33 +364,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     hCascadesCounterToXiPi = registry.add<TH1>("hCascadesCounterToXiPi", "Cascades counter wrt derived data - #Xi #pi decay;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});          // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
     hCascadesCounterToOmegaPi = registry.add<TH1>("hCascadesCounterToOmegaPi", "Cascades counter wrt derived data - #Omega #pi decay;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
     hCascadesCounterToOmegaKa = registry.add<TH1>("hCascadesCounterToOmegaKa", "Cascades counter wrt derived data - #Omega K decay;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});   // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
-
-    // Extra initialization for DCAFitter
-    if (xipiEnabledDca == 1 || omegapiEnabledDca == 1 || omegakaEnabledDca == 1) {
-      registry.get<TH1>(HIST("hVertexerType"))->Fill(aod::hf_cand::VertexerType::DCAFitter);
-      df.setPropagateToPCA(configs.propagateToPCA);
-      df.setMaxR(configs.maxR);
-      df.setMaxDZIni(configs.maxDZIni);
-      df.setMinParamChange(configs.minParamChange);
-      df.setUseAbsDCA(configs.useAbsDCA);
-      df.setWeightedFinalPCA(configs.useWeightedFinalPCA);
-    }
-
-    // Extra initialization for KFParticle
-    if (xipiEnabledKf == 1 || omegapiEnabledKf == 1 || omegakaEnabledKf == 1) {
-      registry.get<TH1>(HIST("hVertexerType"))->Fill(aod::hf_cand::VertexerType::KfParticle);
-    }
-
-    // initialize ccdb
-    ccdb->setURL(configs.ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(configs.ccdbPathLut));
-    runNumber = 0;
-
-    // initailize HF event selection helper
-    hfEvSel.init(registry);
-
   } // end of initialization
 
   ////////////////////////////////////////////////////////////
@@ -295,8 +380,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename TCascFull, typename TCascLinked, typename Colls, typename Hist>
   void runCreatorWithDCAFitter(Colls const&,
                                aod::HfCascLf2Prongs const& candidates,
-                               TCascFull const&,
-                               TCascLinked const&,
+                               aod::Cascades const&, // -> Internal cascade building
+                               aod::V0s const&,      // -> Internal v0 building
                                TracksWCovDcaExtraPidPrPiKa const&,
                                aod::BCsWithTimestamps const&,
                                Hist& hInvMassCharmBaryon,
@@ -315,47 +400,18 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // Apply hfflag selection for different candidate reconstruction
       if (!TESTBIT(cand.hfflag(), decayChannel)) {
         continue;
-      }
-
-      // Fill casccandidate passed hfflag selection
-      if (configs.fillHistograms) {
-        hCandCounter->Fill(HfFlagPass);
+      } else {
+        if (configs.fillHistograms) {
+          hCandCounter->Fill(HfFlagPass);
+        }
       }
 
       // Event selection
       auto collision = cand.collision_as<Colls>();
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-      if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> Reject the candidate
+      if (rejectionMask != 0) { // None of the event selection satisfied -> Reject this candidate
         continue;
-      }
-
-      //------------------------------Cascade pre-selection------------------------------
-
-      // Retrieving skimmed cascade and bachelor tracks
-      // If there is no related tracks, skip
-      auto cascAodElement = cand.cascade_as<CascadesLinked>();
-      if (!cascAodElement.has_cascData()) {
-        continue;
-      }
-
-      auto casc = cascAodElement.cascData_as<CascFull>();
-      auto chargeCasc = casc.sign() > 0 ? 1 : -1;
-      float massCasc = -1.0f;
-      if (configs.doCascadePreselection) {
-        if (std::abs(casc.dcaXYCascToPV()) > configs.dcaXYToPVCascadeMax) {
-          continue;
-        }
-
-        massCasc = (decayChannel == 0) ? casc.mXi() : casc.mOmega();
-        if (std::abs(massCasc - massOfCascades[decayChannel]) > configs.massToleranceCascade) {
-          continue;
-        }
-      }
-
-      if (configs.fillHistograms) {
-        hCandCounter->Fill(CascPreSel);
       }
 
       //------------------------------Set Magnetic field------------------------------
@@ -368,24 +424,71 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       }
       df.setBz(bz);
 
-      //------------------------------Info of V0 and cascade tracks from LF table------------------------------
+      //------------------Intenal Cascade building------------------
+      auto cascAodElement = cand.cascade_as<aod::Cascades>();
+      auto v0AodElement = cand.v0_as<aod::V0s>;
+      auto posTrack = v0AodElement.posTrack_as<TracksWCovDcaExtraPidPrPiKa>();
+      auto negTrack = v0AodElement.negTrack_as<TracksWCovDcaExtraPidPrPiKa>();
+      auto bachTrack = cascAodElement.bachelor_as<TracksWCovDcaExtraPidPrPiKa>();
+
+      // Make cascade starting from V0
+      // If success, fill Cascade and V0 information for reconstruction
+      if (!straHelper.buildCascadeCandidate(collision.globalIndex(),
+                                            collision.posX(), collision.posY(), collision.posZ(),
+                                            posTrack,
+                                            negTrack,
+                                            bachTrack,
+                                            false, // calculateBachelorBaryonVariable
+                                            false, // useCascadeMomentumAtPV
+                                            true)) {
+        LOG(info) << "This cascade cannot be rebuilt" << endl;
+        continue;
+      }
+
+      //------------------Cascade pre selection------------------
+      float massCasc = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
+
+      // Perform cascade pre selection
+      if (configs.doCascadePreselection) {
+
+        // pre selection of dcaXY
+        // FIXME does cascadeDCAxy represents dcaXYtoPV?
+        if (std::abs(straHelper.cascade.cascadeDCAxy) > configs.dcaXYToPVCascadeMax) {
+          continue;
+        }
+
+        // pre selection on invariant mass
+        if (std::abs(massCasc - massOfCascades[decayChannel]) > configs.massToleranceCascade) {
+          continue;
+        }
+      }
+
+      if (configs.fillHistograms) {
+        hCandCounter->Fill(CascPreSel);
+      }
+
+      //------------------------------Info of V0 and cascade------------------------------
       // -> This quantities are used for physical properties of selected candidates
       // -> Not used for candidate creation
-      std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-      std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
-      std::array<float, 3> pVecV0DauPos = {casc.pxpos(), casc.pypos(), casc.pzpos()};
-      std::array<float, 3> pVecV0DauNeg = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
-      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-      std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+      std::array<float, 3> vertexV0 = {straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2]};
+      std::array<float, 3> pVecV0 = {straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2]};
+      std::array<float, 3> pVecV0DauPos = {straHelper.cascade.positiveMomentun[0], straHelper.cascade.positiveMomentun[1], straHelper.cascade.positiveMomentun[2]};
+      std::array<float, 3> pVecV0DauNeg = {straHelper.cascade.negativeMomentun[0], straHelper.cascade.negativeMomentun[1], straHelper.cascade.negativeMomentun[2]};
+
+      int chargeCasc = straHelper.cascade.sign > 0 ? 1 : -1;
+      std::array<float, 3> vertexCasc = {straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2]};
+      std::array<float, 3> pVecCasc = {straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2]};
       std::array<float, 21> covCasc = {0.};
 
       //------------------------------Create cascade track------------------------------
 
       constexpr std::size_t NElementsCovMatrix{6u};
-      constexpr std::array<int, NElementsCovMatrix> MomInd = {9, 13, 14, 18, 19, 20};
+      constexpr std::array<int, NElementsCovMatrix> MomInd = {9, 13, 14, 18, 19, 20}; // Momentum index?
       for (auto i = 0u; i < NElementsCovMatrix; i++) {
-        covCasc[i] = casc.positionCovMat()[i];
-        covCasc[MomInd[i]] = casc.momentumCovMat()[i];
+        covCasc[i] = straHelper.cascade.covariance[i];
+        covCasc[MomInd[i]] = straHelper.cascade.covariance[MomInd[i]];
+        // covCasc[i] = casc.positionCovMat()[i];
+        // covCasc[MomInd[i]] = casc.momentumCovMat()[i];
       }
 
       o2::track::TrackParCov trackCasc;
@@ -400,7 +503,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       trackCasc.setAbsCharge(1);
       trackCasc.setPID(trackPidOfCascade[decayChannel]);
 
-      //------------------------------Fit SV & Create Cascade track------------------------------
+      //------------------------------Fit SV & Create Charm Baryon track------------------------------
 
       // Perform secondary vertex fitting
       auto trackCharmBachelor = cand.prong0_as<TracksWCovDcaExtraPidPrPiKa>();
@@ -430,15 +533,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       std::array<float, 3> pVecCascAsD, pVecCharmBachAsD;
       df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
       df.getTrack(1).getPxPyPzGlo(pVecCharmBachAsD);
-      std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecCharmBachAsD[0], pVecCascAsD[1] + pVecCharmBachAsD[1], pVecCascAsD[2] + pVecCharmBachAsD[2]};
-      std::array<float, 3> pVecBach = {casc.pxbach(), casc.pybach(), casc.pzbach()};
 
-      // // get track momenta -> Previous version...
-      // trackCasc = df.getTrack(0);
-      // trackParCovCharmBachelor = df.getTrack(1);
-      // std::array<float, 3> pVecCasc, pVecBach;
-      // trackCasc.getPxPyPzGlo(pVecCasc);
-      // trackParCovCharmBachelor.getPxPyPzGlo(pVecBach);
+      std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecCharmBachAsD[0], pVecCascAsD[1] + pVecCharmBachAsD[1], pVecCascAsD[2] + pVecCharmBachAsD[2]};
+      std::array<float, 3> pVecBach = {straHelper.cascade.bachelorMomentum[0], casc.cascade.bachelorMomentum[1], casc.cascacde.bachelorMomentum[2]};
 
       // get PV Properties
       auto primaryVertex = getPrimaryVertex(collision);
@@ -451,12 +548,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       auto covMatrixSV = df.calcPCACovMatrixFlat();
 
       // DCAxy and DCAz. Computed with propagatToDCABxByBz method
-      auto trackV0DauPos = casc.posTrack_as<TracksWCovDcaExtraPidPrPiKa>();
-      auto trackV0DauNeg = casc.negTrack_as<TracksWCovDcaExtraPidPrPiKa>();
-      auto trackBach = casc.bachelor_as<TracksWCovDcaExtraPidPrPiKa>();
-      auto trackParCovV0DauPos = getTrackParCov(trackV0DauPos);
-      auto trackParCovV0DauNeg = getTrackParCov(trackV0DauNeg);
-      auto trackParCovBach = getTrackParCov(trackBach);
+      auto trackParCovV0DauPos = getTrackParCov(posTrack);
+      auto trackParCovV0DauNeg = getTrackParCov(negTrack);
+      auto trackParCovBach = getTrackParCov(bachTrack);
+
       o2::dataformats::DCA impactParameterV0DauPos, impactParameterV0DauNeg, impactParameterBach;
       o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauPos, 2.f, matCorr, &impactParameterV0DauPos);
       o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0DauNeg, 2.f, matCorr, &impactParameterV0DauNeg);
@@ -474,40 +569,29 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
       o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCharmBachelor, 2.f, matCorr, &impactParameterCharmBach);
 
-      // float impactParCharmBachXY = impactParameterCharmBach.getY();
-      // float impactParCharmBachZ = impactParameterCharmBach.getZ();
+      // get v0 invariant mass
+      float massLambda = straHelper.v0.massLambda;
 
-      // // get impact parameter -> Previous version...
-      // //! This process modifies track momenta
-      // // calculate impact parameter
-      // o2::dataformats::DCA impactParameterCasc, impactParameterCharmBach;
-      // trackCasc.propagateToDCA(primaryVertex, bz, &impactParameterCasc);
-      // trackParCovCharmBachelor.propagateToDCA(primaryVertex, bz, &impactParameterCharmBach);
-
-      // get invariant mass
-      float massLambda = casc.mLambda(); // mass of V0(lambda0)
+      // Get Charm baryon invarian mass
       auto arrMomenta = std::array{pVecCascAsD, pVecCharmBachAsD};
-      massCharmBaryonCand = RecoDecay::m(arrMomenta, std::array{massOfCascades[decayChannel], massOfCharmBach[decayChannel]});
+      float massCharmBaryonCand = RecoDecay::m(arrMomenta, std::array{massOfCascades[decayChannel], massOfCharmBach[decayChannel]});
       if (configs.fillHistograms) {
         hInvMassCharmBaryon->Fill(massCharmBaryonCand);
       }
 
       // calculate cosine of pointing angle
       std::array<float, 3> vtxCoordCharmBaryon = df.getPCACandidatePos();
-      float cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaV0 = RecoDecay::cap(pvCoord, vertecV0, pVecV0);
+      float cpaCasc = RecoDecay::cpa(pvCoord, vertexCasc, pVecCasc);
       float cpaCharmBaryon = RecoDecay::cpa(pvCoord, vtxCoordCharmBaryon, pVecCharmBaryon);
-      float cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
       float cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
-      float cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, vtxCoordCharmBaryon, pVecCharmBaryon);
       float cpaxyCasc = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
-
-      // float cosPaV0ToPvToCasc = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
-      // float cpaXYLambdaToCasc = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+      float cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, vtxCoordCharmBaryon, pVecCharmBaryon);
 
       // calculate decay length
-      float decLenCharmBaryon = RecoDecay::distance(pvCoord, vtxCoordCharmBaryon);
-      float decLenCasc = RecoDecay::distance(vtxCoordCharmBaryon, vertexCasc);
       float decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
+      float decLenCasc = RecoDecay::distance(vtxCoordCharmBaryon, vertexCasc);
+      float decLenCharmBaryon = RecoDecay::distance(pvCoord, vtxCoordCharmBaryon);
       // get uncertainty of the decay length -> Used in previous code...
       float phi, theta;
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
@@ -515,23 +599,23 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
       // calcuate ctau
-      float ctOmegac0 = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassOmegaC0);
-      float ctXic0 = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassXiC0);
       float ctV0 = RecoDecay::ct(pVecV0, decLenV0, MassLambda0);
       float ctCasc = RecoDecay::ct(pVecCasc, decLenCasc, massOfCascades[decayChannel]);
+      float ctOmegac0 = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassOmegaC0);
+      float ctXic0 = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassXiC0);
 
       // get eta
-      float etaV0DauPos = casc.positiveeta();
-      float etaV0DauNeg = casc.negativeeta();
-      float etaBach = casc.bacheloreta();
+      float etaV0DauPos = posTrack.eta();
+      float etaV0DauNeg = negTrack.eta();
+      float etaBach = bachTrack.eta();
       float etaCharmBach = trackCharmBachelor.eta();
-      float etaCharmBaryon = RecoDecay::eta(pVecCharmBaryon);
-      float etaCasc = RecoDecay::eta(pVecCasc);
       float etaV0 = RecoDecay::eta(pVecV0);
+      float etaCasc = RecoDecay::eta(pVecCasc);
+      float etaCharmBaryon = RecoDecay::eta(pVecCharmBaryon);
 
       // DCA between daughters
-      float dcaCascDau = casc.dcacascdaughters();
-      float dcaV0Dau = casc.dcaV0daughters();
+      float dcaV0Dau = straHelper.cascade.v0DaughterDCA;
+      float dcaCascDau = straHelper.cascade.cascadeDaughterDCA;
       float dcaCharmBaryonDau = std::sqrt(df.getChi2AtPCACandidate());
 
       //------------------------------Fill QA histograms-----------------------------
@@ -540,24 +624,24 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
         cursors.rowCandToXiPi(collision.globalIndex(),
                               pvCoord[0], pvCoord[1], pvCoord[2],
-                              secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],                                     // From DCAFitter
-                              vertexCasc[0], vertexCasc[1], vertexCasc[2],                                                    // From LF table
-                              vertexV0[0], vertexV0[1], vertexV0[2],                                                          // From LF table
-                              trackBach.sign(),                                                                               // From LF table
-                              covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5], // From DCAFittre
-                              pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],                                     // From DCAFitter
-                              pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],                                                 // From DCAFitter
-                              pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],                                  // From DCAFitter
-                              pVecV0[0], pVecV0[1], pVecV0[2],                                                                // From LF table
-                              pVecBach[0], pVecBach[1], pVecBach[2],                                                          // From LF table
-                              pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],                                              // From LF table
-                              pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],                                              // From LF table
+                              secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                              vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                              vertexV0[0], vertexV0[1], vertexV0[2],
+                              bachTrack.sign(),
+                              covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5],
+                              pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
+                              pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],
+                              pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],
+                              pVecV0[0], pVecV0[1], pVecV0[2],
+                              pVecBach[0], pVecBach[1], pVecBach[2],
+                              pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
+                              pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
                               impactParameterCasc.getY(), impactParameterCharmBach.getY(),
                               impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                               std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
-                              cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(),
-                              casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                              casc.mLambda(), massCasc, massCharmBaryonCand,
+                              cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                              cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.bachelorId(),
+                              massLambda, massCasc, massCharmBaryonCand,
                               cpaV0, cpaCharmBaryon, cpaCasc,
                               cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
                               ctOmegac0, ctCasc, ctV0, ctXic0,
@@ -566,28 +650,27 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                               dcazV0DauPos, dcazV0DauNeg, dcazBach,
                               dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                               decLenCharmBaryon, decLenCasc, decLenV0, errorDecayLength, errorDecayLengthXY);
-
       } else if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
         cursors.rowCandToOmegaPi(collision.globalIndex(),
                                  pvCoord[0], pvCoord[1], pvCoord[2],
-                                 secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],                                     // From DCAFitter
-                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],                                                    // From LF table
-                                 vertexV0[0], vertexV0[1], vertexV0[2],                                                          // From LF table
-                                 trackBach.sign(),                                                                               // From LF table
-                                 covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5], // From DCAFittre
-                                 pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],                                     // From DCAFitter
-                                 pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],                                                 // From DCAFitter
-                                 pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],                                  // From DCAFitter
-                                 pVecV0[0], pVecV0[1], pVecV0[2],                                                                // From LF table
-                                 pVecBach[0], pVecBach[1], pVecBach[2],                                                          // From LF table
-                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],                                              // From LF table
-                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],                                              // From LF table
+                                 secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                                 vertexV0[0], vertexV0[1], vertexV0[2],
+                                 backTrack.sign(),
+                                 covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5],
+                                 pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
+                                 pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],
+                                 pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],
+                                 pVecV0[0], pVecV0[1], pVecV0[2],
+                                 pVecBach[0], pVecBach[1], pVecBach[2],
+                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
+                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
                                  impactParameterCasc.getY(), impactParameterCharmBach.getY(),
                                  impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
-                                 cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(),
-                                 casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                                 casc.mLambda(), massCasc, massCharmBaryonCand,
+                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.bachelorId(),
+                                 massLambda, massCasc, massCharmBaryonCand,
                                  cpaV0, cpaCharmBaryon, cpaCasc,
                                  cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
                                  ctOmegac0, ctCasc, ctV0,
@@ -599,24 +682,24 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       } else {
         cursors.rowCandToOmegaKa(collision.globalIndex(),
                                  pvCoord[0], pvCoord[1], pvCoord[2],
-                                 secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],                                     // From DCAFitter
-                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],                                                    // From LF table
-                                 vertexV0[0], vertexV0[1], vertexV0[2],                                                          // From LF table
-                                 trackBach.sign(),                                                                               // From LF table
-                                 covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5], // From DCAFittre
-                                 pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],                                     // From DCAFitter
-                                 pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],                                                 // From DCAFitter
-                                 pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],                                  // From DCAFitter
-                                 pVecV0[0], pVecV0[1], pVecV0[2],                                                                // From LF table
-                                 pVecBach[0], pVecBach[1], pVecBach[2],                                                          // From LF table
-                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],                                              // From LF table
-                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],                                              // From LF table
+                                 secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                                 vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                                 vertexV0[0], vertexV0[1], vertexV0[2],
+                                 backTrack.sign(),
+                                 covMatrixSV[0], covMatrixSV[1], covMatrixSV[2], covMatrixSV[3], covMatrixSV[4], covMatrixSV[5],
+                                 pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
+                                 pVecCascAsD[0], pVecCascAsD[1], pVecCascAsD[2],
+                                 pVecCharmBachAsD[0], pVecCharmBachAsD[1], pVecCharmBachAsD[2],
+                                 pVecV0[0], pVecV0[1], pVecV0[2],
+                                 pVecBach[0], pVecBach[1], pVecBach[2],
+                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
+                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
                                  impactParameterCasc.getY(), impactParameterCharmBach.getY(),
                                  impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
-                                 cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(),
-                                 casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                                 casc.mLambda(), massCasc, massCharmBaryonCand,
+                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.bachelorId(),
+                                 massLambda, massCasc, massCharmBaryonCand,
                                  cpaV0, cpaCharmBaryon, cpaCasc,
                                  cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
                                  ctOmegac0, ctCasc, ctV0,
@@ -637,8 +720,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Colls, typename Hist>
   void runCreatorWithKfParticle(Colls const&,
                                 aod::HfCascLf2Prongs const& candidates,
-                                KFCascFull const&,
-                                KFCascadesLinked const&,
+                                aod::Cascades const&, // -> Implemented for internal cascade building
+                                aod::V0s const&,      // -> Implemented for internal cascade building
                                 TracksWCovDcaExtraPidPrPiKa const&,
                                 aod::BCsWithTimestamps const&,
                                 Hist& hInvMassCharmBaryon,
@@ -655,50 +738,18 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // Apply hfflag selection
       if (!TESTBIT(cand.hfflag(), decayChannel)) {
         continue;
-      }
-
-      // Fill casccandidates after hfflag selection
-      if (configs.fillHistograms) {
-        hCandCounter->Fill(HfFlagPass);
+      } else {
+        if (configs.fillHistograms) {
+          hCandCounter->Fill(HfFlagPass);
+        }
       }
 
       // Event selection
       auto collision = cand.collision_as<Colls>();
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-      if (rejectionMask != 0) {
+      if (rejectionMask != 0) { // None of the event seletion satisfied -> Reject this candidate
         continue;
-      }
-
-      //------------------------------Cascade pre-selection------------------------------
-
-      // Retrieving skimmed cascade and charm bachelor tracks
-      // If there is no related tracks, skip
-      auto cascAodElement = cand.cascade_as<KFCascadesLinked>();
-      if (!cascAodElement.has_kfCascData()) {
-        continue;
-      }
-      auto casc = cascAodElement.kfCascData_as<KFCascFull>(); // -> Need to understand this
-      auto chargeCasc = casc.sign() > 0 ? 1 : -1;
-      float massCasc = (decayChannel == 0) ? casc.mXi() : casc.mOmega();
-
-      if (configs.kfDoCascadePreselection) {
-        if (std::abs(casc.dcaXYCascToPV()) > configs.dcaXYToPVCascadeMax) {
-          continue;
-        }
-        if (std::abs(casc.dcaV0daughters()) > configs.dcaV0DaughtersMax) {
-          continue;
-        }
-        if (std::abs(casc.dcacascdaughters()) > configs.dcaCascDaughtersMax) {
-          continue;
-        }
-        if (std::abs(massCasc - massOfCascades[decayChannel]) > configs.massToleranceCascade) {
-          continue;
-        }
-      }
-
-      if (configs.fillHistograms) {
-        hCandCounter->Fill(CascPreSel);
       }
 
       //------------------------------Set Magnetic field------------------------------
@@ -709,15 +760,80 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         bz = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>> Magnetic field: " << bz;
       }
+      // magnetic field setting for KFParticle
       KFParticle::SetField(bz);
 
-      //------------------------------Info of V0 and cascade tracks from LF table------------------------------
+      //------------------Intenal Cascade building------------------
+      auto cascAodElement = cand.cascade_as<aod::Cascades>();
+      auto v0AodElement = cand.v0_as<aod::V0s>();
+      auto posTrack = v0AodElement.posTrack_as<TracksWCovDcaPidPrPiKa>();
+      auto negTrack = v0AodElement.netTrack_as<TracksWCovDcaPidPrPiKa>();
+      auto bachTrack = cascadeAodElement.bachelor_as<TracksWCovDcaPidPrPiKa>();
+
+      // Make cascade starting from V0
+      // If success, fill Cascade and V0 information for reconstruction
+      if (!straHelper.buildCascadeCandidateWithKF(collision.globalIndex(),
+                                                  collision.posX(), collision.posY(), collision.posZ(),
+                                                  posTrack,
+                                                  negTrack,
+                                                  bachTrack,
+                                                  false, // calculateBachelorBaryonVariables
+                                                  configs.kfConstructMethod,
+                                                  configs.kfTuneForOmega,
+                                                  configs.kfUseV0MassConstraint,
+                                                  configs.kfUseCascadeMassConstraint,
+                                                  configs.kfDoDCAFitterPreMinimV0,
+                                                  configs.kfDoDCAFitterPreMinimCasc)) {
+        LOG(info) << "This cascade cannot be rebuilt" << endl;
+        continue;
+      }
+
+      //------------------------------Cascade pre-selection------------------------------
+      float massCasc = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
+
+      if (configs.kfDoCascadePreselection) {
+
+        // pre selection of dcaXY
+        // FIXME does cascadeDCAxy represents dcaxytoPV?
+        if (std::abs(straHelper.cascade.cascadeDCAxy) > configs.dcaXYToPVCascadeMax) {
+          continue;
+        }
+        // pre selection on dcaV0Daughters
+        if (std::abs(straHelper.cascade.v0DaughterDCA) > configs.dcaV0DaughtersMax) {
+          continue;
+        }
+        // pre selection on dcaCascDaughters
+        if (std::abs(straHelper.cascade.cascadeDaughterDCA) > configs.dcaCascDaughtersMax) {
+          continue;
+        }
+        // pre selection on invariantmass
+        if (std::abs(massCasc - massOfCascades[decayChannel]) > configs.massToleranceCascade) {
+          continue;
+        }
+      }
+
+      if (configs.fillHistograms) {
+        hCandCounter->Fill(CascPreSel);
+      }
+
+      //------------------------------Info of V0 and Cascade------------------------------
       // -> This quantities are used for physical properties of selected candidates
       // -> Not used for candidate creation
-      std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-      std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
-      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-      std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+      // auto chargeCasc = casc.sign() > 0 ? 1 : -1;
+      // std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
+      // std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
+      // std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
+      // std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+
+      std::array<float, 3> vertexV0 = {straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2]};
+      std::array<float, 3> pVecV0 = {straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2]};
+      std::array<float, 3> pVecV0DauPos = {straHelper.cascade.positiveMomentun[0], straHelper.cascade.positiveMomentun[1], straHelper.cascade.positiveMomentun[2]};
+      std::array<float, 3> pVecV0DauNeg = {straHelper.cascade.negativeMomentun[0], straHelper.cascade.negativeMomentun[1], straHelper.cascade.negativeMomentun[2]};
+
+      int chargeCasc = straHelper.cascade.sign > 0 ? 1 : -1;
+      std::array<float, 3> vertexCasc = {straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2]};
+      std::array<float, 3> pVecCasc = {straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2]};
+      std::array<float, 21> covCasc = {0.};
 
       //------------------------------Create Charm Baryon as KF Particle object------------------------------
 
@@ -761,7 +877,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // Get covariance matrix of Charm Baryon
       auto covMatrixCharmBaryon = kfCharmBaryon.CovarianceMatrix();
 
-      // transport Charm Baryon daughters to Charm Baryon to decay vertex => Is this necessary?
+      // transport Charm Baryon daughters to Charm Baryon to decay vertex
+      // FIXME Is this process necessary?
       float secondaryVertex[3] = {kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()};
       kfCasc.TransportToPoint(secondaryVertex);
       kfCharmBachelor.TransportToPoint(secondaryVertex);
@@ -781,11 +898,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       /// In the future, these calculation can be skipped? This must be dicussed.
 
       /// Extra calculation for V0 daughters
-      auto trackV0DauPos = casc.posTrack_as<TracksWCovDcaExtraPidPrPiKa>();
-      auto trackV0DauNeg = casc.negTrack_as<TracksWCovDcaExtraPidPrPiKa>();
-
-      KFPTrack kfpTrackV0Pos = createKFPTrackFromTrack(trackV0DauPos);
-      KFPTrack kfpTrackV0Neg = createKFPTrackFromTrack(trackV0DauNeg);
+      KFPTrack kfpTrackV0Pos = createKFPTrackFromTrack(posTrack);
+      KFPTrack kfpTrackV0Neg = createKFPTrackFromTrack(negTrack);
 
       int pdgV0Pos = (trackCharmBachelor.sign() > 0) ? kProton : kPiPlus;
       int pdgV0Neg = (trackCharmBachelor.sign() > 0) ? kPiMinus : -kProton;
@@ -813,8 +927,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfV0ConstrainedToCasc.SetProductionVertex(kfCasc);
 
       /// Extra calculations for bachelor
-      auto trackBach = casc.bachelor_as<TracksWCovDcaExtraPidPrPiKa>();
-      KFPTrack kfpTrackBach = createKFPTrackFromTrack(trackBach);
+      KFPTrack kfpTrackBach = createKFPTrackFromTrack(bachTrack);
       KFParticle kfBach(kfpTrackBach, pdgOfBach[decayChannel]);
 
       KFParticle kfBachConstrainedToPv = kfBach;
@@ -822,7 +935,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfBachConstrainedToPv.SetProductionVertex(kfPv);
       kfBachConstrainedToCasc.SetProductionVertex(kfCasc);
 
-      auto trackParCovBach = getTrackParCovFromKFP(kfBachConstrainedToCasc, kfBachConstrainedToCasc.GetPDG(), trackBach.sign());
+      auto trackParCovBach = getTrackParCovFromKFP(kfBachConstrainedToCasc, kfBachConstrainedToCasc.GetPDG(), bachTrack.sign());
 
       /// Extra calculations for casc
       float kfMassCasc, kfSigMassCasc;
@@ -893,7 +1006,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       float ldlCharmBaryon = ldlFromKF(kfCharmBaryon, kfPv);
 
       // get DCAs
-      float kfDcaV0Daughters = casc.dcaV0daughters();
+      float kfDcaV0Daughters = kfV0Pos.GetDistanceFromParticle(kfV0Neg);
       float kfDcaCascDaughters = kfBachConstrainedToCasc.GetDistanceFromParticle(kfV0ConstrainedToCasc);
       float kfDcaCharmBaryonDaughters = kfCharmBachelorConstrainedToCharmBaryon.GetDistanceFromParticle(kfCascConstrainedToCharmBaryon);
       float kfDcaXYCharmBachelorToPv = kfCharmBachelorConstrainedToCharmBaryon.GetDistanceFromVertexXY(kfPv);
@@ -910,9 +1023,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       kfCharmBaryonConstrainedToPv.GetDecayLengthXY(decayLXYCharmBaryon, errDecayLXYCharmBaryon);
 
       // get decay length - In XYZ
-      float decayLCharmBaryon = RecoDecay::distance(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()});
-      float decayLCasc = RecoDecay::distance(std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, std::array<float, 3>{kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()});
       float decayLV0 = RecoDecay::distance(std::array<float, 3>{kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()}, std::array<float, 3>{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()});
+      float decayLCasc = RecoDecay::distance(std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, std::array<float, 3>{kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ()});
+      float decayLCharmBaryon = RecoDecay::distance(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()});
 
       double phiCharmBaryon, thetaCharmBaryon;
       getPointDirection(std::array<float, 3>{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, phiCharmBaryon, thetaCharmBaryon);
@@ -960,34 +1073,29 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
       //------------------------------Fill the table------------------------------
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        cursors.rowCandToXiPiKf(collision.globalIndex(),                        // Global index of collision
-                                pvCoord[0], pvCoord[1], pvCoord[2],             // coordination of PV
-                                kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),    // Decay position of kfCasc
-                                casc.xlambda(), casc.ylambda(), casc.zlambda(), // Decay position of KfV0. This values can be also taken from LF table
-                                trackBach.sign(),                               // Sign of bachelor
+        cursors.rowCandToXiPiKf(collision.globalIndex(),                     // Global index of collision
+                                pvCoord[0], pvCoord[1], pvCoord[2],          // coordination of PV
+                                kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(), // Decay position of kfCasc
+                                vertexV0[0], vertexV0[1], vertexV0[2],
+                                backTrack.sign(),
                                 covMatrixCharmBaryon[0], covMatrixCharmBaryon[1], covMatrixCharmBaryon[2], covMatrixCharmBaryon[3], covMatrixCharmBaryon[4], covMatrixCharmBaryon[5],
                                 kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz(), // x, y, z momentum of charm baryon
                                 kfCascConstrainedToCharmBaryon.GetPx(), kfCascConstrainedToCharmBaryon.GetPy(), kfCascConstrainedToCharmBaryon.GetPz(),
                                 kfCharmBachelorConstrainedToCharmBaryon.GetPx(), kfCharmBachelorConstrainedToCharmBaryon.GetPy(), kfCharmBachelorConstrainedToCharmBaryon.GetPz(),
-                                casc.kfpxv0(), casc.kfpyv0(), casc.kfpzv0(), // -> This can be also taken from LF table
+                                pVecV0[0], pVecV0[1], pVecV0[2],
                                 kfBachConstrainedToCasc.GetPx(), kfBachConstrainedToCasc.GetPy(), kfBachConstrainedToCasc.GetPz(),
-                                casc.pxpos(), casc.pypos(), casc.pzpos(),
-                                casc.pxneg(), casc.pyneg(), casc.pzneg(),
-                                // impactParameterCasc.getY(), impactParameterCharmBachelor.getY(),
-                                // impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
-                                // std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
-                                cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(),
-                                casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                                casc.mLambda(), kfCasc.GetMass(), kfCharmBaryon.GetMass(),
+                                pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
+                                pecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
+                                cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                                cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.bachelorId(),
+                                kfMassV0, kfMassCasc, kfMassCharmBaryon,
                                 cosPaV0ToPv, cosPaCascToPv,
                                 // cosPaCharmBaryonToPv, cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
                                 ctCasc, ctV0, ctCharmBaryon,
-                                casc.positiveeta(), casc.negativeeta(), casc.bacheloreta(), kfCharmBachelorConstrainedToCharmBaryon.GetEta(),
+                                kfV0Pos.GetEta(), kfV0Neg.GetEta(), kfBach.GetEta(), kfCharmBachelorConstrainedToCharmBaryon.GetEta(),
                                 kfCharmBaryon.GetEta(), kfCasc.GetEta(), kfV0.GetEta(),
                                 dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                                // dcazV0DauPos, dcazV0DauNeg, dcazBach,
                                 kfDcaCascDaughters, kfDcaV0Daughters, kfDcaCharmBaryonDaughters,
-                                // decayLCharmBaryon, decayLCasc, decayLV0, errDecayLCharmBaryon, errDecayLXYCharmBaryon,
                                 kfDcaXYCharmBachelorToPv, kfDcaXYCascToPv,
                                 casc.kfV0Chi2(), kfCasc.GetChi2(), kfCharmBaryon.GetChi2(),
                                 /*FIXME chi2 of mass constrained, V0 and casc*/ kfV0.GetChi2(), kfCasc.GetChi2(),
@@ -1006,33 +1114,33 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  pvCoord[0], pvCoord[1], pvCoord[2],
                                  /*vertexCharmBaryonFromFitter. For KF, this is 0*/ 0.f, 0.f, 0.f,
                                  kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),
-                                 /*V0 decay position. Taken from LF*/ casc.xlambda(), casc.ylambda(), casc.zlambda(),
+                                 vertexV0[0], vertexV0[1], vertexV0[2],
                                  trackCharmBachelor.sign(),
                                  covMatrixCharmBaryon[0], covMatrixCharmBaryon[1], covMatrixCharmBaryon[2], covMatrixCharmBaryon[3], covMatrixCharmBaryon[4], covMatrixCharmBaryon[5],
                                  kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz(),
                                  kfCascConstrainedToCharmBaryon.GetPx(), kfCascConstrainedToCharmBaryon.GetPy(), kfCascConstrainedToCharmBaryon.GetPz(),
                                  kfCharmBachelorConstrainedToCharmBaryon.GetPx(), kfCharmBachelorConstrainedToCharmBaryon.GetPy(), kfCharmBachelorConstrainedToCharmBaryon.GetPz(),
-                                 /*V0 momentum. Taken from LF*/ casc.kfpxv0(), casc.kfpyv0(), casc.kfpzv0(),
+                                 pVecV0[0], pVecV0[1], pVecV0[2],
                                  kfBachConstrainedToCasc.GetPx(), kfBachConstrainedToCasc.GetPy(), kfBachConstrainedToCasc.GetPz(),
-                                 /*V0 pos daughter momentum. Taken from LF*/ casc.pxpos(), casc.pypos(), casc.pzpos(),
-                                 /*V0 neg daughter momentum. Taken from LF*/ casc.pxneg(), casc.pyneg(), casc.pzneg(),
+                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
+                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
                                  impactParameterCasc.getY(), impactParameterCharmBachelor.getY(),
                                  impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
-                                 cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(),
-                                 casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                                 /*V0 mass. Taken from LF*/ casc.mLambda(), kfMassCasc, kfMassCharmBaryon,
+                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.bachelorId(),
+                                 kfV0Mass, kfMassCasc, kfMassCharmBaryon,
                                  cosPaV0ToPv, cosPaCharmBaryonToPv, cosPaCascToPv, cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
                                  ctCharmBaryon, ctCasc, ctV0,
-                                 /*V0 pos daughter eta. Taken from LF*/ casc.positiveeta(), /*V0 pos daughter eta. Taken from LF*/ casc.negativeeta(), /*Bachelor eta. Taken from LF*/ casc.bacheloreta(), kfCharmBachelorConstrainedToCharmBaryon.GetEta(),
+                                 kfV0Pos.GetEta(), kfV0Neg.GetEta(), kfBach.GetEta(), kfCharmBachelorConstrainedToCharmBaryon.GetEta(),
                                  kfCharmBaryon.GetEta(), kfCasc.GetEta(), kfV0.GetEta(),
                                  dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
                                  dcazV0DauPos, dcazV0DauNeg, dcazBach,
-                                 kfDcaCascDaughters, /*DCA between V0 daughters. Taken From LF*/ casc.dcaV0daughters(), kfDcaCharmBaryonDaughters,
+                                 kfDcaCascDaughters, straHelper.cascade.v0DaughterDCA, kfDcaCharmBaryonDaughters,
                                  decayLCharmBaryon, decayLCasc, decayLV0, errDecayLCharmBaryon, errDecayLXYCharmBaryon, cand.hfflag());
 
         cursors.rowCandToOmegaPiKf(kfDcaXYCharmBachelorToPv, kfDcaXYCascToPv,
-                                   /*V0 chi2. Taken from LF*/ casc.kfV0Chi2(), kfCasc.GetChi2(), kfCharmBaryon.GetChi2(), /*Mass constraint only done when requested*/ casc.kfV0Chi2(), /*Mass constraint only done when requested*/ kfCasc.GetChi2(),
+                                   /*V0 chi2. Taken from LF*/ kfV0.GetChi2(), kfCasc.GetChi2(), kfCharmBaryon.GetChi2(), /*Mass constraint only done when requested*/ kfV0.GetChi2(), /*Mass constraint only done when requested*/ kfCasc.GetChi2(),
                                    ldlV0, ldlCasc, ldlCharmBaryon,
                                    chi2NdfTopoV0ToPv, chi2NdfTopoCascToPv, chi2NdfTopoCharmBachelorToPv, chi2NdfTopoCharmBaryonToPv, deviationCharmBachelorToPv,
                                    chi2NdfTopoV0ToCasc, chi2NdfTopoCascToCharmBaryon,
@@ -1043,7 +1151,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                    kfV0.GetNDF(), kfCasc.GetNDF(), kfCharmBaryon.GetNDF(), /*Mass constraint only done when requested*/ kfV0.GetNDF(), /*Mass constraint only done when requested*/ kfCasc.GetNDF(),
                                    kfV0.GetChi2() / kfV0.GetNDF(), kfCasc.Chi2() / kfCasc.GetNDF(), kfCharmBaryon.GetChi2() / kfCharmBaryon.GetNDF(),
                                    /*Mass constraint only done when requested*/ kfV0.GetChi2() / kfV0.GetNDF(), kfCasc.Chi2() / kfCasc.GetNDF(),
-                                   /*casc-rej not calculated. For now, fill in mass of KFCasc. Need to fix this*/ kfCasc.GetMass());
+                                   /*FIXME casc-rej not calculated. For now, fill in mass of KFCasc*/ kfCasc.GetMass());
 
       } else {
         cursors.rowCandToOmegaKaKf(collision.globalIndex(),
@@ -1053,14 +1161,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                    pVecV0[0], pVecV0[1], pVecV0[2],
                                    vertexCasc[0], vertexCasc[1], vertexCasc[2],
                                    pVecCasc[0], pVecCasc[1], pVecCasc[2],
-                                   casc.xlambda(), casc.ylambda(), casc.zlambda(),
-                                   casc.kfpxv0(), casc.kfpyv0(), casc.kfpzv0(),
+                                   vertexV0[0], vertexV0[1], vertexV0[2],
+                                   pVecV0[0], pVecV0[1], pVecV0[2],
                                    kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),
                                    kfCasc.GetPx(), kfCasc.GetPy(), kfCasc.GetPz(),
                                    kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ(),
                                    kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz(),
-                                   casc.sign(),
-                                   casc.positiveeta(), casc.negativeeta(), casc.bacheloreta(), kfCharmBachelor.GetEta(), kfV0.GetEta(), kfCasc.GetEta(), kfCharmBaryon.GetEta(), kfCharmBaryon.GetRapidity(),
+                                   straHelper.cascade.sign,
+                                   kfV0Pos.GetEta(), kfV0Neg.GetEta(), kfBach.GetEta(), kfCharmBachelor.GetEta(), kfV0.GetEta(), kfCasc.GetEta(), kfCharmBaryon.GetEta(), kfCharmBaryon.GetRapidity(),
                                    impactParameterCharmBachelor.getY(), std::sqrt(impactParameterCharmBachelor.getSigmaY2()), impactParameterCasc.getY(), std::sqrt(impactParameterCasc.getSigmaY2()),
                                    kfDcaV0Daughters, kfDcaCascDaughters, kfDcaCharmBaryonDaughters,
                                    cosPaV0ToPv, cosPaCascToPv, cosPaCharmBaryonToPv, cosPaXYV0ToPv, cosPaXYCascToPv, cosPaXYCharmBaryonToPv, cosPaV0ToCasc, cosPaCascToCharmBaryon, cosPaXYV0ToCasc, cosPaXYCascToCharmBaryon,
@@ -1073,7 +1181,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                    kfMassV0, kfSigMassV0, kfMassCasc, kfSigMassCasc, /*FIXME no -rej has been made*/ kfMassCasc, /*FIXME no -rej has been made*/ kfSigMassCasc, kfMassCharmBaryon, kfSigMassCharmBaryon,
                                    ptCharmBaryon, ptCharmBachelor, ptCasc,
                                    cosThetaStarCharmBachelorOmegac0, cosThetaStarCharmBachelorXic0, ctV0, ctCasc, ctCharmBaryon,
-                                   cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(), casc.cascadeId(), casc.bachelorId(), trackCharmBachelor.globalIndex());
+                                   cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(), cand.cascadeId(), cand.bachelorId(), trackCharmBachelor.globalIndex());
       }
     } // end candidate loop
   } // end of runCreator
@@ -1089,18 +1197,21 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   /*~~~~~~~~~~~~~~*/
   void processToXiPiWithDCAFitterNoCent(SelectedCollisions const& collisions,
                                         aod::HfCascLf2Prongs const& candidates,
-                                        CascFull const& cascFull,
-                                        CascadesLinked const& cascadesLinked,
+                                        aod::Cascades const& cascades,
+                                        aod::V0s const& v0s,
                                         TracksWCovDcaExtraPidPrPiKa const& tracks,
                                         aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
+    runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithDCAFitterNoCent, "Charm candidte reconstruction with Xi Pi via DcaFitter method, no centrality", true);
 
+#if 0
+  // Tracked cascades not supported yet
   void processToXiPiWithDCAFitterNoCentWithTrackedCasc(SelectedCollisions const& collisions,
                                                        aod::HfCascLf2Prongs const& candidates,
-                                                       TrackedCascFull const& trackedCascFull,
+                                                       aod::Cascades const& cascades,
+                                                       aod::V0s const& v0s,
                                                        TrackedCascLinked const& trackedCascLinked,
                                                        TracksWCovDcaExtraPidPrPiKa const& tracks,
                                                        aod::BCsWithTimestamps const& bcsWithTimestamps)
@@ -1108,26 +1219,27 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, trackedCascFull, trackedCascLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithDCAFitterNoCentWithTrackedCasc, "Charm candidte reconstruction with Xi Pi via DcaFitter method with tracked cascade, no centrality", false);
+#endif
 
   void processToXiPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                           aod::HfCascLf2Prongs const& candidates,
-                                          CascFull const& cascFull,
-                                          CascadesLinked const& cascadesLinked,
+                                          aod::Cascades const& cascades,
+                                          aod::V0s const& v0s,
                                           TracksWCovDcaExtraPidPrPiKa const& tracks,
                                           aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0C", false);
 
   void processToXiPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                           aod::HfCascLf2Prongs const& candidates,
-                                          CascFull const& cascFull,
-                                          CascadesLinked const& cascadesLinked,
+                                          aod::Cascades const& cascades,
+                                          aod::V0s const& v0s,
                                           TracksWCovDcaExtraPidPrPiKa const& tracks,
                                           aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0M", false);
 
@@ -1136,34 +1248,34 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   /*~~~~~~~~~~~~~~~~~*/
   void processToOmegaPiWithDCAFitterNoCent(SelectedCollisions const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
-                                           CascFull const& cascFull,
-                                           CascadesLinked const& cascadesLinked,
+                                           aod::Cascades const& cascades,
+                                           aod::V0s const& v0s,
                                            TracksWCovDcaExtraPidPrPiKa const& tracks,
                                            aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
+    runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Pi via DcaFitter method, no centrality", false);
 
   void processToOmegaPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
-                                             CascFull const& cascFull,
-                                             CascadesLinked const& cascadesLinked,
+                                             aod::Cascades const& cascades,
+                                             aod::V0s const& v0s,
                                              TracksWCovDcaExtraPidPrPiKa const& tracks,
                                              aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0C", false);
 
   void processToOmegaPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
-                                             CascFull const& cascFull,
-                                             CascadesLinked const& cascadesLinked,
+                                             aod::Cascades const& cascades,
+                                             aod::V0s const& v0s, ,
                                              TracksWCovDcaExtraPidPrPiKa const& tracks,
                                              aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0M", false);
 
@@ -1172,34 +1284,34 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   /*~~~~~~~~~~~~~~~~~*/
   void processToOmegaKaWithDCAFitterNoCent(SelectedCollisions const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
-                                           CascFull const& cascFull,
-                                           CascadesLinked const& cascadesLinked,
+                                           aod::Cascades const& cascades,
+                                           aod::V0s const& v0s,
                                            TracksWCovDcaExtraPidPrPiKa const& tracks,
                                            aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
+    runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Ka via DcaFitter method, no centrality", false);
 
   void processToOmegaKaWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
-                                             CascFull const& cascFull,
-                                             CascadesLinked const& cascadesLinked,
+                                             aod::Cascades const& cascades,
+                                             aod::V0s const& v0s,
                                              TracksWCovDcaExtraPidPrPiKa const& tracks,
                                              aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0C", false);
 
   void processToOmegaKaWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
-                                             CascFull const& cascFull,
-                                             CascadesLinked const& cascadesLinked,
+                                             aod::Cascades const& cascades,
+                                             aod::V0s, const& v0s, ,
                                              TracksWCovDcaExtraPidPrPiKa const& tracks,
                                              aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaPi);
+    runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0M", false);
 
@@ -1214,34 +1326,34 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   /*~~~~~~~~~~~~~~*/
   void processToXiPiWithKFParticleNoCent(SelectedCollisions const& collisions,
                                          aod::HfCascLf2Prongs const& candidates,
-                                         KFCascFull const& kfCascFull,
-                                         KFCascadesLinked const& kfCascadesLinked,
+                                         aod::Cascades const& cascades,
+                                         aod::V0s const& v0s, ,
                                          TracksWCovDcaExtraPidPrPiKa const& tracks,
                                          aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
+    runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithKFParticleNoCent, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, no centrality", false);
 
   void processToXiPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
-                                           KFCascFull const& kfCascFull,
-                                           KFCascadesLinked const& kfCascadesLinked,
+                                           aod::Cascades const& cascades,
+                                           aod::V0s const& v0s,
                                            TracksWCovDcaExtraPidPrPiKa const& tracks,
                                            aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
+    runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithKFParticleCentFT0C, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, centrality on FT0C", false);
 
   void processToXiPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
-                                           KFCascFull const& kfCascFull,
-                                           KFCascadesLinked const& kfCascadesLinked,
+                                           aod::Cascades const& cascades,
+                                           aod::V0s const& v0s,
                                            TracksWCovDcaExtraPidPrPiKa const& tracks,
                                            aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
+    runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToXiPiWithKFParticleCentFT0M, "Charm Baryon decaying to Xi Pireconstruction via KFParticle method, centrality on FT0M", false);
 
@@ -1250,34 +1362,34 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   /*~~~~~~~~~~~~~~~~~*/
   void processToOmegaPiWithKFParticleNoCent(SelectedCollisions const& collisions,
                                             aod::HfCascLf2Prongs const& candidates,
-                                            KFCascFull const& kfCascFull,
-                                            KFCascadesLinked const& kfCascadesLinked,
+                                            aod::Cascades const& cascades,
+                                            aod::V0s const& v0s,
                                             TracksWCovDcaExtraPidPrPiKa const& tracks,
                                             aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
+    runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithKFParticleNoCent, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, no centrality", false);
 
   void processToOmegaPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
-                                              KFCascFull const& kfCascFull,
-                                              KFCascadesLinked const& kfCascadesLinked,
+                                              aod::Cascades const& cascades,
+                                              aod::V0s const& v0s,
                                               TracksWCovDcaExtraPidPrPiKa const& tracks,
                                               aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
+    runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0C", false);
 
   void processToOmegaPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
-                                              KFCascFull const& kfCascFull,
-                                              KFCascadesLinked const& kfCascadesLinked,
+                                              aod::Cascades const& cascades,
+                                              aod::V0s const& v0s,
                                               TracksWCovDcaExtraPidPrPiKa const& tracks,
                                               aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
+    runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaPiWithKFParticleCentFT0M, "Charm Baryong decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0M", false);
 
@@ -1286,34 +1398,34 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   /*~~~~~~~~~~~~~~~~~*/
   void processToOmegaKaWithKFParticleNoCent(SelectedCollisions const& collisions,
                                             aod::HfCascLf2Prongs const& candidates,
-                                            KFCascFull const& kfCascFull,
-                                            KFCascadesLinked const& kfCascadesLinked,
+                                            aod::Cascades const& cascades,
+                                            aod::V0s const& v0s,
                                             TracksWCovDcaExtraPidPrPiKa const& tracks,
                                             aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
+    runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithKFParticleNoCent, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, no centrality", false);
 
   void processToOmegaKaWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
-                                              KFCascFull const& kfCascFull,
-                                              KFCascadesLinked const& kfCascadesLinked,
+                                              aod::Cascades const& cascades,
+                                              aod::V0s const& v0s,
                                               TracksWCovDcaExtraPidPrPiKa const& tracks,
                                               aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
+    runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0C", false);
 
   void processToOmegaKaWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
-                                              KFCascFull const& kfCascFull,
-                                              KFCascadesLinked const& kfCascadesLinked,
+                                              aod::Cascades const& cascades,
+                                              aod::V0s const& v0s,
                                               TracksWCovDcaExtraPidPrPiKa const& tracks,
                                               aod::BCsWithTimestamps const& bcsWithTimestamps)
   {
-    runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
+    runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascades, v0s, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Qa, processToOmegaKaWithKFParticleCentFT0M, "Charm Baryong decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0M", false);
 
