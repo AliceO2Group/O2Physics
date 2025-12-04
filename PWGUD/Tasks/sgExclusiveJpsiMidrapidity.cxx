@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 using LorentzVector = ROOT::Math::PxPyPzMVector;
 
 // Struct to define the analysis task
-struct SGExclusiveJpsiMidrapidity {
+struct sgExclusiveJpsiMidrapidity {
   // SGSelector object to manage track and collision selections
   SGSelector sgSelector;
 
@@ -332,5 +332,5 @@ struct SGExclusiveJpsiMidrapidity {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SGExclusiveJpsiMidrapidity>(cfgc)};
+    adaptAnalysisTask<sgExclusiveJpsiMidrapidity>(cfgc)};
 }
