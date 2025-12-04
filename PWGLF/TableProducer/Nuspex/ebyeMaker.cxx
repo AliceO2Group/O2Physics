@@ -257,7 +257,6 @@ struct EbyeMaker {
 
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
   Configurable<LabeledArray<float>> cfgDcaSelsParam{"cfgDcaSelsParam", {kDcaSelsParam[0], 3, 3, dcaSelsNames, dcaParNames}, "DCA threshold settings"};
-  Configurable<bool> fillMini{"fillMini", false, "fill mini tables"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -987,38 +986,36 @@ struct EbyeMaker {
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
       histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
 
-      if (fillMini) {
-        miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
-        for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
-          auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-          fillTableMiniTrack<false>(candidateTrack, tk);
-        }
-      } else {
-        collisionEbyeTable(centrality, collision.posZ());
-        for (const auto& candidateV0 : candidateV0s) {
-          lambdaEbyeTable(
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
+        auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
+        fillTableMiniTrack<false>(candidateTrack, tk);
+      }
+
+      collisionEbyeTable(centrality, collision.posZ());
+      for (const auto& candidateV0 : candidateV0s) {
+        lambdaEbyeTable(
+          collisionEbyeTable.lastIndex(),
+          candidateV0.pt,
+          candidateV0.eta,
+          candidateV0.mass,
+          candidateV0.dcav0pv,
+          candidateV0.dcav0daugh,
+          candidateV0.cpa,
+          candidateV0.globalIndexNeg,
+          candidateV0.globalIndexPos);
+      }
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
-            candidateV0.pt,
-            candidateV0.eta,
-            candidateV0.mass,
-            candidateV0.dcav0pv,
-            candidateV0.dcav0daugh,
-            candidateV0.cpa,
-            candidateV0.globalIndexNeg,
-            candidateV0.globalIndexPos);
-        }
-        for (int iP{0}; iP < kNpart; ++iP) {
-          for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
-            nucleiEbyeTable(
-              collisionEbyeTable.lastIndex(),
-              candidateTrack.pt,
-              candidateTrack.eta,
-              candidateTrack.mass,
-              candidateTrack.dcapv,
-              candidateTrack.tpcncls,
-              candidateTrack.tpcnsigma,
-              candidateTrack.tofmass);
-          }
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
         }
       }
     }
@@ -1129,46 +1126,44 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      if (fillMini) {
-        miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
-        for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
-          auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
-          fillTableMiniTrack<true>(candidateTrack, tk);
-        }
-      } else {
-        collisionEbyeTable(centrality, collision.posZ());
-        for (const auto& candidateV0 : candidateV0s) {
-          mcLambdaEbyeTable(
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
+        auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
+        fillTableMiniTrack<true>(candidateTrack, tk);
+      }
+
+      collisionEbyeTable(centrality, collision.posZ());
+      for (const auto& candidateV0 : candidateV0s) {
+        mcLambdaEbyeTable(
+          collisionEbyeTable.lastIndex(),
+          candidateV0.pt,
+          candidateV0.eta,
+          candidateV0.mass,
+          candidateV0.dcav0pv,
+          candidateV0.dcav0daugh,
+          candidateV0.cpa,
+          candidateV0.globalIndexNeg,
+          candidateV0.globalIndexPos,
+          candidateV0.genpt,
+          candidateV0.geneta,
+          candidateV0.pdgcode,
+          candidateV0.isreco);
+      }
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
-            candidateV0.pt,
-            candidateV0.eta,
-            candidateV0.mass,
-            candidateV0.dcav0pv,
-            candidateV0.dcav0daugh,
-            candidateV0.cpa,
-            candidateV0.globalIndexNeg,
-            candidateV0.globalIndexPos,
-            candidateV0.genpt,
-            candidateV0.geneta,
-            candidateV0.pdgcode,
-            candidateV0.isreco);
-        }
-        for (int iP{0}; iP < kNpart; ++iP) {
-          for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
-            mcNucleiEbyeTable(
-              collisionEbyeTable.lastIndex(),
-              candidateTrack.pt,
-              candidateTrack.eta,
-              candidateTrack.mass,
-              candidateTrack.dcapv,
-              candidateTrack.tpcncls,
-              candidateTrack.tpcnsigma,
-              candidateTrack.tofmass,
-              candidateTrack.genpt,
-              candidateTrack.geneta,
-              candidateTrack.pdgcode,
-              candidateTrack.isreco);
-          }
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
         }
       }
     }
