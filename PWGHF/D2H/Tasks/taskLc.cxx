@@ -790,7 +790,7 @@ struct HfTaskLc {
         const auto decayLength = candidate.decayLength();
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
-        const auto rapidity = std::abs(HfHelper::yLc(candidate));
+        const auto rapidity = HfHelper::yLc(candidate);
 
         if (fillTHn) {
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);

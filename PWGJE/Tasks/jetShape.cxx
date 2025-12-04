@@ -110,15 +110,15 @@ struct JetShapeTask {
                               {"ptResolution", "ptResolution", {HistType::kTH2F, {{nBinsPt, 0, ptMax}, {100, -1.0, +1.0}}}},
                               {"mcCentralityReco", "mcCentralityReco", {HistType::kTH1F, {{100, 0, 100}}}},
                               {"mcCentralitySim", "mcCentralitySim", {HistType::kTH1F, {{100, 0, 100}}}},
-                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptHistogramProton", "ptHistogramProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptHistogramProtonTof", "ptHistogramProtonTof", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}},
-                              {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTH1F, {{nBinsPt, 0, ptMax}}}}}};
+                              {"ptHistogramPion", "ptHistogramPion", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptHistogramKaon", "ptHistogramKaon", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptHistogramProton", "ptHistogramProton", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptHistogramPionTof", "ptHistogramPionTof", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptHistogramKaonTof", "ptHistogramKaonTof", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptHistogramProtonTof", "ptHistogramProtonTof", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptGeneratedPion", "ptGeneratedPion", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptGeneratedKaon", "ptGeneratedKaon", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}},
+                              {"ptGeneratedProton", "ptGeneratedProton", {HistType::kTHnSparseD, {{nBinsPt, 0, ptMax}, {nBinsJetPt, jetPtMinForCut, jetPtMaxForCut}, {nBinsCentrality, centralityMinForCut, centralityMaxForCut}}}}}};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
@@ -204,6 +204,7 @@ struct JetShapeTask {
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
   Preslice<soa::Filtered<aod::ChargedMCParticleLevelJets>> perMcCollisionJets = aod::jet::mcCollisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void processJetShape(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, aod::JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
@@ -282,7 +283,7 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processJetShape, "JetShape", false);
 
-  void processProductionRatio(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
+  void processProductionRatio(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
@@ -295,9 +296,8 @@ struct JetShapeTask {
         continue;
       }
 
-      registry.fill(HIST("jetPt"), jet.pt());
-      registry.fill(HIST("jetEta"), jet.eta());
-      registry.fill(HIST("jetPhi"), jet.phi());
+      // Get underlying event subtracted jet.pt() as ptCorr
+      float ptCorr = jet.pt() - collision.rho() * jet.area();
 
       // tracks conditions
       for (const auto& track : tracks) {
@@ -324,6 +324,13 @@ struct JetShapeTask {
           continue;
         if (track.itsNCls() < nclItsMin)
           continue;
+
+        registry.fill(HIST("jetPt"), jet.pt());
+        registry.fill(HIST("ptCorr"), ptCorr);
+        registry.fill(HIST("area"), jet.area());
+        registry.fill(HIST("rho"), collision.rho());
+        registry.fill(HIST("jetEta"), jet.eta());
+        registry.fill(HIST("jetPhi"), jet.phi());
 
         // PID check
         registry.fill(HIST("tofMass"), track.mass());
@@ -359,15 +366,15 @@ struct JetShapeTask {
           registry.fill(HIST("tpcDedxOutOfJet"), track.p(), track.tpcSignal());
 
           if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
-            registry.fill(HIST("tpcTofPiOutOfJet"), track.p(), track.tpcNSigmaPi(), jet.pt(), collision.centFT0M());
+            registry.fill(HIST("tpcTofPiOutOfJet"), track.p(), track.tpcNSigmaPi(), ptCorr, collision.centFT0M());
             if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
-              registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt(), jet.pt(), collision.centFT0M());
+              registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt(), ptCorr, collision.centFT0M());
             }
           }
           if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
-            registry.fill(HIST("tpcTofPrOutOfJet"), track.p(), track.tpcNSigmaPr(), jet.pt(), collision.centFT0M());
+            registry.fill(HIST("tpcTofPrOutOfJet"), track.p(), track.tpcNSigmaPr(), ptCorr, collision.centFT0M());
             if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
-              registry.fill(HIST("pVsPtForPrOutOfJet"), track.p(), track.pt(), jet.pt(), collision.centFT0M());
+              registry.fill(HIST("pVsPtForPrOutOfJet"), track.p(), track.pt(), ptCorr, collision.centFT0M());
             }
           }
         }
@@ -377,16 +384,16 @@ struct JetShapeTask {
         registry.fill(HIST("tofBeta"), track.p(), track.beta());
 
         if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
-          registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance, jet.pt(), collision.centFT0M());
+          registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance, ptCorr, collision.centFT0M());
           if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
-            registry.fill(HIST("pVsPtForPr"), track.p(), track.pt(), distance, jet.pt(), collision.centFT0M());
+            registry.fill(HIST("pVsPtForPr"), track.p(), track.pt(), distance, ptCorr, collision.centFT0M());
           }
         }
 
         if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
-          registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance, jet.pt(), collision.centFT0M());
+          registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance, ptCorr, collision.centFT0M());
           if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
-            registry.fill(HIST("pVsPtForPi"), track.p(), track.pt(), distance, jet.pt(), collision.centFT0M());
+            registry.fill(HIST("pVsPtForPi"), track.p(), track.pt(), distance, ptCorr, collision.centFT0M());
           }
         }
       }
@@ -394,47 +401,58 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processProductionRatio, "production ratio", false);
 
-  void processReco(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  void processReco(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const& mcParticles)
   {
+
+    (void)mcCollision;
+    (void)mcParticles;
+
     registry.fill(HIST("eventCounter"), 0.5);
+    float centrality = collision.centFT0M();
 
-    for (const auto& track : tracks) {
-      if (track.has_mcParticle()) {
-        auto mcParticle = track.mcParticle();
-        registry.fill(HIST("ptResolution"), track.pt(), track.pt() - mcParticle.pt());
+    for (const auto& mcdjet : mcdjets) {
 
-        if (std::abs(track.eta()) > etaTrUp)
-          continue;
-        if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
-          continue;
-        if (std::abs(track.dcaXY()) > dcaxyMax)
-          continue;
-        if (track.itsChi2NCl() > chi2ItsMax)
-          continue;
-        if (track.tpcChi2NCl() > chi2TpcMax)
-          continue;
-        if (track.tpcNClsFound() < nclTpcMin)
-          continue;
-        if (track.itsNCls() < nclItsMin)
-          continue;
+      // Get underlying event subtracted jet.pt() as ptCorr
+      float mcdPtCorr = mcdjet.pt() - collision.rho() * mcdjet.area();
 
-        if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
-            registry.fill(HIST("ptHistogramPion"), mcParticle.pt());
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
-            registry.fill(HIST("ptHistogramKaon"), mcParticle.pt());
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
-            registry.fill(HIST("ptHistogramProton"), mcParticle.pt());
-        }
+      for (const auto& track : tracks) {
+        if (track.has_mcParticle()) {
+          auto mcParticle = track.mcParticle();
+          registry.fill(HIST("ptResolution"), track.pt(), track.pt() - mcParticle.pt());
 
-        if (track.hasTOF()) {
+          if (std::abs(track.eta()) > etaTrUp)
+            continue;
+          if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
+            continue;
+          if (std::abs(track.dcaXY()) > dcaxyMax)
+            continue;
+          if (track.itsChi2NCl() > chi2ItsMax)
+            continue;
+          if (track.tpcChi2NCl() > chi2TpcMax)
+            continue;
+          if (track.tpcNClsFound() < nclTpcMin)
+            continue;
+          if (track.itsNCls() < nclItsMin)
+            continue;
+
           if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
             if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
-              registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt());
+              registry.fill(HIST("ptHistogramPion"), mcParticle.pt(), mcdPtCorr, centrality);
             if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
-              registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt());
+              registry.fill(HIST("ptHistogramKaon"), mcParticle.pt(), mcdPtCorr, centrality);
             if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
-              registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt());
+              registry.fill(HIST("ptHistogramProton"), mcParticle.pt(), mcdPtCorr, centrality);
+          }
+
+          if (track.hasTOF()) {
+            if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+              if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+                registry.fill(HIST("ptHistogramPionTof"), mcParticle.pt(), mcdPtCorr, centrality);
+              if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+                registry.fill(HIST("ptHistogramKaonTof"), mcParticle.pt(), mcdPtCorr, centrality);
+              if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+                registry.fill(HIST("ptHistogramProtonTof"), mcParticle.pt(), mcdPtCorr, centrality);
+            }
           }
         }
       }
@@ -442,20 +460,27 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processReco, "process reconstructed information", true);
 
-  void processSim(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  void processSim(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets, aod::McParticles const& mcParticles)
   {
+    auto mcId = mcCollision.globalIndex();
+    float centrality = mcCollision.centFT0M();
+    registry.fill(HIST("mcCentralitySim"), centrality);
 
-    registry.fill(HIST("mcCentralitySim"), mcCollision.centFT0M());
+    auto mcpjetsPerCollision = mcpjets.sliceBy(perMcCollisionJets, mcId);
+    auto mcParticlesPerCollision = mcParticles.sliceBy(perMcCollision, mcId);
 
-    for (const auto& mcParticle : mcParticles) {
+    for (const auto& mcpjet : mcpjetsPerCollision) {
 
-      if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
-        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
-          registry.fill(HIST("ptGeneratedPion"), mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
-          registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
-          registry.fill(HIST("ptGeneratedProton"), mcParticle.pt());
+      for (const auto& mcParticle : mcParticlesPerCollision) {
+
+        if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
+            registry.fill(HIST("ptGeneratedPion"), mcParticle.pt(), mcpjet.pt(), centrality);
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
+            registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt(), mcpjet.pt(), centrality);
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
+            registry.fill(HIST("ptGeneratedProton"), mcParticle.pt(), mcpjet.pt(), centrality);
+        }
       }
     }
   }

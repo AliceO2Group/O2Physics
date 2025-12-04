@@ -77,6 +77,10 @@ DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
 } // namespace pion_nuclei_tables
 
 DECLARE_SOA_TABLE(PionNucleiTable, "AOD", "PINUCLEITABLE",
+                  pion_nuclei_tables::PtPi,
+                  pion_nuclei_tables::PtNu,
+                  pion_nuclei_tables::InnerParamTPCPi,
+                  pion_nuclei_tables::InnerParamTPCNu,
                   pion_nuclei_tables::TrackIDPi,
                   pion_nuclei_tables::TrackIDNu)
 DECLARE_SOA_TABLE(PionHyperTable, "AOD", "PIHYPERTABLE",
