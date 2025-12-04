@@ -21,6 +21,7 @@
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/OccupancyTables.h"
 #include "Common/DataModel/PIDResponse.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -90,19 +91,29 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
 #define TPCSKIMS_COLUMNS_TOF \
   TPCSKIMS_COLUMNS_BASE
 
-#define TPCSKIMS_COLUMNS_TRACK_QA         \
-  tpcskims::BcGlobalIndex,                \
-    tpcskims::BcTimeFrameId,              \
-    tpcskims::BcBcInTimeFrame,            \
-    o2::aod::trackqa::TPCClusterByteMask, \
-    o2::aod::trackqa::TPCdEdxMax0R,       \
-    o2::aod::trackqa::TPCdEdxMax1R,       \
-    o2::aod::trackqa::TPCdEdxMax2R,       \
-    o2::aod::trackqa::TPCdEdxMax3R,       \
-    o2::aod::trackqa::TPCdEdxTot0R,       \
-    o2::aod::trackqa::TPCdEdxTot1R,       \
-    o2::aod::trackqa::TPCdEdxTot2R,       \
-    o2::aod::trackqa::TPCdEdxTot3R
+#define TPCSKIMS_COLUMNS_TRACK_QA                   \
+  tpcskims::BcGlobalIndex,                          \
+    tpcskims::BcTimeFrameId,                        \
+    tpcskims::BcBcInTimeFrame,                      \
+    o2::aod::trackqa::TPCClusterByteMask,           \
+    o2::aod::trackqa::TPCdEdxMax0R,                 \
+    o2::aod::trackqa::TPCdEdxMax1R,                 \
+    o2::aod::trackqa::TPCdEdxMax2R,                 \
+    o2::aod::trackqa::TPCdEdxMax3R,                 \
+    o2::aod::trackqa::TPCdEdxTot0R,                 \
+    o2::aod::trackqa::TPCdEdxTot1R,                 \
+    o2::aod::trackqa::TPCdEdxTot2R,                 \
+    o2::aod::trackqa::TPCdEdxTot3R,                 \
+    o2::aod::trackmeanocc::TmoPrimUnfm80,           \
+    o2::aod::trackmeanocc::TmoFV0AUnfm80,           \
+    o2::aod::trackmeanocc::TmoFT0AUnfm80,           \
+    o2::aod::trackmeanocc::TmoFT0CUnfm80,           \
+    o2::aod::trackmeanocc::TmoRobustT0V0PrimUnfm80, \
+    o2::aod::trackmeanocc::TwmoPrimUnfm80,          \
+    o2::aod::trackmeanocc::TwmoFV0AUnfm80,          \
+    o2::aod::trackmeanocc::TwmoFT0AUnfm80,          \
+    o2::aod::trackmeanocc::TwmoFT0CUnfm80,          \
+    o2::aod::trackmeanocc::TwmoRobustT0V0PrimUnfm80
 
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   TPCSKIMS_COLUMNS_V0);

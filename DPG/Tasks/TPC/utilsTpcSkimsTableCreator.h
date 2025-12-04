@@ -20,6 +20,10 @@
 #ifndef DPG_TASKS_TPC_UTILSTPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_UTILSTPCSKIMSTABLECREATOR_H_
 
+#include "tpcSkimsTableCreator.h"
+
+#include "Common/DataModel/OccupancyTables.h"
+
 #include <TRandom3.h>
 
 namespace o2::dpg_tpcskimstablecreator
@@ -102,6 +106,41 @@ inline double tpcSignalGeneric(const TrkType& track)
   } else {
     return track.tpcSignal();
   }
+}
+
+struct occupancyValues {
+  float tmoPrimUnfm80{UndefValueFloat};
+  float tmoFV0AUnfm80{UndefValueFloat};
+  float tmoFT0AUnfm80{UndefValueFloat};
+  float tmoFT0CUnfm80{UndefValueFloat};
+  float tmoRT0V0PrimUnfm80{UndefValueFloat};
+  float twmoPrimUnfm80{UndefValueFloat};
+  float twmoFV0AUnfm80{UndefValueFloat};
+  float twmoFT0AUnfm80{UndefValueFloat};
+  float twmoFT0CUnfm80{UndefValueFloat};
+  float twmoRT0V0PrimUnfm80{UndefValueFloat};
+};
+
+using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoToTrackQA, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
+
+/// Evaluate occupancy-related variables
+template <typename TrkType>
+inline void evaluateOccupancyVariables(const TrkType& track, occupancyValues& occValues)
+{
+  if (track.tmoId() == -1) {
+    return;
+  }
+  const auto& tmoFromTrack = track.template tmo_as<TrackMeanOccs>();
+  occValues.tmoPrimUnfm80 = tmoFromTrack.tmoPrimUnfm80();
+  occValues.tmoFV0AUnfm80 = tmoFromTrack.tmoFV0AUnfm80();
+  occValues.tmoFT0AUnfm80 = tmoFromTrack.tmoFT0AUnfm80();
+  occValues.tmoFT0CUnfm80 = tmoFromTrack.tmoFT0CUnfm80();
+  occValues.tmoRT0V0PrimUnfm80 = tmoFromTrack.tmoRobustT0V0PrimUnfm80();
+  occValues.twmoPrimUnfm80 = tmoFromTrack.twmoPrimUnfm80();
+  occValues.twmoFV0AUnfm80 = tmoFromTrack.twmoFV0AUnfm80();
+  occValues.twmoFT0AUnfm80 = tmoFromTrack.twmoFT0AUnfm80();
+  occValues.twmoFT0CUnfm80 = tmoFromTrack.twmoFT0CUnfm80();
+  occValues.twmoRT0V0PrimUnfm80 = tmoFromTrack.twmoRobustT0V0PrimUnfm80();
 }
 
 } // namespace o2::dpg_tpcskimstablecreator

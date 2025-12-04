@@ -140,11 +140,13 @@ struct TreeWriterTpcV0 {
   TRandom3* fRndm = new TRandom3(0);
 
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
-  using TrksWithDEdxCorrection = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection, aod::DEdxsCorrected>;
+  using TrksWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
   using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID, aod::V0TOFNSigmas>;
   using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID, aod::CascTOFNSigmas>;
+  using TrksTmo = soa::Join<Trks, aod::TrackToTmo>;
+  using TrksTmoWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected, aod::TrackToTmo>;
 
   Preslice<V0sWithID> perCollisionV0s = aod::v0data::collisionId;
   Preslice<CascsWithID> perCollisionCascs = aod::cascdata::collisionId;
@@ -233,7 +235,7 @@ struct TreeWriterTpcV0 {
   }
 
   template <bool DoUseCorrectedDeDx, int ModeId, typename T, typename C, typename V0Casc>
-  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame)
+  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const float hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame, const occupancyValues& occValues)
   {
     const double ncl = track.tpcNClsFound();
     const double nclPID = track.tpcNClsFindableMinusPID();
@@ -356,6 +358,16 @@ struct TreeWriterTpcV0 {
                             existTrkQA ? trackQA.tpcdEdxTot1R() : UndefValueInt,
                             existTrkQA ? trackQA.tpcdEdxTot2R() : UndefValueInt,
                             existTrkQA ? trackQA.tpcdEdxTot3R() : UndefValueInt,
+                            occValues.tmoPrimUnfm80,
+                            occValues.tmoFV0AUnfm80,
+                            occValues.tmoFT0AUnfm80,
+                            occValues.tmoFT0CUnfm80,
+                            occValues.tmoRT0V0PrimUnfm80,
+                            occValues.twmoPrimUnfm80,
+                            occValues.twmoFV0AUnfm80,
+                            occValues.twmoFT0AUnfm80,
+                            occValues.twmoFT0CUnfm80,
+                            occValues.twmoRT0V0PrimUnfm80,
                             existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       }
     }
@@ -436,7 +448,11 @@ struct TreeWriterTpcV0 {
         const bool passNSigmaTofCut = std::fabs(daughter.tofNSigma) < daughter.nSigmaTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) < NSigmaTofUnmatchedEqualityTolerance;
         const bool passMatchTofRequirement = !daughter.rejectNoTofDauTrack || std::fabs(daughter.tofNSigma - NSigmaTofUnmatched) > NSigmaTofUnmatchedEqualityTolerance;
         if (passTrackSelection && passDownsamplig && passNSigmaTofCut && passMatchTofRequirement) {
-          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+          occupancyValues occValues{};
+          if constexpr (ModeId == ModeWithTrkQA) {
+            evaluateOccupancyVariables(dauTrack, occValues);
+          }
+          fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues);
         }
       };
 
@@ -539,24 +555,26 @@ struct TreeWriterTpcV0 {
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQAWithCorrecteddEdx, "Standard V0 Samples with dEdx from Track QA for PID with corrected dEdx", false);
 
   void processWithTrQA(Colls const& collisions,
-                       Trks const& myTracks,
+                       TrksTmo const& myTracks,
                        V0sWithID const& myV0s,
                        CascsWithID const& myCascs,
                        MyBCTable const&,
-                       aod::TracksQAVersion const& tracksQA)
+                       aod::TracksQAVersion const& tracksQA,
+                       TrackMeanOccs const&)
   {
-    runV0<false, ModeWithTrkQA, Trks, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
+    runV0<false, ModeWithTrkQA, TrksTmo, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
   }
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQA, "Standard V0 Samples with Track QA for PID", false);
 
   void processWithTrQAWithCorrecteddEdx(Colls const& collisions,
-                                        TrksWithDEdxCorrection const& myTracks,
+                                        TrksTmoWithDEdxCorrection const& myTracks,
                                         V0sWithID const& myV0s,
                                         CascsWithID const& myCascs,
                                         MyBCTable const&,
-                                        aod::TracksQAVersion const& tracksQA)
+                                        aod::TracksQAVersion const& tracksQA,
+                                        TrackMeanOccs const&)
   {
-    runV0<true, ModeWithTrkQA, TrksWithDEdxCorrection, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
+    runV0<true, ModeWithTrkQA, TrksTmoWithDEdxCorrection, MyBCTable>(collisions, myTracks, myV0s, myCascs, tracksQA);
   }
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQAWithCorrecteddEdx, "Standard V0 Samples with Track QA for PID with corrected dEdx", false);
 
@@ -646,17 +664,16 @@ struct TreeWriterTpcTof {
                          aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa,
                          aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr,
                          aod::TrackSelection>;
-  using TrksWithDEdxCorrection = soa::Join<aod::Tracks, aod::TracksExtra,
-                                           aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                                           aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr,
-                                           aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                                           aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr,
-                                           aod::TrackSelection, aod::DEdxsCorrected>;
+  using TrksWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
+  using TrksTmo = soa::Join<Trks, aod::TrackToTmo>;
+  using TrksTmoWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected, aod::TrackToTmo>;
 
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
   Preslice<TrksWithDEdxCorrection> perCollisionTracksWithCorrecteddEdx = aod::track::collisionId;
+  Preslice<TrksTmo> perCollisionTracksTmo = aod::track::collisionId;
+  Preslice<TrksTmoWithDEdxCorrection> perCollisionTracksTmoWithCorrecteddEdx = aod::track::collisionId;
 
   void init(o2::framework::InitContext&)
   {
@@ -671,7 +688,7 @@ struct TreeWriterTpcTof {
   }
 
   template <bool DoCorrectDeDx, int ModeId, typename T, typename C>
-  void fillSkimmedTpcTofTable(T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const double hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame)
+  void fillSkimmedTpcTofTable(T const& track, aod::TracksQA const& trackQA, const bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, const int runnumber, const double dwnSmplFactor, const double hadronicRate, const int bcGlobalIndex, const int bcTimeFrameId, const int bcBcInTimeFrame, const occupancyValues& occValues)
   {
     const double ncl = track.tpcNClsFound();
     const double nclPID = track.tpcNClsFindableMinusPID();
@@ -769,13 +786,23 @@ struct TreeWriterTpcTof {
                                existTrkQA ? trackQA.tpcdEdxTot1R() : UndefValueInt,
                                existTrkQA ? trackQA.tpcdEdxTot2R() : UndefValueInt,
                                existTrkQA ? trackQA.tpcdEdxTot3R() : UndefValueInt,
+                               occValues.tmoPrimUnfm80,
+                               occValues.tmoFV0AUnfm80,
+                               occValues.tmoFT0AUnfm80,
+                               occValues.tmoFT0CUnfm80,
+                               occValues.tmoRT0V0PrimUnfm80,
+                               occValues.twmoPrimUnfm80,
+                               occValues.twmoFV0AUnfm80,
+                               occValues.twmoFT0AUnfm80,
+                               occValues.twmoFT0CUnfm80,
+                               occValues.twmoRT0V0PrimUnfm80,
                                existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
       }
     }
   } /// fillSkimmedTpcTofTable
 
-  template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType>
-  void runTof(Colls const& collisions, TrksType const& myTracks, TrkQAType const& tracksQA, Preslice<TrksType> const& perCollisionTracksType)
+  template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType, typename TMOType>
+  void runTof(Colls const& collisions, TrksType const& myTracks, TrkQAType const& tracksQA, Preslice<TrksType> const& perCollisionTracksType, TMOType const& trackMeanOccs)
   {
     constexpr bool IsWithTrackQa = ModeId != ModeStandard;
 
@@ -792,9 +819,13 @@ struct TreeWriterTpcTof {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
-      const auto& tracksWithITSPid = soa::Attach<TrksType,
-                                                 aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr,
-                                                 aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr>(tracks);
+      auto tracksWithITSPid = soa::Attach<TrksType,
+                                          aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr,
+                                          aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr>(tracks);
+
+      if constexpr (ModeId == ModeWithTrkQA) {
+        tracksWithITSPid.bindExternalIndices(&trackMeanOccs);
+      }
 
       const auto& bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
@@ -838,12 +869,17 @@ struct TreeWriterTpcTof {
 
         TofTrack tofPion(false, UndefValueDouble, maxMomTPCOnlyPi, trk.tpcNSigmaPi(), nSigmaTPCOnlyPi, downsamplingTsalisPions, MassPiPlus, trk.tofNSigmaPi(), trk.itsNSigmaPi(), trk.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidPion, dwnSmplFactorPi, nSigmaTofTpctofPi, nSigmaTpcTpctofPi);
 
+        occupancyValues occValues;
+        if constexpr (ModeId == ModeWithTrkQA) {
+          evaluateOccupancyVariables(trk, occValues);
+        }
+
         for (const auto& tofTrack : {&tofTriton, &tofDeuteron, &tofProton, &tofKaon, &tofPion}) {
           if ((!tofTrack->isApplyHardCutOnly || trk.tpcInnerParam() < tofTrack->maxMomHardCutOnly) &&
               ((trk.tpcInnerParam() <= tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTPCOnly) ||
                (trk.tpcInnerParam() > tofTrack->maxMomTPCOnly && std::fabs(tofTrack->tofNSigma) < tofTrack->nSigmaTofTpctof && std::fabs(tofTrack->tpcNSigma) < tofTrack->nSigmaTpcTpctof)) &&
               downsampleTsalisCharged(fRndm, trk.pt(), tofTrack->downsamplingTsalis, tofTrack->mass, sqrtSNN)) {
-            fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedTpcTofTable<IsCorrectedDeDx, ModeId>(trk, trackQA, existTrkQA, collision, tofTrack->tpcNSigma, tofTrack->tofNSigma, tofTrack->itsNSigma, tofTrack->tpcExpSignal, tofTrack->pid, runnumber, tofTrack->dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues);
           }
         }
       } /// Loop tracks
@@ -854,7 +890,7 @@ struct TreeWriterTpcTof {
                        Trks const& myTracks,
                        aod::BCsWithTimestamps const&)
   {
-    runTof<false, ModeStandard, Trks, aod::BCsWithTimestamps>(collisions, myTracks, static_cast<TObject*>(nullptr), perCollisionTracks);
+    runTof<false, ModeStandard, Trks, aod::BCsWithTimestamps>(collisions, myTracks, static_cast<TObject*>(nullptr), perCollisionTracks, static_cast<TObject*>(nullptr));
   }
   PROCESS_SWITCH(TreeWriterTpcTof, processStandard, "Standard Samples for PID", true);
 
@@ -862,7 +898,7 @@ struct TreeWriterTpcTof {
                                         TrksWithDEdxCorrection const& myTracks,
                                         aod::BCsWithTimestamps const&)
   {
-    runTof<true, ModeStandard, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, static_cast<TObject*>(nullptr), perCollisionTracksWithCorrecteddEdx);
+    runTof<true, ModeStandard, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, static_cast<TObject*>(nullptr), perCollisionTracksWithCorrecteddEdx, static_cast<TObject*>(nullptr));
   }
   PROCESS_SWITCH(TreeWriterTpcTof, processStandardWithCorrecteddEdx, "Standard Samples for PID with corrected dEdx", false);
 
@@ -871,7 +907,7 @@ struct TreeWriterTpcTof {
                            aod::BCsWithTimestamps const&,
                            aod::TracksQAVersion const& tracksQA)
   {
-    runTof<false, ModeWithdEdxTrkQA, Trks, aod::BCsWithTimestamps>(collisions, myTracks, tracksQA, perCollisionTracks);
+    runTof<false, ModeWithdEdxTrkQA, Trks, aod::BCsWithTimestamps>(collisions, myTracks, tracksQA, perCollisionTracks, static_cast<TObject*>(nullptr));
   }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithdEdxTrQA, "Samples for PID with TrackQA info", false);
 
@@ -880,25 +916,27 @@ struct TreeWriterTpcTof {
                                             aod::BCsWithTimestamps const&,
                                             aod::TracksQAVersion const& tracksQA)
   {
-    runTof<true, ModeWithdEdxTrkQA, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, tracksQA, perCollisionTracksWithCorrecteddEdx);
+    runTof<true, ModeWithdEdxTrkQA, TrksWithDEdxCorrection, aod::BCsWithTimestamps>(collisions, myTracks, tracksQA, perCollisionTracksWithCorrecteddEdx, static_cast<TObject*>(nullptr));
   }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithdEdxTrQAWithCorrecteddEdx, "Samples for PID with TrackQA info with corrected dEdx", false);
 
   void processWithTrQA(Colls const& collisions,
-                       Trks const& myTracks,
+                       TrksTmo const& myTracks,
                        MyBCTable const&,
-                       aod::TracksQAVersion const& tracksQA)
+                       aod::TracksQAVersion const& tracksQA,
+                       TrackMeanOccs const& trackMeanOccs)
   {
-    runTof<false, ModeWithTrkQA, Trks, MyBCTable>(collisions, myTracks, tracksQA, perCollisionTracks);
+    runTof<false, ModeWithTrkQA, TrksTmo, MyBCTable>(collisions, myTracks, tracksQA, perCollisionTracksTmo, trackMeanOccs);
   }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithTrQA, "Samples for PID with TrackQA info", false);
 
   void processWithTrQAWithCorrecteddEdx(Colls const& collisions,
-                                        TrksWithDEdxCorrection const& myTracks,
+                                        TrksTmoWithDEdxCorrection const& myTracks,
                                         MyBCTable const&,
-                                        aod::TracksQAVersion const& tracksQA)
+                                        aod::TracksQAVersion const& tracksQA,
+                                        TrackMeanOccs const& trackMeanOccs)
   {
-    runTof<true, ModeWithTrkQA, TrksWithDEdxCorrection, MyBCTable>(collisions, myTracks, tracksQA, perCollisionTracksWithCorrecteddEdx);
+    runTof<true, ModeWithTrkQA, TrksTmoWithDEdxCorrection, MyBCTable>(collisions, myTracks, tracksQA, perCollisionTracksTmoWithCorrecteddEdx, trackMeanOccs);
   }
   PROCESS_SWITCH(TreeWriterTpcTof, processWithTrQAWithCorrecteddEdx, "Samples for PID with TrackQA info with correced dEdx", false);
 
