@@ -264,7 +264,7 @@ o2physics_add_dpl_workflow(upc-test-rct-tables
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(sg-exclusive-jpsi-cb
-                           SOURCES sgExclusiveJpsiCB.cxx
+o2physics_add_dpl_workflow(sg-exclusive-jpsi-midrapidity
+                           SOURCES sgExclusiveJpsiMidrapidity.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
