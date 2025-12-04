@@ -56,7 +56,7 @@ struct SgExclusiveJpsiMidrapidity {
   Configurable<float> fddaCut{"fddaCut", 10000., "fddaThreshold"};
   Configurable<float> fddcCut{"fddcCut", 10000., "fddcThreshold"};
   Configurable<float> zdcCut{"zdcCut", 10., "zdcThreshold"};
-  Configurable<float> gapSide{"gapSide", 2, "gapSelection"};
+  Configurable<float> selectedGapSide{"selectedGapSide", 2, "gapSelection"};
 
   // Track Selections
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
@@ -89,7 +89,7 @@ struct SgExclusiveJpsiMidrapidity {
     // Fill counter to see effect of each selection criteria
     auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{20, 0., 20.}});
 
-numSelectionCuts] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "rapCut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
+TString selectionCuts[numSelectionCuts] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "rapCut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
 
 for (int i = 0; i < numSelectionCuts; i++) {
   hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCuts[i].Data());
@@ -165,7 +165,7 @@ registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2
     // Gap side to be selected in the configurables
     gapSide = truegapSide;
 
-    if (gapSide == gapSide) {
+    if (gapSide == selectedGapSide) {
 
       registry.fill(HIST("hSelectionCounter"), 2);
 
@@ -222,7 +222,7 @@ registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2
         registry.fill(HIST("hSelectionCounter"), 3);
 
         // Selecting only Two good tracks
-        if ((rawPionTracks.size() == two) && (onlyPionTracks.size() == two)) {
+        if ((static_cast<int>(rawPionTracks.size()) == two) && (static_cast<int>(onlyPionTracks.size()) == two)) {
 
           registry.fill(HIST("hSelectionCounter"), 4);
 
@@ -247,22 +247,22 @@ registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2
 
           registry.fill(HIST("hSelectionCounter"), 6);
 
-          // Two opposite sign tracks
+          //  opposite sign tracks
           if (rawPionTracks[0].sign() != rawPionTracks[1].sign()) {
 
             registry.fill(HIST("hSelectionCounter"), 7);
-            registry.fill(HIST("TwoPion/hMassUnlike"), p.M());
+            registry.fill(HIST("Pion/hMassUnlike"), p.M());
 
             // Flexible mass limits, can be selected in the configurable
             if ((p.M() > massMin) && (p.M() < massMax)) {
 
               registry.fill(HIST("hSelectionCounter"), 8);
 
-              registry.fill(HIST("TwoPion/hPt"), p.Pt());
-              registry.fill(HIST("TwoPion/hEta"), p.Eta());
-              registry.fill(HIST("TwoPion/hRap"), p.Rapidity());
-              registry.fill(HIST("TwoPion/hPhiSystem"), p.Phi());
-              registry.fill(HIST("TwoPion/hMPt"), p.M(), p.Pt());
+              registry.fill(HIST("Pion/hPt"), p.Pt());
+              registry.fill(HIST("Pion/hEta"), p.Eta());
+              registry.fill(HIST("Pion/hRap"), p.Rapidity());
+              registry.fill(HIST("Pion/hPhiSystem"), p.Phi());
+              registry.fill(HIST("Pion/hMPt"), p.M(), p.Pt());
 
               // flexible pt limit for selecting coherent Rho(0)
               if (p.Pt() < ptCoherent) {
@@ -270,27 +270,27 @@ registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2
                 registry.fill(HIST("hSelectionCounter"), 9);
 
                 // Quality Control plots after coherent Rho(0) selection
-                registry.fill(HIST("TwoPion/hEta_t1"), onlyPionTracks[0].Eta());
-                registry.fill(HIST("TwoPion/hEta_t2"), onlyPionTracks[1].Eta());
-                registry.fill(HIST("TwoPion/hPtsingle_track1"), onlyPionTracks[0].Pt());
-                registry.fill(HIST("TwoPion/hPtsingle_track2"), onlyPionTracks[1].Pt());
+                registry.fill(HIST("Pion/hEta_t1"), onlyPionTracks[0].Eta());
+                registry.fill(HIST("Pion/hEta_t2"), onlyPionTracks[1].Eta());
+                registry.fill(HIST("Pion/hPtsingle_track1"), onlyPionTracks[0].Pt());
+                registry.fill(HIST("Pion/hPtsingle_track2"), onlyPionTracks[1].Pt());
 
-                registry.fill(HIST("TwoPion/hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
-                registry.fill(HIST("TwoPion/hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
-                registry.fill(HIST("TwoPion/hNsigElvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaEl());
-                registry.fill(HIST("TwoPion/hNsigElvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaEl());
-                registry.fill(HIST("TwoPion/hNsigEl1vsEl2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
+                registry.fill(HIST("Pion/hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
+                registry.fill(HIST("Pion/hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
+                registry.fill(HIST("Pion/hNsigElvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaEl());
+                registry.fill(HIST("Pion/hNsigElvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaEl());
+                registry.fill(HIST("Pion/hNsigEl1vsEl2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
 
-                registry.fill(HIST("TwoPion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
-                registry.fill(HIST("TwoPion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
-                registry.fill(HIST("TwoPion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
+                registry.fill(HIST("Pion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
+                registry.fill(HIST("Pion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
+                registry.fill(HIST("Pion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
 
-                registry.fill(HIST("TwoPion/Coherent/hMassUnlikeCoherent"), p.M());
+                registry.fill(HIST("Pion/Coherent/hMassUnlikeCoherent"), p.M());
               }
               // Incoherent Rho(0) selection
               if (p.Pt() > ptCoherent) {
                 registry.fill(HIST("hSelectionCounter"), 10);
-                registry.fill(HIST("TwoPion/Incoherent/hMassUnlikeInCoherent"), p.M());
+                registry.fill(HIST("Pion/Incoherent/hMassUnlikeInCoherent"), p.M());
               }
             }
           }
@@ -299,13 +299,13 @@ registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2
           if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
 
             registry.fill(HIST("hSelectionCounter"), 11);
-            registry.fill(HIST("TwoPion/hMassLike"), p.M());
+            registry.fill(HIST("Pion/hMassLike"), p.M());
 
             // Mass limit
             if ((p.M() > massMin) && (p.M() < massMax)) {
 
               registry.fill(HIST("hSelectionCounter"), 12);
-              registry.fill(HIST("TwoPion/hPtLike"), p.Pt());
+              registry.fill(HIST("Pion/hPtLike"), p.Pt());
 
               // Coherent Rho(0) selection
               if (p.Pt() < ptCoherent) {
