@@ -378,42 +378,40 @@ struct TreeWriterTpcV0 {
     }
   } /// fillSkimmedV0Table
 
-  /// Evaluate cosPA of the v0
-  template <typename CollisionType>
-  double getCosPA(V0sWithID::iterator const& v0, CollisionType const&)
+  /// Evaluate cosPA of v0 or casc
+  template <typename V0Casc, typename CollisionType>
+  double getCosPA(V0Casc const& v0casc, CollisionType const& collision)
   {
-    return v0.v0cosPA();
+    static_assert(std::is_same_v<V0Casc, V0sWithID::iterator> || std::is_same_v<V0Casc, CascsWithID::iterator>,
+                  "getCosPA() v0casc's type must be either V0sWithID::iterator or CascsWithID::iterator");
+    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
+      return v0casc.v0cosPA();
+    else
+      return v0casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
   }
 
-  /// Evaluate cosPA of the cascade
-  template <typename CollisionType>
-  double getCosPA(CascsWithID::iterator const& casc, CollisionType const& collision)
+  /// Evaluate radius of v0 or casc
+  template <typename V0Casc>
+  double getRadius(V0Casc const& v0casc)
   {
-    return casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+    static_assert(std::is_same_v<V0Casc, V0sWithID::iterator> || std::is_same_v<V0Casc, CascsWithID::iterator>,
+                  "getRadius() v0casc's type must be either V0sWithID::iterator or CascsWithID::iterator");
+    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
+      return v0casc.v0radius();
+    else
+      return v0casc.cascradius();
   }
 
-  /// Evaluate radius of the v0
-  double getRadius(V0sWithID::iterator const& v0)
+  /// Evaluate add id of v0 or casc
+  template <typename V0Casc>
+  int getAddId(V0Casc const& v0casc)
   {
-    return v0.v0radius();
-  }
-
-  /// Evaluate radius of the cascade
-  double getRadius(CascsWithID::iterator const& casc)
-  {
-    return casc.cascradius();
-  }
-
-  /// Evaluate add id of the v0
-  double getAddId(V0sWithID::iterator const& v0)
-  {
-    return v0.v0addid();
-  }
-
-  /// Evaluate add id of the cascade
-  double getAddId(CascsWithID::iterator const& casc)
-  {
-    return casc.cascaddid();
+    static_assert(std::is_same_v<V0Casc, V0sWithID::iterator> || std::is_same_v<V0Casc, CascsWithID::iterator>,
+                  "getAddId() v0casc's type must be either V0sWithID::iterator or CascsWithID::iterator");
+    if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
+      return v0casc.v0addid();
+    else
+      return v0casc.cascaddid();
   }
 
   template <bool IsCorrectedDeDx, int ModeId, typename TrksType, typename BCType, typename TrkQAType>
