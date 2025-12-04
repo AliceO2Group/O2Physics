@@ -669,5 +669,70 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtocascades::LambdaDcaToPv);
 using FOmegaExtras = FOmegaExtras_001;
 
+// tables for monte carlo
+
+namespace femtomccollisions
+{
+DECLARE_SOA_COLUMN(MultMc, multMc, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_COLUMN(CentMc, centMc, float); //! Multiplicity of the event as given by the generator in |eta|<0.8
+                                           //
+} // namespace femtomccollisions
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
+                                   o2::soa::Index<>,
+                                   femtomccollisions::MultMc,
+                                   femtomccollisions::CentMc);
+using FMcCols = FMcCols_001;
+using FMcCol = FMcCols_001::iterator;
+
+namespace femtomcparticle
+{
+DECLARE_SOA_COLUMN(Origin, origin, femtodatatypes::McOriginType); //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                        //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);                         //!
+} // namespace femtomcparticle
+
+// table for basic track information
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcParticles_001, "FMCPARTICLE", 1, //! femto tracks
+                                   o2::soa::Index<>,
+                                   femtomcparticle::FMcColId,
+                                   femtomcparticle::Origin,
+                                   femtomcparticle::PdgCode,
+                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FMcParticles = FMcParticles_001;
+using FMcParticle = FMcParticles::iterator;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the femto particle
+                                   o2::soa::Index<>,
+                                   femtomcparticle::PdgCode);
+using FMcMothers = FMcMothers_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMcPartMoth", 1, //! last partonic mother of the femto particle
+                                   o2::soa::Index<>,
+                                   femtomcparticle::PdgCode);
+using FMcPartMoths = FMcPartMoths_001;
+
+namespace femtolabels
+{
+DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);           //! collision index of femto collision table
+DECLARE_SOA_INDEX_COLUMN(FMcParticle, fMcParticle); //! collision index of femto collision table
+} // namespace femtolabels
+
+DECLARE_SOA_TABLE(FColLabels, "AOD", "FCOLMCLABEL",
+                  o2::soa::Index<>,
+                  femtolabels::FMcColId);
+
+DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL",
+                  o2::soa::Index<>,
+                  femtolabels::FMcParticleId);
 } // namespace o2::aod
 #endif // PWGCF_FEMTO_DATAMODEL_FEMTOTABLES_H_

@@ -446,7 +446,7 @@ class CollisionBuilder
       return;
     }
 
-    if (mCollisionAleadyFilled) {
+    if (mCollisionAlreadyFilled) {
       return;
     }
 
@@ -488,17 +488,28 @@ class CollisionBuilder
       }
     }
 
-    mCollisionAleadyFilled = true;
+    mCollisionAlreadyFilled = true;
   }
 
-  void reset()
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcCollision(T1& collisionProducts, T2 const& col, T3 const& mcCols, T4& mcProducts, T5& mcBuilder)
   {
-    mCollisionAleadyFilled = false;
+    if (mCollisionAlreadyFilled) {
+      return;
+    }
+    this->template fillCollision<system>(collisionProducts, col);
+    mcBuilder.template fillMcCollisionWithLabel<system>(mcProducts, col, mcCols);
+  }
+
+  void
+    reset()
+  {
+    mCollisionAlreadyFilled = false;
   }
 
  private:
   CollisionSelection<HistName> mCollisionSelection;
-  bool mCollisionAleadyFilled = false;
+  bool mCollisionAlreadyFilled = false;
   Zorro mZorro;
   bool mUseTrigger = false;
   int mRunNumber = -1;

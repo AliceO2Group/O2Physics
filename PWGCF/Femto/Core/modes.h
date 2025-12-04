@@ -60,6 +60,7 @@ enum class System : uint32_t {
   kRun3 = BIT(3),
   kRun2 = BIT(4),
   kPP_Run3 = kPP | kRun3,
+  kPP_Run3_MC = kPP | kRun3 | kMC,
   kPP_Run2 = kPP | kRun2,
   kPbPb_Run3 = kPbPb | kRun3,
   kPbPb_Run2 = kPbPb | kRun2,
@@ -83,6 +84,15 @@ enum class Particle : o2::aod::femtodatatypes::ParticleType {
   kV0,
   kKink,
   kCascade,
+};
+
+enum class McOrigin : o2::aod::femtodatatypes::McOriginType {
+  kPhysicalPrimary = 0,
+  kFromSecondaryDecay = 1,
+  kFromMaterial = 2,
+  kFromWrongCollision = 3,
+  kFromFakeRecoCollision = 4,
+  kFromUnkown = 100,
 };
 
 constexpr bool hasMass(Particle p)

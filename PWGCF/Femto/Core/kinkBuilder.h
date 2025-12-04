@@ -396,8 +396,8 @@ class KinkBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& kinkProducts, T6 const& kinks, T7 const& tracks, T8& trackBuilder, T9& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& kinkProducts, T6 const& kinks, T7 const& tracks, T8& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -422,7 +422,7 @@ class KinkBuilder
 
       auto daughter = kink.template trackDaug_as<T7>();
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
-      daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionProducts, indexMap);
+      daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionProducts);
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
       }

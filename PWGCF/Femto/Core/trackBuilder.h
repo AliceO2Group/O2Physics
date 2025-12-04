@@ -586,12 +586,16 @@ class TrackBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& tracks, T5& trackProducts, T6& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& tracks, T5& trackProducts)
   {
     if (!mFillAnyTable) {
       return;
     }
+
+    // clear index map before processing next batch of tracks
+    indexMap.clear();
+
     for (const auto& track : tracks) {
       if (!mTrackSelection.checkFilters(track)) {
         continue;
@@ -602,12 +606,12 @@ class TrackBuilder
       }
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
-      this->fillTrack<modes::Track::kPrimaryTrack>(track, trackProducts, collisionProducts, indexMap);
+      this->fillTrack<modes::Track::kPrimaryTrack>(track, trackProducts, collisionProducts);
     }
   }
 
-  template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
-  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <modes::Track type, typename T1, typename T2, typename T3>
+  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
     if (mProduceTracks) {
       trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
@@ -691,14 +695,46 @@ class TrackBuilder
     }
   }
 
-  template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
-  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillMcTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5 const& tracks, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+    // clear index map before processing next batch of tracks
+    indexMap.clear();
+    for (const auto& track : tracks) {
+      if (!mTrackSelection.checkFilters(track)) {
+        continue;
+      }
+      mTrackSelection.applySelections(track);
+      if (!mTrackSelection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+      fillMcTrack<system, modes::Track::kPrimaryTrack>(col, collisionProducts, mcCols, track, trackProducts, mcParticles, mcBuilder, mcProducts);
+    }
+  }
+
+  template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5& trackProducts, T6 const& mcParticles, T7& mcBuilder, T8& mcProducts)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+    this->fillTrack<trackType>(track, trackProducts, collisionProducts);
+    mcBuilder.template fillMcTrackWithLabel<system, trackType>(col, mcCols, track, mcParticles, mcProducts);
+  }
+
+  template <modes::Track type, typename T1, typename T2, typename T3>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
     } else {
-      this->fillTrack<type>(daughter, trackProducts, collisionProducts, indexMap);
+      this->fillTrack<type>(daughter, trackProducts, collisionProducts);
       int64_t idx = trackProducts.producedTracks.lastIndex();
       indexMap.emplace(daughter.globalIndex(), idx);
       return idx;
@@ -719,6 +755,8 @@ class TrackBuilder
   bool mProduceDeuteronPids = false;
   bool mProduceTritonPids = false;
   bool mProduceHeliumPids = false;
+
+  std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
 };
 
 struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
@@ -756,22 +794,23 @@ class TrackBuilderDerivedToDerived
     return true;
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& indexMap, T6& cache, T7& newTrackTable, T8& newCollisionTable)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+  void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache, T6& newTrackTable, T7& newCollisionTable)
   {
+    indexMap.clear();
     auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& track : trackSlice1) {
-      this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
+      this->fillTrack(track, newTrackTable, newCollisionTable);
     }
     for (auto const& track : trackSlice2) {
-      this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
+      this->fillTrack(track, newTrackTable, newCollisionTable);
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <typename T1, typename T2, typename T3>
+  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
     trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
                                  track.signedPt(),
@@ -781,14 +820,14 @@ class TrackBuilderDerivedToDerived
     indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <typename T1, typename T2, typename T3>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
     } else {
-      this->fillTrack(daughter, trackProducts, collisionProducts, indexMap);
+      this->fillTrack(daughter, trackProducts, collisionProducts);
       int64_t idx = trackProducts.producedTracks.lastIndex();
       indexMap.emplace(daughter.globalIndex(), idx);
       return idx;
@@ -798,6 +837,8 @@ class TrackBuilderDerivedToDerived
  private:
   int mLimitTrack1 = 0;
   int mLimitTrack2 = 0;
+
+  std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
 };
 
 } // namespace trackbuilder

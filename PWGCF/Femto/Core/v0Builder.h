@@ -371,8 +371,8 @@ class V0Builder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0products, T6 const& v0s, T7 const& tracks, T8& trackBuilder, T9& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0products, T6 const& v0s, T7 const& tracks, T8& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -392,8 +392,8 @@ class V0Builder
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
-      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
-      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts, indexMap);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         fillLambda(collisionProducts, v0products, v0, 1.f, posDaughterIndex, negDaughterIndex);
@@ -530,8 +530,8 @@ class V0BuilderDerivedToDerived
     return true;
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processLambdas(T1& col, T2& /*lambdaTable*/, T3& /*oldTrackTable*/, T4& partitionLambda, T5& trackBuilder, T6& indexMap, T7& cache, T8& newLambdaTable, T9& newTrackTable, T10& newCollisionTable)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processLambdas(T1& col, T2& /*lambdaTable*/, T3& /*oldTrackTable*/, T4& partitionLambda, T5& trackBuilder, T6& cache, T7& newLambdaTable, T8& newTrackTable, T9& newCollisionTable)
   {
     auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
@@ -540,8 +540,8 @@ class V0BuilderDerivedToDerived
       auto posDaughter = lambda.template posDau_as<T3>();
       auto negDaughter = lambda.template negDau_as<T3>();
 
-      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable, indexMap);
-      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable, indexMap);
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
 
       newLambdaTable.producedLambdas(newCollisionTable.producedCollision.lastIndex(),
                                      lambda.signedPt(),
@@ -554,8 +554,8 @@ class V0BuilderDerivedToDerived
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-  void processK0shorts(T1& col, T2& /*k0shortTable*/, T3& /*oldTrackTable*/, T4& partitionK0short, T5& trackBuilder, T6& indexMap, T7& cache, T8& newK0shortTable, T9& newTrackTable, T10& newCollisionTable)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processK0shorts(T1& col, T2& /*k0shortTable*/, T3& /*oldTrackTable*/, T4& partitionK0short, T5& trackBuilder, T6& cache, T7& newK0shortTable, T8& newTrackTable, T9& newCollisionTable)
   {
     auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
@@ -564,8 +564,8 @@ class V0BuilderDerivedToDerived
       auto posDaughter = k0short.template posDau_as<T3>();
       auto negDaughter = k0short.template negDau_as<T3>();
 
-      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable, indexMap);
-      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable, indexMap);
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
 
       newK0shortTable.producedK0shorts(newCollisionTable.producedCollision.lastIndex(),
                                        k0short.pt(),
