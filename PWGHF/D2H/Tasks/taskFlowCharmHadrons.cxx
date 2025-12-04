@@ -64,10 +64,10 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_COLUMN(M, m, float);   //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
-DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
+DECLARE_SOA_COLUMN(M, m, float);                   //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                 //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float);     //! ML score of the first configured index
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float);     //! ML score of the second configured index
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality
 } // namespace full
@@ -125,6 +125,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> storeResoOccu{"storeResoOccu", false, "Flag to store Occupancy in resolution ThnSparse"};
   Configurable<bool> storeEpCosSin{"storeEpCosSin", false, "Flag to store cos and sin of EP angle in ThnSparse"};
+  Configurable<bool> storeCandEta{"storeCandEta", false, "Flag to store candidates eta"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -194,6 +195,7 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisResoFT0cFV0a{"thnConfigAxisResoFT0cFV0a", {160, -8, 8}, ""};
   ConfigurableAxis thnConfigAxisResoFT0cTPCtot{"thnConfigAxisResoFT0cTPCtot", {160, -8, 8}, ""};
   ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, 8}, ""};
+  ConfigurableAxis thnConfigAxisCandidateEta{"thnConfigAxisCandidateEta", {100, -5, 5}, ""};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -214,6 +216,7 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
     const AxisSpec thnAxisOccupancyITS{thnConfigAxisOccupancyITS, "OccupancyITS"};
     const AxisSpec thnAxisOccupancyFT0C{thnConfigAxisOccupancyFT0C, "OccupancyFT0C"};
+    const AxisSpec thnAxisCandEta{thnConfigAxisCandidateEta, "#eta"};
     const AxisSpec thnAxisNoSameBunchPileup{thnConfigAxisNoSameBunchPileup, "NoSameBunchPileup"};
     const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
     const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnConfigAxisNoCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow"};
@@ -230,6 +233,9 @@ struct HfTaskFlowCharmHadrons {
     }
     if (storeMl) {
       axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
+    }
+    if (storeCandEta) {
+      axes.insert(axes.end(), {thnAxisCandEta});
     }
     if (occEstimator != 0) {
       if (occEstimator == 1) {
@@ -317,30 +323,36 @@ struct HfTaskFlowCharmHadrons {
   void getQvecDtracks(T1 const& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
-                      const float ampl)
+                      const float amplQVec,
+                      QvecEstimator qvecDetector)
   {
-    // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
-    float const pXTrack0 = cand.pxProng0();
-    float const pYTrack0 = cand.pyProng0();
-    float const pTTrack0 = cand.ptProng0();
-    float const phiTrack0 = std::atan2(pYTrack0, pXTrack0);
-    float const pXTrack1 = cand.pxProng1();
-    float const pYTrack1 = cand.pyProng1();
-    float const pTTrack1 = cand.ptProng1();
-    float const phiTrack1 = std::atan2(pYTrack1, pXTrack1);
+    auto addProngIfInSubevent = [&](float px, float py, float pz) {
+      const std::array<float, 3> pVec{px, py, pz};
+      const float eta = RecoDecay::eta(pVec);
 
-    tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTTrack0 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTTrack0 / ampl);
-    tracksQx.push_back(std::cos(harmonic * phiTrack1) * pTTrack1 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTTrack1 / ampl);
+      // only subtract daughters that actually contributed to THIS subevent Q
+      if (qvecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+        return;
+      }
+      if (qvecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+        return;
+      }
+      // for TPCTot: no early return, all prongs contribute
 
+      const float pt = RecoDecay::pt(pVec); // or std::hypot(px, py);
+      const float phi = std::atan2(py, px);
+
+      // xQVec,yQVec are normalized with amplQVec, so the daughters' contribution must use the SAME normalization.
+      tracksQx.push_back(std::cos(harmonic * phi) * pt / amplQVec);
+      tracksQy.push_back(std::sin(harmonic * phi) * pt / amplQVec);
+    };
+
+    addProngIfInSubevent(cand.pxProng0(), cand.pyProng0(), cand.pzProng0());
+    addProngIfInSubevent(cand.pxProng1(), cand.pyProng1(), cand.pzProng1());
+
+    // 3-prong channels
     if constexpr (Channel != DecayChannel::D0ToPiK && Channel != DecayChannel::D0ToKPi) {
-      float const pXTrack2 = cand.pxProng2();
-      float const pYTrack2 = cand.pyProng2();
-      float const pTTrack2 = cand.ptProng2();
-      float const phiTrack2 = std::atan2(pYTrack2, pXTrack2);
-      tracksQx.push_back(std::cos(harmonic * phiTrack2) * pTTrack2 / ampl);
-      tracksQy.push_back(std::sin(harmonic * phiTrack2) * pTTrack2 / ampl);
+      addProngIfInSubevent(cand.pxProng2(), cand.pyProng2(), cand.pzProng2());
     }
   }
 
@@ -353,34 +365,31 @@ struct HfTaskFlowCharmHadrons {
   void getQvecXic0Tracks(const T1& cand,
                          std::vector<float>& tracksQx,
                          std::vector<float>& tracksQy,
-                         float ampl)
+                         float amplQVec,
+                         QvecEstimator qvecDetector)
   {
-    // add possibility to consider different weights for the tracks, at the moment only pT is considered;
-    float const pXTrack0 = cand.pxPosV0Dau();
-    float const pYTrack0 = cand.pyPosV0Dau();
-    float const pTTrack0 = std::hypot(pXTrack0, pYTrack0);
-    float const phiTrack0 = std::atan2(pXTrack0, pYTrack0);
-    float const pXTrack1 = cand.pxNegV0Dau();
-    float const pYTrack1 = cand.pyNegV0Dau();
-    float const pTTrack1 = std::hypot(pXTrack1, pYTrack1);
-    float const phiTrack1 = std::atan2(pXTrack1, pYTrack1);
-    float const pYTrack2 = cand.pxBachFromCasc();
-    float const pXTrack2 = cand.pyBachFromCasc();
-    float const pTTrack2 = std::hypot(pXTrack2, pYTrack2);
-    float const phiTrack2 = std::atan2(pXTrack2, pYTrack2);
-    float const pXTrack3 = cand.pxBachFromCharmBaryon();
-    float const pYTrack3 = cand.pyBachFromCharmBaryon();
-    float const pTTrack3 = std::hypot(pXTrack3, pYTrack3);
-    float const phiTrack3 = std::atan2(pXTrack3, pYTrack3);
+    auto addProngIfInSubevent = [&](float px, float py, float pz) {
+      const std::array<float, 3> pVec{px, py, pz};
+      const float eta = RecoDecay::eta(pVec);
 
-    tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTTrack0 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTTrack0 / ampl);
-    tracksQx.push_back(std::cos(harmonic * phiTrack1) * pTTrack1 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTTrack1 / ampl);
-    tracksQx.push_back(std::cos(harmonic * phiTrack2) * pTTrack2 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack2) * pTTrack2 / ampl);
-    tracksQx.push_back(std::cos(harmonic * phiTrack3) * pTTrack3 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack3) * pTTrack3 / ampl);
+      if (qvecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+        return;
+      }
+      if (qvecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+        return;
+      }
+
+      const float pt = RecoDecay::pt(pVec);
+      const float phi = std::atan2(py, px);
+
+      tracksQx.push_back(std::cos(harmonic * phi) * pt / amplQVec);
+      tracksQy.push_back(std::sin(harmonic * phi) * pt / amplQVec);
+    };
+
+    addProngIfInSubevent(cand.pxPosV0Dau(), cand.pyPosV0Dau(), cand.pzPosV0Dau());
+    addProngIfInSubevent(cand.pxNegV0Dau(), cand.pyNegV0Dau(), cand.pzNegV0Dau());
+    addProngIfInSubevent(cand.pxBachFromCasc(), cand.pyBachFromCasc(), cand.pzBachFromCasc());
+    addProngIfInSubevent(cand.pxBachFromCharmBaryon(), cand.pyBachFromCharmBaryon(), cand.pzBachFromCharmBaryon());
   }
   /// Compute the delta psi in the range [0, pi/harmonic]
   /// \param psi1 is the first angle
@@ -408,6 +417,7 @@ struct HfTaskFlowCharmHadrons {
   /// Fill THnSparse
   /// \param mass is the invariant mass of the candidate
   /// \param pt is the transverse momentum of the candidate
+  /// \param eta is the pseudorapidityof the candidate
   /// \param cent is the centrality of the collision
   /// \param cosNPhi is the cosine of the n*phi angle
   /// \param sinNPhi is the sine of the n*phi angle
@@ -418,6 +428,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param hfevselflag flag of the collision associated to utilsEvSelHf.h
   void fillThn(const float mass,
                const float pt,
+               const float eta,
                const float cent,
                const float cosNPhi,
                const float sinNPhi,
@@ -427,40 +438,50 @@ struct HfTaskFlowCharmHadrons {
                const float occupancy,
                const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
   {
-    if (occEstimator != 0) {
-      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevselflag);
-      if (storeMl) {
-        if (storeEP) {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, sinNPhi, cosDeltaPhi, outputMl[0], outputMl[1], occupancy,
-                        evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
-        } else {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1], occupancy,
-                        evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
-        }
-      } else {
-        if (storeEP) {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, sinNPhi, cosDeltaPhi, occupancy,
-                        evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
-        } else {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, occupancy,
-                        evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
-        }
-      }
-    } else {
-      if (storeMl) {
-        if (storeEP) {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, sinNPhi, cosDeltaPhi, outputMl[0], outputMl[1]);
-        } else {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1]);
-        }
-      } else {
-        if (storeEP) {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, sinNPhi, cosDeltaPhi);
-        } else {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp);
-        }
-      }
+    auto hSparse = registry.get<THnSparse>(HIST("hSparseFlowCharm"));
+    const int ndim = hSparse->GetNdimensions();
+
+    std::vector<double> values;
+    values.reserve(ndim);
+
+    values.push_back(mass);
+    values.push_back(pt);
+    values.push_back(cent);
+    values.push_back(sp);
+
+    if (storeEP) {
+      values.push_back(cosNPhi);
+      values.push_back(sinNPhi);
+      values.push_back(cosDeltaPhi);
     }
+
+    if (storeMl) {
+      values.push_back(outputMl[0]);
+      values.push_back(outputMl[1]);
+    }
+
+    if (storeCandEta) {
+      values.push_back(eta);
+    }
+
+    if (occEstimator != 0) {
+      auto evtSelFlags = getEventSelectionFlags(hfevselflag);
+      values.push_back(occupancy);
+      values.push_back(evtSelFlags[0]);
+      values.push_back(evtSelFlags[1]);
+      values.push_back(evtSelFlags[2]);
+      values.push_back(evtSelFlags[3]);
+      values.push_back(evtSelFlags[4]);
+    }
+
+    if (static_cast<int>(values.size()) != ndim) {
+      LOGF(fatal,
+           "hSparseFlowCharm: number of filled dimensions (%d) "
+           "does not match THnSparse dimensionality (%d).",
+           static_cast<int>(values.size()), ndim);
+    }
+
+    hSparse->Fill(values.data());
   }
 
   /// Check if the collision is selected
@@ -555,7 +576,6 @@ struct HfTaskFlowCharmHadrons {
     float yQVec = qVecs[1];
     float const amplQVec = qVecs[2];
     float const evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
-    int nProngs = 3;
 
     for (const auto& candidate : candidates) {
       float massCand = 0.;
@@ -590,7 +610,6 @@ struct HfTaskFlowCharmHadrons {
           }
         }
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
-        nProngs = 2;
         switch (Channel) {
           case DecayChannel::D0ToPiK:
             massCand = HfHelper::invMassD0ToPiK(candidate);
@@ -664,27 +683,35 @@ struct HfTaskFlowCharmHadrons {
 
       float ptCand = 0.;
       float phiCand = 0.;
+      float etaCand = 0.;
 
       if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
         ptCand = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
         phiCand = std::atan2(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+        etaCand = candidate.etaBachFromCharmBaryon();
       } else {
         ptCand = candidate.pt();
         phiCand = candidate.phi();
+        etaCand = candidate.eta();
       }
 
-      // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
-      if (qvecDetector == QvecEstimator::TPCNeg || qvecDetector == QvecEstimator::TPCPos) {
-        float const ampl = amplQVec - static_cast<float>(nProngs);
-        std::vector<float> tracksQx = {};
-        std::vector<float> tracksQy = {};
+      // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the corresponding TPC Q vector to avoid self-correlations
+      if (qvecDetector == QvecEstimator::TPCNeg ||
+          qvecDetector == QvecEstimator::TPCPos ||
+          qvecDetector == QvecEstimator::TPCTot) {
+
+        std::vector<float> tracksQx;
+        std::vector<float> tracksQy;
+
+        // IMPORTANT: use the ORIGINAL amplitude used to build this Q-vector
         if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
-          // std::cout<<candidate.pxProng0()<<std::endl;
-          getQvecXic0Tracks(candidate, tracksQx, tracksQy, ampl);
+          getQvecXic0Tracks(candidate, tracksQx, tracksQy, amplQVec, static_cast<QvecEstimator>(qvecDetector.value));
         } else {
-          getQvecDtracks<Channel>(candidate, tracksQx, tracksQy, ampl);
+          getQvecDtracks<Channel>(candidate, tracksQx, tracksQy, amplQVec, static_cast<QvecEstimator>(qvecDetector.value));
         }
-        for (auto iTrack{0u}; iTrack < tracksQx.size(); ++iTrack) {
+
+        // subtract daughters' contribution from the (normalized) Q-vector
+        for (std::size_t iTrack = 0; iTrack < tracksQx.size(); ++iTrack) {
           xQVec -= tracksQx[iTrack];
           yQVec -= tracksQy[iTrack];
         }
@@ -710,7 +737,7 @@ struct HfTaskFlowCharmHadrons {
         }
       }
       if (fillSparse) {
-        fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
+        fillThn(massCand, ptCand, etaCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
       }
     }
   }
