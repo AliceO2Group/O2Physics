@@ -914,8 +914,6 @@ struct GammaJetTreeProducer {
     }
     if (nRecCollisions > 1) {
       mHistograms.fill(HIST("mcCollisionsWithRecCollisions"), 2);
-    }
-    if (nRecCollisions > 1) {
       mcCollisionsMultiRecCollisions.push_back(mcCollision.globalIndex());
     }
 

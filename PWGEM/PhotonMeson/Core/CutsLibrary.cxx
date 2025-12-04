@@ -9,12 +9,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: daiki.sekihata@cern.ch
-//
+/// \file CutsLibrary.cxx
+/// \brief Source of class for EM photon selection.
+/// \author daiki.sekihata@cern.ch
+
+#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/PairCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+
+#include <TString.h>
+
+#include <fairlogger/Logger.h>
+
+#include <cstddef>
+#include <regex>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <regex>
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 
 //_______________________________________________
 int customAtoi(const std::string& str)
@@ -511,12 +527,10 @@ EMCPhotonCut* o2::aod::pwgem::photon::emccuts::GetCut(const char* cutName)
     cut->SetM02Range(0.1f, 0.7f);
     cut->SetTimeRange(-20.f, 25.f);
 
-    cut->SetTrackMatchingEta([](float pT) {
-      return 0.01f + pow(pT + 4.07f, -2.5f);
-    });
-    cut->SetTrackMatchingPhi([](float pT) {
-      return 0.015f + pow(pT + 3.65f, -2.f);
-    });
+    cut->SetTrackMatchingEtaParams(0.01f, 4.07f, -2.5f);
+    cut->SetTrackMatchingPhiParams(0.015f, 3.65f, -2.0f);
+    cut->SetSecTrackMatchingEtaParams(0.01f, 4.07f, -2.5f);
+    cut->SetSecTrackMatchingPhiParams(0.015f, 3.65f, -2.0f);
     cut->SetMinEoverP(1.75f);
     cut->SetUseExoticCut(true);
     return cut;
@@ -527,12 +541,10 @@ EMCPhotonCut* o2::aod::pwgem::photon::emccuts::GetCut(const char* cutName)
     cut->SetM02Range(0.0f, 1000.f);
     cut->SetTimeRange(-500.f, 500.f);
 
-    cut->SetTrackMatchingEta([](float /*pT*/) {
-      return -1.f;
-    });
-    cut->SetTrackMatchingPhi([](float /*pT*/) {
-      return -1.f;
-    });
+    cut->SetTrackMatchingEtaParams(-1.f, 0.f, 0.f);
+    cut->SetTrackMatchingPhiParams(-1.f, 0.f, 0.f);
+    cut->SetSecTrackMatchingEtaParams(-1.f, 0.f, 0.f);
+    cut->SetSecTrackMatchingPhiParams(-1.f, 0.f, 0.f);
     cut->SetMinEoverP(0.f);
     cut->SetUseExoticCut(false);
     return cut;
@@ -543,12 +555,10 @@ EMCPhotonCut* o2::aod::pwgem::photon::emccuts::GetCut(const char* cutName)
     cut->SetM02Range(0.1f, 0.7f);
     cut->SetTimeRange(-20.f, 25.f);
 
-    cut->SetTrackMatchingEta([](float pT) {
-      return 0.01f + pow(pT + 4.07f, -2.5f);
-    });
-    cut->SetTrackMatchingPhi([](float pT) {
-      return 0.015f + pow(pT + 3.65f, -2.f);
-    });
+    cut->SetTrackMatchingEtaParams(0.01f, 4.07f, -2.5f);
+    cut->SetTrackMatchingPhiParams(0.015f, 3.65f, -2.0f);
+    cut->SetSecTrackMatchingEtaParams(0.01f, 4.07f, -2.5f);
+    cut->SetSecTrackMatchingPhiParams(0.015f, 3.65f, -2.0f);
     cut->SetMinEoverP(1.75f);
     cut->SetUseExoticCut(true);
     return cut;

@@ -457,10 +457,6 @@ struct CorrelationTask {
   template <class T>
   using HasPartDaugh1Id = decltype(std::declval<T&>().cfParticleDaugh1Id());
 
-  /*
-  OO outlier cut (requires mask 15):
-(567.785+172.715*[mGlob]+0.77888*[mGlob]*[mGlob]+-0.00693466*[mGlob]*[mGlob]*[mGlob]+1.40564e-05*[mGlob]*[mGlob]*[mGlob]*[mGlob] + 3.5*(679.853+66.8068*[mGlob]+-0.444332*[mGlob]*[mGlob]+0.00115002*[mGlob]*[mGlob]*[mGlob]+-4.92064e-07*[mGlob]*[mGlob]*[mGlob]*[mGlob])) > [mFV0A] && (567.785+172.715*[mGlob]+0.77888*[mGlob]*[mGlob]+-0.00693466*[mGlob]*[mGlob]*[mGlob]+1.40564e-05*[mGlob]*[mGlob]*[mGlob]*[mGlob] - 3.0*(679.853+66.8068*[mGlob]+-0.444332*[mGlob]*[mGlob]+0.00115002*[mGlob]*[mGlob]*[mGlob]+-4.92064e-07*[mGlob]*[mGlob]*[mGlob]*[mGlob])) < [mFV0A] && (172.406 + -4.50219*[cFT0C] + 0.0543038*[cFT0C]*[cFT0C] + -0.000373213*[cFT0C]*[cFT0C]*[cFT0C] + 1.15322e-06*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] + 4.0*(49.7503 + -1.29008*[cFT0C] + 0.0160059*[cFT0C]*[cFT0C] + -7.86846e-05*[cFT0C]*[cFT0C]*[cFT0C])) > [mPV] && (172.406 + -4.50219*[cFT0C] + 0.0543038*[cFT0C]*[cFT0C] + -0.000373213*[cFT0C]*[cFT0C]*[cFT0C] + 1.15322e-06*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] - 2.5*(49.7503 + -1.29008*[cFT0C] + 0.0160059*[cFT0C]*[cFT0C] + -7.86846e-05*[cFT0C]*[cFT0C]*[cFT0C])) < [mPV] && (125.02 + -3.30255*[cFT0C] + 0.0398663*[cFT0C]*[cFT0C] + -0.000271942*[cFT0C]*[cFT0C]*[cFT0C] + 8.34098e-07*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] + 4.0*(37.0244 + -0.949883*[cFT0C] + 0.0116622*[cFT0C]*[cFT0C] + -5.71117e-05*[cFT0C]*[cFT0C]*[cFT0C])) > [mGlob] && (125.02 + -3.30255*[cFT0C] + 0.0398663*[cFT0C]*[cFT0C] + -0.000271942*[cFT0C]*[cFT0C]*[cFT0C] + 8.34098e-07*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] - 2.5*(37.0244 + -0.949883*[cFT0C] + 0.0116622*[cFT0C]*[cFT0C] + -5.71117e-05*[cFT0C]*[cFT0C]*[cFT0C])) < [mGlob] && (-0.223013 + 0.715849*[mPV] + 3*(0.664242 + 0.0829653*[mPV] + -0.000503733*[mPV]*[mPV] + 1.21185e-06*[mPV]*[mPV]*[mPV])) > [mGlob]
-*/
   template <class CollType>
   bool passOutlier(CollType const& collision)
   {
@@ -1180,6 +1176,7 @@ struct CorrelationTask {
           if (!passMLScore(p2track))
             continue;
         }
+        same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
         auto fillMC2p = [&](const aod::CFTracksWithLabel::iterator& p) -> bool {
           if (!p.has_cfMCParticle())
             return false;
@@ -1191,7 +1188,6 @@ struct CorrelationTask {
             return false;
           const auto& mcParticle = mcParticles.iteratorAt(*m - mcParticles.begin().globalIndex());
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
           return true;
         };
         if (p2track.has_cfTrackProng0()) {
@@ -1203,11 +1199,6 @@ struct CorrelationTask {
           if (const auto& p1 = p2track.template cfTrackProng1_as<aod::CFTracksWithLabel>(); fillMC2p(p1))
             continue;
         }
-
-        // alternatively, book the reco pTs directly
-        // same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
-        // same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
-        // continue;
 
         // fake track
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());

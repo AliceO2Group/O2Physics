@@ -1553,10 +1553,12 @@ class LumiModule
     histos.add("luminosity/hCounterTCE", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZEM", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZNC", "", framework::kTH1D, {{1, 0., 1.}});
+    histos.add("luminosity/hCounterTVXZDC", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterTVXafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterTCEafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZEMafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZNCafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
+    histos.add("luminosity/hCounterTVXZDCafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hLumiTVX", ";;Luminosity, 1/#mub", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hLumiTCE", ";;Luminosity, 1/#mub", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hLumiZEM", ";;Luminosity, 1/#mub", framework::kTH1D, {{1, 0., 1.}});
@@ -1799,9 +1801,15 @@ class LumiModule
       if (isTriggerTVX) {
         histos.template get<TH1>(HIST("luminosity/hCounterTVX"))->Fill(srun, 1);
         histos.template get<TH1>(HIST("luminosity/hLumiTVX"))->Fill(srun, lumiTVX);
+        if (isTriggerZNA && isTriggerZNC) {
+          histos.template get<TH1>(HIST("luminosity/hCounterTVXZDC"))->Fill(srun, 1);
+        }
         if (noBorder) {
           histos.template get<TH1>(HIST("luminosity/hCounterTVXafterBCcuts"))->Fill(srun, 1);
           histos.template get<TH1>(HIST("luminosity/hLumiTVXafterBCcuts"))->Fill(srun, lumiTVX);
+          if (isTriggerZNA && isTriggerZNC) {
+            histos.template get<TH1>(HIST("luminosity/hCounterTVXZDCafterBCcuts"))->Fill(srun, 1);
+          }
           for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
             if ((rct & mRCTFlagsCheckers[i].value()) == 0)
               histos.template get<TH2>(HIST("luminosity/hLumiTVXafterBCcutsRCT"))->Fill(srun, i, lumiTVX);

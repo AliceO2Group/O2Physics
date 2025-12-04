@@ -19,6 +19,8 @@
 #ifndef PWGUD_DATAMODEL_UDINDEX_H_
 #define PWGUD_DATAMODEL_UDINDEX_H_
 
+#include "UDTables.h"
+
 #include "Framework/AnalysisDataModel.h"
 namespace o2::aod
 {

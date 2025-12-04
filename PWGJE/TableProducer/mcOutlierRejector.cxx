@@ -33,12 +33,17 @@ using namespace o2::framework::expressions;
 struct McOutlierRejectorTask {
   Produces<aod::JCollisionOutliers> collisionOutliers;
   Produces<aod::JMcCollisionOutliers> mcCollisionOutliers;
+  Preslice<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>> perColParticle = aod::jmccollision::mcCollisionId;
 
   Configurable<bool> checkmcCollisionForCollision{"checkmcCollisionForCollision", true, "additionally reject collision based on mcCollision"};
   Configurable<float> ptHatMax{"ptHatMax", 4.0, "maximum factor of pt hat the leading jet in the event is allowed"};
+  Configurable<float> ptTrackMaxMinBias{"ptTrackMaxMinBias", 20.0, "maximum pt for track originating from minimum bias event"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   std::vector<bool> collisionFlag;
   std::vector<bool> mcCollisionFlag;
+
+  int trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
   void processSetupCollisionSelection(aod::JCollisions const& collisions)
   {
@@ -55,23 +60,43 @@ struct McOutlierRejectorTask {
   PROCESS_SWITCH(McOutlierRejectorTask, processSetupMcCollisionSelection, "Setup MC Collision processing", true);
 
   template <typename T>
-  void collisionSelection(int32_t collisionIndex, T const& selectionObjects, float ptHard, std::vector<bool>& flagArray)
+  void collisionSelection(int32_t collisionIndex, int32_t mcCollisionId, T const& selectionObjects, float ptHard, std::vector<bool>& flagArray, std::optional<std::reference_wrapper<const soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>> mcCollisionsOpt = std::nullopt)
   {
-
     if (selectionObjects.size() != 0) {
-      float maxSelectionObjectPt = 0.0;
-      if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracks> || std::is_same_v<std::decay_t<T>, aod::JetParticles>) {
+      float selectionObjectPt = 0.0;
+      if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD> || std::is_same_v<std::decay_t<T>, aod::JetParticles>) {
         for (auto selectionObject : selectionObjects) {
-          if (selectionObject.pt() > maxSelectionObjectPt) {
-            maxSelectionObjectPt = selectionObject.pt();
+          selectionObjectPt = selectionObject.pt();
+          // may be slow - could save only MC particle then check difference only for tracks IDd as outliers?
+          if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD>) { // tracks
+            if (!jetderiveddatautilities::selectTrack(selectionObject, trackSelection)) {
+              continue;
+            }
+            auto& mcCollisions = mcCollisionsOpt.value().get();
+            auto mcParticle = selectionObject.template mcParticle_as<soa::Join<aod::JetParticles, aod::JMcParticlePIs>>();
+            auto mcCollision = mcCollisions.sliceBy(perColParticle, mcParticle.mcCollisionId());
+            int subGenID = mcCollision.begin().subGeneratorId();
+            int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
+            if (diffCollisionID != 0 &&
+                selectionObjectPt > ptHatMax * ptHard) {
+              if (subGenID != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap && selectionObjectPt > ptHatMax * ptHard) {
+                flagArray[collisionIndex] = true;
+              }
+              if (subGenID == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap && selectionObjectPt > ptTrackMaxMinBias) {
+                flagArray[collisionIndex] = true;
+              }
+            }
+          } else { // particles
+            if (selectionObjectPt > ptHatMax * ptHard) {
+              flagArray[collisionIndex] = true;
+            }
           }
         }
-      } else {
-        maxSelectionObjectPt = selectionObjects.iteratorAt(0).pt();
-      }
-
-      if (maxSelectionObjectPt > ptHatMax * ptHard) {
-        flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
+      } else { // jets
+        selectionObjectPt = selectionObjects.iteratorAt(0).pt();
+        if (selectionObjectPt > ptHatMax * ptHard) {
+          flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
+        }
       }
     }
   }
@@ -80,13 +105,20 @@ struct McOutlierRejectorTask {
   void processSelectionObjects(aod::JetCollisionMCD const& collision, T const& selectionObjects, aod::JetMcCollisions const&)
   {
     auto mcCollision = collision.mcCollision_as<aod::JetMcCollisions>();
-    collisionSelection(collision.globalIndex(), selectionObjects, mcCollision.ptHard(), collisionFlag);
+    collisionSelection(collision.globalIndex(), 1., selectionObjects, mcCollision.ptHard(), collisionFlag);
+  }
+
+  template <typename T>
+  void processSelectionObjectsTracks(aod::JetCollisionMCD const& collision, T const& selectionObjects, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JetParticles, aod::JMcParticlePIs> const&)
+  {
+    auto mcCollision = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
+    collisionSelection(collision.globalIndex(), collision.mcCollisionId(), selectionObjects, mcCollision.ptHard(), collisionFlag, mcCollisions);
   }
 
   template <typename T>
   void processSelectionMcObjects(aod::JetMcCollision const& mcCollision, T const& selectionMcObjects)
   {
-    collisionSelection(mcCollision.globalIndex(), selectionMcObjects, mcCollision.ptHard(), mcCollisionFlag);
+    collisionSelection(mcCollision.globalIndex(), 1., selectionMcObjects, mcCollision.ptHard(), mcCollisionFlag);
   }
 
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::ChargedMCDetectorLevelJets>, processSelectingChargedMCDetectorLevelJets, "process mc detector level charged jets", true);
@@ -101,7 +133,7 @@ struct McOutlierRejectorTask {
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::BplusChargedMCDetectorLevelJets>, processSelectingBplusChargedMCDetectorLevelJets, "process mc detector level Bplus charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::XicToXiPiPiChargedMCDetectorLevelJets>, processSelectingXicToXiPiPiChargedMCDetectorLevelJets, "process mc detector level XicToXiPiPi charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::DielectronChargedMCDetectorLevelJets>, processSelectingDielectronChargedMCDetectorLevelJets, "process mc detector level Dielectron charged jets", false);
-  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::JetTracks>, processSelectingTracks, "process tracks", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjectsTracks<aod::JetTracksMCD>, processSelectingTracks, "process tracks", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::ChargedMCParticleLevelJets>, processSelectingChargedMCParticleLevelJets, "process mc particle level charged jets", true);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::NeutralMCParticleLevelJets>, processSelectingNeutralMCParticleLevelJets, "process mc particle level neutral jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::FullMCParticleLevelJets>, processSelectingFullMCParticleLevelJets, "process mc particle level full jets", false);

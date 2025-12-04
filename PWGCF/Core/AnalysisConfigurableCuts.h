@@ -8,15 +8,22 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file AnalysisConfigurableCuts.h
+/// \brief Convenience classes to support configurable cuts
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 #define PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 
+#include <TMath.h>
+#include <TNamed.h>
+#include <TObject.h>
+
+#include <Rtypes.h>
+
 #include <string>
 #include <vector>
-#include <Rtypes.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TMath.h>
 
 namespace o2
 {
@@ -95,6 +102,8 @@ class TrackSelectionTuneCfg
   bool mUseIt = false;                        ///< use this track selection tuning configuration
   int mTPCclusters = 0;                       ///< minimum number of TPC clusters
   bool mUseTPCclusters = false;               ///< use or not the number of TPC clusters
+  int mITSclusters = 0;                       ///< minimum number of ITS clusters
+  bool mUseITSclusters = false;               ///< use or not the number of ITS clusters
   int mTPCxRows = 70;                         ///< minimum number of TPC crossed rows
   bool mUseTPCxRows = false;                  ///< use or not the number of TPC crossed rows
   float mTPCXRoFClusters = 0.8;               ///< minimum value of the TPC ratio no of crossed rows over findable clusters
