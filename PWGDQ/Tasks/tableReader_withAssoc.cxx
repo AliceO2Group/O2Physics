@@ -1242,6 +1242,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
+  Configurable<bool> fConfigAmbiguousMuonHistograms{"cfgAmbiguousMuonHistograms", true, "If true, fill ambiguous histograms"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -1491,31 +1492,33 @@ struct AnalysisSameEventPairing {
               names.push_back(Form("PairsMuonMEMM_%s", objArray->At(icut)->GetName()));
               histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
             }
-            names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEPM_unambiguous_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEPP_unambiguous_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsMuonSEMM_unambiguous_%s", objArray->At(icut)->GetName()));
-            histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 6 : 3)].Data(), names[(fEnableMuonMixingHistos ? 7 : 4)].Data(), names[(fEnableMuonMixingHistos ? 8 : 5)].Data());
-            histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 9 : 6)].Data(), names[(fEnableMuonMixingHistos ? 10 : 7)].Data(), names[(fEnableMuonMixingHistos ? 11 : 8)].Data());
-            histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 12 : 9)].Data(), names[(fEnableMuonMixingHistos ? 13 : 10)].Data(), names[(fEnableMuonMixingHistos ? 14 : 11)].Data());
-            if (fEnableMuonMixingHistos) {
-              names.push_back(Form("PairsMuonMEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEPM_unambiguous_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEPP_unambiguous_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonMEMM_unambiguous_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[15].Data(), names[16].Data(), names[17].Data());
-              histNames += Form("%s;%s;%s;", names[18].Data(), names[19].Data(), names[20].Data());
-              histNames += Form("%s;%s;%s;", names[21].Data(), names[22].Data(), names[23].Data());
+            if (fConfigAmbiguousMuonHistograms) {
+              names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEPM_unambiguous_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEPP_unambiguous_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonSEMM_unambiguous_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 6 : 3)].Data(), names[(fEnableMuonMixingHistos ? 7 : 4)].Data(), names[(fEnableMuonMixingHistos ? 8 : 5)].Data());
+              histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 9 : 6)].Data(), names[(fEnableMuonMixingHistos ? 10 : 7)].Data(), names[(fEnableMuonMixingHistos ? 11 : 8)].Data());
+              histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 12 : 9)].Data(), names[(fEnableMuonMixingHistos ? 13 : 10)].Data(), names[(fEnableMuonMixingHistos ? 14 : 11)].Data());
+              if (fEnableMuonMixingHistos) {
+                names.push_back(Form("PairsMuonMEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEPM_unambiguous_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEPP_unambiguous_%s", objArray->At(icut)->GetName()));
+                names.push_back(Form("PairsMuonMEMM_unambiguous_%s", objArray->At(icut)->GetName()));
+                histNames += Form("%s;%s;%s;", names[15].Data(), names[16].Data(), names[17].Data());
+                histNames += Form("%s;%s;%s;", names[18].Data(), names[19].Data(), names[20].Data());
+                histNames += Form("%s;%s;%s;", names[21].Data(), names[22].Data(), names[23].Data());
+              }
             }
             fMuonHistNames[icut] = names;
 
