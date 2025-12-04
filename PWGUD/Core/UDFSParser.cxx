@@ -9,13 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/Logger.h"
-#include "CommonConstants/LHCConstants.h"
-#include "CommonDataFormat/BunchFilling.h"
 #include "UDFSParser.h"
 
-#include <vector>
+#include "CommonConstants/LHCConstants.h"
+#include "CommonDataFormat/BunchFilling.h"
+#include "Framework/Logger.h"
+
 #include <string>
+#include <vector>
 
 // -----------------------------------------------------------------------------
 UDFSParser::UDFSParser(const char* filename)
