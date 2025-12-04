@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 using LorentzVector = ROOT::Math::PxPyPzMVector;
 
 // Struct to define the analysis task
-struct sgExclusiveJpsiMidrapidity {
+struct SgExclusiveJpsiMidrapidity {
   // SGSelector object to manage track and collision selections
   SGSelector sgSelector;
 
@@ -89,10 +89,10 @@ struct sgExclusiveJpsiMidrapidity {
     // Fill counter to see effect of each selection criteria
     auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{20, 0., 20.}});
 
-    TString SelectionCuts[16] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "rapCut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
+numSelectionCuts] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "rapCut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
 
     for (int i = 0; i < numSelectionCuts; i++) {
-      hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, SelectionCuts[i].Data());
+      hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCuts[i].Data());
     }
     // tracks
     registry.add("hTracks", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
@@ -131,18 +131,17 @@ struct sgExclusiveJpsiMidrapidity {
     registry.add("TwoPion/hPtLike", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
     registry.add("TwoPion/hEta", "Eta;#it{#eta};", kTH1F, {{500, -10., 10.}});
     registry.add("TwoPion/hRap", "Rapidity;#it{y};", kTH1F, {{500, -10., 10.}});
-    registry.add("TwoPion/hPhiSystem", "Phi;#it{#Phi};", kTH1F, {{250, 0. * TMath::Pi(), 2. * TMath::Pi()}});
+    registry.add("TwoPion/hPhiSystem", "Phi;#it{#Phi};", kTH1F, {{250, 0., o2::constants::math::TwoPI}});
     registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 10.}, {100, 0., 10.}});
   }
 
-  using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
 
   //__________________________________________________________________________
   // Main process
-  void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
+  void process(UDCollisionsFull::iterator const& collision, UDTracksFull const& tracks)
   {
     // No selection criteria
     registry.fill(HIST("hSelectionCounter"), 0);
@@ -155,8 +154,7 @@ struct sgExclusiveJpsiMidrapidity {
     registry.fill(HIST("hSelectionCounter"), 1);
 
     // Accessing FIT information for further exclusivity and/or inclusivity
-    float FIT_cut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
-    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], zdcCut);
+    int truegapSide = sgSelector.trueGap(collision, fv0Cut, ft0aCut, ft0cCut, zdcCut);
 
     // Initiating track parameters to select good tracks, values to be optimized in the configurables, parameters will be taken from SGtrackselector.h task included in the header
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
@@ -332,5 +330,5 @@ struct sgExclusiveJpsiMidrapidity {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<sgExclusiveJpsiMidrapidity>(cfgc)};
+    adaptAnalysisTask<SgExclusiveJpsiMidrapidity>(cfgc)};
 }
