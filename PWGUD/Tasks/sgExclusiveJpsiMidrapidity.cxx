@@ -13,19 +13,21 @@
 /// \author Levi Van Ryder (based on Anisa Khatun's UD Tutorial 5 example)
 /// \file sgExclusiveJpsiMidrapidity.cxx
 
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TMath.h"
+
 #include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include "Math/Vector4D.h"
-#include "TMath.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/SGTrackSelector.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -88,7 +90,7 @@ struct SGExclusiveJpsiMidrapidity {
     auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{20, 0., 20.}});
 
     TString SelectionCuts[16] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "rapCut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
-    
+
     for (int i = 0; i < numSelectionCuts; i++) {
       hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, SelectionCuts[i].Data());
     }
@@ -169,7 +171,8 @@ struct SGExclusiveJpsiMidrapidity {
 
       registry.fill(HIST("hSelectionCounter"), 2);
 
-      if(collision.flags()!=1) return; //UPC setting vs std setting
+      if (collision.flags() != 1)
+        return; // UPC setting vs std setting
       //____________________________________________________________________________________
 
       // Create LorentzVector to store all tracks, Pion tracks and TPC Pion PID
