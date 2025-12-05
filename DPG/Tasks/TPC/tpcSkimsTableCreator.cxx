@@ -47,7 +47,9 @@
 #include <TRandom3.h>
 
 #include <cmath>
+#include <concepts>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -58,6 +60,12 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::dataformats;
 using namespace o2::dpg_tpcskimstablecreator;
+
+using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID, aod::V0TOFNSigmas>;
+using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID, aod::CascTOFNSigmas>;
+
+template <typename T>
+concept V0OrCasc = std::same_as<T, V0sWithID::iterator> || std::same_as<T, CascsWithID::iterator>;
 
 struct TreeWriterTpcV0 {
 
@@ -144,8 +152,6 @@ struct TreeWriterTpcV0 {
   using TrksWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
-  using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID, aod::V0TOFNSigmas>;
-  using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID, aod::CascTOFNSigmas>;
   using TrksTmo = soa::Join<Trks, aod::TrackToTmo>;
   using TrksTmoWithDEdxCorrection = soa::Join<Trks, aod::DEdxsCorrected, aod::TrackToTmo>;
 
@@ -379,11 +385,9 @@ struct TreeWriterTpcV0 {
   } /// fillSkimmedV0Table
 
   /// Evaluate cosPA of v0 or casc
-  template <typename V0Casc, typename CollisionType>
+  template <V0OrCasc V0Casc, typename CollisionType>
   double getCosPA(V0Casc const& v0casc, CollisionType const& collision)
   {
-    static_assert(std::is_same_v<V0Casc, V0sWithID::iterator> || std::is_same_v<V0Casc, CascsWithID::iterator>,
-                  "getCosPA() v0casc's type must be either V0sWithID::iterator or CascsWithID::iterator");
     if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
       return v0casc.v0cosPA();
     else
@@ -391,11 +395,9 @@ struct TreeWriterTpcV0 {
   }
 
   /// Evaluate radius of v0 or casc
-  template <typename V0Casc>
+  template <V0OrCasc V0Casc>
   double getRadius(V0Casc const& v0casc)
   {
-    static_assert(std::is_same_v<V0Casc, V0sWithID::iterator> || std::is_same_v<V0Casc, CascsWithID::iterator>,
-                  "getRadius() v0casc's type must be either V0sWithID::iterator or CascsWithID::iterator");
     if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
       return v0casc.v0radius();
     else
@@ -403,11 +405,9 @@ struct TreeWriterTpcV0 {
   }
 
   /// Evaluate add id of v0 or casc
-  template <typename V0Casc>
+  template <V0OrCasc V0Casc>
   int getAddId(V0Casc const& v0casc)
   {
-    static_assert(std::is_same_v<V0Casc, V0sWithID::iterator> || std::is_same_v<V0Casc, CascsWithID::iterator>,
-                  "getAddId() v0casc's type must be either V0sWithID::iterator or CascsWithID::iterator");
     if constexpr (std::is_same_v<V0Casc, V0sWithID::iterator>)
       return v0casc.v0addid();
     else
