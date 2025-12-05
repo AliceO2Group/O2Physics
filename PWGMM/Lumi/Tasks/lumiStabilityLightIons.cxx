@@ -22,10 +22,10 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include <limits>
 #include <map>
@@ -38,14 +38,16 @@ using namespace o2::framework::expressions;
 
 o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
-namespace o2::aod {
-namespace myBc_aod {
+namespace o2::aod
+{
+namespace myBc_aod
+{
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
-} //namespace myBc_aod
+} // namespace myBc_aod
 DECLARE_SOA_TABLE(MyBCaod, "AOD", "MYBCAOD", myBc_aod::Timestamp, myBc_aod::TimeZNA, myBc_aod::TimeZNC);
-} //namespace o2::aod
+} // namespace o2::aod
 
 using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
@@ -68,7 +70,7 @@ struct LumiStabilityLightIons {
 
   Configurable<int> cfgEmptyBCsBeforeLeadingBC{"cfgEmptyBCsBeforeLeadingBC", 5, "Minimum number of empty BCs before a leading BC to identify it as such"};
 
-  //Configurables specific to VdM analysis: output ao2d with timestamps and ZDC times
+  // Configurables specific to VdM analysis: output ao2d with timestamps and ZDC times
   Configurable<bool> cfgFillBCao2d{"cfgFillBCao2d", false, "Fill BC ao2d with timestamps and ZDC times"};
   Configurable<uint64_t> cfgTstampStartFillingBCao2d{"cfgTstampStartFillingBCao2d", 0, "Minimum value of timestamp for output bc ao2d to be filled"};
   Configurable<uint64_t> cfgTstampEndFillingBCao2d{"cfgTstampEndFillingBCao2d", 0, "Maximum value of timestamp for output bc ao2d to be filled"};
@@ -271,9 +273,9 @@ struct LumiStabilityLightIons {
 
       mHistManager.fill(HIST("ZDCQA/ZDCTimes"), timeZNA, timeZNC);
 
-      //For VdM analysis: fill timestamps and ZDC times in output tree, if enabled
+      // For VdM analysis: fill timestamps and ZDC times in output tree, if enabled
       uint64_t timestamp = bc.timestamp();
-      if(cfgFillBCao2d && timestamp>=cfgTstampStartFillingBCao2d && timestamp<=cfgTstampEndFillingBCao2d) {
+      if (cfgFillBCao2d && timestamp >= cfgTstampStartFillingBCao2d && timestamp <= cfgTstampEndFillingBCao2d) {
         BCaod(timestamp, timeZNA, timeZNC);
       }
     }
