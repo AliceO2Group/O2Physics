@@ -15,19 +15,13 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
 #define PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
 
-#include <vector>
-
 namespace o2::aod::pwgem::dilepton::utils
 {
 class EMFwdTrack
 {
  public:
-  EMFwdTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dcaX, float dcaY, std::vector<int> amb_muon_self_ids, float cXX, float cXY, float cYY)
+  EMFwdTrack(float pt, float eta, float phi, float mass, int8_t charge, float dcaX, float dcaY, float cXX, float cXY, float cYY)
   {
-    fDFId = dfId;
-    fGlobalId = globalId;
-    fCollisionId = collisionId;
-    fTrackId = trackId;
     fPt = pt;
     fEta = eta;
     fPhi = phi;
@@ -35,15 +29,6 @@ class EMFwdTrack
     fCharge = charge;
     fDCAx = dcaX;
     fDCAy = dcaY;
-    fPairDCAXYinSigmaOTF = 0;
-
-    fAmbMuonSelfIds = amb_muon_self_ids;
-    if (fAmbMuonSelfIds.size() > 0) {
-      fIsAmbiguous = true;
-    } else {
-      fIsAmbiguous = false;
-    }
-
     fCXX = cXX;
     fCXY = cXY;
     fCYY = cYY;
@@ -51,10 +36,6 @@ class EMFwdTrack
 
   ~EMFwdTrack() {}
 
-  int dfId() const { return fDFId; }
-  int globalIndex() const { return fGlobalId; }
-  int collisionId() const { return fCollisionId; }
-  int fwdtrackId() const { return fTrackId; }
   float pt() const { return fPt; }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
@@ -67,22 +48,14 @@ class EMFwdTrack
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
-  bool has_ambiguousMuons() const { return fIsAmbiguous; }
-  std::vector<int> ambiguousMuonsIds() const { return fAmbMuonSelfIds; }
+  float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
   float signed1Pt() const { return fCharge * 1.f / fPt; }
 
   float cXXatDCA() const { return fCXX; }
   float cXYatDCA() const { return fCXY; }
   float cYYatDCA() const { return fCYY; }
 
-  float pairDcaXYinSigmaOTF() const { return fPairDCAXYinSigmaOTF; }
-  void setPairDcaXYinSigmaOTF(float dca) { fPairDCAXYinSigmaOTF = dca; }
-
  protected:
-  int fDFId;
-  int fGlobalId;
-  int fCollisionId;
-  int fTrackId;
   float fPt;
   float fEta;
   float fPhi;
@@ -90,9 +63,6 @@ class EMFwdTrack
   int8_t fCharge;
   float fDCAx;
   float fDCAy;
-  float fPairDCAXYinSigmaOTF;
-  bool fIsAmbiguous;
-  std::vector<int> fAmbMuonSelfIds;
   float fCXX;
   float fCXY;
   float fCYY;

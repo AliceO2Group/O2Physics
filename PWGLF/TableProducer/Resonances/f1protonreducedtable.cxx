@@ -14,39 +14,42 @@
 ///
 /// \author Sourav Kundu, sourav.kundu@cern.ch
 
-#include <Framework/Configurable.h>
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
-#include <TMath.h>
-#include <fairlogger/Logger.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
-
-#include <iostream>
-#include <iterator>
-#include <string>
-#include <vector>
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/ReducedF1ProtonTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/PIDResponseITS.h"
+#include <Framework/Configurable.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TMath.h>
+#include <TPDGCode.h> // FIXME
+
+#include <fairlogger/Logger.h>
+
+#include <iostream>
+#include <iterator>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -774,10 +777,10 @@ struct f1protonreducedtable {
                 F1KaonIndex.push_back(KaonIndex.at(i2));
                 F1KshortDaughterPositiveIndex.push_back(KshortPosDaughIndex.at(i3));
                 F1KshortDaughterNegativeIndex.push_back(KshortNegDaughIndex.at(i3));
-                PionTOFHitFinal.push_back(PionTOFHit.at(i1)); // Pion TOF Hit
-                KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
-                PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
-                KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
+                PionTOFHitFinal.push_back(PionTOFHit.at(i1));           // Pion TOF Hit
+                KaonTOFHitFinal.push_back(KaonTOFHit.at(i2));           // Kaon TOF Hit
+                PionTPCFinal.push_back(PionTPC.at(i1));                 // Pion TPC
+                KaonTPCFinal.push_back(KaonTPC.at(i2));                 // Kaon TPC
                 KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
                 if (pairsign > 0) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());

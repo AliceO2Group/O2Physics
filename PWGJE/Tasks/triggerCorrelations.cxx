@@ -38,6 +38,9 @@ struct TriggerCorrelationsTask {
   HistogramRegistry registry;
 
   std::vector<int> triggerMaskBits;
+  long unsigned int nChargedTriggers = 4;
+  long unsigned int nChargedHFTriggers = 4;
+  long unsigned int nFullTriggers = 13;
   void init(o2::framework::InitContext&)
   {
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(jetderiveddatautilities::JTriggerMasks);
@@ -52,7 +55,30 @@ struct TriggerCorrelationsTask {
   }
 
   template <typename T>
-  void fillCorrelationsHistogram(T const& collision, bool fill = false, int iCurrentTrig = -1)
+  void fillOnlineCorrelationsHistogram(T const& collision, bool fill = false, int iCurrentTrig = -1)
+  {
+    for (std::vector<int>::size_type iTrig = 0; iTrig < triggerMaskBits.size(); iTrig++) {
+      if (fill) {
+        if (iTrig < nChargedTriggers && jetderiveddatautilities::selectChargedTrigger(collision, iTrig + 1)) {
+          registry.fill(HIST("triggerCorrelations"), iCurrentTrig, iTrig);
+        }
+        if (iTrig >= nChargedTriggers && iTrig < (nChargedTriggers + nChargedHFTriggers) && jetderiveddatautilities::selectChargedHFTrigger(collision, iTrig - nChargedTriggers + 1)) {
+          registry.fill(HIST("triggerCorrelations"), iCurrentTrig, iTrig);
+        }
+        if (iTrig >= (nChargedTriggers + nChargedHFTriggers) && iTrig < (nChargedTriggers + nChargedHFTriggers + nFullTriggers) && jetderiveddatautilities::selectFullTrigger(collision, iTrig - (nChargedTriggers + nChargedHFTriggers) + 1)) {
+          registry.fill(HIST("triggerCorrelations"), iCurrentTrig, iTrig);
+        }
+
+      } else {
+        if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits[iTrig])) {
+          fillOnlineCorrelationsHistogram(collision, true, iTrig);
+        }
+      }
+    }
+  }
+
+  template <typename T>
+  void fillOfflineCorrelationsHistogram(T const& collision, bool fill = false, int iCurrentTrig = -1)
   {
     for (std::vector<int>::size_type iTrig = 0; iTrig < triggerMaskBits.size(); iTrig++) {
       if (fill) {
@@ -61,23 +87,23 @@ struct TriggerCorrelationsTask {
         }
       } else {
         if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits[iTrig])) {
-          fillCorrelationsHistogram(collision, true, iTrig);
+          fillOfflineCorrelationsHistogram(collision, true, iTrig);
         }
       }
     }
   }
 
-  void processTriggeredCorrelations(soa::Join<aod::JCollisions, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels>::iterator const& collision)
+  void processTriggeredCorrelationsOnline(soa::Join<aod::JCollisions, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels>::iterator const& collision)
   {
-    fillCorrelationsHistogram(collision);
+    fillOnlineCorrelationsHistogram(collision);
   }
-  PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelations, "QA for trigger correlations", true);
+  PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelationsOnline, "QA for online trigger correlations", true);
 
   void processTriggeredCorrelationsOffline(aod::JCollision const& collision)
   {
-    fillCorrelationsHistogram(collision);
+    fillOfflineCorrelationsHistogram(collision);
   }
-  PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelationsOffline, "QA for trigger correlations in offline analysis", false);
+  PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelationsOffline, "QA for offline trigger correlations", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

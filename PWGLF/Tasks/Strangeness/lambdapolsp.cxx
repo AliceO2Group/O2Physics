@@ -22,7 +22,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -89,15 +89,17 @@ struct lambdapolsp {
   o2::ccdb::CcdbApi ccdbApi;
   TH1D* hwgtAL;
   // fill output
-  Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
-  Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
-  Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
-  Configurable<bool> additionalEvSel4{"additionalEvSel4", false, "additionalEvSel4"};
+  struct : ConfigurableGroup {
+    Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
+    Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
+    Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
+    Configurable<bool> additionalEvSel4{"additionalEvSel4", false, "additionalEvSel4"};
+    Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+    Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  } evselGrp;
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
   Configurable<bool> cqvas{"cqvas", false, "change q vectors after shift correction"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
-  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> sys{"sys", 1, "flag to select systematic source"};
   Configurable<int> centestim{"centestim", 0, "flag to select centrality estimator"};
   Configurable<bool> dosystematic{"dosystematic", false, "flag to perform systematic study"};
@@ -353,11 +355,12 @@ struct lambdapolsp {
       histos.add("hpCosPsiC", "hpCosPsiC", HistType::kTHnSparseF, {axisGrp.configcentAxis, thnAxisres});
       histos.add("hpSinPsiA", "hpSinPsiA", HistType::kTHnSparseF, {axisGrp.configcentAxis, thnAxisres});
       histos.add("hpSinPsiC", "hpSinPsiC", HistType::kTHnSparseF, {axisGrp.configcentAxis, thnAxisres});*/
-      /*histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
-      histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
-      histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
-      histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});*/
-
+      if (randGrp.useSP) {
+        histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {axisGrp.configcentAxis, spAxis});
+        histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {axisGrp.configcentAxis, spAxis});
+        histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {axisGrp.configcentAxis, spAxis});
+        histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {axisGrp.configcentAxis, spAxis});
+      }
       if (usesubdet) {
         histos.add("hSparseLambdaCosPsiA", "hSparseLambdaCosPsiA", HistType::kTHnSparseF, runaxes, true);
         histos.add("hSparseLambdaSinPsiA", "hSparseLambdaSinPsiA", HistType::kTHnSparseF, runaxes, true);
@@ -402,6 +405,12 @@ struct lambdapolsp {
       // histos.add("hSparseLambda_corr2b", "hSparseLambda_corr2b", HistType::kTHnSparseF, runaxes, true);
       histos.add("hSparseAntiLambda_corr2a", "hSparseAntiLambda_corr2a", HistType::kTHnSparseF, runaxes, true);
       // histos.add("hSparseAntiLambda_corr2b", "hSparseAntiLambda_corr2b", HistType::kTHnSparseF, runaxes, true);
+      if (randGrp.useSP) {
+        histos.add("hSparseAntiLambda_avgux", "hSparseAntiLambda_avgux", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+        histos.add("hSparseAntiLambda_avguy", "hSparseAntiLambda_avguy", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+        histos.add("hSparseLambda_avgux", "hSparseLambda_avgux", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+        histos.add("hSparseLambda_avguy", "hSparseLambda_avguy", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+      }
     }
 
     if (distGrp.filldist) {
@@ -666,6 +675,11 @@ struct lambdapolsp {
             (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
   }
 
+  double modqxZDCA;
+  double modqyZDCA;
+  double modqxZDCC;
+  double modqyZDCC;
+
   void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
                       const ROOT::Math::PxPyPzMVector& daughter,
                       double psiZDCC, double psiZDCA, double psiZDC, double centrality,
@@ -691,8 +705,8 @@ struct lambdapolsp {
     auto PolC = TMath::Sin(phiminuspsiC);
     auto PolA = TMath::Sin(phiminuspsiA);
     auto Pol = TMath::Sin(phiminuspsi);
-    auto PolSP = uy * TMath::Cos(psiZDC) - ux * TMath::Sin(psiZDC);
-
+    // auto PolSP = uy * TMath::Cos(psiZDC) - ux * TMath::Sin(psiZDC);
+    auto PolSP = uy * (modqxZDCC - modqxZDCA) - ux * (modqyZDCC - modqyZDCA);
     auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
     auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
     // auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(particle.Phi() - phiangle));
@@ -733,6 +747,10 @@ struct lambdapolsp {
         // histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
         histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
         // histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
+        if (randGrp.useSP) {
+          histos.fill(HIST("hSparseAntiLambda_avgux"), candmass, candpt, ux, centrality);
+          histos.fill(HIST("hSparseAntiLambda_avguy"), candmass, candpt, uy, centrality);
+        }
       } else {
         if (usesubdet) {
           histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
@@ -780,6 +798,10 @@ struct lambdapolsp {
         // histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
         histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
         // histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
+        if (randGrp.useSP) {
+          histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
+          histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
+        }
       } else {
         if (usesubdet) {
           histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
@@ -855,20 +877,20 @@ struct lambdapolsp {
     }
     // histos.fill(HIST("hCentrality1"), centrality);
 
-    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
     // histos.fill(HIST("hCentrality2"), centrality);
-    // if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+    // if (evselGrp.additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (evselGrp.additionalEvSel2 && (collision.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
       return;
     }
     // histos.fill(HIST("hCentrality3"), centrality);
-    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (evselGrp.additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
 
-    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (evselGrp.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
 
@@ -885,11 +907,6 @@ struct lambdapolsp {
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-
-    double modqxZDCA;
-    double modqyZDCA;
-    double modqxZDCC;
-    double modqyZDCC;
 
     if (cqvas) {
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
@@ -911,18 +928,20 @@ struct lambdapolsp {
     histos.fill(HIST("hCentrality"), centrality);
     if (!checkwithpub) {
       // histos.fill(HIST("hVtxZ"), collision.posZ());
-      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
-      if (randGrp.useSP)
+      if (randGrp.useSP) {
         histos.fill(HIST("hpRes"), centrality, ((modqxZDCA * modqxZDCC) + (modqyZDCA * modqyZDCC)));
-      // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
-      /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
-      histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
-      /*histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
-        histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
-        histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
-        histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);*/
+        // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+        /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
+          histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
+          histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
+          histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
+        histos.fill(HIST("hcentQxZDCA"), centrality, modqxZDCA);
+        histos.fill(HIST("hcentQyZDCA"), centrality, modqyZDCA);
+        histos.fill(HIST("hcentQxZDCC"), centrality, modqxZDCC);
+        histos.fill(HIST("hcentQyZDCC"), centrality, modqyZDCC);
+      } else {
+        histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      }
     }
 
     ///////////checking v1////////////////////////////////
@@ -1301,20 +1320,20 @@ struct lambdapolsp {
       return;
     }
 
-    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
     // histos.fill(HIST("hCentrality2"), centrality);
-    //  if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+    //  if (evselGrp.additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (evselGrp.additionalEvSel2 && (collision.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
       return;
     }
     // histos.fill(HIST("hCentrality3"), centrality);
-    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (evselGrp.additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
 
-    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (evselGrp.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
 
@@ -1344,10 +1363,10 @@ struct lambdapolsp {
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-    double modqxZDCA;
+    /*double modqxZDCA;
     double modqyZDCA;
     double modqxZDCC;
-    double modqyZDCC;
+    double modqyZDCC;*/
 
     if (cqvas) {
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
@@ -1367,12 +1386,20 @@ struct lambdapolsp {
     histos.fill(HIST("hCentrality"), centrality);
     if (!checkwithpub) {
       // histos.fill(HIST("hVtxZ"), collision.posZ());
-      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
-      // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
-      /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
-      histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
+      if (randGrp.useSP) {
+        histos.fill(HIST("hpRes"), centrality, ((modqxZDCA * modqxZDCC) + (modqyZDCA * modqyZDCC)));
+        // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+        /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
+        histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
+        histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
+        histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
+        histos.fill(HIST("hcentQxZDCA"), centrality, modqxZDCA);
+        histos.fill(HIST("hcentQyZDCA"), centrality, modqyZDCA);
+        histos.fill(HIST("hcentQxZDCC"), centrality, modqxZDCC);
+        histos.fill(HIST("hcentQyZDCC"), centrality, modqyZDCC);
+      } else {
+        histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      }
     }
 
     //___________________________________________________________________________________________________
@@ -1562,18 +1589,18 @@ struct lambdapolsp {
     double centrality = -999.;
     centrality = collision.centFT0C();
 
-    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
 
-    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+    if (evselGrp.additionalEvSel2 && (collision.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
       return;
     }
 
-    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (evselGrp.additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
-    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (evselGrp.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
 
@@ -1722,28 +1749,28 @@ struct lambdapolsp {
         continue;
       }
 
-      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
 
@@ -1857,28 +1884,28 @@ struct lambdapolsp {
         continue;
       }
 
-      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
       auto centrality = collision1.centFT0C();

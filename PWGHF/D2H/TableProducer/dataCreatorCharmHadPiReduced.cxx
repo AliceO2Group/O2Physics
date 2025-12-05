@@ -19,16 +19,20 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -201,7 +205,6 @@ struct HfDataCreatorCharmHadPiReduced {
     Configurable<bool> selectionFlagDstar{"selectionFlagDstar", true, "Selection Flag for D* decay to D0 Pi"};
   } hfflagConfigurations;
 
-  HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::hf_evsel::HfEventSelectionMc hfEvSelMc;
 
@@ -270,6 +273,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
   std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus, hCandidatesDs, hCandidatesLc, hCandidatesD0FromDstar;
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   std::array<int, 2> arrPDGResonantDsPhiPi = {kPhi, kPiPlus};      // Ds± → Phi π±
   std::array<int, 2> arrPDGResonantDKstarK = {kK0Star892, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
@@ -336,14 +340,14 @@ struct HfDataCreatorCharmHadPiReduced {
     runNumber = 0;
 
     // histograms
-    constexpr int kNBinsEvents = kNEvent;
-    std::string labels[kNBinsEvents];
+    constexpr int NumBinsEvents = kNEvent;
+    std::string labels[NumBinsEvents];
     labels[Event::Processed] = "processed";
     labels[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
     labels[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
-    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+    static const AxisSpec axisEvents = {NumBinsEvents, 0.5, NumBinsEvents + 0.5, ""};
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
+    for (int iBin = 0; iBin < NumBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
@@ -392,7 +396,7 @@ struct HfDataCreatorCharmHadPiReduced {
     setLabelHistoCands(hCandidatesD0FromDstar);
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
     if (doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiMc || doprocessDsPiMcWithMl ||
         doprocessD0PiMc || doprocessD0PiMcWithMl ||
@@ -983,7 +987,7 @@ struct HfDataCreatorCharmHadPiReduced {
           RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDstarIndex, std::array{0}, 1);
           if (arrDaughDstarIndex.size() == NDaughtersDstar) {
             bool matchD0{false};
-            for (const int iProng : arrDaughDstarIndex) {
+            for (const int iProng : arrDaughDstarIndex) { // o2-linter: disable=const-ref-in-for-loop (it is preferable to copy values in case of simple variables)
               auto daughI = particlesMc.rawIteratorAt(iProng);
               if (std::abs(daughI.pdgCode()) == Pdg::kD0) {
                 matchD0 = RecoDecay::isMatchedMCGen(particlesMc, daughI, +Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD, 2);
@@ -1019,11 +1023,16 @@ struct HfDataCreatorCharmHadPiReduced {
                        TTracks const&,
                        PParticles const& particlesMc,
                        uint64_t const& indexCollisionMaxNumContrib,
-                       BBCs const&)
+                       BBCs const&,
+                       int& zvtxColl,
+                       int& sel8Coll,
+                       int& zvtxAndSel8Coll,
+                       int& zvtxAndSel8CollAndSoftTrig,
+                       int& allSelColl)
   {
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
-    float centrality = -1.f;
-    const auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+
+    const auto hfRejMap = o2::hf_evsel::getEvSel<true, o2::hf_centrality::CentralityEstimator::None, BBCs>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
     if (configs.skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
@@ -1061,18 +1070,18 @@ struct HfDataCreatorCharmHadPiReduced {
       float invMassC0{-1.f}, invMassC1{-1.f};
       if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
-        invMassC0 = hfHelper.invMassDplusToPiKPi(candC);
+        invMassC0 = HfHelper::invMassDplusToPiKPi(candC);
         registry.fill(HIST("hMassDplus"), invMassC0);
         registry.fill(HIST("hPtDplus"), candC.pt());
         registry.fill(HIST("hCpaDplus"), candC.cpa());
       } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         if (candC.isSelDsToKKPi() >= hfflagConfigurations.selectionFlagDs) {
-          invMassC0 = hfHelper.invMassDsToKKPi(candC);
+          invMassC0 = HfHelper::invMassDsToKKPi(candC);
           registry.fill(HIST("hMassDsToKKPi"), invMassC0);
         }
         if (candC.isSelDsToPiKK() >= hfflagConfigurations.selectionFlagDs) {
-          invMassC1 = hfHelper.invMassDsToPiKK(candC);
+          invMassC1 = HfHelper::invMassDsToPiKK(candC);
           registry.fill(HIST("hMassDsToPiKK"), invMassC1);
         }
         registry.fill(HIST("hPtDs"), candC.pt());
@@ -1080,11 +1089,11 @@ struct HfDataCreatorCharmHadPiReduced {
       } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) {
         indexHfCandCharm = tables.hfCand2Prong.lastIndex() + 1;
         if (candC.isSelD0() >= hfflagConfigurations.selectionFlagD0) {
-          invMassC0 = hfHelper.invMassD0ToPiK(candC);
+          invMassC0 = HfHelper::invMassD0ToPiK(candC);
           registry.fill(HIST("hMassD0"), invMassC0);
         }
         if (candC.isSelD0bar() >= hfflagConfigurations.selectionFlagD0bar) {
-          invMassC1 = hfHelper.invMassD0barToKPi(candC);
+          invMassC1 = HfHelper::invMassD0barToKPi(candC);
           registry.fill(HIST("hMassD0bar"), invMassC1);
         }
         registry.fill(HIST("hPtD0"), candC.pt());
@@ -1092,11 +1101,11 @@ struct HfDataCreatorCharmHadPiReduced {
       } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         if (candC.isSelLcToPKPi() >= hfflagConfigurations.selectionFlagLc) {
-          invMassC0 = hfHelper.invMassLcToPKPi(candC);
+          invMassC0 = HfHelper::invMassLcToPKPi(candC);
           registry.fill(HIST("hMassLcToPKPi"), invMassC0);
         }
         if (candC.isSelLcToPiKP() >= hfflagConfigurations.selectionFlagLc) {
-          invMassC1 = hfHelper.invMassLcToPiKP(candC);
+          invMassC1 = HfHelper::invMassLcToPiKP(candC);
           registry.fill(HIST("hMassLcToPiKP"), invMassC1);
         }
         registry.fill(HIST("hPtLc"), candC.pt());
@@ -1756,12 +1765,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1786,12 +1793,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1816,12 +1821,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::B0ToDminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::B0ToDminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1846,12 +1849,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::B0ToDminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::B0ToDminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1877,12 +1878,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1908,12 +1907,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1939,12 +1936,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::B0ToDstarPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::B0ToDstarPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1970,12 +1965,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::B0ToDstarPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::B0ToDstarPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2000,12 +1993,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2030,12 +2021,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2060,12 +2049,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::BsToDsminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::BsToDsminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2090,12 +2077,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::BsToDsminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::BsToDsminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2120,12 +2105,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2150,12 +2133,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2180,12 +2161,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::BplusToD0barPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::BplusToD0barPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2210,12 +2189,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::BplusToD0barPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::BplusToD0barPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2240,12 +2217,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsLcPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, false, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2270,12 +2245,10 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsLcPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, true, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, true, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2305,14 +2278,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, false, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, false, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2342,14 +2313,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, true, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, true, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2380,14 +2349,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, false, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, false, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2418,14 +2385,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, true, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, true, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2455,14 +2420,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, false, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, false, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2492,14 +2455,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, true, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, true, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2529,14 +2490,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, false, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, false, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2566,14 +2525,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, true, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, true, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2603,14 +2560,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsLcPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, false, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, false, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -2640,14 +2595,12 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, BCsInfo>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(preslices.candsLcPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, true, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, true, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     tables.hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);

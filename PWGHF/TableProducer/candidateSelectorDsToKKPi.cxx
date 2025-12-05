@@ -18,8 +18,10 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDsToKKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
@@ -94,7 +96,6 @@ struct HfCandidateSelectorDsToKKPi {
   // Mass cut for trigger analysis
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrized pT differential mass cut for triggered data"};
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseDsToKKPi<float> hfMlResponse;
   std::vector<float> outputMlDsToKKPi;
   std::vector<float> outputMlDsToPiKK;
@@ -192,7 +193,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
-    if (rejectCandsInDplusToPiKPiRegion && std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) < deltaMRegionDplusToPiKPi) {
+    if (rejectCandsInDplusToPiKPiRegion && std::abs(HfHelper::invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) < deltaMRegionDplusToPiKPi) {
       return false;
     }
     return true;
@@ -215,16 +216,16 @@ struct HfCandidateSelectorDsToKKPi {
     if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
-    if (std::abs(hfHelper.invMassDsToKKPi(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(HfHelper::invMassDsToKKPi(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDsToKKPi(candidate), o2::constants::physics::MassDS, candidate.pt(), hfTriggerCuts)) {
+    if (useTriggerMassCut && !isCandidateInMassRange(HfHelper::invMassDsToKKPi(candidate), o2::constants::physics::MassDS, candidate.pt(), hfTriggerCuts)) {
       return false;
     }
-    if (hfHelper.deltaMassPhiDsToKKPi(candidate) > cuts->get(pTBin, "deltaM Phi")) {
+    if (HfHelper::deltaMassPhiDsToKKPi(candidate) > cuts->get(pTBin, "deltaM Phi")) {
       return false;
     }
-    if (hfHelper.absCos3PiKDsToKKPi(candidate) < cuts->get(pTBin, "cos^3 theta_PiK")) {
+    if (HfHelper::absCos3PiKDsToKKPi(candidate) < cuts->get(pTBin, "cos^3 theta_PiK")) {
       return false;
     }
     return true;
@@ -247,16 +248,16 @@ struct HfCandidateSelectorDsToKKPi {
     if (trackKaon1.pt() < cuts->get(pTBin, "pT K") || trackKaon2.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
       return false;
     }
-    if (std::abs(hfHelper.invMassDsToPiKK(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(HfHelper::invMassDsToPiKK(candidate) - o2::constants::physics::MassDS) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDsToPiKK(candidate), o2::constants::physics::MassDS, candidate.pt(), hfTriggerCuts)) {
+    if (useTriggerMassCut && !isCandidateInMassRange(HfHelper::invMassDsToPiKK(candidate), o2::constants::physics::MassDS, candidate.pt(), hfTriggerCuts)) {
       return false;
     }
-    if (hfHelper.deltaMassPhiDsToPiKK(candidate) > cuts->get(pTBin, "deltaM Phi")) {
+    if (HfHelper::deltaMassPhiDsToPiKK(candidate) > cuts->get(pTBin, "deltaM Phi")) {
       return false;
     }
-    if (hfHelper.absCos3PiKDsToPiKK(candidate) < cuts->get(pTBin, "cos^3 theta_PiK")) {
+    if (HfHelper::absCos3PiKDsToPiKK(candidate) < cuts->get(pTBin, "cos^3 theta_PiK")) {
       return false;
     }
     return true;

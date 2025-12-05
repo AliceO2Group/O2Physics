@@ -22,7 +22,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h" //
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" //
+#include "Common/DataModel/PIDResponseTOF.h" //
+#include "Common/DataModel/PIDResponseTPC.h" //
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -103,6 +104,7 @@ struct HigherMassResonances {
     Configurable<int> configOccCut{"configOccCut", 1000, "Occupancy cut"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
+    Configurable<bool> isSel8{"isSel8", false, "Event Selection 8"};
 
     // Configurables for event selection
     // Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
@@ -150,8 +152,8 @@ struct HigherMassResonances {
     Configurable<bool> iscTVXEvsel{"iscTVXEvsel", true, "Triggger selection"};
     Configurable<bool> isavoidsplitrackMC{"isavoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<bool> isapplyRapidityMC{"isapplyRapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
-    Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
-    std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
+    Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500), 5: f2(1270)"};
+    std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221, 225};
 
     // output THnSparses
     Configurable<bool> activateHelicityFrame{"activateHelicityFrame", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -244,7 +246,7 @@ struct HigherMassResonances {
       rEventSelection.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
       rEventSelection.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
       hMChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
-      hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{25, 0, 25}});
+      hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{20, 0, 20}});
 
       rEventSelection.add("hEventCut", "No. of event after cuts", kTH1I, {{20, 0, 20}});
       std::shared_ptr<TH1> hCutFlow = rEventSelection.get<TH1>(HIST("hEventCut"));
@@ -291,12 +293,23 @@ struct HigherMassResonances {
       hv0labelmcrec->GetXaxis()->SetBinLabel(2, "V0Daughter Sel.");
       hv0labelmcrec->GetXaxis()->SetBinLabel(3, "V0 Sel.");
       hv0labelmcrec->GetXaxis()->SetBinLabel(4, "V0 PDG");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(5, "Mother PDG");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(6, "Same Mother");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(7, "Split Track");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(8, "Global Index");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(9, "Generator");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(10, "Rapidity");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(5, "All Mothers");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(6, "Mother PDG");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(7, "Same Mother");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(8, "Split Track");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(9, "Global Index");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(10, "Generator");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(11, "Rapidity");
+
+      std::shared_ptr<TH1> hv0labelmcgen = hMChists.get<TH1>(HIST("events_check"));
+      hv0labelmcgen->GetXaxis()->SetBinLabel(1, "All Events");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(2, "Event Sel.");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(3, "Event reconstructed");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(4, "PDG check");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(5, "Rapidity");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(6, "Daughters2");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(7, "PhysicalPrimary");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(8, "Daughters K0s");
     }
 
     hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
@@ -366,7 +379,7 @@ struct HigherMassResonances {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 1);
 
-    if (!collision.sel8())
+    if (config.isSel8 && !collision.sel8())
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 2);
@@ -527,7 +540,7 @@ struct HigherMassResonances {
   }
 
   template <typename T, typename V0s>
-  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0DaughterTPC, V0s const& /*candidate*/)
+  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0DaughterTPC, V0s const& v0candidate)
   {
     if (config.qAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
@@ -576,7 +589,13 @@ struct HigherMassResonances {
     }
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
-    // if (std::abs())
+    if (std::abs(v0candidate.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && v0candidate.positiveHasTOF()) {
+      return false;
+    }
+
+    if (std::abs(v0candidate.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0candidate.negativeHasTOF()) {
+      return false;
+    }
 
     if (config.qAPID) {
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -586,7 +605,8 @@ struct HigherMassResonances {
   }
 
   using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
-  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+  // using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
   using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   template <typename TV0>
@@ -618,7 +638,17 @@ struct HigherMassResonances {
       return false;
     }
 
+    // // check TOF PID if TOF exists
+
     if (config.isApplyDCAv0topv && (std::abs(v0.dcapostopv()) < config.cMaxV0DCA || std::abs(v0.dcanegtopv()) < config.cMaxV0DCA)) {
+      return false;
+    }
+
+    if (std::abs(v0.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && v0.positiveHasTOF()) {
+      return false;
+    }
+
+    if (std::abs(v0.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0.negativeHasTOF()) {
       return false;
     }
 
@@ -662,11 +692,11 @@ struct HigherMassResonances {
   // Defining the type of the daughter tracks
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  using V0TrackCandidate = aod::V0Datas;
+  using V0TrackCandidate = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
   // For Monte Carlo
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::PVMults>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
-  using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
+  using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::McV0Labels>>;
   // zBeam direction in lab frame
 
   template <typename T>
@@ -851,7 +881,7 @@ struct HigherMassResonances {
     // }
   }
 
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, V0TrackCandidate const& V0s)
   {
     multiplicity = 0.0;
 
@@ -921,16 +951,33 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (postrack1.hasTOF() && negtrack1.hasTOF() && postrack2.hasTOF() && negtrack2.hasTOF()) {
-        double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
-        double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
-        double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
-        double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
-        if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTPC) || (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTPC) ||
-            (std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTPC) || (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTPC)) {
-          continue;
-        }
-      }
+      // if (postrack1.hasTOF()) {
+      //   double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
+      //   if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTOF)) {
+      //     continue;
+      //   }
+      // }
+
+      // if (negtrack1.hasTOF()) {
+      //   double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
+      //   if (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTOF) {
+      //     continue;
+      //   }
+      // }
+
+      // if (postrack2.hasTOF()) {
+      //   double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
+      //   if ((std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTOF)) {
+      //     continue;
+      //   }
+      // }
+
+      // if (negtrack2.hasTOF()) {
+      //   double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
+      //   if (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTOF) {
+      //     continue;
+      //   }
+      // }
 
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
@@ -1112,31 +1159,31 @@ struct HigherMassResonances {
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     selectedEvents.resize(nevts);
-    hMChists.fill(HIST("events_check"), 3.5);
+    hMChists.fill(HIST("events_check"), 1.5);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
 
     if (!config.isallGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    hMChists.fill(HIST("events_check"), 4.5);
+    hMChists.fill(HIST("events_check"), 2.5);
     for (const auto& mcParticle : mcParticles) {
 
       if (std::abs(mcParticle.pdgCode()) != config.pdgCodes[config.selectMCparticles]) // f2(1525), f0(1710)
       {
         continue;
       }
-      hMChists.fill(HIST("events_check"), 5.5);
+      hMChists.fill(HIST("events_check"), 3.5);
 
       if (config.isapplyRapidityMC && std::abs(mcParticle.y()) >= config.rapidityMotherData) {
         continue;
       }
-      hMChists.fill(HIST("events_check"), 6.5);
+      hMChists.fill(HIST("events_check"), 4.5);
 
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
       if (kDaughters.size() != config.noOfDaughters) {
         continue;
       }
-      hMChists.fill(HIST("events_check"), 7.5);
+      hMChists.fill(HIST("events_check"), 5.5);
 
       for (const auto& kCurrentDaughter : kDaughters) {
         // int daupdg = std::abs(kCurrentDaughter.pdgCode());
@@ -1144,10 +1191,10 @@ struct HigherMassResonances {
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
-        hMChists.fill(HIST("events_check"), 8.5);
+        hMChists.fill(HIST("events_check"), 6.5);
         if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kK0Short) {
           passKs.push_back(true);
-          hMChists.fill(HIST("events_check"), 9.5);
+          hMChists.fill(HIST("events_check"), 7.5);
           if (passKs.size() == 1) {
             daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
           } else if (static_cast<int>(passKs.size()) == config.noOfDaughters) {
@@ -1288,16 +1335,17 @@ struct HigherMassResonances {
           }
 
           for (const auto& mothertrack2 : mctrackv02.mothers_as<aod::McParticles>()) {
+            hMChists.fill(HIST("events_checkrec"), 4.5);
 
             if (mothertrack1.pdgCode() != config.pdgCodes[config.selectMCparticles]) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 4.5);
+            hMChists.fill(HIST("events_checkrec"), 5.5);
 
             if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 5.5);
+            hMChists.fill(HIST("events_checkrec"), 6.5);
 
             gindex2.push_back(mothertrack2.globalIndex());
             if (gindex2.size() > 1) {
@@ -1305,28 +1353,28 @@ struct HigherMassResonances {
                 continue;
               }
             }
-            hMChists.fill(HIST("events_checkrec"), 6.5);
+            hMChists.fill(HIST("events_checkrec"), 7.5);
 
             if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 7.5);
+            hMChists.fill(HIST("events_checkrec"), 8.5);
 
             if (!mothertrack1.producedByGenerator()) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 8.5);
+            hMChists.fill(HIST("events_checkrec"), 9.5);
 
             if (config.isapplyRapidityMC && std::abs(mothertrack1.y()) >= config.rapidityMotherData) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 9.5);
+            hMChists.fill(HIST("events_checkrec"), 10.5);
 
             // if (config.isavoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
             //   hMChists.fill(HIST("h1Recsplit"), mothertrack1.pt());
             //   continue;
             // }
-            // hMChists.fill(HIST("events_checkrec"), 20.5);
+            // hMChists.fill(HIST("events_checkrec"), 11.5);
             // oldindex = mothertrack1.globalIndex(); // split tracks is already handled using gindex1 and gindex2
 
             daughter1 = ROOT::Math::PxPyPzMVector(v01.px(), v01.py(), v01.pz(), o2::constants::physics::MassK0Short);

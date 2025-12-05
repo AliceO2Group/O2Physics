@@ -19,6 +19,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
@@ -108,6 +109,7 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0 (bar)"};
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
+  Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analysis"};
   Configurable<std::vector<double>> signalRegionLeft{"signalRegionLeft", std::vector<double>{vecsignalRegionLeft}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionRight{"signalRegionRight", std::vector<double>{vecsignalRegionRight}, "Outer values of signal region vs pT"};
   Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{vecSidebandLeftInner}, "Inner values of left sideband vs pT"};
@@ -116,8 +118,6 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{vecSidebandRightOuter}, "Outer values of right sideband vs pT"};
   Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
-
-  HfHelper hfHelper;
 
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenD0ToPiKPi,
@@ -143,6 +143,7 @@ struct HfTaskCorrelationD0Hadrons {
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
+  ConfigurableAxis binsCentFt0m{"binsCentFt0m", {100, 0., 100.}, "Centrality percentile (FT0M)"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -160,24 +161,25 @@ struct HfTaskCorrelationD0Hadrons {
     AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec axisD0Prompt = {2, -0.5, 1.5, "Prompt D0"};
     AxisSpec axisCorrelationState = {2, 0., 2., "correlationState"};
+    AxisSpec axisCentFT0M = {binsCentFt0m, "Centrality percentile (FT0M)"};
 
     // Histograms for data
     registry.add("hDeltaEtaPtIntSignalRegion", "D0-h deltaEta signal region", {HistType::kTH1F, {axisDeltaEta}});
     registry.add("hDeltaPhiPtIntSignalRegion", "D0-h deltaPhi signal region", {HistType::kTH1F, {axisDeltaPhi}});
     registry.add("hCorrel2DPtIntSignalRegion", "D0-h deltaPhi vs deltaEta signal region", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hCorrel2DVsPtSignalRegion", "D0-h correlations signal region", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSignalRegion", "D0-h correlations signal region", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
     registry.add("hDeltaEtaPtIntSignalRegionSoftPi", "D0-h deltaEta signal region soft pi only", {HistType::kTH1F, {axisDeltaEta}});
     registry.add("hDeltaPhiPtIntSignalRegionSoftPi", "D0-h deltaPhi signal region soft pi only", {HistType::kTH1F, {axisDeltaPhi}});
     registry.add("hCorrel2DPtIntSignalRegionSoftPi", "D0-h deltaPhi vs deltaEta signal region soft pi only", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hCorrel2DVsPtSignalRegionSoftPi", "D0-h correlations signal region soft pi only", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSignalRegionSoftPi", "D0-h correlations signal region soft pi only", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
     registry.add("hDeltaEtaPtIntSidebands", "D0-h deltaEta sidebands", {HistType::kTH1F, {axisDeltaEta}});
     registry.add("hDeltaPhiPtIntSidebands", "D0-h deltaPhi sidebands", {HistType::kTH1F, {axisDeltaPhi}});
     registry.add("hCorrel2DPtIntSidebands", "D0-h deltaPhi vs deltaEta sidebands", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hCorrel2DVsPtSidebands", "D0-h correlations sidebands", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSidebands", "D0-h correlations sidebands", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
     registry.add("hDeltaEtaPtIntSidebandsSoftPi", "D0-h deltaEta sidebands soft pi only", {HistType::kTH1F, {axisDeltaEta}});
     registry.add("hDeltaPhiPtIntSidebandsSoftPi", "D0-h deltaPhi sidebands soft pi only", {HistType::kTH1F, {axisDeltaPhi}});
     registry.add("hCorrel2DPtIntSidebandsSoftPi", "D0-h deltaPhi vs deltaEta sidebands soft pi only", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hCorrel2DVsPtSidebandsSoftPi", "D0-h correlations sidebands soft pi only", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSidebandsSoftPi", "D0-h correlations sidebands soft pi only", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionSoftPi"))->Sumw2();
@@ -318,13 +320,17 @@ struct HfTaskCorrelationD0Hadrons {
       registry.fill(HIST("hBdtScorePromptD0bar"), bdtScorePromptD0bar);
       registry.fill(HIST("hBdtScoreBkgD0bar"), bdtScoreBkgD0bar);
 
-      if (bdtScorePromptD0 < mlOutputPromptD0->at(effBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(effBinD) ||
-          bdtScorePromptD0bar < mlOutputPromptD0bar->at(effBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(effBinD)) {
+      if ((bdtScorePromptD0 < mlOutputPromptD0->at(effBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(effBinD)) &&
+          (bdtScorePromptD0bar < mlOutputPromptD0bar->at(effBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(effBinD))) {
         continue;
       }
     }
 
     for (const auto& pairEntry : pairEntries) {
+      float cent = 0.;
+      if (useCentrality) {
+        cent = pairEntry.cent();
+      }
       // define variables for widely used quantities
       double const deltaPhi = pairEntry.deltaPhi();
       double const deltaEta = pairEntry.deltaEta();
@@ -348,8 +354,8 @@ struct HfTaskCorrelationD0Hadrons {
       if (ptBinD < 0 || effBinD < 0) {
         continue;
       }
-      if (bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD) ||
-          bdtScorePromptD0bar < mlOutputPromptD0bar->at(ptBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(ptBinD)) {
+      if ((bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD)) &&
+          (bdtScorePromptD0bar < mlOutputPromptD0bar->at(ptBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(ptBinD))) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -388,7 +394,7 @@ struct HfTaskCorrelationD0Hadrons {
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && (signalStatus == ParticleTypeData::D0Only)) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
@@ -396,7 +402,7 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && (signalStatus == ParticleTypeData::D0OnlySoftPi)) {
         // in signal region, fills for soft pion only in ME
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPi"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPi"), deltaPhi, efficiencyWeight);
@@ -404,7 +410,7 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((massDbar > signalRegionLeft->at(ptBinD) && massDbar < signalRegionRight->at(ptBinD)) && (signalStatus == ParticleTypeData::D0barOnly)) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
@@ -412,7 +418,7 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((massDbar > signalRegionLeft->at(ptBinD) && massDbar < signalRegionRight->at(ptBinD)) && (signalStatus >= ParticleTypeData::D0barOnlySoftPi)) {
         // in signal region, fills for soft pion only in ME
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionSoftPi"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionSoftPi"), deltaPhi, efficiencyWeight);
@@ -422,7 +428,7 @@ struct HfTaskCorrelationD0Hadrons {
            (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD))) &&
           (signalStatus == ParticleTypeData::D0Only)) {
         // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
@@ -432,7 +438,7 @@ struct HfTaskCorrelationD0Hadrons {
            (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD))) &&
           (signalStatus == ParticleTypeData::D0OnlySoftPi)) {
         // in sideband region, fills for soft pion only in ME
-        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPi"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPi"), deltaPhi, efficiencyWeight);
@@ -442,7 +448,7 @@ struct HfTaskCorrelationD0Hadrons {
            (massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD))) &&
           (signalStatus == ParticleTypeData::D0barOnly)) {
         // in sideband region
-        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebands"), deltaPhi, efficiencyWeight);
@@ -452,7 +458,7 @@ struct HfTaskCorrelationD0Hadrons {
            (massDbar > sidebandRightInner->at(ptBinD) && massDbar < sidebandRightOuter->at(ptBinD))) &&
           (signalStatus >= ParticleTypeData::D0barOnlySoftPi)) {
         // in sideband region, fills for soft pion only in ME
-        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebandsSoftPi"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, cent, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebandsSoftPi"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandsSoftPi"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandsSoftPi"), deltaPhi, efficiencyWeight);
@@ -477,8 +483,8 @@ struct HfTaskCorrelationD0Hadrons {
       registry.fill(HIST("hBdtScorePromptD0bar"), bdtScorePromptD0bar);
       registry.fill(HIST("hBdtScoreBkgD0bar"), bdtScoreBkgD0bar);
 
-      if (bdtScorePromptD0 < mlOutputPromptD0->at(effBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(effBinD) ||
-          bdtScorePromptD0bar < mlOutputPromptD0bar->at(effBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(effBinD)) {
+      if ((bdtScorePromptD0 < mlOutputPromptD0->at(effBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(effBinD)) &&
+          (bdtScorePromptD0bar < mlOutputPromptD0bar->at(effBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(effBinD))) {
         continue;
       }
     }
@@ -506,8 +512,8 @@ struct HfTaskCorrelationD0Hadrons {
       bool const isD0Prompt = pairEntry.isPrompt();
       int const statusPromptHadron = pairEntry.trackOrigin();
 
-      if (bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD) ||
-          bdtScorePromptD0bar < mlOutputPromptD0bar->at(ptBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(ptBinD)) {
+      if ((bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD)) &&
+          (bdtScorePromptD0bar < mlOutputPromptD0bar->at(ptBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(ptBinD))) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -859,7 +865,7 @@ struct HfTaskCorrelationD0Hadrons {
       multiplicity = collision.multFT0M();
       if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
-        if (std::abs(hfHelper.yD0(candidate)) <= yCandMax) {
+        if (std::abs(HfHelper::yD0(candidate)) <= yCandMax) {
           hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
           if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());

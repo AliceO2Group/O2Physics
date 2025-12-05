@@ -50,6 +50,7 @@ struct femtoDreamDebugTrack {
   Configurable<float> ConfTrk1_PIDThres{"ConfTrk1_PIDThres", 0.75, "Particle 1 - Read from cutCulator"};
 
   Configurable<bool> ConfOptDCACutPtDep{"ConfOptDCACutPtDep", false, "Use pt dependent dca cut"};
+  Configurable<bool> ConfUseRun2Function{"ConfUseRun2Function", true, "Use Run2 pT dependent DCA selection function"};
   Configurable<bool> ConfOptCorrelatedPlots{"ConfOptCorrelatedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
   ConfigurableAxis ConfBinmult{"ConfBinmult", {1, 0, 1}, "multiplicity Binning"};
   ConfigurableAxis ConfBinmultPercentile{"ConfBinmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
@@ -82,7 +83,7 @@ struct femtoDreamDebugTrack {
                                            (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
                                            (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
                                            (aod::femtodreamparticle::eta < ConfTrk1_maxEta) &&
-                                           ifnode(ConfOptDCACutPtDep, nabs(aod::femtodreamparticle::tempFitVar) < 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f)),
+                                           ifnode(ConfOptDCACutPtDep, ifnode(ConfUseRun2Function, nabs(aod::femtodreamparticle::tempFitVar) < 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f)), nabs(aod::femtodreamparticle::tempFitVar) < 0.004f + (0.013f / aod::femtodreamparticle::pt)),
                                                   (aod::femtodreamparticle::tempFitVar > ConfTrk1_TempFitVarMin) &&
                                                     (aod::femtodreamparticle::tempFitVar < ConfTrk1_TempFitVarMax));
 

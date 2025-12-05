@@ -13,7 +13,7 @@ add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(dgcand-producer
                            SOURCES DGCandProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder  O2Physics::EventFilteringUtils O2Physics::AnalysisCCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder  O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sgcand-producer
@@ -53,5 +53,10 @@ o2physics_add_dpl_workflow(udmcparticles-to-udtracks
 
 o2physics_add_dpl_workflow(udmccollisions-to-udcollisions
                            SOURCES udMcCollisions2udCollisions.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tau-three-prong-event-table-producer
+                           SOURCES tauThreeProngEventTableProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)

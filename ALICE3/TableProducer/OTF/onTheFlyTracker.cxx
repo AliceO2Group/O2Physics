@@ -28,6 +28,7 @@
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
+#include "ALICE3/DataModel/OTFTracks.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/Core/RecoDecay.h"
@@ -45,6 +46,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <SimulationDataFormat/InteractionSampler.h>
@@ -64,6 +66,7 @@
 using namespace o2;
 using namespace o2::framework;
 using std::array;
+#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
 struct OnTheFlyTracker {
   Produces<aod::Collisions> tableCollisions;
@@ -79,6 +82,8 @@ struct OnTheFlyTracker {
   Produces<aod::TracksAlice3> tableTracksAlice3;
   Produces<aod::TracksExtraA3> tableTracksExtraA3;
   Produces<aod::UpgradeCascades> tableUpgradeCascades;
+  Produces<aod::OTFLUTConfigId> tableOTFLUTConfigId;
+  Produces<aod::UpgradeV0s> tableUpgradeV0s;
 
   // optionally produced, empty (to be tuned later)
   Produces<aod::StoredTracksExtra_002> tableStoredTracksExtra; // base table, extend later
@@ -90,7 +95,6 @@ struct OnTheFlyTracker {
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
-  Configurable<bool> enableLUT{"enableLUT", false, "Enable track smearing"};
   Configurable<bool> enablePrimarySmearing{"enablePrimarySmearing", false, "Enable smearing of primary particles"};
   Configurable<bool> enableSecondarySmearing{"enableSecondarySmearing", false, "Enable smearing of weak decay daughters"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
@@ -106,15 +110,18 @@ struct OnTheFlyTracker {
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
 
-  Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutPi{"lutPi", "lutCovm.pi.dat", "LUT for pions (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutKa{"lutKa", "lutCovm.ka.dat", "LUT for kaons (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutPr{"lutPr", "lutCovm.pr.dat", "LUT for protons (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutDe{"lutDe", "", "LUT for deuterons (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutTr{"lutTr", "", "LUT for tritons (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutHe3{"lutHe3", "", "LUT for Helium-3 (if emtpy no LUT is taken)"};
-  Configurable<std::string> lutAl{"lutAl", "", "LUT for Alphas (if emtpy no LUT is taken)"};
+  struct : ConfigurableGroup {
+    std::string prefix = "lookUpTables"; // JSON group name
+    Configurable<std::vector<std::string>> lutEl{"lutEl", std::vector<std::string>{"lutCovm.el.dat                                "}, "LUT for electrons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutMu{"lutMu", std::vector<std::string>{"lutCovm.mu.dat                                "}, "LUT for muons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutPi{"lutPi", std::vector<std::string>{"lutCovm.pi.dat                                "}, "LUT for pions (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutKa{"lutKa", std::vector<std::string>{"lutCovm.ka.dat                                "}, "LUT for kaons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutPr{"lutPr", std::vector<std::string>{"lutCovm.pr.dat                                "}, "LUT for protons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutDe{"lutDe", std::vector<std::string>{"                                              "}, "LUT for deuterons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutTr{"lutTr", std::vector<std::string>{"                                              "}, "LUT for tritons (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutHe3{"lutHe3", std::vector<std::string>{"                                              "}, "LUT for Helium-3 (if emtpy no LUT is taken)"};
+    Configurable<std::vector<std::string>> lutAl{"lutAl", std::vector<std::string>{"                                              "}, "LUT for Alphas (if emtpy no LUT is taken)"};
+  } lookUpTables;
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
@@ -124,9 +131,11 @@ struct OnTheFlyTracker {
     ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
     ConfigurableAxis axisX{"axisX", {250, -50, 200}, "track X (cm)"};
     ConfigurableAxis axisDecayRadius{"axisDecayRadius", {55, 0.01, 100}, "decay radius"};
+    ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
     ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
 
+    ConfigurableAxis axisPtRes{"axisPtRes", {200, -0.4f, 0.4f}, "#Delta p_{T} / Reco p_{T}"};
     ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -1.0f, +1.0f}, "#Delta p_{T}"};
     ConfigurableAxis axisDeltaEta{"axisDeltaEta", {200, -0.5f, +0.5f}, "#Delta #eta"};
 
@@ -140,7 +149,7 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
-    Configurable<std::string> alice3geo{"alice3geo", "2", "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025, or path to ccdb with a3 geo"};
+    Configurable<std::vector<std::string>> alice3geo{"alice3geo", std::vector<std::string>{"2"}, "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025, or path to ccdb with a3 geo (ccdb:Users/u/user/)"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
@@ -168,14 +177,28 @@ struct OnTheFlyTracker {
     Configurable<bool> doXiQA{"doXiQA", false, "QA plots for when treating Xi"};
   } cascadeDecaySettings;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "v0DecaySettings"; // Cascade decay settings
+    Configurable<bool> decayV0{"decayV0", false, "Manually decay V0 and fill tables with daughters"};
+    Configurable<bool> findV0{"findV0", false, "if decayV0 on, find V0 and fill Tracks table also with Xi"};
+    Configurable<bool> doV0QA{"doV0QA", false, "QA plots for when treating V0"};
+  } v0DecaySettings;
+
   using PVertex = o2::dataformats::PrimaryVertex;
 
   // for secondary vertex finding
   o2::vertexing::DCAFitterN<2> fitter;
 
   // FastTracker machinery
-  o2::fastsim::FastTracker fastTracker;
+  // o2::fastsim::FastTracker fastTracker;
+  std::vector<std::unique_ptr<o2::fastsim::FastTracker>> fastTracker;
   o2::fastsim::FastTracker fastPrimaryTracker;
+
+  // V0 names for filling histograms
+  static constexpr int NtypesV0 = 3;
+  static constexpr std::string_view NameV0s[NtypesV0] = {"K0", "Lambda", "AntiLambda"};
+  static constexpr int NtypesDetectors = 4;
+  static constexpr std::string_view NameDetectors[NtypesDetectors] = {"0", "1", "2", "3"};
 
   // Class to hold the track information for the O2 vertexing
   class TrackAlice3 : public o2::track::TrackParCov
@@ -233,16 +256,38 @@ struct OnTheFlyTracker {
   };
   cascadecandidate thisCascade;
 
+  // Helper struct to pass V0 information
+  struct v0candidate {
+    int positiveId; // track index in the Tracks table
+    int negativeId; // track index in the Tracks table
+
+    float pt;
+
+    float dcaV0dau;
+    float v0radius;
+
+    float mLambda;
+    float mAntiLambda;
+    float mK0;
+  };
+  v0candidate thisV0;
+  // Constants
+  static constexpr int kv0Prongs = 2;
+  static constexpr std::array<int, 3> v0PDGs = {kK0Short,
+                                                kLambda0,
+                                                kLambda0Bar};
+
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  std::map<std::string, HistPtr> histPointers;
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer
-  o2::delphes::DelphesO2TrackSmearer mSmearer;
+  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
 
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
@@ -251,6 +296,7 @@ struct OnTheFlyTracker {
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
   std::vector<cascadecandidate> cascadesAlice3;
+  std::vector<v0candidate> v0sAlice3;
 
   // For TGenPhaseSpace seed
   TRandom3 rand;
@@ -258,35 +304,120 @@ struct OnTheFlyTracker {
 
   void init(o2::framework::InitContext&)
   {
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
 
-    if (enableLUT) {
-      mSmearer.setCcdbManager(ccdb.operator->());
+    auto loadLUT = [&](int icfg, int pdg, const std::vector<std::string>& tables) {
+      LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided tables with size " << tables.size();
+      if (tables.empty()) {
+        LOG(debug) << "No LUT file passed for pdg " << pdg << ", skipping.";
+        return false;
+      }
+      const bool foundNewCfg = static_cast<size_t>(icfg) < tables.size();
+      std::string lutFile = foundNewCfg ? tables[icfg] : tables.front();
+      LOG(info) << "Loading LUT for pdg " << pdg << " from file " << lutFile << " for config " << icfg;
+      // strip from leading/trailing spaces
+      lutFile.erase(0, lutFile.find_first_not_of(" "));
+      lutFile.erase(lutFile.find_last_not_of(" ") + 1);
+      if (lutFile.empty()) {
+        LOG(info) << "Empty LUT file name for pdg " << pdg << ", skipping.";
+        return false;
+      }
+      bool success = mSmearer[icfg]->loadTable(pdg, lutFile.c_str());
+      if (!success) {
+        LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
+      }
 
-      auto loadLUT = [&](int pdg, const std::string& lutFile) {
-        bool success = mSmearer.loadTable(pdg, lutFile.c_str());
-        if (!success && !lutFile.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
-        }
-      };
-      loadLUT(kElectron, lutEl.value);
-      loadLUT(kMuonMinus, lutMu.value);
-      loadLUT(kPiPlus, lutPi.value);
-      loadLUT(kKPlus, lutKa.value);
-      loadLUT(kProton, lutPr.value);
-      loadLUT(o2::constants::physics::kDeuteron, lutDe.value);
-      loadLUT(o2::constants::physics::kTriton, lutTr.value);
-      loadLUT(o2::constants::physics::kHelium3, lutHe3.value);
-      loadLUT(o2::constants::physics::kAlpha, lutAl.value);
-
-      // interpolate efficiencies if requested to do so
-      mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
-
-      // smear un-reco'ed tracks if asked to do so
-      mSmearer.skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+      return foundNewCfg;
+    };
+    int nGeometries = static_cast<int>(fastTrackerSettings.alice3geo->size());
+    if (enablePrimarySmearing)
+      nGeometries = static_cast<int>(lookUpTables.lutPi->size());
+    if (enablePrimarySmearing && enableSecondarySmearing) {
+      if (static_cast<int>(lookUpTables.lutPi->size()) != static_cast<int>(fastTrackerSettings.alice3geo->size())) {
+        LOG(fatal) << "When enabling both primary and secondary smearing, the number of LUTs provided must match the number of geometries provided!";
+      }
     }
+
+    for (int icfg = 0; icfg < nGeometries; ++icfg) {
+      std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+      mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+      if (enablePrimarySmearing) {
+        // check if more configs were provided, fall back to first entry
+        bool newLUTLoaded = false;
+        newLUTLoaded |= loadLUT(icfg, kElectron, lookUpTables.lutEl.value);
+        newLUTLoaded |= loadLUT(icfg, kMuonMinus, lookUpTables.lutMu.value);
+        newLUTLoaded |= loadLUT(icfg, kPiPlus, lookUpTables.lutPi.value);
+        newLUTLoaded |= loadLUT(icfg, kKPlus, lookUpTables.lutKa.value);
+        newLUTLoaded |= loadLUT(icfg, kProton, lookUpTables.lutPr.value);
+        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kDeuteron, lookUpTables.lutDe.value);
+        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kTriton, lookUpTables.lutTr.value);
+        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kHelium3, lookUpTables.lutHe3.value);
+        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kAlpha, lookUpTables.lutAl.value);
+        bool smearerOK = true;
+        if (!newLUTLoaded) {
+          mSmearer.pop_back();
+          // break;
+          smearerOK = false;
+        }
+
+        // interpolate efficiencies if requested to do so
+        if (smearerOK) {
+          mSmearer[icfg]->interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+
+          // smear un-reco'ed tracks if asked to do so
+          mSmearer[icfg]->skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
+        }
+
+        histPointers.insert({histPath + "hPtGenerated", histos.add((histPath + "hPtGenerated").c_str(), "hPtGenerated", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPhiGenerated", histos.add((histPath + "hPhiGenerated").c_str(), "hPhiGenerated", {kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}}})});
+
+        histPointers.insert({histPath + "hPtGeneratedEl", histos.add((histPath + "hPtGeneratedEl").c_str(), "hPtGeneratedEl", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtGeneratedPi", histos.add((histPath + "hPtGeneratedPi").c_str(), "hPtGeneratedPi", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtGeneratedKa", histos.add((histPath + "hPtGeneratedKa").c_str(), "hPtGeneratedKa", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtGeneratedPr", histos.add((histPath + "hPtGeneratedPr").c_str(), "hPtGeneratedPr", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtReconstructed", histos.add((histPath + "hPtReconstructed").c_str(), "hPtReconstructed", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtReconstructedEl", histos.add((histPath + "hPtReconstructedEl").c_str(), "hPtReconstructedEl", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtReconstructedPi", histos.add((histPath + "hPtReconstructedPi").c_str(), "hPtReconstructedPi", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtReconstructedKa", histos.add((histPath + "hPtReconstructedKa").c_str(), "hPtReconstructedKa", {kTH1D, {{axes.axisMomentum}}})});
+        histPointers.insert({histPath + "hPtReconstructedPr", histos.add((histPath + "hPtReconstructedPr").c_str(), "hPtReconstructedPr", {kTH1D, {{axes.axisMomentum}}})});
+      }
+      // Collision QA
+      histPointers.insert({histPath + "hPVz", histos.add((histPath + "hPVz").c_str(), "hPVz", {kTH1D, {{axes.axisVertexZ}}})});
+      histPointers.insert({histPath + "hLUTMultiplicity", histos.add((histPath + "hLUTMultiplicity").c_str(), "hLUTMultiplicity", {kTH1D, {{axes.axisMultiplicity}}})});
+      histPointers.insert({histPath + "hSimMultiplicity", histos.add((histPath + "hSimMultiplicity").c_str(), "hSimMultiplicity", {kTH1D, {{axes.axisMultiplicity}}})});
+      histPointers.insert({histPath + "hRecoMultiplicity", histos.add((histPath + "hRecoMultiplicity").c_str(), "hRecoMultiplicity", {kTH1D, {{axes.axisMultiplicity}}})});
+
+      if (enableSecondarySmearing) {
+        fastTracker.emplace_back(std::make_unique<o2::fastsim::FastTracker>());
+        fastTracker[icfg]->SetMagneticField(magneticField);
+        fastTracker[icfg]->SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
+        fastTracker[icfg]->SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
+        fastTracker[icfg]->SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
+        if (fastTrackerSettings.alice3geo.value[icfg] == "0") {
+          fastTracker[icfg]->AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
+        } else if (fastTrackerSettings.alice3geo.value[icfg] == "1") {
+          fastTracker[icfg]->AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
+          fastTracker[icfg]->AddTPC(0.1, 0.1);
+        } else if (fastTrackerSettings.alice3geo.value[icfg] == "2") {
+          fastTracker[icfg]->AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
+        } else {
+          fastTracker[icfg]->AddGenericDetector(fastTrackerSettings.alice3geo.value[icfg], ccdb.operator->());
+        }
+        // print fastTracker settings
+        fastTracker[icfg]->Print();
+        if (cascadeDecaySettings.doXiQA)
+          histPointers.insert({histPath + "hMassXi", histos.add((histPath + "hMassXi").c_str(), "hMassXi", {kTH1D, {{axes.axisXiMass}}})});
+      }
+
+      if (doExtraQA) {
+        histPointers.insert({histPath + "h2dPtRes", histos.add((histPath + "h2dPtRes").c_str(), "h2dPtRes", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}})});
+        histPointers.insert({histPath + "h2dDCAxy", histos.add((histPath + "h2dDCAxy").c_str(), "h2dDCAxy", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}})});
+        histPointers.insert({histPath + "h2dDCAz", histos.add((histPath + "h2dDCAz").c_str(), "h2dDCAz", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}})});
+      }
+
+    } // end config loop
 
     // Basic QA
     auto hNaN = histos.add<TH2>("hNaNBookkeeping", "hNaNBookkeeping", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
@@ -303,28 +434,9 @@ struct OnTheFlyTracker {
     hCovMatOK->GetXaxis()->SetBinLabel(1, "Not OK");
     hCovMatOK->GetXaxis()->SetBinLabel(2, "OK");
 
-    histos.add("hPtGenerated", "hPtGenerated", kTH1F, {axes.axisMomentum});
-    histos.add("hPtGeneratedEl", "hPtGeneratedEl", kTH1F, {axes.axisMomentum});
-    histos.add("hPtGeneratedPi", "hPtGeneratedPi", kTH1F, {axes.axisMomentum});
-    histos.add("hPtGeneratedKa", "hPtGeneratedKa", kTH1F, {axes.axisMomentum});
-    histos.add("hPtGeneratedPr", "hPtGeneratedPr", kTH1F, {axes.axisMomentum});
-    histos.add("hPtReconstructed", "hPtReconstructed", kTH1F, {axes.axisMomentum});
-    histos.add("hPtReconstructedEl", "hPtReconstructedEl", kTH1F, {axes.axisMomentum});
-    histos.add("hPtReconstructedPi", "hPtReconstructedPi", kTH1F, {axes.axisMomentum});
-    histos.add("hPtReconstructedKa", "hPtReconstructedKa", kTH1F, {axes.axisMomentum});
-    histos.add("hPtReconstructedPr", "hPtReconstructedPr", kTH1F, {axes.axisMomentum});
-
-    // Collision QA
-    histos.add("hPVz", "hPVz", kTH1F, {axes.axisVertexZ});
-    histos.add("hLUTMultiplicity", "hLUTMultiplicity", kTH1F, {axes.axisMultiplicity});
-    histos.add("hSimMultiplicity", "hSimMultiplicity", kTH1F, {axes.axisMultiplicity});
-    histos.add("hRecoMultiplicity", "hRecoMultiplicity", kTH1F, {axes.axisMultiplicity});
-
     if (doExtraQA) {
       histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
       histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
-      histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axes.axisMomentum, axes.axisDCA});
-      histos.add("h2dDCAz", "h2dDCAz", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
       histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axes.axisX});
       histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axes.axisX});
@@ -375,6 +487,43 @@ struct OnTheFlyTracker {
       hFastTrackerQA->GetXaxis()->SetBinLabel(7, "energy loss");
       hFastTrackerQA->GetXaxis()->SetBinLabel(8, "efficiency");
     }
+    if (v0DecaySettings.doV0QA) {
+      histos.add("V0Building_Configuration_0/hV0Building", "hV0Building", kTH1F, {{10, -0.5f, 9.5f}});
+      histos.add("V0Building_Configuration_0/hFastTrackerHits", "hFastTrackerHits", kTH2F, {axes.axisZ, axes.axisRadius});
+      auto hFastTrackerQA = histos.add<TH1>("V0Building_Configuration_0/hFastTrackerQA", "hFastTrackerQA", kTH1D, {{8, -0.5f, 7.5f}});
+      hFastTrackerQA->GetXaxis()->SetBinLabel(1, "Negative eigenvalue");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(2, "Failed sanity check");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(3, "intercept original radius");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(4, "propagate to original radius");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(5, "problematic layer");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(6, "multiple scattering");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(7, "energy loss");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(8, "efficiency");
+
+      histos.add("V0Building_Configuration_0/K0/hGen", "hGen", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/K0/hReco", "hReco", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/K0/hGenNegDaughterFromV0", "hGenNegDaughterFromV0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/K0/hGenPosDaughterFromV0", "hGenPosDaughterFromV0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/K0/hRecoNegDaughterFromV0", "hRecoNegDaughterFromV0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/K0/hRecoPosDaughterFromV0", "hRecoPosDaughterFromV0", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+
+      histos.addClone("V0Building_Configuration_0/K0/", "V0Building_Configuration_0/Lambda/");
+      histos.addClone("V0Building_Configuration_0/K0/", "V0Building_Configuration_0/AntiLambda/");
+
+      histos.add("V0Building_Configuration_0/K0/hMass", "hMass", kTH2F, {axes.axisK0Mass, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/K0/hFinalMass", "hMass", kTH1F, {axes.axisK0Mass});
+      histos.add("V0Building_Configuration_0/Lambda/hMass", "hMass", kTH2F, {axes.axisLambdaMass, axes.axisMomentum});
+      histos.add("V0Building_Configuration_0/AntiLambda/hMass", "hMass", kTH2F, {axes.axisLambdaMass, axes.axisMomentum});
+      if (static_cast<int>(fastTrackerSettings.alice3geo->size()) > 1) {
+        if (fastTrackerSettings.alice3geo->size() > 4) {
+          LOG(warn) << "More than 4 FastTracker configurations found. Only first 4 will have V0 QA histograms filled.";
+        }
+        for (int icfg = 1; icfg < static_cast<int>(fastTrackerSettings.alice3geo->size()); icfg++) {
+          std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+          histos.addClone("V0Building_Configuration_0/", fmt::format("V0Building_{}", histPath).c_str());
+        }
+      }
+    }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
     o2::parameters::GRPMagField grpmag;
@@ -421,28 +570,7 @@ struct OnTheFlyTracker {
     // Set seed for TGenPhaseSpace
     rand.SetSeed(seed);
 
-    // configure FastTracker
-    if (enableSecondarySmearing) {
-      fastTracker.SetMagneticField(magneticField);
-      fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
-      fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
-      fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
-
-      if (fastTrackerSettings.alice3geo.value == "0") {
-        fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-      } else if (fastTrackerSettings.alice3geo.value == "1") {
-        fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-        fastTracker.AddTPC(0.1, 0.1);
-      } else if (fastTrackerSettings.alice3geo.value == "2") {
-        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
-      } else {
-        fastTracker.AddGenericDetector(fastTrackerSettings.alice3geo, ccdb.operator->());
-      }
-
-      // print fastTracker settings
-      fastTracker.Print();
-    }
-
+    // Configure FastTracker for primaries
     if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
       fastPrimaryTracker.SetMagneticField(magneticField);
       fastPrimaryTracker.SetApplyZacceptance(fastPrimaryTrackerSettings.applyZacceptance);
@@ -472,46 +600,45 @@ struct OnTheFlyTracker {
   /// \param xiDecayVertex the address of the xi decay vertex
   /// \param laDecayVertex the address of the la decay vertex
   template <typename McParticleType>
-  void decayParticle(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& laDecayVertex)
+  void decayCascade(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& laDecayVertex)
   {
-    double u = rand.Uniform(0, 1);
-    double xi_mass = o2::constants::physics::MassXiMinus;
-    double la_mass = o2::constants::physics::MassLambda;
-    double pi_mass = o2::constants::physics::MassPionCharged;
-    double pr_mass = o2::constants::physics::MassProton;
+    const double uXi = rand.Uniform(0, 1);
+    const double ctauXi = 4.91; // cm
+    const double betaGammaXi = particle.p() / o2::constants::physics::MassXiMinus;
+    const double rxyzXi = (-betaGammaXi * ctauXi * std::log(1 - uXi));
 
-    double xi_gamma = 1 / std::sqrt(1 + (particle.p() * particle.p()) / (xi_mass * xi_mass));
-    double xi_ctau = 4.91 * xi_gamma;
-    double xi_rxyz = (-xi_ctau * log(1 - u));
     float sna, csa;
-    o2::math_utils::CircleXYf_t xi_circle;
-    track.getCircleParams(magneticField, xi_circle, sna, csa);
-    double xi_rxy = xi_rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
-    double theta = xi_rxy / xi_circle.rC;
-    double newX = ((particle.vx() - xi_circle.xC) * std::cos(theta) - (particle.vy() - xi_circle.yC) * std::sin(theta)) + xi_circle.xC;
-    double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
-    double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
-    double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+    o2::math_utils::CircleXYf_t circleXi;
+    track.getCircleParams(magneticField, circleXi, sna, csa);
+    const double rxyXi = rxyzXi / std::sqrt(1. + track.getTgl() * track.getTgl());
+    const double theta = rxyXi / circleXi.rC;
+    const double newX = ((particle.vx() - circleXi.xC) * std::cos(theta) - (particle.vy() - circleXi.yC) * std::sin(theta)) + circleXi.xC;
+    const double newY = ((particle.vy() - circleXi.yC) * std::cos(theta) + (particle.vx() - circleXi.xC) * std::sin(theta)) + circleXi.yC;
+    const double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
+    const double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
+    const double newE = std::sqrt(o2::constants::physics::MassXiMinus * o2::constants::physics::MassXiMinus + newPx * newPx + newPy * newPy + particle.pz() * particle.pz());
+
     xiDecayVertex.push_back(newX);
     xiDecayVertex.push_back(newY);
-    xiDecayVertex.push_back(particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
+    xiDecayVertex.push_back(particle.vz() + rxyzXi * (particle.pz() / particle.p()));
 
-    std::vector<double> xiDaughters = {la_mass, pi_mass};
-    TLorentzVector xi(newPx, newPy, particle.pz(), particle.e());
+    std::vector<double> xiDaughters = {o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged};
+    TLorentzVector xi(newPx, newPy, particle.pz(), newE);
     TGenPhaseSpace xiDecay;
     xiDecay.SetDecay(xi, 2, xiDaughters.data());
     xiDecay.Generate();
     decayDaughters.push_back(*xiDecay.GetDecay(1));
     TLorentzVector la = *xiDecay.GetDecay(0);
 
-    double la_gamma = 1 / std::sqrt(1 + (la.P() * la.P()) / (la_mass * la_mass));
-    double la_ctau = 7.89 * la_gamma;
-    std::vector<double> laDaughters = {pi_mass, pr_mass};
-    double la_rxyz = (-la_ctau * log(1 - u));
-    laDecayVertex.push_back(xiDecayVertex[0] + la_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
-    laDecayVertex.push_back(xiDecayVertex[1] + la_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
-    laDecayVertex.push_back(xiDecayVertex[2] + la_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
+    const double uLa = rand.Uniform(0, 1);
+    const double ctauLa = 7.845; // cm
+    const double betaGammaLa = la.P() / o2::constants::physics::MassLambda;
+    const double rxyzLa = (-betaGammaLa * ctauLa * std::log(1 - uLa));
+    laDecayVertex.push_back(xiDecayVertex[0] + rxyzLa * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
+    laDecayVertex.push_back(xiDecayVertex[1] + rxyzLa * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
+    laDecayVertex.push_back(xiDecayVertex[2] + rxyzLa * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
 
+    std::vector<double> laDaughters = {o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton};
     TGenPhaseSpace laDecay;
     laDecay.SetDecay(la, 2, laDaughters.data());
     laDecay.Generate();
@@ -519,15 +646,63 @@ struct OnTheFlyTracker {
     decayDaughters.push_back(*laDecay.GetDecay(1));
   }
 
+  /// Function to decay the V0
+  /// \param particle the particle to decay
+  /// \param decayDaughters the address of resulting daughters
+  /// \param v0DecayVertex the address of the la decay vertex
+  template <typename McParticleType>
+  void decayV0Particle(McParticleType particle, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& v0DecayVertex, int pdgCode)
+  {
+    double u = rand.Uniform(0, 1);
+    double v0Mass = -1.;
+    double negDauMass = -1.;
+    double posDauMass = -1.;
+    double ctau = -1.;
+
+    if (std::abs(pdgCode) == kK0Short) {
+      v0Mass = o2::constants::physics::MassK0Short;
+      negDauMass = o2::constants::physics::MassPionCharged;
+      posDauMass = o2::constants::physics::MassPionCharged;
+      ctau = 2.68;
+    } else if (std::abs(pdgCode) == kLambda0) {
+      v0Mass = o2::constants::physics::MassLambda;
+      negDauMass = o2::constants::physics::MassPionCharged;
+      posDauMass = o2::constants::physics::MassProton;
+      ctau = 7.845;
+    } else if (std::abs(pdgCode) == kLambda0Bar) {
+      v0Mass = o2::constants::physics::MassLambda;
+      negDauMass = o2::constants::physics::MassProton;
+      posDauMass = o2::constants::physics::MassPionCharged;
+      ctau = 7.845;
+    }
+
+    const double v0BetaGamma = particle.p() / v0Mass;
+    const double v0rxyz = (-v0BetaGamma * ctau * std::log(1 - u));
+    TLorentzVector v0(particle.px(), particle.py(), particle.pz(), particle.e());
+
+    v0DecayVertex.push_back(particle.vx() + v0rxyz * (particle.px() / particle.p()));
+    v0DecayVertex.push_back(particle.vy() + v0rxyz * (particle.py() / particle.p()));
+    v0DecayVertex.push_back(particle.vz() + v0rxyz * (particle.pz() / particle.p()));
+    std::vector<double> v0Daughters = {negDauMass, posDauMass};
+
+    TGenPhaseSpace v0Decay;
+    v0Decay.SetDecay(v0, 2, v0Daughters.data());
+    v0Decay.Generate();
+    decayDaughters.push_back(*v0Decay.GetDecay(0));
+    decayDaughters.push_back(*v0Decay.GetDecay(1));
+  }
+
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
-  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, int const& icfg)
   {
     int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
+    const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
 
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
     bcData.clear();
     cascadesAlice3.clear();
+    v0sAlice3.clear();
 
     o2::dataformats::DCA dcaInfo;
     o2::dataformats::VertexBase vtx;
@@ -579,32 +754,44 @@ struct OnTheFlyTracker {
 
     dNdEta /= (multEtaRange * 2.0f);
     uint32_t multiplicityCounter = 0;
-    histos.fill(HIST("hLUTMultiplicity"), dNdEta);
+    getHist(TH1, histPath + "hLUTMultiplicity")->Fill(dNdEta);
+
     gRandom->SetSeed(seed);
 
     for (const auto& mcParticle : mcParticles) {
       double xiDecayRadius2D = 0;
       double laDecayRadius2D = 0;
+      double v0DecayRadius2D = 0;
       std::vector<TLorentzVector> decayProducts;
-      std::vector<double> xiDecayVertex, laDecayVertex;
+      std::vector<TLorentzVector> v0DecayProducts;
+      std::vector<double> xiDecayVertex, laDecayVertex, v0DecayVertex;
       if (cascadeDecaySettings.decayXi) {
         if (mcParticle.pdgCode() == kXiMinus) {
           o2::track::TrackParCov xiTrackParCov;
           o2::upgrade::convertMCParticleToO2Track(mcParticle, xiTrackParCov, pdgDB);
-          decayParticle(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
+          decayCascade(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
           xiDecayRadius2D = std::hypot(xiDecayVertex[0], xiDecayVertex[1]);
           laDecayRadius2D = std::hypot(laDecayVertex[0], laDecayVertex[1]);
         }
+      }
+      const auto pdg = std::abs(mcParticle.pdgCode());
+      bool isV0 = std::find(v0PDGs.begin(), v0PDGs.end(), pdg) != v0PDGs.end();
+      bool isK0 = (std::abs(pdg) == kK0Short);
+      bool isLambda = (std::abs(pdg) == kLambda0);
+      bool isAntiLambda = (std::abs(pdg) == kLambda0Bar);
+
+      if (v0DecaySettings.decayV0 && isV0) {
+        decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, pdg);
+        v0DecayRadius2D = std::hypot(v0DecayVertex[0], v0DecayVertex[1]);
       }
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
 
-      const auto pdg = std::abs(mcParticle.pdgCode());
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), pdg) != nucleiPDGs.end();
-      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled) || (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus);
+      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled) || (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus) || (v0DecaySettings.decayV0 && isV0);
       if (!pdgsToBeHandled) {
         continue;
       }
@@ -612,24 +799,35 @@ struct OnTheFlyTracker {
       if (std::fabs(mcParticle.eta()) > maxEta) {
         continue;
       }
-
-      histos.fill(HIST("hPtGenerated"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kElectron)
-        histos.fill(HIST("hPtGeneratedEl"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kPiPlus)
-        histos.fill(HIST("hPtGeneratedPi"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kKPlus)
-        histos.fill(HIST("hPtGeneratedKa"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kProton)
-        histos.fill(HIST("hPtGeneratedPr"), mcParticle.pt());
-
+      if (enablePrimarySmearing) {
+        getHist(TH1, histPath + "hPtGenerated")->Fill(mcParticle.pt());
+        getHist(TH1, histPath + "hPhiGenerated")->Fill(mcParticle.phi());
+        if (std::abs(mcParticle.pdgCode()) == kElectron)
+          getHist(TH1, histPath + "hPtGeneratedEl")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+          getHist(TH1, histPath + "hPtGeneratedPi")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
+          getHist(TH1, histPath + "hPtGeneratedKa")->Fill(mcParticle.pt());
+        if (std::abs(mcParticle.pdgCode()) == kProton)
+          getHist(TH1, histPath + "hPtGeneratedPr")->Fill(mcParticle.pt());
+      }
       if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
         histos.fill(HIST("hGenXi"), xiDecayRadius2D, mcParticle.pt());
         histos.fill(HIST("hGenPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
         histos.fill(HIST("hGenPiFromLa"), laDecayRadius2D, decayProducts[1].Pt());
         histos.fill(HIST("hGenPrFromLa"), laDecayRadius2D, decayProducts[2].Pt());
       }
-
+      if (v0DecaySettings.doV0QA && isV0) {
+        static_for<0, NtypesV0 * NtypesDetectors - 1>([&](auto i) {
+          constexpr int IndexV0 = i.value / NtypesDetectors;
+          constexpr int IndexDetector = i.value % NtypesDetectors;
+          if (pdg == v0PDGs[IndexV0] && icfg == IndexDetector) {
+            histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/") + HIST(NameV0s[IndexV0]) + HIST("/hGen"), v0DecayRadius2D, mcParticle.pt());
+            histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/") + HIST(NameV0s[IndexV0]) + HIST("/hGenNegDaughterFromV0"), v0DecayRadius2D, v0DecayProducts[0].Pt());
+            histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/") + HIST(NameV0s[IndexV0]) + HIST("/hGenPosDaughterFromV0"), v0DecayRadius2D, v0DecayProducts[1].Pt());
+          }
+        });
+      }
       if (mcParticle.pt() < minPt) {
         continue;
       }
@@ -665,9 +863,9 @@ struct OnTheFlyTracker {
           nSiliconHits[i] = 0;
           nTPCHits[i] = 0;
           if (enableSecondarySmearing) {
-            nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
-            nSiliconHits[i] = fastTracker.GetNSiliconPoints();
-            nTPCHits[i] = fastTracker.GetNGasPoints();
+            nHits[i] = fastTracker[icfg]->FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
+            nSiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
+            nTPCHits[i] = fastTracker[icfg]->GetNGasPoints();
 
             if (nHits[i] < 0) { // QA
               histos.fill(HIST("hFastTrackerQA"), o2::math_utils::abs(nHits[i]));
@@ -678,8 +876,8 @@ struct OnTheFlyTracker {
             } else {
               continue; // extra sure
             }
-            for (uint32_t ih = 0; ih < fastTracker.GetNHits(); ih++) {
-              histos.fill(HIST("hFastTrackerHits"), fastTracker.GetHitZ(ih), std::hypot(fastTracker.GetHitX(ih), fastTracker.GetHitY(ih)));
+            for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits(); ih++) {
+              histos.fill(HIST("hFastTrackerHits"), fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
             }
           } else {
             isReco[i] = true;
@@ -828,8 +1026,8 @@ struct OnTheFlyTracker {
               if (cascadeDecaySettings.trackXi) {
                 // optionally, add the points in the layers before the decay of the Xi
                 // will back-track the perfect MC cascade to relevant layers, find hit, smear and add to smeared cascade
-                for (int i = fastTracker.GetLayers().size() - 1; i >= 0; --i) {
-                  o2::fastsim::DetLayer layer = fastTracker.GetLayer(i);
+                for (int i = fastTracker[icfg]->GetLayers().size() - 1; i >= 0; --i) {
+                  o2::fastsim::DetLayer layer = fastTracker[icfg]->GetLayer(i);
                   if (layer.isInert()) {
                     continue; // Not an active tracking layer
                   }
@@ -899,6 +1097,7 @@ struct OnTheFlyTracker {
                 histos.fill(HIST("hMassLambda"), thisCascade.mLambda);
                 histos.fill(HIST("hMassXi"), thisCascade.mXi);
                 histos.fill(HIST("hFoundVsFindable"), thisCascade.findableClusters, thisCascade.foundClusters);
+                getHist(TH1, histPath + "hMassXi")->Fill(thisCascade.mXi);
               }
 
               // add this cascade to vector (will fill cursor later with collision ID)
@@ -909,6 +1108,208 @@ struct OnTheFlyTracker {
         // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
         continue; // Cascade handling done, should not be considered anymore
       }
+      // V0 handling
+      std::vector<o2::track::TrackParCov> v0DaughterTrackParCovsPerfect(2);
+      std::vector<o2::track::TrackParCov> v0DaughterTrackParCovsTracked(2);
+      std::vector<bool> isV0Reco(kv0Prongs);
+      std::vector<int> nV0Hits(kv0Prongs);        // total
+      std::vector<int> nV0SiliconHits(kv0Prongs); // silicon type
+      std::vector<int> nV0TPCHits(kv0Prongs);     // TPC type
+      if (v0DecaySettings.decayV0 && isV0) {
+        if (v0DecaySettings.doV0QA) {
+          static_for<0, NtypesDetectors - 1>([&](auto j) {
+            constexpr int IndexDetector = j.value;
+            if (icfg == IndexDetector) {
+              histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hV0Building"), 0.0f);
+            }
+          });
+        }
+        if (isK0) {
+          o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
+          o2::upgrade::convertTLorentzVectorToO2Track(kPiPlus, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+        } else if (isLambda) {
+          o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
+          o2::upgrade::convertTLorentzVectorToO2Track(kProton, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+        } else if (isAntiLambda) {
+          o2::upgrade::convertTLorentzVectorToO2Track(kProtonBar, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
+          o2::upgrade::convertTLorentzVectorToO2Track(kPiPlus, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+        }
+        for (int i = 0; i < kv0Prongs; i++) {
+          isV0Reco[i] = false;
+          nV0Hits[i] = 0;
+          nV0SiliconHits[i] = 0;
+          nV0TPCHits[i] = 0;
+          if (enableSecondarySmearing) {
+            nV0Hits[i] = fastTracker[icfg]->FastTrack(v0DaughterTrackParCovsPerfect[i], v0DaughterTrackParCovsTracked[i], dNdEta);
+            nV0SiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
+            nV0TPCHits[i] = fastTracker[icfg]->GetNGasPoints();
+
+            if (nV0Hits[i] < 0) { // QA
+              static_for<0, NtypesDetectors - 1>([&](auto j) {
+                constexpr int IndexDetector = j.value;
+                if (icfg == IndexDetector) {
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hFastTrackerQA"), o2::math_utils::abs(nV0Hits[i]));
+                }
+              });
+            }
+
+            if (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nV0SiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nV0TPCHits[i] >= fastTrackerSettings.minTPCClusters)) {
+              isReco[i] = true;
+            } else {
+              continue; // extra sure
+            }
+            for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits(); ih++) {
+              static_for<0, NtypesDetectors - 1>([&](auto j) {
+                constexpr int IndexDetector = j.value;
+                if (icfg == IndexDetector) {
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hFastTrackerHits"), fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
+                }
+              });
+            }
+          } else {
+            isReco[i] = true;
+            v0DaughterTrackParCovsTracked[i] = v0DaughterTrackParCovsPerfect[i];
+          }
+
+          // if (TMath::IsNaN(v0DaughterTrackParCovsTracked[i].getZ())) {
+          //   continue;
+          // } else {
+          //   histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
+          // }
+          if (isReco[i]) {
+            tracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2, nSiliconHits[i], nTPCHits[i]});
+          } else {
+            ghostTracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), t, 100.f * 1e-3, true, true, i + 2});
+          }
+        }
+        if (v0DecaySettings.doV0QA) {
+          static_for<0, NtypesV0 * NtypesDetectors - 1>([&](auto i) {
+            constexpr int IndexV0 = i.value / NtypesDetectors;
+            constexpr int IndexDetector = i.value % NtypesDetectors;
+            if (pdg == v0PDGs[IndexV0] && icfg == IndexDetector) {
+              if (isReco[0] && isReco[1]) {
+                histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hV0Building"), 1.0f);
+                histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/") + HIST(NameV0s[IndexV0]) + HIST("/hReco"), v0DecayRadius2D, mcParticle.pt());
+              }
+              if (isReco[0])
+                histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/") + HIST(NameV0s[IndexV0]) + HIST("/hRecoNegDaughterFromV0"), v0DecayRadius2D, v0DecayProducts[0].Pt());
+              if (isReco[1])
+                histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/") + HIST(NameV0s[IndexV0]) + HIST("/hRecoPosDaughterFromV0"), v0DecayRadius2D, v0DecayProducts[1].Pt());
+            }
+          });
+        }
+
+        // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+        // combine particles into actual V0 candidate
+        // V0 building starts here
+        if (v0DecaySettings.findV0 && isReco[0] && isReco[1]) {
+          if (v0DecaySettings.doV0QA) {
+            static_for<0, NtypesDetectors - 1>([&](auto j) {
+              constexpr int IndexDetector = j.value;
+              if (icfg == IndexDetector) {
+                histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hV0Building"), 2.0f);
+              }
+            });
+          }
+
+          // assign indices of the particles we've used
+          // they should be the last ones to be filled, in order:
+          // n-1: positive Track from V0
+          // n-2: negative Track from V0
+          thisV0.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
+          thisV0.negativeId = lastTrackIndex + tracksAlice3.size() - 2;
+          // use DCA fitters
+          int nCand = 0;
+          bool dcaFitterOK_V0 = true;
+          try {
+            nCand = fitter.process(v0DaughterTrackParCovsTracked[0], v0DaughterTrackParCovsTracked[1]);
+          } catch (...) {
+            // LOG(error) << "Exception caught in DCA fitter process call!";
+            dcaFitterOK_V0 = false;
+          }
+          if (nCand == 0) {
+            dcaFitterOK_V0 = false;
+          }
+          // V0 found successfully
+          if (dcaFitterOK_V0) {
+            if (v0DecaySettings.doV0QA) {
+              static_for<0, NtypesDetectors - 1>([&](auto j) {
+                constexpr int IndexDetector = j.value;
+                if (icfg == IndexDetector) {
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hV0Building"), 3.0f);
+                }
+              });
+            }
+
+            std::array<float, 3> pos;
+            std::array<float, 3> posP;
+            std::array<float, 3> negP;
+
+            o2::track::TrackParCov pTrackAtPCA = fitter.getTrack(1); //  (positive)
+            o2::track::TrackParCov nTrackAtPCA = fitter.getTrack(0); //  (negative)
+            pTrackAtPCA.getPxPyPzGlo(posP);
+            nTrackAtPCA.getPxPyPzGlo(negP);
+
+            // get decay vertex coordinates
+            const auto& vtx = fitter.getPCACandidate();
+            for (int i = 0; i < 3; i++) {
+              pos[i] = vtx[i];
+            }
+
+            // calculate basic V0 properties here
+            // DCA to PV taken care of in daughter tracks already, not necessary
+            thisV0.dcaV0dau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+            thisV0.v0radius = std::hypot(pos[0], pos[1]);
+            thisV0.pt = std::hypot(std::cos(v0DaughterTrackParCovsTracked[0].getPhi()) * v0DaughterTrackParCovsTracked[0].getPt() + std::cos(v0DaughterTrackParCovsTracked[1].getPhi()) * v0DaughterTrackParCovsTracked[1].getPt(),
+                                   std::sin(v0DaughterTrackParCovsTracked[0].getPhi()) * v0DaughterTrackParCovsTracked[0].getPt() + std::sin(v0DaughterTrackParCovsTracked[1].getPhi()) * v0DaughterTrackParCovsTracked[1].getPt());
+            // thisV0.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
+            //                                                 std::array{negP[0], negP[1], negP[2]}},
+            //                                      std::array{o2::constants::physics::MassProton,
+            //                                                 o2::constants::physics::MassPionCharged});
+            if (isK0) {
+              thisV0.mK0 = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
+                                                   std::array{negP[0], negP[1], negP[2]}},
+                                        std::array{o2::constants::physics::MassPionCharged,
+                                                   o2::constants::physics::MassPionCharged});
+            } else {
+              thisV0.mK0 = -1;
+            }
+
+            if (isLambda) {
+              thisV0.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
+                                                       std::array{negP[0], negP[1], negP[2]}},
+                                            std::array{o2::constants::physics::MassPionCharged,
+                                                       o2::constants::physics::MassProton});
+            } else {
+              thisV0.mLambda = -1;
+            }
+
+            if (isAntiLambda) {
+              thisV0.mAntiLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
+                                                           std::array{negP[0], negP[1], negP[2]}},
+                                                std::array{o2::constants::physics::MassProton,
+                                                           o2::constants::physics::MassPionCharged});
+            } else {
+              thisV0.mAntiLambda = -1;
+            }
+
+            if (v0DecaySettings.doV0QA) {
+              static_for<0, NtypesDetectors - 1>([&](auto j) {
+                constexpr int IndexDetector = j.value;
+                if (icfg == IndexDetector) {
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/hV0Building"), 4.0f);
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/K0/hMass"), thisV0.mK0, thisV0.pt);
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/Lambda/hMass"), thisV0.mLambda, thisV0.pt);
+                  histos.fill(HIST("V0Building_Configuration_") + HIST(NameDetectors[IndexDetector]) + HIST("/AntiLambda/hMass"), thisV0.mAntiLambda, thisV0.pt);
+                }
+              });
+            }
+
+            // add this V0 to vector (will fill cursor later with collision ID)
+            v0sAlice3.push_back(thisV0);
+          }
+        }
+      }
 
       if (doExtraQA) {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
@@ -916,7 +1317,7 @@ struct OnTheFlyTracker {
 
       bool reconstructed = true;
       if (enablePrimarySmearing && !fastPrimaryTrackerSettings.fastTrackPrimaries) {
-        reconstructed = mSmearer.smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+        reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       } else if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
         o2::track::TrackParCov o2Track;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, o2Track, pdgDB);
@@ -938,17 +1339,19 @@ struct OnTheFlyTracker {
       }
 
       // Base QA (note: reco pT here)
-      histos.fill(HIST("hPtReconstructed"), trackParCov.getPt());
-      if (std::abs(mcParticle.pdgCode()) == kElectron)
-        histos.fill(HIST("hPtReconstructedEl"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kPiPlus)
-        histos.fill(HIST("hPtReconstructedPi"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kKPlus)
-        histos.fill(HIST("hPtReconstructedKa"), mcParticle.pt());
-      if (std::abs(mcParticle.pdgCode()) == kProton)
-        histos.fill(HIST("hPtReconstructedPr"), mcParticle.pt());
-
+      if (enablePrimarySmearing) {
+        getHist(TH1, histPath + "hPtReconstructed")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kElectron)
+          getHist(TH1, histPath + "hPtReconstructedEl")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+          getHist(TH1, histPath + "hPtReconstructedPi")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
+          getHist(TH1, histPath + "hPtReconstructedKa")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kProton)
+          getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
+      }
       if (doExtraQA) {
+        getHist(TH2, histPath + "h2dPtRes")->Fill(trackParCov.getPt(), (trackParCov.getPt() - mcParticle.pt()) / trackParCov.getPt());
         histos.fill(HIST("hRecoTrackX"), trackParCov.getX());
       }
 
@@ -1010,9 +1413,9 @@ struct OnTheFlyTracker {
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
     // debug / informational
-    histos.fill(HIST("hSimMultiplicity"), multiplicityCounter);
-    histos.fill(HIST("hRecoMultiplicity"), tracksAlice3.size());
-    histos.fill(HIST("hPVz"), primaryVertex.getZ());
+    getHist(TH1, histPath + "hSimMultiplicity")->Fill(multiplicityCounter);
+    getHist(TH1, histPath + "hRecoMultiplicity")->Fill(tracksAlice3.size());
+    getHist(TH1, histPath + "hPVz")->Fill(primaryVertex.getZ());
 
     if (doExtraQA) {
       histos.fill(HIST("hRecoVsSimMultiplicity"), multiplicityCounter, tracksAlice3.size());
@@ -1044,8 +1447,8 @@ struct OnTheFlyTracker {
           dcaZ = dcaInfo.getZ();
         }
         if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
-          histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
-          histos.fill(HIST("h2dDCAz"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxy")->Fill(trackParametrization.getPt(), dcaXY * 1e+4);
+          getHist(TH2, histPath + "h2dDCAz")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         if (cascadeDecaySettings.doXiQA) {
@@ -1071,6 +1474,7 @@ struct OnTheFlyTracker {
           tableTracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
         }
       }
+      tableOTFLUTConfigId(icfg);
       tableStoredTracks(tableCollisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
       tableTracksExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
 
@@ -1163,11 +1567,31 @@ struct OnTheFlyTracker {
                            cascade.findableClusters,
                            cascade.foundClusters);
     }
+    for (const auto& v0 : v0sAlice3) {
+      tableUpgradeV0s(tableCollisions.lastIndex(), // now we know the collision index -> populate table
+                      v0.positiveId,
+                      v0.negativeId,
+                      v0.dcaV0dau,
+                      v0.v0radius,
+                      v0.mLambda,
+                      v0.mAntiLambda,
+                      v0.mK0,
+                      v0.pt);
+    }
 
     // do bookkeeping of fastTracker tracking
-    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker.GetCovMatNotOK());
-    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker.GetCovMatOK());
+    if (enableSecondarySmearing) {
+      histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker[icfg]->GetCovMatNotOK());
+      histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker[icfg]->GetCovMatOK());
+    }
   } // end process
+
+  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
+      processWithLUTs(mcCollision, mcParticles, static_cast<int>(icfg));
+    }
+  }
 };
 
 /// Extends TracksExtra if necessary

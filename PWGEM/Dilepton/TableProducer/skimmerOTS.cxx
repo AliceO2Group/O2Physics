@@ -17,7 +17,7 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 #include "Common/Core/TableHelper.h"
-#include "EventFiltering/Zorro.h"
+#include "Common/Core/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"

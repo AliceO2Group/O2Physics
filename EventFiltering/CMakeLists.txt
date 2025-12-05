@@ -39,17 +39,17 @@ o2physics_add_header_only_library(HFFilterHelpers
 
 o2physics_add_dpl_workflow(hf-filter
     SOURCES PWGHF/HFFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::HFFilterHelpers O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-charm-hadron-signals
     SOURCES PWGHF/HFFilterCharmHadronSignals.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::HFFilterHelpers
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
     SOURCES PWGHF/HFFilterPrepareMLSamples.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime O2Physics::HFFilterHelpers O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::HFFilterHelpers O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-filter
@@ -106,12 +106,3 @@ o2physics_add_dpl_workflow(lf-f1proton-filter
     SOURCES PWGLF/filterdoublephi.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
-
-o2physics_add_library(EventFilteringUtils
-    SOURCES Zorro.cxx ZorroSummary.cxx
-    INSTALL_HEADERS ZorroHelper.h ZorroSummary.h
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore Arrow::arrow_shared)
-
-o2physics_target_root_dictionary(EventFilteringUtils
-   HEADERS ZorroHelper.h ZorroSummary.h
-   LINKDEF EventFilteringUtilsLinkDef.h)

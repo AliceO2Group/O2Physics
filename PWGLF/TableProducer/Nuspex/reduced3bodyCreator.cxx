@@ -22,13 +22,13 @@
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -91,8 +91,7 @@ struct reduced3bodyCreator {
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID;
 
-  Configurable<bool> doSel8selection{"doSel8selection", true, "flag for sel8 event selection"};
-  Configurable<bool> doPosZselection{"doPosZselection", true, "flag for posZ event selection"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROF border cut"};
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -152,11 +151,10 @@ struct reduced3bodyCreator {
 
     registry.add("hAllSelEventsVtxZ", "hAllSelEventsVtxZ", HistType::kTH1F, {{500, -15.0f, 15.0f, "PV Z (cm)"}});
 
-    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
-    hEventCounter->GetXaxis()->SetBinLabel(1, "total");
-    hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
-    hEventCounter->GetXaxis()->SetBinLabel(3, "vertexZ");
-    hEventCounter->GetXaxis()->SetBinLabel(4, "reduced");
+    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", HistType::kTH1D, {{3, 0.0f, 3.0f}});
+    hEventCounter->GetXaxis()->SetBinLabel(1, "all");
+    hEventCounter->GetXaxis()->SetBinLabel(2, "selected");
+    hEventCounter->GetXaxis()->SetBinLabel(3, "reduced");
     hEventCounter->LabelsOption("v");
 
     auto hEventCounterZorro = registry.add<TH1>("hEventCounterZorro", "hEventCounterZorro", HistType::kTH1D, {{2, 0, 2}});
@@ -259,6 +257,14 @@ struct reduced3bodyCreator {
         lastRunNumber = bc.runNumber(); // Update the last run number
       }
 
+      // all events
+      registry.fill(HIST("hEventCounter"), 0.5);
+
+      // ITS ROF boarder cut if not disabled
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        continue;
+      }
+
       // Zorro event counting
       bool isZorroSelected = false;
       if (cfgSkimmedProcessing) {
@@ -269,16 +275,13 @@ struct reduced3bodyCreator {
         }
       }
 
-      // Event selection
-      registry.fill(HIST("hEventCounter"), 0.5);
-      if (doSel8selection && !collision.sel8()) {
+      // event selection
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
         continue;
       }
+
+      // selected events
       registry.fill(HIST("hEventCounter"), 1.5);
-      if (doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
-        continue;
-      }
-      registry.fill(HIST("hEventCounter"), 2.5);
       registry.fill(HIST("hAllSelEventsVtxZ"), collision.posZ());
 
       if (cfgSkimmedProcessing && isZorroSelected) {
@@ -300,19 +303,18 @@ struct reduced3bodyCreator {
 
       auto collision = d3body.template collision_as<ColwithEvTimesMultsCents>();
 
-      if (doSel8selection && !collision.sel8()) {
+      // event selection
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) { // ITS ROF boarder cut if not disabled
         continue;
       }
-      if (doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) {
         continue;
       }
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      if (cfgSkimmedProcessing && cfgOnlyKeepInterestedTrigger) {
-        if (isTriggeredCollision[collision.globalIndex()] == false) {
-          continue;
-        }
+      if (cfgSkimmedProcessing && cfgOnlyKeepInterestedTrigger && !isTriggeredCollision[collision.globalIndex()]) {
+        continue;
       }
 
       // Save the collision
@@ -411,7 +413,7 @@ struct reduced3bodyCreator {
       reduced3BodyInfo(radius, phi, posZ, rVtx, phiVtx, zVtx, fTrackedClSizeVector[d3body.globalIndex()]);
     } // end decay3body loop
 
-    registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);
+    registry.fill(HIST("hEventCounter"), 2.5, reducedCollisions.lastIndex() + 1);
   }
 };
 

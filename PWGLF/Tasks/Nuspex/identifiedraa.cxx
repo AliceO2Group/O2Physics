@@ -28,8 +28,10 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisTask.h"
 
 using namespace o2;
@@ -220,6 +222,7 @@ struct identifiedraaTask {
   template <std::size_t i, typename T>
   void fillHistogramsData(T const& tracks)
   {
+    static_assert(i < 6, "Index i out of bounds");
     for (auto& track : tracks) {
       if (std::abs(track.eta()) > 0.8) {
         continue;
@@ -233,10 +236,8 @@ struct identifiedraaTask {
           continue;
         }
       }
-      float mass;
-      if constexpr ((i == 0) || (i == 1)) {
-        mass = 0.13957; // pion mass
-      } else if constexpr ((i == 2) || (i == 3)) {
+      float mass{0.13957};
+      if constexpr ((i == 2) || (i == 3)) {
         mass = 0.49367; // kaon mass
       } else if constexpr ((i == 4) || (i == 5)) {
         mass = 0.93827; // proton mass

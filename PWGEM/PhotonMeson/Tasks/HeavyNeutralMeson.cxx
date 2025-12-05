@@ -16,32 +16,35 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
-#include <vector>
-#include <iterator>
-#include <string>
+#include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
 #include "TRandom3.h"
 
-#include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
-#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "fairlogger/Logger.h"
-#include "Framework/Configurable.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
+
+#include <iterator>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

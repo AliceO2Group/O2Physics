@@ -19,6 +19,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/Utils/utilsSigmac.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -86,8 +87,6 @@ struct HfTreeCreatorSigmacCorrBkg {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
 
-  HfHelper hfHelper;
-
   using RecoLcMc = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>;
   using RecoScMc = soa::Join<aod::HfCandSc, aod::HfCandScMcRec>;
   using ParticlesLcSigmac = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen, aod::HfCandScMcGen>;
@@ -98,8 +97,8 @@ struct HfTreeCreatorSigmacCorrBkg {
   ///
   void fillTable(RecoScMc::iterator candidateSc, RecoLcMc::iterator candLcDauSc, int motherPdg, int motherDecay = -1)
   {
-    const int8_t chargeSc = candidateSc.charge();                                                          // either Σc0 or Σc++
-    const float rapidity = chargeSc == 0 ? hfHelper.ySc0(candidateSc) : hfHelper.yScPlusPlus(candidateSc); // NB: since in data we cannot tag Sc(2455) and Sc(2520), then we use only Sc(2455) for y selection on reconstructed signal
+    const int8_t chargeSc = candidateSc.charge();                                                            // either Σc0 or Σc++
+    const float rapidity = chargeSc == 0 ? HfHelper::ySc0(candidateSc) : HfHelper::yScPlusPlus(candidateSc); // NB: since in data we cannot tag Sc(2455) and Sc(2520), then we use only Sc(2455) for y selection on reconstructed signal
     float massSc = -1.f;
     float massLc = -1.f;
     float deltaMass = -1.f;
@@ -117,16 +116,16 @@ struct HfTreeCreatorSigmacCorrBkg {
     }
 
     if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candLcDauSc.template prong0_as<aod::TracksWMc>().template mcParticle_as<ParticlesLcSigmac>().pdgCode()) == kProton) {
-      massSc = hfHelper.invMassScRecoLcToPKPi(candidateSc, candLcDauSc);
-      massLc = hfHelper.invMassLcToPKPi(candLcDauSc);
+      massSc = HfHelper::invMassScRecoLcToPKPi(candidateSc, candLcDauSc);
+      massLc = HfHelper::invMassLcToPKPi(candLcDauSc);
       deltaMass = massSc - massLc;
 
       /// fill the tree
       rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMl.at(0), outputMl.at(1));
     }
     if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candLcDauSc.template prong0_as<aod::TracksWMc>().template mcParticle_as<ParticlesLcSigmac>().pdgCode()) == kPiPlus) {
-      massSc = hfHelper.invMassScRecoLcToPiKP(candidateSc, candLcDauSc);
-      massLc = hfHelper.invMassLcToPiKP(candLcDauSc);
+      massSc = HfHelper::invMassScRecoLcToPiKP(candidateSc, candLcDauSc);
+      massLc = HfHelper::invMassLcToPiKP(candLcDauSc);
       deltaMass = massSc - massLc;
 
       /// fill the tree
@@ -148,10 +147,10 @@ struct HfTreeCreatorSigmacCorrBkg {
 
       /// tag immediately the Σc0,++(2455) and Σc0,++(2520) signal
       auto flagMcDecayChanScAbs = std::abs(candidateSc.flagMcMatchRec());
-      bool const isTrueSigmac0 = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
-      bool const isTrueSigmacPlusPlus = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
-      bool const isTrueSigmacStar0 = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
-      bool const isTrueSigmacStarPlusPlus = (flagMcDecayChanScAbs == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
+      bool const isTrueSigmac0 = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi);
+      bool const isTrueSigmacPlusPlus = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi);
+      bool const isTrueSigmacStar0 = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi);
+      bool const isTrueSigmacStarPlusPlus = (flagMcDecayChanScAbs == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi);
       if (isTrueSigmac0) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaC0);

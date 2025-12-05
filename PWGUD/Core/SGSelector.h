@@ -28,11 +28,12 @@
 #include "Framework/Logger.h"
 
 #include <cmath>
+#include <memory>
 
 template <typename BC>
 struct SelectionResult {
   int value;    // The original integer return value
-  const BC* bc; // Pointer to the BC object
+  std::shared_ptr<BC> bc; // Pointer to the BC object
 };
 
 namespace o2::aod::sgselector
@@ -66,9 +67,9 @@ class SGSelector
     //        LOGF(info, "Collision %f", collision.collisionTime());
     //        LOGF(info, "Number of close BCs: %i", bcRange.size());
     SelectionResult<BC> result;
-    result.bc = &oldbc;
     if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
       result.value = o2::aod::sgselector::TrkOutOfRange; // 4
+      result.bc = std::make_shared<BC>(oldbc);
       return result;
     }
     auto newbc = oldbc;
@@ -97,6 +98,7 @@ class SGSelector
     } // end of loop over bc range
     if (!gA && !gC) {
       result.value = o2::aod::sgselector::NoUpc; // gap = 3
+      result.bc = std::make_shared<BC>(oldbc);
       return result;
     }
     if (gA && gC) { // loop once again for so-called DG events to get the most active FT0 BC
@@ -120,9 +122,8 @@ class SGSelector
       }
       newbc = newdgabc;
     }
-    result.bc = &newbc;
     // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
-    result.bc = &newbc;
+    result.bc = std::make_shared<BC>(newbc);
     // result.value = gA && gC ? 2 : (gA ? 0 : 1);
     result.value = gA && gC ? o2::aod::sgselector::DoubleGap : (gA ? o2::aod::sgselector::SingleGapA : o2::aod::sgselector::SingleGapC);
     return result;

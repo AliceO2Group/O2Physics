@@ -40,8 +40,6 @@
 
 #include <array>
 #include <cmath>
-#include <iostream>
-#include <map>
 #include <vector>
 
 using namespace o2;
@@ -67,7 +65,7 @@ DECLARE_SOA_COLUMN(NContrib, nContrib, int);
 DECLARE_SOA_COLUMN(InputMask, inputMask, uint64_t); //! CTP input mask
 
 // Information for FDD
-DECLARE_SOA_COLUMN(isFDD, isfdd, bool);
+DECLARE_SOA_COLUMN(IsFDD, isfdd, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFDD, tcmTriggerfdd, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFDD, timeAfdd, double);
 DECLARE_SOA_COLUMN(TimeCFDD, timeCfdd, double);
@@ -77,7 +75,7 @@ DECLARE_SOA_COLUMN(ChargeAFDD, chargeAfdd, double);
 DECLARE_SOA_COLUMN(ChargeCFDD, chargeCfdd, double);
 
 // Information for FT0
-DECLARE_SOA_COLUMN(isFT0, isft0, bool);
+DECLARE_SOA_COLUMN(IsFT0, isft0, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFT0, tcmTriggerft0, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFT0, timeAft0, double);
 DECLARE_SOA_COLUMN(TimeCFT0, timeCft0, double);
@@ -85,7 +83,7 @@ DECLARE_SOA_COLUMN(ChargeAFT0, chargeAft0, double);
 DECLARE_SOA_COLUMN(ChargeCFT0, chargeCft0, double);
 
 // information for FV0
-DECLARE_SOA_COLUMN(isFV0, isfv0, bool);
+DECLARE_SOA_COLUMN(IsFV0, isfv0, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFV0, tcmTriggerfv0, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFV0, timeAfv0, double);     // Only FV0-A time
 DECLARE_SOA_COLUMN(ChargeAFV0, chargeAfv0, double); // Only FV0-A charge
@@ -94,12 +92,12 @@ DECLARE_SOA_COLUMN(ChargeAFV0, chargeAfv0, double); // Only FV0-A charge
 DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::InputMask, full::VertexX,
                   full::VertexY, full::VertexZ, full::GlobalBC,
                   full::VertexChi2, full::NContrib,
-                  full::isFDD, full::TCMTriggerFDD,
+                  full::IsFDD, full::TCMTriggerFDD,
                   full::TimeAFDD, full::TimeCFDD,
                   full::ChargeAFDD, full::ChargeCFDD,
-                  full::isFT0, full::TCMTriggerFT0,
+                  full::IsFT0, full::TCMTriggerFT0,
                   full::TimeAFT0, full::TimeCFT0,
-                  full::ChargeAFT0, full::ChargeCFT0, full::isFV0,
+                  full::ChargeAFT0, full::ChargeCFT0, full::IsFV0,
                   full::TCMTriggerFV0, full::TimeAFV0, full::ChargeAFV0);
 
 DECLARE_SOA_TABLE(EventInfoFDD, "AOD", "EventInfoFDD",
@@ -141,6 +139,7 @@ struct LumiFDDFT0 {
   Configurable<int> nContribMax{"nContribMax", 2500, "Maximum number of contributors"};
   Configurable<int> nContribMin{"nContribMin", 10, "Minimum number of contributors"};
   Configurable<bool> useRelTimeStamp{"useRelTimeStamp", false, "timestamp info stored as relative to fttimestamp"};
+  Configurable<bool> cfgKeepOnlyNonZeroCTPMask{"cfgKeepOnlyNonZeroCTPMask", false, "Keep only events with non-zero CTP mask"};
 
   HistogramRegistry histos{
     "histos",
@@ -187,7 +186,7 @@ struct LumiFDDFT0 {
                    o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
                                  o2::aod::TracksExtra> const& unfiltered_tracks)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     Long64_t relTS = bc.timestamp() - fttimestamp;
     Long64_t globalBC = bc.globalBC();
     std::vector<int64_t> vec_globID_contr = {};
@@ -275,38 +274,38 @@ struct LumiFDDFT0 {
 
     // now get information for FDD
     if (collision.has_foundFDD()) {
-      auto fdd = collision.foundFDD();
+      const auto& fdd = collision.foundFDD();
       mTriggerFDD = fdd.triggerMask();
       timeaFDD = fdd.timeA();
       timecFDD = fdd.timeC();
-      for (auto amplitude : fdd.chargeA()) {
+      for (const auto& amplitude : fdd.chargeA()) {
         chargeaFDD += amplitude;
       }
-      for (auto amplitude : fdd.chargeC()) {
+      for (const auto& amplitude : fdd.chargeC()) {
         chargecFDD += amplitude;
       }
     } // fdd
 
     if (collision.has_foundFT0()) {
-      auto ft0 = collision.foundFT0();
+      const auto& ft0 = collision.foundFT0();
       mTriggerFT0 = ft0.triggerMask();
       timeaFT0 = ft0.timeA();
       timecFT0 = ft0.timeC();
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         chargeaFT0 += amplitude;
       }
 
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         chargecFT0 += amplitude;
       }
     } // ft0
 
     // FV0
     if (collision.has_foundFV0()) {
-      auto fv0 = collision.foundFV0();
+      const auto& fv0 = collision.foundFV0();
       mTriggerFV0 = fv0.triggerMask();
       timeaFV0 = fv0.time();
-      for (auto amplitude : fv0.amplitude()) {
+      for (const auto& amplitude : fv0.amplitude()) {
         chargeaFV0 += amplitude;
       }
     } // fv0
@@ -352,6 +351,9 @@ struct LumiFDDFT0 {
     for (const auto& bc : bcs) {
       if (!bc.timestamp())
         continue;
+      if (bc.inputMask() == 0 && cfgKeepOnlyNonZeroCTPMask) // No trigger inputs active
+        continue;
+
       if (useRelTimeStamp) {
         Long64_t relTS = bc.timestamp() - fttimestamp;
         rowEventInfoCTP(relTS, bc.globalBC(), bc.inputMask());
@@ -361,15 +363,15 @@ struct LumiFDDFT0 {
     }
 
     // Scan over the FDD table and store charge and time along with globalBC
-    for (auto& fdd : fdds) {
-      auto bc = fdd.bc_as<BCsWithTimestamps>();
+    for (const auto& fdd : fdds) {
+      const auto& bc = fdd.bc_as<BCsWithTimestamps>();
       if (!bc.timestamp())
         continue;
       if (mRunNumber != bc.runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
         if (grpo != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpo);
-          std::cout << "run " << bc.runNumber() << std::endl;
+          LOG(info) << "run " << bc.runNumber();
         } else {
           LOGF(fatal,
                "GRP object is not available in CCDB for run=%d at timestamp=%llu",
@@ -410,8 +412,8 @@ struct LumiFDDFT0 {
     } // end of fdd table
 
     // Scan over the FT0 table and store charge and time along with globalBC
-    for (auto& ft0 : ft0s) {
-      auto bc = ft0.bc_as<BCsWithTimestamps>();
+    for (const auto& ft0 : ft0s) {
+      const auto& bc = ft0.bc_as<BCsWithTimestamps>();
       if (!bc.timestamp())
         continue;
       Long64_t relTS = bc.timestamp() - fttimestamp;
@@ -420,17 +422,17 @@ struct LumiFDDFT0 {
       histoslite.fill(HIST("BCFT0"), localBC);
       double chargeaFT0 = 0.;
       double chargecFT0 = 0.;
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         chargeaFT0 += amplitude;
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         chargecFT0 += amplitude;
       }
       rowEventInfoft0(relTS, globalBC, bc.inputMask(), ft0.triggerMask(), ft0.timeA(), ft0.timeC(), chargeaFT0, chargecFT0);
     } // end of ft0 table
 
     // Scan over the FV0 table and store charge and time along with globalBC
-    for (auto& fv0 : fv0s) {
+    for (const auto& fv0 : fv0s) {
       auto bc = fv0.bc_as<BCsWithTimestamps>();
       if (!bc.timestamp())
         continue;
@@ -440,7 +442,7 @@ struct LumiFDDFT0 {
       histoslite.fill(HIST("BCFV0"), localBC);
 
       double chargeaFV0 = 0.;
-      for (auto amplitude : fv0.amplitude()) {
+      for (const auto& amplitude : fv0.amplitude()) {
         chargeaFV0 += amplitude;
       }
       rowEventInfofv0(relTS, globalBC, bc.inputMask(), fv0.triggerMask(), fv0.time(), chargeaFV0);
@@ -463,6 +465,6 @@ struct LumiFDDFT0 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec w{adaptAnalysisTask<LumiFDDFT0>(cfgc, TaskName{"LumiFDDFT0"})};
+  WorkflowSpec w{adaptAnalysisTask<LumiFDDFT0>(cfgc)};
   return w;
 }

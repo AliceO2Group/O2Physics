@@ -23,7 +23,8 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/AliasTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -1464,12 +1465,13 @@ struct HfTrackIndexSkimCreator {
 
     if (config.applyMlForHfFilters) {
       const std::vector<std::string> onnxFileNames2Prongs{config.onnxFileNames->get(0u, 0u)};
-      const std::array<std::vector<std::string>, kN3ProngDecays> onnxFileNames3Prongs{std::vector<std::string>{config.onnxFileNames->get(1u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(2u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(3u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(4u, 0u)}};
+      // Exclude Cd from the 3-prong list, as it is not included in the pp trigger program
+      const std::array<std::vector<std::string>, kN3ProngDecays - 1> onnxFileNames3Prongs{std::vector<std::string>{config.onnxFileNames->get(1u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(2u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(3u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(4u, 0u)}};
       const std::vector<std::string> mlModelPathCcdb2Prongs{config.mlModelPathCCDB.value + "D0"};
-      const std::array<std::vector<std::string>, kN3ProngDecays> mlModelPathCcdb3Prongs{std::vector<std::string>{config.mlModelPathCCDB.value + "Dplus"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Lc"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Ds"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Xic"}};
+      const std::array<std::vector<std::string>, kN3ProngDecays - 1> mlModelPathCcdb3Prongs{std::vector<std::string>{config.mlModelPathCCDB.value + "Dplus"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Lc"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Ds"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Xic"}};
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
-      const std::array<LabeledArray<double>, kN3ProngDecays> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
+      const std::array<LabeledArray<double>, kN3ProngDecays - 1> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1482,7 +1484,7 @@ struct HfTrackIndexSkimCreator {
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
-      for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
+      for (int iDecay3P{0}; iDecay3P < kN3ProngDecays - 1; ++iDecay3P) {
         if (onnxFileNames3Prongs[iDecay3P][0].empty()) { // 3-prong species to be skipped
           continue;
         }

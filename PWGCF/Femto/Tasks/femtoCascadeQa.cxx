@@ -36,9 +36,7 @@
 #include <string>
 #include <vector>
 
-using namespace o2;
 using namespace o2::aod;
-using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femto;
@@ -46,15 +44,15 @@ using namespace o2::analysis::femto;
 struct FemtoCascadeQa {
 
   // setup tables
-  using Collisions = Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
-  using Collision = Collisions::iterator;
+  using FemtoCollisions = o2::soa::Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
+  using FemtoCollision = FemtoCollisions::iterator;
 
-  using FilteredCollisions = o2::soa::Filtered<Collisions>;
-  using FilteredCollision = FilteredCollisions::iterator;
+  using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
+  using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
-  using Xis = o2::soa::Join<FXis, FXiMasks, FXiExtras>;
-  using Omegas = o2::soa::Join<FOmegas, FOmegaMasks, FOmegaExtras>;
-  using Tracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
+  using FemtoXis = o2::soa::Join<FXis, FXiMasks, FXiExtras>;
+  using FemtoOmegas = o2::soa::Join<FOmegas, FOmegaMasks, FOmegaExtras>;
+  using FemtoTracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
 
   SliceCache cache;
 
@@ -67,8 +65,8 @@ struct FemtoCascadeQa {
 
   // setup for xis
   cascadebuilder::ConfXiSelection confXiSelection;
-  Partition<Xis> xiPartition = MAKE_CASCADE_PARTITION(confXiSelection);
-  Preslice<Xis> preColXis = aod::femtobase::stored::collisionId;
+  Partition<FemtoXis> xiPartition = MAKE_CASCADE_PARTITION(confXiSelection);
+  Preslice<FemtoXis> preColXis = femtobase::stored::fColId;
 
   cascadehistmanager::ConfXiBinning confXiBinning;
   cascadehistmanager::ConfXiQaBinning confXiQaBinning;
@@ -83,8 +81,8 @@ struct FemtoCascadeQa {
 
   // setup for omegas
   cascadebuilder::ConfOmegaSelection confOmegaSelection;
-  Partition<Omegas> omegaPartition = MAKE_CASCADE_PARTITION(confOmegaSelection);
-  Preslice<Omegas> preColOmegas = aod::femtobase::stored::collisionId;
+  Partition<FemtoOmegas> omegaPartition = MAKE_CASCADE_PARTITION(confOmegaSelection);
+  Preslice<FemtoOmegas> preColOmegas = femtobase::stored::fColId;
 
   cascadehistmanager::ConfOmegaBinning confOmegaBinning;
   cascadehistmanager::ConfOmegaQaBinning confOmegaQaBinning;
@@ -111,7 +109,7 @@ struct FemtoCascadeQa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, colHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec, confCollisionQaBinning);
 
     auto bachelorHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confBachelorBinning, confBachelorQaBinning);
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
@@ -123,29 +121,29 @@ struct FemtoCascadeQa {
 
     if (doprocessXis) {
       auto xiHistSpec = cascadehistmanager::makeCascadeQaHistSpecMap(confXiBinning, confXiQaBinning);
-      xiHistManager.init(&hRegistry, xiHistSpec, bachelorHistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      xiHistManager.init(&hRegistry, xiHistSpec, confXiQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
 
     if (doprocessOmegas) {
       auto omegaHistSpec = cascadehistmanager::makeCascadeQaHistSpecMap(confOmegaBinning, confOmegaQaBinning);
-      omegaHistManager.init(&hRegistry, omegaHistSpec, bachelorHistSpec, posDaughterHistSpec, negDaughterHistSpec);
+      omegaHistManager.init(&hRegistry, omegaHistSpec, confOmegaQaBinning, bachelorHistSpec, confBachelorQaBinning, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
   };
 
-  void processXis(FilteredCollision const& col, Xis const& /*xis*/, Tracks const& tracks)
+  void processXis(FilteredFemtoCollision const& col, FemtoXis const& /*xis*/, FemtoTracks const& tracks)
   {
     colHistManager.fill(col);
-    auto xiSlice = xiPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto xiSlice = xiPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
       xiHistManager.fill(xi, tracks);
     }
   }
   PROCESS_SWITCH(FemtoCascadeQa, processXis, "Process Xis", true);
 
-  void processOmegas(FilteredCollision const& col, Omegas const& /*omegas*/, Tracks const& tracks)
+  void processOmegas(FilteredFemtoCollision const& col, FemtoOmegas const& /*omegas*/, FemtoTracks const& tracks)
   {
     colHistManager.fill(col);
-    auto omegaSlice = omegaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto omegaSlice = omegaPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
       omegaHistManager.fill(omega, tracks);
     }

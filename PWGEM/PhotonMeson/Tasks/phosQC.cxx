@@ -14,25 +14,31 @@
 // This code runs loop over PHOS clusters for PHOS QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
-#include "TString.h"
-#include "THashList.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "THashList.h"
+#include "TString.h"
+
+#include <array>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -42,7 +48,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
 struct phosQC {
@@ -148,8 +154,8 @@ struct phosQC {
         } // end of v0 loop
         reinterpret_cast<TH1F*>(fMainList->FindObject("Cluster")->FindObject(cut.GetName())->FindObject("hNgamma"))->Fill(ng);
       } // end of cut loop
-    }   // end of collision loop
-  }     // end of process
+    } // end of collision loop
+  } // end of process
 
   void processDummy(MyCollisions const&) {}
 

@@ -31,6 +31,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TRandom3.h>
 
 #include <cstdint>
 
@@ -64,7 +65,9 @@ struct ZdcExtraTableProducer {
   Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", true, "Event selection: no collision in time range standard"};
   Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", true, "Event selection: is vertex ITSTPC"};
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
-  //
+  // Calibration settings
+  Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
+
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   enum SelectionCriteria {
@@ -95,8 +98,8 @@ struct ZdcExtraTableProducer {
     registry.add("ZNAsumq", "ZNAsumq; ZNA uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNCsumq", "ZNCsumq; ZNC uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
 
-    registry.add("ZNACentroid", "ZNACentroid; ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
-    registry.add("ZNCCentroid", "ZNCCentroid; ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
+    registry.add("ZNACentroid", "ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
+    registry.add("ZNCCentroid", "ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
 
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
@@ -311,8 +314,8 @@ struct ZdcExtraTableProducer {
         auto vx = collision.posX();
         auto vy = collision.posY();
 
-        if (isZNAhit || isZNChit) {
-          zdcextras(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNA, centroidZNA[0], centroidZNA[1], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNC, centroidZNC[0], centroidZNC[1], centrality, vx, vy, vz, foundBC.timestamp(), evSelection);
+        if ((isZNAhit || isZNChit) && (gRandom->Uniform() < cfgCalibrationDownscaling)) {
+          zdcextras(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNA, centroidZNA[0], centroidZNA[1], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNC, centroidZNC[0], centroidZNC[1], centrality, vx, vy, vz, foundBC.timestamp(), foundBC.runNumber(), evSelection);
         }
       }
     }

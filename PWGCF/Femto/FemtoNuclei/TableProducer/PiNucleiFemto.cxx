@@ -25,16 +25,17 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -222,7 +223,6 @@ struct PiNucleiFemto {
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
-  ConfigurableAxis axisTransMass{"axisTransMass", {1000, 0.2, 3.2}, "Binning for mT"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType binningPolicy{{axisVertex, axisCentrality}, true};
   SliceCache cache;
@@ -261,7 +261,10 @@ struct PiNucleiFemto {
      {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-     {"hSinglePiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hPiPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
+     {"hSingleNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+
      {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
      {"hHe3P", "Pin distribution; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHe3P_preselected", "Pin distribution_preselected; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -283,12 +286,15 @@ struct PiNucleiFemto {
      {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"hkStaVsmTVsCent_LS_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
-     {"hkStaVsmTVsCent_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
-     {"hkStaVsmTVsCent_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
-     {"hkStaVsmTVsCent_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {axisTransMass}, {100, 0.0f, 100.0f}}}},
-     {"hCollIDVsCentEachPion", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
-     {"hCollIDVsCentEachDe", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_LS_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2, 3.2}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2, 3.2}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2, 3.2}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmTVsCent_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2, 3.2}, {100, 0.0f, 100.0f}}}},
+     {"hkStaVsmT_LS_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
+     {"hkStaVsmT_LS_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
+     {"hkStaVsmT_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
+     {"hkStaVsmT_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
+
      {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -811,9 +817,8 @@ struct PiNucleiFemto {
   }
 
   template <typename Ttrack>
-  void pairTracksSameEvent(const Ttrack& tracks, float cent)
+  void pairTracksSameEvent(const Ttrack& tracks, float /*cent*/)
   {
-    bool filledAllOnce = false;
     // LOG(info) << "Number of tracks: " << tracks.size();
     for (const auto& track0 : tracks) {
 
@@ -829,7 +834,7 @@ struct PiNucleiFemto {
       }
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
       mQaRegistry.fill(HIST("hSingleNuPt"), track0.pt() * track0.sign());
-      mQaRegistry.fill(HIST("hCollIDVsCentEachDe"), track0.collisionId(), cent);
+      mQaRegistry.fill(HIST("hSingleNuPin"), track0.tpcInnerParam() * track0.sign());
 
       for (const auto& track1 : tracks) {
         if (track0 == track1) {
@@ -849,11 +854,6 @@ struct PiNucleiFemto {
           continue;
         }
 
-        if (!filledAllOnce) {
-          mQaRegistry.fill(HIST("hCollIDVsCentEachPion"), track1.collisionId(), cent);
-          mQaRegistry.fill(HIST("hSinglePiPt"), track1.pt() * track1.sign());
-        }
-
         SVCand trackPair;
         trackPair.tr0Idx = track0.globalIndex();
         trackPair.tr1Idx = track1.globalIndex();
@@ -862,7 +862,6 @@ struct PiNucleiFemto {
         trackPair.collBracket = collBracket;
         mTrackPairs.push_back(trackPair);
       }
-      filledAllOnce = true;
     }
   }
 
@@ -948,6 +947,10 @@ struct PiNucleiFemto {
   void fillTable(const PiNucandidate& piNucand, const Tcoll& collision)
   {
     mOutputDataTable(
+      piNucand.recoPtPi(),
+      piNucand.recoPtNu(),
+      piNucand.momPiTPC,
+      piNucand.momNuTPC,
       piNucand.trackIDPi,
       piNucand.trackIDNu);
     if (settingFillMultiplicity) {
@@ -1003,6 +1006,8 @@ struct PiNucleiFemto {
   {
     mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
     mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
+    mQaRegistry.fill(HIST("hNuPin"), piNucand.momNuTPC * piNucand.signNu);
+    mQaRegistry.fill(HIST("hPiPin"), piNucand.momPiTPC * piNucand.signPi);
     mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
     mQaRegistry.fill(HIST("hPiEta"), piNucand.recoEtaPi());
     mQaRegistry.fill(HIST("hNuPhi"), piNucand.recoPhiNu());
@@ -1023,17 +1028,21 @@ struct PiNucleiFemto {
       if (piNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_LS_M"), piNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmTVsCent_LS_M"), piNucand.kstar, piNucand.mT, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsmT_LS_M"), piNucand.kstar, piNucand.mT);
       } else {
         mQaRegistry.fill(HIST("hkStar_LS_A"), piNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmTVsCent_LS_A"), piNucand.kstar, piNucand.mT, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsmT_LS_A"), piNucand.kstar, piNucand.mT);
       }
     } else {
       if (piNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_US_M"), piNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmTVsCent_US_M"), piNucand.kstar, piNucand.mT, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsmT_US_M"), piNucand.kstar, piNucand.mT);
       } else {
         mQaRegistry.fill(HIST("hkStar_US_A"), piNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmTVsCent_US_A"), piNucand.kstar, piNucand.mT, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsmT_US_A"), piNucand.kstar, piNucand.mT);
       }
     }
   }

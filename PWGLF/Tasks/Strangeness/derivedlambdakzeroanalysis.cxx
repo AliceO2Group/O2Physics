@@ -39,7 +39,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
@@ -192,6 +191,9 @@ struct derivedlambdakzeroanalysis {
     Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
     Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
+
+    // invariant mass selection
+    Configurable<float> compMassRejection{"compMassRejection", -1, "Competing mass rejection (GeV/#it{c}^{2})"};
 
     // Additional selection on the AP plot (exclusive for K0Short)
     // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
@@ -375,6 +377,8 @@ struct derivedlambdakzeroanalysis {
                               selDCAV0Dau,
                               selK0ShortRapidity,
                               selLambdaRapidity,
+                              selK0ShortMassRejection,
+                              selLambdaMassRejection,
                               selTPCPIDPositivePion,
                               selTPCPIDNegativePion,
                               selTPCPIDPositiveProton,
@@ -572,6 +576,12 @@ struct derivedlambdakzeroanalysis {
       BITSET(maskAntiLambdaSpecific, selNegNotTPCOnly);
     }
 
+    if (v0Selections.compMassRejection > -1) {
+      BITSET(maskK0ShortSpecific, selLambdaMassRejection);
+      BITSET(maskLambdaSpecific, selK0ShortMassRejection);
+      BITSET(maskAntiLambdaSpecific, selK0ShortMassRejection);
+    }
+
     // Primary particle selection, central to analysis
     maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific;
     maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
@@ -722,6 +732,8 @@ struct derivedlambdakzeroanalysis {
     hSelectionV0s->GetXaxis()->SetBinLabel(selDCAV0Dau + 2, "DCA V0 dau.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortRapidity + 2, "K^{0}_{S} rapidity");
     hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaRapidity + 2, "#Lambda rapidity");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortMassRejection + 2, "K^{0}_{S} mass rej.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaMassRejection + 2, "#Lambda mass rej.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositivePion + 2, "TPC PID #pi^{+}");
     hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativePion + 2, "TPC PID #pi^{-}");
     hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositiveProton + 2, "TPC PID p");
@@ -1231,6 +1243,14 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selLambdaRapidity);
     if (std::abs(rapidityK0Short) < v0Selections.rapidityCut)
       BITSET(bitMap, selK0ShortRapidity);
+
+    //
+    // competing mass rejection
+    //
+    if (std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) > v0Selections.compMassRejection)
+      BITSET(bitMap, selK0ShortMassRejection);
+    if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0Selections.compMassRejection)
+      BITSET(bitMap, selLambdaMassRejection);
 
     auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();

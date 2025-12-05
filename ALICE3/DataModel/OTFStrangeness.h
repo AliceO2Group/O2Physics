@@ -65,6 +65,37 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
 
 using UpgradeCascade = UpgradeCascades::iterator;
 
+namespace otfv0
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                         //!
+DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg"); //!
+DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
+
+// topo vars
+DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0Daughters, float);
+DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);
+DECLARE_SOA_COLUMN(MK0, mK0, float);
+
+// kinematics
+DECLARE_SOA_COLUMN(Pt, pt, float);
+
+} // namespace otfv0
+DECLARE_SOA_TABLE(UpgradeV0s, "AOD", "UPGRADEV0S",
+                  o2::soa::Index<>,
+                  otfv0::CollisionId,
+                  otfv0::PosTrackId,
+                  otfv0::NegTrackId,
+                  otfv0::DCAV0Daughters,
+                  otfv0::V0Radius,
+                  otfv0::MLambda,
+                  otfv0::MAntiLambda,
+                  otfv0::MK0,
+                  otfv0::Pt);
+
+using UpgradeV0 = UpgradeV0s::iterator;
 } // namespace o2::aod
 
 #endif // ALICE3_DATAMODEL_OTFSTRANGENESS_H_

@@ -18,6 +18,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -96,7 +97,6 @@ struct HfCandidateCreatorB0 {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -229,7 +229,7 @@ struct HfCandidateCreatorB0 {
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
 
       for (const auto& candD : candsDThisColl) { // start loop over filtered D candidates indices as associated to this collision in candidateCreator3Prong.cxx
-        hMassDToPiKPi->Fill(hfHelper.invMassDplusToPiKPi(candD), candD.pt());
+        hMassDToPiKPi->Fill(HfHelper::invMassDplusToPiKPi(candD), candD.pt());
         hPtD->Fill(candD.pt());
         hCPAD->Fill(candD.cpa());
 

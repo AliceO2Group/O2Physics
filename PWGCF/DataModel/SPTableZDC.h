@@ -10,48 +10,49 @@
 // or submit itself to any jurisdiction.
 
 /// \file SPTableZDC.h
+/// \author Noor Koster
+/// \since  11/2024
+/// \brief  Table to hold Q-vectors and neccesary information for the ZDC q-vector calibration.
 
 #ifndef PWGCF_DATAMODEL_SPTABLEZDC_H_
 #define PWGCF_DATAMODEL_SPTABLEZDC_H_
 
-#include <cmath>
-
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
+#include <vector>
 
 namespace o2::aod
 {
 namespace sptablezdc
 {
 DECLARE_SOA_COLUMN(Runnumber, runnumber, int);
-DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(Vx, vx, float);
-DECLARE_SOA_COLUMN(Vy, vy, float);
-DECLARE_SOA_COLUMN(Vz, vz, float);
-DECLARE_SOA_COLUMN(QXA, qxA, float);
-DECLARE_SOA_COLUMN(QYA, qyA, float);
-DECLARE_SOA_COLUMN(QXC, qxC, float);
-DECLARE_SOA_COLUMN(QYC, qyC, float);
+DECLARE_SOA_COLUMN(Cents, cents, std::vector<float>);
+DECLARE_SOA_COLUMN(Vertex, vertex, std::vector<float>);
+DECLARE_SOA_COLUMN(Timestamp, timestamp, int64_t);
+DECLARE_SOA_COLUMN(QxA, qxA, float);
+DECLARE_SOA_COLUMN(QyA, qyA, float);
+DECLARE_SOA_COLUMN(QxC, qxC, float);
+DECLARE_SOA_COLUMN(QyC, qyC, float);
 DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);
-DECLARE_SOA_COLUMN(Iteration, iteration, int);
-DECLARE_SOA_COLUMN(Step, step, int);
+DECLARE_SOA_COLUMN(EventSelectionFlags, eventSelectionFlags, uint16_t);
 
 } // namespace sptablezdc
 
 DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPZDC",
                   sptablezdc::Runnumber,
-                  sptablezdc::Cent,
-                  sptablezdc::Vx,
-                  sptablezdc::Vy,
-                  sptablezdc::Vz,
-                  sptablezdc::QXA,
-                  sptablezdc::QYA,
-                  sptablezdc::QXC,
-                  sptablezdc::QYC,
+                  sptablezdc::Cents,
+                  sptablezdc::Vertex,
+                  sptablezdc::Timestamp,
+                  sptablezdc::QxA,
+                  sptablezdc::QyA,
+                  sptablezdc::QxC,
+                  sptablezdc::QyC,
                   sptablezdc::IsSelected,
-                  sptablezdc::Iteration,
-                  sptablezdc::Step);
+                  sptablezdc::EventSelectionFlags);
 } // namespace o2::aod
 #endif // PWGCF_DATAMODEL_SPTABLEZDC_H_
