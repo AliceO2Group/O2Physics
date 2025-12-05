@@ -9,12 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for track selection
-//
+/// \file PHOSPhotonCut.cxx
+/// \brief Source of class for phos photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+
+#include <Framework/Logger.h>
+
+#include <Rtypes.h>
 
 ClassImp(PHOSPhotonCut);
 

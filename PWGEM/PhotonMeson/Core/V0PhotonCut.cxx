@@ -9,15 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for v0 photon selection
-//
+/// \file V0PhotonCut.cxx
+/// \brief Source of class for V0 photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+
+#include <Framework/Logger.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <functional>
 #include <set>
 #include <utility>
-
-#include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 
 ClassImp(V0PhotonCut);
 
