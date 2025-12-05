@@ -89,7 +89,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfCandDstarMcRec, aod::HfSelDstarToD0Pi>>;
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
@@ -126,12 +126,34 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     rowsCommon.init(confDerData);
   }
 
+  /// prongTracks is the vector of daughter tracks
+  /// etaMin is the minimum eta
+  /// nItsClsMin is the minumum number of clusters in ITS
+  /// nTpcClsMin is the minumum number of clusters in TPC
+  template <typename Trk>
+  void getTrackingInfos(std::array<Trk, 3> const& prongTracks, float& etaMin, uint8_t& nItsClsMin, int16_t& nTpcClsMin)
+  {
+    etaMin = 10.f;
+    nItsClsMin = 100;
+    nTpcClsMin = 1000;
+
+    for (const auto& track : prongTracks) {
+      etaMin = std::min(etaMin, std::abs(track.eta()));
+      nItsClsMin = std::min(nItsClsMin, track.itsNCls());
+      nTpcClsMin = std::min(nTpcClsMin, track.tpcNClsCrossedRows());
+    }
+  }
+
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass, double invMassD0,
                            double y, int8_t flagMc, int8_t flagMcD0, int8_t origin, int8_t nTracksDecayed, double ptBhad, int pdgBhad, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
+      float absEtaTrackMin{-1.f};
+      uint8_t numItsClsMin{200u};
+      int16_t numTpcClsMin{1000};
+      getTrackingInfos(std::array{prong0, prong1, prongSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
       rowCandidatePar(
         candidate.pxD0(),
         candidate.pyD0(),
@@ -144,7 +166,10 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         candidate.normalisedImpParamSoftPi(),
         prongSoftPi.tpcNSigmaPi(),
         prongSoftPi.tofNSigmaPi(),
-        prongSoftPi.tpcTofNSigmaPi());
+        prongSoftPi.tpcTofNSigmaPi(),
+        absEtaTrackMin,
+        numItsClsMin,
+        numTpcClsMin);
     }
     if (fillCandidateParD0) {
       rowCandidateParD0(
@@ -251,11 +276,6 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       double ptBhadMotherPart = 0;
       int pdgBhadMotherPart = 0;
       for (const auto& candidate : candidatesThisColl) {
-        if constexpr (IsMl) {
-          if (!TESTBIT(candidate.isSelDstarToD0Pi(), aod::SelectionStep::RecoMl)) {
-            continue;
-          }
-        }
         if constexpr (IsMc) {
           flagMcRec = candidate.flagMcMatchRec();
           flagMcRecD0 = candidate.flagMcMatchRecD0();
