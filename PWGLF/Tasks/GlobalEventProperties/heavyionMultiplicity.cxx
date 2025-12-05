@@ -317,15 +317,15 @@ struct HeavyionMultiplicity {
       x->SetBinLabel(2, "MC events with reco event after event selection");
       x->SetBinLabel(3, "MC events with no reco events");
       histos.add("hgendndetaVscentGenwithNOreco", "dndeta vs impact parameter, gen events with no reco", kTH2F, {axisEtaExtended, impactParAxis});
-      histos.add("hgendndetaVscentGenwithReco"  , "dndeta vs impact parameter, gen events with at least one reco", kTH2F, {axisEtaExtended, impactParAxis});
-      
+      histos.add("hgendndetaVscentGenwithReco", "dndeta vs impact parameter, gen events with at least one reco", kTH2F, {axisEtaExtended, impactParAxis});
+
       histos.add("hMultEta05GenwithNoreco", "multiplicity in eta<0.5 of generated MC events, with no recoevent", kTH1F, {multAxis});
       histos.add("hMultEta05Gen", "multiplicity in eta<0.5 of generated MC events", kTH1F, {multAxis});
       histos.add("hMultEta05Rec", "multiplicity in eta<0.5 of selected MC events", kTH1F, {multAxis});
       histos.add("hMultEta05vsCentrRec", "multiplicity in eta<0.5 of selected MC events vs centrality", kTH2F, {axisCent, multAxis});
       histos.add("hgendndetaVsMultEta05BeforeEvtSel", "hgendndetaBeforeEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
       histos.add("hgendndetaVsMultEta05AfterEvtSel", "hgendndetaAfterEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
-    
+
       histos.add("hMultGen", "multiplicity of generated MC events", kTH1F, {axisFt0cMult});
       histos.add("hMultRec", "multiplicity of selected MC events", kTH1F, {axisFt0cMult});
       histos.add("hMultvsCentrRec", "multiplicity of selected MC events vs centrality", kTH2F, {axisCent, axisFt0cMult});
@@ -988,11 +988,11 @@ struct HeavyionMultiplicity {
     }
 
     for (const auto& particle : GenParticles) {
-      
+
       if (RecCols.size() == 0) {
-	      histos.fill(HIST("hgendndetaVscentGenwithNOreco"), particle.eta(), mcCollision.impactParameter());
+        histos.fill(HIST("hgendndetaVscentGenwithNOreco"), particle.eta(), mcCollision.impactParameter());
       } else {
-	      histos.fill(HIST("hgendndetaVscentGenwithReco"), particle.eta(), mcCollision.impactParameter());
+        histos.fill(HIST("hgendndetaVscentGenwithReco"), particle.eta(), mcCollision.impactParameter());
       }
 
       if (!isGenTrackSelected(particle)) {
