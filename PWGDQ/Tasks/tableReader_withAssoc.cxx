@@ -196,6 +196,7 @@ using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtend
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
 using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
+using MyEventsMultExtraZdcFit = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs, aod::ReducedFITs>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 using MyEventsMultExtraSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
@@ -204,8 +205,8 @@ using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended,
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsVtxCovSelectedQvectorWithHash = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::MixingHashes>;
-using MyEventsVtxCovZdcSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::EventCuts>;
-using MyEventsVtxCovZdcSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsVtxCovZdcSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts>;
+using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
@@ -235,7 +236,8 @@ constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::Re
 // New fillmap
 constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::CollisionQvect;
 constexpr static uint32_t gkEventFillMapWithMultExtraZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc;
-constexpr static uint32_t gkEventFillMapWithCovZdcMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedEventMultExtra;
+constexpr static uint32_t gkEventFillMapWithMultExtraZdcFit = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc | VarManager::ReducedFit;
+constexpr static uint32_t gkEventFillMapWithCovZdcFitMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedFit | VarManager::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
 // constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
 // constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
@@ -302,7 +304,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -538,6 +540,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithMultExtraZdc>(events);
     publishSelections<gkEventFillMapWithMultExtraZdc>(events);
   }
+  void processSkimmedWithMultExtraZdcFit(MyEventsMultExtraZdcFit const& events)
+  {
+    runEventSelection<gkEventFillMapWithMultExtraZdcFit>(events);
+    publishSelections<gkEventFillMapWithMultExtraZdcFit>(events);
+  }
   void processSkimmedWithQvectorCentr(MyEventsQvectorCentr const& events)
   {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
@@ -552,6 +559,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
@@ -3042,11 +3050,11 @@ struct AnalysisAsymmetricPairing {
     runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-  void processKaonPionSkimmedMultExtra(MyEventsVtxCovZdcSelectedMultExtra const& events,
+  void processKaonPionSkimmedMultExtra(MyEventsVtxCovZdcFitSelectedMultExtra const& events,
                                        soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                        MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdcMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+    runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdcFitMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
   void processKaonPionPionSkimmed(MyEventsVtxCovZdcSelected const& events,
@@ -3056,11 +3064,11 @@ struct AnalysisAsymmetricPairing {
     runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
-  void processKaonPionPionSkimmedMultExtra(MyEventsVtxCovZdcSelectedMultExtra const& events,
+  void processKaonPionPionSkimmedMultExtra(MyEventsVtxCovZdcFitSelectedMultExtra const& events,
                                            soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                            MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runThreeProng<true, gkEventFillMapWithCovZdcMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
+    runThreeProng<true, gkEventFillMapWithCovZdcFitMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
   void processProtonKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
