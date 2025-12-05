@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/HfMlResponseXic0ToXiPiKf.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -66,7 +67,7 @@ struct HfCandidateSelectorToXiPiQa {
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
   // KFParticle
   Produces<aod::HfSelToXiPiKf> hfSelToXiPiKf;
-  Produces<aod::HfMlToXiPiKf> hfMlToXiPiKf;
+  Produces<aod::HfMlToXiPi> hfMlToXiPiKf; // -> Suffix "kf" of table name was deleted
 
   // cuts from SelectorCuts.h
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_to_xi_pi::vecBinsPt}, "pT bin limits"};
