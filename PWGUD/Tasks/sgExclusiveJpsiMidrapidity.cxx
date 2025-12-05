@@ -185,7 +185,7 @@ struct SgExclusiveJpsiMidrapidity {
 
       for (const auto& t : tracks) {
         // Apply good track selection criteria
-        if (!sgSelector.trackselector(t, parameters))
+        if (!trackselector(t, parameters))
           continue;
 
         double dEdx = t.tpcSignal();
