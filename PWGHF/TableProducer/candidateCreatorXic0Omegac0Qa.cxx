@@ -98,7 +98,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Options for V0 building
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // ---------------------------------------------------------------------
-    Configurable<int> minCrossedRowsForV0Building{"minCrossedRowsV0", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
+    Configurable<int> minCrossedRowsForV0Building{"minCrossedRowsForV0Building", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
     Configurable<float> dcanegtopvForV0Building{"dcanegtopvForV0Building", .1, "DCV Neg to PV"};
     Configurable<float> dcapostopvForV0Building{"dcapostopvForV0Building", .1, "DCV Pos To PV"};
     Configurable<double> v0cospaForV0Building{"v0cospaForV0Building", 0.95, "V0 CosPA"};
@@ -109,7 +109,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // Options for internal cascade building
     // ...Initial values taken from PWGLF/Utiles/strangenessBuilderModule.h
     // --------------------------------------------------------------------
-    Configurable<int> minCrossedRowsForCascadeBuilding{"minCrossedRowsCascade", 50, "minimun TPC crossed rows for daughter tracks. Used for internal Cascade Building"};
+    Configurable<int> minCrossedRowsForCascadeBuilding{"minCrossedRowsForCascadeBuilding", 50, "minimun TPC crossed rows for daughter tracks. Used for internal Cascade Building"};
     Configurable<float> dcabachtopvForCascadeBuilding{"dcabachtopvForCascadeBuilding", .1, "DCV Bach to PV"};
     Configurable<float> cascradiusForCascadeBuilding{"cascradiusForCascadeBuilding", .1, "DCV Bach to PV"};
     Configurable<float> casccospaForCascadeBuilding{"casccospaForCascadeBuilding", 0.95, "Cascade CosPA"};
@@ -169,7 +169,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<float> maxPtCasc{"maxPtCasc", 20.0, "maximum value of cascade"};
 
     // For Prong0
-    Configurable<int> nBinMassProng0{"nBinMassPi", 100, "nBinMassPi"};
+    Configurable<int> nBinMassProng0{"nBinMassProng0", 100, "nBinMassPi"};
     Configurable<float> minMassProng0{"minMassProng0", 0.0, "ptPiMin"};
     Configurable<float> maxMassProng0{"maxMassProng0", 20.0, "ptPiMax"};
     Configurable<int> nBinPtProng0{"nBinPtProng0", 100, "nBinPtProng0"};
