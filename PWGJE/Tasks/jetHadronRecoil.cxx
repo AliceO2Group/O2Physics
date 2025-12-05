@@ -1047,7 +1047,7 @@ struct JetHadronRecoil {
       }
     }
     registry.fill(HIST("hZvtxSelected"), mccollision.posZ(), mccollision.weight());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, mccollision.weight(), collision.rho(), mccollision.ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, mccollision.weight(), mccollision.rho(), mccollision.ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeightedWithRhoSubtraction, "process MC matched with event weights (inc jets) and rho subtraction", false);
 
