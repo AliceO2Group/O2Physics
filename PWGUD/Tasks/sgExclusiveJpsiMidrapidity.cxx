@@ -41,14 +41,14 @@ struct SgExclusiveJpsiMidrapidity {
   SGSelector sgSelector;
 
   // Number of Selection cuts
-  const int numSelectionCuts = 16;
+  static constexpr int numSelectionCuts = 16;
 
   // Gapside rejection
-  const int gapSideLow = 0;
-  const int gapSideHigh = 2;
+  static constexpr int gapSideLow = 0;
+  static constexpr int gapSideHigh = 2;
 
   // Numbers for selections
-  const int two = 2;
+  static constexpr int two = 2;
 
   Configurable<float> fv0Cut{"fv0Cut", 100., "fv0aThreshold"};
   Configurable<float> ft0aCut{"ft0aCut", 100., "ft0aThreshold"};
@@ -174,7 +174,6 @@ struct SgExclusiveJpsiMidrapidity {
       //____________________________________________________________________________________
 
       // Create LorentzVector to store all tracks, Pion tracks and TPC Pion PID
-      std::vector<LorentzVector> allTracks;
       std::vector<LorentzVector> onlyPionTracks;
       std::vector<float> onlyPionSigma;
       std::vector<decltype(tracks.begin())> rawPionTracks;
@@ -186,7 +185,7 @@ struct SgExclusiveJpsiMidrapidity {
 
       for (const auto& t : tracks) {
         // Apply good track selection criteria
-        if (!trackselector(t, parameters))
+        if (!sgSelector.trackselector(t, parameters))
           continue;
 
         double dEdx = t.tpcSignal();
@@ -195,7 +194,6 @@ struct SgExclusiveJpsiMidrapidity {
 
         // Create Lorentz vector for this track (use constructor, portable)
         LorentzVector a(t.px(), t.py(), t.pz(), o2::constants::physics::MassPionCharged);
-        allTracks.push_back(a);
 
         // Apply TPC pion sigma
         auto nSigmaPi = t.tpcNSigmaPi();
@@ -251,18 +249,18 @@ struct SgExclusiveJpsiMidrapidity {
           if (rawPionTracks[0].sign() != rawPionTracks[1].sign()) {
 
             registry.fill(HIST("hSelectionCounter"), 7);
-            registry.fill(HIST("Pion/hMassUnlike"), p.M());
+            registry.fill(HIST("TwoPion/hMassUnlike"), p.M());
 
             // Flexible mass limits, can be selected in the configurable
             if ((p.M() > massMin) && (p.M() < massMax)) {
 
               registry.fill(HIST("hSelectionCounter"), 8);
 
-              registry.fill(HIST("Pion/hPt"), p.Pt());
-              registry.fill(HIST("Pion/hEta"), p.Eta());
-              registry.fill(HIST("Pion/hRap"), p.Rapidity());
-              registry.fill(HIST("Pion/hPhiSystem"), p.Phi());
-              registry.fill(HIST("Pion/hMPt"), p.M(), p.Pt());
+              registry.fill(HIST("TwoPion/hPt"), p.Pt());
+              registry.fill(HIST("TwoPion/hEta"), p.Eta());
+              registry.fill(HIST("TwoPion/hRap"), p.Rapidity());
+              registry.fill(HIST("TwoPion/hPhiSystem"), p.Phi());
+              registry.fill(HIST("TwoPion/hMPt"), p.M(), p.Pt());
 
               // flexible pt limit for selecting coherent Rho(0)
               if (p.Pt() < ptCoherent) {
@@ -270,27 +268,27 @@ struct SgExclusiveJpsiMidrapidity {
                 registry.fill(HIST("hSelectionCounter"), 9);
 
                 // Quality Control plots after coherent Rho(0) selection
-                registry.fill(HIST("Pion/hEta_t1"), onlyPionTracks[0].Eta());
-                registry.fill(HIST("Pion/hEta_t2"), onlyPionTracks[1].Eta());
-                registry.fill(HIST("Pion/hPtsingle_track1"), onlyPionTracks[0].Pt());
-                registry.fill(HIST("Pion/hPtsingle_track2"), onlyPionTracks[1].Pt());
+                registry.fill(HIST("TwoPion/hEta_t1"), onlyPionTracks[0].Eta());
+                registry.fill(HIST("TwoPion/hEta_t2"), onlyPionTracks[1].Eta());
+                registry.fill(HIST("TwoPion/hPtsingle_track1"), onlyPionTracks[0].Pt());
+                registry.fill(HIST("TwoPion/hPtsingle_track2"), onlyPionTracks[1].Pt());
 
-                registry.fill(HIST("Pion/hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
-                registry.fill(HIST("Pion/hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
-                registry.fill(HIST("Pion/hNsigElvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaEl());
-                registry.fill(HIST("Pion/hNsigElvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaEl());
-                registry.fill(HIST("Pion/hNsigEl1vsEl2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
+                registry.fill(HIST("TwoPion/hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
+                registry.fill(HIST("TwoPion/hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
+                registry.fill(HIST("TwoPion/hNsigElvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaEl());
+                registry.fill(HIST("TwoPion/hNsigElvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaEl());
+                registry.fill(HIST("TwoPion/hNsigEl1vsEl2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
 
-                registry.fill(HIST("Pion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
-                registry.fill(HIST("Pion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
-                registry.fill(HIST("Pion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
+                registry.fill(HIST("TwoPion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
+                registry.fill(HIST("TwoPion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
+                registry.fill(HIST("TwoPion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
 
-                registry.fill(HIST("Pion/Coherent/hMassUnlikeCoherent"), p.M());
+                registry.fill(HIST("TwoPion/Coherent/hMassUnlikeCoherent"), p.M());
               }
               // Incoherent Rho(0) selection
               if (p.Pt() > ptCoherent) {
                 registry.fill(HIST("hSelectionCounter"), 10);
-                registry.fill(HIST("Pion/Incoherent/hMassUnlikeInCoherent"), p.M());
+                registry.fill(HIST("TwoPion/Incoherent/hMassUnlikeInCoherent"), p.M());
               }
             }
           }
@@ -299,13 +297,13 @@ struct SgExclusiveJpsiMidrapidity {
           if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
 
             registry.fill(HIST("hSelectionCounter"), 11);
-            registry.fill(HIST("Pion/hMassLike"), p.M());
+            registry.fill(HIST("TwoPion/hMassLike"), p.M());
 
             // Mass limit
             if ((p.M() > massMin) && (p.M() < massMax)) {
 
               registry.fill(HIST("hSelectionCounter"), 12);
-              registry.fill(HIST("Pion/hPtLike"), p.Pt());
+              registry.fill(HIST("TwoPion/hPtLike"), p.Pt());
 
               // Coherent Rho(0) selection
               if (p.Pt() < ptCoherent) {
