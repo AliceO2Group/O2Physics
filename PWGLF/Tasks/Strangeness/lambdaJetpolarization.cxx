@@ -149,7 +149,8 @@ struct LfMyV0s {
     const AxisSpec axisPy{100, -10, 10, "#py (GeV/c)"};
     const AxisSpec axisPz{100, -10, 10, "#pz (GeV/c)"};
     const AxisSpec axisPT{200, 0, 50, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisPhi{100, -TMath::Pi(), TMath::Pi(), "#Phi"};
+    const AxisSpec axisPhi{200, -TMath::Pi(), TMath::Pi(), "#Phi"};
+    const AxisSpec axisDeltaPhi{200, 0, TMath::Pi(), "#Phi"};
     const AxisSpec axisTheta{100, -TMath::Pi(), TMath::Pi(), "#Theta"};
     const AxisSpec axisMass{100, 0.9, 1.0, "Mass(GeV/c^{2})"};
     const AxisSpec axisCostheta{100, -1, 1, "Cos(#theta^{*}_{p})"};
@@ -303,7 +304,7 @@ struct LfMyV0s {
     registryData.add("hprotonThetaInV0", "hprotonThetaInV0", kTH1F, {axisTheta});
     registryData.add("hprotonThetaInJetV0", "hprotonThetaInJetV0", kTH1F, {axisTheta});
 
-    registryData.add("LambdaQA/TH2FLambdaMassPhiInJet", "TH2FLambdaMassPhiInJet", kTH2F, {{200, -TMath::Pi(), TMath::Pi()}, {200, 0.9, 1.2}});
+    registryData.add("LambdaQA/TH2FLambdaMassPhiInJet", "TH2FLambdaMassPhiInJet", kTH2F, {{200, 0, TMath::Pi()}, {200, 0.9, 1.2}});
 
     // Lab frame measures
     registryData.add("LambdaQA/TH2FprotonCosThetaInLab", "TH2FprotonCosThetaInLab", kTH2F, {{200, 0.9, 1.2}, {200, -1.0, 1.0}});
@@ -324,8 +325,8 @@ struct LfMyV0s {
     registryData.add("LambdaQA/TH2FprotonCosThetaInJetV0", "TH2FprotonCosThetaInJetV0", kTH2F, {{200, 0.9, 1.2}, {200, -1.0, 1.0}});
     registryData.add("LambdaQA/TProfile1DprotonCosThetaInJetV0", "TProfile1DprotonCosThetaInJetV0", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("LambdaQA/TProfile1DprotonCos2ThetaInJetV0", "TProfile1DprotonCos2ThetaInJetV0", {HistType::kTProfile, {{200, 0.9, 1.2}}});
-    registryData.add("LambdaQA/TProfile2DprotonCosThetaInJetV0", "TProfile2DprotonCosThetaInJetV0", kTProfile2D, {TProfile2DaxisMass, axisPhi});
-    registryData.add("LambdaQA/TProfile2DprotonCos2ThetaInJetV0", "TProfile2DprotonCos2ThetaInJetV0", kTProfile2D, {TProfile2DaxisMass, axisPhi});
+    registryData.add("LambdaQA/TProfile2DprotonCosThetaInJetV0", "TProfile2DprotonCosThetaInJetV0", kTProfile2D, {TProfile2DaxisMass, axisDeltaPhi});
+    registryData.add("LambdaQA/TProfile2DprotonCos2ThetaInJetV0", "TProfile2DprotonCos2ThetaInJetV0", kTProfile2D, {TProfile2DaxisMass, axisDeltaPhi});
 
     registryData.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
