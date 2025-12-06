@@ -160,8 +160,6 @@ struct Kstar892LightIon {
   ConfigurableAxis binsImpactPar{"binsImpactPar", {100, 0, 25}, "Binning of the impact parameter axis"};
   ConfigurableAxis axisNch{"axisNch", {100, 0.0f, 100.0f}, "Number of charged particles in |y| < 0.5"};
 
-  Configurable<bool> indexCheck{"indexCheck", true, "Check if track2id < track1id matters"}; // check and remove
-
   enum MultEstimator {
     kFT0M,
     kFT0A,
@@ -199,28 +197,25 @@ struct Kstar892LightIon {
     hEventSelection.add("hOccupancy", "Occupancy distribution", kTH1F, {{1000, 0, 15000}});
 
     hEventSelection.add("hEventCut", "No. of event after cuts", kTH1D, {{20, 0, 20}});
-    std::shared_ptr<TH1> hCutFlow = hEventSelection.get<TH1>(HIST("hEventCut"));
-
     auto check = [](bool enabled) { return enabled ? "" : " #otimes"; }; // check if a cut is enabled and put #otimes beside that label if not enabled
-
     std::vector<std::string> eveCutLabels = {
       "All Events",
       Form("|Vz| < %.1f", selectionConfig.cfgVrtxZCut.value),
       "sel8",
       std::string("kNoTimeFrameBorder") + check(selectionConfig.isNoTimeFrameBorder.value),
       std::string("kNoITSROFrameBorder") + check(selectionConfig.isNoITSROFrameBorder.value),
+      std::string("kIsTriggerTVX") + check(selectionConfig.isTriggerTVX.value),
       std::string("kNoSameBunchPileup") + check(selectionConfig.isNoSameBunchPileup.value),
       std::string("kIsGoodITSLayersAll") + check(selectionConfig.isGoodITSLayersAll.value),
       std::string("kNoCollInTimeRangeStandard") + check(selectionConfig.isNoCollInTimeRangeStandard.value),
       Form("Occupancy < %.0f%s", selectionConfig.cfgOccCut.value, check(selectionConfig.isApplyOccCut.value)),
       std::string("rctChecker") + check(rctCut.requireRCTFlagChecker.value),
-      std::string("kIsTriggerTVX") + check(selectionConfig.isTriggerTVX.value),
       std::string("kIsGoodZvtxFT0vsPV") + check(selectionConfig.isGoodZvtxFT0vsPV.value),
       std::string("isVertexITSTPC") + check(selectionConfig.isVertexITSTPC.value),
       std::string("isVertexTOFMatched") + check(selectionConfig.isVertexTOFMatched.value)};
     // assign labels
     for (size_t i = 0; i < eveCutLabels.size(); ++i) {
-      hCutFlow->GetXaxis()->SetBinLabel(i + 1, eveCutLabels[i].c_str());
+      hEventSelection.get<TH1>(HIST("hEventCut"))->GetXaxis()->SetBinLabel(i + 1, eveCutLabels[i].c_str());
     }
 
     // for primary tracksbinsCentPlot
@@ -280,6 +275,7 @@ struct Kstar892LightIon {
 
     // MC histograms
     if (doprocessGen) {
+      hMC.add("Gen/hGenNo", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
       hMC.add("Gen/hk892GenpT", "pT distribution of True MC K(892)0", kTH2F, {ptAxis, centralityAxis});
       hMC.add("Gen/hk892GenpT2", "pT distribution of True MC K(892)0", kTH2F, {ptAxis, centralityAxis});
       hMC.add("Gen/h1genmass", "Invariant mass of generated kstar meson", kTH1F, {invmassAxis});
@@ -351,32 +347,32 @@ struct Kstar892LightIon {
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 4);
 
-    if (selectionConfig.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
+    if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 5);
 
-    if (selectionConfig.isGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    if (selectionConfig.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 6);
 
-    if (selectionConfig.isNoCollInTimeRangeStandard && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
+    if (selectionConfig.isGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 7);
 
-    if (selectionConfig.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > selectionConfig.cfgOccCut))
+    if (selectionConfig.isNoCollInTimeRangeStandard && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 8);
 
-    if (rctCut.requireRCTFlagChecker && !rctChecker(collision))
+    if (selectionConfig.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > selectionConfig.cfgOccCut))
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 9);
 
-    if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision))
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 10);
@@ -1048,6 +1044,9 @@ struct Kstar892LightIon {
     centrality = -1.0;
 
     for (const auto& collision : collisions) {
+
+      hMC.fill(HIST("Gen/hGenNo"), 0.5);
+
       if (!selectionEvent(collision, false)) { // don't fill event cut histogram
         continue;
       }
@@ -1084,6 +1083,7 @@ struct Kstar892LightIon {
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
+    hMC.fill(HIST("Gen/hGenNo"), 1.5);
 
     hMC.fill(HIST("Gen/hAllGenCollisions1Rec"), centrality);
 
@@ -1186,10 +1186,7 @@ struct Kstar892LightIon {
         continue;
       }
 
-      if (track1.index() == track2.index())
-        continue;
-
-      if (indexCheck && (track2.index() < track1.index()))
+      if (track1.index() <= track2.index())
         continue;
 
       if (!selectionPair(track1, track2)) {
@@ -1407,7 +1404,21 @@ struct Kstar892LightIon {
 
     float centrality = 100.5f;
     for (auto const& collision : collisions) {
-      centrality = collision.centFT0M();
+
+      if (!selectionEvent(collision, false)) // don't fill event cut histogram
+        continue;
+
+      if (selectCentEstimator == kFT0M) {
+        centrality = collision.centFT0M();
+      } else if (selectCentEstimator == kFT0A) {
+        centrality = collision.centFT0A();
+      } else if (selectCentEstimator == kFT0C) {
+        centrality = collision.centFT0C();
+      } else if (selectCentEstimator == kFV0A) {
+        centrality = collision.centFV0A();
+      } else {
+        centrality = collision.centFT0M(); // default
+      }
     }
 
     hMC.fill(HIST("CorrFactors/hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta08());
