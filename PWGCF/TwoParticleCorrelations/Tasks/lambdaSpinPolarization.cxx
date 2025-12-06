@@ -155,8 +155,8 @@ DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);
 
 DECLARE_SOA_TABLE(LambdaMixEventCollisions, "AOD", "LAMBDAMIXCOLS", o2::soa::Index<>,
                   lambdamixeventcollision::CollisionIndex,
-                  aod::Collision::PosZ,
-                  lambdacollision::Cent);
+                  lambdacollision::Cent,
+                  aod::Collision::PosZ);
 
 using LambdaMixEventCollision = LambdaMixEventCollisions::iterator;
 
