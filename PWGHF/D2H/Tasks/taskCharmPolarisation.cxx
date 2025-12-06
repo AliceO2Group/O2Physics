@@ -17,13 +17,12 @@
 /// \author M. Faggin (CERN) mattia.faggin@cern.ch
 /// \author M. Li (CCNU) mingze.li@cern.ch
 
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "Common/Core/EventPlaneHelper.h"
@@ -221,7 +220,7 @@ struct HfTaskCharmPolarisation {
 
   SliceCache cache;
   EventPlaneHelper epHelper; // event plane helper
-  HfEventSelection hfEvSel; // event selection and monitoring
+  HfEventSelection hfEvSel;  // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
