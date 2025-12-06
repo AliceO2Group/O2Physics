@@ -19,6 +19,7 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -59,6 +60,7 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
+using namespace o2::analysis::hf_flow_utils;
 
 namespace o2::aod
 {
@@ -98,20 +100,12 @@ enum DecayChannel { DplusToPiKPi = 0,
                     Xic0ToXiPi
 };
 
-enum QvecEstimator { FV0A = 0,
-                     FT0M,
-                     FT0A,
-                     FT0C,
-                     TPCPos,
-                     TPCNeg,
-                     TPCTot };
-
 struct HfTaskFlowCharmHadrons {
   Produces<o2::aod::HfCandMPtInfos> rowCandMassPtMl;
   Produces<o2::aod::HfCandFlowInfos> rowCandMassPtMlSpCent;
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
-  Configurable<int> qvecDetector{"qvecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
+  Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality accepted in SP/EP computation (not applied in resolution process)"};
@@ -307,7 +301,8 @@ struct HfTaskFlowCharmHadrons {
         registry.add("spReso/hSparseReso", "THn for resolution with occupancy", HistType::kTHnSparseF, axesReso);
       }
 
-      hfEvSel.addHistograms(registry); // collision monitoring
+      int dummyVariable;
+      hfEvSel.init(registry, dummyVariable);
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -324,17 +319,17 @@ struct HfTaskFlowCharmHadrons {
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
                       const float amplQVec,
-                      QvecEstimator qvecDetector)
+                      QvecEstimator qVecDetector)
   {
     auto addProngIfInSubevent = [&](float px, float py, float pz) {
       const std::array<float, 3> pVec{px, py, pz};
       const float eta = RecoDecay::eta(pVec);
 
       // only subtract daughters that actually contributed to THIS subevent Q
-      if (qvecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+      if (qVecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
         return;
       }
-      if (qvecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+      if (qVecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
         return;
       }
       // for TPCTot: no early return, all prongs contribute
@@ -366,16 +361,16 @@ struct HfTaskFlowCharmHadrons {
                          std::vector<float>& tracksQx,
                          std::vector<float>& tracksQy,
                          float amplQVec,
-                         QvecEstimator qvecDetector)
+                         QvecEstimator qVecDetector)
   {
     auto addProngIfInSubevent = [&](float px, float py, float pz) {
       const std::array<float, 3> pVec{px, py, pz};
       const float eta = RecoDecay::eta(pVec);
 
-      if (qvecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
+      if (qVecDetector == QvecEstimator::TPCPos && eta <= 0.f) {
         return;
       }
-      if (qvecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
+      if (qVecDetector == QvecEstimator::TPCNeg && eta >= 0.f) {
         return;
       }
 
@@ -390,16 +385,6 @@ struct HfTaskFlowCharmHadrons {
     addProngIfInSubevent(cand.pxNegV0Dau(), cand.pyNegV0Dau(), cand.pzNegV0Dau());
     addProngIfInSubevent(cand.pxBachFromCasc(), cand.pyBachFromCasc(), cand.pzBachFromCasc());
     addProngIfInSubevent(cand.pxBachFromCharmBaryon(), cand.pyBachFromCharmBaryon(), cand.pzBachFromCharmBaryon());
-  }
-  /// Compute the delta psi in the range [0, pi/harmonic]
-  /// \param psi1 is the first angle
-  /// \param psi2 is the second angle
-  /// \note Ported from AliAnalysisTaskSECharmHadronvn::GetDeltaPsiSubInRange
-  float getDeltaPsiInRange(float psi1, float psi2)
-  {
-    float deltaPsi = psi1 - psi2;
-    deltaPsi = RecoDecay::constrainAngle(deltaPsi, -o2::constants::math::PI / harmonic, harmonic);
-    return deltaPsi;
   }
 
   /// Get the event selection flags
@@ -504,54 +489,6 @@ struct HfTaskFlowCharmHadrons {
     return rejectionMask == 0;
   }
 
-  /// Get the Q vector
-  /// \param collision is the collision with the Q vector information
-  std::vector<float> getQvec(CollsWithQvecs::iterator const& collision)
-  {
-    float xQVec = -999.;
-    float yQVec = -999.;
-    float amplQVec = -999.;
-    switch (qvecDetector) {
-      case QvecEstimator::FV0A:
-        xQVec = collision.qvecFV0ARe();
-        yQVec = collision.qvecFV0AIm();
-        break;
-      case QvecEstimator::FT0M:
-        xQVec = collision.qvecFT0MRe();
-        yQVec = collision.qvecFT0MIm();
-        break;
-      case QvecEstimator::FT0A:
-        xQVec = collision.qvecFT0ARe();
-        yQVec = collision.qvecFT0AIm();
-        break;
-      case QvecEstimator::FT0C:
-        xQVec = collision.qvecFT0CRe();
-        yQVec = collision.qvecFT0CIm();
-        break;
-      case QvecEstimator::TPCPos:
-        xQVec = collision.qvecBPosRe();
-        yQVec = collision.qvecBPosIm();
-        amplQVec = collision.nTrkBPos();
-        break;
-      case QvecEstimator::TPCNeg:
-        xQVec = collision.qvecBNegRe();
-        yQVec = collision.qvecBNegIm();
-        amplQVec = collision.nTrkBNeg();
-        break;
-      case QvecEstimator::TPCTot:
-        xQVec = collision.qvecBTotRe();
-        yQVec = collision.qvecBTotIm();
-        amplQVec = collision.nTrkBTot();
-        break;
-      default:
-        LOG(warning) << "Q vector estimator not valid. Please choose between FV0A, FT0M, FT0A, FT0C, TPC Pos, TPC Neg. Fallback to FV0A";
-        xQVec = collision.qvecFV0ARe();
-        yQVec = collision.qvecFV0AIm();
-        break;
-    }
-    return {xQVec, yQVec, amplQVec};
-  }
-
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
@@ -571,7 +508,7 @@ struct HfTaskFlowCharmHadrons {
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
 
-    std::vector<float> qVecs = getQvec(collision);
+    std::array<float, 3> qVecs = getQvec(collision, qVecDetector.value);
     float xQVec = qVecs[0];
     float yQVec = qVecs[1];
     float const amplQVec = qVecs[2];
@@ -696,18 +633,18 @@ struct HfTaskFlowCharmHadrons {
       }
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the corresponding TPC Q vector to avoid self-correlations
-      if (qvecDetector == QvecEstimator::TPCNeg ||
-          qvecDetector == QvecEstimator::TPCPos ||
-          qvecDetector == QvecEstimator::TPCTot) {
+      if (qVecDetector == QvecEstimator::TPCNeg ||
+          qVecDetector == QvecEstimator::TPCPos ||
+          qVecDetector == QvecEstimator::TPCTot) {
 
         std::vector<float> tracksQx;
         std::vector<float> tracksQy;
 
         // IMPORTANT: use the ORIGINAL amplitude used to build this Q-vector
         if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
-          getQvecXic0Tracks(candidate, tracksQx, tracksQy, amplQVec, static_cast<QvecEstimator>(qvecDetector.value));
+          getQvecXic0Tracks(candidate, tracksQx, tracksQy, amplQVec, static_cast<QvecEstimator>(qVecDetector.value));
         } else {
-          getQvecDtracks<Channel>(candidate, tracksQx, tracksQy, amplQVec, static_cast<QvecEstimator>(qvecDetector.value));
+          getQvecDtracks<Channel>(candidate, tracksQx, tracksQy, amplQVec, static_cast<QvecEstimator>(qVecDetector.value));
         }
 
         // subtract daughters' contribution from the (normalized) Q-vector
@@ -928,23 +865,23 @@ struct HfTaskFlowCharmHadrons {
       float const epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
       float const epBTots = epHelper.GetEventPlane(xQVecBTot, yQVecBTot, harmonic);
 
-      registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a)));
-      registry.fill(HIST("epReso/hEpResoFT0cFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFV0a)));
-      registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFT0cTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBTots)));
-      registry.fill(HIST("epReso/hEpResoFT0aFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epFV0a)));
-      registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFT0aTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBTots)));
-      registry.fill(HIST("epReso/hEpResoFT0mFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epFV0a)));
-      registry.fill(HIST("epReso/hEpResoFT0mTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFT0mTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBTots)));
-      registry.fill(HIST("epReso/hEpResoFV0aTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBPoss)));
-      registry.fill(HIST("epReso/hEpResoFV0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFV0aTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBTots)));
-      registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs)));
+      registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0cFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFV0a, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBPoss, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBNegs, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0cTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBTots, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0aFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epFV0a, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBPoss, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBNegs, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0aTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBTots, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0mFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epFV0a, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0mTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBPoss, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBNegs, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFT0mTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBTots, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFV0aTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBPoss, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFV0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs, harmonic)));
+      registry.fill(HIST("epReso/hEpResoFV0aTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBTots, harmonic)));
+      registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs, harmonic)));
     }
 
     if (storeEpCosSin) {

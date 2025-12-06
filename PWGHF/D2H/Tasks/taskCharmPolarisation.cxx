@@ -20,8 +20,10 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/D2H/Utils/utilsFlow.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
@@ -62,6 +64,9 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_centrality;
+using namespace o2::hf_evsel;
+using namespace o2::analysis::hf_flow_utils;
 
 namespace o2::aod
 {
@@ -214,11 +219,13 @@ struct HfTaskCharmPolarisation {
   Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
 
   SliceCache cache;
-  EventPlaneHelper epHelper;
+  EventPlaneHelper epHelper; // event plane helper
+  HfEventSelection hfEvSel;  // event selection and monitoring
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
   using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
-  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
@@ -359,9 +366,9 @@ struct HfTaskCharmPolarisation {
     minInvMass = invMassBins.front();
     maxInvMass = invMassBins.back();
 
-    registry.add("hNumPvContributorsAll", "Number of PV contributors for all events ;num. PV contributors; counts", HistType::kTH1F, {thnAxisNumPvContributors});
-    registry.add("hNumPvContributorsCand", "Number of PV contributors for events with candidates;num. PV contributors; counts", HistType::kTH1F, {thnAxisNumPvContributors});
-    registry.add("hNumPvContributorsCandInMass", "Number of PV contributors for events with candidates in the signal region;num. PV contributors; counts", HistType::kTH1F, {thnAxisNumPvContributors});
+    registry.add("hNumPvContributorsAll", "Number of PV contributors for all events ;num. PV contributors; counts", HistType::kTH1D, {thnAxisNumPvContributors});
+    registry.add("hNumPvContributorsCand", "Number of PV contributors for events with candidates;num. PV contributors; counts", HistType::kTH1D, {thnAxisNumPvContributors});
+    registry.add("hNumPvContributorsCandInMass", "Number of PV contributors for events with candidates in the signal region;num. PV contributors; counts", HistType::kTH1D, {thnAxisNumPvContributors});
     if (doprocessDstarInPbPb || doprocessDstarMcInPbPb || doprocessDstarWithMlInPbPb || doprocessDstarMcWithMlInPbPb) {
       registry.add("hCentrality", "Centrality distribution for D*+ candidates;centrality (%); counts", HistType::kTH1D, {thnAxisCentrality});
     }
@@ -669,6 +676,38 @@ struct HfTaskCharmPolarisation {
       registry.add("hMass2PairsLcPKPi", "THnSparse to monitor M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi", HistType::kTHnSparseF, {thnAxisInvMass2KPiLcMonitoring, thnAxisInvMass2PKLcMonitoring, thnAxisInvMass2PPiLcMonitoring, thnAxisPt});
     }
 
+    /// Event-plane related histograms
+    if (doprocessResolEventPlane) {
+      const AxisSpec axisCosDeltaPhi{{1000, -1., 1.}, "cos(2(#Psi_{2}(A) #minus #Psi_{2}(B)))"};
+      const AxisSpec axisPsi{{180, 0., o2::constants::math::PI}, "#Psi_{2}"};
+
+      registry.add("resolEvPlane/hEvPlaneAngleFV0A", ";centrality;#Psi_{2} (FV0A)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+      registry.add("resolEvPlane/hEvPlaneAngleFT0A", ";centrality;#Psi_{2} (FT0A)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+      registry.add("resolEvPlane/hEvPlaneAngleFT0C", ";centrality;#Psi_{2} (FT0C)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+      registry.add("resolEvPlane/hEvPlaneAngleFT0M", ";centrality;#Psi_{2} (FT0M)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+      registry.add("resolEvPlane/hEvPlaneAngleTPCpos", ";centrality;#Psi_{2} (TPC pos)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+      registry.add("resolEvPlane/hEvPlaneAngleTPCneg", ";centrality;#Psi_{2} (TPC neg)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+      registry.add("resolEvPlane/hEvPlaneAngleTPCtot", ";centrality;#Psi_{2} (TPC)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
+
+      registry.add("resolEvPlane/hResolEvPlaneFT0CFT0A", "hResolEvPlaneFT0CFT0A; centrality; cos(2(#Psi_{2}(FT0C) #minus #Psi_{2}(FT0A)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0CFV0A", "hResolEvPlaneFT0CFV0A; centrality; cos(2(#Psi_{2}(FT0C) #minus #Psi_{2}(FV0A)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0CTPCpos", "hResolEvPlaneFT0CTPCpos; centrality; cos(2(#Psi_{2}(FT0C) #minus #Psi_{2}(TPC pos)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0CTPCneg", "hResolEvPlaneFT0CTPCneg; centrality; cos(2(#Psi_{2}(FT0C) #minus #Psi_{2}(TPC neg)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0CTPCtot", "hResolEvPlaneFT0CTPCtot; centrality; cos(2(#Psi_{2}(FT0C) #minus #Psi_{2}(TPC tot)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0AFV0A", "hResolEvPlaneFT0AFV0A; centrality; cos(2(#Psi_{2}(FT0A) #minus #Psi_{2}(FV0A)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0ATPCpos", "hResolEvPlaneFT0ATPCpos; centrality; cos(2(#Psi_{2}(FT0A) #minus #Psi_{2}(TPC pos)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0ATPCneg", "hResolEvPlaneFT0ATPCneg; centrality; cos(2(#Psi_{2}(FT0A) #minus #Psi_{2}(TPC neg)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0ATPCtot", "hResolEvPlaneFT0ATPCtot; centrality; cos(2(#Psi_{2}(FT0A) #minus #Psi_{2}(TPC)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0MFV0A", "hResolEvPlaneFT0MFV0A; centrality; cos(2(#Psi_{2}(FV0A) #minus #Psi_{2}(FV0A)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0MTPCpos", "hResolEvPlaneFT0MTPCpos; centrality; cos(2(#Psi_{2}(FT0M) #minus #Psi_{2}(TPC pos)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0MTPCneg", "hResolEvPlaneFT0MTPCneg; centrality; cos(2(#Psi_{2}(FT0M) #minus #Psi_{2}(TPC neg)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFT0MTPCtot", "hResolEvPlaneFT0MTPCtot; centrality; cos(2(#Psi_{2}(FT0M) #minus #Psi_{2}(TPC tot)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFV0ATPCpos", "hResolEvPlaneFV0ATPCpos; centrality; cos(2(#Psi_{2}(FV0A) #minus #Psi_{2}(TPC pos)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFV0ATPCneg", "hResolEvPlaneFV0ATPCneg; centrality; cos(2(#Psi_{2}(FV0A) #minus #Psi_{2}(TPC neg)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneFV0ATPCtot", "hResolEvPlaneFV0ATPCtot; centrality; cos(2(#Psi_{2}(FV0A) #minus #Psi_{2}(TPC)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+      registry.add("resolEvPlane/hResolEvPlaneTPCposTPCneg", "hResolEvPlaneTPCposTPCneg; centrality; cos(2(#Psi_{2}(TPC pos) #minus #Psi_{2}(TPC neg)))", {HistType::kTH2F, {thnAxisCentrality, axisCosDeltaPhi}});
+    }
+
     // inv. mass hypothesis to loop over
     // e.g.: Lc->pKpi has the ambiguity pKpi vs. piKp
     if (doprocessLcToPKPi || doprocessLcToPKPiWithMl) {
@@ -678,6 +717,13 @@ struct HfTaskCharmPolarisation {
       nMassHypos = 1;
     }
 
+    if (doprocessResolEventPlane) {
+      int dummyVariable;
+      hfEvSel.init(registry, dummyVariable);
+      ccdb->setURL("http://alice-ccdb.cern.ch");
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+    }
   }; // end init
 
   /// \param invMassCharmHad is the invariant-mass of the candidate
@@ -1472,36 +1518,6 @@ struct HfTaskCharmPolarisation {
         nTpcClsMin = track.tpcNClsCrossedRows();
       }
     }
-  }
-
-  /// Get the Q vector
-  /// \param collision is the collision with the Q vector information
-  template <typename Coll>
-  std::vector<float> getQVec(Coll const& collision)
-  {
-    float xQVec = -999.;
-    float yQVec = -999.;
-    float const amplQVec = -999.;
-    switch (qVecDetector) {
-      case charm_polarisation::QvecEstimator::FV0A:
-        xQVec = collision.qvecFV0ARe();
-        yQVec = collision.qvecFV0AIm();
-        break;
-      case charm_polarisation::QvecEstimator::FT0M:
-        xQVec = collision.qvecFT0MRe();
-        yQVec = collision.qvecFT0MIm();
-        break;
-      case charm_polarisation::QvecEstimator::FT0C:
-        xQVec = collision.qvecFT0CRe();
-        yQVec = collision.qvecFT0CIm();
-        break;
-      default:
-        LOG(warning) << "Q vector estimator not valid. Please choose between FV0A, FT0M, FT0A, FT0C, TPC Pos, TPC Neg. Fallback to FV0A";
-        xQVec = collision.qvecFV0ARe();
-        yQVec = collision.qvecFV0AIm();
-        break;
-    }
-    return {xQVec, yQVec, amplQVec};
   }
 
   /// \param candidates are the selected candidates
@@ -2308,7 +2324,7 @@ struct HfTaskCharmPolarisation {
                           TracksWithExtra const& tracks)
   {
     for (const auto& collision : collisions) {
-      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2319,7 +2335,7 @@ struct HfTaskCharmPolarisation {
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
-      std::vector<float> const qVecs = getQVec(collision);
+      std::array<float, 3> const qVecs = getQvec(collision, qVecDetector.value);
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
@@ -2337,7 +2353,7 @@ struct HfTaskCharmPolarisation {
                                 TracksWithExtra const& tracks)
   {
     for (const auto& collision : collisions) {
-      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2348,7 +2364,7 @@ struct HfTaskCharmPolarisation {
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
-      std::vector<float> const qVecs = getQVec(collision);
+      std::array<float, 3> const qVecs = getQvec(collision, qVecDetector.value);
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
@@ -2370,7 +2386,7 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2395,7 +2411,7 @@ struct HfTaskCharmPolarisation {
     }
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
-      const auto cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+      const auto cent = getCentralityGenColl(recoCollsPerMcColl, centEstimator);
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
     }
   }
@@ -2410,7 +2426,7 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-      const auto centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      const auto centrality = getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         continue; // skip this collision if outside of the centrality range
       }
@@ -2435,7 +2451,7 @@ struct HfTaskCharmPolarisation {
     }
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
-      const auto cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+      const auto cent = getCentralityGenColl(recoCollsPerMcColl, centEstimator);
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
     }
   }
@@ -2579,6 +2595,52 @@ struct HfTaskCharmPolarisation {
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiBackgroundMcWithMl, "Process Lc candidates in MC with ML w/o mcCollision grouping", false);
+
+  // Event-plane resolution
+  void processResolEventPlane(CollsWithQVecs::iterator const& collision,
+                              aod::BCsWithTimestamps const&)
+  {
+    float centrality{-1.f};
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    if (rejectionMask != 0) {
+      return;
+    }
+    centrality = getCentralityColl(collision, CentralityEstimator::FT0C);
+
+    float const psiFT0a = epHelper.GetEventPlane(collision.qvecFT0ARe(), collision.qvecFT0AIm(), 2);
+    float const psiFT0c = epHelper.GetEventPlane(collision.qvecFT0CRe(), collision.qvecFT0CIm(), 2);
+    float const psiFT0m = epHelper.GetEventPlane(collision.qvecFT0MRe(), collision.qvecFT0MIm(), 2);
+    float const psiFV0a = epHelper.GetEventPlane(collision.qvecFV0ARe(), collision.qvecFV0AIm(), 2);
+    float const psiBPoss = epHelper.GetEventPlane(collision.qvecBPosRe(), collision.qvecBPosIm(), 2);
+    float const psiBNegs = epHelper.GetEventPlane(collision.qvecBNegRe(), collision.qvecBNegIm(), 2);
+    float const psiBTots = epHelper.GetEventPlane(collision.qvecBTotRe(), collision.qvecBTotIm(), 2);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleFV0A"), centrality, psiFV0a);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleFT0A"), centrality, psiFT0a);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleFT0C"), centrality, psiFT0c);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleFT0M"), centrality, psiFT0m);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleTPCpos"), centrality, psiBPoss);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleTPCneg"), centrality, psiBNegs);
+    registry.fill(HIST("resolEvPlane/hEvPlaneAngleTPCtot"), centrality, psiBTots);
+
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0CFT0A"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0c, psiFT0a, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0CFV0A"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0c, psiFV0a, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0CTPCpos"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0c, psiBPoss, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0CTPCneg"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0c, psiBNegs, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0CTPCtot"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0c, psiBTots, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0AFV0A"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0a, psiFV0a, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0ATPCpos"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0a, psiBPoss, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0ATPCneg"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0a, psiBNegs, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0ATPCtot"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0a, psiBTots, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0MFV0A"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0m, psiFV0a, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0MTPCpos"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0m, psiBPoss, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0MTPCneg"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0m, psiBNegs, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFT0MTPCtot"), centrality, std::cos(2 * getDeltaPsiInRange(psiFT0m, psiBTots, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFV0ATPCpos"), centrality, std::cos(2 * getDeltaPsiInRange(psiFV0a, psiBPoss, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFV0ATPCneg"), centrality, std::cos(2 * getDeltaPsiInRange(psiFV0a, psiBNegs, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneFV0ATPCtot"), centrality, std::cos(2 * getDeltaPsiInRange(psiFV0a, psiBTots, 2)));
+    registry.fill(HIST("resolEvPlane/hResolEvPlaneTPCposTPCneg"), centrality, std::cos(2 * getDeltaPsiInRange(psiBPoss, psiBNegs, 2)));
+  }
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processResolEventPlane, "Process event-plane resolution", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
