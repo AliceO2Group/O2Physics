@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file utilsFLow.h
+/// \file utilsFlow.h
 /// \brief Utilities for flow analyses
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
