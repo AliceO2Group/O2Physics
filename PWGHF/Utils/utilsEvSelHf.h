@@ -254,7 +254,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   /// \brief Inits the HF event selection object
   /// \param registry reference to the histogram registry
-  template<typename T>
+  template <typename T>
   void init(o2::framework::HistogramRegistry& registry, T& zorroSummary)
   {
     // we initialise the RCT checker
