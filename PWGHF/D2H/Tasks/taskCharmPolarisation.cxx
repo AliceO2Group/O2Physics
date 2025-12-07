@@ -678,8 +678,8 @@ struct HfTaskCharmPolarisation {
 
     /// Event-plane related histograms
     if (doprocessResolEventPlane) {
-      const AxisSpec axisCosDeltaPhi{{1000, -1., 1.}, "cos(2(#Psi_{2}(A) #minus #Psi_{2}(B)))"};
-      const AxisSpec axisPsi{{180, 0., o2::constants::math::PI}, "#Psi_{2}"};
+      const AxisSpec axisCosDeltaPhi{1000, -1., 1., "cos(2(#Psi_{2}(A) #minus #Psi_{2}(B)))"};
+      const AxisSpec axisPsi{180, 0., o2::constants::math::PI, "#Psi_{2}"};
 
       registry.add("resolEvPlane/hEvPlaneAngleFV0A", ";centrality;#Psi_{2} (FV0A)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
       registry.add("resolEvPlane/hEvPlaneAngleFT0A", ";centrality;#Psi_{2} (FT0A)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
