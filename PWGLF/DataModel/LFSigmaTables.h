@@ -482,7 +482,7 @@ namespace sigma0Gen
 DECLARE_SOA_COLUMN(IsSigma0, isSigma0, bool); // true: sigma0, false: antisigma0
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 DECLARE_SOA_COLUMN(MCPt, mcpt, float); // MC pT
-DECLARE_SOA_COLUMN(MCY, mcy, float); // MC Y
+DECLARE_SOA_COLUMN(MCY, mcy, float);   // MC Y
 
 } // namespace sigma0Gen
 
@@ -862,7 +862,7 @@ namespace pi0Gen
 {
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 DECLARE_SOA_COLUMN(MCPt, mcpt, float); // MC pT
-DECLARE_SOA_COLUMN(MCY, mcy, float); // MC Y
+DECLARE_SOA_COLUMN(MCY, mcy, float);   // MC Y
 } // namespace pi0Gen
 
 DECLARE_SOA_TABLE(Pi0Gens, "AOD", "PI0GENS",
