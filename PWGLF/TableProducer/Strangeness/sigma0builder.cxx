@@ -51,6 +51,7 @@
 #include <TPDGCode.h>
 #include <TProfile.h>
 
+#include <vector>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -1961,3 +1962,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigma0builder>(cfgc)};
 }
+

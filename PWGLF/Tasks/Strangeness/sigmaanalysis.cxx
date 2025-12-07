@@ -49,6 +49,8 @@
 #include <TPDGCode.h>
 #include <TProfile.h>
 
+#include <vector>
+#include <unordered_map>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -130,6 +132,7 @@ struct sigmaanalysis {
     Configurable<float> mc_rapidityMin{"mc_rapidityMin", -0.5, "Min generated particle rapidity"};
     Configurable<float> mc_rapidityMax{"mc_rapidityMax", 0.5, "Max generated particle rapidity"};
   } genSelections;
+  
 
   // QA
   Configurable<bool> fdoSigma0QA{"doSigma0QA", false, "if true, perform Sigma0 QA analysis. Only works with MC."};
@@ -549,7 +552,8 @@ struct sigmaanalysis {
         histos.add("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt", "h2dGenAntiSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenSigma0VsMultMC", "h2dGenSigma0VsMultMC", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenAntiSigma0VsMultMC", "h2dGenAntiSigma0VsMultMC", kTH2D, {axisNch, axisPt});
-      }
+
+      } 
       if (doprocessPi0GeneratedRun3) { // Pi0 specific
         histos.add("Gen/h2dGenPi0VsMultMC_RecoedEvt", "h2dGenPi0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenPi0", "h2dGenPi0", kTH2D, {axisCentrality, axisPt});
@@ -1221,7 +1225,7 @@ struct sigmaanalysis {
                                                            "TPCTOFPID", "DCADauToPV", "Mass"};
 
     if (PDGRequired == 22) {
-      if constexpr (selection_index >= 0 && selection_index < (int)std::size(PhotonSelsLocal)) {
+      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(PhotonSelsLocal))) {
         histos.fill(HIST("Selection/Photon/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Photon/h2d") + HIST(PhotonSelsLocal[selection_index]), sigma.photonPt(), sigma.photonMass());
         histos.fill(HIST("Selection/Sigma0/h2dPhoton") + HIST(PhotonSelsLocal[selection_index]), sigma.pt(), sigma.sigma0Mass());
@@ -1229,7 +1233,7 @@ struct sigmaanalysis {
     }
 
     if (PDGRequired == 3122) {
-      if constexpr (selection_index >= 0 && selection_index < (int)std::size(LambdaSelsLocal)) {
+      if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(LambdaSelsLocal))) {
         histos.fill(HIST("Selection/Lambda/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Lambda/h2d") + HIST(LambdaSelsLocal[selection_index]), sigma.lambdaPt(), sigma.lambdaMass());
         histos.fill(HIST("Selection/Sigma0/h2dLambda") + HIST(LambdaSelsLocal[selection_index]), sigma.pt(), sigma.sigma0Mass());
@@ -1263,9 +1267,8 @@ struct sigmaanalysis {
       auto sigma0mc = fullSigma0s.rawIteratorAt(sigma0Index[mcid]);
       histos.fill(HIST("Sigma0QA/hDuplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
 
-      if (sigma0mc.isSigma0()) {
-      }
-      histos.fill(HIST("Sigma0QA/hSigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
+      if (sigma0mc.isSigma0()) 
+        histos.fill(HIST("Sigma0QA/hSigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
 
       if (sigma0mc.isAntiSigma0())
         histos.fill(HIST("Sigma0QA/hASigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
@@ -1730,3 +1733,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigmaanalysis>(cfgc)};
 }
+
