@@ -49,12 +49,12 @@
 #include <TPDGCode.h>
 #include <TProfile.h>
 
-#include <vector>
-#include <unordered_map>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -132,7 +132,6 @@ struct sigmaanalysis {
     Configurable<float> mc_rapidityMin{"mc_rapidityMin", -0.5, "Min generated particle rapidity"};
     Configurable<float> mc_rapidityMax{"mc_rapidityMax", 0.5, "Max generated particle rapidity"};
   } genSelections;
-  
 
   // QA
   Configurable<bool> fdoSigma0QA{"doSigma0QA", false, "if true, perform Sigma0 QA analysis. Only works with MC."};
@@ -552,8 +551,7 @@ struct sigmaanalysis {
         histos.add("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt", "h2dGenAntiSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenSigma0VsMultMC", "h2dGenSigma0VsMultMC", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenAntiSigma0VsMultMC", "h2dGenAntiSigma0VsMultMC", kTH2D, {axisNch, axisPt});
-
-      } 
+      }
       if (doprocessPi0GeneratedRun3) { // Pi0 specific
         histos.add("Gen/h2dGenPi0VsMultMC_RecoedEvt", "h2dGenPi0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenPi0", "h2dGenPi0", kTH2D, {axisCentrality, axisPt});
@@ -1267,7 +1265,7 @@ struct sigmaanalysis {
       auto sigma0mc = fullSigma0s.rawIteratorAt(sigma0Index[mcid]);
       histos.fill(HIST("Sigma0QA/hDuplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
 
-      if (sigma0mc.isSigma0()) 
+      if (sigma0mc.isSigma0())
         histos.fill(HIST("Sigma0QA/hSigma0Duplicates"), NDuplicates); // how many times a mc sigma0 was reconstructed
 
       if (sigma0mc.isAntiSigma0())
@@ -1733,4 +1731,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigmaanalysis>(cfgc)};
 }
-

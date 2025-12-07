@@ -51,11 +51,11 @@
 #include <TPDGCode.h>
 #include <TProfile.h>
 
-#include <vector>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1962,4 +1962,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigma0builder>(cfgc)};
 }
-
