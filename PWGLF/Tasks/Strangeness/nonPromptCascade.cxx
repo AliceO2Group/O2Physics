@@ -37,9 +37,9 @@
 
 #include "Math/Vector4D.h"
 #include "TDatabasePDG.h"
+#include "THnSparse.h"
 #include "TParticlePDG.h"
 #include "TTree.h"
-#include "THnSparse.h"
 
 #include <cmath>
 #include <memory>
@@ -189,7 +189,6 @@ struct NonPromptCascadeTask {
   using CollisionsWithLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsGlobal>;
   using TracksWithLabel = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
-
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
 
@@ -216,7 +215,7 @@ struct NonPromptCascadeTask {
 
   Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
-  Configurable<std::string> cfgPtEdgesdNdeta{ "ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
+  Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -253,7 +252,7 @@ struct NonPromptCascadeTask {
     }
   }
 
-  void init(InitContext & context)
+  void init(InitContext& context)
   {
     mZorroSummary.setObject(mZorro.getZorroSummary());
     mCCDB->setURL(ccdbUrl);
@@ -291,11 +290,11 @@ struct NonPromptCascadeTask {
     std::vector<double> trackBinning;
     std::vector<double> runsBinning;
     double cent = -0.0;
-    while(cent < 100) {
-      if(cent < 0.1) {
+    while (cent < 100) {
+      if (cent < 0.1) {
         centBinning.push_back(cent);
         cent += 0.01;
-      } else if(cent < 1) {
+      } else if (cent < 1) {
         centBinning.push_back(cent);
         cent += 0.1;
       } else {
@@ -304,17 +303,17 @@ struct NonPromptCascadeTask {
       }
     }
     double ntracks = 0;
-    while(ntracks < 100) {
+    while (ntracks < 100) {
       trackBinning.push_back(ntracks);
       ntracks++;
     }
     double run = 550367 - 0.5;
-    for(int i = 0; i < 9000; i++) {
+    for (int i = 0; i < 9000; i++) {
       runsBinning.push_back(run);
       run++;
     }
     AxisSpec centAxis{centBinning, "Centrality (%)"};
-    //AxisSpec multAxis{multBinning, "Multiplicity"};
+    // AxisSpec multAxis{multBinning, "Multiplicity"};
     AxisSpec trackAxisMC{trackBinning, "NTracks MC"};
     AxisSpec trackAxis{trackBinning, "NTracks Global Reco"};
     AxisSpec runsAxis{runsBinning, "Run Number"};
@@ -323,14 +322,14 @@ struct NonPromptCascadeTask {
     //
     // dN/deta
     //
-    bool runMCdNdeta =  context.options().get<bool>("processdNdetaMC");
-    //std::cout << "runMCdNdeta: " << runMCdNdeta << std::endl;
-    if(runMCdNdeta) {
+    bool runMCdNdeta = context.options().get<bool>("processdNdetaMC");
+    // std::cout << "runMCdNdeta: " << runMCdNdeta << std::endl;
+    if (runMCdNdeta) {
       std::vector<double> ptBins;
       std::vector<std::string> tokens = o2::utils::Str::tokenize(cfgPtEdgesdNdeta, ',');
-      for(auto const& pts: tokens){
+      for (auto const& pts : tokens) {
         double pt = 0;
-        try{
+        try {
           pt = std::stof(pts);
         } catch (...) {
           LOG(error) << "Wrong cfgPtEdgesdNdeta string:" << cfgPtEdgesdNdeta << std::endl;
@@ -811,8 +810,8 @@ struct NonPromptCascadeTask {
         }
         accept = accept && (q != 0);
         if (accept) {
-          ++mult;    
-          ptMCvec.push_back(mcp.pt());    
+          ++mult;
+          ptMCvec.push_back(mcp.pt());
         }
       }
     }
@@ -834,28 +833,28 @@ struct NonPromptCascadeTask {
     std::vector<int> isReco(mcParticles.size(), 0);
     std::vector<int> isRecoMult(mcParticles.size(), 0);
     std::vector<int> mcReconstructed(mcCollisions.size(), 0);
-    //std::cout << " reco cols with mc:" << colls.size() << " tracks:" << tracks.size() << " mccols:" << mcCollisions.size() << "mcParticles:" << mcParticles.size() << std::endl;
+    // std::cout << " reco cols with mc:" << colls.size() << " tracks:" << tracks.size() << " mccols:" << mcCollisions.size() << "mcParticles:" << mcParticles.size() << std::endl;
     for (auto const& col : colls) {
       int mcCollId = col.mcCollisionId(); // col.template mcCollision_as<aod::McCollisions>();
-      int collId   = col.globalIndex();
-      //auto mc = col.mcCollision();
-      //int mcId = mc.globalIndex();
-      //std::cout << "globalIndex:" << mcId << " colID:" << mcCollId << std::endl;
+      int collId = col.globalIndex();
+      // auto mc = col.mcCollision();
+      // int mcId = mc.globalIndex();
+      // std::cout << "globalIndex:" << mcId << " colID:" << mcCollId << std::endl;
       std::vector<float> mcptvec;
       float mult = getMCMult(mcParticles, mcCollId, mcptvec);
       mcReconstructed[mcCollId] = 1;
       for (auto const& trk : tracks) {
-        int mcPid = trk.mcParticleId();                 // depends on your label table
+        int mcPid = trk.mcParticleId(); // depends on your label table
         if (mcPid >= 0 && mcPid < (int)mcParticles.size()) {
-            isReco[mcPid] = 1;
-            isRecoMult[mcPid] = mult;
+          isReco[mcPid] = 1;
+          isRecoMult[mcPid] = mult;
         } else {
           continue;
         }
         if (trk.collisionId() != collId) {
           continue; // different event
         }
-        auto mcPar = mcParticles.rawIteratorAt(mcPid); 
+        auto mcPar = mcParticles.rawIteratorAt(mcPid);
         // Apply same acceptance as in MC multiplicity
         if (!mcPar.isPhysicalPrimary()) {
           continue;
@@ -868,23 +867,22 @@ struct NonPromptCascadeTask {
         if (pdgEntry) {
           q = int(std::round(pdgEntry->Charge() / 3.0));
         }
-        if(q == 0) {
+        if (q == 0) {
           continue;
         }
-        //float multReco = recoMult[collId]; 
+        // float multReco = recoMult[collId];
         float multReco = col.multNTracksGlobal();
         float ptReco = trk.pt();
-        float ptMC   = mcPar.pt();
+        float ptMC = mcPar.pt();
         mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
-        
       }
 
-      //mRegistry.fill(HIST("hNTracksMCVsTracksReco"), mult, col.multNTracksGlobal());
+      // mRegistry.fill(HIST("hNTracksMCVsTracksReco"), mult, col.multNTracksGlobal());
     }
     // count mc particles with no reco tracks
     for (auto const& mcp : mcParticles) {
       int mcPidG = mcp.globalIndex();
-      //std::cout << "mcPidG:" << mcPidG << std::endl;
+      // std::cout << "mcPidG:" << mcPidG << std::endl;
       if (!isReco[mcPidG]) {
         mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"), isRecoMult[mcPidG], mcp.pt());
       }
@@ -892,13 +890,13 @@ struct NonPromptCascadeTask {
     // count unreconstructed mc collisions
     for (auto const& mc : mcCollisions) {
       int gindex = mc.globalIndex();
-      //std::cout << "mc globalIndex:" << gindex << std::endl;
+      // std::cout << "mc globalIndex:" << gindex << std::endl;
       if (!mcReconstructed[gindex]) {
         std::vector<float> mcptvec;
         int mult = getMCMult(mcParticles, gindex, mcptvec);
-        //std::cout << "===> unreconstructed:" << mult << std::endl;
-        for(auto const& pt: mcptvec){
-          mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"), mult,pt);
+        // std::cout << "===> unreconstructed:" << mult << std::endl;
+        for (auto const& pt : mcptvec) {
+          mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"), mult, pt);
         }
       }
     }
