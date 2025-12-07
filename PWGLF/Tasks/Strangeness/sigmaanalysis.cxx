@@ -59,7 +59,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using std::array;
-using MCSigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::Sigma0MCCores, aod::SigmaCollRef, aod::SigmaMCLabels>;
+using MCSigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::Sigma0MCCores, aod::SigmaCollRef>;
 using Sigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::SigmaCollRef>;
 
 static const std::vector<std::string> PhotonSels = {"NoSel", "V0Type", "DCADauToPV",
@@ -124,7 +124,13 @@ struct sigmaanalysis {
   } eventSelections;
 
   // Generated Sigma0s
-  Configurable<bool> mc_keepOnlyFromGenerator{"mc_keepOnlyFromGenerator", true, "if true, consider only particles from generator to calculate efficiency."};
+  struct : ConfigurableGroup {
+    std::string prefix = "genSelections"; // JSON group name
+    Configurable<bool> mc_keepOnlyFromGenerator{"mc_keepOnlyFromGenerator", true, "if true, consider only particles from generator to calculate efficiency."};
+    Configurable<float> mc_rapidityMin{"mc_rapidityMin", -0.5, "Min generated particle rapidity"};
+    Configurable<float> mc_rapidityMax{"mc_rapidityMax", 0.5, "Max generated particle rapidity"};
+  } genSelections;
+  
 
   // QA
   Configurable<bool> fdoSigma0QA{"doSigma0QA", false, "if true, perform Sigma0 QA analysis. Only works with MC."};
@@ -545,7 +551,8 @@ struct sigmaanalysis {
         histos.add("Gen/h2dGenSigma0VsMultMC", "h2dGenSigma0VsMultMC", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenAntiSigma0VsMultMC", "h2dGenAntiSigma0VsMultMC", kTH2D, {axisNch, axisPt});
 
-      } else { // Pi0 specific
+      } 
+      if (doprocessPi0GeneratedRun3) { // Pi0 specific
         histos.add("Gen/h2dGenPi0VsMultMC_RecoedEvt", "h2dGenPi0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenPi0", "h2dGenPi0", kTH2D, {axisCentrality, axisPt});
         histos.add("Gen/h2dGenPi0VsMultMC", "h2dGenPi0VsMultMC", kTH2D, {axisNch, axisPt});
@@ -813,8 +820,12 @@ struct sigmaanalysis {
         continue;
       }
 
+      // Rapidity selection
+      if ((genParticle.mcy() < genSelections.mc_rapidityMin) || (genParticle.mcy() > genSelections.mc_rapidityMax))
+        continue;
+
       // Selection on the source (generator/transport)
-      if (!genParticle.producedByGenerator() && mc_keepOnlyFromGenerator)
+      if (!genParticle.producedByGenerator() && genSelections.mc_keepOnlyFromGenerator)
         continue;
 
       // Select corresponding mc collision && Basic event selection
@@ -834,33 +845,35 @@ struct sigmaanalysis {
 
       //______________________________________________________________________________
       // Generated Sigma0 processing
-      if constexpr (requires { genParticle.sigma0MCPt(); }) {
+      if constexpr (requires { genParticle.isSigma0(); }) {
+        if (doprocessGeneratedRun3) {
 
-        float ptmc = genParticle.sigma0MCPt();
+          float ptmc = genParticle.mcpt();
 
-        if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-          auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
+            auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
+            centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
 
-          if (genParticle.isSigma0())
-            histos.fill(HIST("Gen/h2dGenSigma0VsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            if (genParticle.isSigma0())
+              histos.fill(HIST("Gen/h2dGenSigma0VsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
 
-          else
-            histos.fill(HIST("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
-        }
+            else
+              histos.fill(HIST("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
 
-        if (genParticle.isSigma0()) {
-          histos.fill(HIST("Gen/h2dGenSigma0"), centrality, ptmc);
-          histos.fill(HIST("Gen/h2dGenSigma0VsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
-        } else {
-          histos.fill(HIST("Gen/h2dGenAntiSigma0"), centrality, ptmc);
-          histos.fill(HIST("Gen/h2dGenAntiSigma0VsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (genParticle.isSigma0()) {
+            histos.fill(HIST("Gen/h2dGenSigma0"), centrality, ptmc);
+            histos.fill(HIST("Gen/h2dGenSigma0VsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          } else {
+            histos.fill(HIST("Gen/h2dGenAntiSigma0"), centrality, ptmc);
+            histos.fill(HIST("Gen/h2dGenAntiSigma0VsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
       }
       //______________________________________________________________________________
       // Generated Pi0 processing
-      if constexpr (requires { genParticle.pi0MCPt(); }) {
-        float ptmc = genParticle.pi0MCPt();
+      if (doprocessPi0GeneratedRun3) {
+        float ptmc = genParticle.mcpt();
 
         if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
           auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);

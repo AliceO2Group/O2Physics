@@ -481,14 +481,16 @@ namespace sigma0Gen
 {
 DECLARE_SOA_COLUMN(IsSigma0, isSigma0, bool); // true: sigma0, false: antisigma0
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
-DECLARE_SOA_COLUMN(Sigma0MCPt, sigma0MCPt, float); // MC pT
+DECLARE_SOA_COLUMN(MCPt, mcpt, float); // MC pT
+DECLARE_SOA_COLUMN(MCY, mcy, float); // MC Y
 
 } // namespace sigma0Gen
 
 DECLARE_SOA_TABLE(Sigma0Gens, "AOD", "SIGMA0GENS",
                   sigma0Gen::IsSigma0,
                   sigma0Gen::ProducedByGenerator,
-                  sigma0Gen::Sigma0MCPt);
+                  sigma0Gen::MCPt,
+                  sigma0Gen::MCY);
 
 DECLARE_SOA_TABLE(SigmaCollRef, "AOD", "SIGMACOLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);
@@ -859,12 +861,14 @@ DECLARE_SOA_TABLE(Pi0CollRef, "AOD", "PI0COLLREF", //! optional table to refer b
 namespace pi0Gen
 {
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
-DECLARE_SOA_COLUMN(Pi0MCPt, pi0MCPt, float); // MC pT
+DECLARE_SOA_COLUMN(MCPt, mcpt, float); // MC pT
+DECLARE_SOA_COLUMN(MCY, mcy, float); // MC Y
 } // namespace pi0Gen
 
 DECLARE_SOA_TABLE(Pi0Gens, "AOD", "PI0GENS",
                   pi0Gen::ProducedByGenerator,
-                  pi0Gen::Pi0MCPt);
+                  pi0Gen::MCPt,
+                  pi0Gen::MCY);
 
 DECLARE_SOA_TABLE(Pi0GenCollRef, "AOD", "PI0GENCOLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraMCCollisionId);
