@@ -30,76 +30,72 @@
 
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 template <typename JetsBase, typename JetsTag, typename SplittingsBasetoTagMatchingTable, typename SplittingsTagtoBaseMatchingTable, typename PairsBasetoTagMatchingTable, typename PairsTagtoBaseMatchingTable, typename SplittingsBase, typename SplittingsTag, typename PairsBase, typename PairsTag, typename Candidates, typename TracksBase, typename TracksTag, typename ClustersBase>
 struct JetSubstructureMatchingSub {
 
-  Produces<SplittingsBasetoTagMatchingTable> splittingsBasetoTagMatchingTable;
-  Produces<SplittingsTagtoBaseMatchingTable> splittingsTagtoBaseMatchingTable;
+  o2::framework::Produces<SplittingsBasetoTagMatchingTable> splittingsBasetoTagMatchingTable;
+  o2::framework::Produces<SplittingsTagtoBaseMatchingTable> splittingsTagtoBaseMatchingTable;
 
-  Produces<PairsBasetoTagMatchingTable> pairsBasetoTagMatchingTable;
-  Produces<PairsTagtoBaseMatchingTable> pairsTagtoBaseMatchingTable;
+  o2::framework::Produces<PairsBasetoTagMatchingTable> pairsBasetoTagMatchingTable;
+  o2::framework::Produces<PairsTagtoBaseMatchingTable> pairsTagtoBaseMatchingTable;
 
-  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
-  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
-  Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
-  Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
-  Configurable<bool> requireGeoMatchedJets{"requireGeoMatchedJets", false, "require jets are geo matched as well"};
-  Configurable<bool> requirePtMatchedJets{"requirePtMatchedJets", false, "require jets are pT matched as well"};
-  Configurable<bool> requireHFMatchedJets{"requireHFMatchedJets", false, "require jets are HF matched as well"};
+  o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
+  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
+  o2::framework::Configurable<bool> requireGeoMatchedJets{"requireGeoMatchedJets", false, "require jets are geo matched as well"};
+  o2::framework::Configurable<bool> requirePtMatchedJets{"requirePtMatchedJets", false, "require jets are pT matched as well"};
+  o2::framework::Configurable<bool> requireHFMatchedJets{"requireHFMatchedJets", false, "require jets are HF matched as well"};
 
-  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<aod::JetMcCollisions, JetsBase>();
-  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<aod::JetMcCollisions, JetsTag>();
+  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<o2::aod::JetMcCollisions, JetsBase>();
+  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<o2::aod::JetMcCollisions, JetsTag>();
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
   }
 
-  PresliceOptional<aod::ChargedSPs> BaseSplittingsPerBaseJetInclusive = aod::chargedsplitting::jetId;
-  PresliceOptional<aod::ChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetInclusive = aod::chargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::D0ChargedSPs> BaseSplittingsPerBaseJetD0 = aod::d0chargedsplitting::jetId;
-  PresliceOptional<aod::D0ChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetD0 = aod::d0chargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::DplusChargedSPs> BaseSplittingsPerBaseJetDplus = aod::dpluschargedsplitting::jetId;
-  PresliceOptional<aod::DplusChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDplus = aod::dpluschargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::DsChargedSPs> BaseSplittingsPerBaseJetDs = aod::dschargedsplitting::jetId;
-  PresliceOptional<aod::DsChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDs = aod::dschargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::DstarChargedSPs> BaseSplittingsPerBaseJetDstar = aod::dstarchargedsplitting::jetId;
-  PresliceOptional<aod::DstarChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDstar = aod::dstarchargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::LcChargedSPs> BaseSplittingsPerBaseJetLc = aod::lcchargedsplitting::jetId;
-  PresliceOptional<aod::LcChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetLc = aod::lcchargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::B0ChargedSPs> BaseSplittingsPerBaseJetB0 = aod::b0chargedsplitting::jetId;
-  PresliceOptional<aod::B0ChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetB0 = aod::b0chargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::BplusChargedSPs> BaseSplittingsPerBaseJetBplus = aod::bpluschargedsplitting::jetId;
-  PresliceOptional<aod::BplusChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetBplus = aod::bpluschargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedSPs> BaseSplittingsPerBaseJetXicToXiPiPi = aod::xictoxipipichargedsplitting::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetXicToXiPiPi = aod::xictoxipipichargedeventwisesubtractedsplitting::jetId;
-  PresliceOptional<aod::DielectronChargedSPs> BaseSplittingsPerBaseJetDielectron = aod::dielectronchargedsplitting::jetId;
-  PresliceOptional<aod::DielectronChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDielectron = aod::dielectronchargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedSPs> BaseSplittingsPerBaseJetInclusive = o2::aod::chargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetInclusive = o2::aod::chargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedSPs> BaseSplittingsPerBaseJetD0 = o2::aod::d0chargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetD0 = o2::aod::d0chargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedSPs> BaseSplittingsPerBaseJetDplus = o2::aod::dpluschargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDplus = o2::aod::dpluschargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedSPs> BaseSplittingsPerBaseJetDs = o2::aod::dschargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDs = o2::aod::dschargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedSPs> BaseSplittingsPerBaseJetDstar = o2::aod::dstarchargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDstar = o2::aod::dstarchargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedSPs> BaseSplittingsPerBaseJetLc = o2::aod::lcchargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetLc = o2::aod::lcchargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedSPs> BaseSplittingsPerBaseJetB0 = o2::aod::b0chargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetB0 = o2::aod::b0chargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedSPs> BaseSplittingsPerBaseJetBplus = o2::aod::bpluschargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetBplus = o2::aod::bpluschargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedSPs> BaseSplittingsPerBaseJetXicToXiPiPi = o2::aod::xictoxipipichargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetXicToXiPiPi = o2::aod::xictoxipipichargedeventwisesubtractedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedSPs> BaseSplittingsPerBaseJetDielectron = o2::aod::dielectronchargedsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedEventWiseSubtractedSPs> TagSplittingsPerTagJetDielectron = o2::aod::dielectronchargedeventwisesubtractedsplitting::jetId;
 
-  PresliceOptional<aod::ChargedPRs> BasePairsPerBaseJetInclusive = aod::chargedpair::jetId;
-  PresliceOptional<aod::ChargedEventWiseSubtractedPRs> TagPairsPerTagJetInclusive = aod::chargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::D0ChargedPRs> BasePairsPerBaseJetD0 = aod::d0chargedpair::jetId;
-  PresliceOptional<aod::D0ChargedEventWiseSubtractedPRs> TagPairsPerTagJetD0 = aod::d0chargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::DplusChargedPRs> BasePairsPerBaseJetDplus = aod::dpluschargedpair::jetId;
-  PresliceOptional<aod::DplusChargedEventWiseSubtractedPRs> TagPairsPerTagJetDplus = aod::dpluschargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::DsChargedPRs> BasePairsPerBaseJetDs = aod::dschargedpair::jetId;
-  PresliceOptional<aod::DsChargedEventWiseSubtractedPRs> TagPairsPerTagJetDs = aod::dschargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::DstarChargedPRs> BasePairsPerBaseJetDstar = aod::dstarchargedpair::jetId;
-  PresliceOptional<aod::DstarChargedEventWiseSubtractedPRs> TagPairsPerTagJetDstar = aod::dstarchargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::LcChargedPRs> BasePairsPerBaseJetLc = aod::lcchargedpair::jetId;
-  PresliceOptional<aod::LcChargedEventWiseSubtractedPRs> TagPairsPerTagJetLc = aod::lcchargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::B0ChargedPRs> BasePairsPerBaseJetB0 = aod::b0chargedpair::jetId;
-  PresliceOptional<aod::B0ChargedEventWiseSubtractedPRs> TagPairsPerTagJetB0 = aod::b0chargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::BplusChargedPRs> BasePairsPerBaseJetBplus = aod::bpluschargedpair::jetId;
-  PresliceOptional<aod::BplusChargedEventWiseSubtractedPRs> TagPairsPerTagJetBplus = aod::bpluschargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedPRs> BasePairsPerBaseJetXicToXiPiPi = aod::xictoxipipichargedpair::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedEventWiseSubtractedPRs> TagPairsPerTagJetXicToXiPiPi = aod::xictoxipipichargedeventwisesubtractedpair::jetId;
-  PresliceOptional<aod::DielectronChargedPRs> BasePairsPerBaseJetDielectron = aod::dielectronchargedpair::jetId;
-  PresliceOptional<aod::DielectronChargedEventWiseSubtractedPRs> TagPairsPerTagJetDielectron = aod::dielectronchargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedPRs> BasePairsPerBaseJetInclusive = o2::aod::chargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedEventWiseSubtractedPRs> TagPairsPerTagJetInclusive = o2::aod::chargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedPRs> BasePairsPerBaseJetD0 = o2::aod::d0chargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedEventWiseSubtractedPRs> TagPairsPerTagJetD0 = o2::aod::d0chargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedPRs> BasePairsPerBaseJetDplus = o2::aod::dpluschargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedEventWiseSubtractedPRs> TagPairsPerTagJetDplus = o2::aod::dpluschargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedPRs> BasePairsPerBaseJetDs = o2::aod::dschargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedEventWiseSubtractedPRs> TagPairsPerTagJetDs = o2::aod::dschargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedPRs> BasePairsPerBaseJetDstar = o2::aod::dstarchargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedEventWiseSubtractedPRs> TagPairsPerTagJetDstar = o2::aod::dstarchargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedPRs> BasePairsPerBaseJetLc = o2::aod::lcchargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedEventWiseSubtractedPRs> TagPairsPerTagJetLc = o2::aod::lcchargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedPRs> BasePairsPerBaseJetB0 = o2::aod::b0chargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedEventWiseSubtractedPRs> TagPairsPerTagJetB0 = o2::aod::b0chargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedPRs> BasePairsPerBaseJetBplus = o2::aod::bpluschargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedEventWiseSubtractedPRs> TagPairsPerTagJetBplus = o2::aod::bpluschargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedPRs> BasePairsPerBaseJetXicToXiPiPi = o2::aod::xictoxipipichargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedEventWiseSubtractedPRs> TagPairsPerTagJetXicToXiPiPi = o2::aod::xictoxipipichargedeventwisesubtractedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedPRs> BasePairsPerBaseJetDielectron = o2::aod::dielectronchargedpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedEventWiseSubtractedPRs> TagPairsPerTagJetDielectron = o2::aod::dielectronchargedeventwisesubtractedpair::jetId;
 
   // workaround till binding nodes can be passed as template arguments
   template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A, typename B>

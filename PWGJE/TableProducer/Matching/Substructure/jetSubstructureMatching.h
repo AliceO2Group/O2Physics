@@ -29,76 +29,72 @@
 
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 template <typename JetsBase, typename JetsTag, typename SplittingsBasetoTagMatchingTable, typename SplittingsTagtoBaseMatchingTable, typename PairsBasetoTagMatchingTable, typename PairsTagtoBaseMatchingTable, typename SplittingsBase, typename SplittingsTag, typename PairsBase, typename PairsTag, typename CandidatesBase, typename CandidatesTag, typename TracksBase, typename TracksTag, typename ClustersBase>
 struct JetSubstructureMatching {
 
-  Produces<SplittingsBasetoTagMatchingTable> splittingsBasetoTagMatchingTable;
-  Produces<SplittingsTagtoBaseMatchingTable> splittingsTagtoBaseMatchingTable;
+  o2::framework::Produces<SplittingsBasetoTagMatchingTable> splittingsBasetoTagMatchingTable;
+  o2::framework::Produces<SplittingsTagtoBaseMatchingTable> splittingsTagtoBaseMatchingTable;
 
-  Produces<PairsBasetoTagMatchingTable> pairsBasetoTagMatchingTable;
-  Produces<PairsTagtoBaseMatchingTable> pairsTagtoBaseMatchingTable;
+  o2::framework::Produces<PairsBasetoTagMatchingTable> pairsBasetoTagMatchingTable;
+  o2::framework::Produces<PairsTagtoBaseMatchingTable> pairsTagtoBaseMatchingTable;
 
-  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
-  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
-  Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
-  Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
-  Configurable<bool> requireGeoMatchedJets{"requireGeoMatchedJets", false, "require jets are geo matched as well"};
-  Configurable<bool> requirePtMatchedJets{"requirePtMatchedJets", false, "require jets are pT matched as well"};
-  Configurable<bool> requireHFMatchedJets{"requireHFMatchedJets", false, "require jets are HF matched as well"};
+  o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
+  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
+  o2::framework::Configurable<bool> requireGeoMatchedJets{"requireGeoMatchedJets", false, "require jets are geo matched as well"};
+  o2::framework::Configurable<bool> requirePtMatchedJets{"requirePtMatchedJets", false, "require jets are pT matched as well"};
+  o2::framework::Configurable<bool> requireHFMatchedJets{"requireHFMatchedJets", false, "require jets are HF matched as well"};
 
-  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<aod::JetMcCollisions, JetsBase>();
-  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<aod::JetMcCollisions, JetsTag>();
+  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<o2::aod::JetMcCollisions, JetsBase>();
+  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<o2::aod::JetMcCollisions, JetsTag>();
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
   }
 
-  PresliceOptional<aod::ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetInclusive = aod::chargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::ChargedMCParticleLevelSPs> TagSplittingsPerTagJetInclusive = aod::chargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::D0ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetD0 = aod::d0chargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::D0ChargedMCParticleLevelSPs> TagSplittingsPerTagJetD0 = aod::d0chargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::DplusChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDplus = aod::dpluschargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::DplusChargedMCParticleLevelSPs> TagSplittingsPerTagJetDplus = aod::dpluschargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::DsChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDs = aod::dschargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::DsChargedMCParticleLevelSPs> TagSplittingsPerTagJetDs = aod::dschargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::DstarChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDstar = aod::dstarchargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::DstarChargedMCParticleLevelSPs> TagSplittingsPerTagJetDstar = aod::dstarchargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::LcChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetLc = aod::lcchargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::LcChargedMCParticleLevelSPs> TagSplittingsPerTagJetLc = aod::lcchargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::B0ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetB0 = aod::b0chargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::B0ChargedMCParticleLevelSPs> TagSplittingsPerTagJetB0 = aod::b0chargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::BplusChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetBplus = aod::bpluschargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::BplusChargedMCParticleLevelSPs> TagSplittingsPerTagJetBplus = aod::bpluschargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetXicToXiPiPi = aod::xictoxipipichargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedMCParticleLevelSPs> TagSplittingsPerTagJetXicToXiPiPi = aod::xictoxipipichargedmcparticlelevelsplitting::jetId;
-  PresliceOptional<aod::DielectronChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDielectron = aod::dielectronchargedmcdetectorlevelsplitting::jetId;
-  PresliceOptional<aod::DielectronChargedMCParticleLevelSPs> TagSplittingsPerTagJetDielectron = aod::dielectronchargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetInclusive = o2::aod::chargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedMCParticleLevelSPs> TagSplittingsPerTagJetInclusive = o2::aod::chargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetD0 = o2::aod::d0chargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedMCParticleLevelSPs> TagSplittingsPerTagJetD0 = o2::aod::d0chargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDplus = o2::aod::dpluschargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedMCParticleLevelSPs> TagSplittingsPerTagJetDplus = o2::aod::dpluschargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDs = o2::aod::dschargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedMCParticleLevelSPs> TagSplittingsPerTagJetDs = o2::aod::dschargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDstar = o2::aod::dstarchargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedMCParticleLevelSPs> TagSplittingsPerTagJetDstar = o2::aod::dstarchargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetLc = o2::aod::lcchargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedMCParticleLevelSPs> TagSplittingsPerTagJetLc = o2::aod::lcchargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetB0 = o2::aod::b0chargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedMCParticleLevelSPs> TagSplittingsPerTagJetB0 = o2::aod::b0chargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetBplus = o2::aod::bpluschargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedMCParticleLevelSPs> TagSplittingsPerTagJetBplus = o2::aod::bpluschargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetXicToXiPiPi = o2::aod::xictoxipipichargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedMCParticleLevelSPs> TagSplittingsPerTagJetXicToXiPiPi = o2::aod::xictoxipipichargedmcparticlelevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedMCDetectorLevelSPs> BaseSplittingsPerBaseJetDielectron = o2::aod::dielectronchargedmcdetectorlevelsplitting::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedMCParticleLevelSPs> TagSplittingsPerTagJetDielectron = o2::aod::dielectronchargedmcparticlelevelsplitting::jetId;
 
-  PresliceOptional<aod::ChargedMCDetectorLevelPRs> BasePairsPerBaseJetInclusive = aod::chargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::ChargedMCParticleLevelPRs> TagPairsPerTagJetInclusive = aod::chargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::D0ChargedMCDetectorLevelPRs> BasePairsPerBaseJetD0 = aod::d0chargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::D0ChargedMCParticleLevelPRs> TagPairsPerTagJetD0 = aod::d0chargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::DplusChargedMCDetectorLevelPRs> BasePairsPerBaseJetDplus = aod::dpluschargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::DplusChargedMCParticleLevelPRs> TagPairsPerTagJetDplus = aod::dpluschargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::DsChargedMCDetectorLevelPRs> BasePairsPerBaseJetDs = aod::dschargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::DsChargedMCParticleLevelPRs> TagPairsPerTagJetDs = aod::dschargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::DstarChargedMCDetectorLevelPRs> BasePairsPerBaseJetDstar = aod::dstarchargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::DstarChargedMCParticleLevelPRs> TagPairsPerTagJetDstar = aod::dstarchargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::LcChargedMCDetectorLevelPRs> BasePairsPerBaseJetLc = aod::lcchargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::LcChargedMCParticleLevelPRs> TagPairsPerTagJetLc = aod::lcchargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::B0ChargedMCDetectorLevelPRs> BasePairsPerBaseJetB0 = aod::b0chargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::B0ChargedMCParticleLevelPRs> TagPairsPerTagJetB0 = aod::b0chargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::BplusChargedMCDetectorLevelPRs> BasePairsPerBaseJetBplus = aod::bpluschargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::BplusChargedMCParticleLevelPRs> TagPairsPerTagJetBplus = aod::bpluschargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedMCDetectorLevelPRs> BasePairsPerBaseJetXicToXiPiPi = aod::xictoxipipichargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::XicToXiPiPiChargedMCParticleLevelPRs> TagPairsPerTagJetXicToXiPiPi = aod::xictoxipipichargedmcparticlelevelpair::jetId;
-  PresliceOptional<aod::DielectronChargedMCDetectorLevelPRs> BasePairsPerBaseJetDielectron = aod::dielectronchargedmcdetectorlevelpair::jetId;
-  PresliceOptional<aod::DielectronChargedMCParticleLevelPRs> TagPairsPerTagJetDielectron = aod::dielectronchargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedMCDetectorLevelPRs> BasePairsPerBaseJetInclusive = o2::aod::chargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::ChargedMCParticleLevelPRs> TagPairsPerTagJetInclusive = o2::aod::chargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedMCDetectorLevelPRs> BasePairsPerBaseJetD0 = o2::aod::d0chargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::D0ChargedMCParticleLevelPRs> TagPairsPerTagJetD0 = o2::aod::d0chargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedMCDetectorLevelPRs> BasePairsPerBaseJetDplus = o2::aod::dpluschargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DplusChargedMCParticleLevelPRs> TagPairsPerTagJetDplus = o2::aod::dpluschargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedMCDetectorLevelPRs> BasePairsPerBaseJetDs = o2::aod::dschargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DsChargedMCParticleLevelPRs> TagPairsPerTagJetDs = o2::aod::dschargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedMCDetectorLevelPRs> BasePairsPerBaseJetDstar = o2::aod::dstarchargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DstarChargedMCParticleLevelPRs> TagPairsPerTagJetDstar = o2::aod::dstarchargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedMCDetectorLevelPRs> BasePairsPerBaseJetLc = o2::aod::lcchargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::LcChargedMCParticleLevelPRs> TagPairsPerTagJetLc = o2::aod::lcchargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedMCDetectorLevelPRs> BasePairsPerBaseJetB0 = o2::aod::b0chargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::B0ChargedMCParticleLevelPRs> TagPairsPerTagJetB0 = o2::aod::b0chargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedMCDetectorLevelPRs> BasePairsPerBaseJetBplus = o2::aod::bpluschargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::BplusChargedMCParticleLevelPRs> TagPairsPerTagJetBplus = o2::aod::bpluschargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedMCDetectorLevelPRs> BasePairsPerBaseJetXicToXiPiPi = o2::aod::xictoxipipichargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::XicToXiPiPiChargedMCParticleLevelPRs> TagPairsPerTagJetXicToXiPiPi = o2::aod::xictoxipipichargedmcparticlelevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedMCDetectorLevelPRs> BasePairsPerBaseJetDielectron = o2::aod::dielectronchargedmcdetectorlevelpair::jetId;
+  o2::framework::PresliceOptional<o2::aod::DielectronChargedMCParticleLevelPRs> TagPairsPerTagJetDielectron = o2::aod::dielectronchargedmcparticlelevelpair::jetId;
 
   // workaround till binding nodes can be passed as template arguments
   template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A, typename B>
