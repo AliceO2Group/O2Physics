@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
+#ifndef PWGJE_TASKS_JETSUBSTRUCTUREHF_H_
+#define PWGJE_TASKS_JETSUBSTRUCTUREHF_H_
+
 #include "RecoDecay.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
@@ -42,6 +45,7 @@
 #include <fastjet/JetDefinition.hh>
 
 #include <cstdint>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -515,3 +519,5 @@ struct JetSubstructureHFTask {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
 };
+
+#endif // PWGJE_TASKS_JETSUBSTRUCTUREHF_H_
