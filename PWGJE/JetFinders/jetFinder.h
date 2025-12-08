@@ -15,9 +15,11 @@
 /// \author Jochen Klein <jochen.klein@cern.ch>
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 
-#include "PWGJE/Core/JetFinder.h"
+#ifndef PWGJE_JETFINDERS_JETFINDER_H_
+#define PWGJE_JETFINDERS_JETFINDER_H_
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
@@ -280,3 +282,5 @@ struct JetFinderTask {
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevelFullJets, "Particle level full jet finding", false);
 };
+
+#endif // PWGJE_JETFINDERS_JETFINDER_H_
