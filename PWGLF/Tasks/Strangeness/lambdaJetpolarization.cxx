@@ -35,7 +35,7 @@
 #include "Math/Vector4D.h"
 #include "TProfile2D.h"
 #include <TFile.h>
-#include <TLorentzVector.h>
+//#include <TLorentzVector.h>
 #include <TMatrixD.h>
 #include <TTree.h>
 
@@ -158,8 +158,8 @@ struct LfMyV0s {
     const AxisSpec ptAxis{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassLambdaAxis{200, 1.016, 1.216, "m_{p#pi} (GeV/#it{c}^{2})"};
 
-    ConfigurableAxis axistprofile2DaxisPt{"axistprofile2DaxisPt", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.7, 4.2, 5, 6, 8, 10, 12}, "pt axis for histograms"};
-    ConfigurableAxis axistprofile2DaxisMass{"axistprofile2DaxisMass", {VARIABLE_WIDTH, 1.10068, 1.10668, 1.11068, 1.11268, 1.11368, 1.11468, o2::constants::physics::MassLambda, 1.11668, 1.11768, 1.11868, 1.12068, 1.12468, 1.13068}, "Mass axis for histograms"};
+    ConfigurableAxis tprofile2DaxisPt{"tprofile2DaxisPt", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.7, 4.2, 5, 6, 8, 10, 12}, "pt axis for histograms"};
+    ConfigurableAxis tprofile2DaxisMass{"tprofile2DaxisMass", {VARIABLE_WIDTH, 1.10068, 1.10668, 1.11068, 1.11268, 1.11368, 1.11468, o2::constants::physics::MassLambda, 1.11668, 1.11768, 1.11868, 1.12068, 1.12468, 1.13068}, "Mass axis for histograms"};
 
     registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
     registryData.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", kTH1F, {{200, 0., 200.}});
@@ -286,16 +286,16 @@ struct LfMyV0s {
     registryData.add("TProfile1DLambdasinphiInJet", "#Delta #theta vs sin(phi)", {HistType::kTProfile, {{200, 0.0, TMath::Pi()}}});
     registryData.add("hAntiLambdamassandSinPhi", "hAntiLambdaPhiandSinPhi", kTH2F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}, {200, -1, 1}});
     registryData.add("hprotonsinphiInJetV0frame", "hprotonsinphiInJetV0frame", kTH1F, {axisSinPhi});
-    registryData.add("TProfile2DLambdaPtMassSinPhi", "", kTProfile2D, {axistprofile2DaxisMass, axistprofile2DaxisPt});
-    registryData.add("TProfile2DAntiLambdaPtMassSinPhi", "", kTProfile2D, {axistprofile2DaxisMass, axistprofile2DaxisPt});
-    registryData.add("TProfile2DLambdaPtMassSintheta", "", kTProfile2D, {axistprofile2DaxisMass, axistprofile2DaxisPt});
-    registryData.add("TProfile2DAntiLambdaPtMassSintheta", "", kTProfile2D, {axistprofile2DaxisMass, axistprofile2DaxisPt});
+    registryData.add("TProfile2DLambdaPtMassSinPhi", "", kTProfile2D, {tprofile2DaxisMass, tprofile2DaxisPt});
+    registryData.add("TProfile2DAntiLambdaPtMassSinPhi", "", kTProfile2D, {tprofile2DaxisMass, tprofile2DaxisPt});
+    registryData.add("TProfile2DLambdaPtMassSintheta", "", kTProfile2D, {tprofile2DaxisMass, tprofile2DaxisPt});
+    registryData.add("TProfile2DAntiLambdaPtMassSintheta", "", kTProfile2D, {tprofile2DaxisMass, tprofile2DaxisPt});
 
-    registryData.add("TProfile2DLambdaPtMassCosSquareTheta", "", kTProfile2D, {axistprofile2DaxisMass, axistprofile2DaxisPt});
-    registryData.add("TProfile2DAntiLambdaPtMassCosSquareTheta", "", kTProfile2D, {axistprofile2DaxisMass, axistprofile2DaxisPt});
-    registryData.add("TProfile2DLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, axistprofile2DaxisMass});
-    registryData.add("TProfile2DLambdaMassDeltaTheta", "", kTProfile2D, {{200, 0, TMath::Pi(), "#Delta#theta"}, axistprofile2DaxisMass});
-    registryData.add("TProfile2DAntiLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, axistprofile2DaxisMass});
+    registryData.add("TProfile2DLambdaPtMassCosSquareTheta", "", kTProfile2D, {tprofile2DaxisMass, tprofile2DaxisPt});
+    registryData.add("TProfile2DAntiLambdaPtMassCosSquareTheta", "", kTProfile2D, {tprofile2DaxisMass, tprofile2DaxisPt});
+    registryData.add("TProfile2DLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, tprofile2DaxisMass});
+    registryData.add("TProfile2DLambdaMassDeltaTheta", "", kTProfile2D, {{200, 0, TMath::Pi(), "#Delta#theta"}, tprofile2DaxisMass});
+    registryData.add("TProfile2DAntiLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, tprofile2DaxisMass});
     registryData.add("hprotonThetaInLab", "hprotonThetaInLab", kTH1F, {axisTheta});
     registryData.add("hprotonThetaInV0", "hprotonThetaInV0", kTH1F, {axisTheta});
     registryData.add("hprotonThetaInJetV0", "hprotonThetaInJetV0", kTH1F, {axisTheta});
