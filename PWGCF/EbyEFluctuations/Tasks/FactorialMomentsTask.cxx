@@ -32,6 +32,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -328,10 +329,7 @@ struct FactorialMomentsTask {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : tracks) {
-      if (track.hasTPC())
-      // if (track.hasITS())
-      // if (track.isGlobalTrack())
-      {
+      if (track.hasTPC()) {
         histos.fill(HIST("mCollID"), track.collisionId());
         histos.fill(HIST("mEta"), track.eta());
         histos.fill(HIST("mPt"), track.pt());
