@@ -609,7 +609,7 @@ struct JetOutlierQATask {
           registry.fill(HIST("h2_pt_hat_track_pt_outlier"), pTHat, track.pt());
           for (auto const& collisionOutlier : collisions) { // find collisions closeby
             int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
-            if (abs(diffColl) < 6) {
+            if (std::abs(diffColl) < 6) {
               float eventWeightOutlier = collisionOutlier.mcCollision().weight();
               double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
               registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
@@ -714,7 +714,7 @@ struct JetOutlierQATask {
           double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
           int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
 
-          if (abs(diffColl) < 6) {
+          if (std::abs(diffColl) < 6) {
             // LOG(info) << "pThat = " << pTHat << "pThat neighbour = "<<pTHatOutlier;
             registry.fill(HIST("h2_neighbour_pt_hat_all"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
             registry.fill(HIST("h2_neighbour_track_pt_all"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);
