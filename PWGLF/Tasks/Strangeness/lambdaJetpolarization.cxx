@@ -53,8 +53,6 @@
 #include <string>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -118,22 +116,22 @@ struct LfMyV0s {
   Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 1, "isGoodZvtxFT0vsPV"};
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> CtauLambda{"ctauLambda", 30, "C tau Lambda (cm)"};
+  Configurable<float> cTau{"cTau", 30, "C tau (cm)"};
   Configurable<bool> requirepassedSingleTrackSelection{"requirepassedSingleTrackSelection", false, "requirepassedSingleTrackSelection"};
-  Configurable<float> V0tracketaMin{"V0tracketaMin", -0.8f, "eta min track"};
-  Configurable<float> V0tracketaMax{"V0tracketaMax", +0.8f, "eta max track"};
+  Configurable<float> v0TracketaMin{"v0TracketaMin", -0.8f, "eta min track"};
+  Configurable<float> v0TracketaMax{"v0TracketaMax", +0.8f, "eta max track"};
   Configurable<bool> requireTPC{"requireTPC", true, "require TPC hit"};
-  Configurable<float> yMin{"V0yMin", -0.5f, "minimum y"};
-  Configurable<float> yMax{"V0yMax", +0.5f, "maximum y"};
+  Configurable<float> yMin{"yMin", -0.5f, "minimum y"};
+  Configurable<float> yMax{"yMax", +0.5f, "maximum y"};
   Configurable<float> v0rejLambda{"v0rejLambda", 0.01, "V0 rej Lambda"};
   Configurable<float> v0accLambda{"v0accLambda", 0.075, "V0 acc Lambda"};
   Configurable<bool> ifinitpasslambda{"ifinitpasslambda", 0, "ifinitpasslambda"};
-  Configurable<bool> ifpasslambda{"passedLambdaSelection", 1, "passedLambdaSelection"};
+  Configurable<bool> ifpasslambda{"ifpasslambda", 1, "ifpasslambda"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> doArmenterosCut{"doArmenterosCut", 0, "do Armenteros Cut"};
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
-  Configurable<bool> NotITSAfterburner{"NotITSAfterburner", 0, "NotITSAfterburner"};
+  Configurable<bool> notITSAfterburner{"notITSAfterburner", 0, "notITSAfterburner"};
   Configurable<bool> doQA{"doQA", 1, "fill QA histograms"};
   Configurable<bool> evSel{"evSel", 1, "evSel"};
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
@@ -160,8 +158,8 @@ struct LfMyV0s {
     const AxisSpec ptAxis{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassLambdaAxis{200, 1.016, 1.216, "m_{p#pi} (GeV/#it{c}^{2})"};
 
-    ConfigurableAxis TProfile2DaxisPt{"#it{p}_{T} (GeV/#it{c})", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.7, 4.2, 5, 6, 8, 10, 12}, "pt axis for histograms"};
-    ConfigurableAxis TProfile2DaxisMass{"Mass p#pi (GeV/#it{c^{2}})", {VARIABLE_WIDTH, 1.10068, 1.10668, 1.11068, 1.11268, 1.11368, 1.11468, 1.11568, 1.11668, 1.11768, 1.11868, 1.12068, 1.12468, 1.13068}, "Mass axis for histograms"};
+    ConfigurableAxis TProfile2DaxisPt{"pTBins", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.7, 4.2, 5, 6, 8, 10, 12}, "pt axis for histograms"};
+    ConfigurableAxis TProfile2DaxisMass{"massBins", {VARIABLE_WIDTH, 1.10068, 1.10668, 1.11068, 1.11268, 1.11368, 1.11468, o2::constants::physics::MassLambda, 1.11668, 1.11768, 1.11868, 1.12068, 1.12468, 1.13068}, "Mass axis for histograms"};
 
     registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
     registryData.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", kTH1F, {{200, 0., 200.}});
@@ -512,8 +510,8 @@ struct LfMyV0s {
   bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
   {
     if (v0.v0radius() < v0radius || v0.v0cosPA() < v0cospainit ||
-        TMath::Abs(ptrack.eta()) > V0tracketaMax ||
-        TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+        TMath::Abs(ptrack.eta()) > v0TracketaMax ||
+        TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
     if (v0.dcaV0daughters() > dcav0dau) {
@@ -548,7 +546,7 @@ struct LfMyV0s {
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
 
-    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
 
@@ -599,7 +597,7 @@ struct LfMyV0s {
     }
 
     float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    if (ctauLambda >= CtauLambda)
+    if (ctauLambda >= cTau)
       return false;
 
     if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
@@ -641,7 +639,7 @@ struct LfMyV0s {
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
 
-    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
 
@@ -692,7 +690,7 @@ struct LfMyV0s {
     }
 
     float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    if (ctauAntiLambda >= CtauLambda)
+    if (ctauAntiLambda >= cTau)
       return false;
 
     if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
@@ -734,7 +732,7 @@ struct LfMyV0s {
 
     registryData.fill(HIST("QA/hv0sSelection"), 2.5);
 
-    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
     registryData.fill(HIST("QA/hv0sSelection"), 3.5);
@@ -797,7 +795,7 @@ struct LfMyV0s {
     registryData.fill(HIST("QA/hv0sSelection"), 14.5);
 
     float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-    if (ctauLambda >= CtauLambda)
+    if (ctauLambda >= cTau)
       return false;
     registryData.fill(HIST("QA/hv0sSelection"), 15.5);
 
@@ -840,7 +838,7 @@ struct LfMyV0s {
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
 
-    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
 
@@ -891,7 +889,7 @@ struct LfMyV0s {
     }
 
     float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    if (ctauAntiLambda >= CtauLambda)
+    if (ctauAntiLambda >= cTau)
       return false;
 
     if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
@@ -925,7 +923,7 @@ struct LfMyV0s {
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
 
-    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
 
@@ -1043,7 +1041,7 @@ struct LfMyV0s {
     if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
-    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
       return false;
     }
 
@@ -1573,7 +1571,7 @@ struct LfMyV0s {
       const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
 
-      if (NotITSAfterburner && (v0.negTrack_as<StrHadronDaughterTracks>().isITSAfterburner() || v0.posTrack_as<StrHadronDaughterTracks>().isITSAfterburner())) {
+      if (notITSAfterburner && (v0.negTrack_as<StrHadronDaughterTracks>().isITSAfterburner() || v0.posTrack_as<StrHadronDaughterTracks>().isITSAfterburner())) {
         continue;
       }
 
