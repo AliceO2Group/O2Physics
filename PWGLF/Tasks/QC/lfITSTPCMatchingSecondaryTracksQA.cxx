@@ -218,14 +218,14 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   bool passedProtonSelection(const protonTrack& track)
   {
     // Switch between TPC and TOF analysis
-    static constexpr double kPtThreshold = 0.6;
+    static constexpr double ptThreshold = 0.6;
 
     // TPC Selection
-    if (track.pt() < kPtThreshold && (track.tpcNSigmaPr() < nsigmaTPCmin || track.tpcNSigmaPr() > nsigmaTPCmax))
+    if (track.pt() < ptThreshold && (track.tpcNSigmaPr() < nsigmaTPCmin || track.tpcNSigmaPr() > nsigmaTPCmax))
       return false;
 
     // TOF Selection
-    if (track.pt() > kPtThreshold && (track.tpcNSigmaPr() < nsigmaTPCmin || track.tpcNSigmaPr() > nsigmaTPCmax || track.tofNSigmaPr() < nsigmaTOFmin || track.tofNSigmaPr() > nsigmaTOFmax))
+    if (track.pt() > ptThreshold && (track.tpcNSigmaPr() < nsigmaTPCmin || track.tpcNSigmaPr() > nsigmaTPCmax || track.tofNSigmaPr() < nsigmaTOFmin || track.tofNSigmaPr() > nsigmaTOFmax))
       return false;
     return true;
   }
@@ -239,10 +239,11 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return false;
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
+    static constexpr int nItsLayers = 7;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
     if (requireItsHits) {
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < nItsLayers; i++) {
         if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
           return false;
         }
@@ -262,13 +263,14 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
     */
+    static constexpr int nItsLayers = 7;
 
     if (track.itsNCls() < minITSnCls)
       return false;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
     if (requireItsHits) {
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < nItsLayers; i++) {
         if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
           return false;
         }
