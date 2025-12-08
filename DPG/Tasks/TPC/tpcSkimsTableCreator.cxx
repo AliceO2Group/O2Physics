@@ -265,12 +265,7 @@ struct TreeWriterTpcV0 {
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
-      float usedDedx{UndefValueFloat};
-      if constexpr (DoUseCorrectedDeDx) {
-        usedDedx = track.tpcSignalCorrected();
-      } else {
-        usedDedx = track.tpcSignal();
-      }
+      const float usedDedx = tpcSignalGeneric<DoUseCorrectedDeDx>(track);
       float tpcdEdxNorm{UndefValueFloat};
       if constexpr (ModeId != ModeStandard) {
         tpcdEdxNorm = existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat;
@@ -679,12 +674,7 @@ struct TreeWriterTpcTof {
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
-      float usedEdx;
-      if constexpr (DoCorrectDeDx) {
-        usedEdx = track.tpcSignalCorrected();
-      } else {
-        usedEdx = track.tpcSignal();
-      }
+      const float usedEdx = tpcSignalGeneric<DoCorrectDeDx>(track);
       float tpcdEdxNorm{UndefValueFloat};
       if constexpr (ModeId != ModeStandard) {
         tpcdEdxNorm = existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat;
