@@ -1992,5 +1992,5 @@ struct lambdaJetpolarization {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdaJetpolarization>(cfgc, TaskName{"lf-lambdaJetpolarization"})};
+    adaptAnalysisTask<lambdaJetpolarization>(cfgc, TaskName{"lambdaJetpolarization"})};
 }
