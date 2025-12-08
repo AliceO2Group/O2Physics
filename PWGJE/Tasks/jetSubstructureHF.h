@@ -52,42 +52,38 @@
 
 #include <math.h>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 // NB: runDataProcessing.h must be included after customize!
 
 template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTableDataSub, typename CandidateTable, typename CandidateTableMCP, typename SubstructureTableData, typename SplittingsTableData, typename PairsTableData, typename SubstructureTableMCD, typename SplittingsTableMCD, typename PairsTableMCD, typename SubstructureTableMCP, typename SplittingsTableMCP, typename PairsTableMCP, typename SubstructureTableDataSub, typename SplittingsTableDataSub, typename PairsTableDataSub, typename TracksSub>
 struct JetSubstructureHFTask {
-  Produces<SubstructureTableData> jetSubstructureDataTable;
-  Produces<SubstructureTableMCD> jetSubstructureMCDTable;
-  Produces<SubstructureTableMCP> jetSubstructureMCPTable;
-  Produces<SubstructureTableDataSub> jetSubstructureDataSubTable;
+  o2::framework::Produces<SubstructureTableData> jetSubstructureDataTable;
+  o2::framework::Produces<SubstructureTableMCD> jetSubstructureMCDTable;
+  o2::framework::Produces<SubstructureTableMCP> jetSubstructureMCPTable;
+  o2::framework::Produces<SubstructureTableDataSub> jetSubstructureDataSubTable;
 
-  Produces<SplittingsTableData> jetSplittingsDataTable;
-  Produces<SplittingsTableMCD> jetSplittingsMCDTable;
-  Produces<SplittingsTableMCP> jetSplittingsMCPTable;
-  Produces<SplittingsTableDataSub> jetSplittingsDataSubTable;
+  o2::framework::Produces<SplittingsTableData> jetSplittingsDataTable;
+  o2::framework::Produces<SplittingsTableMCD> jetSplittingsMCDTable;
+  o2::framework::Produces<SplittingsTableMCP> jetSplittingsMCPTable;
+  o2::framework::Produces<SplittingsTableDataSub> jetSplittingsDataSubTable;
 
-  Produces<PairsTableData> jetPairsDataTable;
-  Produces<PairsTableMCD> jetPairsMCDTable;
-  Produces<PairsTableMCP> jetPairsMCPTable;
-  Produces<PairsTableDataSub> jetPairsDataSubTable;
+  o2::framework::Produces<PairsTableData> jetPairsDataTable;
+  o2::framework::Produces<PairsTableMCD> jetPairsMCDTable;
+  o2::framework::Produces<PairsTableMCP> jetPairsMCPTable;
+  o2::framework::Produces<PairsTableDataSub> jetPairsDataSubTable;
 
   // Jet level configurables
-  Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
-  Configurable<float> beta{"beta", 0.0, "soft drop beta"};
-  Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
-  Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
-  Configurable<bool> doPairBkg{"doPairBkg", true, "save bkg pairs"};
-  Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
-  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
-  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
+  o2::framework::Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
+  o2::framework::Configurable<float> beta{"beta", 0.0, "soft drop beta"};
+  o2::framework::Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
+  o2::framework::Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
+  o2::framework::Configurable<bool> doPairBkg{"doPairBkg", true, "save bkg pairs"};
+  o2::framework::Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
+  o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
+  o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
+  o2::framework::Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
   float candMass;
 
   std::vector<fastjet::PseudoJet> jetConstituents;
@@ -115,23 +111,23 @@ struct JetSubstructureHFTask {
   float leadingConstituentPt;
   float perpConeRho;
 
-  HistogramRegistry registry;
+  o2::framework::HistogramRegistry registry;
 
   int trackSelection = -1;
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
-    registry.add("h2_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h2_jet_pt_jet_rg", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h2_jet_pt_jet_nsd", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
+    registry.add("h2_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_rg", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_nsd", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
-    registry.add("h2_jet_pt_part_jet_zg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{z}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h2_jet_pt_part_jet_rg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{R}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h2_jet_pt_part_jet_nsd_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{n}_{SD}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
+    registry.add("h2_jet_pt_part_jet_zg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{z}_{g}^{part}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_part_jet_rg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{R}_{g}^{part}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_part_jet_nsd_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{n}_{SD}^{part}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
-    registry.add("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
+    registry.add("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {o2::framework::HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
@@ -151,17 +147,17 @@ struct JetSubstructureHFTask {
     }
   }
 
-  Preslice<aod::JetTracks> TracksPerCollision = aod::jtrack::collisionId;
-  PresliceOptional<aod::JTrackD0Subs> TracksPerD0DataSub = aod::bkgd0::candidateId;
-  PresliceOptional<aod::JTrackDplusSubs> TracksPerDplusDataSub = aod::bkgdplus::candidateId;
-  PresliceOptional<aod::JTrackDsSubs> TracksPerDsDataSub = aod::bkgds::candidateId;
-  PresliceOptional<aod::JTrackDstarSubs> TracksPerDstarDataSub = aod::bkgdstar::candidateId;
-  PresliceOptional<aod::JTrackLcSubs> TracksPerLcDataSub = aod::bkglc::candidateId;
-  PresliceOptional<aod::JTrackB0Subs> TracksPerB0DataSub = aod::bkgb0::candidateId;
-  PresliceOptional<aod::JTrackBplusSubs> TracksPerBplusDataSub = aod::bkgbplus::candidateId;
-  PresliceOptional<aod::JTrackXicToXiPiPiSubs> TracksPerXicToXiPiPiDataSub = aod::bkgxictoxipipi::candidateId;
-  PresliceOptional<aod::JTrackDielectronSubs> TracksPerDielectronDataSub = aod::bkgdielectron::candidateId;
-  Preslice<aod::JetParticles> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
+  o2::framework::Preslice<o2::aod::JetTracks> TracksPerCollision = o2::aod::jtrack::collisionId;
+  o2::framework::PresliceOptional<o2::aod::JTrackD0Subs> TracksPerD0DataSub = o2::aod::bkgd0::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackDplusSubs> TracksPerDplusDataSub = o2::aod::bkgdplus::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackDsSubs> TracksPerDsDataSub = o2::aod::bkgds::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackDstarSubs> TracksPerDstarDataSub = o2::aod::bkgdstar::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackLcSubs> TracksPerLcDataSub = o2::aod::bkglc::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackB0Subs> TracksPerB0DataSub = o2::aod::bkgb0::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackBplusSubs> TracksPerBplusDataSub = o2::aod::bkgbplus::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackXicToXiPiPiSubs> TracksPerXicToXiPiPiDataSub = o2::aod::bkgxictoxipipi::candidateId;
+  o2::framework::PresliceOptional<o2::aod::JTrackDielectronSubs> TracksPerDielectronDataSub = o2::aod::bkgdielectron::candidateId;
+  o2::framework::Preslice<o2::aod::JetParticles> ParticlesPerMcCollision = o2::aod::jmcparticle::mcCollisionId;
 
   template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R>
   auto selectSlicer(T const& D0Slicer, U const& DplusSlicer, V const& DsSlicer, M const& DstarSlicer, N const& LcSlicer, O const& B0Slicer, P const& BplusSlicer, Q const& XicToXiPiPiSlicer, R const& DielectronSlicer)
@@ -354,7 +350,7 @@ struct JetSubstructureHFTask {
         continue;
       }
 
-      if constexpr (!std::is_same_v<std::decay_t<U>, aod::JetParticles>) {
+      if constexpr (!std::is_same_v<std::decay_t<U>, o2::aod::JetParticles>) {
         if (!jetfindingutilities::isTrackSelected<typename U::iterator, typename U::iterator>(track, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning)) {
           continue;
         }
@@ -478,7 +474,7 @@ struct JetSubstructureHFTask {
 
   void processChargedJetsData(typename JetTableData::iterator const& jet,
                               CandidateTable const& candidates,
-                              aod::JetTracks const& tracks)
+                              o2::aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks, candidates, TracksPerCollision, jetSubstructureDataTable, jetSplittingsDataTable, jetPairsDataTable);
   }
@@ -494,18 +490,18 @@ struct JetSubstructureHFTask {
 
   void processChargedJetsMCD(typename JetTableMCD::iterator const& jet,
                              CandidateTable const& candidates,
-                             aod::JetTracks const& tracks)
+                             o2::aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks, candidates, TracksPerCollision, jetSubstructureMCDTable, jetSplittingsMCDTable, jetPairsMCDTable);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCD, "HF jet substructure on data", false);
 
   void processChargedJetsMCP(typename JetTableMCP::iterator const& jet,
-                             aod::JetParticles const& particles,
+                             o2::aod::JetParticles const& particles,
                              CandidateTableMCP const& candidates)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<aod::JetParticles>()) {
+    for (auto& jetConstituent : jet.template tracks_as<o2::aod::JetParticles>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     for (auto& jetHFCandidate : jet.template candidates_as<CandidateTableMCP>()) {

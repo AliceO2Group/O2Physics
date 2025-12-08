@@ -27,37 +27,33 @@
 
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename Candidates>
 struct JetMatchingMcSub {
 
-  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
-  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
-  Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
-  Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
+  o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
+  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
 
-  Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
-  Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
+  o2::framework::Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
+  o2::framework::Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
 
   // preslicing jet collections, only for Mc-based collection
   static constexpr bool jetsBaseIsMc = false;
   static constexpr bool jetsTagIsMc = false;
 
-  Preslice<JetsBase> baseJetsPerCollision = aod::jet::collisionId;
-  Preslice<JetsTag> tagJetsPerCollision = aod::jet::collisionId;
+  o2::framework::Preslice<JetsBase> baseJetsPerCollision = o2::aod::jet::collisionId;
+  o2::framework::Preslice<JetsTag> tagJetsPerCollision = o2::aod::jet::collisionId;
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
   }
 
-  void processJets(aod::JetCollisions const& collisions,
+  void processJets(o2::aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   aod::JetTracks const& tracks,
-                   aod::JetTracksSub const& tracksSub,
+                   o2::aod::JetTracks const& tracks,
+                   o2::aod::JetTracksSub const& tracksSub,
                    Candidates const& candidates)
   {
 

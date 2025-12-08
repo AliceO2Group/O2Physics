@@ -45,82 +45,78 @@
 #include <string>
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 template <typename CandidateTableData, typename CandidateTableMCD, typename CandidateTableMCP, typename JetTracksSubTable, typename JetParticlesSubTable, typename JetTable, typename ConstituentTable, typename JetEvtWiseSubTable, typename ConstituentEvtWiseSubTable>
 struct JetFinderHFTask {
-  Produces<JetTable> jetsTable;
-  Produces<ConstituentTable> constituentsTable;
-  Produces<JetEvtWiseSubTable> jetsEvtWiseSubTable;
-  Produces<ConstituentEvtWiseSubTable> constituentsEvtWiseSubTable;
+  o2::framework::Produces<JetTable> jetsTable;
+  o2::framework::Produces<ConstituentTable> constituentsTable;
+  o2::framework::Produces<JetEvtWiseSubTable> jetsEvtWiseSubTable;
+  o2::framework::Produces<ConstituentEvtWiseSubTable> constituentsEvtWiseSubTable;
 
-  HistogramRegistry registry;
+  o2::framework::HistogramRegistry registry;
 
   // event level configurables
-  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
-  Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
-  Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-  Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
-  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
-  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+  o2::framework::Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+  o2::framework::Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
+  o2::framework::Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
+  o2::framework::Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  o2::framework::Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  o2::framework::Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
+  o2::framework::Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
+  o2::framework::Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
 
   // track level configurables
-  Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
-  Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
-  Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
-  Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
-  Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
-  Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
-  Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
-  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
-  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
+  o2::framework::Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
+  o2::framework::Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
+  o2::framework::Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
+  o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
+  o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
+  o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
+  o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
+  o2::framework::Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
+  o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
   // cluster level configurables
-  Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.71, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterPhiMin{"clusterPhiMin", 1.39, "minimum cluster phi"};
-  Configurable<float> clusterPhiMax{"clusterPhiMax", 3.27, "maximum cluster phi"};
-  Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.5, "minimum cluster energy in EMCAL (GeV)"};
-  Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
-  Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
-  Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
+  o2::framework::Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  o2::framework::Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  o2::framework::Configurable<float> clusterEtaMax{"clusterEtaMax", 0.71, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  o2::framework::Configurable<float> clusterPhiMin{"clusterPhiMin", 1.39, "minimum cluster phi"};
+  o2::framework::Configurable<float> clusterPhiMax{"clusterPhiMax", 3.27, "maximum cluster phi"};
+  o2::framework::Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.5, "minimum cluster energy in EMCAL (GeV)"};
+  o2::framework::Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
+  o2::framework::Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
+  o2::framework::Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
   // HF candidate level configurables
-  Configurable<float> candPtMin{"candPtMin", 0.0, "minimum candidate pT"};
-  Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
-  Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
-  Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
+  o2::framework::Configurable<float> candPtMin{"candPtMin", 0.0, "minimum candidate pT"};
+  o2::framework::Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
+  o2::framework::Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
+  o2::framework::Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
   // HF candidiate selection configurables
-  Configurable<bool> rejectBackgroundMCDCandidates{"rejectBackgroundMCDCandidates", false, "reject background HF candidates at MC detector level"};
-  Configurable<bool> rejectIncorrectDecaysMCP{"rejectIncorrectDecaysMCP", true, "reject HF paticles decaying to the non-analysed decay channels at MC generator level"};
+  o2::framework::Configurable<bool> rejectBackgroundMCDCandidates{"rejectBackgroundMCDCandidates", false, "reject background HF candidates at MC detector level"};
+  o2::framework::Configurable<bool> rejectIncorrectDecaysMCP{"rejectIncorrectDecaysMCP", true, "reject HF paticles decaying to the non-analysed decay channels at MC generator level"};
 
   // jet level configurables
-  Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
-  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
-  Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
-  Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
-  Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
-  Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
-  Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
-  Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
-  Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
-  Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
-  Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
-  Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
-  Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
-  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
-  Configurable<int> jetPtBinWidth{"jetPtBinWidth", 5, "used to define the width of the jetPt bins for the THnSparse"};
-  Configurable<bool> fillTHnSparse{"fillTHnSparse", false, "switch to fill the THnSparse"};
-  Configurable<double> jetExtraParam{"jetExtraParam", -99.0, "sets the _extra_param in fastjet"};
+  o2::framework::Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
+  o2::framework::Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
+  o2::framework::Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  o2::framework::Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
+  o2::framework::Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
+  o2::framework::Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
+  o2::framework::Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
+  o2::framework::Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
+  o2::framework::Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
+  o2::framework::Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
+  o2::framework::Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
+  o2::framework::Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
+  o2::framework::Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
+  o2::framework::Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
+  o2::framework::Configurable<int> jetPtBinWidth{"jetPtBinWidth", 5, "used to define the width of the jetPt bins for the THnSparse"};
+  o2::framework::Configurable<bool> fillTHnSparse{"fillTHnSparse", false, "switch to fill the THnSparse"};
+  o2::framework::Configurable<double> jetExtraParam{"jetExtraParam", -99.0, "sets the _extra_param in fastjet"};
 
-  Service<o2::framework::O2DatabasePDG> pdgDatabase;
+  o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
   std::vector<int> eventSelectionBits;
   std::string particleSelection;
@@ -130,7 +126,7 @@ struct JetFinderHFTask {
 
   std::vector<int> triggerMaskBits;
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
@@ -169,8 +165,8 @@ struct JetFinderHFTask {
     double jetPtMinDouble = static_cast<double>(jetPtMinInt);
     double jetPtMaxDouble = static_cast<double>(jetPtMaxInt);
 
-    registry.add("hJet", "sparse for data or mcd jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
-    registry.add("hJetMCP", "sparse for mcp jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
+    registry.add("hJet", "sparse for data or mcd jets", {o2::framework::HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
+    registry.add("hJetMCP", "sparse for mcp jets", {o2::framework::HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
 
     if (applyTrackingEfficiency) {
       if (trackingEfficiencyPtBinning->size() < 2) {
@@ -182,32 +178,32 @@ struct JetFinderHFTask {
     }
   }
 
-  aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax && aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
-  Filter mcCollisionFilter = (nabs(aod::jmccollision::posZ) < vertexZCut);
-  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta >= trackEtaMin && aod::jtrack::eta <= trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
-  Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta >= trackEtaMin && aod::jmcparticle::eta <= trackEtaMax && aod::jmcparticle::phi >= trackPhiMin && aod::jmcparticle::phi <= trackPhiMax);
-  Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta >= clusterEtaMin && aod::jcluster::eta <= clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
-  // Filter candidateCuts = (aod::hfcand::pt >= candPtMin && aod::hfcand::pt < candPtMax && aod::hfcand::y >= candYMin && aod::hfcand::y < candYMax);
+  o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
+  o2::framework::expressions::Filter collisionFilter = (nabs(o2::aod::jcollision::posZ) < vertexZCut && o2::aod::jcollision::centFT0M >= centralityMin && o2::aod::jcollision::centFT0M < centralityMax && o2::aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
+  o2::framework::expressions::Filter mcCollisionFilter = (nabs(o2::aod::jmccollision::posZ) < vertexZCut);
+  o2::framework::expressions::Filter trackCuts = (o2::aod::jtrack::pt >= trackPtMin && o2::aod::jtrack::pt < trackPtMax && o2::aod::jtrack::eta >= trackEtaMin && o2::aod::jtrack::eta <= trackEtaMax && o2::aod::jtrack::phi >= trackPhiMin && o2::aod::jtrack::phi <= trackPhiMax);
+  o2::framework::expressions::Filter partCuts = (o2::aod::jmcparticle::pt >= trackPtMin && o2::aod::jmcparticle::pt < trackPtMax && o2::aod::jmcparticle::eta >= trackEtaMin && o2::aod::jmcparticle::eta <= trackEtaMax && o2::aod::jmcparticle::phi >= trackPhiMin && o2::aod::jmcparticle::phi <= trackPhiMax);
+  o2::framework::expressions::Filter clusterFilter = (o2::aod::jcluster::definition == static_cast<int>(clusterDefinition) && o2::aod::jcluster::eta >= clusterEtaMin && o2::aod::jcluster::eta <= clusterEtaMax && o2::aod::jcluster::phi >= clusterPhiMin && o2::aod::jcluster::phi <= clusterPhiMax && o2::aod::jcluster::energy >= clusterEnergyMin && o2::aod::jcluster::time > clusterTimeMin && o2::aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && o2::aod::jcluster::isExotic != true));
+  // o2::framework::expressions::Filter candidateCuts = (o2::aod::hfcand::pt >= candPtMin && o2::aod::hfcand::pt < candPtMax && o2::aod::hfcand::y >= candYMin && o2::aod::hfcand::y < candYMax);
 
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perD0Candidate = aod::bkgd0::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perD0McCandidate = aod::bkgd0mc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDplusCandidate = aod::bkgdplus::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDplusMcCandidate = aod::bkgdplusmc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDsCandidate = aod::bkgds::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDsMcCandidate = aod::bkgdsmc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDstarCandidate = aod::bkgdstar::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDstarMcCandidate = aod::bkgdstarmc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perLcCandidate = aod::bkglc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perLcMcCandidate = aod::bkglcmc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perB0Candidate = aod::bkgb0::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perB0McCandidate = aod::bkgb0mc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perBplusCandidate = aod::bkgbplus::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perBplusMcCandidate = aod::bkgbplusmc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perXicToXiPiPiCandidate = aod::bkgxictoxipipi::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perXicToXiPiPiMcCandidate = aod::bkgxictoxipipimc::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDielectronCandidate = aod::bkgdielectron::candidateId;
-  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDielectronMcCandidate = aod::bkgdielectronmc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perD0Candidate = o2::aod::bkgd0::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perD0McCandidate = o2::aod::bkgd0mc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDplusCandidate = o2::aod::bkgdplus::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDplusMcCandidate = o2::aod::bkgdplusmc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDsCandidate = o2::aod::bkgds::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDsMcCandidate = o2::aod::bkgdsmc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDstarCandidate = o2::aod::bkgdstar::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDstarMcCandidate = o2::aod::bkgdstarmc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perLcCandidate = o2::aod::bkglc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perLcMcCandidate = o2::aod::bkglcmc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perB0Candidate = o2::aod::bkgb0::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perB0McCandidate = o2::aod::bkgb0mc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perBplusCandidate = o2::aod::bkgbplus::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perBplusMcCandidate = o2::aod::bkgbplusmc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perXicToXiPiPiCandidate = o2::aod::bkgxictoxipipi::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perXicToXiPiPiMcCandidate = o2::aod::bkgxictoxipipimc::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDielectronCandidate = o2::aod::bkgdielectron::candidateId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDielectronMcCandidate = o2::aod::bkgdielectronmc::candidateId;
 
   // function that generalically processes Data and reco level events
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
@@ -261,12 +257,12 @@ struct JetFinderHFTask {
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, mcCollision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
   }
 
-  void processDummy(aod::JetCollisions const&)
+  void processDummy(o2::aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processChargedJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, CandidateTableData const& candidates)
+  void processChargedJetsData(o2::soa::Filtered<o2::aod::JetCollisions>::iterator const& collision, o2::soa::Filtered<o2::aod::JetTracks> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) { // why can the type not be auto?  try const auto
       analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
@@ -274,7 +270,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsData, "charged hf jet finding on data", false);
 
-  void processChargedEvtWiseSubJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
+  void processChargedEvtWiseSubJetsData(o2::soa::Filtered<o2::aod::JetCollisions>::iterator const& collision, o2::soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) {
       analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perDplusCandidate, perDsCandidate, perDstarCandidate, perLcCandidate, perB0Candidate, perBplusCandidate, perXicToXiPiPiCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
@@ -282,7 +278,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsData, "charged hf jet finding on data with event-wise constituent subtraction", false);
 
-  void processChargedJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, CandidateTableMCD const& candidates)
+  void processChargedJetsMCD(o2::soa::Filtered<o2::aod::JetCollisions>::iterator const& collision, o2::soa::Filtered<o2::aod::JetTracks> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
       analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
@@ -290,7 +286,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
 
-  void processChargedEvtWiseSubJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
+  void processChargedEvtWiseSubJetsMCD(o2::soa::Filtered<o2::aod::JetCollisions>::iterator const& collision, o2::soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
       analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perDplusCandidate, perDsCandidate, perDstarCandidate, perLcCandidate, perB0Candidate, perBplusCandidate, perXicToXiPiPiCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
@@ -298,8 +294,8 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCD, "charged hf jet finding on MC detector level with event-wise constituent subtraction", false);
 
-  void processChargedJetsMCP(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision,
-                             soa::Filtered<aod::JetParticles> const& particles,
+  void processChargedJetsMCP(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision,
+                             o2::soa::Filtered<o2::aod::JetParticles> const& particles,
                              CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {
@@ -308,8 +304,8 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 
-  void processChargedEvtWiseSubJetsMCP(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision,
-                                       soa::Filtered<JetParticlesSubTable> const& particles,
+  void processChargedEvtWiseSubJetsMCP(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision,
+                                       o2::soa::Filtered<JetParticlesSubTable> const& particles,
                                        CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {

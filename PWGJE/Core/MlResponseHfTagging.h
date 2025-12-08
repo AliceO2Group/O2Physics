@@ -18,11 +18,10 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#include <onnxruntime_cxx_api.h>
-
 #include <Framework/Logger.h>
 
 #include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -32,10 +31,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BJET(FEATURE)                                 \
-  {                                                            \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE) \
-  }
+#define FILL_MAP_BJET(FEATURE) \
+  {                            \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -330,6 +328,7 @@ class TensorAllocator
 {
  protected:
   Ort::MemoryInfo memInfo;
+
  public:
   TensorAllocator()
     : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
@@ -426,7 +425,7 @@ class GNNBjetAllocator : public TensorAllocator
   }
   ~GNNBjetAllocator() = default;
 
-  // Copy operator for initializing GNNBjetAllocator using Configurable values
+  // Copy operator for initializing GNNBjetAllocator using o2::framework::Configurable values
   GNNBjetAllocator& operator=(const GNNBjetAllocator& other)
   {
     nJetFeat = other.nJetFeat;
