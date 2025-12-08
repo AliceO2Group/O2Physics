@@ -26,6 +26,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using XicToXiPiPiChargedJetSubstructureMatchingSub = JetSubstructureMatchingSub<soa::Join<aod::XicToXiPiPiChargedJets, aod::XicToXiPiPiChargedJetConstituents, aod::XicToXiPiPiChargedJetsMatchedToXicToXiPiPiChargedEventWiseSubtractedJets>,
                                                                                 soa::Join<aod::XicToXiPiPiChargedEventWiseSubtractedJets, aod::XicToXiPiPiChargedEventWiseSubtractedJetConstituents, aod::XicToXiPiPiChargedEventWiseSubtractedJetsMatchedToXicToXiPiPiChargedJets>,
                                                                                 aod::XicToXiPiPiChargedSPsMatchedToXicToXiPiPiChargedEventWiseSubtractedSPs,

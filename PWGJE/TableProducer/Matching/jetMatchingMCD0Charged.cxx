@@ -25,6 +25,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using D0ChargedJetMatchingMC = JetMatchingMc<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
                                              soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
                                              aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,

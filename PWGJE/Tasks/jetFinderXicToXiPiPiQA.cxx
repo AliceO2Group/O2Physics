@@ -24,6 +24,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using JetFinderXicToXiPiPiQATask = JetFinderHFQATask<aod::XicToXiPiPiChargedJets, aod::XicToXiPiPiChargedJetConstituents, aod::XicToXiPiPiChargedJetsMatchedToXicToXiPiPiChargedEventWiseSubtractedJets, aod::CandidatesXicToXiPiPiData, aod::XicToXiPiPiChargedMCDetectorLevelJets, aod::XicToXiPiPiChargedMCDetectorLevelJetConstituents, aod::XicToXiPiPiChargedMCDetectorLevelJetsMatchedToXicToXiPiPiChargedMCParticleLevelJets, aod::XicToXiPiPiChargedMCDetectorLevelJetEventWeights, aod::CandidatesXicToXiPiPiMCD, aod::XicToXiPiPiChargedMCParticleLevelJets, aod::XicToXiPiPiChargedMCParticleLevelJetConstituents, aod::XicToXiPiPiChargedMCParticleLevelJetsMatchedToXicToXiPiPiChargedMCDetectorLevelJets, aod::XicToXiPiPiChargedMCParticleLevelJetEventWeights, aod::XicToXiPiPiChargedEventWiseSubtractedJets, aod::XicToXiPiPiChargedEventWiseSubtractedJetConstituents, aod::XicToXiPiPiChargedEventWiseSubtractedJetsMatchedToXicToXiPiPiChargedJets, aod::CandidatesXicToXiPiPiMCP, aod::JTrackXicToXiPiPiSubs, aod::BkgXicToXiPiPiRhos>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

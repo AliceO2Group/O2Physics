@@ -26,6 +26,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using DstarChargedJetSubstructureMatchingMC = JetSubstructureMatching<soa::Join<aod::DstarChargedMCDetectorLevelJets, aod::DstarChargedMCDetectorLevelJetConstituents, aod::DstarChargedMCDetectorLevelJetsMatchedToDstarChargedMCParticleLevelJets>,
                                                                       soa::Join<aod::DstarChargedMCParticleLevelJets, aod::DstarChargedMCParticleLevelJetConstituents, aod::DstarChargedMCParticleLevelJetsMatchedToDstarChargedMCDetectorLevelJets>,
                                                                       aod::DstarChargedMCDetectorLevelSPsMatchedToDstarChargedMCParticleLevelSPs,

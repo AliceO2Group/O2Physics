@@ -23,6 +23,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using JetFinderBplusMCParticleLevelCharged = JetFinderHFTask<aod::CandidatesBplusData, aod::CandidatesBplusMCD, aod::CandidatesBplusMCP, aod::JetTracksSubBplus, aod::JetParticlesSubBplus, aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelEventWiseSubtractedJets, aod::BplusChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
