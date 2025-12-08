@@ -57,7 +57,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct LfMyV0s {
+struct lambdaJetpolarization {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -1550,7 +1550,7 @@ struct LfMyV0s {
       }
     }
   }
-  PROCESS_SWITCH(LfMyV0s, processData, "processData", false);
+  PROCESS_SWITCH(lambdaJetpolarization, processData, "processData", false);
 
   // V0Collisions
   // SelCollisions
@@ -1597,7 +1597,7 @@ struct LfMyV0s {
       }
     }
   }
-  PROCESS_SWITCH(LfMyV0s, processLongitudinalPolarization, "processLongitudinalPolarization", true);
+  PROCESS_SWITCH(lambdaJetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", true);
 
   void processLambdaJetPolarization(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
   {
@@ -1984,12 +1984,12 @@ struct LfMyV0s {
       }
     }
   }
-  PROCESS_SWITCH(LfMyV0s, processLambdaJetPolarization, "processLambdaJetPolarization", true);
+  PROCESS_SWITCH(lambdaJetpolarization, processLambdaJetPolarization, "processLambdaJetPolarization", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LfMyV0s>(cfgc),// TaskName{"lf-my-v0s"}
+    adaptAnalysisTask<lambdaJetpolarization>(cfgc),// TaskName{"lf-my-v0s"}
   };
 }
