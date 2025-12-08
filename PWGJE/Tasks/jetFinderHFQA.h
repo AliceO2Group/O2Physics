@@ -13,6 +13,9 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#ifndef PWGJE_TASKS_JETFINDERHFQA_H_
+#define PWGJE_TASKS_JETFINDERHFQA_H_
+
 #include "RecoDecay.h"
 
 #include "PWGHF/Core/HfHelper.h"
@@ -1590,3 +1593,5 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processCandidates, "HF candidate QA", false);
 };
+
+#endif // PWGJE_TASKS_JETFINDERHFQA_H_
