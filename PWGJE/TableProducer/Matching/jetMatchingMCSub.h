@@ -13,6 +13,9 @@
 /// \brief matching event-wise constituent subtracted detector level and unsubtracted generated level jets (this is usseful as a template for embedding  matching)
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMCSUB_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMCSUB_H_
+
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -86,3 +89,5 @@ struct JetMatchingMcSub {
   }
   PROCESS_SWITCH(JetMatchingMcSub, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMCSUB_H_
