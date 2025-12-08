@@ -26,6 +26,7 @@
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -273,34 +274,34 @@ struct HfTreeCreatorOmegacSt {
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
-  // TOF & TPC nsigma configurable cuts (defaults: very loose = 9999)
+  // TOF nsigma configurable cuts (defaults: very loose = 9999)
   Configurable<float> maxAbsTofNsigmaTrackPi{"maxAbsTofNsigmaTrackPi", 9999.f, "Max abs TOF nsigma for charm bachelor track as pion"};
   Configurable<float> maxAbsTofNsigmaTrackKa{"maxAbsTofNsigmaTrackKa", 9999.f, "Max abs TOF nsigma for charm bachelor track as kaon"};
   Configurable<float> maxAbsTofNsigmaV0Pr{"maxAbsTofNsigmaV0Pr", 9999.f, "Max abs TOF nsigma for V0 proton"};
   Configurable<float> maxAbsTofNsigmaV0Pi{"maxAbsTofNsigmaV0Pi", 9999.f, "Max abs TOF nsigma for V0 pion"};
-  Configurable<float> maxAbsTofNsigmaBachelorPi{"maxAbsTofNsigmaBachelorPi", 9999.f, "Max abs TOF nsigma for bachelor as pion"};
-  Configurable<float> maxAbsTofNsigmaBachelorKa{"maxAbsTofNsigmaBachelorKa", 9999.f, "Max abs TOF nsigma for bachelor as kaon"};
+  Configurable<float> maxAbsTofNsigmaBachelorPi{"maxAbsTofNsigmaBachelorPi", 9999.f, "Max abs TOF nsigma for cascade bachelor as pion"};
+  Configurable<float> maxAbsTofNsigmaBachelorKa{"maxAbsTofNsigmaBachelorKa", 9999.f, "Max abs TOF nsigma for cascade bachelor as kaon"};
   // whether to require TOF in addition to TPC
   Configurable<bool> useTofPid{"useTofPid", false, "Require TOF PID together with TPC PID when true; otherwise use TPC only"};
 
 
-  // CPA cuts (defaults: require good alignment > 0.9)
-  Configurable<float> minCpaCharmedBaryon{"minCpaCharmedBaryon", 0.9f, "Minimum CPA for charmed baryon (parent)"};
-  Configurable<float> minCpaXYCharmedBaryon{"minCpaXYCharmedBaryon", 0.9f, "Minimum CPA XY for charmed baryon (parent)"};
+  // CPA cuts (defaults: >= 0.9)
+  Configurable<float> minCpaCharmedBaryon{"minCpaCharmedBaryon", 0.9f, "Minimum CPA for charmed baryon"};
+  Configurable<float> minCpaXYCharmedBaryon{"minCpaXYCharmedBaryon", 0.9f, "Minimum CPA XY for charmed baryon"};
   Configurable<float> minCpaCasc{"minCpaCasc", 0.9f, "Minimum CPA for cascade"};
   Configurable<float> minCpaXYCasc{"minCpaXYCasc", 0.9f, "Minimum CPA XY for cascade"};
 
   // Chi2 cuts (defaults: <= 10)
   Configurable<float> maxChi2TopCharmedBaryon{"maxChi2TopCharmedBaryon", 10.f, "Maximum chi2 for top charmed baryon fit"};
-  Configurable<float> maxTopologyChi2{"maxTopologyChi2", 10.f, "Maximum topologyChi2 of the tracked cascade"};
+  Configurable<float> maxChi2TopCasc{"maxChi2TopCasc", 10.f, "Maximum topologyChi2 of the tracked cascade"};
 
   // Impact parameter cuts (defaults: absolute value < 10)
-  Configurable<float> maxImpactCascY{"maxImpactCascY", 10.f, "Max abs impactParameterCasc.getY()"};
-  Configurable<float> maxImpactCascZ{"maxImpactCascZ", 10.f, "Max abs impactParameterCasc.getZ()"};
-  Configurable<float> maxImpactPionY{"maxImpactPionY", 10.f, "Max abs impactParameterPion.getY()"};
-  Configurable<float> maxImpactPionZ{"maxImpactPionZ", 10.f, "Max abs impactParameterPion.getZ()"};
+  Configurable<float> maxImpactCascY{"maxImpactCascY", 10.f, "Max abs Max abs impactParameter of cascade(Y)"};
+  Configurable<float> maxImpactCascZ{"maxImpactCascZ", 10.f, "Max abs DCA Z of cascade"};
+  Configurable<float> maxImpactCharmBachelorY{"maxImpactCharmBachelorY", 10.f, "Max abs impactParameter of charm bachelor(Y)"};
+  Configurable<float> maxImpactCharmBachelorZ{"maxImpactCharmBachelorZ", 10.f, "Max abs DCA Z of charm bachelor"};
   Configurable<float> minPtCascade{"minPtCascade", 0.f, "Minimum pT requirement for the cascade track"};
-  Configurable<float> minPtPionOrKaon{"minPtPionOrKaon", 0.f, "Minimum pT requirement for the associated pion/kaon track"};
+  Configurable<float> minPtPionOrKaon{"minPtPionOrKaon", 0.f, "Minimum pT requirement for the charm baryon daughter pion/kaon track"};
   Configurable<float> minImpProduct{"minImpProduct", -1.e9f, "Lower bound for DCA impact product"};
   Configurable<float> maxImpProduct{"maxImpProduct", 0.f, "Upper bound for DCA impact product"};
 
@@ -318,7 +319,7 @@ struct HfTreeCreatorOmegacSt {
   int runNumber{0};
   std::map<int, int> mapMcPartToGenTable;
 
-  using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
@@ -388,7 +389,7 @@ struct HfTreeCreatorOmegacSt {
     setLabelHistoCands(hCandidatesCascPiOrK);
 
     // init HF event selection helper (centrality, event cuts, monitoring)
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
   }
 
   // processMC: loop over MC objects
@@ -489,7 +490,6 @@ struct HfTreeCreatorOmegacSt {
                  std::optional<std::reference_wrapper<aod::McParticles const>> mcParticles = std::nullopt)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
-
     for (const auto& collision : collisions) {
         // Event selection & centrality using HF helper 
         float centrality{-1.f};
@@ -497,6 +497,8 @@ struct HfTreeCreatorOmegacSt {
         if (rejectionMask != 0) {
           continue; // reject collisions failing HF event selection
         }
+        // record event-level monitoring (centrality, vertex, etc.)
+        hfEvSel.fillHistograms(collision, rejectionMask, centrality);
         const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         if (skimmedProcessing) {
@@ -508,7 +510,6 @@ struct HfTreeCreatorOmegacSt {
         }
         runNumber = bc.runNumber();
         auto timestamp = bc.timestamp();
-
         if (auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
           o2::base::Propagator::initFieldFromGRP(grpo);
           bz = grpo->getNominalL3Field();
@@ -537,7 +538,6 @@ struct HfTreeCreatorOmegacSt {
       const auto collId = collision.globalIndex();
       auto groupedTrackIds = trackIndices.sliceBy(trackIndicesPerCollision, collId);
       auto groupedTrackedCascades = trackedCascades.sliceBy(assignedTrackedCascadesPerCollision, collId);
-
       o2::dataformats::DCA impactParameterCasc;
       for (const auto& trackedCascade : groupedTrackedCascades) {
         const auto trackCasc = trackedCascade.track_as<TracksType>();
@@ -555,7 +555,6 @@ struct HfTreeCreatorOmegacSt {
         } else {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCasc, 2.f, matCorr, &impactParameterCasc);
         }
-
         const auto& casc = trackedCascade.cascade();
         const auto& bachelor = casc.bachelor_as<TracksType>();
         const auto& v0 = casc.v0();
@@ -568,7 +567,6 @@ struct HfTreeCreatorOmegacSt {
             bachelor.tpcNClsFindable() < minNoClsTrackedCascade) {
           continue;
         }
-
         const auto& v0TrackPr = trackCasc.sign() < 0 ? v0TrackPos : v0TrackNeg;
         const auto& v0TrackPi = trackCasc.sign() < 0 ? v0TrackNeg : v0TrackPos;
 
@@ -678,7 +676,6 @@ struct HfTreeCreatorOmegacSt {
               o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovKa, 2.f, matCorr, &impactParameterKa);
               o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPi, 2.f, matCorr, &impactParameterPi);
             }
-
             for (const auto& trackId : groupedTrackIds) {
               const auto track = trackId.template track_as<TracksType>();
               if (track.globalIndex() == v0TrackPr.globalIndex() ||
@@ -725,7 +722,6 @@ struct HfTreeCreatorOmegacSt {
                   o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPionOrKaon, 2.f, matCorr, &impactParameterPion);
                 }
                 const float impactProduct = impactParameterCasc.getY() * impactParameterPion.getY();
-
                 hCandidatesCascPiOrK->Fill(SVFitting::BeforeFit);
                 try {
                   auto decayLengthUntracked = -1.;
@@ -744,7 +740,6 @@ struct HfTreeCreatorOmegacSt {
                     df2.createParentTrackParCov().getPxPyPzGlo(pCharmedBaryon);
                     const auto cpaCharmedBaryon = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
                     const auto cpaXYCharmedBaryon = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
-
                     df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
                     df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
                     const auto ptCascade = std::hypot(momenta[0][0], momenta[0][1]);
@@ -791,7 +786,6 @@ struct HfTreeCreatorOmegacSt {
                     if (!passSelectedChannel) {
                       continue;
                     }
-
                     //--- do the MC Rec match
                     if (mcParticles) {
                       auto arrayDaughters = std::array{
@@ -846,7 +840,6 @@ struct HfTreeCreatorOmegacSt {
                         origin = RecoDecay::getCharmHadronOrigin(mcParticles->get(), particle, false, &idxBhadMothers);
                       }
                     }
-
                     // apply configurable quality cuts (CPA, chi2, impact parameters)
                     if (cpaCharmedBaryon < minCpaCharmedBaryon)
                       continue;
@@ -858,11 +851,11 @@ struct HfTreeCreatorOmegacSt {
                       continue;
                     if (chi2TopCharmedBaryon > maxChi2TopCharmedBaryon)
                       continue;
-                    if (trackedCascade.topologyChi2() > maxTopologyChi2)
+                    if (trackedCascade.topologyChi2() > maxChi2TopCasc)
                       continue;
                     if (std::abs(impactParameterCasc.getY()) > maxImpactCascY || std::abs(impactParameterCasc.getZ()) > maxImpactCascZ)
                       continue;
-                    if (std::abs(impactParameterPion.getY()) > maxImpactPionY || std::abs(impactParameterPion.getZ()) > maxImpactPionZ)
+                    if (std::abs(impactParameterPion.getY()) > maxImpactCharmBachelorY || std::abs(impactParameterPion.getZ()) > maxImpactCharmBachelorZ)
                       continue;
                     if (ptCascade < minPtCascade)
                       continue;
@@ -872,6 +865,7 @@ struct HfTreeCreatorOmegacSt {
                       continue;
                     registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                     registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                    std::cout << "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj"<< std::endl;
                     outputTable(massOmega,
                                 massXi,
                                 massV0,
@@ -938,6 +932,9 @@ struct HfTreeCreatorOmegacSt {
                   hCandidatesCascPiOrK->Fill(SVFitting::Fail);
                   continue;
                 }
+
+                std::cout << "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"<< std::endl;
+
                 hCandidatesCascPiOrK->Fill(SVFitting::FitOk);
               }
             }
@@ -949,12 +946,12 @@ struct HfTreeCreatorOmegacSt {
   
     // No centrality selection
     void processDataNocent(Collisions const& collisions,
-                           soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
-                           aod::TrackAssoc const& trackIndices,
-                           aod::Cascades const& cascades,
-                           aod::V0s const& v0s,
-                           TracksExt const& tracks,
-                           aod::BCsWithTimestamps const& bcs)
+                 soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+                 aod::TrackAssoc const& trackIndices,
+                 aod::Cascades const&,
+                 aod::V0s const&,
+                 TracksExt const&,
+                 aod::BCsWithTimestamps const&)
     {
       fillTable<CentralityEstimator::None, TracksExt>(collisions, trackedCascades, trackIndices);
     }
@@ -962,29 +959,29 @@ struct HfTreeCreatorOmegacSt {
   
     // FT0C centrality selection
     void processDataFT0C(Collisions const& collisions,
-                         soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
-                         aod::TrackAssoc const& trackIndices,
-                         aod::Cascades const& cascades,
-                         aod::V0s const& v0s,
-                         TracksExt const& tracks,
-                         aod::BCsWithTimestamps const& bcs)
+               soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+               aod::TrackAssoc const& trackIndices,
+               aod::Cascades const&,
+               aod::V0s const&,
+               TracksExt const&,
+               aod::BCsWithTimestamps const&)
     {
       fillTable<CentralityEstimator::FT0C, TracksExt>(collisions, trackedCascades, trackIndices);
     }
-    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0C, "Process data (FT0C centrality)", true);
+    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0C, "Process data (FT0C centrality)", false);
   
     // FT0M centrality selection
     void processDataFT0M(Collisions const& collisions,
-                         soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
-                         aod::TrackAssoc const& trackIndices,
-                         aod::Cascades const& cascades,
-                         aod::V0s const& v0s,
-                         TracksExt const& tracks,
-                         aod::BCsWithTimestamps const& bcs)
+               soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+               aod::TrackAssoc const& trackIndices,
+               aod::Cascades const&,
+               aod::V0s const&,
+               TracksExt const&,
+               aod::BCsWithTimestamps const&)
     {
       fillTable<CentralityEstimator::FT0M, TracksExt>(collisions, trackedCascades, trackIndices);
     }
-    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0M, "Process data (FT0M centrality)", true);
+    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0M, "Process data (FT0M centrality)", false);
 
 
   // MC reco: No centrality selection
@@ -1000,7 +997,7 @@ struct HfTreeCreatorOmegacSt {
   {
     fillTable<CentralityEstimator::None, TracksExtMc>(collisions, trackedCascades, trackIndices, mcParticles);
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecNocent, "Process MC reco (No centrality)", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecNocent, "Process MC reco (No centrality)", false);
 
   // MC reco: FT0C centrality selection
   void processMcRecFT0C(Collisions const& collisions,
@@ -1015,7 +1012,7 @@ struct HfTreeCreatorOmegacSt {
   {
     fillTable<CentralityEstimator::FT0C, TracksExtMc>(collisions, trackedCascades, trackIndices, mcParticles);
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecFT0C, "Process MC reco (FT0C centrality)", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecFT0C, "Process MC reco (FT0C centrality)", false);
 
   // MC reco: FT0M centrality selection
   void processMcRecFT0M(Collisions const& collisions,
@@ -1030,7 +1027,7 @@ struct HfTreeCreatorOmegacSt {
   {
     fillTable<CentralityEstimator::FT0M, TracksExtMc>(collisions, trackedCascades, trackIndices, mcParticles);
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecFT0M, "Process MC reco (FT0M centrality)", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecFT0M, "Process MC reco (FT0M centrality)", false);
 
   void processMcGen(aod::Collision const& collision,
                     aod::McCollisions const&,
