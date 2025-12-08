@@ -15,6 +15,8 @@
 #ifndef PWGEM_DILEPTON_UTILS_EVENTHISTOGRAMS_H_
 #define PWGEM_DILEPTON_UTILS_EVENTHISTOGRAMS_H_
 
+#include "Common/Core/RecoDecay.h"
+
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;

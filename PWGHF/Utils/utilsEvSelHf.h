@@ -254,7 +254,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   /// \brief Inits the HF event selection object
   /// \param registry reference to the histogram registry
-  void init(o2::framework::HistogramRegistry& registry, o2::framework::OutputObj<ZorroSummary>& zorroSummary)
+  template <typename T>
+  void init(o2::framework::HistogramRegistry& registry, T& zorroSummary)
   {
     // we initialise the RCT checker
     if (requireGoodRct) {
@@ -263,7 +264,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     // we initialise the summary object
     if (!softwareTrigger.value.empty()) {
-      zorroSummary.setObject(zorro.getZorroSummary());
+      if constexpr (std::is_same_v<T, o2::framework::OutputObj<ZorroSummary>>) {
+        zorroSummary.setObject(zorro.getZorroSummary());
+      } else {
+        LOGP(fatal, "No o2::framework::OutputObj<ZorroSummary> provided to HF event selection object in your task, add it if you want to get the normalisation from Zorro.");
+      }
     }
 
     // we initialise histograms

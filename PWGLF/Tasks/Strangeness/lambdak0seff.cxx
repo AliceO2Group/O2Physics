@@ -146,6 +146,7 @@ struct lambdak0seff {
     std::vector<AxisSpec> runaxes2 = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configetaAxis, axisGrp.configvzAxis, axisGrp.configcentAxis};
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{axisGrp.configcentAxis}});
+    histos.add("hCentralitymc", "Centrality distribution MC", kTH1F, {{axisGrp.configcentAxis}});
     histos.add("hSparseGenLambda", "hSparseGenLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseGenAntiLambda", "hSparseGenAntiLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseRecLambda", "hSparseRecLambda", HistType::kTHnSparseF, runaxes2, true);
@@ -239,10 +240,10 @@ struct lambdak0seff {
       return false;
     }
     if (pid == 0 && (candidate.positivept() < cfgDaughPrPt || candidate.negativept() < cfgDaughPiPt)) {
-      return false; // doesn´t pass lambda pT sels
+      return false;
     }
     if (pid == 1 && (candidate.positivept() < cfgDaughPiPt || candidate.negativept() < cfgDaughPrPt)) {
-      return false; // doesn´t pass antilambda pT sels
+      return false;
     }
     if (std::abs(candidate.positiveeta()) > ConfDaughEta || std::abs(candidate.negativeeta()) > ConfDaughEta) {
       return false;
@@ -285,166 +286,194 @@ struct lambdak0seff {
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
 
+  using CollisionMCTrueTable = aod::McCollisions;
+  // using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>>;
   using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
   using ResoV0s = aod::V0Datas;
 
   using TrackMCTrueTable = aod::McParticles;
+  Preslice<ResoV0s> perCollision = aod::v0data::collisionId;
+
   ROOT::Math::PxPyPzMVector lambdadummymc, antiLambdadummymc, kshortdummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
 
-  void processMC(EventCandidatesMC::iterator const& collision, AllTrackCandidates const& /*tracks*/, TrackMCTrueTable const& GenParticles, ResoV0s const& V0s)
+  void processMC(CollisionMCTrueTable::iterator const&, EventCandidatesMC const& RecCollisions, TrackMCTrueTable const& GenParticles, ResoV0s const& V0s, AllTrackCandidates const&)
   {
-    if (!collision.sel8()) {
-      return;
-    }
-    double centrality = -999.;
-    centrality = collision.centFT0C();
-    // centrality = collision.multiplicity();
-    double vz = collision.posZ();
 
-    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      return;
-    }
-    if (evselGrp.additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-      return;
-    }
-    if (evselGrp.additionalEvSel3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-      return;
-    }
+    for (auto& collision : RecCollisions) {
 
-    histos.fill(HIST("hCentrality"), centrality);
-
-    for (const auto& v0 : V0s) {
-
-      auto postrack = v0.template posTrack_as<AllTrackCandidates>();
-      auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
-
-      if (analyzeLambda && analyzeK0s)
-        continue;
-      if (!analyzeLambda && !analyzeK0s)
-        continue;
-
-      int LambdaTag = 0;
-      int aLambdaTag = 0;
-      int K0sTag = 0;
-
-      const auto signpos = postrack.sign();
-      const auto signneg = negtrack.sign();
-
-      if (signpos < 0 || signneg > 0) {
+      if (!collision.sel8()) {
         continue;
       }
-      if (analyzeLambda) {
-        if (isSelectedV0Daughter(v0, postrack, 0, 0) && isSelectedV0Daughter(v0, negtrack, 1, 0)) {
-          LambdaTag = 1;
+      double centrality = -999.;
+      centrality = collision.centFT0C();
+      double vz = collision.posZ();
+
+      if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (evselGrp.additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (evselGrp.additionalEvSel3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      histos.fill(HIST("hCentrality"), centrality);
+
+      auto v0sThisColl = V0s.sliceBy(perCollision, collision.globalIndex());
+
+      for (const auto& v0 : v0sThisColl) {
+
+        auto postrack = v0.template posTrack_as<AllTrackCandidates>();
+        auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
+
+        if (analyzeLambda && analyzeK0s)
+          continue;
+        if (!analyzeLambda && !analyzeK0s)
+          continue;
+
+        int LambdaTag = 0;
+        int aLambdaTag = 0;
+        int K0sTag = 0;
+
+        const auto signpos = postrack.sign();
+        const auto signneg = negtrack.sign();
+
+        if (signpos < 0 || signneg > 0) {
+          continue;
         }
-        if (isSelectedV0Daughter(v0, negtrack, 0, 1) && isSelectedV0Daughter(v0, postrack, 1, 1)) {
-          aLambdaTag = 1;
+        if (analyzeLambda) {
+          if (isSelectedV0Daughter(v0, postrack, 0, 0) && isSelectedV0Daughter(v0, negtrack, 1, 0)) {
+            LambdaTag = 1;
+          }
+          if (isSelectedV0Daughter(v0, negtrack, 0, 1) && isSelectedV0Daughter(v0, postrack, 1, 1)) {
+            aLambdaTag = 1;
+          }
         }
-      }
-      if (analyzeK0s) {
-        if (isSelectedV0Daughter(v0, postrack, 0, 0) && isSelectedV0Daughter(v0, negtrack, 1, 0)) {
-          K0sTag = 1;
+        if (analyzeK0s) {
+          if (isSelectedV0Daughter(v0, postrack, 0, 0) && isSelectedV0Daughter(v0, negtrack, 1, 0)) {
+            K0sTag = 1;
+          }
         }
-      }
 
-      if (analyzeLambda && (!LambdaTag && !aLambdaTag))
-        continue;
-      if (analyzeK0s && (!K0sTag))
-        continue;
+        if (analyzeLambda && (!LambdaTag && !aLambdaTag))
+          continue;
+        if (analyzeK0s && (!K0sTag))
+          continue;
 
-      if (!SelectionV0(collision, v0)) {
-        continue;
-      }
+        if (!SelectionV0(collision, v0)) {
+          continue;
+        }
 
-      if (analyzeLambda) {
+        if (analyzeLambda) {
+          if (LambdaTag) {
+            Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+            AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+            Lambdadummy = Proton + AntiPion;
+          }
+          if (aLambdaTag) {
+            AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+            Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+            AntiLambdadummy = AntiProton + Pion;
+          }
+
+          if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+            continue;
+          }
+        }
+
+        if (analyzeK0s) {
+          if (K0sTag) {
+            Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+            AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+            K0sdummy = Pion + AntiPion;
+          }
+        }
+
+        if (TMath::Abs(v0.eta()) > 0.8)
+          continue;
+
         if (LambdaTag) {
-          Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
-          AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
-          Lambdadummy = Proton + AntiPion;
+          Lambda = Proton + AntiPion;
+          histos.fill(HIST("hSparseRecLambda"), v0.mLambda(), v0.pt(), v0.eta(), vz, centrality);
         }
         if (aLambdaTag) {
-          AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
-          Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
-          AntiLambdadummy = AntiProton + Pion;
+          AntiLambda = AntiProton + Pion;
+          histos.fill(HIST("hSparseRecAntiLambda"), v0.mAntiLambda(), v0.pt(), v0.eta(), vz, centrality);
         }
-
-        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
-          continue;
-        }
-      }
-
-      if (analyzeK0s) {
         if (K0sTag) {
-          Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
-          AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
-          K0sdummy = Pion + AntiPion;
+          histos.fill(HIST("hSparseRecK0s"), v0.mK0Short(), v0.pt(), v0.eta(), vz, centrality);
         }
       }
 
-      if (TMath::Abs(v0.eta()) > 0.8)
-        continue;
+      for (const auto& mcParticle : GenParticles) {
 
-      if (LambdaTag) {
-        Lambda = Proton + AntiPion;
-        histos.fill(HIST("hSparseRecLambda"), v0.mLambda(), v0.pt(), v0.eta(), vz, centrality);
-      }
-      if (aLambdaTag) {
-        AntiLambda = AntiProton + Pion;
-        histos.fill(HIST("hSparseRecAntiLambda"), v0.mAntiLambda(), v0.pt(), v0.eta(), vz, centrality);
-      }
-      if (K0sTag) {
-        histos.fill(HIST("hSparseRecK0s"), v0.mK0Short(), v0.pt(), v0.eta(), vz, centrality);
-      }
-    }
-
-    for (const auto& mcParticle : GenParticles) {
-      if (analyzeLambda && std::abs(mcParticle.pdgCode()) != PDG_t::kLambda0) {
-        continue;
-      }
-      if (analyzeK0s && std::abs(mcParticle.pdgCode()) != PDG_t::kK0Short) {
-        continue;
-      }
-      if (std::abs(mcParticle.y()) > ConfV0Rap) {
-        continue;
-      }
-      auto pdg1 = mcParticle.pdgCode();
-      auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-      int daughsize = 2;
-      if (kDaughters.size() != daughsize) {
-        continue;
-      }
-      for (const auto& kCurrentDaughter : kDaughters) {
-
-        if (std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kPiPlus) {
+        if (analyzeLambda && std::abs(mcParticle.pdgCode()) != PDG_t::kLambda0) {
           continue;
         }
-        if (kCurrentDaughter.pdgCode() == PDG_t::kProton) {
-          protonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
+        if (analyzeK0s && std::abs(mcParticle.pdgCode()) != PDG_t::kK0Short) {
+          continue;
         }
-        if (kCurrentDaughter.pdgCode() == PDG_t::kPiMinus) {
-          antiPionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
+        if (std::abs(mcParticle.y()) > ConfV0Rap) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary() || !mcParticle.producedByGenerator()) {
+          continue;
         }
 
-        if (kCurrentDaughter.pdgCode() == PDG_t::kProtonBar) {
-          antiProtonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
+        auto pdg1 = mcParticle.pdgCode();
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        int daughsize = 2;
+        if (kDaughters.size() != daughsize) {
+          continue;
         }
-        if (kCurrentDaughter.pdgCode() == PDG_t::kPiPlus) {
-          pionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
-        }
-      }
-      if (pdg1 == PDG_t::kLambda0) {
-        lambdadummymc = protonmc + antiPionmc;
-        histos.fill(HIST("hSparseGenLambda"), lambdadummymc.M(), lambdadummymc.Pt(), lambdadummymc.Eta(), vz, centrality);
-      }
 
-      if (pdg1 == PDG_t::kLambda0Bar) {
-        antiLambdadummymc = antiProtonmc + pionmc;
-        histos.fill(HIST("hSparseGenAntiLambda"), antiLambdadummymc.M(), antiLambdadummymc.Pt(), lambdadummymc.Eta(), vz, centrality);
-      }
-      if (pdg1 == PDG_t::kK0Short) {
-        kshortdummymc = antiPionmc + pionmc;
-        histos.fill(HIST("hSparseGenK0s"), kshortdummymc.M(), kshortdummymc.Pt(), kshortdummymc.Eta(), vz, centrality);
+        int lambdacounter = 0;
+        int antilambdacounter = 0;
+        int k0scounter = 0;
+
+        for (const auto& kCurrentDaughter : kDaughters) {
+          if (std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kPiPlus) {
+            continue;
+          }
+          if (kCurrentDaughter.pt() < 0.2 || TMath::Abs(kCurrentDaughter.eta()) > 0.8)
+            continue;
+
+          if (kCurrentDaughter.pdgCode() == PDG_t::kProton) {
+            lambdacounter += 1;
+            protonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
+          }
+          if (kCurrentDaughter.pdgCode() == PDG_t::kPiMinus) {
+            lambdacounter += 1;
+            k0scounter += 1;
+            antiPionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
+          }
+
+          if (kCurrentDaughter.pdgCode() == PDG_t::kProtonBar) {
+            antilambdacounter += 1;
+            antiProtonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
+          }
+          if (kCurrentDaughter.pdgCode() == PDG_t::kPiPlus) {
+            antilambdacounter += 1;
+            k0scounter += 1;
+            pionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
+          }
+        }
+
+        if (analyzeLambda && pdg1 == PDG_t::kLambda0 && lambdacounter == 2 && antilambdacounter != 2 && k0scounter != 2) {
+          lambdadummymc = protonmc + antiPionmc;
+          histos.fill(HIST("hSparseGenLambda"), lambdadummymc.M(), lambdadummymc.Pt(), lambdadummymc.Eta(), vz, centrality);
+        }
+
+        if (analyzeLambda && pdg1 == PDG_t::kLambda0Bar && antilambdacounter == 2 && lambdacounter != 2 && k0scounter != 2) {
+          antiLambdadummymc = antiProtonmc + pionmc;
+          histos.fill(HIST("hSparseGenAntiLambda"), antiLambdadummymc.M(), antiLambdadummymc.Pt(), antiLambdadummymc.Eta(), vz, centrality);
+        }
+        if (analyzeK0s && pdg1 == PDG_t::kK0Short && k0scounter == 2 && lambdacounter != 2 && antilambdacounter != 2) {
+          kshortdummymc = antiPionmc + pionmc;
+          histos.fill(HIST("hSparseGenK0s"), kshortdummymc.M(), kshortdummymc.Pt(), kshortdummymc.Eta(), vz, centrality);
+        }
       }
     }
   }

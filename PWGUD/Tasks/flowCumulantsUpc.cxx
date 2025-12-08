@@ -1039,12 +1039,12 @@ struct FlowCumulantsUpc {
         if (withinPtPOI && withinPtRef) {
           fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
         }
-        LOG(info) << "successfully filled" << std::endl;
+        // LOG(info) << "successfully filled" << std::endl;
       }
       registry.fill(HIST("hTrackCorrection2dMC"), mcParticles.size(), nTracksCorrected);
       // Filling Flow Container
       for (uint l_ind = 0; l_ind < corrconfigsmc.size(); l_ind++) {
-        LOG(info) << "filling flow container for MC" << std::endl;
+        // LOG(info) << "filling flow container for MC" << std::endl;
         fillFCMC(corrconfigsmc.at(l_ind), independent, lRandomMc);
       }
     }

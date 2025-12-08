@@ -1274,11 +1274,11 @@ struct HfCandidateCreator3ProngExpressions {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
                 arrPdgDaugResonant[iProng] = std::abs(daughI.pdgCode());
               }
-              if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToPKstar0[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToPKstar0[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToPKstar0[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToPKstar0[0])) {
+              if ((arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToPKstar0[0]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToPKstar0[1])) || (arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToPKstar0[1]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToPKstar0[0]))) {
                 flagChannelResonant = DecayChannelResonant::LcToPKstar0;
-              } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToDeltaplusplusK[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToDeltaplusplusK[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToDeltaplusplusK[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToDeltaplusplusK[0])) {
+              } else if ((arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[0]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[1])) || (arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[1]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[0]))) {
                 flagChannelResonant = DecayChannelResonant::LcToDeltaplusplusK;
-              } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToL1520Pi[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToL1520Pi[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToL1520Pi[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToL1520Pi[0])) {
+              } else if ((arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToL1520Pi[0]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToL1520Pi[1])) || (arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToL1520Pi[1]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToL1520Pi[0]))) {
                 flagChannelResonant = DecayChannelResonant::LcToL1520Pi;
               }
             }

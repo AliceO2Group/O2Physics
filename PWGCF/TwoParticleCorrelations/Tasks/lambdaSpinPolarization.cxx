@@ -148,60 +148,39 @@ DECLARE_SOA_TABLE(LambdaMcGenTracks, "AOD", "LMCGENTRACKS", o2::soa::Index<>,
                   lambdatrack::CorrFact);
 using LambdaMcGenTrack = LambdaMcGenTracks::iterator;
 
-// collisions: cent, posZ
-namespace lambdamixcollision
+namespace lambdamixeventcollision
 {
-DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(PosZ, posZ, float);
-} // namespace lambdamixcollision
+DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);
+} // namespace lambdamixeventcollision
 
-DECLARE_SOA_TABLE(LambdaMixCollisions, "AOD", "LAMBDAMIXCOLS",
-                  lambdamixcollision::Cent,
-                  lambdamixcollision::PosZ);
-using LambdaMixCollision = LambdaMixCollisions::iterator;
+DECLARE_SOA_TABLE(LambdaMixEventCollisions, "AOD", "LAMBDAMIXCOLS", o2::soa::Index<>,
+                  lambdamixeventcollision::CollisionIndex,
+                  lambdacollision::Cent,
+                  aod::collision::PosZ);
 
-// per-Lambda record for mixing
-namespace lambdamixtrk
+using LambdaMixEventCollision = LambdaMixEventCollisions::iterator;
+
+namespace lambdamixeventtracks
 {
-DECLARE_SOA_INDEX_COLUMN(LambdaCollision, lambdaCollision);
+// DECLARE_SOA_INDEX_COLUMN(LambdaMixEventCollision, lambdaMixEventCollision);
+DECLARE_SOA_COLUMN(LambdaMixEventCollisionIdx, lambdaMixEventCollisionIdx, int);
+DECLARE_SOA_COLUMN(LambdaMixEventTrackIdx, lambdaMixEventTrackIdx, int);
+} // namespace lambdamixeventtracks
 
-DECLARE_SOA_COLUMN(Px, px, float);
-DECLARE_SOA_COLUMN(Py, py, float);
-DECLARE_SOA_COLUMN(Pz, pz, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Rap, rap, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Mass, mass, float);
+DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS", o2::soa::Index<>,
+                  // lambdamixeventtracks::LambdaMixEventCollisionId,
+                  lambdamixeventtracks::LambdaMixEventCollisionIdx,
+                  lambdamixeventtracks::LambdaMixEventTrackIdx,
+                  lambdatrack::Px,
+                  lambdatrack::Py,
+                  lambdatrack::Pz,
+                  lambdatrack::Mass,
+                  lambdatrack::PrPx,
+                  lambdatrack::PrPy,
+                  lambdatrack::PrPz,
+                  lambdatrack::V0Type);
 
-DECLARE_SOA_COLUMN(PrPx, prPx, float);
-DECLARE_SOA_COLUMN(PrPy, prPy, float);
-DECLARE_SOA_COLUMN(PrPz, prPz, float);
-
-DECLARE_SOA_COLUMN(V0Type, v0Type, int8_t);
-DECLARE_SOA_COLUMN(V0PrmScd, v0PrmScd, int8_t);
-DECLARE_SOA_COLUMN(PosTrackId, posTrackId, int64_t);
-DECLARE_SOA_COLUMN(NegTrackId, negTrackId, int64_t);
-} // namespace lambdamixtrk
-
-DECLARE_SOA_TABLE(LambdaMixTracks, "AOD", "LAMBDAMIXTRKS",
-                  lambdamixtrk::LambdaCollisionId,
-                  lambdamixtrk::Px,
-                  lambdamixtrk::Py,
-                  lambdamixtrk::Pz,
-                  lambdamixtrk::Pt,
-                  lambdamixtrk::Rap,
-                  lambdamixtrk::Eta,
-                  lambdamixtrk::Phi,
-                  lambdamixtrk::Mass,
-                  lambdamixtrk::PrPx,
-                  lambdamixtrk::PrPy,
-                  lambdamixtrk::PrPz,
-                  lambdamixtrk::V0Type,
-                  lambdamixtrk::V0PrmScd,
-                  lambdamixtrk::PosTrackId,
-                  lambdamixtrk::NegTrackId);
-using LambdaMixTrack = LambdaMixTracks::iterator;
+using LambdaMixEventTrack = LambdaMixEventTracks::iterator;
 } // namespace o2::aod
 
 enum CollisionLabels {
@@ -1540,6 +1519,9 @@ struct LambdaTracksExtProducer {
 };
 
 struct LambdaSpinPolarization {
+  // Table producer
+  Produces<aod::LambdaMixEventCollisions> lambdaMixEvtCol;
+  Produces<aod::LambdaMixEventTracks> lambdaMixEvtTrk;
 
   // Global Configurables
   Configurable<int> cNPtBins{"cNPtBins", 30, "N pT Bins"};
@@ -1698,55 +1680,30 @@ struct LambdaSpinPolarization {
   }
 
   PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", true);
-};
 
-struct LambdaMixWriter {
-
-  using LambdaCollisions = aod::LambdaCollisions;
-  using LambdaTracks = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-
-  Produces<o2::aod::LambdaMixCollisions> lambdamixCollisionsTable;
-  Produces<o2::aod::LambdaMixTracks> lambdamixTracksTable;
-
-  void processDataRecoMixTable(LambdaCollisions::iterator const& collision, LambdaTracks const& tracks)
+  void processDataRecoMixEvent(LambdaCollisions::iterator const& collision, LambdaTracks const& tracks)
   {
-
+    // return for no lambdas in a collision
     if (tracks.size() == 0) {
       return;
     }
 
-    lambdamixCollisionsTable(collision.cent(), collision.posZ());
+    // fill collision table
+    lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ());
 
     for (auto const& track : tracks) {
-
-      auto collIndex = track.lambdaCollisionId();
-
-      lambdamixTracksTable(collIndex,
-                           track.px(),
-                           track.py(),
-                           track.pz(),
-                           track.pt(),
-                           track.rap(),
-                           track.eta(),
-                           track.phi(),
-                           track.mass(),
-                           track.prPx(),
-                           track.prPy(),
-                           track.prPz(),
-                           track.v0Type(),
-                           track.v0PrmScd(),
-                           track.posTrackId(),
-                           track.negTrackId());
+      lambdaMixEvtTrk(collision.index(), track.index(), track.px(), track.py(), track.pz(), track.mass(),
+                      track.prPx(), track.prPy(), track.prPz(), track.v0Type());
     }
   }
-  PROCESS_SWITCH(LambdaMixWriter, processDataRecoMixTable, "Process Table for Data and MCReco Mix Event", false);
+
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixEvent, "Process for Data and MCReco Mix Event", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LambdaTableProducer>(cfg),
-    adaptAnalysisTask<LambdaTracksExtProducer>(cfg),
-    adaptAnalysisTask<LambdaSpinPolarization>(cfg),
-    adaptAnalysisTask<LambdaMixWriter>(cfg)};
+    adaptAnalysisTask<LambdaTableProducer>(cfgc),
+    adaptAnalysisTask<LambdaTracksExtProducer>(cfgc),
+    adaptAnalysisTask<LambdaSpinPolarization>(cfgc)};
 }

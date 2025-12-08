@@ -15,8 +15,6 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
 #define PWGEM_DILEPTON_UTILS_EMFWDTRACK_H_
 
-#include <vector>
-
 namespace o2::aod::pwgem::dilepton::utils
 {
 class EMFwdTrack
@@ -31,7 +29,6 @@ class EMFwdTrack
     fCharge = charge;
     fDCAx = dcaX;
     fDCAy = dcaY;
-
     fCXX = cXX;
     fCXY = cXY;
     fCYY = cYY;
@@ -51,6 +48,7 @@ class EMFwdTrack
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
+  float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
   float signed1Pt() const { return fCharge * 1.f / fPt; }
 
   float cXXatDCA() const { return fCXX; }

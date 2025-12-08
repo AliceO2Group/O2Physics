@@ -198,7 +198,7 @@ struct PiKpRAA {
   Configurable<bool> isCentSel{"isCentSel", true, "Centrality selection?"};
   Configurable<bool> isT0Ccent{"isT0Ccent", true, "Use T0C-based centrality?"};
   Configurable<bool> isZvtxPosSel{"isZvtxPosSel", true, "Zvtx position selection?"};
-  Configurable<bool> isINELgt0{"isINELgt0", true, "Apply INEL > 0?"};
+  Configurable<bool> selINELgt0{"selINELgt0", true, "Select INEL > 0?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
   Configurable<bool> applyNchSel{"applyNchSel", false, "Use mid-rapidity-based Nch selection"};
   Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
@@ -551,11 +551,19 @@ struct PiKpRAA {
       registry.add("PtPiVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("PtKaVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("PtPrVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+
+      registry.add("MCclosure_PtMCPiVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+      registry.add("MCclosure_PtMCKaVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+      registry.add("MCclosure_PtMCPrVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+
+      registry.add("MCclosure_PtPiVsCent", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisCent});
+      registry.add("MCclosure_PtKaVsCent", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisCent});
+      registry.add("MCclosure_PtPrVsCent", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisCent});
     }
 
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
     LOG(info) << "\tapplyNchSel=" << applyNchSel.value;
-    LOG(info) << "\tisINELgt0=" << isINELgt0.value;
+    LOG(info) << "\tselINELgt0=" << selINELgt0.value;
     LOG(info) << "\tdetector4Calibration=" << detector4Calibration.value;
     LOG(info) << "\tv0TypeSelection=" << static_cast<int>(v0Selections.v0TypeSelection);
     LOG(info) << "\tselElecFromGammas=" << v0Selections.selElecFromGammas;
@@ -1369,45 +1377,49 @@ struct PiKpRAA {
   void processSim(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<ColEvSelsMC> const& collisions, BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TracksMC const& tracksMC)
   {
 
+    //---------------------------
     // Only INEL > 0 generated collisions
     // By counting number of primary charged particles in |eta| < 1
-    if (isINELgt0) {
-      int nChMC{0};
-      for (const auto& particle : mcParticles) {
+    //---------------------------
+    int nChMC{0};
+    for (const auto& particle : mcParticles) {
 
-        if (std::abs(particle.eta()) > kOne)
-          continue;
+      if (std::abs(particle.eta()) > kOne)
+        continue;
 
-        auto charge{0.};
-        // Get the MC particle
-        const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-        if (pdgParticle != nullptr) {
-          charge = pdgParticle->Charge();
-        } else {
-          continue;
-        }
-
-        // Is it a charged particle?
-        if (std::abs(charge) < kMinCharge)
-          continue;
-
-        // Is it a primary particle?
-        if (!particle.isPhysicalPrimary())
-          continue;
-
-        nChMC++;
+      auto charge{0.};
+      // Get the MC particle
+      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (pdgParticle != nullptr) {
+        charge = pdgParticle->Charge();
+      } else {
+        continue;
       }
 
-      // Only INEL > 0 generated events
+      // Is it a charged particle?
+      if (std::abs(charge) < kMinCharge)
+        continue;
+
+      // Is it a primary particle?
+      if (!particle.isPhysicalPrimary())
+        continue;
+
+      nChMC++;
+    }
+
+    //---------------------------
+    // Only INEL > 0 generated events
+    //---------------------------
+    if (selINELgt0) {
       if (!(nChMC > kZeroInt)) {
         return;
       }
-    }
+    } // selINELgt0 condition: Rejects all NON-INEL > 0
 
     const auto& nRecColls{collisions.size()};
-
     registry.fill(HIST("NumberOfRecoCollisions"), nRecColls);
 
+    // Only Generated evets with at least one reconstrued collision
     if (nRecColls > kZeroInt) {
 
       // Finds the collisions with the largest number of contributors
@@ -1427,6 +1439,10 @@ struct PiKpRAA {
         }
       }
 
+      //---------------------------
+      // Loop over the reconstructed collisions
+      // Only that one with the largest number of contributors is considered
+      //---------------------------
       for (const auto& collision : collisions) {
 
         // Choose the collisions with the largest number of contributors
@@ -1452,34 +1468,9 @@ struct PiKpRAA {
             return;
         }
 
+        //---------------------------
         // Needed to construct the correlation between MC Nch v.s. centrality
-        int nChMC{0};
-        for (const auto& particle : mcParticles) {
-          if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
-            continue;
-
-          if (particle.pt() < v0Selections.minPt || particle.pt() > v0Selections.maxPt)
-            continue;
-
-          auto charge{0.};
-          // Get the MC particle
-          const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr) {
-            charge = pdgParticle->Charge();
-          } else {
-            continue;
-          }
-
-          // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge)
-            continue;
-
-          // Is it a primary particle?
-          if (!particle.isPhysicalPrimary())
-            continue;
-
-          nChMC++;
-        }
+        //---------------------------
 
         const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
         registry.fill(HIST("Centrality_WRecoEvt"), centrality);
@@ -1488,6 +1479,7 @@ struct PiKpRAA {
         //---------------------------
         // All Generated events with at least one associated reconstructed collision
         // The Generated events are not subjected to any selection criteria
+        // This histograms are used for the denominator of the tracking efficiency
         //---------------------------
         for (const auto& particle : mcParticles) {
           if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
@@ -1547,7 +1539,10 @@ struct PiKpRAA {
 
         const auto& groupedTracks{tracksMC.sliceBy(perCollision, collision.globalIndex())};
 
+        //---------------------------
         // Track selection with Open DCAxy
+        //  This is needed for the Secondary Particle Correction
+        //---------------------------
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < v0Selections.minEtaDaughter || track.eta() > v0Selections.maxEtaDaughter)
@@ -1634,7 +1629,11 @@ struct PiKpRAA {
           }
         }
 
+        //---------------------------
         // Global track + DCAxy selections
+        // This is needed for the number of the Tracking Efficiency
+        // and the spectra to be corrected
+        //---------------------------
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < v0Selections.minEtaDaughter || track.eta() > v0Selections.maxEtaDaughter)
@@ -1716,25 +1715,33 @@ struct PiKpRAA {
             continue;
           }
 
-          if (isPi && !isKa && !isPr)
+          if (isPi && !isKa && !isPr) {
             registry.fill(HIST("PtPiVsCent_WithRecoEvt"), track.pt(), centrality);
-          if (isKa && !isPi && !isPr)
+            registry.fill(HIST("MCclosure_PtPiVsCent"), track.pt(), centrality);
+          }
+          if (isKa && !isPi && !isPr) {
             registry.fill(HIST("PtKaVsCent_WithRecoEvt"), track.pt(), centrality);
-          if (isPr && !isPi && !isKa)
+            registry.fill(HIST("MCclosure_PtKaVsCent"), track.pt(), centrality);
+          }
+          if (isPr && !isPi && !isKa) {
             registry.fill(HIST("PtPrVsCent_WithRecoEvt"), track.pt(), centrality);
-
+            registry.fill(HIST("MCclosure_PtPrVsCent"), track.pt(), centrality);
+          }
           registry.fill(HIST("PtResolution"), particle.pt(), (track.pt() - particle.pt()) / particle.pt());
         } // Loop over reconstructed tracks
-      } // Loop over Reco. Collisions: These collisions are not required to pass the event selection
+      } // Loop over Reco. Collisions: Only the collisions with the largest number of contributors
     } // If condition: Only simulated evets with at least one reconstrued collision
 
     //---------------------------
     // All Generated events irrespective of whether there is an associated reconstructed collision
     // Consequently, the centrality being a reconstructed quantity, might not always be available
-    // Therefore it is expressed as a function of the generated pT and the generated Nch in ∣eta∣ < 0.5
+    // Therefore it is expressed as a function of the generated pT and the generated Nch in ∣eta∣ < 0.8
     //---------------------------
 
-    int nChMC{0};
+    //---------------------------
+    // To perform MC closure
+    // True Pt vs Generated Nch
+    //---------------------------
     for (const auto& particle : mcParticles) {
       if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
         continue;
@@ -1756,12 +1763,28 @@ struct PiKpRAA {
         continue;
 
       // Is it a primary particle?
+      bool isPrimary{true};
       if (!particle.isPhysicalPrimary())
-        continue;
+        isPrimary = false;
 
-      nChMC++;
-    }
+      if (isPrimary) {
+        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+          registry.fill(HIST("MCclosure_PtMCPiVsNchMC"), particle.pt(), nChMC);
+        } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+          registry.fill(HIST("MCclosure_PtMCKaVsNchMC"), particle.pt(), nChMC);
+        } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+          registry.fill(HIST("MCclosure_PtMCPrVsNchMC"), particle.pt(), nChMC);
+        } else {
+          continue;
+        }
+      }
+    } // Loop over generated particles per Gen Event 4 MC closure
 
+    //---------------------------
+    // Generated Pt spectra of all INEL > 0 Generated evets
+    // irrespective of whether there is a reconstructed collision
+    // This is used for the denominator of the signal loss correction
+    //---------------------------
     for (const auto& particle : mcParticles) {
       if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
         continue;
@@ -1799,6 +1822,10 @@ struct PiKpRAA {
         }
       }
     } // Loop over Generated Particles
+
+    //---------------------------
+    //  This is used for the denominator of the event loss correction
+    //---------------------------
     registry.fill(HIST("NchMC_AllGen"), nChMC);
   }
   PROCESS_SWITCH(PiKpRAA, processSim, "Process Sim", false);
@@ -2180,7 +2207,7 @@ struct PiKpRAA {
       registry.fill(HIST("EventCounter"), EvCutLabel::VtxZ);
     }
 
-    if (isINELgt0) {
+    if (selINELgt0) {
       if (!col.isInelGt0()) {
         return false;
       }

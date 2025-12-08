@@ -17,8 +17,6 @@
 
 #include "Math/Vector4D.h"
 
-#include <vector>
-
 namespace o2::aod::pwgem::dilepton::utils
 {
 class EMTrack
@@ -57,7 +55,7 @@ class EMTrack
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
-  float e() const { return std::sqrt(std::pow(fPt * std::cosh(fEta), 2) + std::pow(fMass, 2)); } // e2 = p2 + m2
+  float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
   float signed1Pt() const { return fCharge * 1.f / fPt; }
 
  protected:
