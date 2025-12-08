@@ -13,6 +13,9 @@
 /// \brief matching duplicate jets
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_DUPLICATES_JETMATCHINGDUPLICATES_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_DUPLICATES_JETMATCHINGDUPLICATES_H_
+
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -85,3 +88,5 @@ struct JetMatchingDuplicates {
   }
   PROCESS_SWITCH(JetMatchingDuplicates, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_DUPLICATES_JETMATCHINGDUPLICATES_H_
