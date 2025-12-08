@@ -1990,6 +1990,6 @@ struct LfMyV0s {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LfMyV0s>(cfgc), // TaskName{"lf-my-v0s"}
+    adaptAnalysisTask<LfMyV0s>(cfgc, TaskName{"lf-my-v0s"})
   };
 }
