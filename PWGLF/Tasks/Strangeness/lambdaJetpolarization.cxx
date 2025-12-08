@@ -13,7 +13,8 @@
 // o2-linter: disable=name/workflow-file
 
 /// \author Youpeng Su (yousu@cern.ch)
-// #include "PWGLF/DataModel/lambdaJetpolarization.h"
+#include "PWGLF/DataModel/lambdaJetpolarization.h"
+
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
