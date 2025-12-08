@@ -13,13 +13,13 @@
 //
 /// \author Jaime Norman <jaime.norman@cern.ch>
 
-#include "RecoDecay.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Common/Core/RecoDecay.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisTask.h"
