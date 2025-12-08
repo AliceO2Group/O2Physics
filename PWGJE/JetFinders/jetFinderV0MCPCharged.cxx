@@ -13,9 +13,8 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/JetFinders/jetFinderV0.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/JetFinders/jetFinderV0.h"
 
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
