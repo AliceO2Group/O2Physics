@@ -892,12 +892,12 @@ struct StrangeCascTrack {
         fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/Xi")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
         // fill for particle-antiparticle type
         if (cascade.sign() < 0) {
-        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiMinus"), massXi);
-        fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiMinus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiMinus"), massXi);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiMinus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
         }
         if (cascade.sign() > 0) {
-        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiPlus"), massXi);
-        fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiPlus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiPlus"), massXi);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiPlus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
         }
         // fill truth
         if (fillTruthXi) {
@@ -913,12 +913,12 @@ struct StrangeCascTrack {
         fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/Omega")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
         // fill for particle-antiparticle type
         if (cascade.sign() < 0) {
-        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaMinus"), massOmega);
-        fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaMinus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaMinus"), massOmega);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaMinus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
         }
         if (cascade.sign() > 0) {
-        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaPlus"), massOmega);
-        fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaPlus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaPlus"), massOmega);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaPlus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
         }
         // fill truth
         if (fillTruthOmega) {
@@ -1030,17 +1030,17 @@ struct StrangeCascTrack {
     histos.add("MC/Gen/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                       // generated Xis
     histos.add("MC/Gen/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                 // generated Omegas
     histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Xis
-    histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});         // generated primary Omegas
-    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});              // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Xis in selected rapidity range
     histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
-    histos.add("MC/Gen/PrimaryXiMinus", "Xi- primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Xis
-    histos.add("MC/Gen/PrimaryOmegaMinus", "Omega- primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});         // generated primary Omegas
-    histos.add("MC/Gen/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});              // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiMinus", "Xi- primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                // generated primary Xis
+    histos.add("MC/Gen/PrimaryOmegaMinus", "Omega- primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});          // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});      // generated primary Xis in selected rapidity range
     histos.add("MC/Gen/PrimaryOmegaMinusRapidity", "Omega- primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
-    histos.add("MC/Gen/PrimaryXiPlus", "Xi+ primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Xis
-    histos.add("MC/Gen/PrimaryOmegaPlus", "Omega+ primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});         // generated primary Omegas
-    histos.add("MC/Gen/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});              // generated primary Xis in selected rapidity range
-    histos.add("MC/Gen/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiPlus", "Xi+ primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                       // generated primary Xis
+    histos.add("MC/Gen/PrimaryOmegaPlus", "Omega+ primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                 // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});        // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});  // generated primary Omegas in selected rapidity range
     // label filter statistic bins for standard cascs
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
@@ -1200,14 +1200,12 @@ struct StrangeCascTrack {
               histos.fill(HIST("MC/Gen/PrimaryXi"), cascPt, cascMult);
               if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
                 histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), cascPt, cascMult);
-              if (casc.pdgCode() == PDG_t::kXiMinus) 
-              {
+              if (casc.pdgCode() == PDG_t::kXiMinus) {
                 histos.fill(HIST("MC/Gen/PrimaryXiMinus"), cascPt, cascMult);
                 if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
                   histos.fill(HIST("MC/Gen/PrimaryXiMinusRapidity"), cascPt, cascMult);
               }
-              if (casc.pdgCode() == PDG_t::kXiPlusBar) 
-              {
+              if (casc.pdgCode() == PDG_t::kXiPlusBar) {
                 histos.fill(HIST("MC/Gen/PrimaryXiPlus"), cascPt, cascMult);
                 if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
                   histos.fill(HIST("MC/Gen/PrimaryXiPlusRapidity"), cascPt, cascMult);
@@ -1217,14 +1215,12 @@ struct StrangeCascTrack {
               histos.fill(HIST("MC/Gen/PrimaryOmega"), cascPt, cascMult);
               if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
                 histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), cascPt, cascMult);
-              if (casc.pdgCode() == PDG_t::kOmegaMinus) 
-              {
+              if (casc.pdgCode() == PDG_t::kOmegaMinus) {
                 histos.fill(HIST("MC/Gen/PrimaryOmegaMinus"), cascPt, cascMult);
                 if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
                   histos.fill(HIST("MC/Gen/PrimaryOmegaMinusRapidity"), cascPt, cascMult);
               }
-              if (casc.pdgCode() == PDG_t::kOmegaPlusBar) 
-              {
+              if (casc.pdgCode() == PDG_t::kOmegaPlusBar) {
                 histos.fill(HIST("MC/Gen/PrimaryOmegaPlus"), cascPt, cascMult);
                 if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
                   histos.fill(HIST("MC/Gen/PrimaryOmegaPlusRapidity"), cascPt, cascMult);
