@@ -17,8 +17,6 @@
 #ifndef PWGJE_TASKS_JETSUBSTRUCTUREHF_H_
 #define PWGJE_TASKS_JETSUBSTRUCTUREHF_H_
 
-#include "RecoDecay.h"
-
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -29,6 +27,8 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Common/Core/RecoDecay.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/HistogramRegistry.h"
