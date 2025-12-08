@@ -35,7 +35,7 @@
 #include "Math/Vector4D.h"
 #include "TProfile2D.h"
 #include <TFile.h>
-//#include <TLorentzVector.h>
+// #include <TLorentzVector.h>
 #include <TMatrixD.h>
 #include <TTree.h>
 
@@ -57,7 +57,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct lambdaJetpolarization {
+struct lambdajetpolarization {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -1550,7 +1550,7 @@ struct lambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(lambdaJetpolarization, processData, "processData", false);
+  PROCESS_SWITCH(lambdajetpolarization, processData, "processData", false);
 
   // V0Collisions
   // SelCollisions
@@ -1597,7 +1597,7 @@ struct lambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(lambdaJetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", true);
+  PROCESS_SWITCH(lambdajetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", true);
 
   void processLambdaJetPolarization(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
   {
@@ -1984,12 +1984,12 @@ struct lambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(lambdaJetpolarization, processLambdaJetPolarization, "processLambdaJetPolarization", true);
+  PROCESS_SWITCH(lambdajetpolarization, processLambdaJetPolarization, "processLambdaJetPolarization", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdaJetpolarization>(cfgc),// TaskName{"lf-my-v0s"}
+    adaptAnalysisTask<lambdajetpolarization>(cfgc), // TaskName{"lf-my-v0s"}
   };
 }
