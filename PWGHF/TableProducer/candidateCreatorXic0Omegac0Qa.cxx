@@ -814,6 +814,11 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                                   configs.kfDoDCAFitterPreMinimCasc)) {
         LOG(info) << "This cascade cannot be rebuilt";
         continue;
+      } else {
+        float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
+        float storePt = RecoDecay::pt(straHelper.cascade.cascadeMomentum);
+        registry.fill(HIST("hCascMass"), storeMass);
+        registry.fill(HIST("hCascPt"), storePt);
       }
 
       //------------------------------Cascade pre-selection------------------------------
