@@ -68,7 +68,6 @@ struct StrangeCascTrack {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // subprocess switches:
-  // Configurable<bool> doProcessDirectData{"doProcessDirectData", false, "true for direct data, false for derived data"};
 
   Configurable<bool> doProcesspp{"doProcesspp", true, "true for pp"};
   Configurable<bool> doProcessPbPb{"doProcessPbPb", false, "true for PbPb"};
@@ -891,6 +890,16 @@ struct StrangeCascTrack {
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 4.5);
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXi"), massXi);
         fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/Xi")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+        // fill for particle-antiparticle type
+        if (cascade.sign() < 0) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiMinus"), massXi);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiMinus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+        }
+        if (cascade.sign() > 0) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiPlus"), massXi);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiPlus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+        }
+        // fill truth
         if (fillTruthXi) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 4.5);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/MassXi"), massXi);
@@ -902,6 +911,16 @@ struct StrangeCascTrack {
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 5.5);
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmega"), massOmega);
         fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/Omega")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+        // fill for particle-antiparticle type
+        if (cascade.sign() < 0) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaMinus"), massOmega);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaMinus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+        }
+        if (cascade.sign() > 0) {
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaPlus"), massOmega);
+          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaPlus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+        }
+        // fill truth
         if (fillTruthOmega) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 5.5);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/MassOmega"), massOmega);
@@ -914,16 +933,16 @@ struct StrangeCascTrack {
   void init(InitContext const&)
   {
     // for all events processing
-    histos.add("NoSel-Events/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}});
-    histos.add("NoSel-Events/PVxy", "PV xy position", kTH2F, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
-    histos.add("NoSel-Events/PVz", "PV z position", kTH1F, {{100, -20, 20}});
-    histos.add("NoSel-Events/Mult", "Multiplicity", kTH1F, {axesConfig.axisMult});
+    histos.add("NoSel-Events/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("NoSel-Events/PVxy", "PV xy position", kTH2D, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
+    histos.add("NoSel-Events/PVz", "PV z position", kTH1D, {{100, -20, 20}});
+    histos.add("NoSel-Events/Mult", "Multiplicity", kTH1D, {axesConfig.axisMult});
     // for all events processing
-    histos.add("Rec-Events/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}});
-    histos.add("Rec-Events/PVxy", "PV xy position", kTH2F, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
-    histos.add("Rec-Events/PVz", "PV z position", kTH1F, {{100, -20, 20}});
-    histos.add("Rec-Events/Mult", "Multiplicity", kTH1F, {axesConfig.axisMult});
-    histos.add("Rec-Events/EvFilter", "Event Filter", kTH1F, {{4, 0, 4}});
+    histos.add("Rec-Events/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("Rec-Events/PVxy", "PV xy position", kTH2D, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
+    histos.add("Rec-Events/PVz", "PV z position", kTH1D, {{100, -20, 20}});
+    histos.add("Rec-Events/Mult", "Multiplicity", kTH1D, {axesConfig.axisMult});
+    histos.add("Rec-Events/EvFilter", "Event Filter", kTH1D, {{4, 0, 4}});
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(1, "INEL>0");
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(2, "PVz cut");
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(3, "sel8");
@@ -931,81 +950,97 @@ struct StrangeCascTrack {
     // for cascade processing
     static_for<0, 1>([&](auto Type) {
       // no selections applied
-      histos.add(Form("%s/NoSel/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/NoSel/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1F, {axesConfig.axisDCAz});
-      histos.add(Form("%s/NoSel/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/NoSel/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1F, {axesConfig.axisEta});
-      histos.add(Form("%s/NoSel/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1F, {axesConfig.axisMult});
-      histos.add(Form("%s/NoSel/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisXiMass});
-      histos.add(Form("%s/NoSel/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/NoSel/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/NoSel/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/NoSel/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/NoSel/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
+      histos.add(Form("%s/NoSel/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
+      histos.add(Form("%s/NoSel/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/NoSel/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       // mc truth for no selectrion
-      histos.add(Form("%s/NoSel-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/NoSel-Truth/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1F, {axesConfig.axisDCAz});
-      histos.add(Form("%s/NoSel-Truth/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/NoSel-Truth/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel-Truth/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel-Truth/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/NoSel-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1F, {axesConfig.axisEta});
-      histos.add(Form("%s/NoSel-Truth/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1F, {axesConfig.axisMult});
-      histos.add(Form("%s/NoSel-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisXiMass});
-      histos.add(Form("%s/NoSel-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/NoSel-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/NoSel-Truth/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/NoSel-Truth/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/NoSel-Truth/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/NoSel-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
+      histos.add(Form("%s/NoSel-Truth/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/NoSel-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       // xi and omega selection statistics
-      histos.add(Form("%s/Rec/FiltersXi", TypeNames[Type].data()), "main cascade filters for Xi", kTH1F, {{5, 0, 5}});
-      histos.add(Form("%s/Rec/GenFiltersXi", TypeNames[Type].data()), "general cascade filters for Xi", kTH1F, {{9, 0, 9}});
-      histos.add(Form("%s/Rec/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1F, {{6, 0, 6}});
-      histos.add(Form("%s/Rec/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1F, {{9, 0, 9}});
-      histos.add(Form("%s/Rec/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/Rec/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1F, {axesConfig.axisDCAz});
-      histos.add(Form("%s/Rec/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/Rec/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1F, {axesConfig.axisEta});
+      histos.add(Form("%s/Rec/FiltersXi", TypeNames[Type].data()), "main cascade filters for Xi", kTH1D, {{5, 0, 5}});
+      histos.add(Form("%s/Rec/GenFiltersXi", TypeNames[Type].data()), "general cascade filters for Xi", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1D, {{6, 0, 6}});
+      histos.add(Form("%s/Rec/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/Rec/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/Rec/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/Rec/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
       // passed all applied sels
-      histos.add(Form("%s/Rec/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1F, {axesConfig.axisMult});
-      histos.add(Form("%s/Rec/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisXiMass});
-      histos.add(Form("%s/Rec/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
+      histos.add(Form("%s/Rec/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec/Xi", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
       histos.add(Form("%s/Rec/Omega", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/MassXiMinus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec/MassOmegaMinus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec/XiMinus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/OmegaMinus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/MassXiPlus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec/MassOmegaPlus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec/XiPlus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/OmegaPlus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
       // mc truth for all passed selections
       // xi and omega truth selection statistics
-      histos.add(Form("%s/Rec-Truth/FiltersXi", TypeNames[Type].data()), "main cascade filters for Xi", kTH1F, {{5, 0, 5}});
-      histos.add(Form("%s/Rec-Truth/GenFiltersXi", TypeNames[Type].data()), "general cascade filters for Xi", kTH1F, {{9, 0, 9}});
-      histos.add(Form("%s/Rec-Truth/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1F, {{6, 0, 6}});
-      histos.add(Form("%s/Rec-Truth/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1F, {{9, 0, 9}});
-      histos.add(Form("%s/Rec-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/Rec-Truth/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1F, {axesConfig.axisDCAz});
-      histos.add(Form("%s/Rec-Truth/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1F, {axesConfig.axisDCAxy});
-      histos.add(Form("%s/Rec-Truth/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec-Truth/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec-Truth/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1F, {{200, -1.0, 1.0}});
-      histos.add(Form("%s/Rec-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1F, {axesConfig.axisEta});
+      histos.add(Form("%s/Rec-Truth/FiltersXi", TypeNames[Type].data()), "main cascade filters for Xi", kTH1D, {{5, 0, 5}});
+      histos.add(Form("%s/Rec-Truth/GenFiltersXi", TypeNames[Type].data()), "general cascade filters for Xi", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec-Truth/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1D, {{6, 0, 6}});
+      histos.add(Form("%s/Rec-Truth/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1D, {{9, 0, 9}});
+      histos.add(Form("%s/Rec-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/Rec-Truth/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
+      histos.add(Form("%s/Rec-Truth/Filters/CalcDCA", TypeNames[Type].data()), "DCA (calculated)", kTH1D, {axesConfig.axisDCAxy});
+      histos.add(Form("%s/Rec-Truth/Filters/BachCosPA", TypeNames[Type].data()), "Bachelor cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/V0CosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/CascCosPA", TypeNames[Type].data()), "V0 cosPA", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
       // truth that passed all sels
-      histos.add(Form("%s/Rec-Truth/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1F, {axesConfig.axisMult});
-      histos.add(Form("%s/Rec-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisXiMass});
-      histos.add(Form("%s/Rec-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1F, {axesConfig.axisOmegaMass});
+      histos.add(Form("%s/Rec-Truth/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
+      histos.add(Form("%s/Rec-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec-Truth/Omega", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
       histos.add(Form("%s/Rec-Truth/Xi", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
     });
     // for MC-specific processing
-    histos.add("MC/Gen/EvCounter", "Event Counter", kTH1F, {{1, 0, 1}});
-    histos.add("MC/Gen/Xi", "Xi", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});                        // generated Xis
-    histos.add("MC/Gen/Omega", "Omega", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});                  // generated Omegas
-    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Xis
-    histos.add("MC/Gen/PrimaryOmega", "Omega primaries in |y|", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});         // generated primary Omegas
-    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries", kTH2F, {axesConfig.axisPt, axesConfig.axisMult});              // generated primary Xis in selected rapidity range
-    histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2F, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
+    histos.add("MC/Gen/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
+    histos.add("MC/Gen/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                             // generated Xis
+    histos.add("MC/Gen/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                       // generated Omegas
+    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                            // generated primary Xis
+    histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});             // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Omegas in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiMinus", "Xi- primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Xis
+    histos.add("MC/Gen/PrimaryOmegaMinus", "Omega- primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});      // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaMinusRapidity", "Omega- primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiPlus", "Xi+ primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                       // generated primary Xis
+    histos.add("MC/Gen/PrimaryOmegaPlus", "Omega+ primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                 // generated primary Omegas
+    histos.add("MC/Gen/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});        // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});  // generated primary Omegas in selected rapidity range
     // label filter statistic bins for standard cascs
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
@@ -1165,11 +1200,31 @@ struct StrangeCascTrack {
               histos.fill(HIST("MC/Gen/PrimaryXi"), cascPt, cascMult);
               if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
                 histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), cascPt, cascMult);
+              if (casc.pdgCode() == PDG_t::kXiMinus) {
+                histos.fill(HIST("MC/Gen/PrimaryXiMinus"), cascPt, cascMult);
+                if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
+                  histos.fill(HIST("MC/Gen/PrimaryXiMinusRapidity"), cascPt, cascMult);
+              }
+              if (casc.pdgCode() == PDG_t::kXiPlusBar) {
+                histos.fill(HIST("MC/Gen/PrimaryXiPlus"), cascPt, cascMult);
+                if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity)
+                  histos.fill(HIST("MC/Gen/PrimaryXiPlusRapidity"), cascPt, cascMult);
+              }
             }
             if (isValidPDG(casc, "Omega")) {
               histos.fill(HIST("MC/Gen/PrimaryOmega"), cascPt, cascMult);
               if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
                 histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), cascPt, cascMult);
+              if (casc.pdgCode() == PDG_t::kOmegaMinus) {
+                histos.fill(HIST("MC/Gen/PrimaryOmegaMinus"), cascPt, cascMult);
+                if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
+                  histos.fill(HIST("MC/Gen/PrimaryOmegaMinusRapidity"), cascPt, cascMult);
+              }
+              if (casc.pdgCode() == PDG_t::kOmegaPlusBar) {
+                histos.fill(HIST("MC/Gen/PrimaryOmegaPlus"), cascPt, cascMult);
+                if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity)
+                  histos.fill(HIST("MC/Gen/PrimaryOmegaPlusRapidity"), cascPt, cascMult);
+              }
             }
           }
         }
