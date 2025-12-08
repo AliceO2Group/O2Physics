@@ -26,15 +26,7 @@ enum CharmHadAlice3 { Lc = 1 };
 
 } // namespace o2::analysis
 
-class HfHelperAlice3
-{
- public:
-  /// Default constructor
-  HfHelperAlice3() = default;
-
-  /// Default destructor
-  ~HfHelperAlice3() = default;
-
+struct HfHelperAlice3 {
   /// Get candidate mass (ALICE3 HF data model)
   /// \tparam TCand candidate type
   /// \param cand candidate
