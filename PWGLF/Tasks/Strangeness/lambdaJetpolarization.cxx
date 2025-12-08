@@ -13,8 +13,7 @@
 // o2-linter: disable=name/workflow-file
 
 /// \author Youpeng Su (yousu@cern.ch)
-#include "PWGLF/DataModel/lambdaJetpolarization.h"
-
+// #include "PWGLF/DataModel/lambdaJetpolarization.h"
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -59,7 +58,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct lambdaJetpolarization {
+struct LambdaJetpolarization {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -1552,7 +1551,7 @@ struct lambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(lambdaJetpolarization, processData, "processData", false);
+  PROCESS_SWITCH(LambdaJetpolarization, processData, "processData", false);
 
   // V0Collisions
   // SelCollisions
@@ -1599,7 +1598,7 @@ struct lambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(lambdaJetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", true);
+  PROCESS_SWITCH(LambdaJetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", true);
 
   void processLambdaJetPolarization(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
   {
@@ -1986,10 +1985,10 @@ struct lambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(lambdaJetpolarization, processLambdaJetPolarization, "processLambdaJetPolarization", true);
+  PROCESS_SWITCH(LambdaJetpolarization, processLambdaJetPolarization, "processLambdaJetPolarization", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<lambdaJetpolarization>(cfgc)}; // TaskName{"lambdaJetpolarization"}
+  return WorkflowSpec{adaptAnalysisTask<LambdaJetpolarization>(cfgc)}; // TaskName{"lambdaJetpolarization"}
 }
