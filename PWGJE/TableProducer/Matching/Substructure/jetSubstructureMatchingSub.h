@@ -15,6 +15,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_SUBSTRUCTURE_JETSUBSTRUCTUREMATCHINGSUB_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_SUBSTRUCTURE_JETSUBSTRUCTUREMATCHINGSUB_H_
+
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
@@ -280,3 +283,5 @@ struct JetSubstructureMatchingSub {
   }
   PROCESS_SWITCH(JetSubstructureMatchingSub, processData, "charged jet substructure", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_SUBSTRUCTURE_JETSUBSTRUCTUREMATCHINGSUB_H_
