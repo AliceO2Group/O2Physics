@@ -25,6 +25,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using BplusChargedJetMatchingSub = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
                                                   soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
                                                   aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,

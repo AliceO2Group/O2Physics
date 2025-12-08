@@ -23,6 +23,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using JetFinderXicToXiPiPiDataCharged = JetFinderHFTask<aod::CandidatesXicToXiPiPiData, aod::CandidatesXicToXiPiPiMCD, aod::CandidatesXicToXiPiPiMCP, aod::JetTracksSubXicToXiPiPi, aod::JetParticlesSubXicToXiPiPi, aod::XicToXiPiPiChargedJets, aod::XicToXiPiPiChargedJetConstituents, aod::XicToXiPiPiChargedEventWiseSubtractedJets, aod::XicToXiPiPiChargedEventWiseSubtractedJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

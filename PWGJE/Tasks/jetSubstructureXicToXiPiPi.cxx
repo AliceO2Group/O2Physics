@@ -26,6 +26,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using JetSubstructureXicToXiPiPi = JetSubstructureHFTask<soa::Join<aod::XicToXiPiPiChargedJets, aod::XicToXiPiPiChargedJetConstituents>, soa::Join<aod::XicToXiPiPiChargedMCDetectorLevelJets, aod::XicToXiPiPiChargedMCDetectorLevelJetConstituents>, soa::Join<aod::XicToXiPiPiChargedMCParticleLevelJets, aod::XicToXiPiPiChargedMCParticleLevelJetConstituents>, soa::Join<aod::XicToXiPiPiChargedEventWiseSubtractedJets, aod::XicToXiPiPiChargedEventWiseSubtractedJetConstituents>, aod::CandidatesXicToXiPiPiData, aod::CandidatesXicToXiPiPiMCP, aod::XicToXiPiPiCJetSSs, aod::XicToXiPiPiChargedSPs, aod::XicToXiPiPiChargedPRs, aod::XicToXiPiPiCMCDJetSSs, aod::XicToXiPiPiChargedMCDetectorLevelSPs, aod::XicToXiPiPiChargedMCDetectorLevelPRs, aod::XicToXiPiPiCMCPJetSSs, aod::XicToXiPiPiChargedMCParticleLevelSPs, aod::XicToXiPiPiChargedMCParticleLevelPRs, aod::XicToXiPiPiCEWSJetSSs, aod::XicToXiPiPiChargedEventWiseSubtractedSPs, aod::XicToXiPiPiChargedEventWiseSubtractedPRs, aod::JTrackXicToXiPiPiSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -25,6 +25,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using Charged1JetMCPMatchingDupliacates = JetMatchingDuplicates<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>,
                                                                 soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>,
                                                                 aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets,

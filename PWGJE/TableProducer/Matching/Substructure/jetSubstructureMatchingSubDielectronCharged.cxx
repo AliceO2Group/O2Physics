@@ -26,6 +26,10 @@
 
 #include <vector>
 
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 using DielectronChargedJetSubstructureMatchingSub = JetSubstructureMatchingSub<soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets>,
                                                                                soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents, aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets>,
                                                                                aod::DielectronChargedSPsMatchedToDielectronChargedEventWiseSubtractedSPs,
