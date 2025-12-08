@@ -70,7 +70,6 @@ concept V0OrCasc = std::same_as<T, V0sWithID::iterator> || std::same_as<T, Cascs
 struct TreeWriterTpcV0 {
 
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
-  Produces<o2::aod::SkimmedTPCV0TreeWithdEdxTrkQA> rowTPCTreeWithdEdxTrkQA;
   Produces<o2::aod::SkimmedTPCV0TreeWithTrkQA> rowTPCTreeWithTrkQA;
 
   /// Configurables general
@@ -266,13 +265,17 @@ struct TreeWriterTpcV0 {
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
-      float usedDedx;
+      float usedDedx{UndefValueFloat};
       if constexpr (DoUseCorrectedDeDx) {
         usedDedx = track.tpcSignalCorrected();
       } else {
         usedDedx = track.tpcSignal();
       }
-      if constexpr (ModeId == ModeStandard) {
+      float tpcdEdxNorm{UndefValueFloat};
+      if constexpr (ModeId != ModeStandard) {
+        tpcdEdxNorm = existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat;
+      }
+      if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
         rowTPCTree(usedDedx,
                    1. / dEdxExp,
                    track.tpcInnerParam(),
@@ -294,42 +297,14 @@ struct TreeWriterTpcV0 {
                    trackOcc,
                    ft0Occ,
                    hadronicRate,
+                   tpcdEdxNorm,
                    alpha,
                    qt,
                    cosPA,
                    pT,
                    v0radius,
                    gammapsipair);
-      } else if constexpr (ModeId == ModeWithdEdxTrkQA) {
-        rowTPCTreeWithdEdxTrkQA(usedDedx,
-                                1. / dEdxExp,
-                                track.tpcInnerParam(),
-                                track.tgl(),
-                                track.signed1Pt(),
-                                track.eta(),
-                                track.phi(),
-                                track.y(),
-                                mass,
-                                bg,
-                                multTPC / MultiplicityNorm,
-                                std::sqrt(nClNorm / ncl),
-                                nclPID,
-                                id,
-                                nSigmaTPC,
-                                nSigmaTOF,
-                                nSigmaITS,
-                                runnumber,
-                                trackOcc,
-                                ft0Occ,
-                                hadronicRate,
-                                alpha,
-                                qt,
-                                cosPA,
-                                pT,
-                                v0radius,
-                                gammapsipair,
-                                existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
-      } else if constexpr (ModeId == ModeWithTrkQA) {
+      } else {
         rowTPCTreeWithTrkQA(usedDedx,
                             1. / dEdxExp,
                             track.tpcInnerParam(),
@@ -351,6 +326,7 @@ struct TreeWriterTpcV0 {
                             trackOcc,
                             ft0Occ,
                             hadronicRate,
+                            tpcdEdxNorm,
                             alpha,
                             qt,
                             cosPA,
@@ -378,8 +354,7 @@ struct TreeWriterTpcV0 {
                             occValues.twmoFV0AUnfm80,
                             occValues.twmoFT0AUnfm80,
                             occValues.twmoFT0CUnfm80,
-                            occValues.twmoRT0V0PrimUnfm80,
-                            existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
+                            occValues.twmoRT0V0PrimUnfm80);
       }
     }
   } /// fillSkimmedV0Table
@@ -446,11 +421,7 @@ struct TreeWriterTpcV0 {
       if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
-        if constexpr (ModeId == ModeWithdEdxTrkQA) {
-          rowTPCTreeWithdEdxTrkQA.reserve(2 * v0s.size() + cascs.size());
-        } else if (ModeId == ModeStandard) {
-          rowTPCTree.reserve(2 * v0s.size() + cascs.size());
-        }
+        rowTPCTree.reserve(2 * v0s.size() + cascs.size());
       } else if constexpr (ModeId == ModeWithTrkQA) {
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();
@@ -594,7 +565,6 @@ struct TreeWriterTpcV0 {
 struct TreeWriterTpcTof {
 
   Produces<o2::aod::SkimmedTPCTOFTree> rowTPCTOFTree;
-  Produces<o2::aod::SkimmedTPCTOFTreeWithdEdxTrkQA> rowTPCTOFTreeWithdEdxTrkQA;
   Produces<o2::aod::SkimmedTPCTOFTreeWithTrkQA> rowTPCTOFTreeWithTrkQA;
 
   /// Configurables general
@@ -715,7 +685,11 @@ struct TreeWriterTpcTof {
       } else {
         usedEdx = track.tpcSignal();
       }
-      if (ModeId == ModeStandard) {
+      float tpcdEdxNorm{UndefValueFloat};
+      if constexpr (ModeId != ModeStandard) {
+        tpcdEdxNorm = existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat;
+      }
+      if (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
         rowTPCTOFTree(usedEdx,
                       1. / dEdxExp,
                       track.tpcInnerParam(),
@@ -736,31 +710,9 @@ struct TreeWriterTpcTof {
                       runnumber,
                       trackOcc,
                       ft0Occ,
-                      hadronicRate);
-      } else if constexpr (ModeId == ModeWithdEdxTrkQA) {
-        rowTPCTOFTreeWithdEdxTrkQA(usedEdx,
-                                   1. / dEdxExp,
-                                   track.tpcInnerParam(),
-                                   track.tgl(),
-                                   track.signed1Pt(),
-                                   track.eta(),
-                                   track.phi(),
-                                   track.y(),
-                                   mass,
-                                   bg,
-                                   multTPC / MultiplicityNorm,
-                                   std::sqrt(nClNorm / ncl),
-                                   nclPID,
-                                   id,
-                                   nSigmaTPC,
-                                   nSigmaTOF,
-                                   nSigmaITS,
-                                   runnumber,
-                                   trackOcc,
-                                   ft0Occ,
-                                   hadronicRate,
-                                   existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
-      } else if constexpr (ModeId == ModeWithTrkQA) {
+                      hadronicRate,
+                      tpcdEdxNorm);
+      } else {
         rowTPCTOFTreeWithTrkQA(usedEdx,
                                1. / dEdxExp,
                                track.tpcInnerParam(),
@@ -782,6 +734,7 @@ struct TreeWriterTpcTof {
                                trackOcc,
                                ft0Occ,
                                hadronicRate,
+                               tpcdEdxNorm,
                                bcGlobalIndex,
                                bcTimeFrameId,
                                bcBcInTimeFrame,
@@ -803,8 +756,7 @@ struct TreeWriterTpcTof {
                                occValues.twmoFV0AUnfm80,
                                occValues.twmoFT0AUnfm80,
                                occValues.twmoFT0CUnfm80,
-                               occValues.twmoRT0V0PrimUnfm80,
-                               existTrkQA ? trackQA.tpcdEdxNorm() : UndefValueFloat);
+                               occValues.twmoRT0V0PrimUnfm80);
       }
     }
   } /// fillSkimmedTpcTofTable
@@ -843,11 +795,7 @@ struct TreeWriterTpcTof {
       if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
-        if constexpr (ModeId == ModeStandard) {
-          rowTPCTOFTree.reserve(tracks.size());
-        } else {
-          rowTPCTOFTreeWithdEdxTrkQA.reserve(tracks.size());
-        }
+        rowTPCTOFTree.reserve(tracks.size());
       } else {
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();

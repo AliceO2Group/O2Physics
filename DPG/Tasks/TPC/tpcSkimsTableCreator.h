@@ -77,7 +77,8 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::RunNumber,           \
     tpcskims::TrackOcc,            \
     tpcskims::Ft0Occ,              \
-    tpcskims::HadronicRate
+    tpcskims::HadronicRate,        \
+    o2::aod::trackqa::TPCdEdxNorm
 
 #define TPCSKIMS_COLUMNS_V0 \
   TPCSKIMS_COLUMNS_BASE,    \
@@ -118,26 +119,16 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   TPCSKIMS_COLUMNS_V0);
 
-DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithdEdxTrkQA, "AOD", "TPCSKIMV0WdE",
-                  TPCSKIMS_COLUMNS_V0,
-                  o2::aod::trackqa::TPCdEdxNorm);
-
 DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithTrkQA, "AOD", "TPCSKIMV0WQA",
                   TPCSKIMS_COLUMNS_V0,
-                  TPCSKIMS_COLUMNS_TRACK_QA,
-                  o2::aod::trackqa::TPCdEdxNorm);
+                  TPCSKIMS_COLUMNS_TRACK_QA);
 
 DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   TPCSKIMS_COLUMNS_TOF);
 
-DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithdEdxTrkQA, "AOD", "TPCTOFSKIMWdE",
-                  TPCSKIMS_COLUMNS_TOF,
-                  o2::aod::trackqa::TPCdEdxNorm);
-
 DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   TPCSKIMS_COLUMNS_TOF,
-                  TPCSKIMS_COLUMNS_TRACK_QA,
-                  o2::aod::trackqa::TPCdEdxNorm);
+                  TPCSKIMS_COLUMNS_TRACK_QA);
 
 #undef TPCSKIMS_COLUMNS_TRACK_QA
 #undef TPCSKIMS_COLUMNS_TOF
