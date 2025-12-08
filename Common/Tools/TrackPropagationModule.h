@@ -384,7 +384,7 @@ class TrackPropagationModule
   // TTrackPar type: either aod::TrackPar or aod::TrackParCov
   // TVertex type: either math_utils::Point3D<value_t> or o2::dataformats::VertexBase
   // TDCA type: either dim2_t or o2::dataformats::DCA
-  template<typename TTrackPar, typename TVertex, typename TDCA>
+  template <typename TTrackPar, typename TVertex, typename TDCA>
   bool calculateDCA(TTrackPar trackPar, const TVertex& vtx, double b, TDCA* dca, double maxD)
   {
     // propagate track to DCA to the vertex
@@ -400,7 +400,7 @@ class TrackPropagationModule
       // provide default DCA for failed propag
       if constexpr (requires { trackPar.getSigmaY2(); vtx.getSigmaX2(); }) {
         dca->set(o2::track::DefaultDCA, o2::track::DefaultDCA,
-                o2::track::DefaultDCACov, o2::track::DefaultDCACov, o2::track::DefaultDCACov);
+                 o2::track::DefaultDCACov, o2::track::DefaultDCACov, o2::track::DefaultDCACov);
       } else {
         (*dca)[0] = o2::track::DefaultDCA;
         (*dca)[1] = o2::track::DefaultDCA;
