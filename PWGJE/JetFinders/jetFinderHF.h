@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
+#ifndef PWGJE_JETFINDERS_JETFINDERHF_H_
+#define PWGJE_JETFINDERS_JETFINDERHF_H_
+
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
@@ -315,3 +318,5 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCP, "hf jet finding on MC particle level", false);
 };
+
+#endif // PWGJE_JETFINDERS_JETFINDERHF_H_
