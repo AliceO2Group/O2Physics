@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
+#ifndef PWGJE_TASKS_JETSUBSTRUCTUREHFOUTPUT_H_
+#define PWGJE_TASKS_JETSUBSTRUCTUREHFOUTPUT_H_
+
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -755,3 +758,5 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputJetMatchingMC, "jet matching output MC", false);
 };
+
+#endif // PWGJE_TASKS_JETSUBSTRUCTUREHFOUTPUT_H_

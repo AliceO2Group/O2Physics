@@ -13,13 +13,12 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Tasks/jetSubstructureHFOutput.cxx"
-
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/Tasks/jetSubstructureHFOutput.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
