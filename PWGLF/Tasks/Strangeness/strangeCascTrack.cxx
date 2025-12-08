@@ -1000,9 +1000,9 @@ struct StrangeCascTrack {
     });
     // for MC-specific processing
     histos.add("MC/Gen/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
-    histos.add("MC/Gen/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                        // generated Xis
-    histos.add("MC/Gen/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                  // generated Omegas
-    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Xis
+    histos.add("MC/Gen/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                       // generated Xis
+    histos.add("MC/Gen/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                 // generated Omegas
+    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Xis
     histos.add("MC/Gen/PrimaryOmega", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});         // generated primary Omegas
     histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});              // generated primary Xis in selected rapidity range
     histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omegas in selected rapidity range
