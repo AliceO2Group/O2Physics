@@ -47,7 +47,6 @@
 #include "MathUtils/Utils.h"
 
 #include "Math/Vector4D.h"
-#include "TH1D.h"
 #include "TString.h"
 
 #include <algorithm>
@@ -100,16 +99,18 @@ struct DileptonProducer {
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
-  Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  Configurable<bool> cfgStoreULS{"cfgStoreULS", true, "flag to store ULS pairs"};
+  Configurable<bool> cfgStoreLS{"cfgStoreLS", true, "flag to store LS pairs"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
+    Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+    Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
     Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
     Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
@@ -535,7 +536,7 @@ struct DileptonProducer {
     return true;
   }
 
-  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   // Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
@@ -580,7 +581,7 @@ struct DileptonProducer {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       // float centrality = centralities[cfgCentEstimator];
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -598,22 +599,27 @@ struct DileptonProducer {
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
       int nuls = 0, nlspp = 0, nlsmm = 0;
-      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        bool is_pair_ok = fillPairInfo(collision, pos, neg, cut, tracks);
-        if (is_pair_ok) {
-          nuls++;
+
+      if (cfgStoreULS) {
+        for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+          bool is_pair_ok = fillPairInfo(collision, pos, neg, cut, tracks);
+          if (is_pair_ok) {
+            nuls++;
+          }
         }
       }
-      for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-        bool is_pair_ok = fillPairInfo(collision, pos1, pos2, cut, tracks);
-        if (is_pair_ok) {
-          nlspp++;
+      if (cfgStoreLS) {
+        for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+          bool is_pair_ok = fillPairInfo(collision, pos1, pos2, cut, tracks);
+          if (is_pair_ok) {
+            nlspp++;
+          }
         }
-      }
-      for (const auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-        bool is_pair_ok = fillPairInfo(collision, neg1, neg2, cut, tracks);
-        if (is_pair_ok) {
-          nlsmm++;
+        for (const auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+          bool is_pair_ok = fillPairInfo(collision, neg1, neg2, cut, tracks);
+          if (is_pair_ok) {
+            nlsmm++;
+          }
         }
       }
 
@@ -671,7 +677,7 @@ struct DileptonProducer {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -758,16 +764,14 @@ struct DileptonProducer {
   }
   PROCESS_SWITCH(DileptonProducer, processAnalysis, "run dilepton analysis", true);
 
-  Filter collisionFilter_centrality_norm = cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax;
-  using FilteredNormInfos = soa::Filtered<aod::EMEventNormInfos>;
-  void processNorm(FilteredNormInfos const& collisions)
+  void processNorm(aod::EMEventNormInfos const& collisions)
   {
     for (const auto& collision : collisions) {
-      if (collision.centFT0C() < cfgCentMin || cfgCentMax < collision.centFT0C()) {
+      if (collision.centFT0C() < eventcuts.cfgCentMin || eventcuts.cfgCentMax < collision.centFT0C()) {
         continue;
       }
 
-      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZ(), collision.centFT0C());
+      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZint16(), collision.centFT0Cuint16());
 
     } // end of collision loop
   }

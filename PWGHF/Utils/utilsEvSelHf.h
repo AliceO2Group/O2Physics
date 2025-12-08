@@ -26,9 +26,12 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/DeviceSpec.h>
@@ -181,6 +184,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
   o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
   o2::framework::Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
+  o2::framework::Configurable<std::string> irSource{"irSource", "", "Estimator of the interaction rate (Empty: automatically set. Otherwise recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   //  SG selector
   SGSelector sgSelector;
@@ -206,8 +210,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
-  o2::framework::OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int currentRun{-1};
+
+  // util to retrieve IR
+  ctpRateFetcher irFetcher;
+  std::string irSourceForCptFetcher;
 
   /// Set standard preselection gap trigger (values taken from UD group)
   SGCutParHolder setSgPreselection()
@@ -247,7 +254,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   /// \brief Inits the HF event selection object
   /// \param registry reference to the histogram registry
-  void init(o2::framework::HistogramRegistry& registry)
+  template <typename T>
+  void init(o2::framework::HistogramRegistry& registry, T& zorroSummary)
   {
     // we initialise the RCT checker
     if (requireGoodRct) {
@@ -256,11 +264,20 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     // we initialise the summary object
     if (!softwareTrigger.value.empty()) {
-      zorroSummary.setObject(zorro.getZorroSummary());
+      if constexpr (std::is_same_v<T, o2::framework::OutputObj<ZorroSummary>>) {
+        zorroSummary.setObject(zorro.getZorroSummary());
+      } else {
+        LOGP(fatal, "No o2::framework::OutputObj<ZorroSummary> provided to HF event selection object in your task, add it if you want to get the normalisation from Zorro.");
+      }
     }
 
     // we initialise histograms
     addHistograms(registry);
+
+    // we initialise IR fetcher
+    if (!irSource.value.empty()) {
+      irSourceForCptFetcher = irSource.value;
+    }
   }
 
   /// \brief Applies event selection.
@@ -430,6 +447,23 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hSelCollisionsCent->Fill(centrality);
     hCollisionsCentOcc->Fill(centrality, occupancy);
     hCollisionsCentIR->Fill(centrality, ir);
+  }
+
+  template <typename TBc>
+  double getInteractionRate(TBc const& bc,
+                            o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
+  {
+    if (irSourceForCptFetcher.empty()) {
+      o2::parameters::GRPLHCIFData* grpo = ccdb.service->getSpecificForRun<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.runNumber());
+      auto collsys = o2::common::core::CollisionSystemType::getCollisionTypeFromGrp(grpo);
+      if (collsys == o2::common::core::CollisionSystemType::kCollSyspp) {
+        irSourceForCptFetcher = std::string("T0VTX");
+      } else {
+        irSourceForCptFetcher = std::string("ZNC hadronic");
+      }
+    }
+
+    return irFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSourceForCptFetcher, true);
   }
 };
 

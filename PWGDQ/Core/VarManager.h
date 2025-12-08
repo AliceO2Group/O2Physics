@@ -110,7 +110,8 @@ class VarManager : public TObject
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
     RapidityGapFilter = BIT(21),
-    ReducedFit = BIT(22),
+    Fit = BIT(22),
+    ReducedFit = BIT(23),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -2103,6 +2104,35 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
     FillZDC(event, values);
+  }
+
+  if constexpr ((fillMap & ReducedFit) > 0) {
+    values[kAmplitudeFT0A] = event.amplitudeFT0A();
+    values[kAmplitudeFT0C] = event.amplitudeFT0C();
+    values[kTimeFT0A] = event.timeFT0A();
+    values[kTimeFT0C] = event.timeFT0C();
+    values[kTriggerMaskFT0] = event.triggerMaskFT0();
+    values[kNFiredChannelsFT0A] = event.nFiredChannelsFT0A();
+    values[kNFiredChannelsFT0C] = event.nFiredChannelsFT0C();
+    values[kAmplitudeFDDA] = event.amplitudeFDDA();
+    values[kAmplitudeFDDC] = event.amplitudeFDDC();
+    values[kTimeFDDA] = event.timeFDDA();
+    values[kTimeFDDC] = event.timeFDDC();
+    values[kTriggerMaskFDD] = event.triggerMaskFDD();
+    values[kAmplitudeFV0A] = event.amplitudeFV0A();
+    values[kTimeFV0A] = event.timeFV0A();
+    values[kTriggerMaskFV0A] = event.triggerMaskFV0A();
+    values[kNFiredChannelsFV0A] = event.nFiredChannelsFV0A();
+    values[kBBFT0Apf] = event.bbFT0Apf();
+    values[kBGFT0Apf] = event.bgFT0Apf();
+    values[kBBFT0Cpf] = event.bbFT0Cpf();
+    values[kBGFT0Cpf] = event.bgFT0Cpf();
+    values[kBBFV0Apf] = event.bbFV0Apf();
+    values[kBGFV0Apf] = event.bgFV0Apf();
+    values[kBBFDDApf] = event.bbFDDApf();
+    values[kBGFDDApf] = event.bgFDDApf();
+    values[kBBFDDCpf] = event.bbFDDCpf();
+    values[kBGFDDCpf] = event.bgFDDCpf();
   }
 
   // FillEventDerived(values);

@@ -116,14 +116,21 @@ struct FlowGfwLightIons {
   O2_DEFINE_CONFIGURABLE(cfgEtaPtPtFull, float, 0.8, "eta cut for pure pt-pt correlations");
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
-  O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
-  O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
-  O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
-  O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
+    O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
+    O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
+    O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
+    O2_DEFINE_CONFIGURABLE(cfgNoCollInRofStandard, bool, true, "kNoCollInRofStandard");
+    O2_DEFINE_CONFIGURABLE(cfgNoHighMultCollInPrevRof, bool, true, "kNoHighMultCollInPrevRof");
+    O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, true, "kNoITSROFrameBorder");
+    O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, true, "kNoTimeFrameBorder");
+    O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "kTVXinTRD - Use kTVXinTRD (reject TRD triggered events)");
+    O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "kIsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
+  } cfgEventCutFlags;
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
+  O2_DEFINE_CONFIGURABLE(cfgCentralityFactor, double, 1., "Correction factor for testing centrality robustness");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
-  O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
-  O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMin, int, 1, "Minimum for fixed nch range");
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMax, int, 3000, "Maximum for fixed nch range");
@@ -210,12 +217,16 @@ struct FlowGfwLightIons {
     kFilteredEvent = 1,
     kSel8,
     kOccupancy,
-    kTVXTRD,
-    kNoSamebunchPU,
-    kZVtxFT0PV,
-    kNoCollTRStd,
-    kVtxITSTPC,
-    kGoodITSLayers,
+    kTVXinTRD,
+    kNoSameBunchPileup,
+    kIsGoodZvtxFT0vsPV,
+    kNoCollInTimeRangeStandard,
+    kNoCollInRofStandard,
+    kNoHighMultCollInPrevRof,
+    kNoTimeFrameBorder,
+    kNoITSROFrameBorder,
+    kIsVertexITSTPC,
+    kIsGoodITSLayersAll,
     kMultCuts,
     kTrackCent
   };
@@ -415,18 +426,23 @@ struct FlowGfwLightIons {
       }
 
       registry.addClone("eventQA/before/", "eventQA/after/");
-      registry.add("eventQA/eventSel", "Number of Events;; Counts", {HistType::kTH1D, {{11, 0.5, 11.5}}});
+      registry.add("eventQA/eventSel", "Number of Events;; Counts", {HistType::kTH1D, {{15, 0.5, 15.5}}});
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kFilteredEvent, "Filtered event");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kSel8, "sel8");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kOccupancy, "occupancy");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kTVXTRD, "kTVXinTRD");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoSamebunchPU, "kNoSameBunchPileup");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kZVtxFT0PV, "kIsGoodZvtxFT0vsPV");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoCollTRStd, "kNoCollInTimeRangeStandard");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kVtxITSTPC, "kIsVertexITSTPC");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kGoodITSLayers, "kIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kTVXinTRD, "kTVXinTRD");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoSameBunchPileup, "kNoSameBunchPileup");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kIsGoodZvtxFT0vsPV, "kIsGoodZvtxFT0vsPV");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoCollInTimeRangeStandard, "kNoCollInTimeRangeStandard");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoCollInRofStandard, "kNoCollInRofStandard");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoHighMultCollInPrevRof, "kNoHighMultCollInPrevRof");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoTimeFrameBorder, "kNoTimeFrameBorder");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kNoITSROFrameBorder, "kNoITSROFrameBorder");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kIsVertexITSTPC, "kIsVertexITSTPC");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kIsGoodITSLayersAll, "kIsGoodITSLayersAll");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kMultCuts, "after Mult cuts");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kTrackCent, "has track + within cent");
+      LOGF(info, "eventsel N bins = %d", registry.get<TH1>(HIST("eventQA/eventSel"))->GetNbinsX());
       if (!cfgRunByRun && cfgFillWeights) {
         registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       }
@@ -642,63 +658,101 @@ struct FlowGfwLightIons {
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
   {
-    if (cfgTVXinTRD) {
+    if (cfgEventCutFlags.cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
         // TRD triggered
         // "CMTVX-B-NOPF-TRD,minbias_TVX"
         return 0;
       }
-      registry.fill(HIST("eventQA/eventSel"), kTVXTRD);
+      registry.fill(HIST("eventQA/eventSel"), kTVXinTRD);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(kTVXTRD);
+        th1sList[run][hEventSel]->Fill(kTVXinTRD);
     }
-    if (cfgNoSameBunchPileupCut) {
+    if (cfgEventCutFlags.cfgNoSameBunchPileupCut) {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         // rejects collisions which are associated with the same "found-by-T0" bunch crossing
         // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
         return 0;
       }
-      registry.fill(HIST("eventQA/eventSel"), kNoSamebunchPU);
+      registry.fill(HIST("eventQA/eventSel"), kNoSameBunchPileup);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(kNoSamebunchPU);
+        th1sList[run][hEventSel]->Fill(kNoSameBunchPileup);
     }
-    if (cfgIsGoodZvtxFT0vsPV) {
+    if (cfgEventCutFlags.cfgIsGoodZvtxFT0vsPV) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
         // use this cut at low multiplicities with caution
         return 0;
       }
-      registry.fill(HIST("eventQA/eventSel"), kZVtxFT0PV);
+      registry.fill(HIST("eventQA/eventSel"), kIsGoodZvtxFT0vsPV);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(kZVtxFT0PV);
+        th1sList[run][hEventSel]->Fill(kIsGoodZvtxFT0vsPV);
     }
-    if (cfgNoCollInTimeRangeStandard) {
+    if (cfgEventCutFlags.cfgNoCollInTimeRangeStandard) {
       if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         //  Rejection of the collisions which have other events nearby
         return 0;
       }
-      registry.fill(HIST("eventQA/eventSel"), kNoCollTRStd);
+      registry.fill(HIST("eventQA/eventSel"), kNoCollInTimeRangeStandard);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(kNoCollTRStd);
+        th1sList[run][hEventSel]->Fill(kNoCollInTimeRangeStandard);
     }
 
-    if (cfgIsVertexITSTPC) {
+    if (cfgEventCutFlags.cfgNoCollInRofStandard) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        //  Rejection of the collisions which have other events nearby
+        return 0;
+      }
+      registry.fill(HIST("eventQA/eventSel"), kNoCollInRofStandard);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(kNoCollInRofStandard);
+    }
+
+    if (cfgEventCutFlags.cfgNoHighMultCollInPrevRof) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        //  Rejection of the collisions which have other events nearby
+        return 0;
+      }
+      registry.fill(HIST("eventQA/eventSel"), kNoHighMultCollInPrevRof);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(kNoHighMultCollInPrevRof);
+    }
+
+    if (cfgEventCutFlags.cfgIsVertexITSTPC) {
       if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
         return 0;
       }
-      registry.fill(HIST("eventQA/eventSel"), kVtxITSTPC);
+      registry.fill(HIST("eventQA/eventSel"), kIsVertexITSTPC);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(kVtxITSTPC);
+        th1sList[run][hEventSel]->Fill(kIsVertexITSTPC);
     }
 
-    if (cfgIsGoodITSLayersAll) {
+    if (cfgEventCutFlags.cfgIsGoodITSLayersAll) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         return 0;
       }
-      registry.fill(HIST("eventQA/eventSel"), kGoodITSLayers);
+      registry.fill(HIST("eventQA/eventSel"), kIsGoodITSLayersAll);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(kGoodITSLayers);
+        th1sList[run][hEventSel]->Fill(kIsGoodITSLayersAll);
+    }
+
+    if (cfgEventCutFlags.cfgNoTimeFrameBorder) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        return 0;
+      }
+      registry.fill(HIST("eventQA/eventSel"), kNoTimeFrameBorder);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(kNoTimeFrameBorder);
+    }
+
+    if (cfgEventCutFlags.cfgNoITSROFrameBorder) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        return 0;
+      }
+      registry.fill(HIST("eventQA/eventSel"), kNoITSROFrameBorder);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(kNoITSROFrameBorder);
     }
 
     float vtxz = -999;
@@ -783,18 +837,23 @@ struct FlowGfwLightIons {
       profiles[pfCorr22] = registry.add<TProfile>(Form("%d/corr22", run), "", {HistType::kTProfile, {(cfgUseNch) ? nchAxis : centAxis}});
       tpfsList.insert(std::make_pair(run, profiles));
     }
-    histos[hEventSel] = registry.add<TH1>(Form("%d/eventSel", run), "Number of Events;; Counts", {HistType::kTH1D, {{11, 0.5, 11.5}}});
+    histos[hEventSel] = registry.add<TH1>(Form("%d/eventSel", run), "Number of Events;; Counts", {HistType::kTH1D, {{15, 0.5, 15.5}}});
     histos[hEventSel]->GetXaxis()->SetBinLabel(kFilteredEvent, "Filtered event");
     histos[hEventSel]->GetXaxis()->SetBinLabel(kSel8, "sel8");
     histos[hEventSel]->GetXaxis()->SetBinLabel(kOccupancy, "occupancy");
-    histos[hEventSel]->GetXaxis()->SetBinLabel(kTVXTRD, "kTVXinTRD");
-    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoSamebunchPU, "kNoSameBunchPileup");
-    histos[hEventSel]->GetXaxis()->SetBinLabel(kZVtxFT0PV, "kIsGoodZvtxFT0vsPV");
-    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoCollTRStd, "kNoCollInTimeRangeStandard");
-    histos[hEventSel]->GetXaxis()->SetBinLabel(kVtxITSTPC, "kIsVertexITSTPC");
-    histos[hEventSel]->GetXaxis()->SetBinLabel(kGoodITSLayers, "kIsGoodITSLayersAll");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kTVXinTRD, "kTVXinTRD");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoSameBunchPileup, "kNoSameBunchPileup");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kIsGoodZvtxFT0vsPV, "kIsGoodZvtxFT0vsPV");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoCollInTimeRangeStandard, "kNoCollInTimeRangeStandard");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoCollInRofStandard, "kNoCollInRofStandard");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoHighMultCollInPrevRof, "kNoHighMultCollInPrevRof");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoTimeFrameBorder, "kNoTimeFrameBorder");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kNoITSROFrameBorder, "kNoITSROFrameBorder");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kIsVertexITSTPC, "kIsVertexITSTPC");
+    histos[hEventSel]->GetXaxis()->SetBinLabel(kIsGoodITSLayersAll, "kIsGoodITSLayersAll");
     histos[hEventSel]->GetXaxis()->SetBinLabel(kMultCuts, "after Mult cuts");
     histos[hEventSel]->GetXaxis()->SetBinLabel(kTrackCent, "has track + within cent");
+
     th1sList.insert(std::make_pair(run, histos));
     std::vector<std::shared_ptr<TH3>> histos3d(kCount_TH3Names);
     histos3d[hNUAref] = registry.add<TH3>(Form("%d/phi_eta_vtxz_ref", run), "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -820,25 +879,32 @@ struct FlowGfwLightIons {
       fFCptgenFull->fillPtProfiles(centmult, rndm);
       fFCptgenFull->fillCMProfiles(centmult, rndm);
       fFCptgenFull->fillSubeventPtProfiles(centmult, rndm);
+      fFCptgenFull->fillCMSubeventProfiles(centmult, rndm);
     } else {
       fFCpt->fillPtProfiles(centmult, rndm);
       fFCpt->fillCMProfiles(centmult, rndm);
       fFCptFull->fillPtProfiles(centmult, rndm);
       fFCptFull->fillSubeventPtProfiles(centmult, rndm);
       fFCptFull->fillCMProfiles(centmult, rndm);
+      fFCptFull->fillCMSubeventProfiles(centmult, rndm);
     }
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
+        uint8_t vnptmask = o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind];
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
-        if (dnx == 0)
+        if (dnx == 0) {
+          (dt == kGen) ? fFCptgen->skipVnPtProfiles(vnptmask) : fFCpt->skipVnPtProfiles(vnptmask);
           continue;
+        }
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
           (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
-          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
+          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, vnptmask) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, vnptmask);
           if (cfgRunByRun && cfgFillFlowRunByRun && dt != kGen && l_ind == 0) {
             tpfsList[run][pfCorr22]->Fill(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
           }
+        } else {
+          (dt == kGen) ? fFCptgen->skipVnPtProfiles(vnptmask) : fFCpt->skipVnPtProfiles(vnptmask);
         }
         continue;
       }
@@ -1153,21 +1219,21 @@ struct FlowGfwLightIons {
   {
     switch (cfgCentEstimator) {
       case kCentFT0C:
-        return collision.centFT0C();
+        return cfgCentralityFactor * collision.centFT0C();
       case kCentFT0CVariant1:
-        return collision.centFT0CVariant1();
+        return cfgCentralityFactor * collision.centFT0CVariant1();
       case kCentFT0M:
-        return collision.centFT0M();
+        return cfgCentralityFactor * collision.centFT0M();
       case kCentFV0A:
-        return collision.centFV0A();
+        return cfgCentralityFactor * collision.centFV0A();
       case kCentNTPV:
-        return collision.centNTPV();
+        return cfgCentralityFactor * collision.centNTPV();
       case kCentNGlobal:
-        return collision.centNGlobal();
+        return cfgCentralityFactor * collision.centNGlobal();
       case kCentMFT:
-        return collision.centMFT();
+        return cfgCentralityFactor * collision.centMFT();
       default:
-        return collision.centFT0C();
+        return cfgCentralityFactor * collision.centFT0C();
     }
   }
 

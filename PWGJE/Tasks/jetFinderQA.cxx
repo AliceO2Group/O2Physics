@@ -439,10 +439,9 @@ struct JetFinderQATask {
   }
 
   template <typename T>
-  void fillHistograms(T const& jet, float centrality, float occupancy, float hadronicRate, float weight = 1.0)
+  void fillHistograms(T const& jet, float centrality, float occupancy, float hadronicRate, float weight = 1.0, float pTHat = 999.)
   {
 
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -546,10 +545,9 @@ struct JetFinderQATask {
   }
 
   template <typename T>
-  void fillMCPHistograms(T const& jet, float weight = 1.0)
+  void fillMCPHistograms(T const& jet, float weight = 1.0, float pTHat = 999.)
   {
 
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -583,7 +581,6 @@ struct JetFinderQATask {
   template <typename T, typename U>
   void fillMatchedHistograms(T const& jetBase, float leadingTrackPtBase, float angularity, float weight = 1.0, float pTHat = 999.)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -710,9 +707,8 @@ struct JetFinderQATask {
   }
 
   template <typename T, typename U>
-  void fillTrackHistograms(T const& collision, U const& tracks, float weight = 1.0)
+  void fillTrackHistograms(T const& collision, U const& tracks, float weight = 1.0, float pTHat = 999.)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -932,7 +928,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsSubMatched, "jet finder QA matched unsubtracted and constituent subtracted jets", false);
 
-  void processJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
+  void processJetsMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -944,12 +940,12 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
+      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate(), 1., collision.mcCollision().ptHard());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
 
-  void processJetsMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
+  void processJetsMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -964,18 +960,17 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      double pTHat = 10. / (std::pow(collision.weight(), 1.0 / pTHatExponent));
       for (int N = 1; N < 21; N++) {
-        if (jet.pt() < N * 0.25 * pTHat && jet.r() == round(selectedJetsRadius * 100.0f)) {
+        if (jet.pt() < N * 0.25 * collision.mcCollision().ptHard() && jet.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h_jet_ptcut"), jet.pt(), N * 0.25, collision.weight());
         }
       }
-      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate(), collision.weight());
+      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate(), collision.weight(), collision.mcCollision().ptHard());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
-  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, aod::JetParticles const&, aod::JetMcCollisions const&, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
+  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -983,13 +978,14 @@ struct JetFinderQATask {
     if (!isAcceptedJet<aod::JetParticles>(jet)) {
       return;
     }
+    auto mcCollision = mcCollisions.sliceBy(McCollisionsPerMCPCollision, jet.mcCollisionId());
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
       if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
-        fillMCPHistograms(jet);
+        fillMCPHistograms(jet, 1., mcCollision.begin().ptHard());
       }
     } else {
-      fillMCPHistograms(jet);
+      fillMCPHistograms(jet, 1., mcCollision.begin().ptHard());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
@@ -1004,25 +1000,25 @@ struct JetFinderQATask {
     }
     auto mcCollision = mcCollisions.sliceBy(McCollisionsPerMCPCollision, jet.mcCollisionId());
     if (mcCollision.size() == 1) {
-      double pTHat = 10. / (std::pow(mcCollision.begin().weight(), 1.0 / pTHatExponent));
       for (int N = 1; N < 21; N++) {
-        if (jet.pt() < N * 0.25 * pTHat && jet.r() == round(selectedJetsRadius * 100.0f)) {
+        if (jet.pt() < N * 0.25 * mcCollision.begin().ptHard() && jet.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h_jet_ptcut_part"), jet.pt(), N * 0.25, mcCollision.begin().weight());
         }
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
         if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits) && !collisionspermcpjet.begin().isOutlier()) {
-          fillMCPHistograms(jet, mcCollision.begin().weight());
+          fillMCPHistograms(jet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
         }
       } else {
-        fillMCPHistograms(jet, mcCollision.begin().weight());
+        fillMCPHistograms(jet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
       }
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPWeighted, "jet finder QA mcp with weighted events", false);
 
-  void processJetsMCPMCDMatched(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+  void processJetsMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+                                aod::JetMcCollisions const&,
                                 soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets,
                                 soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const&,
                                 aod::JetTracks const&, aod::JetParticles const&)
@@ -1051,7 +1047,8 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPMCDMatched, "jet finder QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionOutliers>>::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision,
+                                        aod::JetMcCollisions const&,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets,
                                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const&,
                                         aod::JetTracks const&, aod::JetParticles const&)
@@ -1226,7 +1223,8 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processTriggeredData, "QA for charged jet trigger", false);
 
-  void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+  void processTracks(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+                     aod::JetMcCollisions const&,
                      soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
@@ -1244,7 +1242,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 2.5);
-    fillTrackHistograms(collision, tracks);
+    fillTrackHistograms(collision, tracks, 1., collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
 
@@ -1273,7 +1271,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
-    fillTrackHistograms(collision, tracks, eventWeight);
+    fillTrackHistograms(collision, tracks, eventWeight, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetFinderQATask, processTracksWeighted, "QA for charged tracks weighted", false);
 

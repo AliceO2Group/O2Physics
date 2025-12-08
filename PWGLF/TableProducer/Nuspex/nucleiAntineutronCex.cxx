@@ -609,7 +609,7 @@ struct NucleiAntineutronCex {
                 histos.fill(HIST("pItsPidValid"), pTrkItsPidValid);
                 histos.fill(HIST("pTgl"), pTrkTgl);
               }
-              if (motherPdg == -kNeutron) {
+              if (motherPdg != -kNeutron) {
                 histos.fill(HIST("pItsNsigmaPr_bg"), pTrkItsNSigmaPr);
                 histos.fill(HIST("pItsPidValid_bg"), pTrkItsPidValid);
                 histos.fill(HIST("pTgl_bg"), pTrkTgl);

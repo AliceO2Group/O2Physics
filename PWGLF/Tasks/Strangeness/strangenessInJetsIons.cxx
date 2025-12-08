@@ -130,7 +130,7 @@ struct StrangenessInJetsIons {
 
   // Track analysis parameters
   Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
-  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "Minimum number of TPC crossed rows"};
+  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Minimum number of TPC crossed rows"};
   Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
   Configurable<double> etaMin{"etaMin", -0.8f, "Minimum eta"};
   Configurable<double> etaMax{"etaMax", +0.8f, "Maximum eta"};
@@ -148,12 +148,22 @@ struct StrangenessInJetsIons {
   Configurable<bool> requireTOF{"requireTOF", false, "Require TOF hit"};
 
   // V0 analysis parameters
-  Configurable<double> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
-  Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
-  Configurable<double> dcanegtoPVmin{"dcanegtoPVmin", 0.1f, "Minimum DCA of negative track to primary vertex"};
-  Configurable<double> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA of positive track to primary vertex"};
-  Configurable<double> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 cosine of pointing angle"};
-  Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum DCA between V0 daughters"};
+  Configurable<double> minimumV0Radius{"minimumV0Radius", 1.2f, "Minimum V0 Radius (cm)"};
+  Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
+  Configurable<double> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 cosine of pointing angle"};
+  Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA between V0 daughters"};
+  Configurable<bool> requireV0type{"requireV0type", true, "Require V0 type Cut"};
+  Configurable<int> v0type{"v0type", 1, "0: solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1"};
+  // K0S parameters
+  Configurable<double> dcaNegToPVminK0s{"dcaNegToPVminK0s", 0.1f, "Minimum DCA of negative track to primary vertex in K0S decays (cm)"};
+  Configurable<double> dcaPosToPVminK0s{"dcaPosToPVminK0s", 0.1f, "Minimum DCA of positive track to primary vertex in K0S decays (cm)"};
+  Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
+  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 2.0f, "Parameter Armenteros Cut (K0S only). This parameters multiplies qtarm"};
+  Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
+  // Lambda/anti-Lambda paramaters
+  Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
+  Configurable<double> dcaPionToPVmin{"dcaPionToPVmin", 0.2f, "Minimum DCA of pion-/pion+ track to primary vertex in Lambda/anti-Lambda decays (cm)"};
+  Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda (cm)"};
 
   // Cascade analysis parameters
   Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
@@ -162,6 +172,8 @@ struct StrangenessInJetsIons {
   Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
   Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
+  Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
+  Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
   Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
   Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
   Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
@@ -218,6 +230,9 @@ struct StrangenessInJetsIons {
     if (!atLeastOneParticle) {
       LOG(fatal) << "No particles selected. Select at least one particle." << endl;
     }
+
+    // Histograms for checks
+    registryQC.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
 
     // Histograms for real data
     if (doprocessData) {
@@ -574,7 +589,7 @@ struct StrangenessInJetsIons {
 
   // Lambda selections
   template <typename Lambda, typename TrackPos, typename TrackNeg>
-  bool passedLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
+  bool passedLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TVector3& vtxPos)
   {
     // Single-track selections
     if (!passedSingleTrackSelection(ptrack) || !passedSingleTrackSelection(ntrack))
@@ -595,12 +610,18 @@ struct StrangenessInJetsIons {
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > ctauLambda)
+      return false;
     if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(v0.dcapostopv()) < dcaProtonToPVmin)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(v0.dcanegtopv()) < dcaPionToPVmin)
       return false;
+    if (v0.v0Type() != v0type && requireV0type) {
+      registryQC.fill(HIST("V0_type"), v0.v0Type());
+      return false;
+    }
 
     // PID selections (TPC): positive track = proton, negative track = pion
     if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
@@ -620,7 +641,7 @@ struct StrangenessInJetsIons {
 
   // AntiLambda selections
   template <typename AntiLambda, typename TrackPos, typename TrackNeg>
-  bool passedAntiLambdaSelection(const AntiLambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
+  bool passedAntiLambdaSelection(const AntiLambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TVector3& vtxPos)
   {
     // Single-track selections
     if (!passedSingleTrackSelection(ptrack) || !passedSingleTrackSelection(ntrack))
@@ -641,12 +662,18 @@ struct StrangenessInJetsIons {
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > ctauLambda)
+      return false;
     if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(v0.dcapostopv()) < dcaPionToPVmin)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(v0.dcanegtopv()) < dcaProtonToPVmin)
       return false;
+    if (v0.v0Type() != v0type && requireV0type) {
+      registryQC.fill(HIST("V0_type"), v0.v0Type());
+      return false;
+    }
 
     // PID selections (TPC): negative track = proton, positive track = pion
     if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
@@ -666,7 +693,7 @@ struct StrangenessInJetsIons {
 
   // K0s selections
   template <typename K0short, typename TrackPos, typename TrackNeg>
-  bool passedK0ShortSelection(const K0short& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
+  bool passedK0ShortSelection(const K0short& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TVector3& vtxPos)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack) || !passedSingleTrackSelection(ntrack))
@@ -682,17 +709,27 @@ struct StrangenessInJetsIons {
     if (pionNeg.Pt() < ptMinK0Pion || pionNeg.Pt() > ptMaxK0Pion)
       return false;
 
+    // Armenteros-Podolanski cut
+    if (std::abs(v0.alpha()) >= (paramArmenterosCut * v0.qtarm()) && (requireArmenterosCut))
+      return false;
+
     // V0 selections
     if (v0.v0cosPA() < v0cospaMin)
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassK0Short > ctauK0s)
+      return false;
     if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(v0.dcapostopv()) < dcaPosToPVminK0s)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(v0.dcanegtopv()) < dcaNegToPVminK0s)
       return false;
+    if (v0.v0Type() != v0type && requireV0type) {
+      registryQC.fill(HIST("V0_type"), v0.v0Type());
+      return false;
+    }
 
     // PID selections (TPC)
     if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
@@ -791,9 +828,9 @@ struct StrangenessInJetsIons {
       return false;
     if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (std::fabs(casc.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(casc.dcapostopv()) < dcaPosToPVminV0)
       return false;
-    if (std::fabs(casc.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(casc.dcanegtopv()) < dcaNegToPVminV0)
       return false;
 
     // Cascade selections
@@ -905,9 +942,9 @@ struct StrangenessInJetsIons {
       return false;
     if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (std::fabs(casc.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(casc.dcapostopv()) < dcaPosToPVminV0)
       return false;
-    if (std::fabs(casc.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(casc.dcanegtopv()) < dcaNegToPVminV0)
       return false;
 
     // Cascade selections
@@ -1119,8 +1156,11 @@ struct StrangenessInJetsIons {
           const float deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
           const float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+          // Vertex position vector
+          TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
           // K0s
-          if (passedK0ShortSelection(v0, pos, neg)) {
+          if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
             }
@@ -1129,7 +1169,7 @@ struct StrangenessInJetsIons {
             }
           }
           // Lambda
-          if (passedLambdaSelection(v0, pos, neg)) {
+          if (passedLambdaSelection(v0, pos, neg, vtxPos)) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
             }
@@ -1138,7 +1178,7 @@ struct StrangenessInJetsIons {
             }
           }
           // AntiLambda
-          if (passedAntiLambdaSelection(v0, pos, neg)) {
+          if (passedAntiLambdaSelection(v0, pos, neg, vtxPos)) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
             }
@@ -1722,8 +1762,11 @@ struct StrangenessInJetsIons {
             double deltaPhiUe2 = getDeltaPhi(v0dir.Phi(), ue2[i].Phi());
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
+            // Vertex position vector
+            TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
             // K0s
-            if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short && isPhysPrim) {
+            if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_jet"), multiplicity, v0.pt());
               }
@@ -1732,7 +1775,7 @@ struct StrangenessInJetsIons {
               }
             }
             // Lambda
-            if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0 && isPhysPrim) {
+            if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0 && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt());
               }
@@ -1741,7 +1784,7 @@ struct StrangenessInJetsIons {
               }
             }
             // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar && isPhysPrim) {
+            if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt());
               }
@@ -1752,7 +1795,7 @@ struct StrangenessInJetsIons {
 
             // Fill inclusive spectra
             // K0s
-            if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
+            if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1761,7 +1804,7 @@ struct StrangenessInJetsIons {
               }
             }
             // Lambda
-            if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
+            if (passedLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1770,7 +1813,7 @@ struct StrangenessInJetsIons {
               }
             }
             // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
+            if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && pdgParent == kLambda0Bar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_jet_incl"), multiplicity, v0.pt());
               }

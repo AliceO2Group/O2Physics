@@ -119,6 +119,7 @@ struct HfTaskDplus {
   Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {600, 1.67, 2.27}, "Cand. mass bins"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {40, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
@@ -155,7 +156,7 @@ struct HfTaskDplus {
     }
     auto vbins = static_cast<std::vector<double>>(binsPt);
     AxisSpec const thnAxisPt = {vbins, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec const thnAxisMass = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
+    AxisSpec const thnAxisMass = {thnConfigAxisMass, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
     AxisSpec const thnAxisY = {thnConfigAxisY, "y"};
     AxisSpec const thnAxisMlScore0 = {thnConfigAxisMlScore0, "Score 0"};
     AxisSpec const thnAxisMlScore1 = {thnConfigAxisMlScore1, "Score 1"};
