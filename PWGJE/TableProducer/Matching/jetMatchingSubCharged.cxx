@@ -13,11 +13,10 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/Matching/jetMatchingSub.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/TableProducer/Matching/jetMatchingSub.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
