@@ -17,6 +17,9 @@
 /// \author Aimeric Lanodu <aimeric.landou@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMC_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMC_H_
+
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -97,3 +100,5 @@ struct JetMatchingMc {
   }
   PROCESS_SWITCH(JetMatchingMc, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMC_H_
