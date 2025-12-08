@@ -13,6 +13,9 @@
 /// \brief matching event-wise constituent subtracted data jets and unsubtracted data jets
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGSUB_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGSUB_H_
+
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -85,3 +88,5 @@ struct JetMatchingSub {
   }
   PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGSUB_H_
