@@ -24,6 +24,7 @@
 #include <Framework/Configurable.h>
 
 #include <string>
+#include <type_traits>
 
 namespace o2::analysis::hf_upc
 {
