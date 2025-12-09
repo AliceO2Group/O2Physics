@@ -288,7 +288,7 @@ class TrackPropagationModule
             }
           } // MC and fillCovMat block ends
         }
-  
+
         if (track.trackType() == o2::aod::track::TrackIU) {
           if (track.has_collision()) {
             auto const& collision = collisions.rawIteratorAt(track.collisionId());
