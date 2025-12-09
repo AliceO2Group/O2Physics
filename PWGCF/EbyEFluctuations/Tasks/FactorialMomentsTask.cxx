@@ -367,11 +367,9 @@ struct FactorialMomentsTask {
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processMcRun2(CollisionRecSim_Run2 const& coll,
-                     aod::BCs const& bcs,
                      TracksRecSim const& tracks,
-                     aod::McParticles const& mcParticles,
-                     aod::McCollisions const& mcCollisions,
-                     BCsWithRun2Info const& bcsInfo)
+                     aod::McParticles const& mcParticles
+                      )
   {
     auto bc = coll.bc_as<BCsWithRun2Info>();
     if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
@@ -411,8 +409,6 @@ struct FactorialMomentsTask {
         }
       }
     }
-
-    auto mccollision = coll.mcCollision_as<aod::McCollisions>();
     auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
     for (auto const& mc : mcParts) {
       int pdgCode = mc.pdgCode();
