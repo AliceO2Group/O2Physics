@@ -31,6 +31,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
