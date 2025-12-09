@@ -64,7 +64,7 @@ class FemtoDreamResoSelection
 
   virtual ~FemtoDreamResoSelection() = default;
 
-  template <typename V>
+  template <aod::femtodreamparticle::ParticleType part, typename V>
   int getType(V const& track1, V const& track2, bool resoIsNotAnti);
 
   /// assigns value from configurbale to private class member
@@ -84,6 +84,17 @@ class FemtoDreamResoSelection
             aod::femtodreamparticle::TrackType trackType1,
             aod::femtodreamparticle::TrackType trackType2, typename T>
   void fillQA(T const& track1, T const& track2);
+
+  template <aod::femtodreamparticle::ParticleType part>
+  void fillMassSelectedQA(float const& mass, bool const& isNotAnti);
+
+  template <aod::femtodreamparticle::ParticleType part,
+            typename T, typename V>
+  void fillResoQA(T const& trackPos, T const& trackNeg, bool const& isNotAnti, float const& mass, float const& massOtherHypothesis, V const& pidVector, o2::track::PID::ID const& extraPID);
+
+  template <aod::femtodreamparticle::ParticleType part,
+            typename T, typename V>
+  void fillLikeSignHistos(T const& trackPos, T const& trackNeg, V const& pidVector, o2::track::PID::ID const& extraPID, bool resoIsNotAnti);
 
   template <typename T, typename V>
   void setDaughterCuts(femto_dream_reso_selection::Daughtertype child, T selVal,
@@ -108,12 +119,12 @@ class FemtoDreamResoSelection
   std::array<cutContainerType, 5> getCutContainer(V const& track1, V const& track2, float sign);
 
   template <typename T, typename V>
-  std::pair<bool, bool> checkCombination(T const& PosTrack, T const& NegTrack, V const& pidVector, float massDiff, float massDiffAnti, bool useMassDiff);
+  std::pair<bool, bool> checkCombination(T const& PosTrack, T const& NegTrack, V const& pidVector);
 
   template <typename T, typename V>
   float getNSigTotal(T const& track, V const& pid, float const& threshold);
 
-  void updateThreshold()
+  void updateSigmaPIDMax()
   {
     mSigmaPIDMax = posDaughTrack.getMinimalSelection(o2::analysis::femtoDream::femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit); // the same for pos and neg
   };
@@ -128,19 +139,6 @@ class FemtoDreamResoSelection
     mPIDoffsetTPC = offsetTPC;
     mPIDoffsetTOF = offsetTOF;
   };
-
-  float getMass(o2::track::PID::ID pid)
-  {
-    switch (pid) {
-      case (o2::track::PID::Kaon):
-        return o2::constants::physics::MassKPlus;
-      case (o2::track::PID::Pion):
-        return o2::constants::physics::MassPiPlus;
-      default:
-        LOG(warn) << "PID not implemented in femto_dream_reso_selection.getMass";
-        return 0.;
-    }
-  }
 
   /// The following functions might not be needed, as right now there is only one ResoSel (sign).
   /// However all the other selections are implemented this way (also in the CutCulator).
@@ -217,7 +215,7 @@ class FemtoDreamResoSelection
 
 }; // namespace femtoDream
 
-template <typename V>
+template <aod::femtodreamparticle::ParticleType part, typename V>
 int FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool resoIsNotAnti)
 {
   float posThresh = 0.;
@@ -230,19 +228,37 @@ int FemtoDreamResoSelection::getType(V const& track1, V const& track2, bool reso
     negThresh = mDaughPTPCThr[0];
   }
 
-  if (track1.pt() <= posThresh && track2.pt() <= negThresh) {
-    return aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC;
+  if (part == aod::femtodreamparticle::kReso) { // Phi
+    if (track1.pt() <= posThresh && track2.pt() <= negThresh) {
+      return aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC;
+    }
+    if (track1.pt() <= posThresh && track2.pt() > negThresh) {
+      return aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF;
+    }
+    if (track1.pt() > posThresh && track2.pt() <= negThresh) {
+      return aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC;
+    }
+    if (track1.pt() > posThresh && track2.pt() > negThresh) {
+      return aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF;
+    }
+    return 255; // as error filler
   }
-  if (track1.pt() <= posThresh && track2.pt() > negThresh) {
-    return aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF;
+  if (part == aod::femtodreamparticle::kResoKStar) { // KStar
+    if (track1.pt() <= posThresh && track2.pt() <= negThresh) {
+      return aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC;
+    }
+    if (track1.pt() <= posThresh && track2.pt() > negThresh) {
+      return aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF;
+    }
+    if (track1.pt() > posThresh && track2.pt() <= negThresh) {
+      return aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC;
+    }
+    if (track1.pt() > posThresh && track2.pt() > negThresh) {
+      return aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF;
+    }
+    return 255; // as error filler
   }
-  if (track1.pt() > posThresh && track2.pt() <= negThresh) {
-    return aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC;
-  }
-  if (track1.pt() > posThresh && track2.pt() > negThresh) {
-    return aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF;
-  }
-  return 255; // as error filler
+  return 255;
 }
 
 template <typename V>
@@ -262,8 +278,76 @@ template <aod::femtodreamparticle::ParticleType part,
 void FemtoDreamResoSelection::init(HistogramRegistry* QAregistry, HistogramRegistry* Registry)
 {
   if (QAregistry && Registry) {
-    this->mHistogramRegistry = Registry;
-    this->mQAHistogramRegistry = QAregistry;
+    mHistogramRegistry = Registry;
+    mQAHistogramRegistry = QAregistry;
+    fillSelectionHistogram<part>();
+    fillSelectionHistogram<PartDaugh>();
+
+    AxisSpec massAxisReso = {3000, 0.0f, 3.0f, "m_{#Reso} (GeV/#it{c}^{2})"};
+    AxisSpec massAxisAntiReso = {3000, 0.0f, 3.0f,
+                                 "m_{#bar{#Reso}} (GeV/#it{c}^{2})"};
+
+    // initialize Histograms
+    std::string folderName = static_cast<std::string>(
+      o2::aod::femtodreamparticle::ParticleTypeName[part]);
+
+    /*
+    int cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    mQAHistogramRegistry->add((folderName + "/CutCounter"), "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
+    */
+
+    // mass histos
+    mQAHistogramRegistry->add((folderName + "/InvMass"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMassAnti"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMass_phi_selected"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMassAnti_phi_selected"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+
+    // ResoQA
+    // Histos for PosDaughter
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Histos for NegDaughter
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Histos for massQA
+    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+
+    // AntiResoQA
+    // Histos for PosDaughter
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Histos for NegDaughter
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Histos for massQA
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+
+    // likeSign MassHistos
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMass"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMass"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
 
     posDaughTrack.init<PartDaugh,
                        aod::femtodreamparticle::kPosChild,
@@ -282,8 +366,128 @@ template <aod::femtodreamparticle::ParticleType part,
           aod::femtodreamparticle::TrackType trackType2, typename T>
 void FemtoDreamResoSelection::fillQA(T const& track1, T const& track2)
 {
+  // Also fill mass_selected histos
   posDaughTrack.fillQA<part, trackType1>(track1);
   negDaughTrack.fillQA<part, trackType2>(track2);
+}
+
+template <aod::femtodreamparticle::ParticleType part>
+void FemtoDreamResoSelection::fillMassSelectedQA(float const& mass, bool const& isNotAnti)
+{
+  if (isNotAnti) {
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
+                                 HIST("/InvMass_phi_selected"),
+                               mass);
+  } else {
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
+                                 HIST("/InvMassAnti_phi_selected"),
+                               mass);
+  }
+}
+
+template <aod::femtodreamparticle::ParticleType part,
+          typename T, typename V>
+void FemtoDreamResoSelection::fillResoQA(T const& trackPos, T const& trackNeg, bool const& isNotAnti, float const& mass, float const& massOtherHypothesis, V const& pidVector, o2::track::PID::ID const& extraPID)
+{
+  // calculate invMass
+  float massPart1 = o2::track::PID::getMass(pidVector[0]);
+  float massPart2 = o2::track::PID::getMass(extraPID);
+  if (pidVector.size() > 1 && pidVector[0] != pidVector[1]) {
+    massPart2 = o2::track::PID::getMass(pidVector[1]);
+  }
+
+  ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA1(trackPos.pt(), trackPos.eta(), trackPos.phi(), massPart1);
+  ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA1(trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), massPart1);
+  ROOT::Math::PtEtaPhiMVector tempMassBothPID1 = tempDaughter1MassQA1 + tempDaughter2MassQA1;
+
+  ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA2(trackPos.pt(), trackPos.eta(), trackPos.phi(), massPart2);
+  ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA2(trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), massPart2);
+  ROOT::Math::PtEtaPhiMVector tempMassBothPID2 = tempDaughter1MassQA2 + tempDaughter2MassQA2;
+
+  if (isNotAnti) {
+    /// filling mass histograms
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/InvMass"), mass);
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/InvMassSwitched"), massOtherHypothesis);
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/InvMassBothPID1"), tempMassBothPID1.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/InvMassBothPID2"), tempMassBothPID2.M());
+
+    // filling daughter histos
+    // pos
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/PosDaughter/Pt"), trackPos.pt());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/PosDaughter/Eta"), trackPos.eta());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/PosDaughter/Phi"), trackPos.phi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/PosDaughter/DcaXY"), trackPos.dcaXY());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/PosDaughter/DcaZ"), trackPos.dcaZ());
+    // neg
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/NegDaughter/Eta"), trackNeg.eta());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/NegDaughter/Phi"), trackNeg.phi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/NegDaughter/Pt"), trackNeg.pt());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/NegDaughter/DcaXY"), trackNeg.dcaXY());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoQA/NegDaughter/DcaZ"), trackNeg.dcaZ());
+  } else {
+    /// filling mass histograms
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/InvMassAnti"), mass);
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/InvMassSwitched"), massOtherHypothesis);
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/InvMassBothPID1"), tempMassBothPID1.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/InvMassBothPID2"), tempMassBothPID2.M());
+
+    // filling daughter histos
+    // pos
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/PosDaughter/Pt"), trackPos.pt());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/PosDaughter/Eta"), trackPos.eta());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/PosDaughter/Phi"), trackPos.phi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/PosDaughter/DcaXY"), trackPos.dcaXY());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/PosDaughter/DcaZ"), trackPos.dcaZ());
+    // neg
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/NegDaughter/Eta"), trackNeg.eta());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/NegDaughter/Phi"), trackNeg.phi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/NegDaughter/Pt"), trackNeg.pt());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/NegDaughter/DcaXY"), trackNeg.dcaXY());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/AntiResoQA/NegDaughter/DcaZ"), trackNeg.dcaZ());
+  }
+}
+
+template <aod::femtodreamparticle::ParticleType part,
+          typename T, typename V>
+void FemtoDreamResoSelection::fillLikeSignHistos(T const& trackPos, T const& trackNeg, V const& pidVector, o2::track::PID::ID const& extraPID, bool resoIsNotAnti)
+{
+  float massPart1 = o2::track::PID::getMass(pidVector[0]);
+  float massPart2 = massPart1;
+  if (pidVector.size() > 1)
+    massPart2 = o2::track::PID::getMass(pidVector[1]);
+
+  /// Resonance
+  ROOT::Math::PtEtaPhiMVector tempD1(trackPos.pt(), trackPos.eta(), trackPos.phi(), massPart1);
+  ROOT::Math::PtEtaPhiMVector tempD2(trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), massPart2);
+  ROOT::Math::PtEtaPhiMVector tempReso = tempD1 + tempD2;
+  /// Anti-resonance
+  ROOT::Math::PtEtaPhiMVector tempDA1(trackPos.pt(), trackPos.eta(), trackPos.phi(), massPart2);
+  ROOT::Math::PtEtaPhiMVector tempDA2(trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), massPart1);
+  ROOT::Math::PtEtaPhiMVector tempAntiReso = tempDA1 + tempDA2;
+
+  if (pidVector.size() < 1 || pidVector[0] == pidVector[1]) {
+    massPart2 = o2::track::PID::getMass(extraPID);
+  }
+
+  ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA1(trackPos.pt(), trackPos.eta(), trackPos.phi(), massPart1);
+  ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA1(trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), massPart1);
+  ROOT::Math::PtEtaPhiMVector tempMassBothPID1 = tempDaughter1MassQA1 + tempDaughter2MassQA1;
+
+  ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA2(trackPos.pt(), trackPos.eta(), trackPos.phi(), massPart2);
+  ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA2(trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), massPart2);
+  ROOT::Math::PtEtaPhiMVector tempMassBothPID2 = tempDaughter1MassQA2 + tempDaughter2MassQA2;
+
+  if (resoIsNotAnti) {
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/ResoQA/InvMass"), tempReso.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/ResoQA/InvMassSwitched"), tempAntiReso.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/ResoQA/InvMassBothPID1"), tempMassBothPID1.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/ResoQA/InvMassBothPID2"), tempMassBothPID2.M());
+  } else {
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/AntiResoQA/InvMass"), tempAntiReso.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/AntiResoQA/InvMassSwitched"), tempReso.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/AntiResoQA/InvMassBothPID1"), tempMassBothPID1.M());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/ResoLikeSign/AntiResoQA/InvMassBothPID2"), tempMassBothPID2.M());
+  }
 }
 
 template <typename T, typename V>
@@ -360,7 +564,7 @@ bool FemtoDreamResoSelection::isSelectedMinimalPIDNeg(V const& track2, T const& 
 }
 
 template <typename T, typename V>
-std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrack, T const& NegTrack, V const& pidVector, float massDiff, float massDiffAnti, bool useMassDiff)
+std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrack, T const& NegTrack, V const& pidVector)
 {
   /// first bool: true (normal resonance) / false (anti resonance)
   /// second bool: is not a valid combination
@@ -378,10 +582,12 @@ std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrac
   // check if PosTrack is more likely to be part2 than part1 (and vice versa for NegTrack) -> anti resonance
   bool couldBeAnti = nSigPosPart2Total < nSigPosPart1Total && nSigNegPart1Total < nSigNegPart2Total;
 
+  /*
   if (useMassDiff) {
     couldBeNormal = couldBeNormal && massDiff < massDiffAnti;
     couldBeAnti = couldBeAnti && massDiffAnti < massDiff;
   }
+  */
 
   if (couldBeNormal && !couldBeAnti) {
     return {true, false};

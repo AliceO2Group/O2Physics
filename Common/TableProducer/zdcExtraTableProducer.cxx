@@ -31,6 +31,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TRandom3.h>
 
 #include <cstdint>
 
@@ -64,7 +65,9 @@ struct ZdcExtraTableProducer {
   Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", true, "Event selection: no collision in time range standard"};
   Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", true, "Event selection: is vertex ITSTPC"};
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
-  //
+  // Calibration settings
+  Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
+
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   enum SelectionCriteria {
@@ -311,7 +314,7 @@ struct ZdcExtraTableProducer {
         auto vx = collision.posX();
         auto vy = collision.posY();
 
-        if (isZNAhit || isZNChit) {
+        if ((isZNAhit || isZNChit) && (gRandom->Uniform() < cfgCalibrationDownscaling)) {
           zdcextras(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNA, centroidZNA[0], centroidZNA[1], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNC, centroidZNC[0], centroidZNC[1], centrality, vx, vy, vz, foundBC.timestamp(), foundBC.runNumber(), evSelection);
         }
       }

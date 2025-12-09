@@ -23,6 +23,11 @@ o2physics_add_dpl_workflow(lambdacorr
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambda-spin-polarization
+                           SOURCES lambdaSpinPolarization.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(dpt-dpt-efficiency-and-qc
                            SOURCES dptDptEfficiencyAndQc.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
@@ -73,3 +78,7 @@ o2physics_add_dpl_workflow(long-range-dihadron-cor
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(two-particle-correlation-pp
+                           SOURCES twoParticleCorrelationPp.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)

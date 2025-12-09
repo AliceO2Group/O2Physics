@@ -160,6 +160,8 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confIsUsePileUp{"confIsUsePileUp", true, "Required for choosing whether to run the pile-up cuts"};
     Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
     Configurable<bool> confIsGoodITSLayersAll{"confIsGoodITSLayersAll", true, "Require IsGoodITSLayersAll selection on Events."};
+    Configurable<bool> confNoITSROFrameBorder{"confNoITSROFrameBorder", true, "Require NoITSROFrameBorder selection on Events."};
+    Configurable<bool> confNoTimeFrameBorder{"confNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection on Events."};
     Configurable<bool> confNoCollInRofStandard{"confNoCollInRofStandard", true, "Require NoCollInRofStandard selection on Events."};
     Configurable<bool> confNoHighMultCollInPrevRof{"confNoHighMultCollInPrevRof", true, "Require NoHighMultCollInPrevRof selection on Events."};
     Configurable<bool> confNoCollInTimeRangeStandard{"confNoCollInTimeRangeStandard", true, "Require NoCollInTimeRangeStandard selection on Events."};
@@ -1169,7 +1171,9 @@ struct FemtoUniverseProducerTask {
           (!ConfGeneral.confNoCollInRofStandard || col.selection_bit(aod::evsel::kNoCollInRofStandard)) &&
           (!ConfGeneral.confNoHighMultCollInPrevRof || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) &&
           (!ConfGeneral.confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC)) &&
-          (!ConfGeneral.confNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))) {
+          (!ConfGeneral.confNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) &&
+          (!ConfGeneral.confNoITSROFrameBorder || col.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+          (!ConfGeneral.confNoTimeFrameBorder || col.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
       } else {
@@ -2640,26 +2644,26 @@ struct FemtoUniverseProducerTask {
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3, "Provide both MC truth and reco for tracks in Pb-Pb", false);
 
-  Preslice<soa::Join<o2::aod::V0Datas, aod::McV0Labels>> perCollisionV0s = aod::track::collisionId;
+  Preslice<soa::Join<o2::aod::V0Datas, aod::V0TOFNSigmas, aod::McV0Labels>> perCollisionV0s = aod::track::collisionId;
   void processTruthAndFullMCV0(
     aod::McCollisions const& mccols,
     aod::McParticles const& mcParticles,
     soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
-    soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s,
+    soa::Join<o2::aod::V0Datas, aod::V0TOFNSigmas, aod::McV0Labels> const& fullV0s,
     aod::BCsWithTimestamps const& bcs)
   {
     processTruthAndFullMC(mccols, mcParticles, collisions, tracks, fullV0s, bcs, perCollisionV0s);
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCV0, "Provide both MC truth and reco for tracks and V0s", false);
 
-  Preslice<soa::Join<o2::aod::CascDatas, aod::McCascLabels>> perCollisionCascs = aod::track::collisionId;
+  Preslice<soa::Join<o2::aod::CascDatas, aod::CascTOFNSigmas, aod::McCascLabels>> perCollisionCascs = aod::track::collisionId;
   void processTruthAndFullMCCasc(
     aod::McCollisions const& mccols,
     aod::McParticles const& mcParticles,
     soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions,
     soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
-    soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades,
+    soa::Join<o2::aod::CascDatas, aod::CascTOFNSigmas, aod::McCascLabels> const& fullCascades,
     aod::BCsWithTimestamps const& bcs)
   {
     processTruthAndFullMC(mccols, mcParticles, collisions, tracks, fullCascades, bcs, perCollisionCascs);

@@ -98,6 +98,7 @@ struct epvector {
   Configurable<bool> useITSFrameCut{"useITSFrameCut", true, "Reject ITS RO Frame border events"};
   Configurable<bool> usePileupCut{"usePileupCut", false, "Reject same bunch pileup"};
   Configurable<bool> useITSLayerCut{"useITSLayerCut", false, "Require good ITS layers"};
+  Configurable<bool> useGoodZvtx{"useGoodZvtx", false, "Require good vertex from FT0 and PV"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
@@ -300,7 +301,7 @@ struct epvector {
     auto qyTPCL = 0.0;
     auto qxTPCR = 0.0;
     auto qyTPCR = 0.0;
-    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && (!useEventSelection || eventSelected(coll, centrality)) && (!useTimeFrameCut || coll.selection_bit(aod::evsel::kNoTimeFrameBorder)) && (!useITSFrameCut || coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) && (!usePileupCut || coll.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!useITSLayerCut || coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && (!useEventSelection || eventSelected(coll, centrality)) && (!useTimeFrameCut || coll.selection_bit(aod::evsel::kNoTimeFrameBorder)) && (!useITSFrameCut || coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) && (!usePileupCut || coll.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!useITSLayerCut || coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && (!useGoodZvtx || coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TProfile>(ConfGainPath.value, bc.timestamp());

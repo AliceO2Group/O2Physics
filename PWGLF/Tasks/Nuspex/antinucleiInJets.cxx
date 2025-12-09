@@ -51,7 +51,7 @@
 #include "TGrid.h"
 #include <TList.h>
 #include <TPDGCode.h>
-#include <TRandom.h>
+#include <TRandom3.h>
 #include <TVector2.h>
 #include <TVector3.h>
 
@@ -64,6 +64,7 @@
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
 
+#include <chrono>
 #include <cmath>
 #include <memory>
 #include <random>
@@ -95,6 +96,9 @@ struct AntinucleiInJets {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMult{"registryMult", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryCorr{"registryCorr", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // Random generator for subsample assignment
+  TRandom3 mRand;
 
   // Event selection criteria
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "Reject events near the ITS ROF border"};
@@ -205,6 +209,10 @@ struct AntinucleiInJets {
       itsResponse.setMCDefaultParameters();
     }
 
+    // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
+    auto time_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    mRand.SetSeed(time_seed);
+
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
     if (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec) {
       ccdb->setURL(urlToCcdb.value);
@@ -251,6 +259,9 @@ struct AntinucleiInJets {
 
       // Event counters
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "counter"}});
+
+      // Configuration
+      registryData.add("settingData", "settingData", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} (GeV/#it{c})"}, {20, 0.0, 1.0, "#it{R}_{jet}"}});
 
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
@@ -308,6 +319,7 @@ struct AntinucleiInJets {
       // Generated spectra of antiprotons
       registryMC.add("antiproton_gen_jet", "antiproton_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_full", "antiproton_gen_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Normalization histogram
       registryMC.add("antiproton_deltay_deltaphi_jet", "antiproton_deltay_deltaphi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
@@ -325,11 +337,16 @@ struct AntinucleiInJets {
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
       registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
+      // Configuration
+      registryMC.add("settingMC", "settingMC", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} (GeV/#it{c})"}, {20, 0.0, 1.0, "#it{R}_{jet}"}});
+
       // Reconstructed spectra of antiprotons
       registryMC.add("antiproton_rec_tpc_jet", "antiproton_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tof_jet", "antiproton_rec_tof_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tpc_ue", "antiproton_rec_tpc_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tof_ue", "antiproton_rec_tof_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_full", "antiproton_rec_tpc_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_full", "antiproton_rec_tof_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Fraction of primary antiprotons
       registryMC.add("antiproton_prim_jet", "antiproton_prim_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -455,43 +472,44 @@ struct AntinucleiInJets {
       const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
       const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
       const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
+      const AxisSpec subsampleAxis{20, 0, 20, "Subsample Index"};
 
       // Event counter
       registryCorr.add("eventCounter", "number of events", HistType::kTH1F, {{20, 0, 20, "counter"}});
-      registryCorr.add("eventCounter_centrality_fullEvent", "Number of events per centrality (Full Event)", HistType::kTH1F, {multiplicityAxis});
-      registryCorr.add("eventCounter_centrality_jet", "Number of events per centrality (Jet)", HistType::kTH1F, {multiplicityAxis});
-      registryCorr.add("eventCounter_centrality_ue", "Number of events per centrality (Underlying Event)", HistType::kTH1F, {multiplicityAxis});
+      registryCorr.add("eventCounter_centrality_fullEvent", "Number of events per centrality (Full Event)", HistType::kTH2F, {multiplicityAxis, subsampleAxis});
+      // registryCorr.add("eventCounter_centrality_jet", "Number of events per centrality (Jet)", HistType::kTH1F, {multiplicityAxis});
+      // registryCorr.add("eventCounter_centrality_ue", "Number of events per centrality (Underlying Event)",  HistType::kTH1F, {multiplicityAxis});
 
       // Correlation histograms: antiproton vs. antideuteron number vs. event multiplicity
-      registryCorr.add("rho_jet", "rho_jet", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
-      registryCorr.add("rho_ue", "rho_ue", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
-      registryCorr.add("rho_fullEvent", "rho_fullEvent", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
+      // registryCorr.add("rho_jet", "rho_jet", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
+      // registryCorr.add("rho_ue", "rho_ue", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
+      registryCorr.add("rho_fullEvent", "rho_fullEvent", HistType::kTHnSparseD, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis, subsampleAxis});
 
       // Correlation histograms: net antiproton vs. net antideuteron numbers
-      registryCorr.add("rho_netP_netD_jet", "rho_netP_netD_jet", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
-      registryCorr.add("rho_netP_netD_ue", "rho_netP_netD_ue", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
-      registryCorr.add("rho_netP_netD_fullEvent", "rho_netP_netD_fullEvent", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
+      // registryCorr.add("rho_netP_netD_jet", "rho_netP_netD_jet", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
+      // registryCorr.add("rho_netP_netD_ue", "rho_netP_netD_ue", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
+      registryCorr.add("rho_netP_netD_fullEvent", "rho_netP_netD_fullEvent", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, subsampleAxis});
 
       // Efficiency histograms jet
-      registryCorr.add("q1d_jet", "q1d_jet", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
-      registryCorr.add("q1p_jet", "q1p_jet", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
-      registryCorr.add("q1d_square_jet", "q1d_square_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
-      registryCorr.add("q1p_square_jet", "q1p_square_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
-      registryCorr.add("q1d_q1p_jet", "q1d_q1p_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
+      // registryCorr.add("q1d_jet", "q1d_jet", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
+      // registryCorr.add("q1p_jet", "q1p_jet", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
+      // registryCorr.add("q1d_square_jet", "q1d_square_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
+      // registryCorr.add("q1p_square_jet", "q1p_square_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
+      // registryCorr.add("q1d_q1p_jet", "q1d_q1p_jet", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
 
       // Efficiency histograms UE
-      registryCorr.add("q1d_ue", "q1d_ue", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
-      registryCorr.add("q1p_ue", "q1p_ue", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
-      registryCorr.add("q1d_square_ue", "q1d_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
-      registryCorr.add("q1p_square_ue", "q1p_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
-      registryCorr.add("q1d_q1p_ue", "q1d_q1p_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
+      // registryCorr.add("q1d_ue", "q1d_ue", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
+      // registryCorr.add("q1p_ue", "q1p_ue", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
+      // registryCorr.add("q1d_square_ue", "q1d_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
+      // registryCorr.add("q1p_square_ue", "q1p_square_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
+      // registryCorr.add("q1d_q1p_ue", "q1d_q1p_ue", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
 
       // Efficiency histograms full event
-      registryCorr.add("q1d_fullEvent", "q1d_fullEvent", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
-      registryCorr.add("q1p_fullEvent", "q1p_fullEvent", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
-      registryCorr.add("q1d_square_fullEvent", "q1d_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
-      registryCorr.add("q1p_square_fullEvent", "q1p_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
-      registryCorr.add("q1d_q1p_fullEvent", "q1d_q1p_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
+      registryCorr.add("q1d_fullEvent", "q1d_fullEvent", HistType::kTHnSparseD, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis, subsampleAxis});
+      registryCorr.add("q1p_fullEvent", "q1p_fullEvent", HistType::kTHnSparseD, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis, subsampleAxis});
+      registryCorr.add("q1d_square_fullEvent", "q1d_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis, subsampleAxis});
+      registryCorr.add("q1p_square_fullEvent", "q1p_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis, subsampleAxis});
+      registryCorr.add("q1d_q1p_fullEvent", "q1d_q1p_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis, subsampleAxis});
     }
   }
 
@@ -924,6 +942,7 @@ struct AntinucleiInJets {
   {
     // Event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
+    registryData.fill(HIST("settingData"), minJetPt.value, rJet.value);
 
     // Retrieve the bunch crossing information with timestamps from the collision
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1108,8 +1127,7 @@ struct AntinucleiInJets {
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
             double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
-            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
-            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("antihelium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
@@ -1204,8 +1222,7 @@ struct AntinucleiInJets {
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
             double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
-            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
-            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("antihelium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
@@ -1801,6 +1818,7 @@ struct AntinucleiInJets {
         if (particle.pdgCode() == PDG_t::kProtonBar) {
           TVector3 pVec(particle.px(), particle.py(), particle.pz());
           protonMomentum.emplace_back(pVec);
+          registryMC.fill(HIST("antiproton_gen_full"), particle.pt());
         }
 
         // 4-momentum representation of a particle
@@ -1950,6 +1968,9 @@ struct AntinucleiInJets {
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
 
+      // Configuration
+      registryMC.fill(HIST("settingMC"), minJetPt.value, rJet.value);
+
       // Increment event counter
       eventCounter++;
 
@@ -2013,6 +2034,19 @@ struct AntinucleiInJets {
         // Store track index for antiproton tracks
         if (passedTrackSelection(track) && track.sign() < 0 && mcparticle.pdgCode() == PDG_t::kProtonBar) {
           antiprotonTrackIndex.emplace_back(id);
+
+          double nsigmaTPCPr = track.tpcNSigmaPr();
+          double nsigmaTOFPr = track.tofNSigmaPr();
+          double pt = track.pt();
+          double dcaxy = track.dcaXY();
+          double dcaz = track.dcaZ();
+
+          if (mcparticle.isPhysicalPrimary() && std::fabs(dcaxy) < maxDcaxy && std::fabs(dcaz) < maxDcaz && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
+            registryMC.fill(HIST("antiproton_rec_tpc_full"), pt);
+            if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
+              registryMC.fill(HIST("antiproton_rec_tof_full"), pt);
+            }
+          }
         }
 
         // Apply track selection for jet reconstruction
@@ -2649,11 +2683,14 @@ struct AntinucleiInJets {
       return;
     registryCorr.fill(HIST("eventCounter"), 7.5);
 
+    // Assign event to a random subsample (0-19)
+    double sampleId = mRand.Integer(20) + 0.5;
+
     // Multiplicity percentile
     const float multiplicity = collision.centFT0M();
 
     // Fill event counter vs centrality (full Event region)
-    registryCorr.fill(HIST("eventCounter_centrality_fullEvent"), multiplicity);
+    registryCorr.fill(HIST("eventCounter_centrality_fullEvent"), multiplicity, sampleId);
 
     // pt/A bins
     std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
@@ -2732,23 +2769,25 @@ struct AntinucleiInJets {
     // Fill correlation histograms
     int netProtonFullEvent = nTotProtonFullEvent - nTotAntiprotonFullEvent;
     int netDeuteronFullEvent = nTotDeuteronFullEvent - nTotAntideuteronFullEvent;
-    registryCorr.fill(HIST("rho_fullEvent"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity);
-    registryCorr.fill(HIST("rho_netP_netD_fullEvent"), netDeuteronFullEvent, netProtonFullEvent);
+
+    registryCorr.fill(HIST("rho_fullEvent"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity, sampleId);
+    registryCorr.fill(HIST("rho_netP_netD_fullEvent"), netDeuteronFullEvent, netProtonFullEvent, sampleId);
 
     // Fill efficiency histograms
     for (int i = 0; i < nBins; i++) {
       double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
 
-      registryCorr.fill(HIST("q1d_fullEvent"), nAntideuteronFullEvent[i], ptAcenteri, multiplicity);
-      registryCorr.fill(HIST("q1p_fullEvent"), nAntiprotonFullEvent[i], ptAcenteri, multiplicity);
+      registryCorr.fill(HIST("q1d_fullEvent"), nAntideuteronFullEvent[i], ptAcenteri, multiplicity, sampleId);
+      registryCorr.fill(HIST("q1p_fullEvent"), nAntiprotonFullEvent[i], ptAcenteri, multiplicity, sampleId);
       for (int j = 0; j < nBins; j++) {
         double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
-        registryCorr.fill(HIST("q1d_square_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j], multiplicity);
-        registryCorr.fill(HIST("q1p_square_fullEvent"), ptAcenteri, ptAcenterj, nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j], multiplicity);
-        registryCorr.fill(HIST("q1d_q1p_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j], multiplicity);
+        registryCorr.fill(HIST("q1d_square_fullEvent"), ptAcenteri, ptAcenterj, (nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]), multiplicity, sampleId);
+        registryCorr.fill(HIST("q1p_square_fullEvent"), ptAcenteri, ptAcenterj, (nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity, sampleId);
+        registryCorr.fill(HIST("q1d_q1p_fullEvent"), ptAcenteri, ptAcenterj, (nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity, sampleId);
       }
     }
 
+    /*
     // Loop over reconstructed tracks (refactoring: this part can be incorporated above)
     int id(-1);
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -3013,6 +3052,7 @@ struct AntinucleiInJets {
       registryCorr.fill(HIST("eventCounter"), 9.5);
       registryCorr.fill(HIST("eventCounter_centrality_jet"), multiplicity);
     }
+    */
   }
   PROCESS_SWITCH(AntinucleiInJets, processCorr, "Process Correlation analysis", false);
 };

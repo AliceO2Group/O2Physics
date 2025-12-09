@@ -13,7 +13,7 @@
 
 o2physics_add_dpl_workflow(single-track-selector
     SOURCES singleTrackSelector.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(single-track-selector-extra

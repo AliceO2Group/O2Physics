@@ -11,23 +11,26 @@
 /// \file femtoDreamPairTaskTrackTrack.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-#include <sys/stat.h>
-#include <cstdint>
-#include <vector>
-#include <string>
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Expressions.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Expressions.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
+#include <sys/stat.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::soa;
@@ -327,9 +330,9 @@ struct femtoDreamPairTaskTrackCascade {
       auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto SliceCasc2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceCasc2))) {
-        const auto& posChild = parts.iteratorAt(p2.index() - 3);
-        const auto& negChild = parts.iteratorAt(p2.index() - 2);
-        const auto& bachChild = parts.iteratorAt(p2.index() - 1);
+        const auto& posChild = parts.iteratorAt(p2.globalIndex() - 3);
+        const auto& negChild = parts.iteratorAt(p2.globalIndex() - 2);
+        const auto& bachChild = parts.iteratorAt(p2.globalIndex() - 1);
         // check cuts on Cascade children
         if (Cascade2.UseChildCuts) {
           if (!(((posChild.cut() & Cascade2.ChildPos_CutBit) == Cascade2.ChildPos_CutBit) &&
