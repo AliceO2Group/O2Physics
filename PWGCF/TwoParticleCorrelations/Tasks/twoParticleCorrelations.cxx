@@ -9,25 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include <DataFormatsParameters/GRPObject.h>
-#include <cmath>
-#include <TROOT.h>
+
 #include <TDatabasePDG.h>
-#include <TParameter.h>
-#include <TList.h>
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
+#include <TROOT.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/Core/PairCuts.h"
+#include <cmath>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -576,7 +581,7 @@ struct twoParticleCorrelations {
   }; // DataCollectingEngine
 
 /* the skimming configuration */
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -754,7 +759,7 @@ struct twoParticleCorrelations {
     LOGF(info, "twoParticleCorrelationsFilter::init(), collision selection masks 0x%016lx, %s, and 0x%016lx and multiplicity index %d", collisionmask, fFilterFramework->printCollisionOptionalMasks().Data(), collisionmask_forced, fMultiplicityIndex);
     LOGF(info, "twoParticleCorrelationsFilter::init(), track selection masks 0x%016lx, %s, and 0x%016lx ", trackmask, fFilterFramework->printTrackOptionalMasks().Data(), trackmask_forced);
     LOGF(info, "twoParticleCorrelationsFilter::init(), PID selection masks 0x%016lx, %s, and 0x%016lx ", pidmask, fFilterFramework->printPIDOptionalMasks().Data(), pidmask_forced);
-    if (collisionmask == uint64_t(0) || trackmask == uint64_t(0)) {
+    if (collisionmask == static_cast<uint64_t>(0) || trackmask == static_cast<uint64_t>(0)) {
       LOGF(fatal, "twoParticleCorrelationsFilter::init() null masks, selecting everything!!!");
     }
 
