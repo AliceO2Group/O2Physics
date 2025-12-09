@@ -29,6 +29,7 @@
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/Core/PID/PIDTOFParamService.h"
 
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -129,18 +130,19 @@ class VarManager : public TObject
     ReducedMuon = BIT(14),
     ReducedMuonExtra = BIT(15),
     ReducedMuonCov = BIT(16),
-    ParticleMC = BIT(17),
-    Pair = BIT(18), // TODO: check whether we really need the Pair member here
-    AmbiTrack = BIT(19),
-    AmbiMuon = BIT(20),
-    DalitzBits = BIT(21),
-    TrackTPCPID = BIT(22),
-    TrackMFT = BIT(23),
-    ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
-    ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
-    MuonRealign = BIT(26),
-    MuonCovRealign = BIT(27),
-    MFTCov = BIT(28)
+    Pair = BIT(17), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(18),
+    AmbiMuon = BIT(19),
+    DalitzBits = BIT(20),
+    TrackTPCPID = BIT(21),
+    TrackMFT = BIT(22),
+    ReducedTrackCollInfo = BIT(23), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    ReducedMuonCollInfo = BIT(24),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    MuonRealign = BIT(25),
+    MuonCovRealign = BIT(26),
+    MFTCov = BIT(27),
+    TrackTOFService = BIT(28),
+    ParticleMC = BIT(29)
   };
 
   enum PairCandidateType {
@@ -1190,7 +1192,7 @@ class VarManager : public TObject
   static void FillPhoton(T const& photon, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
-  template <int candidateType, typename T1, typename T2, typename C>
+  template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C const& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C, typename M, typename P>
   static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
@@ -1309,7 +1311,7 @@ class VarManager : public TObject
     fgITSROFBorderMarginLow = marginLow;
     fgITSROFBorderMarginHigh = marginHigh;
   }
-
+  
   static void SetSORandEOR(uint64_t sor, uint64_t eor)
   {
     fgSOR = sor;
@@ -2657,6 +2659,12 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTOFbeta] = track.beta();
     }
   }
+  if constexpr ((fillMap & TrackTOFService) > 0) {
+    values[kTOFnSigmaEl] = track.tofNSigmaDynEl();
+    values[kTOFnSigmaEl] = track.tofNSigmaDynPi();
+    values[kTOFnSigmaEl] = track.tofNSigmaDynKa();
+    values[kTOFnSigmaEl] = track.tofNSigmaDynPr();
+  }
   if constexpr ((fillMap & TrackTPCPID) > 0) {
     values[kTPCnSigmaEl] = track.tpcNSigmaEl();
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
@@ -2847,7 +2855,7 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   FillTrackDerived(values);
 }
 
-template <int candidateType, typename T1, typename T2, typename C>
+template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
 void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C const& collision, float* values)
 {
 
@@ -2855,39 +2863,47 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
     values = fgValues;
   }
 
-  float m = 0.0;
-  float pdgLifetime = 0.0;
-  if (std::abs(MotherTrack.pdgCode()) == 521) {
-    m = o2::constants::physics::MassBPlus;
-    pdgLifetime = 1.638e-12; // s
-  }
+  float m = o2::constants::physics::MassBPlus;
+  float pdgLifetime = 1.638e-12; // s
   if (std::abs(MotherTrack.pdgCode()) == 511) {
     m = o2::constants::physics::MassB0;
     pdgLifetime = 1.517e-12; // s
   }
 
+  // Extract the collision primary vertex position using constexpr, since the collision type may be CollisionMC or ReducedMCEvent
+  double collPos[3] = {0.0, 0.0, 0.0};
+  if constexpr (fillMap & ObjTypes::CollisionMC) {
+    collPos[0] = collision.posX();
+    collPos[1] = collision.posY();
+    collPos[2] = collision.posZ();
+  } else if constexpr (fillMap & ObjTypes::ReducedEventMC) {
+    collPos[0] = collision.mcPosX();
+    collPos[1] = collision.mcPosY();
+    collPos[2] = collision.mcPosZ();
+  }  
+
   // displaced vertex is compued with decay product (track) and momentum of mother particle (MotherTrack)
-  values[kMCVertexingLxy] = (collision.mcPosX() - track.vx()) * (collision.mcPosX() - track.vx()) +
-                            (collision.mcPosY() - track.vy()) * (collision.mcPosY() - track.vy());
-  values[kMCVertexingLz] = (collision.mcPosZ() - track.vz()) * (collision.mcPosZ() - track.vz());
+  values[kMCVertexingLxy] = (collPos[0] - track.vx()) * (collPos[0] - track.vx()) +
+                            (collPos[1] - track.vy()) * (collPos[1] - track.vy());
+  values[kMCVertexingLz] = (collPos[2] - track.vz()) * (collPos[2] - track.vz());
   values[kMCVertexingLxyz] = values[kMCVertexingLxy] + values[kMCVertexingLz];
   values[kMCVertexingLxy] = std::sqrt(values[kMCVertexingLxy]);
   values[kMCVertexingLz] = std::sqrt(values[kMCVertexingLz]);
   values[kMCVertexingLxyz] = std::sqrt(values[kMCVertexingLxyz]);
-  values[kMCVertexingTauz] = (collision.mcPosZ() - track.vz()) * m / (TMath::Abs(MotherTrack.pz()) * o2::constants::physics::LightSpeedCm2NS);
+  values[kMCVertexingTauz] = (collPos[2] - track.vz()) * m / (TMath::Abs(MotherTrack.pz()) * o2::constants::physics::LightSpeedCm2NS);
   values[kMCVertexingTauxy] = values[kMCVertexingLxy] * m / (MotherTrack.pt() * o2::constants::physics::LightSpeedCm2NS);
 
-  values[kMCCosPointingAngle] = ((collision.mcPosX() - track.vx()) * MotherTrack.px() +
-                                 (collision.mcPosY() - track.vy()) * MotherTrack.py() +
-                                 (collision.mcPosZ() - track.vz()) * MotherTrack.pz()) /
+  values[kMCCosPointingAngle] = ((collPos[0] - track.vx()) * MotherTrack.px() +
+                                 (collPos[1] - track.vy()) * MotherTrack.py() +
+                                 (collPos[2] - track.vz()) * MotherTrack.pz()) /
                                 (MotherTrack.p() * values[VarManager::kMCVertexingLxyz]);
 
   values[kMCLxyExpected] = (MotherTrack.pt() / m) * (pdgLifetime * o2::constants::physics::LightSpeedCm2S);
   values[kMCLxyzExpected] = (MotherTrack.p() / m) * (pdgLifetime * o2::constants::physics::LightSpeedCm2S);
 
-  values[kMCVertexingLzProjected] = ((track.vz() - collision.mcPosZ()) * MotherTrack.pz()) / TMath::Abs(MotherTrack.pz());
-  values[kMCVertexingLxyProjected] = (((track.vx() - collision.mcPosX()) * MotherTrack.px()) + ((track.vy() - collision.mcPosY()) * MotherTrack.py())) / TMath::Abs(MotherTrack.pt());
-  values[kMCVertexingLxyzProjected] = (((track.vx() - collision.mcPosX()) * MotherTrack.px()) + ((track.vy() - collision.mcPosY()) * MotherTrack.py()) + ((track.vz() - collision.mcPosZ()) * MotherTrack.pz())) / MotherTrack.p();
+  values[kMCVertexingLzProjected] = ((track.vz() - collPos[2]) * MotherTrack.pz()) / TMath::Abs(MotherTrack.pz());
+  values[kMCVertexingLxyProjected] = (((track.vx() - collPos[0]) * MotherTrack.px()) + ((track.vy() - collPos[1]) * MotherTrack.py())) / TMath::Abs(MotherTrack.pt());
+  values[kMCVertexingLxyzProjected] = (((track.vx() - collPos[1]) * MotherTrack.px()) + ((track.vy() - collPos[1]) * MotherTrack.py()) + ((track.vz() - collPos[2]) * MotherTrack.pz())) / MotherTrack.p();
   values[kMCVertexingTauxyProjected] = values[kMCVertexingLxyProjected] * m / (MotherTrack.pt());
   values[kMCVertexingTauzProjected] = values[kMCVertexingLzProjected] * m / TMath::Abs(MotherTrack.pz());
   values[kMCVertexingTauxyzProjected] = values[kMCVertexingLxyzProjected] * m / (MotherTrack.p());
