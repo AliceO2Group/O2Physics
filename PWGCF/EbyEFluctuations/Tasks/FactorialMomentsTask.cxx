@@ -368,8 +368,7 @@ struct FactorialMomentsTask {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processMcRun2(CollisionRecSim_Run2 const& coll,
                      TracksRecSim const& tracks,
-                     aod::McParticles const& mcParticles
-                      )
+                     aod::McParticles const& mcParticles)
   {
     auto bc = coll.bc_as<BCsWithRun2Info>();
     if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
