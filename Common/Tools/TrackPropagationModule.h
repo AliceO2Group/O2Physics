@@ -271,25 +271,25 @@ class TrackPropagationModule
       // std::array<float, 3> trackPxPyPz;
       // std::array<float, 3> trackPxPyPzTuned = {0.0, 0.0, 0.0};
       double q2OverPtNew = -9999.;
+      bool isPropagationOK = true;
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.x() < cGroup.minPropagationRadius.value) {
-        if (track.trackType() == o2::aod::track::TrackIU) {
-          if (fillTracksCov) {
-            if constexpr (isMc) { // checking MC and fillCovMat block begins
-              // bool hasMcParticle = track.has_mcParticle();
-              if (cGroup.useTrackTuner.value) {
-                trackTunedTracks->Fill(1); // all tracks
-                bool hasMcParticle = track.has_mcParticle();
-                if (hasMcParticle) {
-                  auto mcParticle = track.mcParticle();
-                  trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, trackTunedTracks);
-                  q2OverPtNew = mTrackParCov.getQ2Pt();
-                }
+        if (fillTracksCov) {
+          if constexpr (isMc) { // checking MC and fillCovMat block begins
+            // bool hasMcParticle = track.has_mcParticle();
+            if (cGroup.useTrackTuner.value) {
+              trackTunedTracks->Fill(1); // all tracks
+              bool hasMcParticle = track.has_mcParticle();
+              if (hasMcParticle) {
+                auto mcParticle = track.mcParticle();
+                trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, trackTunedTracks);
+                q2OverPtNew = mTrackParCov.getQ2Pt();
               }
-            } // MC and fillCovMat block ends
-          }
-          bool isPropagationOK = true;
-
+            }
+          } // MC and fillCovMat block ends
+        }
+  
+        if (track.trackType() == o2::aod::track::TrackIU) {
           if (track.has_collision()) {
             auto const& collision = collisions.rawIteratorAt(track.collisionId());
             if (fillTracksCov) {
@@ -310,21 +310,6 @@ class TrackPropagationModule
           }
           if (isPropagationOK) {
             trackType = o2::aod::track::Track;
-          }
-          // filling some QA histograms for track tuner test purpose
-          if (fillTracksCov) {
-            if constexpr (isMc) { // checking MC and fillCovMat block begins
-              if (track.has_mcParticle() && isPropagationOK) {
-                auto mcParticle1 = track.mcParticle();
-                // && abs(mcParticle1.pdgCode())==211
-                if (mcParticle1.isPhysicalPrimary()) {
-                  registry.fill(HIST("hDCAxyVsPtRec"), mDcaInfoCov.getY(), mTrackParCov.getPt());
-                  registry.fill(HIST("hDCAxyVsPtMC"), mDcaInfoCov.getY(), mcParticle1.pt());
-                  registry.fill(HIST("hDCAzVsPtRec"), mDcaInfoCov.getZ(), mTrackParCov.getPt());
-                  registry.fill(HIST("hDCAzVsPtMC"), mDcaInfoCov.getZ(), mcParticle1.pt());
-                }
-              }
-            } // MC and fillCovMat block ends
           }
         } else {
           if (fillTracksDCA || fillTracksDCACov) {
@@ -347,6 +332,21 @@ class TrackPropagationModule
               calculateDCA(mTrackPar, mVtx, o2::base::Propagator::Instance()->getNominalBz(), &mDcaInfo, 999.f);
             }
           }
+        }
+        // filling some QA histograms for track tuner test purpose
+        if (fillTracksCov) {
+          if constexpr (isMc) { // checking MC and fillCovMat block begins
+            if (track.has_mcParticle() && isPropagationOK) {
+              auto mcParticle1 = track.mcParticle();
+              // && abs(mcParticle1.pdgCode())==211
+              if (mcParticle1.isPhysicalPrimary()) {
+                registry.fill(HIST("hDCAxyVsPtRec"), mDcaInfoCov.getY(), mTrackParCov.getPt());
+                registry.fill(HIST("hDCAxyVsPtMC"), mDcaInfoCov.getY(), mcParticle1.pt());
+                registry.fill(HIST("hDCAzVsPtRec"), mDcaInfoCov.getZ(), mTrackParCov.getPt());
+                registry.fill(HIST("hDCAzVsPtMC"), mDcaInfoCov.getZ(), mcParticle1.pt());
+              }
+            }
+          } // MC and fillCovMat block ends
         }
       }
       // Filling modified Q/Pt values at IU/production point by track tuner in track tuner table
