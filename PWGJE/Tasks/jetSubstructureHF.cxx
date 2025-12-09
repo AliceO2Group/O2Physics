@@ -19,6 +19,7 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetSubstructureUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -77,6 +78,10 @@ struct JetSubstructureHFTask {
   Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
   Configurable<bool> doPairBkg{"doPairBkg", true, "save bkg pairs"};
   Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
+  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
+  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
   float candMass;
@@ -107,6 +112,9 @@ struct JetSubstructureHFTask {
   float perpConeRho;
 
   HistogramRegistry registry;
+
+  int trackSelection = -1;
+
   void init(InitContext const&)
   {
     registry.add("h2_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
@@ -123,8 +131,20 @@ struct JetSubstructureHFTask {
 
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
+    jetReclusterer.ghostRepeatN = 0;
 
     candMass = jetcandidateutilities::getTablePDGMass<CandidateTable>();
+
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+
+    if (applyTrackingEfficiency) {
+      if (trackingEfficiencyPtBinning->size() < 2) {
+        LOGP(fatal, "jetFinder workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
+      }
+      if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
+        LOGP(fatal, "jetFinder workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
+      }
+    }
   }
 
   Preslice<aod::JetTracks> TracksPerCollision = aod::jtrack::collisionId;
@@ -180,8 +200,6 @@ struct JetSubstructureHFTask {
     fastjet::PseudoJet parentSubJet2;
     bool softDropped = false;
     auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
 
       bool isHFInSubjet1 = false;
@@ -214,8 +232,8 @@ struct JetSubstructureHFTask {
       thetaVec.push_back(theta);
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (!softDropped) {
-          zg = z;
-          rg = theta;
+          auto zg = z;
+          auto rg = theta;
           if constexpr (!isSubtracted && !isMCP) {
             registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
             registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);
@@ -328,6 +346,25 @@ struct JetSubstructureHFTask {
     std::vector<typename U::iterator> tracksPerpCone1Vec;
     std::vector<typename U::iterator> tracksPerpCone2Vec;
     for (auto const& track : tracksPerCollision) {
+      if (!jetderiveddatautilities::applyTrackKinematics(track)) {
+        continue;
+      }
+
+      if constexpr (!std::is_same_v<std::decay_t<U>, aod::JetParticles>) {
+        if (!jetfindingutilities::isTrackSelected<typename U::iterator, typename U::iterator>(track, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning)) {
+          continue;
+        }
+      }
+      bool isdaughterTrack = false;
+      for (auto& candidate : jet.template candidates_as<V>()) {
+        if (jetcandidateutilities::isDaughterTrack(track, candidate)) {
+          isdaughterTrack = true;
+          break;
+        }
+      }
+      if (isdaughterTrack) {
+        continue;
+      }
       float deltaPhi1 = track.phi() - perpCone1Phi;
       deltaPhi1 = RecoDecay::constrainAngle<float, float>(deltaPhi1, -M_PI);
       float deltaPhi2 = track.phi() - perpCone2Phi;

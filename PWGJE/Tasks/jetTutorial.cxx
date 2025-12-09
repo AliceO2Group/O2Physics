@@ -215,6 +215,7 @@ struct JetTutorialTask {
 
   using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
   void processMCMatchedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
+                               aod::JetMcCollisions const&,
                                soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                JetMCPTable const&,
                                aod::JetTracks const&,
@@ -226,8 +227,8 @@ struct JetTutorialTask {
     for (const auto& mcdjet : mcdjets) {
       for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPTable>()) {
         registry.fill(HIST("h_matched_jets_pt"), mcpjet.pt(), mcdjet.pt(), collision.mcCollision().weight());
-        registry.fill(HIST("h_matched_jets_pt"), mcpjet.phi(), mcdjet.phi(), collision.mcCollision().weight());
-        registry.fill(HIST("h_matched_jets_pt"), mcpjet.eta(), mcdjet.eta(), collision.mcCollision().weight());
+        registry.fill(HIST("h_matched_jets_phi"), mcpjet.phi(), mcdjet.phi(), collision.mcCollision().weight());
+        registry.fill(HIST("h_matched_jets_eta"), mcpjet.eta(), mcdjet.eta(), collision.mcCollision().weight());
       }
     }
   }

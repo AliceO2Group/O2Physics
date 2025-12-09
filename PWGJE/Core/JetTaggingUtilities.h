@@ -248,10 +248,9 @@ template <typename T, typename U>
 int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterator& hfparticle, bool searchUpToQuark)
 {
 
-  int origin = -1;
   for (const auto& particle : jet.template tracks_as<U>()) {
     hfparticle = particle; // for init if origin is 1 or 2, the particle is not hfparticle
-    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
+    int origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
     if (origin == RecoDecay::OriginType::Prompt || origin == RecoDecay::OriginType::NonPrompt) { // 1=charm , 2=beauty
       hfparticle = particle;
       if (origin == RecoDecay::OriginType::Prompt) {
@@ -1063,7 +1062,7 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
     tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
   }
 
-  auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
+  auto compare = [](const BJetTrackParams& tr1, const BJetTrackParams& tr2) {
     return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
   };
 
@@ -1088,7 +1087,7 @@ void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const&
     tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
   }
 
-  auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
+  auto compare = [](const BJetTrackParams& tr1, const BJetTrackParams& tr2) {
     return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
   };
 

@@ -22,7 +22,7 @@
     (femtocollisions::mult >= selection.multMin && femtocollisions::mult <= selection.multMax) &&                                                           \
     (femtocollisions::cent >= selection.centMin && femtocollisions::cent <= selection.centMax) &&                                                           \
     (femtocollisions::magField >= static_cast<int8_t>(selection.magFieldMin) && femtocollisions::magField <= static_cast<int8_t>(selection.magFieldMax)) && \
-    ncheckbit(femtocollisions::collisionMask, selection.collisionMask)
+    ncheckbit(femtocollisions::mask, selection.collisionMask)
 
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                                                         \
@@ -34,8 +34,8 @@
     (femtobase::stored::phi > selection.phiMin) &&                                                                                                                              \
     (femtobase::stored::phi < selection.phiMax) &&                                                                                                                              \
     ifnode(nabs(selection.chargeAbs.node() * femtobase::stored::signedPt) * (nexp(femtobase::stored::eta) + nexp(-1.f * femtobase::stored::eta)) / (2.f) <= selection.pidThres, \
-           ncheckbit(femtotracks::trackMask, selection.maskLowMomentum),                                                                                                        \
-           ncheckbit(femtotracks::trackMask, selection.maskHighMomentum))
+           ncheckbit(femtotracks::mask, selection.maskLowMomentum),                                                                                                             \
+           ncheckbit(femtotracks::mask, selection.maskHighMomentum))
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
 #define MAKE_RESONANCE_0_PARTITON(selection)                                            \
@@ -114,6 +114,19 @@
     ncheckbit(femtocascades::mask, selection.mask)
 
 #define MAKE_SIGMA_PARTITION(selection)                                                                                    \
+  ifnode(selection.sign.node() != 0,                                                                                       \
+         ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f), true) && \
+    (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                               \
+    (nabs(femtobase::stored::signedPt) < selection.ptMax) &&                                                               \
+    (femtobase::stored::eta > selection.etaMin) &&                                                                         \
+    (femtobase::stored::eta < selection.etaMax) &&                                                                         \
+    (femtobase::stored::phi > selection.phiMin) &&                                                                         \
+    (femtobase::stored::phi < selection.phiMax) &&                                                                         \
+    (femtobase::stored::mass > selection.massMin) &&                                                                       \
+    (femtobase::stored::mass < selection.massMax) &&                                                                       \
+    ncheckbit(femtokinks::mask, selection.mask)
+
+#define MAKE_SIGMAPLUS_PARTITION(selection)                                                                                \
   ifnode(selection.sign.node() != 0,                                                                                       \
          ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f), true) && \
     (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                               \

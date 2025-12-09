@@ -103,6 +103,16 @@ DECLARE_SOA_COLUMN(PLayersOk, pLayersOk, int8_t);
 DECLARE_SOA_COLUMN(APLayersOk, apLayersOk, int8_t);
 
 DECLARE_SOA_COLUMN(PVtxZ, pVtxZ, float);
+
+// Proton ITS PID
+DECLARE_SOA_COLUMN(PTrkItsNSigmaPr, pTrkItsNSigmaPr, float);
+DECLARE_SOA_COLUMN(PTrkItsPidValid, pTrkItsPidValid, int8_t);
+DECLARE_SOA_COLUMN(PTrkTgl, pTrkTgl, float);
+
+// Antiproton ITS PID
+DECLARE_SOA_COLUMN(AntipTrkItsNSigmaPr, antipTrkItsNSigmaPr, float);
+DECLARE_SOA_COLUMN(AntipTrkItsPidValid, antipTrkItsPidValid, int8_t);
+DECLARE_SOA_COLUMN(AntipTrkTgl, antipTrkTgl, float);
 } // namespace antin_cex
 
 // Table
@@ -123,7 +133,9 @@ DECLARE_SOA_TABLE(AntinCexPairs, "AOD", "ANTINCEX",
                   antin_cex::DPairP, antin_cex::DPairPt, antin_cex::DPairPz, antin_cex::DOpenAngle,
                   antin_cex::SVNearestLayerId, antin_cex::SVDeltaRToLayer,
                   antin_cex::PTrkItsHitMap, antin_cex::APTrkItsHitMap, antin_cex::PLayersOk, antin_cex::APLayersOk,
-                  antin_cex::PVtxZ);
+                  antin_cex::PVtxZ,
+                  antin_cex::PTrkItsNSigmaPr, antin_cex::PTrkItsPidValid, antin_cex::PTrkTgl,
+                  antin_cex::AntipTrkItsNSigmaPr, antin_cex::AntipTrkItsPidValid, antin_cex::AntipTrkTgl);
 
 } // namespace o2::aod
 

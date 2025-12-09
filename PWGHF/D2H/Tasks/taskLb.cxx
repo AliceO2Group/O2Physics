@@ -18,6 +18,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -71,7 +72,6 @@ struct HfTaskLb {
   Configurable<float> largeLifetimeBG{"largeLifetimeBG", 0.01, "fraction of strange contribution within 2mm"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
   Service<o2::framework::O2DatabasePDG> pdg;
 
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
@@ -245,7 +245,7 @@ struct HfTaskLb {
       registry.get<TH2>(HIST("hIPsAfterCut"))->Fill(candidateLc.pt(), candidateLc.impactParameter1());
       registry.get<TH2>(HIST("hIPsAfterCut"))->Fill(candidateLc.pt(), candidateLc.impactParameter2());
       if (candidateLc.isSelLcToPKPi() != 0) {
-        registry.get<TH2>(HIST("hPtinvMassLc"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
+        registry.get<TH2>(HIST("hPtinvMassLc"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPKPi(candidateLc));
         float const mRecoKstar = RecoDecay::m(std::array{track1.pVector(), track2.pVector()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
         float const mRecoDelta1232 = RecoDecay::m(std::array{track0.pVector(), track2.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
         float const mRecoLambda1520 = RecoDecay::m(std::array{track0.pVector(), track1.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
@@ -253,26 +253,26 @@ struct HfTaskLb {
         float const mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
         float const mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
         if (mDiffKStar892 < mDiffKStar892Max || mDiffDelta1232 < mDiffDelta1232Max || mDiffLambda1520 < mDiffLambda1520Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPKPi(candidateLc));
         }
         if (mDiffKStar892 < mDiffKStar892Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcKStar"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcKStar"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPKPi(candidateLc));
         }
         if (mDiffDelta1232 < mDiffDelta1232Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcDelta"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcDelta"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPKPi(candidateLc));
         }
         if (mDiffLambda1520 < mDiffLambda1520Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcLambda1520"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcLambda1520"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPKPi(candidateLc));
         }
 
-        if (std::abs(hfHelper.invMassLcToPKPi(candidateLc) - o2::constants::physics::MassLambdaCPlus) < mDiffLcMax) {
+        if (std::abs(HfHelper::invMassLcToPKPi(candidateLc) - o2::constants::physics::MassLambdaCPlus) < mDiffLcMax) {
           registry.get<TH2>(HIST("hPtinvMassKStar"))->Fill(candidateLc.pt(), mRecoKstar);
           registry.get<TH2>(HIST("hPtinvMassDelta"))->Fill(candidateLc.pt(), mRecoDelta1232);
           registry.get<TH2>(HIST("hPtinvMassLambda1520"))->Fill(candidateLc.pt(), mRecoLambda1520);
         }
       }
       if (candidateLc.isSelLcToPiKP() != 0) {
-        registry.get<TH2>(HIST("hPtinvMassLc"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
+        registry.get<TH2>(HIST("hPtinvMassLc"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPiKP(candidateLc));
         float const mRecoKstar = RecoDecay::m(std::array{track1.pVector(), track0.pVector()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
         float const mRecoDelta1232 = RecoDecay::m(std::array{track2.pVector(), track0.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
         float const mRecoLambda1520 = RecoDecay::m(std::array{track2.pVector(), track1.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
@@ -280,19 +280,19 @@ struct HfTaskLb {
         float const mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
         float const mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
         if (mDiffKStar892 < mDiffKStar892Max || mDiffDelta1232 < mDiffDelta1232Max || mDiffLambda1520 < mDiffLambda1520Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPiKP(candidateLc));
         }
         if (mDiffKStar892 < mDiffKStar892Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcKStar"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcKStar"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPiKP(candidateLc));
         }
         if (mDiffDelta1232 < mDiffDelta1232Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcDelta"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcDelta"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPiKP(candidateLc));
         }
         if (mDiffLambda1520 < mDiffLambda1520Max) {
-          registry.get<TH2>(HIST("hPtinvMassLcLambda1520"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
+          registry.get<TH2>(HIST("hPtinvMassLcLambda1520"))->Fill(candidateLc.pt(), HfHelper::invMassLcToPiKP(candidateLc));
         }
 
-        if (std::abs(hfHelper.invMassLcToPiKP(candidateLc) - o2::constants::physics::MassLambdaCPlus) < mDiffLcMax) {
+        if (std::abs(HfHelper::invMassLcToPiKP(candidateLc) - o2::constants::physics::MassLambdaCPlus) < mDiffLcMax) {
           registry.get<TH2>(HIST("hPtinvMassKStar"))->Fill(candidateLc.pt(), mRecoKstar);
           registry.get<TH2>(HIST("hPtinvMassDelta"))->Fill(candidateLc.pt(), mRecoDelta1232);
           registry.get<TH2>(HIST("hPtinvMassLambda1520"))->Fill(candidateLc.pt(), mRecoLambda1520);
@@ -302,7 +302,7 @@ struct HfTaskLb {
 
     for (const auto& candidate : candidates) {
 
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       registry.get<TH1>(HIST("hZVertex"))->Fill(collision.posZ());
@@ -326,10 +326,10 @@ struct HfTaskLb {
       if (likelihoodRatio < minLikelihoodRatio) {
         continue; // Larger likelihood means more likely to be signal
       }
-      float const lbMass = hfHelper.invMassLbToLcPi(candidate);
+      float const lbMass = HfHelper::invMassLbToLcPi(candidate);
       registry.get<TH2>(HIST("hPtinvMassLb"))->Fill(candidate.pt(), lbMass);
 
-      registry.fill(HIST("hMass"), hfHelper.invMassLbToLcPi(candidate), candidate.pt());
+      registry.fill(HIST("hMass"), HfHelper::invMassLbToLcPi(candidate), candidate.pt());
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
@@ -340,7 +340,7 @@ struct HfTaskLb {
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
       registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
       registry.fill(HIST("hEta"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hRapidity"), hfHelper.yLb(candidate), candidate.pt());
+      registry.fill(HIST("hRapidity"), HfHelper::yLb(candidate), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
       registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
@@ -358,7 +358,7 @@ struct HfTaskLb {
     // MC rec
     for (const auto& candidate : candidates) {
 
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
@@ -373,10 +373,10 @@ struct HfTaskLb {
         registry.fill(HIST("MC/hCPARecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("MC/hCPAxyRecSig"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("MC/hEtaRecSig"), candidate.eta(), candidate.pt());
-        registry.fill(HIST("MC/hRapidityRecSig"), hfHelper.yLb(candidate), candidate.pt());
+        registry.fill(HIST("MC/hRapidityRecSig"), HfHelper::yLb(candidate), candidate.pt());
         registry.fill(HIST("MC/hDecLengthRecSig"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("MC/hDecLengthXYRecSig"), candidate.decayLengthXY(), candidate.pt());
-        registry.fill(HIST("MC/hMassRecSig"), hfHelper.invMassLbToLcPi(candidate), candidate.pt());
+        registry.fill(HIST("MC/hMassRecSig"), HfHelper::invMassLbToLcPi(candidate), candidate.pt());
         registry.fill(HIST("MC/hd0Prong0RecSig"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("MC/hd0Prong1RecSig"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("MC/hPtProng0RecSig"), candidate.ptProng0(), candidate.pt());
@@ -392,10 +392,10 @@ struct HfTaskLb {
         registry.fill(HIST("MC/hCPARecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("MC/hCPAxyRecBg"), candidate.cpa(), candidate.pt());
         registry.fill(HIST("MC/hEtaRecBg"), candidate.eta(), candidate.pt());
-        registry.fill(HIST("MC/hRapidityRecBg"), hfHelper.yLb(candidate), candidate.pt());
+        registry.fill(HIST("MC/hRapidityRecBg"), HfHelper::yLb(candidate), candidate.pt());
         registry.fill(HIST("MC/hDecLengthRecBg"), candidate.decayLength(), candidate.pt());
         registry.fill(HIST("MC/hDecLengthXYRecBg"), candidate.decayLengthXY(), candidate.pt());
-        registry.fill(HIST("MC/hMassRecBg"), hfHelper.invMassLbToLcPi(candidate), candidate.pt());
+        registry.fill(HIST("MC/hMassRecBg"), HfHelper::invMassLbToLcPi(candidate), candidate.pt());
         registry.fill(HIST("MC/hd0Prong0RecBg"), candidate.impactParameter0(), candidate.pt());
         registry.fill(HIST("MC/hd0Prong1RecBg"), candidate.impactParameter1(), candidate.pt());
         registry.fill(HIST("MC/hPtProng0RecBg"), candidate.ptProng0(), candidate.pt());

@@ -17,8 +17,10 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -77,7 +79,6 @@ struct HfCandidateCreatorLb {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter (to rebuild Lc vertex)
-  HfHelper hfHelper;
 
   double massPi{0.};
   double massLc{0.};
@@ -138,10 +139,10 @@ struct HfCandidateCreatorLb {
         continue;
       }
       if (lcCand.isSelLcToPKPi() >= selectionFlagLc) {
-        hMassLcToPKPi->Fill(hfHelper.invMassLcToPKPi(lcCand), lcCand.pt());
+        hMassLcToPKPi->Fill(HfHelper::invMassLcToPKPi(lcCand), lcCand.pt());
       }
       if (lcCand.isSelLcToPiKP() >= selectionFlagLc) {
-        hMassLcToPKPi->Fill(hfHelper.invMassLcToPiKP(lcCand), lcCand.pt());
+        hMassLcToPKPi->Fill(HfHelper::invMassLcToPiKP(lcCand), lcCand.pt());
       }
       hPtLc->Fill(lcCand.pt());
       hCPALc->Fill(lcCand.cpa());

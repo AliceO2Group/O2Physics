@@ -35,12 +35,8 @@ namespace o2::aod
 
 namespace dqppfilter
 {
-DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t);  //! Bit-field used for the high level event triggering
-DECLARE_SOA_COLUMN(NewBcMultFT0A, newBcMultFT0A, float); //! sum of amplitudes on A side of FT0
-DECLARE_SOA_COLUMN(NewBcMultFT0C, newBcMultFT0C, float); //! sum of amplitudes on C side of FT0
-DECLARE_SOA_COLUMN(NewBcMultFDDA, newBcMultFDDA, float); //! sum of amplitudes on A side of FDD
-DECLARE_SOA_COLUMN(NewBcMultFDDC, newBcMultFDDC, float); //! sum of amplitudes on C side of FDD
-DECLARE_SOA_COLUMN(NewBcMultFV0A, newBcMultFV0A, float); //! sum of amplitudes on A side of FDD
+DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t); //! Bit-field used for the high level event triggering
+DECLARE_SOA_COLUMN(NewBcIndex, newBcIndex, uint64_t);   //! globalIndex of the new BC determined in filterPbPb
 } // namespace dqppfilter
 
 DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level decisions (DQ high level triggers)
@@ -48,19 +44,7 @@ DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level dec
 
 DECLARE_SOA_TABLE(DQRapidityGapFilter, "AOD", "RAPIDITYGAPFILTER",
                   dqppfilter::EventFilter,
-                  dqppfilter::NewBcMultFT0A,
-                  dqppfilter::NewBcMultFT0C,
-                  dqppfilter::NewBcMultFDDA,
-                  dqppfilter::NewBcMultFDDC,
-                  dqppfilter::NewBcMultFV0A,
-                  zdc::EnergyCommonZNA,
-                  zdc::EnergyCommonZNC,
-                  zdc::EnergyCommonZPA,
-                  zdc::EnergyCommonZPC,
-                  zdc::TimeZNA,
-                  zdc::TimeZNC,
-                  zdc::TimeZPA,
-                  zdc::TimeZPC);
+                  dqppfilter::NewBcIndex);
 
 namespace reducedevent
 {
@@ -218,10 +202,19 @@ DECLARE_SOA_TABLE(ReducedEventsInfo, "AOD", "REDUCEVENTINFO", //!   Main event i
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
 //           can be constructed and the same data model could be used
-DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC truth information
+
+DECLARE_SOA_TABLE(ReducedMCEvents_000, "AOD", "REDUCEDMCEVENT", //!   Event level MC truth information
                   o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
+
+DECLARE_SOA_TABLE_VERSIONED(ReducedMCEvents_001, "AOD", "REDUCEDMCEVENT", 1, //!   Event level MC truth information
+                            o2::soa::Index<>,
+                            mccollision::GeneratorsID, reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
+                            mccollision::T, mccollision::Weight, mccollision::ImpactParameter, cent::CentFT0C,
+                            mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10);
+
+using ReducedMCEvents = ReducedMCEvents_001;
 
 using ReducedEvent = ReducedEvents::iterator;
 using StoredReducedEvent = StoredReducedEvents::iterator;
@@ -279,6 +272,56 @@ DECLARE_SOA_TABLE(ReducedZdcsExtra, "AOD", "REDUCEDZDCEXTRA", //!   Event ZDC ex
 
 using ReducedZdc = ReducedZdcs::iterator;
 using ReducedZdcExtra = ReducedZdcsExtra::iterator;
+
+namespace reducedfit
+{
+// FIT detector information (based on upchelpers::FITInfo structure)
+DECLARE_SOA_COLUMN(AmplitudeFT0A, amplitudeFT0A, float);         //! FT0A total amplitude
+DECLARE_SOA_COLUMN(AmplitudeFT0C, amplitudeFT0C, float);         //! FT0C total amplitude
+DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);                   //! FT0A time
+DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);                   //! FT0C time
+DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);     //! FT0 trigger mask
+DECLARE_SOA_COLUMN(NFiredChannelsFT0A, nFiredChannelsFT0A, int); //! Number of fired channels in FT0A
+DECLARE_SOA_COLUMN(NFiredChannelsFT0C, nFiredChannelsFT0C, int); //! Number of fired channels in FT0C
+DECLARE_SOA_COLUMN(AmplitudeFDDA, amplitudeFDDA, float);         //! FDDA total amplitude
+DECLARE_SOA_COLUMN(AmplitudeFDDC, amplitudeFDDC, float);         //! FDDC total amplitude
+DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);                   //! FDDA time
+DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);                   //! FDDC time
+DECLARE_SOA_COLUMN(TriggerMaskFDD, triggerMaskFDD, uint8_t);     //! FDD trigger mask
+DECLARE_SOA_COLUMN(AmplitudeFV0A, amplitudeFV0A, float);         //! FV0A total amplitude
+DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);                   //! FV0A time
+DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t);   //! FV0A trigger mask
+DECLARE_SOA_COLUMN(NFiredChannelsFV0A, nFiredChannelsFV0A, int); //! Number of fired channels in FV0A
+DECLARE_SOA_COLUMN(BBFT0Apf, bbFT0Apf, int32_t);                 //! Beam-beam flags for FT0A
+DECLARE_SOA_COLUMN(BGFT0Apf, bgFT0Apf, int32_t);                 //! Beam-gas flags for FT0A
+DECLARE_SOA_COLUMN(BBFT0Cpf, bbFT0Cpf, int32_t);                 //! Beam-beam flags for FT0C
+DECLARE_SOA_COLUMN(BGFT0Cpf, bgFT0Cpf, int32_t);                 //! Beam-gas flags for FT0C
+DECLARE_SOA_COLUMN(BBFV0Apf, bbFV0Apf, int32_t);                 //! Beam-beam flags for FV0A
+DECLARE_SOA_COLUMN(BGFV0Apf, bgFV0Apf, int32_t);                 //! Beam-gas flags for FV0A
+DECLARE_SOA_COLUMN(BBFDDApf, bbFDDApf, int32_t);                 //! Beam-beam flags for FDDA
+DECLARE_SOA_COLUMN(BGFDDApf, bgFDDApf, int32_t);                 //! Beam-gas flags for FDDA
+DECLARE_SOA_COLUMN(BBFDDCpf, bbFDDCpf, int32_t);                 //! Beam-beam flags for FDDC
+DECLARE_SOA_COLUMN(BGFDDCpf, bgFDDCpf, int32_t);                 //! Beam-gas flags for FDDC
+} // namespace reducedfit
+
+DECLARE_SOA_TABLE(ReducedFITs, "AOD", "REDUCEDFIT", //! FIT detector information
+                  reducedfit::AmplitudeFT0A, reducedfit::AmplitudeFT0C,
+                  reducedfit::TimeFT0A, reducedfit::TimeFT0C,
+                  reducedfit::TriggerMaskFT0,
+                  reducedfit::NFiredChannelsFT0A, reducedfit::NFiredChannelsFT0C,
+                  reducedfit::AmplitudeFDDA, reducedfit::AmplitudeFDDC,
+                  reducedfit::TimeFDDA, reducedfit::TimeFDDC,
+                  reducedfit::TriggerMaskFDD,
+                  reducedfit::AmplitudeFV0A, reducedfit::TimeFV0A,
+                  reducedfit::TriggerMaskFV0A,
+                  reducedfit::NFiredChannelsFV0A,
+                  reducedfit::BBFT0Apf, reducedfit::BGFT0Apf,
+                  reducedfit::BBFT0Cpf, reducedfit::BGFT0Cpf,
+                  reducedfit::BBFV0Apf, reducedfit::BGFV0Apf,
+                  reducedfit::BBFDDApf, reducedfit::BGFDDApf,
+                  reducedfit::BBFDDCpf, reducedfit::BGFDDCpf);
+
+using ReducedFIT = ReducedFITs::iterator;
 
 namespace reducedtrack
 {

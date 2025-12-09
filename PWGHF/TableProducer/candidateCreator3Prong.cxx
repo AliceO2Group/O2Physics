@@ -21,7 +21,9 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsMcGen.h"
@@ -31,6 +33,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -147,6 +150,7 @@ struct HfCandidateCreator3Prong {
 
   std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -217,7 +221,7 @@ struct HfCandidateCreator3Prong {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
 
     // Configure DCAFitterN
     // df.setBz(bz);
@@ -897,9 +901,10 @@ struct HfCandidateCreator3Prong {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -915,9 +920,10 @@ struct HfCandidateCreator3Prong {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -933,9 +939,10 @@ struct HfCandidateCreator3Prong {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -956,9 +963,10 @@ struct HfCandidateCreator3Prong {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, aod::BcFullInfos>(collision, centrality, ccdb, registry, bcs);
-
+      const auto bc = collision.template foundBC_as<aod::BcFullInfos>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -1126,8 +1134,8 @@ struct HfCandidateCreator3ProngExpressions {
             if (indexRec > -1) {
               flagChannelMain = sign * channelMain;
 
-              /// swapping for D+, Ds->Kpipi and Lc->pKpi
-              if (std::abs(flagChannelMain) == DecayChannelMain::DplusToPiKK || std::abs(flagChannelMain) == DecayChannelMain::DsToPiKK || std::abs(flagChannelMain) == DecayChannelMain::LcToPKPi) {
+              /// swapping for D+, Ds->Kpipi; Lc, Xic->pKpi
+              if (std::abs(flagChannelMain) == DecayChannelMain::DplusToPiKK || std::abs(flagChannelMain) == DecayChannelMain::DsToPiKK || std::abs(flagChannelMain) == DecayChannelMain::LcToPKPi || std::abs(flagChannelMain) == DecayChannelMain::XicToPKPi) {
                 if (arrayDaughters[0].has_mcParticle()) {
                   swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
                 }
@@ -1265,11 +1273,11 @@ struct HfCandidateCreator3ProngExpressions {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
                 arrPdgDaugResonant[iProng] = std::abs(daughI.pdgCode());
               }
-              if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToPKstar0[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToPKstar0[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToPKstar0[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToPKstar0[0])) {
+              if ((arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToPKstar0[0]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToPKstar0[1])) || (arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToPKstar0[1]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToPKstar0[0]))) {
                 flagChannelResonant = DecayChannelResonant::LcToPKstar0;
-              } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToDeltaplusplusK[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToDeltaplusplusK[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToDeltaplusplusK[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToDeltaplusplusK[0])) {
+              } else if ((arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[0]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[1])) || (arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[1]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToDeltaplusplusK[0]))) {
                 flagChannelResonant = DecayChannelResonant::LcToDeltaplusplusK;
-              } else if ((arrPdgDaugResonant[0] == arrPdgDaugResonantLcToL1520Pi[0] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToL1520Pi[1]) || (arrPdgDaugResonant[0] == arrPdgDaugResonantLcToL1520Pi[1] && arrPdgDaugResonant[1] == arrPdgDaugResonantLcToL1520Pi[0])) {
+              } else if ((arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToL1520Pi[0]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToL1520Pi[1])) || (arrPdgDaugResonant[0] == std::abs(arrPdgDaugResonantLcToL1520Pi[1]) && arrPdgDaugResonant[1] == std::abs(arrPdgDaugResonantLcToL1520Pi[0]))) {
                 flagChannelResonant = DecayChannelResonant::LcToL1520Pi;
               }
             }

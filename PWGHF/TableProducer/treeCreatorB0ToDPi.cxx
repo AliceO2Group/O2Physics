@@ -18,6 +18,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -182,8 +183,6 @@ struct HfTreeCreatorB0ToDPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
-
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
@@ -232,14 +231,14 @@ struct HfTreeCreatorB0ToDPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelB0ToDPi(),
-        hfHelper.invMassB0ToDPi(candidate),
+        HfHelper::invMassB0ToDPi(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yB0(candidate),
+        HfHelper::yB0(candidate),
         flagMc,
         originMc);
     } else {
@@ -279,17 +278,17 @@ struct HfTreeCreatorB0ToDPi {
         prong1.tpcNSigmaPi(),
         prong1.tofNSigmaPi(),
         candidate.isSelB0ToDPi(),
-        hfHelper.invMassB0ToDPi(candidate),
+        HfHelper::invMassB0ToDPi(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
-        hfHelper.ctB0(candidate),
+        HfHelper::ctB0(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yB0(candidate),
-        hfHelper.eB0(candidate),
+        HfHelper::yB0(candidate),
+        HfHelper::eB0(candidate),
         flagMc,
         originMc);
     }

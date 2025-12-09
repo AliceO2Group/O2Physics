@@ -9,15 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Nuclei spectra analysis task
-// ========================
-//
-// Executable + dependencies:
-//
-// Data (run3):
-// o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
-// o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
-// (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
+/// \brief TableProducer/Task for nuclei QC. The produced table can be disabled with a configurable.
+///
+/// \author Giorgio Alberto Lucia (giorgio.alberto.lucia@cern.ch)
+///
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
@@ -27,18 +22,19 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Tools/TrackTuner.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -55,6 +51,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "Math/Vector4D.h"
+#include "TMCProcess.h"
 #include "TRandom3.h"
 
 #include <algorithm>
@@ -226,43 +223,61 @@ struct nucleiQC {
   void fillNucleusFlagsPdgsMc(const Tparticle& particle, nuclei::SlimCandidate& candidate)
   {
     candidate.pdgCode = particle.pdgCode();
+    candidate.mcProcess = particle.getProcess();
+
+    if (particle.has_mothers()) {
+      for (const auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
+        candidate.motherPdgCode = motherparticle.pdgCode();
+      }
+    }
 
     if (particle.isPhysicalPrimary()) {
       candidate.flags |= nuclei::Flags::kIsPhysicalPrimary;
 
-      // heavy flavour mother
-      // if (particle.has_mothers()) {
-      //  for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
-      //    if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
-      //      flags |= kIsSecondaryFromWeakDecay;
-      //      motherPdgCode = motherparticle.pdgCode();
-      //      break;
-      //    }
-      //  }
-      //}
+      ///<  heavy flavour mother
+      /*if (particle.has_mothers()) {
+        for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+          if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+            flags |= kIsSecondaryFromWeakDecay;
+            motherPdgCode = motherparticle.pdgCode();
+            break;
+          }
+        }
+      }*/
 
-    } else if (particle.has_mothers()) {
+    } else if (particle.getProcess() == TMCProcess::kPDecay) {
+      ///<  assuming that strong decays are included in the previous step
       candidate.flags |= nuclei::Flags::kIsSecondaryFromWeakDecay;
-      for (const auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
-        candidate.motherPdgCode = motherparticle.pdgCode();
-      }
-
     } else {
       candidate.flags |= nuclei::Flags::kIsSecondaryFromMaterial;
     }
-
-    mFilledMcParticleIds.emplace_back(particle.globalIndex());
   }
 
   template <typename Tcollision, typename Ttrack>
   void fillNucleusFlagsPdgs(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate)
   {
     candidate.flags = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
-    candidate.flags |= iSpecies == nuclei::Species::kPr ? nuclei::Flags::kProton : iSpecies == nuclei::Species::kDe ? nuclei::Flags::kDeuteron
-                                                                                 : iSpecies == nuclei::Species::kTr ? nuclei::Flags::kTriton
-                                                                                 : iSpecies == nuclei::Species::kHe ? nuclei::Flags::kHe3
-                                                                                 : iSpecies == nuclei::Species::kAl ? nuclei::Flags::kHe4
-                                                                                                                    : 0;
+
+    switch (iSpecies) {
+      case nuclei::Species::kPr:
+        candidate.flags |= nuclei::Flags::kProton;
+        break;
+      case nuclei::Species::kDe:
+        candidate.flags |= nuclei::Flags::kDeuteron;
+        break;
+      case nuclei::Species::kTr:
+        candidate.flags |= nuclei::Flags::kTriton;
+        break;
+      case nuclei::Species::kHe:
+        candidate.flags |= nuclei::Flags::kHe3;
+        break;
+      case nuclei::Species::kAl:
+        candidate.flags |= nuclei::Flags::kHe4;
+        break;
+      default:
+        candidate.flags |= 0;
+        break;
+    }
 
     if (track.hasTOF())
       candidate.flags |= nuclei::Flags::kHasTOF;
@@ -319,7 +334,8 @@ struct nucleiQC {
                                        .ptGenerated = 0.f, // to be filled for mc
                                        .etaGenerated = 0.f,
                                        .phiGenerated = 0.f,
-                                       .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator)};
+                                       .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator),
+                                       .mcProcess = TMCProcess::kPNoProcess};
 
     fillDcaInformation(collision, track, candidate);
     fillNucleusFlagsPdgs(iSpecies, collision, track, candidate);
@@ -414,11 +430,6 @@ struct nucleiQC {
         if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
           return;
 
-        nuclei::SlimCandidate candidate;
-        candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
-        if ((candidate.flags >> 10) & 0b1)
-          LOG(info) << "track from material before track selection";
-
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
         if (!trackSelection(track))
           return;
@@ -428,10 +439,11 @@ struct nucleiQC {
           return;
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
 
-        // nuclei::SlimCandidate candidate;
-        // candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
+        nuclei::SlimCandidate candidate;
+        candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
 
         mNucleiCandidates.emplace_back(candidate);
+        mFilledMcParticleIds.emplace_back(particle.globalIndex());
         dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
         dispatchFillHistograms</*isGenerated*/ false>(kSpeciesRt, candidate);
       });
@@ -442,10 +454,14 @@ struct nucleiQC {
     mcParticlesThisCollision.bindExternalIndices(&mcParticles);
 
     for (const auto& particle : mcParticlesThisCollision) {
+
       if (std::find(mFilledMcParticleIds.begin(), mFilledMcParticleIds.end(), particle.globalIndex()) != mFilledMcParticleIds.end())
         continue;
 
       if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
+        continue;
+
+      if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
         continue;
 
       int iSpecies = nuclei::getSpeciesFromPdg(particle.pdgCode());
@@ -457,6 +473,7 @@ struct nucleiQC {
       fillNucleusGeneratedVariables(particle, candidate);
 
       mNucleiCandidates.emplace_back(candidate);
+      mFilledMcParticleIds.emplace_back(particle.globalIndex());
       dispatchFillHistograms</*isGenerated*/ true>(iSpecies, candidate);
     }
 
@@ -475,6 +492,7 @@ struct nucleiQC {
         candidate.DCAxy,
         candidate.DCAz,
         candidate.flags,
+        candidate.mcProcess,
         candidate.pdgCode,
         candidate.motherPdgCode);
     }

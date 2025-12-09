@@ -17,30 +17,30 @@
 //
 
 // C++ headers
+#include <algorithm>
+#include <random>
 #include <set>
 #include <utility>
-#include <algorithm>
 #include <vector>
-#include <random>
 
 // O2 headers
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
 #include "Math/Vector4D.h"

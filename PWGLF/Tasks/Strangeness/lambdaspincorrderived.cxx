@@ -96,7 +96,8 @@ struct lambdaspincorrderived {
   Configurable<int> rngSeed{"rngSeed", 12345, "Seed for random mixing (reproducible)"};
   std::mt19937 rng{12345};
   // Lambda selection ////////////
-  Configurable<unsigned> harmonic{"harmonic", 1, "Harmonic delta phi"};
+  Configurable<unsigned> harmonic{"harmonic", 1, "Harmonic phi"};
+  Configurable<unsigned> harmonicDphi{"harmonicDphi", 2, "Harmonic delta phi"};
   Configurable<bool> useweight{"useweight", 0, "Use weight"};
   Configurable<bool> usebothweight{"usebothweight", 1, "Use both weight"};
   // Configurable<bool> useNUA{"useNUA", 0, "Use NUA weight"};
@@ -256,10 +257,10 @@ struct lambdaspincorrderived {
     if (candidate.dcaBetweenDaughter() > dcaDaughters) {
       return false;
     }
-    if (candidate.v0Status() == 0 && std::abs(candidate.dcaPositive()) < dcaProton && std::abs(candidate.dcaNegative()) < dcaPion) {
+    if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < dcaProton || std::abs(candidate.dcaNegative()) < dcaPion)) {
       return false;
     }
-    if (candidate.v0Status() == 1 && std::abs(candidate.dcaPositive()) < dcaPion && std::abs(candidate.dcaNegative()) < dcaProton) {
+    if (candidate.v0Status() == 1 && (std::abs(candidate.dcaPositive()) < dcaPion || std::abs(candidate.dcaNegative()) < dcaProton)) {
       return false;
     }
     if (candidate.lambdaPt() < ptMin) {
@@ -376,7 +377,7 @@ struct lambdaspincorrderived {
     double deta2 = particle2.Eta();
 
     double deta_pair = std::abs(deta1 - deta2);
-    double dphi_pair = std::abs(dphi1 - dphi2);
+    double dphi_pair = RecoDecay::constrainAngle(particle1.Phi() - particle2.Phi(), 0.0F, harmonicDphi);
 
     double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
     double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
@@ -387,7 +388,7 @@ struct lambdaspincorrderived {
     if (useweight && datatype == 1) {
       if (tag1 == 0 && tag2 == 0) {
         epsWeight1 = hweight1->GetBinContent(hweight1->FindBin(dphi1, deta1, pt1));
-        epsWeight2 = hweight2->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
+        epsWeight2 = hweight12->GetBinContent(hweight12->FindBin(dphi2, deta2, pt2));
       } else if (tag1 == 0 && tag2 == 1) {
         epsWeight1 = hweight2->GetBinContent(hweight2->FindBin(dphi1, deta1, pt1));
         epsWeight2 = hweight22->GetBinContent(hweight22->FindBin(dphi2, deta2, pt2));
@@ -535,7 +536,7 @@ struct lambdaspincorrderived {
         }
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
-        histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F, harmonic)));
+        histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), 0.0F, harmonicDphi));
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
         }
@@ -607,7 +608,7 @@ struct lambdaspincorrderived {
           lambda = ROOT::Math::PtEtaPhiMVector(t3.lambdaPt(), t3.lambdaEta(), t3.lambdaPhi(), t3.lambdaMass());
           proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
-          histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F, harmonic)));
+          histos.fill(HIST("deltaPhiMix"), RecoDecay::constrainAngle(t3.lambdaPhi() - t2.lambdaPhi(), 0.0F, harmonicDphi));
           if (t3.v0Status() == 0 && t2.v0Status() == 0) {
             fillHistograms(0, 0, lambda, lambda2, proton, proton2, 1, 1.0);
           }
@@ -1029,9 +1030,7 @@ struct lambdaspincorrderived {
           auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
 
-          const float dPhi = std::fabs(
-            RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) -
-            RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
+          const float dPhi = std::fabs(RecoDecay::constrainAngle(lambda.Phi() - lambda2.Phi(), 0.0F, harmonicDphi));
           histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
           fillHistograms(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, wBase);
         }

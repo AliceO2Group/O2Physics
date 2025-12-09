@@ -9,8 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+//**********************************************************************
 // Defines TOF PID tables for strangeness.
 // Entries calculated per candidate, tables are joinable with v0/cascdata tables.
+//**********************************************************************
+
+//**********************************************************************
+// Nota bene: when using, do not check track.hasTOF! That conditional may not match
+// the calculation of strangeness TOF, which requires e.g. a successful calculation
+// of the collision time for the reassociated collision
+//**********************************************************************
 
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
@@ -203,6 +211,25 @@ DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive 
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
 
+// dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
+// note: only single hypothesis check necessary; other hypotheses will always be valid
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid
+                           [](float TOFNSigmaLaPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(TOFNSigmaLaPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! negative daughter TOF calculation valid
+                           [](float TOFNSigmaALaPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(TOFNSigmaALaPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+
 // dynamics based on n-sigmas with use-only-if-tof-present logic
 DECLARE_SOA_DYNAMIC_COLUMN(TofLambdaCompatibility, tofLambdaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaLaPr, float tofNSigmaLaPi, float nsigma) -> float {
@@ -284,6 +311,8 @@ DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table 
                   v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi,
                   v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi,
                   v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus,
+                  v0data::PositiveHasTOF<v0data::TOFNSigmaLaPr>,
+                  v0data::NegativeHasTOF<v0data::TOFNSigmaALaPr>,
                   v0data::TofLambdaCompatibility<v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi>,
                   v0data::TofAntiLambdaCompatibility<v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi>,
                   v0data::TofK0ShortCompatibility<v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus>);
@@ -324,6 +353,33 @@ DECLARE_SOA_COLUMN(TOFNSigmaXiPi, tofNSigmaXiPi, float);     //! bachelor track 
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPi, tofNSigmaOmLaPi, float); //! meson track NSigma from pion <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NSigma from proton <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
+
+// dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
+// note: only single hypothesis check necessary; other hypotheses will always be valid
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid
+                           [](float PosTOFDeltaTXiPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(PosTOFDeltaTXiPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! positive daughter TOF calculation valid
+                           [](float NegTOFDeltaTXiPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(NegTOFDeltaTXiPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(BachelorHasTOF, bachelorHasTOF, //! bachelor daughter TOF calculation valid
+                           [](float BachTOFDeltaTXiPi) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(BachTOFDeltaTXiPi - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
 
 // dynamics based on n-sigmas with use-only-if-tof-present logic
 DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
@@ -376,6 +432,9 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
 DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
                   cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa,
+                  cascdata::PositiveHasTOF<cascdata::PosTOFDeltaTXiPr>,
+                  cascdata::NegativeHasTOF<cascdata::NegTOFDeltaTXiPr>,
+                  cascdata::BachelorHasTOF<cascdata::BachTOFDeltaTXiPi>,
                   cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
                   cascdata::TofOmegaCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
 } // namespace o2::aod

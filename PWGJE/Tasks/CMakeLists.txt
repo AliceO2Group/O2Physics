@@ -270,8 +270,8 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(nuclei-in-jets
                         SOURCES nucleiInJets.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                        O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                        O2Physics::AnalysisCCDB
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-taggerhf-qa
                         SOURCES jetTaggerHFQA.cxx
@@ -303,8 +303,8 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(full-jet-spectra
                         SOURCES fullJetSpectra.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                        O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                        O2Physics::AnalysisCCDB
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(bjet-tagging-ml
                         SOURCES bjetTaggingML.cxx
@@ -312,6 +312,10 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-spectra-ese
                         SOURCES jetSpectraEseTask.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-cross-section-efficiency
+                        SOURCES jetCrossSectionEfficiency.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(gamma-jet-tree-producer

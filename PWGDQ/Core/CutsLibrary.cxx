@@ -4304,6 +4304,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   // -----------------------------------------------
   // Barrel track quality cuts
 
+  // ---------------------------------------------------
+  // MC generated particle acceptance cuts
+
+  if (!nameStr.compare("rapidity08")) {
+    cut->AddCut(VarManager::kMCY, -0.8, 0.8);
+    return cut;
+  }
+
+  if (!nameStr.compare("rapidity09")) {
+    cut->AddCut(VarManager::kMCY, -0.9, 0.9);
+    return cut;
+  }
+
+  // ---------------------------------------------------
+  // MC generated particle acceptance cuts
+
   // Run 2 only
 
   if (!nameStr.compare("highPtHadron")) {

@@ -94,10 +94,9 @@ constexpr bool isMatchedDielectronCandidate(T const& /*candidate*/)
  *
  * @param track track that is being checked
  * @param candidate Dielectron candidate that is being checked
- * @param tracks the track table
  */
-template <typename T, typename U, typename V>
-bool isDielectronDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
+template <typename T, typename U>
+bool isDielectronDaughterTrack(T& track, U& candidate)
 {
   if constexpr (isDielectronCandidate<U>()) {
     if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
@@ -283,7 +282,7 @@ bool selectDielectronParticleDecay(T const& dielectronParticle, int dielectronPa
   return (dielectronParticle.decayFlag() & (1 << dielectronParticleDecaySelection));
 }
 
-int initialiseDielectronParticleDecaySelection(std::string dielectronParticleDecaySelection)
+int initialiseDielectronParticleDecaySelection(const std::string& dielectronParticleDecaySelection)
 {
   if (dielectronParticleDecaySelection == "JPsiToEE") {
     return JDielectronParticleDecays::JPsiToEE;
@@ -353,7 +352,7 @@ void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U&
 template <typename T, typename U>
 void fillDielectronCandidateMcTable(T const& candidate, int32_t mcCollisionIndex, U& DielectronMcTable)
 {
-  DielectronMcTable(mcCollisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.y(), candidate.e(), candidate.m(), candidate.pdgCode(), candidate.getGenStatusCode(), candidate.getHepMCStatusCode(), candidate.isPhysicalPrimary(), candidate.decayFlag(), candidate.origin());
+  DielectronMcTable(mcCollisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.y(), candidate.e(), candidate.m(), candidate.pdgCode(), candidate.statusCode(), candidate.flags(), candidate.decayFlag(), candidate.origin());
 }
 
 }; // namespace jetdqutilities

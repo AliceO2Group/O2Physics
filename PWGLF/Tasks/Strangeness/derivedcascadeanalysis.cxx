@@ -13,44 +13,46 @@
 /// \brief Tasks processing derived data for Cascade analysis in PbPb collisions
 /// \author Lucia Anna Tarasovicova (lucia.anna.husova@cern.ch)
 
-#include <string>
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/StaticFor.h"
+#include "MetadataHelper.h"
 
-#include "Framework/ConfigParamSpec.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include <TFile.h>
 #include <TH2F.h>
-#include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <string>
+#include <vector>
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG

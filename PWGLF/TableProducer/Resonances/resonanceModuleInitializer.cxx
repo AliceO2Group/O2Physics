@@ -14,33 +14,35 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#include <string>
-#include <vector>
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Qvectors.h"
+#include "PWGLF/DataModel/LFResonanceTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/collisionCuts.h"
+
 #include "Common/Core/EventPlaneHelper.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/collisionCuts.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

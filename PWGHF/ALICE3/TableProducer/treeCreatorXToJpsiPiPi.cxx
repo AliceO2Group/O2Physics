@@ -17,12 +17,12 @@
 ///
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -144,8 +144,6 @@ struct HfTreeCreatorXToJpsiPiPi {
   Produces<o2::aod::HfCandXFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXFullPs> rowCandidateFullParticles;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void init(InitContext const&)
@@ -236,7 +234,7 @@ struct HfTreeCreatorXToJpsiPiPi {
         }
       };
 
-      fillTable(0, candidate.isSelXToJpsiToMuMuPiPi(), hfHelper.invMassXToJpsiPiPi(candidate), hfHelper.ctX(candidate), hfHelper.yX(candidate), hfHelper.qX(candidate), hfHelper.dRX(candidate, 1), hfHelper.dRX(candidate, 2), hfHelper.balancePtPionsX(candidate));
+      fillTable(0, candidate.isSelXToJpsiToMuMuPiPi(), HfHelper::invMassXToJpsiPiPi(candidate), HfHelper::ctX(candidate), HfHelper::yX(candidate), HfHelper::qX(candidate), HfHelper::dRX(candidate, 1), HfHelper::dRX(candidate, 2), HfHelper::balancePtPionsX(candidate));
     }
 
     // Filling particle properties

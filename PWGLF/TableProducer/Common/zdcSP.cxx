@@ -12,42 +12,37 @@
 // Minimal example to run this task:
 // o2-analysis-centrality-table -b --configuration json://configuration.json | o2-analysis-timestamp -b --configuration json://configuration.json | o2-analysis-event-selection -b --configuration json://configuration.json | o2-analysis-multiplicity-table -b --configuration json://configuration.json | o2-analysis-lf-zdcsp -b --configuration json://configuration.json --aod-file @input_data.txt --aod-writer-json OutputDirector.json
 
-#include <array>
-#include <cmath>
+#include "PWGLF/DataModel/LFzdcSPtables.h"
 
-#include "Math/Vector4D.h"
-
-#include "CCDB/BasicCCDBManager.h"
-
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
-#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Math/Vector4D.h>
+#include <TRandom3.h>
 
-#include "ReconstructionDataFormats/Track.h"
-
-#include "PWGLF/DataModel/LFzdcSPtables.h"
-
-#include "TRandom3.h"
+#include <array>
+#include <cmath>
+#include <string>
+#include <unordered_map>
 
 using namespace o2;
 using namespace o2::framework;

@@ -15,27 +15,31 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch)
 /// \since Feb 11, 2025
 
-#include <TLorentzVector.h>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TVector2.h>
 #include <TVector3.h>
+
 #include <cmath>
-#include <vector>
 #include <string>
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -61,8 +65,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
 
   // Track Parameters
-  Configurable<float> minITSnCls{"minITSnCls", 1.0f, "min number of ITS clusters"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
+  Configurable<float> minITSnCls{"minITSnCls", 5.0f, "min number of ITS clusters"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 100.0f, "min number of TPC crossed rows"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> etaMin{"etaMin", -0.8f, "eta min"};
@@ -70,13 +74,13 @@ struct LfITSTPCMatchingSecondaryTracksQA {
   Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
   Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
-  Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
-  Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "dcaxy max"};
-  Configurable<float> dcazMax{"dcazMax", 0.1f, "dcaz max"};
+  Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.5f, "Maximum nsigma TOF"};
+  Configurable<float> dcaxyMax{"dcaxyMax", 0.05f, "dcaxy max"};
+  Configurable<float> dcazMax{"dcazMax", 0.05f, "dcaz max"};
   Configurable<float> dcaMin{"dcaMin", 0.1f, "dca min"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireItsHits{"requireItsHits", false, "require ITS hits"};
-  Configurable<std::vector<float>> requiredHit{"requiredHit", {0, 0, 0, 0, 0, 0, 0}, "required ITS Hits (1=required, 0=not required)"};
+  Configurable<std::vector<float>> requiredHit{"requiredHit", {1, 1, 1, 0, 0, 0, 0}, "required ITS Hits (1=required, 0=not required)"};
 
   // V0 Parameters
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.0f, "Minimum V0 Radius"};
@@ -101,6 +105,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       registryData.add("secPionTPC_ITS", "secPionTPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("secPionV0TPC", "secPionV0TPC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryData.add("secPionV0TPC_ITS", "secPionV0TPC_ITS", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryData.add("primProtonTPC", "primProtonTPC", HistType::kTH1D, {{500, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryData.add("primProtonITS", "primProtonITS", HistType::kTH1D, {{500, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
     }
 
     if (doprocessMC) {
@@ -113,6 +119,8 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       registryMC.add("secPionTPC_ITS_MC", "secPionTPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("secPionV0TPC_MC", "secPionV0TPC_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
       registryMC.add("secPionV0TPC_ITS_MC", "secPionV0TPC_ITS_MC", HistType::kTH3D, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}, {100, 0, TwoPI, "#phi"}});
+      registryMC.add("primProtonTPC_MC", "primProtonTPC_MC", HistType::kTH1D, {{500, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("primProtonITS_MC", "primProtonITS_MC", HistType::kTH1D, {{500, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
     }
   }
 
@@ -205,6 +213,44 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     return true;
   }
 
+  template <typename protonTrack>
+  bool passedProtonSelection(const protonTrack& track)
+  {
+    // Switch between TPC and TOF analysis
+    static constexpr double PtThreshold = 0.6;
+
+    // TPC Selection
+    if (track.pt() < PtThreshold && (track.tpcNSigmaPr() < nsigmaTPCmin || track.tpcNSigmaPr() > nsigmaTPCmax))
+      return false;
+
+    // TOF Selection
+    if (track.pt() > PtThreshold && (track.tpcNSigmaPr() < nsigmaTPCmin || track.tpcNSigmaPr() > nsigmaTPCmax || track.tofNSigmaPr() < nsigmaTOFmin || track.tofNSigmaPr() > nsigmaTOFmax))
+      return false;
+    return true;
+  }
+
+  template <typename ItsTrack>
+  bool passedTrackSelectionItsPrimary(const ItsTrack& track)
+  {
+    if (!track.hasITS())
+      return false;
+    if (track.itsNCls() < minITSnCls)
+      return false;
+    if (track.itsChi2NCl() > maxChi2ITS)
+      return false;
+    static constexpr int NitsLayers = 7;
+
+    auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
+    if (requireItsHits) {
+      for (int i = 0; i < NitsLayers; i++) {
+        if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   template <typename ItsTrack>
   bool passedTrackSelectionIts(const ItsTrack& track)
   {
@@ -216,13 +262,14 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     if (track.itsChi2NCl() > maxChi2ITS)
       return false;
     */
+    static constexpr int NitsLayers = 7;
 
     if (track.itsNCls() < minITSnCls)
       return false;
 
     auto requiredItsHit = static_cast<std::vector<float>>(requiredHit);
     if (requireItsHits) {
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < NitsLayers; i++) {
         if (requiredItsHit[i] > 0 && !hasHitOnITSlayer(track.itsClusterMap(), i)) {
           return false;
         }
@@ -240,6 +287,27 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       return;
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
+    // Reject events near the ITS Read-Out Frame border
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+      return;
+    registryData.fill(HIST("number_of_events_data"), 2.5);
+
+    // Reject events at the Time Frame border
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+      return;
+    registryData.fill(HIST("number_of_events_data"), 3.5);
+
+    // Reject events with same-bunch pileup
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    registryData.fill(HIST("number_of_events_data"), 4.5);
+
+    // Require consistent FT0 vs PV z-vertex
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    registryData.fill(HIST("number_of_events_data"), 5.5);
+
+    // Loop over reconstructed tracks
     for (const auto& track : tracks) {
 
       // DCA distributions
@@ -247,6 +315,12 @@ struct LfITSTPCMatchingSecondaryTracksQA {
         registryData.fill(HIST("dcaxyDatavspt"), track.pt(), track.dcaXY());
         registryData.fill(HIST("dcazDatavspt"), track.pt(), track.dcaZ());
       }
+
+      // Primary protons
+      if (passedTrackSelectionTpcPrimary(track) && passedProtonSelection(track))
+        registryData.fill(HIST("primProtonTPC"), track.pt());
+      if (passedTrackSelectionTpcPrimary(track) && passedProtonSelection(track) && passedTrackSelectionItsPrimary(track))
+        registryData.fill(HIST("primProtonITS"), track.pt());
 
       // Primary Tracks
       if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))
@@ -288,9 +362,30 @@ struct LfITSTPCMatchingSecondaryTracksQA {
     for (const auto& collision : collisions) {
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
 
+      // Event Selection
       if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
         continue;
-      registryMC.fill(HIST("number_of_events_mc"), 1.5);
+      registryData.fill(HIST("number_of_events_mc"), 1.5);
+
+      // Reject events near the ITS Read-Out Frame border
+      if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+      registryData.fill(HIST("number_of_events_mc"), 2.5);
+
+      // Reject events at the Time Frame border
+      if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+      registryData.fill(HIST("number_of_events_mc"), 3.5);
+
+      // Reject events with same-bunch pileup
+      if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+      registryData.fill(HIST("number_of_events_mc"), 4.5);
+
+      // Require consistent FT0 vs PV z-vertex
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      registryData.fill(HIST("number_of_events_mc"), 5.5);
 
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
@@ -302,6 +397,12 @@ struct LfITSTPCMatchingSecondaryTracksQA {
           registryMC.fill(HIST("dcaxyMCvspt"), track.pt(), track.dcaXY());
           registryMC.fill(HIST("dcazMCvspt"), track.pt(), track.dcaZ());
         }
+
+        // Primary protons
+        if (passedTrackSelectionTpcPrimary(track) && passedProtonSelection(track))
+          registryMC.fill(HIST("primProtonTPC_MC"), track.pt());
+        if (passedTrackSelectionTpcPrimary(track) && passedProtonSelection(track) && passedTrackSelectionItsPrimary(track))
+          registryMC.fill(HIST("primProtonITS_MC"), track.pt());
 
         // Primary Tracks
         if (passedTrackSelectionTpcPrimary(track) && passedPionSelection(track))

@@ -20,8 +20,10 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
@@ -124,7 +126,6 @@ struct HfTaskDs {
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
-  HfHelper hfHelper;
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -353,7 +354,7 @@ struct HfTaskDs {
   bool isCandInSignalRegion(const CandDs& candidate, bool isDs)
   {
     bool const isKKPi = candidate.isSelDsToKKPi() >= selectionFlagDs;
-    float const invMass = isKKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    float const invMass = isKKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
     if (isDs && (invMass < massDsSignalMin || invMass > massDsSignalMax)) {
       return false;
     }
@@ -441,7 +442,7 @@ struct HfTaskDs {
     std::get<TH1Ptr>(histosPtr[dataType]["hPtProng1"])->Fill(candidate.ptProng1());
     std::get<TH1Ptr>(histosPtr[dataType]["hPtProng2"])->Fill(candidate.ptProng2());
     std::get<TH2Ptr>(histosPtr[dataType]["hEta"])->Fill(candidate.eta(), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hCt"])->Fill(hfHelper.ctDs(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCt"])->Fill(HfHelper::ctDs(candidate), pt);
     std::get<TH2Ptr>(histosPtr[dataType]["hDecayLength"])->Fill(candidate.decayLength(), pt);
     std::get<TH2Ptr>(histosPtr[dataType]["hDecayLengthXY"])->Fill(candidate.decayLengthXY(), pt);
     std::get<TH2Ptr>(histosPtr[dataType]["hNormalisedDecayLengthXY"])->Fill(candidate.decayLengthXYNormalised(), pt);
@@ -467,7 +468,7 @@ struct HfTaskDs {
   template <bool IsMc, typename Coll, HasDsMlInfo Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
-    auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
     auto pt = candidate.pt();
     auto mlScore = finalState == FinalState::KKPi ? candidate.mlProbDsToKKPi() : candidate.mlProbDsToPiKK();
 
@@ -512,7 +513,7 @@ struct HfTaskDs {
   template <bool IsMc, typename Coll, typename Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
-    auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
     auto pt = candidate.pt();
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
@@ -550,10 +551,10 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     fillSparse<IsMc, Coll>(candidate, dataType, FinalState::KKPi);
 
-    std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(HfHelper::cos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(HfHelper::absCos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(HfHelper::deltaMassPhiDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hMassKK"])->Fill(HfHelper::massKKPairDsToKKPi(candidate), pt);
   }
 
   /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
@@ -565,10 +566,10 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     fillSparse<IsMc, Coll>(candidate, dataType, FinalState::PiKK);
 
-    std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
-    std::get<TH2Ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(HfHelper::cos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(HfHelper::absCos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(HfHelper::deltaMassPhiDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hMassKK"])->Fill(HfHelper::massKKPairDsToPiKK(candidate), pt);
   }
 
   /// Fill MC histograms at reconstruction level
@@ -595,7 +596,7 @@ struct HfTaskDs {
       auto pt = candidate.pt(); // rec. level pT
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-        auto yCand = candidate.y(hfHelper.invMassDsToKKPi(candidate));
+        auto yCand = candidate.y(HfHelper::invMassDsToKKPi(candidate));
         if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
           return;
         }
@@ -613,7 +614,7 @@ struct HfTaskDs {
         }
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-        auto yCand = candidate.y(hfHelper.invMassDsToPiKK(candidate));
+        auto yCand = candidate.y(HfHelper::invMassDsToPiKK(candidate));
         if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
           return;
         }
@@ -637,14 +638,14 @@ struct HfTaskDs {
   void runDataAnalysisPerCandidate(CandDs const& candidate)
   {
     if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-      if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToKKPi(candidate))) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(candidate.y(HfHelper::invMassDsToKKPi(candidate))) > yCandRecoMax) {
         return;
       }
       fillHisto(candidate, DataType::Data);
       fillHistoKKPi<false, Coll>(candidate, DataType::Data);
     }
     if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-      if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToPiKK(candidate))) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(candidate.y(HfHelper::invMassDsToPiKK(candidate))) > yCandRecoMax) {
         return;
       }
       fillHisto(candidate, DataType::Data);
@@ -677,14 +678,14 @@ struct HfTaskDs {
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
-          if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToKKPi(candidate))) > yCandRecoMax) {
+          if (yCandRecoMax >= 0. && std::abs(candidate.y(HfHelper::invMassDsToKKPi(candidate))) > yCandRecoMax) {
             return;
           }
           fillHisto(candidate, DataType::McBkg);
           fillHistoKKPi<true, Coll>(candidate, DataType::McBkg);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
-          if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToPiKK(candidate))) > yCandRecoMax) {
+          if (yCandRecoMax >= 0. && std::abs(candidate.y(HfHelper::invMassDsToPiKK(candidate))) > yCandRecoMax) {
             return;
           }
           fillHisto(candidate, DataType::McBkg);

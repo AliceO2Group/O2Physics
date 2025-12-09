@@ -66,9 +66,37 @@ enum class System : uint32_t {
 };
 
 enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
-  kPAtPv, // momentum at primary vertex
-  kPt,    // transverse momentum
+  kPt = 0,    // transverse momentum
+  kPAtPv = 1, // momentum at primary vertex
+  kPTpc = 2,  // momentum at inner wall of tpc
 };
+
+enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
+  kAveragePdgMass = 0,
+  kReducedPdgMass = 1,
+  kMt4Vector = 2
+};
+
+enum class Particle : o2::aod::femtodatatypes::ParticleType {
+  kTrack,
+  kTwoTrackResonance,
+  kV0,
+  kKink,
+  kCascade,
+};
+
+constexpr bool hasMass(Particle p)
+{
+  switch (p) {
+    case Particle::kV0:
+    case Particle::kTwoTrackResonance:
+    case Particle::kKink:
+    case Particle::kCascade:
+      return true;
+    default:
+      return false;
+  }
+}
 
 enum class Track : o2::aod::femtodatatypes::TrackType {
   kPrimaryTrack,
@@ -85,7 +113,8 @@ enum class V0 : o2::aod::femtodatatypes::V0Type {
 };
 
 enum class Kink : o2::aod::femtodatatypes::KinkType {
-  kSigma
+  kSigma,
+  kSigmaPlus
 };
 
 enum class Cascade : o2::aod::femtodatatypes::CascadeType {

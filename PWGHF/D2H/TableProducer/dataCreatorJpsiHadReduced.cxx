@@ -21,13 +21,16 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -184,8 +187,6 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
-
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorEl selectorElectron;
@@ -220,6 +221,7 @@ struct HfDataCreatorJpsiHadReduced {
   o2::vertexing::DCAFitterN<4> df4;
 
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext& initContext)
   {
@@ -250,26 +252,26 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     // Set up the histogram registry
-    constexpr int kNBinsSelections = 2 + aod::SelectionStep::RecoPID;
-    std::string labels[kNBinsSelections];
+    constexpr int NumBinsSelections = 2 + aod::SelectionStep::RecoPID;
+    std::string labels[NumBinsSelections];
     labels[0] = "No selection";
     labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
     labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
     labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-    static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+    static const AxisSpec axisSelections = {NumBinsSelections, 0.5, NumBinsSelections + 0.5, ""};
     registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+    for (int iBin = 0; iBin < NumBinsSelections; ++iBin) {
       registry.get<TH2>(HIST("hSelectionsJpsi"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    constexpr int kNBinsEvents = NEvent;
-    std::string labelsEvents[kNBinsEvents];
+    constexpr int NumBinsEvents = NEvent;
+    std::string labelsEvents[NumBinsEvents];
     labelsEvents[Event::Processed] = "processed";
     labelsEvents[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
     labelsEvents[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
-    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+    static const AxisSpec axisEvents = {NumBinsEvents, 0.5, NumBinsEvents + 0.5, ""};
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
+    for (int iBin = 0; iBin < NumBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labelsEvents[iBin].data());
     }
 
@@ -335,7 +337,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
     if (doprocessJpsiKMc || doprocessJpsiPhiMc) {
       const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
       for (const DeviceSpec& device : workflows.devices) {
@@ -357,7 +359,7 @@ struct HfDataCreatorJpsiHadReduced {
   bool selectionTopol(const T1& candidate, const T2& trackPos, const T2& trackNeg)
   {
     auto candpT = candidate.pt();
-    auto candInvMass = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
+    auto candInvMass = runJpsiToee ? HfHelper::invMassJpsiToEE(candidate) : HfHelper::invMassJpsiToMuMu(candidate);
     auto pseudoPropDecLen = candidate.decayLengthXY() * candInvMass / candpT;
     auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
@@ -723,12 +725,16 @@ struct HfDataCreatorJpsiHadReduced {
                        TTracks const&,
                        PParticles const& particlesMc,
                        uint64_t const& indexCollisionMaxNumContrib,
-                       BBCs const&)
+                       BBCs const&,
+                       int& zvtxColl,
+                       int& sel8Coll,
+                       int& zvtxAndSel8Coll,
+                       int& zvtxAndSel8CollAndSoftTrig,
+                       int& allSelColl)
   {
 
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
-    float centrality = -1.f;
-    const auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    const auto hfRejMap = o2::hf_evsel::getEvSel<true, o2::hf_centrality::CentralityEstimator::None, BBCs>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
     if (skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
@@ -824,7 +830,7 @@ struct HfDataCreatorJpsiHadReduced {
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
       int const indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float const invMassJpsi = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
+      float const invMassJpsi = runJpsiToee ? HfHelper::invMassJpsiToEE(candidate) : HfHelper::invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
@@ -1049,9 +1055,9 @@ struct HfDataCreatorJpsiHadReduced {
       if (fillHfCandJpsi) { // fill Jpsi table only once per Jpsi candidate
         double invMassJpsi{0.};
         if (runJpsiToee) {
-          invMassJpsi = hfHelper.invMassJpsiToEE(candidate);
+          invMassJpsi = HfHelper::invMassJpsiToEE(candidate);
         } else {
-          invMassJpsi = hfHelper.invMassJpsiToMuMu(candidate);
+          invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
         }
         hfJpsi(trackPos.globalIndex(), trackNeg.globalIndex(),
                indexHfReducedCollision,
@@ -1123,12 +1129,10 @@ struct HfDataCreatorJpsiHadReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsJpsiThisColl = candsJpsi.sliceBy(candsJpsiPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, DecayChannel::BplusToJpsiK>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, DecayChannel::BplusToJpsiK>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1153,12 +1157,10 @@ struct HfDataCreatorJpsiHadReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsJpsiThisColl = candsJpsi.sliceBy(candsJpsiPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, DecayChannel::BsToJpsiPhi>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+      runDataCreation<false, DecayChannel::BsToJpsiPhi>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1185,14 +1187,12 @@ struct HfDataCreatorJpsiHadReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsJpsiThisColl = candsJpsi.sliceBy(candsJpsiPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, DecayChannel::BplusToJpsiK>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, DecayChannel::BplusToJpsiK>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1222,14 +1222,12 @@ struct HfDataCreatorJpsiHadReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-
       auto thisCollId = collision.globalIndex();
       auto candsJpsiThisColl = candsJpsi.sliceBy(candsJpsiPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(colPerMcCollision, collision.mcCollisionId());
       int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
-      runDataCreation<true, DecayChannel::BsToJpsiPhi>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
+      runDataCreation<true, DecayChannel::BsToJpsiPhi>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);

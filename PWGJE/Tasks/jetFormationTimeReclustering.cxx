@@ -305,9 +305,6 @@ struct FormationTimeReclustering {
     fastjet::PseudoJet parentSubJet2;
     bool softDropped = false;
     auto nsd = 0.0;
-    auto zg = -1.0;
-    auto rg = -1.0;
-    auto tg = -1.0;
 
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
       if (parentSubJet1.perp() < parentSubJet2.perp()) {
@@ -334,9 +331,9 @@ struct FormationTimeReclustering {
 
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (!softDropped) {
-          zg = z;
-          rg = theta;
-          tg = tau;
+          auto zg = z;
+          auto rg = theta;
+          auto tg = tau;
           ptgVec.push_back(jet.pt());
           thetagVec.push_back(rg);
           taugVec.push_back(tg);

@@ -21,10 +21,10 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -158,7 +158,6 @@ struct HfFemtoDreamProducer {
 
   FemtoDreamTrackSelection trackCuts;
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponseDplus;
   std::vector<float> outputMlDplus;

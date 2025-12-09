@@ -150,10 +150,10 @@ struct HfTreeCreatorXic0ToXiPiKf {
 
   void init(InitContext const&)
   {
-    registry.add("hPiFromXic0ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
-    registry.add("hPiFromCacsItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
-    registry.add("hV0Dau0ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
-    registry.add("hV0Dau1ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
+    registry.add("hPiFromXic0ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, -5.0f, 5.0f}}});
+    registry.add("hPiFromCacsItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, -5.0f, 5.0f}}});
+    registry.add("hV0Dau0ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, -5.0f, 5.0f}}});
+    registry.add("hV0Dau1ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, -5.0f, 5.0f}}});
   }
 
   template <bool UseCentrality, typename MyEventTableType, typename T>

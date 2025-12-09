@@ -12,11 +12,12 @@
 /// \author Luca Barioglio
 
 // O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
