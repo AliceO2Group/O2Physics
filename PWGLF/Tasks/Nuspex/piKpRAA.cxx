@@ -556,9 +556,9 @@ struct PiKpRAA {
       registry.add("MCclosure_PtMCKaVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("MCclosure_PtMCPrVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
 
-      registry.add("MCclosure_PtPiVsCent", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisCent});
-      registry.add("MCclosure_PtKaVsCent", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisCent});
-      registry.add("MCclosure_PtPrVsCent", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisCent});
+      registry.add("MCclosure_PtPiVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+      registry.add("MCclosure_PtKaVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+      registry.add("MCclosure_PtPrVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
     }
 
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
@@ -1508,8 +1508,8 @@ struct PiKpRAA {
 
           if (isPrimary) {
             if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-              registry.fill(HIST("PtPiVsCentMC_WithRecoEvt"), particle.pt(), centrality);
-              registry.fill(HIST("PtPiVsNchMC_WithRecoEvt"), particle.pt(), nChMC);
+              registry.fill(HIST("PtPiVsCentMC_WithRecoEvt"), particle.pt(), centrality); // Denominator of tracking efficiency
+              registry.fill(HIST("PtPiVsNchMC_WithRecoEvt"), particle.pt(), nChMC);       // Numerator of signal loss
             } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
               registry.fill(HIST("PtKaVsCentMC_WithRecoEvt"), particle.pt(), centrality);
               registry.fill(HIST("PtKaVsNchMC_WithRecoEvt"), particle.pt(), nChMC);
@@ -1716,16 +1716,16 @@ struct PiKpRAA {
           }
 
           if (isPi && !isKa && !isPr) {
-            registry.fill(HIST("PtPiVsCent_WithRecoEvt"), track.pt(), centrality);
-            registry.fill(HIST("MCclosure_PtPiVsCent"), track.pt(), centrality);
+            registry.fill(HIST("PtPiVsCent_WithRecoEvt"), track.pt(), centrality); // Numerator of tracking efficiency
+            registry.fill(HIST("MCclosure_PtPiVsNchMC"), track.pt(), nChMC);
           }
           if (isKa && !isPi && !isPr) {
             registry.fill(HIST("PtKaVsCent_WithRecoEvt"), track.pt(), centrality);
-            registry.fill(HIST("MCclosure_PtKaVsCent"), track.pt(), centrality);
+            registry.fill(HIST("MCclosure_PtKaVsNchMC"), track.pt(), nChMC);
           }
           if (isPr && !isPi && !isKa) {
             registry.fill(HIST("PtPrVsCent_WithRecoEvt"), track.pt(), centrality);
-            registry.fill(HIST("MCclosure_PtPrVsCent"), track.pt(), centrality);
+            registry.fill(HIST("MCclosure_PtPrVsNchMC"), track.pt(), nChMC);
           }
           registry.fill(HIST("PtResolution"), particle.pt(), (track.pt() - particle.pt()) / particle.pt());
         } // Loop over reconstructed tracks
@@ -1739,51 +1739,10 @@ struct PiKpRAA {
     //---------------------------
 
     //---------------------------
-    // To perform MC closure
-    // True Pt vs Generated Nch
-    //---------------------------
-    for (const auto& particle : mcParticles) {
-      if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
-        continue;
-
-      if (particle.pt() < v0Selections.minPt || particle.pt() > v0Selections.maxPt)
-        continue;
-
-      auto charge{0.};
-      // Get the MC particle
-      auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle != nullptr) {
-        charge = pdgParticle->Charge();
-      } else {
-        continue;
-      }
-
-      // Is it a charged particle?
-      if (std::abs(charge) < kMinCharge)
-        continue;
-
-      // Is it a primary particle?
-      bool isPrimary{true};
-      if (!particle.isPhysicalPrimary())
-        isPrimary = false;
-
-      if (isPrimary) {
-        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-          registry.fill(HIST("MCclosure_PtMCPiVsNchMC"), particle.pt(), nChMC);
-        } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-          registry.fill(HIST("MCclosure_PtMCKaVsNchMC"), particle.pt(), nChMC);
-        } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-          registry.fill(HIST("MCclosure_PtMCPrVsNchMC"), particle.pt(), nChMC);
-        } else {
-          continue;
-        }
-      }
-    } // Loop over generated particles per Gen Event 4 MC closure
-
-    //---------------------------
     // Generated Pt spectra of all INEL > 0 Generated evets
     // irrespective of whether there is a reconstructed collision
     // This is used for the denominator of the signal loss correction
+    // Also for MC closure: True Pt vs Generated Nch
     //---------------------------
     for (const auto& particle : mcParticles) {
       if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
@@ -1813,10 +1772,13 @@ struct PiKpRAA {
       if (isPrimary) {
         if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
           registry.fill(HIST("PtPiVsNchMC_AllGen"), particle.pt(), nChMC);
+          registry.fill(HIST("MCclosure_PtMCPiVsNchMC"), particle.pt(), nChMC);
         } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
           registry.fill(HIST("PtKaVsNchMC_AllGen"), particle.pt(), nChMC);
+          registry.fill(HIST("MCclosure_PtMCKaVsNchMC"), particle.pt(), nChMC);
         } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
           registry.fill(HIST("PtPrVsNchMC_AllGen"), particle.pt(), nChMC);
+          registry.fill(HIST("MCclosure_PtMCPrVsNchMC"), particle.pt(), nChMC);
         } else {
           continue;
         }
