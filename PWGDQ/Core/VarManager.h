@@ -27,9 +27,9 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/PID/PIDTOFParamService.h"
 
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -1311,7 +1311,7 @@ class VarManager : public TObject
     fgITSROFBorderMarginLow = marginLow;
     fgITSROFBorderMarginHigh = marginHigh;
   }
-  
+
   static void SetSORandEOR(uint64_t sor, uint64_t eor)
   {
     fgSOR = sor;
@@ -2267,17 +2267,17 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
   if (!values) {
     values = fgValues;
   }
-  //if constexpr (T::template contains<o2::aod::Collision>()) {
+  // if constexpr (T::template contains<o2::aod::Collision>()) {
   values[kTwoEvPosZ1] = ev1.posZ();
   values[kTwoEvPosZ2] = ev2.posZ();
   values[kTwoEvPosR1] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
-  values[kTwoEvPosR2] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());  
+  values[kTwoEvPosR2] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
   values[kTwoEvDeltaZ] = ev1.posZ() - ev2.posZ();
   values[kTwoEvDeltaX] = ev1.posX() - ev2.posX();
   values[kTwoEvDeltaY] = ev1.posY() - ev2.posY();
   //}
   values[kTwoEvPVcontrib1] = ev1.numContrib();
-  values[kTwoEvPVcontrib2] = ev2.numContrib();  
+  values[kTwoEvPVcontrib2] = ev2.numContrib();
   values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX] * values[kTwoEvDeltaX] + values[kTwoEvDeltaY] * values[kTwoEvDeltaY]);
 }
 
@@ -2880,7 +2880,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
     collPos[0] = collision.mcPosX();
     collPos[1] = collision.mcPosY();
     collPos[2] = collision.mcPosZ();
-  }  
+  }
 
   // displaced vertex is compued with decay product (track) and momentum of mother particle (MotherTrack)
   values[kMCVertexingLxy] = (collPos[0] - track.vx()) * (collPos[0] - track.vx()) +

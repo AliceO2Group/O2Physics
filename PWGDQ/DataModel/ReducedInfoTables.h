@@ -718,7 +718,7 @@ DECLARE_SOA_COLUMN(DeviationxyTrk1KF, deviationxyTrk1KF, float); //! 2D chi2 dev
 // pair information
 namespace reducedpair
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); 
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedTracks, "_0");                 //! Index to first prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedTracks, "_1");                 //! Index to second prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0");                        //! Index of first prong in Tracks table
@@ -818,7 +818,7 @@ DECLARE_SOA_TABLE_STAGED(Dielectrons, "RTDIELECTRON", //!
                          reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
                          reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
                          reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
-                         reducedpair::P<reducedpair::Pt, reducedpair::Eta>);                      
+                         reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
 
 DECLARE_SOA_TABLE(Dimuons, "AOD", "RTDIMUON", //!
                   o2::soa::Index<>, reducedpair::ReducedEventId,
