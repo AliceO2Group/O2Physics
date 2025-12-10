@@ -64,6 +64,7 @@ struct HfTaskSigmac {
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
   Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of sof-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
+  Configurable<float> deltaMassSigmacRecoMax{"deltaMassSigmacRecoMax", 1000, "Maximum allowed value for Sigmac deltaMass. Conceived to reduce the output size (i.e. reject background above a certain threshold)"};
 
   bool isMc{};
   static constexpr std::size_t NDaughters{2u};
@@ -375,6 +376,12 @@ struct HfTaskSigmac {
         massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
         massLc = HfHelper::invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
+
+        if (deltaMass > deltaMassSigmacRecoMax) {
+          /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+          continue;
+        }
+
         /// fill the histograms
         if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
@@ -458,6 +465,12 @@ struct HfTaskSigmac {
         massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
         massLc = HfHelper::invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
+
+        if (deltaMass > deltaMassSigmacRecoMax) {
+          /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+          continue;
+        }
+
         /// fill the histograms
         if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
@@ -879,6 +892,11 @@ struct HfTaskSigmac {
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
 
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
+
           /// Fill the histograms for reconstructed Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSc0Sig"), ptSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenSc0Sig"), ptGenSc, origin, channel);
@@ -963,6 +981,11 @@ struct HfTaskSigmac {
           massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
+
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
 
           /// Fill the histograms for reconstructed Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSc0Sig"), ptSc, origin, channel);
@@ -1086,6 +1109,11 @@ struct HfTaskSigmac {
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
 
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
+
           /// Fill the histograms for reconstructed Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtScPlusPlusSig"), ptSc, origin, channel);
           registry.fill(HIST("MC/reconstructed/hPtGenScPlusPlusSig"), ptGenSc, origin, channel);
@@ -1170,6 +1198,11 @@ struct HfTaskSigmac {
           massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
+
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
 
           /// Fill the histograms for reconstructed Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtScPlusPlusSig"), ptSc, origin, channel);
