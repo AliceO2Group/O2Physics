@@ -793,9 +793,8 @@ struct TableMaker {
     } // end loop over collisions
   }
 
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs,
-            typename TZdcs, typename TTrackAssoc, typename TTracks,
-            typename TFt0s, typename TFv0as, typename TFdds>
+  template <uint32_t TEventFillMap, typename TEvents, typename TBCs,
+            typename TZdcs, typename TFt0s, typename TFv0as, typename TFdds>
   void skimCollisions(TEvents const& collisions, TBCs const& bcs, TZdcs const& /*zdcs*/,
                       TFt0s const& ft0s, TFv0as const& fv0as, TFdds const& fdds)
   {
@@ -1503,7 +1502,7 @@ struct TableMaker {
     eventExtended.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
 
-    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, ft0s, fv0as, fdds);
+    skimCollisions<TEventFillMap>(collisions, bcs, zdcs, ft0s, fv0as, fdds);
     if (fCollIndexMap.size() == 0) {
       return;
     }
