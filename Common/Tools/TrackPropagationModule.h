@@ -385,7 +385,7 @@ class TrackPropagationModule
   // TVertex type: either math_utils::Point3D<value_t> or o2::dataformats::VertexBase
   // TDCA type: either dim2_t or o2::dataformats::DCA
   template <typename TTrackPar, typename TVertex, typename TDCA>
-  bool calculateDCA(TTrackPar trackPar, const TVertex& vtx, double b, TDCA* dca, double maxD)
+  bool calculateDCA(TTrackPar& trackPar, const TVertex& vtx, double b, TDCA* dca, double maxD)
   {
     // propagate track to DCA to the vertex
     double sn, cs, alp = trackPar.getAlpha();
