@@ -76,6 +76,15 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
       mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
       // Add CCDB handling logic here if needed
       LOG(info) << " --- Now retrieving LUT file from CCDB to: " << filename;
+      if (mCleanupDownloadedFile) { // Clean up the downloaded file if needed
+        bool status = loadTable(pdg, filename, forceReload);
+        if (std::remove(filename) != 0) {
+          LOG(warn) << " --- Could not remove temporary LUT file: " << filename;
+        } else {
+          LOG(info) << " --- Removed temporary LUT file: " << filename;
+        }
+        return status;
+      }
     } else { // File exists, proceed to load
       LOG(info) << " --- LUT file already exists: " << filename << ". Skipping download.";
       checkFile.close();
