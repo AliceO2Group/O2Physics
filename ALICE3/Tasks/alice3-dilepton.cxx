@@ -505,7 +505,7 @@ struct Alice3Dilepton {
         } else if constexpr (pairtype == PairType::kLSnn) {
           registry.fill(HIST("Generated/Pair/LSnn/Tried"), 1);
         }
-        
+
         if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary()) {
           continue;
         }
@@ -514,7 +514,7 @@ struct Alice3Dilepton {
         } else if constexpr (pairtype == PairType::kLSnn) {
           registry.fill(HIST("Generated/Pair/LSnn/Tried"), 2);
         }
-        
+
         if (!IsInAcceptance(t1) || !IsInAcceptance(t2)) {
           continue;
         }
@@ -523,10 +523,10 @@ struct Alice3Dilepton {
         } else if constexpr (pairtype == PairType::kLSnn) {
           registry.fill(HIST("Generated/Pair/LSnn/Tried"), 3);
         }
-        
+
         const int motherid = -1;
         const int hfee_type = IsHFLS(t1, t2, mcParticles);
-        
+
         if (requireHFEid.value && motherid < 0 && hfee_type == HFllType::kUndef) {
           continue;
         }
