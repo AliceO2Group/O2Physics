@@ -797,7 +797,6 @@ struct TableMaker {
             typename TZdcs, typename TTrackAssoc, typename TTracks,
             typename TFt0s, typename TFv0as, typename TFdds>
   void skimCollisions(TEvents const& collisions, TBCs const& bcs, TZdcs const& /*zdcs*/,
-                      TTrackAssoc const& trackAssocs, TTracks const& tracks,
                       TFt0s const& ft0s, TFv0as const& fv0as, TFdds const& fdds)
   {
     // Skim collisions
@@ -1504,7 +1503,7 @@ struct TableMaker {
     eventExtended.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
 
-    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, trackAssocs, tracksBarrel, ft0s, fv0as, fdds);
+    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, ft0s, fv0as, fdds);
     if (fCollIndexMap.size() == 0) {
       return;
     }
