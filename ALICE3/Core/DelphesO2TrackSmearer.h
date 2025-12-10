@@ -250,6 +250,7 @@ class TrackSmearer
   }
   void setdNdEta(float val) { mdNdEta = val; }                                 //;
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
+  void setCleanupDownloadedFile(bool val) { mCleanupDownloadedFile = val; }  //;
 
  protected:
   static constexpr unsigned int nLUTs = 9; // Number of LUT available
@@ -263,6 +264,7 @@ class TrackSmearer
 
  private:
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
+  bool mCleanupDownloadedFile = true;
 };
 
 } // namespace delphes
