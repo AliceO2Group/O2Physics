@@ -379,7 +379,7 @@ struct NucleitpcPbPb {
           float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
           if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
             continue;
-          if (tpcNsigma < correctionsigma && cfgmccorrectionhe4Require ) {
+          if (tpcNsigma < correctionsigma && cfgmccorrectionhe4Require) {
             double a = 0, b = 0, c = 0;
 
             int param = -1;
