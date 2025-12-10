@@ -39,11 +39,11 @@
 
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <vector>
-#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
