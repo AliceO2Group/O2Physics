@@ -277,6 +277,7 @@ struct cascadeFlow {
   Configurable<float> etaCascMCGen{"etaCascMCGen", 0.8, "etaCascMCGen"};
   Configurable<float> yCascMCGen{"yCascMCGen", 0.5, "yCascMCGen"};
 
+  struct : ConfigurableGroup {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
@@ -293,7 +294,10 @@ struct cascadeFlow {
   Configurable<std::string> acceptanceHistoNamePrimaryLambda{"acceptanceHistoNamePrimaryLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
   Configurable<std::string> resoPaths{"resoPath", "Users/c/chdemart/Resolution/", "Paths of resolution"};
   Configurable<std::string> resoHistoName{"resoHistoName", "hResoPerCentBinsV0A", "Histo name of resolution"};  
-
+  Configurable<std::string> centWeightPaths{"centWeightPath", "Users/c/chdemart/CentralityWeight/", "Paths of centrality weight"};
+  Configurable<std::string> centWeightHistoName{"centWeightHistoName", "hCentWeight", "Histo name of centrality weight"};
+  } ccdbConfigs; 
+  
   // ML inference
   Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{cascade_flow_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -304,6 +308,7 @@ struct cascadeFlow {
   // acceptance crrection
   Configurable<bool> applyAcceptanceCorrection{"applyAcceptanceCorrection", false, "apply acceptance correction"};
   Configurable<bool> applyResoCorrection{"applyResoCorrection", false, "apply resolution correction"};
+  Configurable<bool> applyCentWeightCorrection{"applyCentWeightCorrection", false, "apply centrality weight correction"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -577,6 +582,9 @@ struct cascadeFlow {
   //objects to use for resolution correction
   TH1F* hReso;
 
+  //objects to use for centrality weight
+  TH1F* hCentWeight;
+  
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -716,35 +724,35 @@ struct cascadeFlow {
   void initAcceptanceFromCCDB()
   {
     LOG(info) << "Loading acceptance from CCDB ";
-    TList* listAcceptanceXi = ccdb->get<TList>(acceptancePathsCCDBXi);
+    TList* listAcceptanceXi = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBXi);
     if (!listAcceptanceXi)
       LOG(fatal) << "Problem getting TList object with acceptance for Xi!";
-    TList* listAcceptanceOmega = ccdb->get<TList>(acceptancePathsCCDBOmega);
+    TList* listAcceptanceOmega = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBOmega);
     if (!listAcceptanceOmega)
       LOG(fatal) << "Problem getting TList object with acceptance for Omega!";
-    TList* listAcceptanceLambda = ccdb->get<TList>(acceptancePathsCCDBLambda);
+    TList* listAcceptanceLambda = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBLambda);
     if (!listAcceptanceLambda)
       LOG(fatal) << "Problem getting TList object with acceptance for Lambda!";
-    TList* listAcceptancePrimaryLambda = ccdb->get<TList>(acceptancePathsCCDBPrimaryLambda);
+    TList* listAcceptancePrimaryLambda = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBPrimaryLambda);
     if (!listAcceptancePrimaryLambda)
       LOG(fatal) << "Problem getting TList object with acceptance for Primary Lambda!";
 
-    hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNameCasc->data())));
     if (!hAcceptanceXi) {
       LOG(fatal) << "The histogram for Xi is not there!";
     }
     hAcceptanceXi->SetName("hAcceptanceXi");
-    hAcceptanceOmega = static_cast<TH2F*>(listAcceptanceOmega->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    hAcceptanceOmega = static_cast<TH2F*>(listAcceptanceOmega->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNameCasc->data())));
     if (!hAcceptanceOmega) {
       LOG(fatal) << "The histogram for omega is not there!";
     }
     hAcceptanceOmega->SetName("hAcceptanceOmega");
-    hAcceptanceLambda = static_cast<TH2F*>(listAcceptanceLambda->FindObject(Form("%s", acceptanceHistoNameLambda->data())));
+    hAcceptanceLambda = static_cast<TH2F*>(listAcceptanceLambda->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNameLambda->data())));
     if (!hAcceptanceLambda) {
       LOG(fatal) << "The histogram for Lambda is not there!";
     }
     hAcceptanceLambda->SetName("hAcceptanceLambda");
-    hAcceptancePrimaryLambda = static_cast<TH2F*>(listAcceptancePrimaryLambda->FindObject(Form("%s", acceptanceHistoNamePrimaryLambda->data())));
+    hAcceptancePrimaryLambda = static_cast<TH2F*>(listAcceptancePrimaryLambda->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNamePrimaryLambda->data())));
     if (!hAcceptancePrimaryLambda) {
       LOG(fatal) << "The histogram for Primary Lambda is not there!";
     }
@@ -754,16 +762,31 @@ struct cascadeFlow {
   void initResoFromCCDB()
   {
     LOG(info) << "Loading resolution from CCDB ";
-    TList* listReso = ccdb->get<TList>(resoPaths);
+    TList* listReso = ccdb->get<TList>(ccdbConfigs.resoPaths);
     if (!listReso)
       LOG(fatal) << "Problem getting TList object with resolution!";
 
-    hReso = static_cast<TH1F*>(listReso->FindObject(Form("%s", resoHistoName->data())));
+    hReso = static_cast<TH1F*>(listReso->FindObject(Form("%s", ccdbConfigs.resoHistoName->data())));
     if (!hReso) {
       LOG(fatal) << "The histogram for resolution is not there";
     }
     hReso->SetName("hReso");
     LOG(info) << "Resolution now loaded";
+  }
+
+  void initCentWeightFromCCDB()
+  {
+    LOG(info) << "Loading resolution from CCDB ";
+    TList* listCentWeight = ccdb->get<TList>(ccdbConfigs.centWeightPaths);
+    if (!listCentWeight)
+      LOG(fatal) << "Problem getting TList object with resolution!";
+
+    hCentWeight = static_cast<TH1F*>(listCentWeight->FindObject(Form("%s", ccdbConfigs.centWeightHistoName->data())));
+    if (!hCentWeight) {
+      LOG(fatal) << "The histogram for resolution is not there";
+    }
+    hCentWeight->SetName("hCentWeight");
+    LOG(info) << "Centrality weight now loaded";
   }
 
   void init(InitContext const&)
@@ -1009,30 +1032,37 @@ struct cascadeFlow {
       mlResponseXi.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       mlResponseOmega.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        mlResponseXi.setModelPathsCCDB(onnxFileNamesXi, ccdbApi, modelPathsCCDBXi, timestampCCDB);
-        mlResponseOmega.setModelPathsCCDB(onnxFileNamesOmega, ccdbApi, modelPathsCCDBOmega, timestampCCDB); // TODO: use different model for Xi and Omega
+      if (ccdbConfigs.loadModelsFromCCDB) {
+        ccdbApi.init(ccdbConfigs.ccdbUrl);
+        mlResponseXi.setModelPathsCCDB(ccdbConfigs.onnxFileNamesXi, ccdbApi, ccdbConfigs.modelPathsCCDBXi, ccdbConfigs.timestampCCDB);
+        mlResponseOmega.setModelPathsCCDB(ccdbConfigs.onnxFileNamesOmega, ccdbApi, ccdbConfigs.modelPathsCCDBOmega, ccdbConfigs.timestampCCDB); // TODO: use different model for Xi and Omega
       } else {
-        mlResponseXi.setModelPathsLocal(onnxFileNamesXi);
-        mlResponseOmega.setModelPathsLocal(onnxFileNamesOmega);
+        mlResponseXi.setModelPathsLocal(ccdbConfigs.onnxFileNamesXi);
+        mlResponseOmega.setModelPathsLocal(ccdbConfigs.onnxFileNamesOmega);
       }
       mlResponseXi.init();
       mlResponseOmega.init();
     }
     if (applyAcceptanceCorrection) {
-      ccdb->setURL(ccdbUrl);
+      ccdb->setURL(ccdbConfigs.ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
       initAcceptanceFromCCDB();
     }
     if (applyResoCorrection) {
-      ccdb->setURL(ccdbUrl);
+      ccdb->setURL(ccdbConfigs.ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
       initResoFromCCDB();
+    }
+    if (applyCentWeightCorrection) {
+      ccdb->setURL(ccdbConfigs.ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+      initCentWeightFromCCDB();
     }
   }
 
@@ -1900,7 +1930,12 @@ struct cascadeFlow {
       int centBin = hReso->FindBin(collisionCentrality);
       EPresolution = hReso->GetBinContent(centBin);
     }
-
+    double centWeight = 1;
+    if (applyCentWeightCorrection){
+      int centBin = hCentWeight->FindBin(collisionCentrality);
+      centWeight = hCentWeight->GetBinContent(centBin);
+    }
+    
     std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
 
@@ -2015,14 +2050,15 @@ struct cascadeFlow {
         if (fillingConfigs.isFillTHN_V2)
           histos.get<THn>(HIST("hLambdaV2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
         if (fillingConfigs.isFillTHN_Pz) {
-          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+	  //          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+	  histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda, centWeight);
         }
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
       }
       if (fillingConfigs.isFillTHNLambda_PzVsPsi) {
         if (fillingConfigs.isFillTHN_Pz)
-          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C);
+          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C, centWeight);
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
       }
