@@ -84,11 +84,11 @@ struct CreateEMEventPhoton {
   };
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
+  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  // Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -107,8 +107,8 @@ struct CreateEMEventPhoton {
   }
 
   int mRunNumber;
-  float dBz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // float dBz;
+  // Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   template <typename TBC>
   void initCCDB(TBC const& bc)
@@ -117,35 +117,35 @@ struct CreateEMEventPhoton {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (dBzInput > -990) {
-      dBz = dBzInput;
-      o2::parameters::GRPMagField grpmag;
-      if (std::fabs(dBz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (dBz / 5.0f));
-      }
-      mRunNumber = bc.runNumber();
-      return;
-    }
+    // // In case override, don't proceed, please - no CCDB access required
+    // if (dBzInput > -990) {
+    //   dBz = dBzInput;
+    //   o2::parameters::GRPMagField grpmag;
+    //   if (std::fabs(dBz) > 1e-5) {
+    //     grpmag.setL3Current(30000.f / (dBz / 5.0f));
+    //   }
+    //   mRunNumber = bc.runNumber();
+    //   return;
+    // }
 
-    auto run3GRPTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    }
+    // auto run3GRPTimestamp = bc.timestamp();
+    // o2::parameters::GRPObject* grpo = 0x0;
+    // o2::parameters::GRPMagField* grpmag = 0x0;
+    // if (!skipGRPOquery)
+    //   grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
+    // if (grpo) {
+    //   // Fetch magnetic field from ccdb for current collision
+    //   dBz = grpo->getNominalL3Field();
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
+    // } else {
+    //   grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
+    //   if (!grpmag) {
+    //     LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
+    //   }
+    //   // Fetch magnetic field from ccdb for current collision
+    //   dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
+    // }
     mRunNumber = bc.runNumber();
   }
 
@@ -165,7 +165,8 @@ struct CreateEMEventPhoton {
         }
       }
 
-      auto bc = collision.template foundBC_as<TBCs>();
+      // auto bc = collision.template foundBC_as<TBCs>();
+      auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
       initCCDB(bc);
 
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {

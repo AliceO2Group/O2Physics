@@ -52,9 +52,9 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod:
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
 
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
-using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
-using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
+// using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+// using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
+// using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
@@ -68,11 +68,12 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
-  Produces<o2::aod::EMSWTriggerBits> emswtbit;
-  Produces<o2::aod::EMSWTriggerInfos> emswtinfo;
-  Produces<o2::aod::EMSWTriggerATCounters> emswtATcounter;
-  Produces<o2::aod::EMSWTriggerTOICounters> emswtTOIcounter;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
+
+  // Produces<o2::aod::EMSWTriggerBits> emswtbit;
+  // Produces<o2::aod::EMSWTriggerInfos> emswtinfo;
+  // Produces<o2::aod::EMSWTriggerATCounters> emswtATcounter;
+  // Produces<o2::aod::EMSWTriggerTOICounters> emswtTOIcounter;
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -118,7 +119,8 @@ struct CreateEMEventDilepton {
       }
       registry.fill(HIST("hEventCounter"), 1);
 
-      auto bc = collision.template foundBC_as<TBCs>();
+      // auto bc = collision.template foundBC_as<TBCs>();
+      auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         int16_t posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
@@ -146,13 +148,13 @@ struct CreateEMEventDilepton {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
-          continue;
-        } else {
-          emswtbit(collision.swtaliastmp_raw());
-        }
-      }
+      // if constexpr (isTriggerAnalysis) {
+      //   if (collision.swtaliastmp_raw() == 0) {
+      //     continue;
+      //   } else {
+      //     emswtbit(collision.swtaliastmp_raw());
+      //   }
+      // }
 
       registry.fill(HIST("hEventCounter"), 2);
 
@@ -224,74 +226,74 @@ struct CreateEMEventDilepton {
 
   //---------- for data with swt ----------
 
-  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
-  {
-    skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
+  // void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
+  // {
+  //   skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
 
-    for (const auto& info : emswtinfostmp) {
-      if (mRunNumber != info.runNumber()) {
-        std::vector<uint64_t> scalers;
-        std::vector<uint64_t> selections;
-        std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
-        std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
-        emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
-        mRunNumber = info.runNumber();
-      }
-    }
-    for (const auto& counter : emswtATcounterstmp) {
-      emswtATcounter(counter.isAnalyzed_raw());
-    }
-    for (const auto& counter : emswtTOIcounterstmp) {
-      emswtTOIcounter(counter.isAnalyzedToI_raw());
-    }
-  }
-  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT, "process event info", false);
+  //   for (const auto& info : emswtinfostmp) {
+  //     if (mRunNumber != info.runNumber()) {
+  //       std::vector<uint64_t> scalers;
+  //       std::vector<uint64_t> selections;
+  //       std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
+  //       std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
+  //       emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
+  //       mRunNumber = info.runNumber();
+  //     }
+  //   }
+  //   for (const auto& counter : emswtATcounterstmp) {
+  //     emswtATcounter(counter.isAnalyzed_raw());
+  //   }
+  //   for (const auto& counter : emswtTOIcounterstmp) {
+  //     emswtTOIcounter(counter.isAnalyzedToI_raw());
+  //   }
+  // }
+  // PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT, "process event info", false);
 
-  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
-  {
-    skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
+  // void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
+  // {
+  //   skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
 
-    for (const auto& info : emswtinfostmp) {
-      if (mRunNumber != info.runNumber()) {
-        std::vector<uint64_t> scalers;
-        std::vector<uint64_t> selections;
-        std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
-        std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
-        emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
-        mRunNumber = info.runNumber();
-      }
-    }
-    for (const auto& counter : emswtATcounterstmp) {
-      emswtATcounter(counter.isAnalyzed_raw());
-    }
-    for (const auto& counter : emswtTOIcounterstmp) {
-      emswtTOIcounter(counter.isAnalyzedToI_raw());
-    }
-  }
-  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent, "process event info", false);
+  //   for (const auto& info : emswtinfostmp) {
+  //     if (mRunNumber != info.runNumber()) {
+  //       std::vector<uint64_t> scalers;
+  //       std::vector<uint64_t> selections;
+  //       std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
+  //       std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
+  //       emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
+  //       mRunNumber = info.runNumber();
+  //     }
+  //   }
+  //   for (const auto& counter : emswtATcounterstmp) {
+  //     emswtATcounter(counter.isAnalyzed_raw());
+  //   }
+  //   for (const auto& counter : emswtTOIcounterstmp) {
+  //     emswtTOIcounter(counter.isAnalyzedToI_raw());
+  //   }
+  // }
+  // PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent, "process event info", false);
 
-  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
-  {
-    skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+  // void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, aod::EMSWTriggerTOICountersTMP const& emswtTOIcounterstmp)
+  // {
+  //   skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
 
-    for (const auto& info : emswtinfostmp) {
-      if (mRunNumber != info.runNumber()) {
-        std::vector<uint64_t> scalers;
-        std::vector<uint64_t> selections;
-        std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
-        std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
-        emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
-        mRunNumber = info.runNumber();
-      }
-    }
-    for (const auto& counter : emswtATcounterstmp) {
-      emswtATcounter(counter.isAnalyzed_raw());
-    }
-    for (const auto& counter : emswtTOIcounterstmp) {
-      emswtTOIcounter(counter.isAnalyzedToI_raw());
-    }
-  }
-  PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent_Qvec, "process event info", false);
+  //   for (const auto& info : emswtinfostmp) {
+  //     if (mRunNumber != info.runNumber()) {
+  //       std::vector<uint64_t> scalers;
+  //       std::vector<uint64_t> selections;
+  //       std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
+  //       std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
+  //       emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
+  //       mRunNumber = info.runNumber();
+  //     }
+  //   }
+  //   for (const auto& counter : emswtATcounterstmp) {
+  //     emswtATcounter(counter.isAnalyzed_raw());
+  //   }
+  //   for (const auto& counter : emswtTOIcounterstmp) {
+  //     emswtTOIcounter(counter.isAnalyzedToI_raw());
+  //   }
+  // }
+  // PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent_Qvec, "process event info", false);
 
   //---------- for MC ----------
 

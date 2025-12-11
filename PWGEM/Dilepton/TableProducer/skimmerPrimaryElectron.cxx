@@ -704,109 +704,109 @@ struct skimmerPrimaryElectron {
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processRec_TTCA, "process reconstructed info only", false); // with TTCA
 
-  void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
-  {
-    stored_trackIds.reserve(tracks.size());
+  // void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  // {
+  //   stored_trackIds.reserve(tracks.size());
 
-    for (const auto& collision : collisions) {
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
+  //   for (const auto& collision : collisions) {
+  //     auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+  //     initCCDB(bc);
 
-      if (!collision.isSelected()) {
-        continue;
-      }
+  //     if (!collision.isSelected()) {
+  //       continue;
+  //     }
 
-      if (collision.swtaliastmp_raw() == 0) {
-        continue;
-      }
+  //     if (collision.swtaliastmp_raw() == 0) {
+  //       continue;
+  //     }
 
-      auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
-      for (const auto& track : tracks_per_coll) {
-        float probaEl = 1.0;
-        if (!checkTrack<false>(collision, track)) {
-          continue;
-        }
-        if (!isElectron(collision, track, probaEl)) {
-          continue;
-        }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
-        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
-      }
+  //     auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
+  //     for (const auto& track : tracks_per_coll) {
+  //       float probaEl = 1.0;
+  //       if (!checkTrack<false>(collision, track)) {
+  //         continue;
+  //       }
+  //       if (!isElectron(collision, track, probaEl)) {
+  //         continue;
+  //       }
+  //       mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+  //       multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
+  //     }
 
-    } // end of collision loop
+  //   } // end of collision loop
 
-    for (const auto& collision : collisions) {
-      int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      if (fillQAHistogram) {
-        fRegistry.fill(HIST("Track/hNe"), count_electrons);
-      }
-      if (count_electrons >= minNelectron) {
-        auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
-        for (auto it = range_electrons.first; it != range_electrons.second; it++) {
-          auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
-        }
-      }
-    } // end of collision loop
+  //   for (const auto& collision : collisions) {
+  //     int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
+  //     if (fillQAHistogram) {
+  //       fRegistry.fill(HIST("Track/hNe"), count_electrons);
+  //     }
+  //     if (count_electrons >= minNelectron) {
+  //       auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
+  //       for (auto it = range_electrons.first; it != range_electrons.second; it++) {
+  //         auto track = tracks.rawIteratorAt(it->second);
+  //         fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+  //       }
+  //     }
+  //   } // end of collision loop
 
-    mapProbEl.clear();
-    multiMapTracksPerCollision.clear();
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
-  }
-  PROCESS_SWITCH(skimmerPrimaryElectron, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
+  //   mapProbEl.clear();
+  //   multiMapTracksPerCollision.clear();
+  //   stored_trackIds.clear();
+  //   stored_trackIds.shrink_to_fit();
+  // }
+  // PROCESS_SWITCH(skimmerPrimaryElectron, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
 
-  void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
-  {
-    stored_trackIds.reserve(tracks.size() * 2);
+  // void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
+  // {
+  //   stored_trackIds.reserve(tracks.size() * 2);
 
-    for (const auto& collision : collisions) {
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
+  //   for (const auto& collision : collisions) {
+  //     auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+  //     initCCDB(bc);
 
-      if (!collision.isSelected()) {
-        continue;
-      }
-      if (collision.swtaliastmp_raw() == 0) {
-        continue;
-      }
+  //     if (!collision.isSelected()) {
+  //       continue;
+  //     }
+  //     if (collision.swtaliastmp_raw() == 0) {
+  //       continue;
+  //     }
 
-      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+  //     auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
-      for (const auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<MyTracks>();
-        float probaEl = 1.0;
-        if (!checkTrack<false>(collision, track)) {
-          continue;
-        }
-        if (!isElectron(collision, track, probaEl)) {
-          continue;
-        }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
-        multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
-      }
-    } // end of collision loop
+  //     for (const auto& trackId : trackIdsThisCollision) {
+  //       auto track = trackId.template track_as<MyTracks>();
+  //       float probaEl = 1.0;
+  //       if (!checkTrack<false>(collision, track)) {
+  //         continue;
+  //       }
+  //       if (!isElectron(collision, track, probaEl)) {
+  //         continue;
+  //       }
+  //       mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+  //       multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
+  //     }
+  //   } // end of collision loop
 
-    for (const auto& collision : collisions) {
-      int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
-      if (fillQAHistogram) {
-        fRegistry.fill(HIST("Track/hNe"), count_electrons);
-      }
-      if (count_electrons >= minNelectron) {
-        auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
-        for (auto it = range_electrons.first; it != range_electrons.second; it++) {
-          auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
-        }
-      }
-    } // end of collision loop
+  //   for (const auto& collision : collisions) {
+  //     int count_electrons = multiMapTracksPerCollision.count(collision.globalIndex());
+  //     if (fillQAHistogram) {
+  //       fRegistry.fill(HIST("Track/hNe"), count_electrons);
+  //     }
+  //     if (count_electrons >= minNelectron) {
+  //       auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
+  //       for (auto it = range_electrons.first; it != range_electrons.second; it++) {
+  //         auto track = tracks.rawIteratorAt(it->second);
+  //         fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+  //       }
+  //     }
+  //   } // end of collision loop
 
-    mapProbEl.clear();
-    multiMapTracksPerCollision.clear();
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
-  }
-  PROCESS_SWITCH(skimmerPrimaryElectron, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
+  //   mapProbEl.clear();
+  //   multiMapTracksPerCollision.clear();
+  //   stored_trackIds.clear();
+  //   stored_trackIds.shrink_to_fit();
+  // }
+  // PROCESS_SWITCH(skimmerPrimaryElectron, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
 
   // ---------- for MC ----------
 
