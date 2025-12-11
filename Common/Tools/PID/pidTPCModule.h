@@ -233,13 +233,13 @@ class pidTPCModule
     pidTPCopts = external_pidtpcopts;
 
     if (pidTPCopts.useCorrecteddEdx.value) {
-      LOGF(info, "***************************************************");
-      LOGF(info, " WARNING: YOU HAVE SWITCHED ON 'corrected dEdx!");
-      LOGF(info, " This mode is still in development and it is meant");
-      LOGF(info, " ONLY FOR EXPERTS at this time. Please switch ");
-      LOGF(info, " this option off UNLESS you are absolutely SURE");
-      LOGF(info, " of what you're doing! You've been warned!");
-      LOGF(info, "***************************************************");
+      LOGF(warning, "***************************************************");
+      LOGF(warning, " WARNING: YOU HAVE SWITCHED ON 'corrected dEdx!");
+      LOGF(warning, " This mode is still in development and it is meant");
+      LOGF(warning, " ONLY FOR EXPERTS at this time. Please switch ");
+      LOGF(warning, " this option off UNLESS you are absolutely SURE");
+      LOGF(warning, " of what you're doing! You've been warned!");
+      LOGF(warning, "***************************************************");
     }
 
     if (pidTPCopts.skipTPCOnly.value == -1) {
