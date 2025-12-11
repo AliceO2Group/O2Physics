@@ -41,8 +41,8 @@
 #include <TVector2.h>
 #include <TVector3.h>
 
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace std;
 using namespace o2;
