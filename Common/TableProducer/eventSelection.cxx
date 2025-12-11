@@ -287,9 +287,9 @@ struct BcSelectionTask {
         // first bc of the first orbit
         bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
         // duration of TF in bcs
-        nBCsPerTF = confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : confNumberOfOrbitsPerTF * nBCsPerOrbit;
+        nBCsPerTF = confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : static_cast<int64_t>(confNumberOfOrbitsPerTF) * nBCsPerOrbit;
         if (strLPMProductionTag == "LHC25f3") // temporary workaround for MC production LHC25f3 anchored to Pb-Pb 2023 apass5 (to be removed once the info is in ccdb)
-          nBCsPerTF = 8 * nBCsPerOrbit;
+          nBCsPerTF = static_cast<int64_t>(8) * nBCsPerOrbit;
       }
 
       // timestamp of the middle of the run used to access run-wise CCDB entries
