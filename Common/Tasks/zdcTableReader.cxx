@@ -139,16 +139,15 @@ struct ZDCLIAnalysis {
       auto timestamp = zdc.timestamp();
       // auto selectionBits = zdc.selectionBits();
 
-      if( enCalibZNA > 0.) { 
+      if (enCalibZNA > 0.) {
         zna *= enCalibZNA;
         znaADC *= enCalibZNA;
         znapm1 *= enCalibZNA;
         znapm2 *= enCalibZNA;
         znapm3 *= enCalibZNA;
         znapm4 *= enCalibZNA;
-
       }
-      if( enCalibZNC > 0.) { 
+      if (enCalibZNC > 0.) {
         znc *= enCalibZNC;
         zncADC *= enCalibZNC;
         zncpm1 *= enCalibZNC;
@@ -156,11 +155,11 @@ struct ZDCLIAnalysis {
         zncpm3 *= enCalibZNC;
         zncpm4 *= enCalibZNC;
       }
-      if( enCalibZPA > 0.) { 
+      if (enCalibZPA > 0.) {
         zpa *= enCalibZPA;
         zpaADC *= enCalibZPA;
       }
-      if( enCalibZPC > 0.) { 
+      if (enCalibZPC > 0.) {
         zpc *= enCalibZPC;
         zpcADC *= enCalibZPC;
       }
@@ -187,8 +186,8 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
       registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
       //
-      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25*(znapm1 + znapm2 + znapm3 + znapm4), zna);
-      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25*(zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
+      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
+      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
       //
       registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
       registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
@@ -207,12 +206,12 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
       registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
       //
-      if ( tStampOffset > timestamp ) {
+      if (tStampOffset > timestamp) {
         printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %llu \n\n", timestamp);
         return;
       }
-      float tsh = (timestamp/1000.) - (tStampOffset/1000.); // in hours
-      if ( tsh > tStampMax ) {
+      float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
+      if (tsh > tStampMax) {
         printf("\n\n MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n\n", tsh);
         return;
       }
