@@ -56,7 +56,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   Configurable<int> confNumberOfTracks{"confNumberOfTracks", 0, "Number of tracks"};
   Configurable<int> confNumberOfV0{"confNumberOfV0", 1, "Number of V0"};
   Configurable<int> confNumberOfCascades{"confNumberOfCascades", 0, "Number of Cascades"};
-   Configurable<int> confNumberOfReso{"confNumberOfV0", 1, "Number of Reso"};
+  Configurable<int> confNumberOfReso{"confNumberOfReso", 1, "Number of Reso"};
 
   /// Track selection
   Configurable<float> confPIDthrMom{"confPIDthrMom", 1.f, "Momentum threshold from which TPC and TOF are required for PID"};
@@ -84,26 +84,24 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   Configurable<float> confMinInvMassCascade{"confMinInvMassCascade", 1.2, "Minimum invariant mass of Cascade (particle)"};
   Configurable<float> confMaxInvMassCascade{"confMaxInvMassCascade", 1.5, "Maximum invariant mass of Cascade (particle)"};
 
-
-   struct : ConfigurableGroup { //set loosest cuts
+  struct : ConfigurableGroup { // set loosest cuts
     std::string prefix = std::string("Reso");
     Configurable<int> pdgCode{"pdgCode", 333, "PDG code of particle 2 Reso"};
 
     Configurable<float> confMinInvMassReso{"confMinInvMassReso", 0.86, "Minimum invariant mass of Reso (particle)"};
     Configurable<float> confMaxInvMassReso{"confMaxInvMassReso", 1.3, "Maximum invariant mass of Reso (particle)"};
 
+    Configurable<aod::femtodreamparticle::cutContainerType> daughPosCutBit{"daughPosCutBit", 2401446, "Selection bit for positive child of V02"}; // K+
+    Configurable<aod::femtodreamparticle::cutContainerType> daughPosTPCBit{"daughPosTPCBit", 4096, "PID TPC bit for positive child of V02"};
+    Configurable<aod::femtodreamparticle::cutContainerType> daughPosTPCTOFBit{"daughPosTPCTOFBit", 2048, "PID TOF bit for positive child of V02"};
+    Configurable<aod::femtodreamparticle::cutContainerType> daughNegCutBit{"daughNegCutBit", 2401445, "Selection bit for negative child of V02"}; // K-
+    Configurable<aod::femtodreamparticle::cutContainerType> daughNegMergedTPCBit{"daughNegMergedTPCBit", 16386, "PID TPC bit for negative child of V02"};
+    Configurable<aod::femtodreamparticle::cutContainerType> daughNegMergedTPCTOFBit{"daughNegMergedTPCTOFBit", 8194, "PID TOF bit for negative child of V02"};
 
-    Configurable<femtodreamparticle::cutContainerType> daughPosCutBit{"daughPosCutBit", 2401446, "Selection bit for positive child of V02"}; // K+
-    Configurable<femtodreamparticle::cutContainerType> daughPosTPCBit{"daughPosTPCBit", 4096, "PID TPC bit for positive child of V02"};
-    Configurable<femtodreamparticle::cutContainerType> daughPosTPCTOFBit{"daughPosTPCTOFBit", 2048, "PID TOF bit for positive child of V02"};
-    Configurable<femtodreamparticle::cutContainerType> daughNegCutBit{"daughNegCutBit", 2401445, "Selection bit for negative child of V02"}; // K-
-    Configurable<femtodreamparticle::cutContainerType> daughNegMergedTPCBit{"daughNegMergedTPCBit", 16386, "PID TPC bit for negative child of V02"};
-    Configurable<femtodreamparticle::cutContainerType> daughNegMergedTPCTOFBit{"daughNegMergedTPCTOFBit", 8194, "PID TOF bit for negative child of V02"};
-
-    Configurable<aod::femtodreamparticle::partType>  partType1{"partType1", kResoPosdaughTPC_NegdaughTPC};
-    Configurable<aod::femtodreamparticle::partType>  partType2{"partType2", kResoPosdaughTOF_NegdaughTOF};
-    Configurable<aod::femtodreamparticle::partType>  partType3{"partType3", kResoPosdaughTOF_NegdaughTPC};
-    Configurable<aod::femtodreamparticle::partType>  partType4{"partType4", kResoPosdaughTPC_NegdaughTOF};
+    Configurable<aod::femtodreamparticle::partType> partType1{"partType1", aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC};
+    Configurable<aod::femtodreamparticle::partType> partType2{"partType2", aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF};
+    Configurable<aod::femtodreamparticle::partType> partType3{"partType3", aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC};
+    Configurable<aod::femtodreamparticle::partType> partType4{"partType4", aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF};
 
   } Reso;
 
@@ -111,14 +109,13 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   Partition<aod::FDParticles> selectedV0s = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0));
   Partition<aod::FDParticles> selectedCascades = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade));
 
-  Partition<aod::FDParticles> selectedResos =  (ifnode(aod::femtodreamparticle::partType == uint8_t(Reso.partType1), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                ifnode(aod::femtodreamparticle::partType == uint8_t(Reso.partType1), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
-                                                ifnode(aod::femtodreamparticle::partType == uint8_t(Reso.partType1), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                ifnode(aod::femtodreamparticle::partType == uint8_t(Reso.partType1), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
-                                               (aod::femtodreamparticle::mLambda > Reso.confMinInvMassReso) &&
-                                               (aod::femtodreamparticle::mLambda < Reso.confMaxInvMassReso);
+  Partition<aod::FDParticles> selectedResos = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso.daughNegMergedTPCBit), false) ||
+                                               ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso.daughNegMergedTPCTOFBit), false) ||
+                                               ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso.daughNegMergedTPCBit), false) ||
+                                               ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso.daughNegMergedTPCTOFBit), false)) &&
+                                              (aod::femtodreamparticle::mLambda > Reso.confMinInvMassReso) &&
+                                              (aod::femtodreamparticle::mLambda < Reso.confMaxInvMassReso);
 
-  
   HistogramRegistry eventRegistry{"eventRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   static constexpr uint32_t kSignPlusMask = 1 << 1;
@@ -419,11 +416,10 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   }
   PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, processCollisionsWithNTracksAndNCascades, "Enable producing data with tracks and Cascades collisions for data", true);
 
-
   template <bool isMC, typename PartitionType, typename PartType>
-  void createSpecifiedDerivedDataV0Reso(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos,  PartType parts)
+  void createSpecifiedDerivedDataV0Reso(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos, PartType parts)
   {
-    //check v0's
+    // check v0's
     int v0Count = 0;
     int antiV0Count = 0;
     int ResoCount = 0; // no antiparticles
@@ -462,23 +458,21 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
       }
     }
 
-
     for (const auto& reso : groupSelectedResos) {
 
       if (confRequireBitmask) {
 
-        const auto& posChild = parts.iteratorAt(reso.index() - 2);
-        const auto& negChild = parts.iteratorAt(reso.index() - 1);
+        const auto& posresoChild = parts.iteratorAt(reso.index() - 2);
+        const auto& negresoChild = parts.iteratorAt(reso.index() - 1);
 
-        if (((posresoChild.cut() & Reso2.daughPosCutBit) == Reso2.daughPosCutBit) &&
-            ((negresoChild.cut() & Reso2.daughNegCutBit) == Reso2.daughNegCutBit)) {
+        if (((posresoChild.cut() & Reso.daughPosCutBit) == Reso.daughPosCutBit) &&
+            ((negresoChild.cut() & Reso.daughNegCutBit) == Reso.daughNegCutBit)) {
 
-          ResoCount++;   
+          ResoCount++;
         }
       } else {
-        ResoCount++;  
+        ResoCount++;
       }
-
     }
 
     std::vector<int> tmpIDtrack;
@@ -541,14 +535,14 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
                       femtoParticle.mAntiLambda());
         }
 
-        if ( (Reso.partType1 == femtoParticle.partType()) ||
-             (Reso.partType2 == femtoParticle.partType()) ||
-             (Reso.partType3 == femtoParticle.partType()) ||
-             (Reso.partType4 == femtoParticle.partType()) ) {
+        if ((aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTPC == femtoParticle.partType()) || // later as configurable
+            (aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTOF == femtoParticle.partType()) ||
+            (aod::femtodreamparticle::kResoPosdaughTOF_NegdaughTPC == femtoParticle.partType()) ||
+            (aod::femtodreamparticle::kResoPosdaughTPC_NegdaughTOF == femtoParticle.partType())) {
 
-            const int rowOfLastTrack = outputParts.lastIndex();               //überprüfen
-            std::vector<int> childIDs = {rowOfLastTrack - 1, rowOfLastTrack}; //überprüfen
-            outputParts(outputCollision.lastIndex(),
+          const int rowOfLastTrack = outputParts.lastIndex();               // überprüfen
+          std::vector<int> childIDs = {rowOfLastTrack - 1, rowOfLastTrack}; // überprüfen
+          outputParts(outputCollision.lastIndex(),
                       femtoParticle.pt(),
                       femtoParticle.eta(),
                       femtoParticle.phi(),
@@ -566,9 +560,8 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
     }
   }
 
-
-   void processCollisionsWithNV0AndNReso(const o2::aod::FDCollision& col,
-                                          const o2::aod::FDParticles& parts)
+  void processCollisionsWithNV0AndNReso(const o2::aod::FDCollision& col,
+                                        const o2::aod::FDParticles& parts)
   {
     eventRegistry.fill(HIST("hStatistiscs"), 0);
     auto thegroupSelectedResos = selectedResos->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -577,7 +570,6 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
     createSpecifiedDerivedDataV0Reso<false>(col, thegroupSelectedV0s, thegroupSelectedResos, parts);
   }
   PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, processCollisionsWithNV0AndNReso, "Enable producing data with pp collisions for data v0-reso", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
