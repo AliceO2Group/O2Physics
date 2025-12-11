@@ -51,7 +51,12 @@
 
 using namespace rapidjson;
 
-int runMassFitter(const std::string& configFileName = "config_massfitter.json");
+void runMassFitter(const std::string& configFileName = "config_massfitter.json");
+
+TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option = "read");
+
+template <typename T>
+T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName);
 
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
@@ -75,7 +80,7 @@ void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
 void divideCanvas(TCanvas* c, int nSliceVarBins);
 void setHistoStyle(TH1* histo, Color_t color = kBlack, Size_t markerSize = 1);
 
-int runMassFitter(const std::string& configFileName)
+void runMassFitter(const std::string& configFileName)
 {
   // load config
   FILE* configFile = fopen(configFileName.c_str(), "r");
@@ -231,17 +236,11 @@ int runMassFitter(const std::string& configFileName)
   const std::vector<std::string> plotLabels = {std::get<2>(particleTuple), collisionSystem.c_str()};
 
   // load inv-mass histograms
-  auto* inputFile = TFile::Open(inputFileName.c_str());
-  if ((inputFile == nullptr) || !inputFile->IsOpen()) {
-    return -1;
-  }
+  auto* inputFile = openFileWithNullptrCheck(inputFileName);
 
   TFile* inputFileRefl = nullptr;
   if (enableRefl) {
-    inputFileRefl = TFile::Open(reflFileName.c_str());
-    if ((inputFileRefl == nullptr) || !inputFileRefl->IsOpen()) {
-      return -1;
-    }
+    inputFileRefl = openFileWithNullptrCheck(reflFileName);
   }
 
   std::vector<TH1*> hMassSgn(nSliceVarBins);
@@ -250,32 +249,26 @@ int runMassFitter(const std::string& configFileName)
 
   for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
-      hMass[iSliceVar] = inputFile->Get<TH1>(inputHistoName[iSliceVar].data());
+      hMass[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFile, inputHistoName[iSliceVar]);
       if (enableRefl) {
-        hMassRefl[iSliceVar] = inputFileRefl->Get<TH1>(reflHistoName[iSliceVar].data());
-        if (hMassRefl[iSliceVar] == nullptr) {
-          throw std::runtime_error("ERROR: MC reflection histogram not found! Exit!");
-        }
-        hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
-        if (hMassSgn[iSliceVar] == nullptr) {
-          throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
-        }
-        hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
+        hMassRefl[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFileRefl, reflHistoName[iSliceVar]);
+        hMassSgn[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFileRefl, fdHistoName[iSliceVar]);
+        hMassSgn[iSliceVar]->Add(getObjectWithNullPtrCheck<TH1>(inputFileRefl, promptHistoName[iSliceVar]));
       }
     } else {
-      hMass[iSliceVar] = inputFile->Get<TH1>(promptHistoName[iSliceVar].data());
-      hMass[iSliceVar]->Add(inputFile->Get<TH1>(fdHistoName[iSliceVar].data()));
+      hMass[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFile, promptHistoName[iSliceVar]);
+      hMass[iSliceVar]->Add(getObjectWithNullPtrCheck<TH1>(inputFile, fdHistoName[iSliceVar]));
       if (includeSecPeak) {
-        hMass[iSliceVar]->Add(inputFile->Get<TH1>(promptSecPeakHistoName[iSliceVar].data()));
-        hMass[iSliceVar]->Add(inputFile->Get<TH1>(fdSecPeakHistoName[iSliceVar].data()));
+        hMass[iSliceVar]->Add(getObjectWithNullPtrCheck<TH1>(inputFile, promptSecPeakHistoName[iSliceVar]));
+        hMass[iSliceVar]->Add(getObjectWithNullPtrCheck<TH1>(inputFile, fdSecPeakHistoName[iSliceVar]));
       }
-    }
-    if (hMass[iSliceVar] == nullptr) {
-      throw std::runtime_error("ERROR: input histogram for fit not found! Exit!");
     }
     hMass[iSliceVar]->SetDirectory(nullptr);
   }
   inputFile->Close();
+  if (enableRefl) {
+    inputFileRefl->Close();
+  }
 
   // define output histos
   auto* hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield", nSliceVarBins, sliceVarLimits.data());
@@ -327,12 +320,9 @@ int runMassFitter(const std::string& configFileName)
     TH1* histToFix = nullptr;
     if (isFix) {
       if (fixManual.empty()) {
-        auto* fixInputFile = TFile::Open(fixFileName.data());
-        if (fixInputFile == nullptr) {
-          throw std::runtime_error("Cannot open file for fixed " + var);
-        }
+        auto* fixInputFile = openFileWithNullptrCheck(fixFileName);
         const std::string histName = "hRawYields" + var;
-        histToFix = fixInputFile->Get<TH1>(histName.data());
+        histToFix = getObjectWithNullPtrCheck<TH1>(fixInputFile, histName);
         histToFix->SetDirectory(nullptr);
         if (histToFix->GetNbinsX() != nSliceVarBins) {
           throw std::runtime_error("Different number of bins for this analysis and histo for fixed " + var);
@@ -568,7 +558,6 @@ int runMassFitter(const std::string& configFileName)
       canvasResiduals[iCanvas]->Print(Form("%s%s", outputFileNameResidual.Data(), printingBracket.c_str()), "pdf");
     }
   }
-  return 0;
 }
 
 void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
@@ -586,6 +575,25 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
   int nCols = std::ceil(std::sqrt(nSliceVarBins));
   int nRows = std::ceil(static_cast<double>(nSliceVarBins) / nCols);
   canvas->Divide(nCols, nRows);
+}
+
+TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option)
+{
+  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
+  if (file == nullptr || file->IsZombie()) {
+    throw std::runtime_error("openFileWithNullptrCheck(): Cannot open file " + fileName);
+  }
+  return file;
+}
+
+template <typename T>
+T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName)
+{
+  T* ptr = fileIn->Get<T>(objectName.c_str());
+  if (ptr == nullptr) {
+    throw std::runtime_error("getObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
+  }
+  return ptr;
 }
 
 int main(int argc, const char* argv[])
