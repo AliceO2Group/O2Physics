@@ -95,7 +95,7 @@ class TrackCascadePairCleaner : public BasePairCleaner
   {
     auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
     auto posDaughter = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
-    auto negDaughter = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
+    auto negDaughter = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
     return (this->isCleanTrackPair(bachelor, track) && this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
   }
 };
