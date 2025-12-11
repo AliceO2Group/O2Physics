@@ -105,7 +105,7 @@ struct SelectionStudyTable {
       if (std::abs(mcPart.pdgCode()) == 3334) {
         ptom.push_back(mcPart.pt());
       }
-      if (std::abs(mcPart.pdgCode()) == 3334) {
+      if (std::abs(mcPart.pdgCode()) == 3334) { // FIXME: The if condition is the same as the previous if condition.
         ptom.push_back(mcPart.pt());
       }
       // inclusive HF for now
