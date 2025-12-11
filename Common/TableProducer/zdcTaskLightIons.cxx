@@ -49,22 +49,25 @@ struct ZdcTaskLightIons {
   Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 2.5, "Max. ZN TDC cut value"};
   //
   // Event selections
-  Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx"};
+  Configurable<bool> cfgApplyZvtxCut{"cfgApplyZvtxCut", true, "Event selection: zVtx"};
+  Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx cut value"};
   Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
+  Configurable<bool> cfgIsTriggerTVX{"cfgIsTriggerTVX", true, "Event selection: is trigger TVX"};
   Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", true, "Event selection: do occupancy selection"};
   Configurable<float> cfgEvSelsMaxOccupancy{"cfgEvSelsMaxOccupancy", 10000, "Event selection: set max occupancy"};
   Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", true, "Event selection: no same bunch pileup cut"};
   Configurable<bool> cfgEvSelsIsGoodZvtxFT0vsPV{"cfgEvSelsIsGoodZvtxFT0vsPV", true, "Event selection: is good ZVTX FT0 vs PV"};
   Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", true, "Event selection: no collision in time range standard"};
-  Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", true, "Event selection: is vertex ITSTPC"};
+  Configurable<bool> cfgNoTimeFrameBorder{"cfgNoTimeFrameBorder", true, "Event selection: no time frame border"};
+  Configurable<bool> cfgNoITSROFFrameBorder{"cfgNoITSROFFrameBorder", true, "Event selection: no ITS ROF frame border"};
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
   //
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   enum SelectionCriteria {
     evSel_zvtx,
-    evSel_kIsTriggerTVX,
     evSel_sel8,
+    evSel_kIsTriggerTVX,
     evSel_occupancy,
     evSel_kNoSameBunchPileup,
     evSel_kIsGoodZvtxFT0vsPV,
@@ -104,7 +107,8 @@ struct ZdcTaskLightIons {
 
     registry.fill(HIST("hEventCount"), evSel_allEvents);
 
-    selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
+    if (cfgApplyZvtxCut)
+      selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_zvtx);
       registry.fill(HIST("hEventCount"), evSel_zvtx);
