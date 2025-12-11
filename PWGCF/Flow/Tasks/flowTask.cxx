@@ -92,7 +92,6 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
-  O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
   O2_DEFINE_CONFIGURABLE(cfgCutMaxIR, float, 50.0f, "maximum interaction rate (kHz)")
@@ -102,6 +101,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   // User configuration for ananlysis
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgUseNchCorrected, bool, false, "Use Nch-corrected for flow observables, you also need to set cfgUseNch to true")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
@@ -118,6 +118,7 @@ struct FlowTask {
   Configurable<GFWCorrConfigs> cfgUserPtVnCorrConfig{"cfgUserPtVnCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}"}, {"ChGap22", "ChGap32"}, {0, 0}, {3, 3}}, "Configurations for vn-pt correlations"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
   struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
     Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
     Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -888,9 +889,9 @@ struct FlowTask {
 
     // V0A T0A 5 sigma cut
     float sigma = 5.0;
-    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (cfgFuncParas.cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
-    if (cfgEvSelV0AT0ACut)
+    if (cfgFuncParas.cfgEvSelV0AT0ACut)
       registry.fill(HIST("hEventCountSpecific"), 11.5);
 
     return 1;
@@ -1175,6 +1176,9 @@ struct FlowTask {
         fillPtSums<kReco>(track, weff);
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+    if (cfgUseNch && cfgUseNchCorrected) {
+      independent = nTracksCorrected;
+    }
 
     if (cfgFuncParas.cfgDptDisEnable) {
       double meanPt = ptSum / weffEvent;
