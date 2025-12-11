@@ -44,6 +44,7 @@
 #include <stdexcept>
 #include <string> // std::string
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector> // std::vector
 
@@ -57,6 +58,16 @@ TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& 
 
 template <typename T>
 T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName);
+
+template <typename T>
+T readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue);
+
+template <typename T>
+T readJsonField(const Document& config, const std::string& fieldName);
+
+void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName);
+
+void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName);
 
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
@@ -94,13 +105,13 @@ void runMassFitter(const std::string& configFileName)
   config.ParseStream(is);
   fclose(configFile);
 
-  bool const isMc = config["IsMC"].GetBool();
-  bool const writeSignalPar = config["WriteSignalPar"].GetBool();
-  std::string const particleName = config["Particle"].GetString();
-  std::string const collisionSystem = config["CollisionSystem"].GetString();
-  std::string const inputFileName = config["InFileName"].GetString();
-  std::string const reflFileName = config["ReflFileName"].GetString();
-  TString outputFileName = config["OutFileName"].GetString();
+  bool const isMc = readJsonField<bool>(config, "IsMC");
+  bool const writeSignalPar = readJsonField<bool>(config, "WriteSignalPar", true);
+  std::string const particleName = readJsonField<std::string>(config, "Particle");
+  std::string const collisionSystem = readJsonField<std::string>(config, "CollisionSystem", "");
+  std::string const inputFileName = readJsonField<std::string>(config, "InFileName");
+  std::string const reflFileName = readJsonField<std::string>(config, "ReflFileName", "");
+  TString outputFileName = readJsonField<std::string>(config, "OutFileName", "mInvFit.root");
 
   std::vector<std::string> inputHistoName;
   std::vector<std::string> promptHistoName;
@@ -594,6 +605,70 @@ T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName)
     throw std::runtime_error("getObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
   }
   return ptr;
+}
+
+template <typename T>
+T getJsonValue(const Value& value)
+{
+  if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+    return value.GetString();
+  } else if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+    return value.GetBool();
+  } else if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+    return value.GetInt();
+  } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+    return value.GetDouble();
+  }
+  throw std::runtime_error("getJsonValue(): unsupported type!");
+  return T();
+}
+
+template <typename T>
+T readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue)
+{
+  if (!config.HasMember(fieldName.c_str())) {
+    return defaultValue;
+  }
+  const auto& value = config[fieldName.c_str()];
+  return getJsonValue<T>(value);
+}
+
+template <typename T>
+T readJsonField(const Document& config, const std::string& fieldName)
+{
+  if (!config.HasMember(fieldName.c_str())) {
+    throw std::runtime_error("readJsonField(): missing field " + fieldName);
+  }
+  return readJsonField<T>(config, fieldName, T());
+}
+
+void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName)
+{
+  if (!vec.empty()) {
+    throw std::runtime_error("readJsonVectorValues(): vector is not empty!");
+  }
+  if (config.HasMember(fieldName.c_str())) {
+    const Value& jsonArray = config[fieldName.c_str()];
+    readArray(jsonArray, vec);
+  }
+}
+
+void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName)
+{
+  if (!vec.empty()) {
+    throw std::runtime_error("readJsonVectorHistogram(): vector is not empty!");
+  }
+  const auto fileName = readJsonField<std::string>(config, fileNameFieldName);
+  const auto histoName = readJsonField<std::string>(config, histoNameFieldName);
+  if (fileName.empty() || histoName.empty()) {
+    return;
+  }
+  TFile* inputFile = openFileWithNullptrCheck(fileName);
+  TH1* histo = getObjectWithNullPtrCheck<TH1>(inputFile, histoName);
+  for (int iBin = 1; iBin <= histo->GetNbinsX(); iBin++) {
+    vec.push_back(histo->GetBinContent(iBin));
+  }
+  inputFile->Close();
 }
 
 int main(int argc, const char* argv[])
