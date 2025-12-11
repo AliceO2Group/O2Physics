@@ -584,11 +584,8 @@ struct HfEventSelectionMc {
 
     /// RCT condition
     if (requireGoodRct) {
-      for (auto const& collision : collSlice) {
-        if (!rctChecker.checkTable(collision)) {
-          SETBIT(rejectionMask, EventRejection::Rct);
-          break;
-        }
+      if (!rctChecker.checkTable(bc)) {
+        SETBIT(rejectionMask, EventRejection::Rct);
       }
     }
     /// Sel8 trigger selection
