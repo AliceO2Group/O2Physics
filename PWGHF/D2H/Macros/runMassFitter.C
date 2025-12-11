@@ -38,15 +38,15 @@
 #include <RtypesCore.h>
 
 #include <cmath>
-#include <cstdio> // for fclose
+#include <cstdio>
 #include <functional>
 #include <map>
 #include <stdexcept>
-#include <string> // std::string
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector> // std::vector
+#include <vector>
 
 #endif
 
@@ -65,30 +65,13 @@ T readJsonField(const Document& config, const std::string& fieldName, const T& d
 template <typename T>
 T readJsonField(const Document& config, const std::string& fieldName);
 
-void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName);
+template <typename T>
+void readJsonVector(std::vector<T>& vec, const Document& config, const std::string& fieldName, bool isRequired = false);
 
 void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName);
 
-template <typename ValueType>
-void readArray(const Value& jsonArray, std::vector<ValueType>& output)
-{
-  for (const auto* it = jsonArray.Begin(); it != jsonArray.End(); it++) {
-    auto value = it->template Get<ValueType>();
-    output.emplace_back(value);
-  }
-}
-
-void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
-{
-  size_t const arrayLength = jsonArray.Size();
-  for (size_t i = 0; i < arrayLength; i++) {
-    if (jsonArray[i].IsString()) {
-      output.emplace_back(jsonArray[i].GetString());
-    }
-  }
-}
-
 void divideCanvas(TCanvas* c, int nSliceVarBins);
+
 void setHistoStyle(TH1* histo, Color_t color = kBlack, Size_t markerSize = 1);
 
 void runMassFitter(const std::string& configFileName)
@@ -119,8 +102,6 @@ void runMassFitter(const std::string& configFileName)
   std::vector<std::string> reflHistoName;
   std::vector<std::string> promptSecPeakHistoName;
   std::vector<std::string> fdSecPeakHistoName;
-  TString sliceVarName;
-  TString sliceVarUnit;
   std::vector<double> sliceVarMin;
   std::vector<double> sliceVarMax;
   std::vector<double> massMin;
@@ -133,79 +114,49 @@ void runMassFitter(const std::string& configFileName)
   std::vector<int> bkgFuncConfig;
   std::vector<int> sgnFuncConfig;
 
-  const Value& inputHistoNameValue = config["InputHistoName"];
-  parseStringArray(inputHistoNameValue, inputHistoName);
+  readJsonVector(inputHistoName, config, "InputHistoName", true);
+  readJsonVector(promptHistoName, config, "PromptHistoName");
+  readJsonVector(fdHistoName, config, "FDHistoName");
+  readJsonVector(reflHistoName, config, "ReflHistoName");
+  readJsonVector(promptSecPeakHistoName, config, "PromptSecPeakHistoName");
+  readJsonVector(fdSecPeakHistoName, config, "FDSecPeakHistoName");
 
-  const Value& promptHistoNameValue = config["PromptHistoName"];
-  parseStringArray(promptHistoNameValue, promptHistoName);
+  const bool fixMean = readJsonField<bool>(config, "FixMean", false);
+  const std::string meanFile = readJsonField<std::string>(config, "MeanFile", "");
+  readJsonVector(fixMeanManual, config, "FixMeanManual");
 
-  const Value& fdHistoNameValue = config["FDHistoName"];
-  parseStringArray(fdHistoNameValue, fdHistoName);
+  const bool fixSigma = readJsonField<bool>(config, "FixSigma", false);
+  const std::string sigmaFile = readJsonField<std::string>(config, "SigmaFile", "");
+  readJsonVector(fixSigmaManual, config, "FixSigmaManual");
 
-  const Value& reflHistoNameValue = config["ReflHistoName"];
-  parseStringArray(reflHistoNameValue, reflHistoName);
+  const bool fixSecondSigma = readJsonField<bool>(config, "FixSecondSigma", false);
+  const std::string secondSigmaFile = readJsonField<std::string>(config, "SecondSigmaFile", "");
+  readJsonVector(fixSecondSigmaManual, config, "FixSecondSigmaManual");
 
-  const Value& promptSecPeakHistoNameValue = config["PromptSecPeakHistoName"];
-  parseStringArray(promptSecPeakHistoNameValue, promptSecPeakHistoName);
+  const bool fixFracDoubleGaus = readJsonField<bool>(config, "FixFracDoubleGaus", false);
+  const std::string fracDoubleGausFile = readJsonField<std::string>(config, "FracDoubleGausFile", "");
+  readJsonVector(fixFracDoubleGausManual, config, "FixFracDoubleGausManual");
 
-  const Value& fdSecPeakHistoNameValue = config["FDSecPeakHistoName"];
-  parseStringArray(fdSecPeakHistoNameValue, fdSecPeakHistoName);
+  const TString sliceVarName = readJsonField<std::string>(config, "SliceVarName");
+  const TString sliceVarUnit = readJsonField<std::string>(config, "SliceVarUnit");
 
-  const bool fixMean = config["FixMean"].GetBool();
-  const std::string meanFile = config["MeanFile"].GetString();
+  readJsonVector(sliceVarMin, config, "SliceVarMin", true);
+  readJsonVector(sliceVarMax, config, "SliceVarMax", true);
 
-  const Value& fixMeanManualValue = config["FixMeanManual"];
-  readArray(fixMeanManualValue, fixMeanManual);
+  readJsonVector(massMin, config, "MassMin", true);
+  readJsonVector(massMax, config, "MassMax", true);
 
-  const bool fixSigma = config["FixSigma"].GetBool();
-  const std::string sigmaFile = config["SigmaFile"].GetString();
+  readJsonVector(nRebin, config, "Rebin", true);
 
-  const Value& fixSigmaManualValue = config["FixSigmaManual"];
-  readArray(fixSigmaManualValue, fixSigmaManual);
+  bool const includeSecPeak = readJsonField<bool>(config, "InclSecPeak", false);
+  bool const useLikelihood = readJsonField<bool>(config, "UseLikelihood");
 
-  const bool fixSecondSigma = config["FixSecondSigma"].GetBool();
-  const std::string secondSigmaFile = config["SecondSigmaFile"].GetString();
+  readJsonVector(bkgFuncConfig, config, "BkgFunc", true);
+  readJsonVector(sgnFuncConfig, config, "SgnFunc", true);
 
-  const Value& fixSecondSigmaManualValue = config["FixSecondSigmaManual"];
-  readArray(fixSecondSigmaManualValue, fixSecondSigmaManual);
-
-  const bool fixFracDoubleGaus = config["FixFracDoubleGaus"].GetBool();
-  const std::string fracDoubleGausFile = config["FracDoubleGausFile"].GetString();
-
-  const Value& fixFracDoubleGausManualValue = config["FixFracDoubleGausManual"];
-  readArray(fixFracDoubleGausManualValue, fixFracDoubleGausManual);
-
-  sliceVarName = config["SliceVarName"].GetString();
-  sliceVarUnit = config["SliceVarUnit"].GetString();
-
-  const Value& sliceVarMinValue = config["SliceVarMin"];
-  readArray(sliceVarMinValue, sliceVarMin);
-
-  const Value& sliceVarMaxValue = config["SliceVarMax"];
-  readArray(sliceVarMaxValue, sliceVarMax);
-
-  const Value& massMinValue = config["MassMin"];
-  readArray(massMinValue, massMin);
-
-  const Value& massMaxValue = config["MassMax"];
-  readArray(massMaxValue, massMax);
-
-  const Value& rebinValue = config["Rebin"];
-  readArray(rebinValue, nRebin);
-
-  bool const includeSecPeak = config["InclSecPeak"].GetBool();
-  bool const useLikelihood = config["UseLikelihood"].GetBool();
-
-  const Value& bkgFuncValue = config["BkgFunc"];
-  readArray(bkgFuncValue, bkgFuncConfig);
-
-  const Value& sgnFuncValue = config["SgnFunc"];
-  readArray(sgnFuncValue, sgnFuncConfig);
-
-  const bool enableRefl = config["EnableRefl"].GetBool();
-
-  const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
-  const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+  const bool enableRefl = readJsonField<bool>(config, "EnableRefl", false);
+  const bool drawBgPrefit = readJsonField<bool>(config, "drawBgPrefit", true);
+  const bool highlightPeakRegion = readJsonField<bool>(config, "highlightPeakRegion", true);
 
   const int nSliceVarBins = static_cast<int>(sliceVarMin.size());
   std::vector<int> bkgFunc(nSliceVarBins);
@@ -642,14 +593,19 @@ T readJsonField(const Document& config, const std::string& fieldName)
   return readJsonField<T>(config, fieldName, T());
 }
 
-void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName)
+template <typename T>
+void readJsonVector(std::vector<T>& vec, const Document& config, const std::string& fieldName, const bool isRequired)
 {
   if (!vec.empty()) {
-    throw std::runtime_error("readJsonVectorValues(): vector is not empty!");
+    throw std::runtime_error("readJsonVector(): vector is not empty!");
   }
   if (config.HasMember(fieldName.c_str())) {
     const Value& jsonArray = config[fieldName.c_str()];
-    readArray(jsonArray, vec);
+    for (auto it = jsonArray.Begin(); it != jsonArray.End(); it++) {
+      vec.push_back(getJsonValue<T>(*it));
+    }
+  } else if (isRequired) {
+    throw std::runtime_error("readJsonVector(): missing required field " + fieldName);
   }
 }
 
