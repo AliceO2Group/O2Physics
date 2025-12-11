@@ -540,7 +540,7 @@ class pidTPCModule
     constexpr int ExpectedInputDimensionsNNV3 = 8;
     constexpr auto NetworkVersionV2 = "2";
     constexpr auto NetworkVersionV3 = "3";
-    for (int i = 0; i < NParticleTypes; i++) { // Loop over particle number for which network correction is used
+    for (int j = 0; j < NParticleTypes; j++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
           continue;
@@ -553,7 +553,7 @@ class pidTPCModule
         track_properties[counter_track_props] = trk.tpcInnerParam();
         track_properties[counter_track_props + 1] = trk.tgl();
         track_properties[counter_track_props + 2] = trk.signed1Pt();
-        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[j];
         track_properties[counter_track_props + 4] = trk.has_collision() ? mults[trk.collisionId()] / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
@@ -583,9 +583,9 @@ class pidTPCModule
       float* output_network = network.evalModel(track_properties);
       auto stop_network_eval = std::chrono::high_resolution_clock::now();
       duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
-        for (int j = 0; j < output_dimensions; j++) {
-          network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+      for (uint64_t k = 0; k < prediction_size; k += output_dimensions) {
+        for (int l = 0; l < output_dimensions; l++) {
+          network_prediction[k + l + prediction_size * loop_counter] = output_network[k + l];
         }
       }
 
