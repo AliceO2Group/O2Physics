@@ -206,15 +206,15 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
       registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
       //
-      if (tStampOffset > timestamp) {
+      /*if (tStampOffset > timestamp) {
         printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %llu \n\n", timestamp);
         return;
-      }
+      }*/
       float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
-      if (tsh > tStampMax) {
+      /*if (tsh > tStampMax) {
         printf("\n\n MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n\n", tsh);
         return;
-      }
+      }*/
       registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(tsh, zna);
       registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(tsh, znc);
       registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(tsh, zpa);
