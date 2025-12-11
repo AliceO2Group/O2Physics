@@ -291,6 +291,8 @@ struct cascadeFlow {
   Configurable<std::string> acceptanceHistoNameCasc{"acceptanceHistoNameCasc", "histoCos2ThetaNoFit2D", "Histo name of acceptance on CCDB"};
   Configurable<std::string> acceptanceHistoNameLambda{"acceptanceHistoNameLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
   Configurable<std::string> acceptanceHistoNamePrimaryLambda{"acceptanceHistoNamePrimaryLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
+  Configurable<std::string> resoPaths{"resoPath", "Users/c/chdemart/Resolution/", "Paths of resolution"};
+  Configurable<std::string> resoHistoName{"resoHistoName", "hResoPerCentBinsV0A", "Histo name of resolution"};  
 
   // ML inference
   Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
@@ -301,6 +303,7 @@ struct cascadeFlow {
 
   // acceptance crrection
   Configurable<bool> applyAcceptanceCorrection{"applyAcceptanceCorrection", false, "apply acceptance correction"};
+  Configurable<bool> applyResoCorrection{"applyResoCorrection", false, "apply resolution correction"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -571,6 +574,9 @@ struct cascadeFlow {
   TH2F* hAcceptanceLambda;
   TH2F* hAcceptancePrimaryLambda;
 
+  //objects to use for resolution correction
+  TH1F* hReso;
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -744,6 +750,20 @@ struct cascadeFlow {
     }
     hAcceptancePrimaryLambda->SetName("hAcceptancePrimaryLambda");
     LOG(info) << "Acceptance now loaded";
+  }
+  void initResoFromCCDB()
+  {
+    LOG(info) << "Loading resolution from CCDB ";
+    TList* listReso = ccdb->get<TList>(resoPaths);
+    if (!listReso)
+      LOG(fatal) << "Problem getting TList object with resolution!";
+
+    hReso = static_cast<TH1F*>(listReso->FindObject(Form("%s", resoHistoName->data())));
+    if (!hReso) {
+      LOG(fatal) << "The histogram for resolution is not there";
+    }
+    hReso->SetName("hReso");
+    LOG(info) << "Resolution now loaded";
   }
 
   void init(InitContext const&)
@@ -1006,6 +1026,13 @@ struct cascadeFlow {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
       initAcceptanceFromCCDB();
+    }
+    if (applyResoCorrection) {
+      ccdb->setURL(ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+      initResoFromCCDB();
     }
   }
 
@@ -1868,6 +1895,12 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0ATPCC"), eventplaneVecT0A.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0A()), collisionCentrality);
     resolution.fill(HIST("QVectorsNormT0ATPCA"), eventplaneVecT0A.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0A()), collisionCentrality);
 
+    double EPresolution = 1;
+    if (applyResoCorrection){
+      int centBin = hReso->FindBin(collisionCentrality);
+      EPresolution = hReso->GetBinContent(centBin);
+    }
+
     std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
 
@@ -1952,7 +1985,7 @@ struct cascadeFlow {
       // acceptance values if requested
       double meanCos2ThetaProtonFromLambda = 1;
       if (applyAcceptanceCorrection) {
-        int bin2DLambda = hAcceptanceLambda->FindBin(v0.pt(), v0.eta());
+        int bin2DLambda = hAcceptancePrimaryLambda->FindBin(v0.pt(), v0.eta());
         meanCos2ThetaProtonFromLambda = hAcceptancePrimaryLambda->GetBinContent(bin2DLambda);
       }
 
@@ -1960,17 +1993,17 @@ struct cascadeFlow {
       double cos2ThetaLambda = 0;
       double cosThetaLambda = 0;
       if (chargeIndex == 0) {
-        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
-        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
       } else if (chargeIndex == 1) {
-        pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda / EPresolution;
         cos2ThetaLambda = cosThetaStarProton[1] * cosThetaStarProton[1];
-        cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+        cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda / EPresolution;
       } else { // I treat these bkg candidates as Lambdas for the purpose of calculating Pz
-        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
-        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
       }
 
       histos.fill(HIST("hv2CEPvsFT0C"), collisionCentrality, v2CEP);
