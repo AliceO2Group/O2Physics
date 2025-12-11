@@ -142,7 +142,7 @@ struct JetBackgroundAnalysis {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"),centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     // removing the leading jet from the random cone
     if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
@@ -259,5 +259,5 @@ struct JetBackgroundAnalysis {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
 { 
-  return WorkflowSpec{adaptAnalysisTask<JetBackgroundAnalysis>(cfgc)}; 
+  return WorkflowSpec{adaptAnalysisTask<JetBackgroundAnalysis>(cfgc)};
 }
