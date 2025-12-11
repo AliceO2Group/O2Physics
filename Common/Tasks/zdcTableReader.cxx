@@ -58,11 +58,11 @@ struct ZDCLIAnalysis {
 
   void init(InitContext const&)
   {
-    registry.add("hZNApmc", "ZNApmc; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -10.5, MaxZN}}});
-    registry.add("hZPApmc", "ZPApmc; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -10.5, MaxZP}}});
-    registry.add("hZNCpmc", "ZNCpmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -10.5, MaxZN}}});
-    registry.add("hZPCpmc", "ZPCpmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -10.5, MaxZP}}});
-    registry.add("hZEM", "ZEM; ZEM1+ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -10.5, MaxZEM}}});
+    registry.add("hZNApmc", "ZNApmc; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -0.5, MaxZN}}});
+    registry.add("hZPApmc", "ZPApmc; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZP}}});
+    registry.add("hZNCpmc", "ZNCpmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -0.5, MaxZN}}});
+    registry.add("hZPCpmc", "ZPCpmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZP}}});
+    registry.add("hZEM", "ZEM; ZEM1+ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZEM}}});
     registry.add("hZNAamplvsADC", "ZNA amplitude vs. ADC; ZNA ADC; ZNA amplitude", {HistType::kTH2F, {{{nBinsAmpZN, -0.5, 3. * MaxZN}, {nBinsAmpZN, -0.5, MaxZN}}}});
     registry.add("hZNCamplvsADC", "ZNC amplitude vs. ADC; ZNC ADC; ZNC amplitude", {HistType::kTH2F, {{{nBinsAmpZN, -0.5, 3. * MaxZN}, {nBinsAmpZN, -0.5, MaxZN}}}});
     registry.add("hZPAamplvsADC", "ZPA amplitude vs. ADC; ZPA ADC; ZPA amplitude", {HistType::kTH2F, {{{nBinsAmpZP, -0.5, 3. * MaxZP}, {nBinsAmpZP, -0.5, MaxZP}}}});
@@ -76,10 +76,10 @@ struct ZDCLIAnalysis {
     registry.add("hZNCcvsZNCsum", "ZNC PMC vs PMsum; ZNCC ADC; ZNCsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
     registry.add("hZNAcvsZNAsum", "ZNA PMC vs PMsum; ZNAsum", {HistType::kTH2F, {{{nBinsADC, -0.5, 3. * MaxZN}, {nBinsADC, -0.5, 3. * MaxZN}}}});
     //
-    registry.add("hZNCvstdc", "ZNC vs tdc; ZNC amplitude; ZNC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZN, -0.5, MaxZN}}}});
-    registry.add("hZNAvstdc", "ZNA vs tdc; ZNA amplitude; ZNA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZN, -0.5, MaxZN}}}});
-    registry.add("hZPCvstdc", "ZPC vs tdc; ZPC amplitude; ZPC TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZP, -0.5, MaxZP}}}});
-    registry.add("hZPAvstdc", "ZPA vs tdc; ZPA amplitude; ZPA TDC", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZP, -0.5, MaxZP}}}});
+    registry.add("hZNCvstdc", "ZNC vs tdc; ZNC TDC (ns); ZNC amplitude", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZN, -0.5, MaxZN}}}});
+    registry.add("hZNAvstdc", "ZNA vs tdc; ZNA TDC (ns); ZNA amplitude", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZN, -0.5, MaxZN}}}});
+    registry.add("hZPCvstdc", "ZPC vs tdc; ZPC TDC (ns); ZPC amplitude", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZP, -0.5, MaxZP}}}});
+    registry.add("hZPAvstdc", "ZPA vs tdc; ZPA TDC (ns); ZPA amplitude", {HistType::kTH2F, {{{480, -13.5, 11.45}, {nBinsAmpZP, -0.5, MaxZP}}}});
     //
     registry.add("hZNvsV0A", "ZN vs V0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmpZN, -0.5, 2. * MaxZN}}}});
     registry.add("hZNAvsFT0A", "ZNA vs FT0A", {HistType::kTH2F, {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmpZN, -0.5, MaxZN}}}});
@@ -139,10 +139,31 @@ struct ZDCLIAnalysis {
       auto timestamp = zdc.timestamp();
       // auto selectionBits = zdc.selectionBits();
 
-      enCalibZNA != 1.0 ? zna *= enCalibZNA : zna;
-      enCalibZNC != 1.0 ? znc *= enCalibZNC : znc;
-      enCalibZPA != 1.0 ? zpa *= enCalibZPA : zpa;
-      enCalibZPC != 1.0 ? zpc *= enCalibZPC : zpc;
+      if( enCalibZNA > 0.) { 
+        zna *= enCalibZNA;
+        znaADC *= enCalibZNA;
+        znapm1 *= enCalibZNA;
+        znapm2 *= enCalibZNA;
+        znapm3 *= enCalibZNA;
+        znapm4 *= enCalibZNA;
+
+      }
+      if( enCalibZNC > 0.) { 
+        znc *= enCalibZNC;
+        zncADC *= enCalibZNC;
+        zncpm1 *= enCalibZNC;
+        zncpm2 *= enCalibZNC;
+        zncpm3 *= enCalibZNC;
+        zncpm4 *= enCalibZNC;
+      }
+      if( enCalibZPA > 0.) { 
+        zpa *= enCalibZPA;
+        zpaADC *= enCalibZPA;
+      }
+      if( enCalibZPC > 0.) { 
+        zpc *= enCalibZPC;
+        zpcADC *= enCalibZPC;
+      }
 
       registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
       registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
@@ -166,8 +187,8 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
       registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
       //
-      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(znapm1 + znapm2 + znapm3 + znapm4, zna);
-      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(zncpm1 + zncpm2 + zncpm3 + zncpm4, znc);
+      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25*(znapm1 + znapm2 + znapm3 + znapm4), zna);
+      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25*(zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
       //
       registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
       registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
@@ -186,15 +207,15 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
       registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
       //
-      /*if ( tStampOffset > timestamp ) {
-        printf(" #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %llu \n", timestamp);
+      if ( tStampOffset > timestamp ) {
+        printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %llu \n\n", timestamp);
         return;
-      }*/
-      float tsh = 1. * (timestamp - tStampOffset) / 1000.;
-      /*if ( tsh > tStampMax ) {
-        printf(" MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n", tsh);
+      }
+      float tsh = (timestamp/1000.) - (tStampOffset/1000.); // in hours
+      if ( tsh > tStampMax ) {
+        printf("\n\n MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n\n", tsh);
         return;
-      }*/
+      }
       registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(tsh, zna);
       registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(tsh, znc);
       registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(tsh, zpa);

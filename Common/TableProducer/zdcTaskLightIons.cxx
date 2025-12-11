@@ -63,11 +63,13 @@ struct ZdcTaskLightIons {
 
   enum SelectionCriteria {
     evSel_zvtx,
+    evSel_kIsTriggerTVX,
     evSel_sel8,
     evSel_occupancy,
     evSel_kNoSameBunchPileup,
     evSel_kIsGoodZvtxFT0vsPV,
     evSel_kNoCollInTimeRangeStandard,
+    evSel_kNoTimeFrameBorder,
     evSel_kNoITSROFrameBorder,
     evSel_kIsGoodITSLayersAll,
     evSel_allEvents,
@@ -78,25 +80,27 @@ struct ZdcTaskLightIons {
   {
     registry.add("zdcDebunchHist", "ZN sum vs. diff; ZNA-ZNC (ns); ZNA+ZNC (ns)", {HistType::kTH2D, {{nBinsTiming, -20., 20.}, {nBinsTiming, -20., 20.}}});
 
-    if (doprocessALICEcoll) {
-      registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
-      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
-    }
+    // if (doprocessALICEcoll) {
+    registry.add("hEventCount", "Number of events; Cut; # of selected events ", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsTriggerTVX + 1, "kIsTriggerTVX");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
+    //}
   }
 
   template <typename TCollision>
   uint8_t eventSelected(TCollision collision)
   {
     uint8_t selectionBits = 0;
-    bool selected;
+    bool selected = false;
 
     registry.fill(HIST("hEventCount"), evSel_allEvents);
 
@@ -110,6 +114,12 @@ struct ZdcTaskLightIons {
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_sel8);
       registry.fill(HIST("hEventCount"), evSel_sel8);
+    }
+
+    selected = collision.selection_bit(kIsTriggerTVX);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kIsTriggerTVX);
+      registry.fill(HIST("hEventCount"), evSel_kIsTriggerTVX);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
@@ -135,6 +145,12 @@ struct ZdcTaskLightIons {
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kNoCollInTimeRangeStandard);
       registry.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
+    }
+
+    selected = collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kNoTimeFrameBorder);
+      registry.fill(HIST("hEventCount"), evSel_kNoTimeFrameBorder);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
@@ -237,6 +253,14 @@ struct ZdcTaskLightIons {
 
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       uint8_t evSelection = eventSelected(collision);
+      //
+      // sel8
+      if (!collision.sel8())
+        continue;
+      // vertex cut
+      if (std::fabs(collision.posZ()) > cfgEvSelVtxZ)
+        continue;
+
       auto zv = collision.posZ();
       auto centralityFT0C = collision.centFT0C();
       auto centralityFT0A = collision.centFT0A();
