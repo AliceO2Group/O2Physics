@@ -1692,12 +1692,12 @@ struct LambdaSpinPolarization {
     lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ());
 
     for (auto const& track : tracks) {
-      lambdaMixEvtTrk(collision.index(), track.index(), track.px(), track.py(), track.pz(), track.mass(),
+      lambdaMixEvtTrk(collision.index(), track.globalIndex(), track.px(), track.py(), track.pz(), track.mass(),
                       track.prPx(), track.prPy(), track.prPz(), track.v0Type());
     }
   }
 
-  PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixEvent, "Process for Data and MCReco Mix Event", false);
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixEvent, "Process for Data and MCReco Mix Event", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
