@@ -257,7 +257,7 @@ struct JetBackgroundAnalysis {
   PROCESS_SWITCH(JetBackgroundAnalysis, processBkgFluctuationsMCD, "QA for random cone estimation of background fluctuations in mcd", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
-{ 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<JetBackgroundAnalysis>(cfgc)};
 }
