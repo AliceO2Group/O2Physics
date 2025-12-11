@@ -278,26 +278,26 @@ struct cascadeFlow {
   Configurable<float> yCascMCGen{"yCascMCGen", 0.5, "yCascMCGen"};
 
   struct : ConfigurableGroup {
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
-  Configurable<std::string> acceptancePathsCCDBXi{"acceptancePathsCCDBXi", "Users/c/chdemart/AcceptanceXi", "Paths of Xi acceptance on CCDB"};
-  Configurable<std::string> acceptancePathsCCDBOmega{"acceptancePathsCCDBOmega", "Users/c/chdemart/AcceptanceOmega", "Paths of Omega acceptance on CCDB"};
-  Configurable<std::string> acceptancePathsCCDBLambda{"acceptancePathsCCDBLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of Lambda acceptance on CCDB"};
-  Configurable<std::string> acceptancePathsCCDBPrimaryLambda{"acceptancePathsCCDBPrimaryLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of PrimaryLambda acceptance on CCDB"};
-  Configurable<std::string> acceptanceHistoNameCasc{"acceptanceHistoNameCasc", "histoCos2ThetaNoFit2D", "Histo name of acceptance on CCDB"};
-  Configurable<std::string> acceptanceHistoNameLambda{"acceptanceHistoNameLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
-  Configurable<std::string> acceptanceHistoNamePrimaryLambda{"acceptanceHistoNamePrimaryLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
-  Configurable<std::string> resoPaths{"resoPath", "Users/c/chdemart/Resolution/", "Paths of resolution"};
-  Configurable<std::string> resoHistoName{"resoHistoName", "hResoPerCentBinsV0A", "Histo name of resolution"};  
-  Configurable<std::string> centWeightPaths{"centWeightPath", "Users/c/chdemart/CentralityWeight/", "Paths of centrality weight"};
-  Configurable<std::string> centWeightHistoName{"centWeightHistoName", "hCentWeight", "Histo name of centrality weight"};
-  } ccdbConfigs; 
-  
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+    Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<std::string> acceptancePathsCCDBXi{"acceptancePathsCCDBXi", "Users/c/chdemart/AcceptanceXi", "Paths of Xi acceptance on CCDB"};
+    Configurable<std::string> acceptancePathsCCDBOmega{"acceptancePathsCCDBOmega", "Users/c/chdemart/AcceptanceOmega", "Paths of Omega acceptance on CCDB"};
+    Configurable<std::string> acceptancePathsCCDBLambda{"acceptancePathsCCDBLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of Lambda acceptance on CCDB"};
+    Configurable<std::string> acceptancePathsCCDBPrimaryLambda{"acceptancePathsCCDBPrimaryLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of PrimaryLambda acceptance on CCDB"};
+    Configurable<std::string> acceptanceHistoNameCasc{"acceptanceHistoNameCasc", "histoCos2ThetaNoFit2D", "Histo name of acceptance on CCDB"};
+    Configurable<std::string> acceptanceHistoNameLambda{"acceptanceHistoNameLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
+    Configurable<std::string> acceptanceHistoNamePrimaryLambda{"acceptanceHistoNamePrimaryLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
+    Configurable<std::string> resoPaths{"resoPath", "Users/c/chdemart/Resolution/", "Paths of resolution"};
+    Configurable<std::string> resoHistoName{"resoHistoName", "hResoPerCentBinsV0A", "Histo name of resolution"};
+    Configurable<std::string> centWeightPaths{"centWeightPath", "Users/c/chdemart/CentralityWeight/", "Paths of centrality weight"};
+    Configurable<std::string> centWeightHistoName{"centWeightHistoName", "hCentWeight", "Histo name of centrality weight"};
+  } ccdbConfigs;
+
   // ML inference
   Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{cascade_flow_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -579,12 +579,12 @@ struct cascadeFlow {
   TH2F* hAcceptanceLambda;
   TH2F* hAcceptancePrimaryLambda;
 
-  //objects to use for resolution correction
+  // objects to use for resolution correction
   TH1F* hReso;
 
-  //objects to use for centrality weight
+  // objects to use for centrality weight
   TH1F* hCentWeight;
-  
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -1926,16 +1926,16 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0ATPCA"), eventplaneVecT0A.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0A()), collisionCentrality);
 
     double EPresolution = 1;
-    if (applyResoCorrection){
+    if (applyResoCorrection) {
       int centBin = hReso->FindBin(collisionCentrality);
       EPresolution = hReso->GetBinContent(centBin);
     }
     double centWeight = 1;
-    if (applyCentWeightCorrection){
+    if (applyCentWeightCorrection) {
       int centBin = hCentWeight->FindBin(collisionCentrality);
       centWeight = hCentWeight->GetBinContent(centBin);
     }
-    
+
     std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
 
@@ -2050,8 +2050,8 @@ struct cascadeFlow {
         if (fillingConfigs.isFillTHN_V2)
           histos.get<THn>(HIST("hLambdaV2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
         if (fillingConfigs.isFillTHN_Pz) {
-	  //          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
-	  histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda, centWeight);
+          //          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda, centWeight);
         }
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
