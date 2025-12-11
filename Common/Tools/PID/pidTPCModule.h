@@ -201,14 +201,10 @@ typedef struct Str_dEdx_correction {
 class pidTPCModule
 {
  public:
-  pidTPCModule()
-  {
-    // constructor
-  }
   o2::aod::pid::pidTPCConfigurables pidTPCopts;
 
   // TPC PID Response
-  o2::pid::tpc::Response* response;
+  o2::pid::tpc::Response* response{nullptr};
 
   // Network correction for TPC PID response
   ml::OnnxModel network;
