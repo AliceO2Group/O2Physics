@@ -132,7 +132,7 @@ struct ZDCLIAnalysis {
       auto multFT0A = zdc.multFt0a();
       auto multFT0C = zdc.multFt0c();
       auto multV0A = zdc.multV0a();
-      auto zvtx = zdc.vertexZ();
+      // auto zvtx = zdc.vertexZ();
       auto centrFT0C = zdc.centralityFt0c();
       auto centrFT0A = zdc.centralityFt0a();
       auto centrFT0M = zdc.centralityFt0m();
@@ -207,7 +207,7 @@ struct ZDCLIAnalysis {
       registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
       //
       /*if (tStampOffset > timestamp) {
-        printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %llu \n\n", timestamp);
+        printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %lu \n\n", timestamp);
         return;
       }*/
       float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
