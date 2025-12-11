@@ -181,21 +181,28 @@ void runMassFitter(const std::string& configFileName)
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
-  std::map<std::string, std::tuple<std::string, std::string, std::string>> particles{
-    {"Dplus", {"K#pi#pi", "D+", "D^{+} #rightarrow K^{-}#pi^{+}#pi^{+} + c.c."}},
-    {"D0", {"K#pi", "D0", "D^{0} #rightarrow K^{-}#pi^{+} + c.c."}},
-    {"Ds", {"KK#pi", "D_s+", "D_{s}^{+} #rightarrow K^{-}K^{+}#pi^{+} + c.c."}},
-    {"LcToPKPi", {"pK#pi", "Lambda_c+", "#Lambda_{c}^{+} #rightarrow pK^{-}#pi^{+} + c.c."}},
-    {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s} + c.c."}},
-    {"Dstar", {"D^{0}pi^{+}", "D*+", "D^{*+} #rightarrow D^{0}#pi^{+} + c.c."}},
-    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+", "#Xi_{c}^{+} #rightarrow #Xi^{-}#pi^{+}#pi^{+} + c.c."}}};
+  struct decayInfo {
+    std::string decayProducts;
+    std::string pdgName;
+    std::string decayFormulaLhs;
+    std::string decayFormulaRhs;
+  };
+
+  std::map<std::string, decayInfo> particles{
+    {"Dplus", {"K#pi#pi", "D+", "D^{+}", "K^{-}#pi^{+}#pi^{+}"}},
+    {"D0", {"K#pi", "D0", "D^{0}", "K^{-}#pi^{+}"}},
+    {"Ds", {"KK#pi", "D_s+", "D_{s}^{+}", "K^{-}K^{+}#pi^{+}"}},
+    {"LcToPKPi", {"pK#pi", "Lambda_c+", "#Lambda_{c}^{+}", "pK^{-}#pi^{+}"}},
+    {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+", "#Lambda_{c}^{+}", "pK^{0}_{s}"}},
+    {"Dstar", {"D^{0}pi^{+}", "D*+", "D^{*+}", "D^{0}#pi^{+}"}},
+    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+", "#Xi_{c}^{+}", "#Xi^{-}#pi^{+}#pi^{+}"}}};
   if (particles.find(particleName.c_str()) == particles.end()) {
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
-  const auto& particleTuple = particles[particleName.c_str()];
-  const std::string massAxisTitle = "#it{M}(" + std::get<0>(particleTuple) + ") (GeV/#it{c}^{2})";
-  const double massPDG = TDatabasePDG::Instance()->GetParticle(std::get<1>(particleTuple).c_str())->Mass();
-  const std::vector<std::string> plotLabels = {std::get<2>(particleTuple), collisionSystem.c_str()};
+  const auto& particle = particles[particleName.c_str()];
+  const std::string massAxisTitle = "#it{M}(" + particle.decayProducts + ") (GeV/#it{c}^{2})";
+  const double massPDG = TDatabasePDG::Instance()->GetParticle(particle.pdgName.c_str())->Mass();
+  const std::vector<std::string> plotLabels = {(particle.decayFormulaLhs + " #rightarrow " + particle.decayFormulaRhs + " + c.c.").c_str(), collisionSystem};
 
   // load inv-mass histograms
   auto* inputFile = openFileWithNullptrCheck(inputFileName);
