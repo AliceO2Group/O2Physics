@@ -258,7 +258,7 @@ class pidTPCModule
       pidTPCopts.skipTPCOnly.value = 1;
 
       // loop over devices in this execution
-      auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+      auto const& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
       for (o2::framework::DeviceSpec const& device : workflows.devices) {
         // Look for propagation service
         if (device.name.compare("propagation-service") == 0) {
