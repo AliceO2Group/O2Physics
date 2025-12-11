@@ -9,27 +9,38 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file gammaConversions.cxx
 /// \brief perform photon conversion analysis on V0 candidates from aod::StoredV0Datas
-/// dependencies: o2-analysis-lf-lambdakzerobuilder
 /// \author stephan.friedrich.stiefelmaier@cern.ch
+/// dependencies: o2-analysis-lf-lambdakzerobuilder
 
 #include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
-
-#include <map>
-#include <vector>
-#include <string>
-#include <memory>
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
 #include "Common/Core/RecoDecay.h"
 
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TAxis.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TPDGCode.h>
 #include <TVector3.h>
-#include <TMath.h> // for ATan2, Cos, Sin, Sqrt
+
+#include <cmath>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -70,7 +81,7 @@ struct GammaConversions {
   Configurable<float> fV0QtPtMultiplicator{"fV0QtPtMultiplicator", 0.125, "Multiply pt of V0s by this value to get the 2nd denominator in the armenteros cut. The products maximum value is fV0QtMax."};
   Configurable<float> fV0QtMax{"fV0QtMax", 0.050, "the maximum value of the product, that is the maximum qt"};
   Configurable<float> fLineCutZ0{"fLineCutZ0", 12.0, "The offset for the linecute used in the Z vs R plot"};
-  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", static_cast<float>(TMath::Tan(2 * TMath::ATan(TMath::Exp(-fTruePhotonEtaMax)))), "The slope for the line cut"};
+  Configurable<float> fLineCutZRSlope{"fLineCutZRSlope", std::tan(2.f * std::atan(std::exp(-fTruePhotonEtaMax.value))), "The slope for the line cut"};
   Configurable<bool> fPhysicalPrimaryOnly{"fPhysicalPrimaryOnly", true, "fPhysicalPrimaryOnly"};
 
   std::map<ePhotonCuts, std::string> fPhotonCutLabels{
@@ -188,7 +199,7 @@ struct GammaConversions {
       auto lHisto = theContainer.find(theHistoName);
       if (lHisto != theContainer.end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH1>>(lHisto->second)->GetXaxis();
-        for (auto& lPairIt : theLables) {
+        for (const auto& lPairIt : theLables) {
           lXaxis->SetBinLabel(static_cast<int>(lPairIt.first) + 1, lPairIt.second.data());
         }
       }
@@ -198,7 +209,7 @@ struct GammaConversions {
       auto lHisto = theContainer.find(theHistoName);
       if (lHisto != theContainer.end()) {
         TAxis* lXaxis = std::get<std::shared_ptr<TH2>>(lHisto->second)->GetXaxis();
-        for (auto& lPairIt : theLables) {
+        for (const auto& lPairIt : theLables) {
           lXaxis->SetBinLabel(static_cast<int>(lPairIt.first) + 1, lPairIt.second.data());
         }
       }
@@ -316,7 +327,7 @@ struct GammaConversions {
 
     fillReconstructedInfoHistogramsI(kAfterRecCuts);
 
-    return kTRUE;
+    return true;
   }
 
   template <typename TV0, typename TMCGAMMA>
@@ -384,7 +395,7 @@ struct GammaConversions {
       return false;
     }
 
-    if (theMcPhoton.pdgCode() != 22) {
+    if (theMcPhoton.pdgCode() != PDG_t::kGamma) {
       fillV0McValidationHisto(eV0McValidation::kNoPhoton);
       // add here a fillRejectedV0HistosI() call if interested in properties of non-gamma V0s
       return false;
@@ -482,27 +493,27 @@ struct GammaConversions {
 
     if (PDGCode[0] == 0) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::nomcparticle), 0);
-    } else if (sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    } else if (sameMother && ((PDGCode[0] == PDG_t::kElectron && PDGCode[1] == PDG_t::kPositron) || (PDGCode[0] == PDG_t::kPositron && PDGCode[1] == PDG_t::kElectron))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee1), MCV0p);
-    } else if (!sameMother && ((PDGCode[0] == 11 && PDGCode[1] == -11) || (PDGCode[0] == -11 && PDGCode[1] == 11))) {
+    } else if (!sameMother && ((PDGCode[0] == PDG_t::kElectron && PDGCode[1] == PDG_t::kPositron) || (PDGCode[0] == PDG_t::kPositron && PDGCode[1] == PDG_t::kElectron))) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ee2), MCV0p);
-    } else if ((PDGCode[0] == 11 && PDGCode[1] == 211) || (PDGCode[0] == -11 && PDGCode[1] == -211)) {
+    } else if ((PDGCode[0] == PDG_t::kElectron && PDGCode[1] == PDG_t::kPiPlus) || (PDGCode[0] == PDG_t::kPositron && PDGCode[1] == PDG_t::kPiMinus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::epi), MCV0p);
-    } else if ((PDGCode[0] == 11 && PDGCode[1] == 321) || (PDGCode[0] == -11 && PDGCode[1] == -321)) {
+    } else if ((PDGCode[0] == PDG_t::kElectron && PDGCode[1] == PDG_t::kKPlus) || (PDGCode[0] == PDG_t::kPositron && PDGCode[1] == PDG_t::kKMinus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ek), MCV0p);
-    } else if ((PDGCode[0] == 11 && PDGCode[1] == 2212) || (PDGCode[0] == -11 && PDGCode[1] == -2212)) {
+    } else if ((PDGCode[0] == PDG_t::kElectron && PDGCode[1] == PDG_t::kProton) || (PDGCode[0] == PDG_t::kPositron && PDGCode[1] == PDG_t::kProtonBar)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::ep), MCV0p);
-    } else if ((PDGCode[0] == 11 && PDGCode[1] == -13) || (PDGCode[0] == -11 && PDGCode[1] == 13)) {
+    } else if ((PDGCode[0] == PDG_t::kElectron && PDGCode[1] == PDG_t::kMuonPlus) || (PDGCode[0] == PDG_t::kPositron && PDGCode[1] == PDG_t::kMuonMinus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::emu), MCV0p);
-    } else if ((PDGCode[0] == 211 && PDGCode[1] == -211) || (PDGCode[0] == -211 && PDGCode[1] == 211)) {
+    } else if ((PDGCode[0] == PDG_t::kPiPlus && PDGCode[1] == PDG_t::kPiMinus) || (PDGCode[0] == PDG_t::kPiMinus && PDGCode[1] == PDG_t::kPiPlus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pipi), MCV0p);
-    } else if ((PDGCode[0] == 211 && PDGCode[1] == -321) || (PDGCode[0] == -211 && PDGCode[1] == 321)) {
+    } else if ((PDGCode[0] == PDG_t::kPiPlus && PDGCode[1] == PDG_t::kKMinus) || (PDGCode[0] == PDG_t::kPiMinus && PDGCode[1] == PDG_t::kKPlus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pik), MCV0p);
-    } else if ((PDGCode[0] == 211 && PDGCode[1] == -2212) || (PDGCode[0] == -211 && PDGCode[1] == 2212)) {
+    } else if ((PDGCode[0] == PDG_t::kPiPlus && PDGCode[1] == PDG_t::kProtonBar) || (PDGCode[0] == PDG_t::kPiMinus && PDGCode[1] == PDG_t::kProton)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pip), MCV0p);
-    } else if ((PDGCode[0] == 211 && PDGCode[1] == 13) || (PDGCode[0] == -211 && PDGCode[1] == -13)) {
+    } else if ((PDGCode[0] == PDG_t::kPiPlus && PDGCode[1] == PDG_t::kMuonMinus) || (PDGCode[0] == PDG_t::kPiMinus && PDGCode[1] == PDG_t::kMuonPlus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pimu), MCV0p);
-    } else if ((PDGCode[0] == 2212 && PDGCode[1] == -321) || (PDGCode[0] == -2212 && PDGCode[1] == 321) || (PDGCode[0] == 2212 && PDGCode[1] == 13) || (PDGCode[0] == -2212 && PDGCode[1] == -13)) {
+    } else if ((PDGCode[0] == PDG_t::kProton && PDGCode[1] == PDG_t::kKMinus) || (PDGCode[0] == PDG_t::kProtonBar && PDGCode[1] == PDG_t::kKPlus) || (PDGCode[0] == PDG_t::kProton && PDGCode[1] == PDG_t::kMuonMinus) || (PDGCode[0] == PDG_t::kProtonBar && PDGCode[1] == PDG_t::kMuonPlus)) {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::pKmu), MCV0p);
     } else {
       fillTH2(theContainer, "hDecays", static_cast<int>(eV0Decays::other), MCV0p);
@@ -618,7 +629,7 @@ struct GammaConversions {
             theCollision.posZ());
 
     auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.globalIndex());
-    for (auto& lV0 : theV0s_per_coll) {
+    for (const auto& lV0 : theV0s_per_coll) {
 
       float lV0CosinePA = lV0.cospa();
 
@@ -645,7 +656,7 @@ struct GammaConversions {
             theCollision.posZ());
 
     auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.globalIndex());
-    for (auto& lV0 : theV0s) {
+    for (const auto& lV0 : theV0s) {
 
       float lV0CosinePA = lV0.cospa();
       auto pos = lV0.posTrack_as<V0LegsWithMC>();
@@ -776,31 +787,31 @@ struct GammaConversions {
   bool trackPassesCuts(const T& theTrack)
   {
     // single track eta cut
-    if (TMath::Abs(theTrack.eta()) > fTrackEtaMax) {
+    if (std::abs(theTrack.eta()) > fTrackEtaMax) {
       fillV0SelectionHisto(ePhotonCuts::kTrackEta);
-      return kFALSE;
+      return false;
     }
 
     // single track pt cut
     if (theTrack.pt() < fTrackPtMin) {
       fillV0SelectionHisto(ePhotonCuts::kTrackPt);
-      return kFALSE;
+      return false;
     }
 
     if (!(selectionPIDTPC_track(theTrack))) {
-      return kFALSE;
+      return false;
     }
 
     if (theTrack.tpcFoundOverFindableCls() < fMinTPCFoundOverFindableCls) {
       fillV0SelectionHisto(ePhotonCuts::kTPCFoundOverFindableCls);
-      return kFALSE;
+      return false;
     }
 
     if (theTrack.tpcCrossedRowsOverFindableCls() < fMinTPCCrossedRowsOverFindableCls) {
       fillV0SelectionHisto(ePhotonCuts::kTPCCrossedRowsOverFindableCls);
-      return kFALSE;
+      return false;
     }
-    return kTRUE;
+    return true;
   }
 
   template <typename TTRACKS>
@@ -820,30 +831,30 @@ struct GammaConversions {
   {
     if (theV0.v0radius() < fV0RMin || theV0.v0radius() > fV0RMax) {
       fillV0SelectionHisto(ePhotonCuts::kV0Radius);
-      return kFALSE;
+      return false;
     }
 
     if (fV0PhotonAsymmetryMax > 0. && !ArmenterosQtCut(theV0.alpha(), theV0.qtarm(), theV0.pt())) {
       fillV0SelectionHisto(ePhotonCuts::kArmenteros);
-      return kFALSE;
+      return false;
     }
 
     // if (fV0PsiPairMax > 0. && TMath::Abs(theV0.psipair()) > fV0PsiPairMax) {
-    if (fV0PsiPairMax > 0. && TMath::Abs(0.f) > fV0PsiPairMax) {
+    if (fV0PsiPairMax > 0. && std::abs(0.f) > fV0PsiPairMax) {
       fillV0SelectionHisto(ePhotonCuts::kPsiPair);
-      return kFALSE;
+      return false;
     }
 
     if (fV0CosPAngleMin > 0. && theV0CosinePA < fV0CosPAngleMin) {
       fillV0SelectionHisto(ePhotonCuts::kCosinePA);
-      return kFALSE;
+      return false;
     }
 
-    if (TMath::Abs(theV0.vz()) > fLineCutZ0 + theV0.v0radius() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
+    if (std::abs(theV0.vz()) > fLineCutZ0 + theV0.v0radius() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
       fillV0SelectionHisto(ePhotonCuts::kRZLine);
-      return kFALSE;
+      return false;
     }
-    return kTRUE;
+    return true;
   }
 
   template <typename TV0, typename TTRACKS>
@@ -869,17 +880,17 @@ struct GammaConversions {
       theV0);
   }
 
-  Bool_t ArmenterosQtCut(Double_t theAlpha, Double_t theQt, Double_t thePt)
+  bool ArmenterosQtCut(float theAlpha, float theQt, float thePt)
   {
     // in AliPhysics this is the cut for if fDo2DQt && fDoQtGammaSelection == 2
-    Float_t lQtMaxPtDep = fV0QtPtMultiplicator * thePt;
+    float lQtMaxPtDep = fV0QtPtMultiplicator * thePt;
     if (lQtMaxPtDep > fV0QtMax) {
       lQtMaxPtDep = fV0QtMax;
     }
-    if ((TMath::Power(theAlpha / fV0PhotonAsymmetryMax, 2) + TMath::Power(theQt / lQtMaxPtDep, 2)) >= 1) {
-      return kFALSE;
+    if ((std::pow(theAlpha / fV0PhotonAsymmetryMax, 2) + std::pow(theQt / lQtMaxPtDep, 2)) >= 1) {
+      return false;
     }
-    return kTRUE;
+    return true;
   }
 
   template <typename T>
@@ -888,7 +899,7 @@ struct GammaConversions {
     // TPC Electron Line
     if (fPIDnSigmaElectronMin && (theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMin || theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMax)) {
       fillV0SelectionHisto(ePhotonCuts::kElectronPID);
-      return kFALSE;
+      return false;
     }
 
     // TPC Pion Line
@@ -897,17 +908,17 @@ struct GammaConversions {
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejLowMom);
-          return kFALSE;
+          return false;
         }
         // High Pt Pion rej
       } else {
         if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejHighMom);
-          return kFALSE;
+          return false;
         }
       }
     }
-    return kTRUE;
+    return true;
   }
 };
 

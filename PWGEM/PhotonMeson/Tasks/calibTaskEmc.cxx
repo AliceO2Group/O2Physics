@@ -666,7 +666,7 @@ struct CalibTaskEmc {
         if (photon.globalIndex() == ig2) {
           continue;
         }
-        if (!(fPCMPhotonCut.IsSelected<aod::V0Legs>(photon))) {
+        if (!(fPCMPhotonCut.IsSelected<decltype(photon), aod::V0Legs>(photon))) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
@@ -839,7 +839,7 @@ struct CalibTaskEmc {
         }
       }
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonsEMCPerCollision, photonsPCMPerCollision))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fPCMPhotonCut.IsSelected<aod::V0Legs>(g2))) {
+        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fPCMPhotonCut.IsSelected<decltype(g2), aod::V0Legs>(g2))) {
           continue;
         }
 
@@ -1005,7 +1005,7 @@ struct CalibTaskEmc {
         runBefore = runNow;
       }
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonEMC, photonPCM))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fPCMPhotonCut.IsSelected<aod::V0Legs>(g2))) {
+        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fPCMPhotonCut.IsSelected<decltype(g2), aod::V0Legs>(g2))) {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
