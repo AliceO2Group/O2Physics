@@ -238,6 +238,16 @@ struct LongRangeDihadronCor {
     kTOF,
     kITS
   };
+  enum DetectorChannels {
+    kFT0AInnerRingMin = 0,
+    kFT0AInnerRingMax = 31,
+    kFT0AOuterRingMin = 32,
+    kFT0AOuterRingMax = 95,
+    kFT0CInnerRingMin = 96,
+    kFT0CInnerRingMax = 143,
+    kFT0COuterRingMin = 144,
+    kFT0COuterRingMax = 207
+  };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
   std::array<float, 6> tpcNsigmaCut;
@@ -641,7 +651,7 @@ struct LongRangeDihadronCor {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
-      if ((cfgRejectInsideDetectors && ((id >= 31 && id <= 96) || (id >= 143 && id <= 208))) || (cfgRejectOutsideDetectors && ((id >= 0 && id <= 30) || (id >= 97 && id <= 142))))
+      if ((cfgRejectInsideDetectors && ((id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax) || (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax))) || (cfgRejectOutsideDetectors && ((id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax) || (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax))))
         ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
@@ -649,7 +659,7 @@ struct LongRangeDihadronCor {
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
-      if ((cfgRejectInsideDetectors && ((id >= 31 && id <= 96) || (id >= 143 && id <= 208))) || (cfgRejectOutsideDetectors && ((id >= 0 && id <= 30) || (id >= 97 && id <= 142))))
+      if ((cfgRejectInsideDetectors && ((id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax) || (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax))) || (cfgRejectOutsideDetectors && ((id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax) || (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax))))
         ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
