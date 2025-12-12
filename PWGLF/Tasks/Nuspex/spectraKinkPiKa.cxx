@@ -240,14 +240,11 @@ struct KinkBuilder {
 
     for (const auto& svCand : kinkPool) {
       KinkCandidate kinkCand;
-
       auto trackMoth = tracks.rawIteratorAt(svCand.tr0Idx);
       auto trackDaug = tracks.rawIteratorAt(svCand.tr1Idx);
-
       auto const& collision = trackMoth.template collision_as<Tcolls>();
       auto const& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-
       o2::dataformats::VertexBase primaryVertex;
       primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
       primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
@@ -258,33 +255,21 @@ struct KinkBuilder {
       std::array<float, 2> dcaInfoMoth;
       bool okMoth = o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovMothPV, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoMoth);
       if (!okMoth) {
-        //	LOG(DEBUG) << "Skipping candidate: propagateToDCABxByBz failed for moth idx " << svCand.tr0Idx;
         continue;
       }
       o2::track::TrackParCov trackParCovDaug = getTrackParCov(trackDaug);
       // propagate to PV
       std::array<float, 2> dcaInfoDaug;
       bool okDaug = o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
-
       if (!okDaug) {
-        //	LOG(DEBUG) << "Skipping candidate: propagateToDCABxByBz failed for daug idx " << svCand.tr1Idx;
         continue;
       }
-
       if (std::abs(dcaInfoMoth[1]) > maxDCAMothToPV) {
         continue;
       }
       if (std::abs(dcaInfoDaug[1]) < minDCADaugToPV) {
         continue;
       }
-      /*   // check if the kink daughter is close to the mother
-      if (std::abs(trackParCovMoth.getZ() - trackParCovDaug.getZ()) > maxZDiff) {
-        continue;
-      }
-      if ((std::abs(trackParCovMoth.getPhi() - trackParCovDaug.getPhi()) * radToDeg) > maxPhiDiff) {
-        continue;
-      }
-      */
       int nCand = 0;
       try {
         nCand = fitter.process(trackParCovMoth, trackParCovDaug);
