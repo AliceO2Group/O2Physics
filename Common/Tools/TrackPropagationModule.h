@@ -312,19 +312,30 @@ class TrackPropagationModule
             trackType = o2::aod::track::Track;
           }
         } else {
-          if (fillTracksDCA || fillTracksDCACov) {
+          if (fillTracksCov || fillTracksDCA || fillTracksDCACov) {
             if (track.has_collision()) {
               auto const& collision = collisions.rawIteratorAt(track.collisionId());
               mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-              if (fillTracksDCACov) {
+              if (fillTracksCov || fillTracksDCACov) {
                 mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
               }
             } else {
               mVtx.setPos({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()});
-              if (fillTracksDCACov) {
+              if (fillTracksCov || fillTracksDCACov) {
                 mVtx.setCov(ccdbLoader.mMeanVtx->getSigmaX() * ccdbLoader.mMeanVtx->getSigmaX(), 0.0f, ccdbLoader.mMeanVtx->getSigmaY() * ccdbLoader.mMeanVtx->getSigmaY(), 0.0f, 0.0f, ccdbLoader.mMeanVtx->getSigmaZ() * ccdbLoader.mMeanVtx->getSigmaZ());
               }
             }
+	    if (fillTracksCov) {
+              if constexpr (isMc) { // checking MC and fillCovMat block begins
+                if (cGroup.useTrackTuner.value) {
+                  bool hasMcParticle = track.has_mcParticle();
+                  if (hasMcParticle) {
+                    isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+                  }
+                }
+              } // MC and fillCovMat block ends
+            }
+
 
             if (fillTracksDCACov) {
               calculateDCA(mTrackParCov, mVtx, o2::base::Propagator::Instance()->getNominalBz(), &mDcaInfoCov, 999.f);
@@ -388,27 +399,15 @@ class TrackPropagationModule
   bool calculateDCA(TTrackPar& trackPar, const TVertex& vtx, double b, TDCA* dca, double maxD)
   {
     // propagate track to DCA to the vertex
-    double sn, cs, alp = trackPar.getAlpha();
+    float sn, cs, alp = trackPar.getAlpha();
     o2::math_utils::detail::sincos(alp, sn, cs);
-    double x = trackPar.getX(), y = trackPar.getY(), snp = trackPar.getSnp(), csp = gpu::CAMath::Sqrt((1.f - snp) * (1.f + snp));
-    double xv = vtx.getX() * cs + vtx.getY() * sn, yv = -vtx.getX() * sn + vtx.getY() * cs, zv = vtx.getZ();
+    float x = trackPar.getX(), y = trackPar.getY(), snp = trackPar.getSnp(), csp = gpu::CAMath::Sqrt((1.f - snp) * (1.f + snp));
+    float xv = vtx.getX() * cs + vtx.getY() * sn, yv = -vtx.getX() * sn + vtx.getY() * cs, zv = vtx.getZ();
     x -= xv;
     y -= yv;
-    // Estimate the impact parameter neglecting the track curvature
-    double d = gpu::CAMath::Abs(x * snp - y * csp);
-    if (d > maxD) {
-      // provide default DCA for failed propag
-      if constexpr (requires { trackPar.getSigmaY2(); vtx.getSigmaX2(); }) {
-        dca->set(o2::track::DefaultDCA, o2::track::DefaultDCA,
-                 o2::track::DefaultDCACov, o2::track::DefaultDCACov, o2::track::DefaultDCACov);
-      } else {
-        (*dca)[0] = o2::track::DefaultDCA;
-        (*dca)[1] = o2::track::DefaultDCA;
-      }
-      return false;
-    }
-    double crv = trackPar.getCurvature(b);
-    double tgfv = -(crv * x - snp) / (crv * y + csp);
+
+    float crv = trackPar.getCurvature(b);
+    float tgfv = -(crv * x - snp) / (crv * y + csp);
     sn = tgfv / gpu::CAMath::Sqrt(1.f + tgfv * tgfv);
     cs = gpu::CAMath::Sqrt((1.f - sn) * (1.f + sn));
     cs = (gpu::CAMath::Abs(tgfv) > constants::math::Almost0) ? sn / tgfv : constants::math::Almost1;
