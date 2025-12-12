@@ -325,7 +325,7 @@ class TrackPropagationModule
                 mVtx.setCov(ccdbLoader.mMeanVtx->getSigmaX() * ccdbLoader.mMeanVtx->getSigmaX(), 0.0f, ccdbLoader.mMeanVtx->getSigmaY() * ccdbLoader.mMeanVtx->getSigmaY(), 0.0f, 0.0f, ccdbLoader.mMeanVtx->getSigmaZ() * ccdbLoader.mMeanVtx->getSigmaZ());
               }
             }
-	    if (fillTracksCov) {
+            if (fillTracksCov) {
               if constexpr (isMc) { // checking MC and fillCovMat block begins
                 if (cGroup.useTrackTuner.value) {
                   bool hasMcParticle = track.has_mcParticle();
@@ -335,7 +335,6 @@ class TrackPropagationModule
                 }
               } // MC and fillCovMat block ends
             }
-
 
             if (fillTracksDCACov) {
               calculateDCA(mTrackParCov, mVtx, o2::base::Propagator::Instance()->getNominalBz(), &mDcaInfoCov, 999.f);
