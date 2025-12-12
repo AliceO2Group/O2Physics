@@ -159,7 +159,7 @@ struct sigmaProtonCorrTask {
     if (!candidate.hasTOF()) {
       return false;
     }
-    if (std::abs(candidate.tofNSigmaPi()) > cutNSigmaTOF) {
+    if (std::abs(candidate.tofNSigmaPr()) > cutNSigmaTOF) {
       return false;
     }
     return true; // Track is selected
