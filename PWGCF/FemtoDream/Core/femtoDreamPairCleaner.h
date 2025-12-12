@@ -17,7 +17,6 @@
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMPAIRCLEANER_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
