@@ -1282,7 +1282,7 @@ struct FlowTask {
       if (!cfgUsePtRef && withinPtPOI)
         fillPtSums<kGen>(mcParticle, 1.);
     }
-    
+
     if (count_Gap08 > 0)
       registry.fill(HIST("hMeanPtWithinGap08_MC"), independent, ptSum_Gap08 / count_Gap08, 1.0);
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
