@@ -117,7 +117,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
 
   HistogramRegistry eventRegistry{"eventRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  static constexpr uint32_t kSignPlusMask = 1 << 1;
+  static constexpr uint32_t KSignPlusMask = 1 << 1;
 
   template <typename T>
   int getRowDaughters(int daughID, T const& vecID)
@@ -308,7 +308,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
     int ascadeCount = 0;
     int antiCascadeCount = 0;
     for (const auto& casc : groupSelectedCascades) {
-      if ((casc.cut() & kSignPlusMask) == kSignPlusMask) {
+      if ((casc.cut() & KSignPlusMask) == KSignPlusMask) {
         ascadeCount++;
       } else {
         antiCascadeCount++;
@@ -421,7 +421,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
     // check v0's
     int v0Count = 0;
     int antiV0Count = 0;
-    int ResoCount = 0; // no antiparticles
+    int resoCount = 0; // no antiparticles
 
     for (const auto& V0 : groupSelectedV0s) {
       if ((V0.mLambda() > confMinInvMassV0) && (V0.mLambda() < confMaxInvMassV0)) {
@@ -466,16 +466,16 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
         if (((posresoChild.cut() & Reso.daughPosCutBit) == Reso.daughPosCutBit) &&
             ((negresoChild.cut() & Reso.daughNegCutBit) == Reso.daughNegCutBit)) {
 
-          ResoCount++;
+          resoCount++;
         }
       } else {
-        ResoCount++;
+        resoCount++;
       }
     }
 
     std::vector<int> tmpIDtrack;
 
-    if ((v0Count >= confNumberOfV0 && ResoCount >= confNumberOfReso) || (antiV0Count >= confNumberOfV0 && ResoCount >= confNumberOfReso)) {
+    if ((v0Count >= confNumberOfV0 && resoCount >= confNumberOfReso) || (antiV0Count >= confNumberOfV0 && resoCount >= confNumberOfReso)) {
       eventRegistry.fill(HIST("hStatistiscs"), 1);
       outputCollision(col.posZ(), col.multV0M(), col.multNtr(), col.sphericity(), col.magField());
 
@@ -579,7 +579,7 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
     // check v0's
     int v0Count = 0;
     int antiV0Count = 0;
-    int ResoCount = 0; // no antiparticles
+    int resoCount = 0; // no antiparticles
 
     for (const auto& V0 : groupSelectedV0s) {
       if ((V0.mLambda() > confMinInvMassV0) && (V0.mLambda() < confMaxInvMassV0)) {
@@ -624,16 +624,16 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
         if (((posresoChild.cut() & Reso.daughPosCutBit) == Reso.daughPosCutBit) &&
             ((negresoChild.cut() & Reso.daughNegCutBit) == Reso.daughNegCutBit)) {
 
-          ResoCount++;
+          resoCount++;
         }
       } else {
-        ResoCount++;
+        resoCount++;
       }
     }
 
     std::vector<int> tmpIDtrack;
 
-    if ((v0Count >= confNumberOfV0 && ResoCount >= confNumberOfReso) || (antiV0Count >= confNumberOfV0 && ResoCount >= confNumberOfReso)) {
+    if ((v0Count >= confNumberOfV0 && resoCount >= confNumberOfReso) || (antiV0Count >= confNumberOfV0 && resoCount >= confNumberOfReso)) {
       eventRegistry.fill(HIST("hStatistiscs"), 1);
       outputCollision(col.posZ(), col.multV0M(), col.multNtr(), col.sphericity(), col.magField());
 
