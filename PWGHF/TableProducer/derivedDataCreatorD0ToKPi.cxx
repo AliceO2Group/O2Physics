@@ -334,6 +334,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       }
     }
   }
+
   void processDataWithDCAFitterN(CollisionsWCentMult const& collisions,
                                  SelectedCandidates const&,
                                  aod::Tracks const& tracks,

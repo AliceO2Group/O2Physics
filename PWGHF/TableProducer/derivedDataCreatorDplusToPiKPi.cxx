@@ -301,15 +301,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
               continue;
             }
           }
-        } else {
-            if (downSampleBkgFactor < 1.) {
-              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-              if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-                continue;
-              }
-            }
-          }
-          
+        }
         double const ct = HfHelper::ctDplus(candidate);
         double const y = HfHelper::yDplus(candidate);
         float const massDplusToPiKPi = HfHelper::invMassDplusToPiKPi(candidate);
