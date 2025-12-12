@@ -793,17 +793,16 @@ struct TableMaker {
     } // end loop over collisions
   }
 
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs,
-            typename TZdcs, typename TTrackAssoc, typename TTracks,
-            typename TFt0s, typename TFv0as, typename TFdds>
+  template <uint32_t TEventFillMap, typename TEvents, typename TBCs,
+            typename TZdcs, typename TFt0s, typename TFv0as, typename TFdds>
   void skimCollisions(TEvents const& collisions, TBCs const& bcs, TZdcs const& /*zdcs*/,
-                      TTrackAssoc const& trackAssocs, TTracks const& tracks,
                       TFt0s const& ft0s, TFv0as const& fv0as, TFdds const& fdds)
   {
     // Skim collisions
     // NOTE: So far, collisions are filtered based on the user specified analysis cuts AND the filterPP or Zorro event filter.
     //      The collision-track associations which point to an event that is not selected for writing are discarded!
 
+    VarManager::FillTimeFrame(collisions);
     fCollIndexMap.clear();
     int multTPC = -1.0;
     float multFV0A = -1.0;
@@ -879,10 +878,10 @@ struct TableMaker {
           }
         }
       }
-      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
+      /*if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
         auto groupedTrackIndices = trackAssocs.sliceBy(trackIndicesPerCollision, collision.globalIndex());
         VarManager::FillEventTrackEstimators<TTrackFillMap>(collision, groupedTrackIndices, tracks);
-      }
+      }*/
       // Exceptionally fill the TPC occupancy quantities here
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         VarManager::fgValues[VarManager::kNTPCcontribLongA] = fOccup.oContribLongA[collision.globalIndex()];
@@ -1503,7 +1502,7 @@ struct TableMaker {
     eventExtended.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
 
-    skimCollisions<TEventFillMap, TTrackFillMap>(collisions, bcs, zdcs, trackAssocs, tracksBarrel, ft0s, fv0as, fdds);
+    skimCollisions<TEventFillMap>(collisions, bcs, zdcs, ft0s, fv0as, fdds);
     if (fCollIndexMap.size() == 0) {
       return;
     }
