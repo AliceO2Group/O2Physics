@@ -238,10 +238,10 @@ struct TagTwoProngDisplacedVertices {
   Configurable<float> trackDcaXyMin{"trackDcaXyMin", 0.002f, "minimum DCAxy for tracks with pT < 2 GeV/c"};
   Configurable<float> trackPtMin{"trackPtMin", 0.4f, "minimum track pT"};
 
-  Configurable<std::vector<double>> BinsPtPiPiFromDplus{"BinsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
-  Configurable<std::vector<double>> BinsPtKaKaFromDsOrDplus{"BinsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
-  Configurable<std::vector<double>> BinsPtDzeroFromDstar{"BinsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
-  Configurable<std::vector<double>> BinsPtDzeroKaKaFromDstar{"BinsPtDzeroKaKaFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from D0 <- D*+ decays"};
+  Configurable<std::vector<double>> binsPtPiPiFromDplus{"binsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
+  Configurable<std::vector<double>> binsPtKaKaFromDsOrDplus{"binsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
+  Configurable<std::vector<double>> binsPtDzeroFromDstar{"binsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
+  Configurable<std::vector<double>> binsPtDzeroKaKaFromDstar{"binsPtDzeroKaKaFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from D0 <- D*+ decays"};
 
   Configurable<LabeledArray<double>> cutsPiPiFromDplus{"cutsPiPiFromDplus", {aod::tagandprobe::Cuts[0], aod::tagandprobe::NBinsPt, aod::tagandprobe::NCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for pipi pairs from D+ decays"};
   Configurable<LabeledArray<double>> cutsKaKaFromDsOrDplus{"cutsKaKaFromDsOrDplus", {aod::tagandprobe::Cuts[0], aod::tagandprobe::NBinsPt, aod::tagandprobe::NCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for KK pairs from Ds or D+ decays"};
@@ -341,7 +341,7 @@ struct TagTwoProngDisplacedVertices {
     vertexer.setUseAbsDCA(false);
 
     topologicalCuts = {cutsPiPiFromDplus, cutsKaKaFromDsOrDplus, cutsDzeroFromDstar, cutsDzeroFromDstar, cutsDzeroKaKaFromDstar};
-    ptBinsForTopologicalCuts = {BinsPtPiPiFromDplus, BinsPtKaKaFromDsOrDplus, BinsPtDzeroFromDstar, BinsPtDzeroFromDstar, BinsPtDzeroKaKaFromDstar};
+    ptBinsForTopologicalCuts = {binsPtPiPiFromDplus, binsPtKaKaFromDsOrDplus, binsPtDzeroFromDstar, binsPtDzeroFromDstar, binsPtDzeroKaKaFromDstar};
 
     const AxisSpec axisPt{250, 0.f, 50.f};
     const AxisSpec axisPtDzeroRefl{{0.f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 24.0f, 30.0f, 40.0f}};
@@ -1185,9 +1185,9 @@ struct ProbeThirdTrack {
     Configurable<bool> applyMlKaKaFromDsOrDplus{"applyMlKaKaFromDsOrDplus", false, "Flag to enable ML application for KK pairs from Ds or D+ decays"};
     Configurable<bool> applyMlDzeroFromDstar{"applyMlDzeroFromDstar", false, "Flag to enable ML application for Kpi pairs from D0 <- D*+ decays"};
     // pt bins
-    Configurable<std::vector<double>> BinsPtPiPiFromDplus{"BinsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
-    Configurable<std::vector<double>> BinsPtKaKaFromDsOrDplus{"BinsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
-    Configurable<std::vector<double>> BinsPtDzeroFromDstar{"BinsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
+    Configurable<std::vector<double>> binsPtPiPiFromDplus{"binsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
+    Configurable<std::vector<double>> binsPtKaKaFromDsOrDplus{"binsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
+    Configurable<std::vector<double>> binsPtDzeroFromDstar{"binsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
     // ML cuts
     Configurable<LabeledArray<double>> mlCutsPiPiFromDplus{"mlCutsPiPiFromDplus", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for pipi pairs from D+ decays"};
     Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
