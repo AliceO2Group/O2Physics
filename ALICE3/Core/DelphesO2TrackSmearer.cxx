@@ -157,9 +157,9 @@ lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, const floa
 {
   const int ipdg = getIndexPDG(pdg);
   if (!mLUTHeader[ipdg]) {
-    LOG(error) << " --- getLUTEntry: LUT header not loaded for pdg=" << pdg << ". Returning nullptr.";
     return nullptr;
   }
+
   auto inch = mLUTHeader[ipdg]->nchmap.find(nch);
   auto irad = mLUTHeader[ipdg]->radmap.find(radius);
   auto ieta = mLUTHeader[ipdg]->etamap.find(eta);
@@ -281,7 +281,6 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
 
 bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 {
-
   auto pt = o2track.getPt();
   switch (pdg) {
     case o2::constants::physics::kHelium3:
