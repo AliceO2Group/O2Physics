@@ -682,11 +682,21 @@ struct hadronnucleicorrelation {
   template <int ME, typename Type>
   void mixTracks(Type const& tracks1, Type const& tracks2, bool isIdentical, bool dorapidity)
   { // last value: 0 -- SE; 1 -- ME
+    int i = 0;
     for (auto const& it1 : tracks1) {
+      int j = 0;
       for (auto const& it2 : tracks2) {
 
         Pair->SetPair(it1, it2);
         Pair->SetIdentical(isIdentical);
+
+        if (isIdentical) {
+          if (j <= i)
+            continue;
+
+          if (it1->globalIndex() == it1->globalIndex())
+            continue;
+        }
 
         // if Identical (pp and antip-antip)
         if (isIdentical && Pair->IsClosePair(deta, dphi, radiusTPC)) {
@@ -770,7 +780,9 @@ struct hadronnucleicorrelation {
 
         Pair->ResetPair();
 
+        j++;
       } // tracks 2
+      i++;
     } // tracks 1
   }
 
@@ -823,7 +835,9 @@ struct hadronnucleicorrelation {
   template <int ME, typename Type>
   void mixMCParticlesIdentical(Type const& particles1, Type const& particles2, bool ismatter, bool dorapidity)
   {
+    int i = 0;
     for (auto const& it1 : particles1) {
+      int j = 0;
       for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = it1->eta() - it2->eta();
@@ -832,6 +846,11 @@ struct hadronnucleicorrelation {
         if (dorapidity) {
           deltaEtaGen = deltaRapGen;
         }
+
+        if (j <= i)
+          continue;
+        if (it1->globalIndex() == it1->globalIndex())
+          continue;
 
         if (!ME && std::abs(deltaPhiGen) < 0.0001 && std::abs(deltaEtaGen) < 0.0001) {
           continue;
@@ -854,7 +873,9 @@ struct hadronnucleicorrelation {
             }
           }
         }
+        j++;
       }
+      i++;
     }
   }
 
@@ -954,7 +975,8 @@ struct hadronnucleicorrelation {
       if (isAntiDe) {
         selectedtracks_antid[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
         if (mode == 0 || mode == 2) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_antideuteron->Interpolate(track.pt(), track.eta()));
+          if (docorrection)
+            registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_antideuteron->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -968,7 +990,8 @@ struct hadronnucleicorrelation {
         selectedtracks_d[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         if (mode == 1 || mode == 3) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_deuteron->Interpolate(track.pt(), track.eta()));
+          if (docorrection)
+            registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_deuteron->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -984,7 +1007,8 @@ struct hadronnucleicorrelation {
         selectedtracks_p[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         if (mode == 6 || mode == 7) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_proton->Interpolate(track.pt(), track.eta()));
+          if (docorrection)
+            registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_proton->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -997,7 +1021,8 @@ struct hadronnucleicorrelation {
         selectedtracks_antip[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         if (mode == 4 || mode == 5) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_antiproton->Interpolate(track.pt(), track.eta()));
+          if (docorrection)
+            registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_antiproton->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -1049,6 +1074,54 @@ struct hadronnucleicorrelation {
 
       Pair->SetMagField1(collision.magField());
       Pair->SetMagField2(collision.magField());
+
+      if (mode == 0 &&
+          selectedtracks_antid.find(collision.globalIndex()) != selectedtracks_antid.end() &&
+          selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end()) {
+        mixTracks<0>(selectedtracks_antid[collision.globalIndex()], selectedtracks_antip[collision.globalIndex()], 0, dorapidity); // mixing SE
+      }
+
+      if (mode == 1 &&
+          selectedtracks_d.find(collision.globalIndex()) != selectedtracks_d.end() &&
+          selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end()) {
+        mixTracks<0>(selectedtracks_d[collision.globalIndex()], selectedtracks_p[collision.globalIndex()], 0, dorapidity); // mixing SE
+      }
+
+      if (mode == 2 &&
+          selectedtracks_antid.find(collision.globalIndex()) != selectedtracks_antid.end() &&
+          selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end()) {
+        mixTracks<0>(selectedtracks_antid[collision.globalIndex()], selectedtracks_p[collision.globalIndex()], 0, dorapidity); // mixing SE
+      }
+
+      if (mode == 3 &&
+          selectedtracks_d.find(collision.globalIndex()) != selectedtracks_d.end() &&
+          selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end()) {
+        mixTracks<0>(selectedtracks_d[collision.globalIndex()], selectedtracks_antip[collision.globalIndex()], 0, dorapidity); // mixing SE
+      }
+
+      if (mode == 4 &&
+          selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end() &&
+          selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end()) {
+        mixTracks<0>(selectedtracks_antip[collision.globalIndex()], selectedtracks_p[collision.globalIndex()], 0, dorapidity); // mixing SE
+      }
+
+      if (mode == 5 &&
+          selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end() &&
+          selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end()) {
+        mixTracks<0>(selectedtracks_antip[collision.globalIndex()], selectedtracks_antip[collision.globalIndex()], 1, dorapidity); // mixing SE
+      }
+
+      if (mode == 6 &&
+          selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end() &&
+          selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end()) {
+        mixTracks<0>(selectedtracks_p[collision.globalIndex()], selectedtracks_p[collision.globalIndex()], 1, dorapidity); // mixing SE
+      }
+
+      if (mode == 7 &&
+          selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end() &&
+          selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end()) {
+        mixTracks<0>(selectedtracks_p[collision.globalIndex()], selectedtracks_antip[collision.globalIndex()], 0, dorapidity); // mixing SE
+      }
     }
 
     if (mode == 0 && !mixbins_antid.empty()) {
@@ -1062,9 +1135,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+          /*if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
             mixTracks<0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1093,9 +1166,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+          /*if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
             mixTracks<0>(selectedtracks_d[col1->index()], selectedtracks_p[col1->index()], 0, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1124,9 +1197,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+          /*if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
             mixTracks<0>(selectedtracks_antid[col1->index()], selectedtracks_p[col1->index()], 0, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1155,9 +1228,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+          /*if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
             mixTracks<0>(selectedtracks_d[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1186,9 +1259,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+          /*if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
             mixTracks<0>(selectedtracks_antip[col1->index()], selectedtracks_p[col1->index()], 0, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1217,9 +1290,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+          /*if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
             mixTracks<0>(selectedtracks_antip[col1->index()], selectedtracks_antip[col1->index()], 1, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1248,9 +1321,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+          /*if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
             mixTracks<0>(selectedtracks_p[col1->index()], selectedtracks_p[col1->index()], 1, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
@@ -1279,9 +1352,9 @@ struct hadronnucleicorrelation {
 
           auto col1 = value[indx1];
 
-          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+          /*if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
             mixTracks<0>(selectedtracks_p[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
-          }
+          }*/
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
