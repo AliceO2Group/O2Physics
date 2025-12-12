@@ -107,6 +107,8 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgDrawEtaPhiDis, bool, false, "draw eta-phi distribution for detectors in used")
+  O2_DEFINE_CONFIGURABLE(cfgRejectOuterRings, bool, false, "Reject events from the outer rings of both FT0A and FT0C detectors")
+  O2_DEFINE_CONFIGURABLE(cfgRejectInnerRings, bool, false, "Reject events from the inner rings of both FT0A and FT0C detectors")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -235,6 +237,16 @@ struct LongRangeDihadronCor {
     kTPC = 0,
     kTOF,
     kITS
+  };
+  enum DetectorChannels {
+    kFT0AInnerRingMin = 0,
+    kFT0AInnerRingMax = 31,
+    kFT0AOuterRingMin = 32,
+    kFT0AOuterRingMax = 95,
+    kFT0CInnerRingMin = 96,
+    kFT0CInnerRingMax = 143,
+    kFT0COuterRingMin = 144,
+    kFT0COuterRingMax = 207
   };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
@@ -639,12 +651,16 @@ struct LongRangeDihadronCor {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
+      if ((cfgRejectInsideDetectors && ((id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax) || (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax))) || (cfgRejectOutsideDetectors && ((id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax) || (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax))))
+        ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
       registry.fill(HIST("FT0AmpCorrect"), id, ampl);
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
+      if ((cfgRejectInsideDetectors && ((id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax) || (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax))) || (cfgRejectOutsideDetectors && ((id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax) || (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax))))
+        ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
       ampl = ampl / cstFT0RelGain[iCh];
       registry.fill(HIST("FT0AmpCorrect"), id, ampl);
