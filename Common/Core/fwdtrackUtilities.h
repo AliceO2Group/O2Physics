@@ -75,7 +75,7 @@ o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov
   return trackparCov;
 }
 
-/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift 
+/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
 template <typename TFwdTrack, typename... TCovariance>
 o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
 {
@@ -105,8 +105,7 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
     std::vector<double> v1{
       cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
       cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
-      cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()
-    };
+      cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
     tcovs = SMatrix55(v1.begin(), v1.end());
   } else {
     tcovs = SMatrix55{};
