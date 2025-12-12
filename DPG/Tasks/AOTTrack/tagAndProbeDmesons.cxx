@@ -73,13 +73,39 @@ enum SignalFlags : uint8_t {
   BkgFromNoHf
 };
 
-static constexpr int nBinsPt = 7;
-static constexpr int nCutVars = 9;
-constexpr double binsPt[nBinsPt + 1] = {0., 1., 2., 4., 6., 10., 20., 1000.};
-auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+enum EvSelITSLayers : uint8_t {
+  None = 0,
+  GoodITSLayer3,
+  GoodITSLayer0123,
+  GoodITSLayersAll,
+  NEvSelITSLayers
+};
+
+enum TopoVarsFillOptions : uint8_t {
+  Disabled = 0,
+  Signal,
+  Background,
+  BackgroundNoHF,
+  All,
+  NTopoVarsFillOptions
+};
+
+enum DzeroType : uint8_t {
+  Dzero = 1,
+  DzeroBar,
+  DzeroAndDzeroBar
+};
+
+static constexpr float ZVtxMax = 10.f;
+static constexpr float PtMaxDcaCut = 2.f;
+
+static constexpr int NBinsPt = 7;
+static constexpr int NCutVars = 9;
+constexpr double BinsPt[NBinsPt + 1] = {0., 1., 2., 4., 6., 10., 20., 1000.};
+auto VecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutVars] = {{1.815f, 1.915f, 0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
+constexpr double Cuts[NBinsPt][NCutVars] = {{1.815f, 1.915f, 0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
                                             {1.815f, 1.915f, 0.01f, 0.01f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
                                             {1.815f, 1.915f, 0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
                                             {1.815f, 1.915f, 0.02f, 0.02f, 2.f, 2.f, 0.f, 0.90f, 0.90f},
@@ -87,7 +113,7 @@ constexpr double cuts[nBinsPt][nCutVars] = {{1.815f, 1.915f, 0.01f, 0.01f, 2.f, 
                                             {1.815f, 1.915f, 0.04f, 0.04f, 2.f, 2.f, 0.f, 0.95f, 0.95f},
                                             {1.815f, 1.915f, 0.06f, 0.06f, 2.f, 2.f, 0.f, 0.95f, 0.95f}};
 
-constexpr double mlCuts[nBinsPt][3] = {{0.f, 0.f, 0.f},
+constexpr double MlCuts[NBinsPt][3] = {{0.f, 0.f, 0.f},
                                        {0.f, 0.f, 0.f},
                                        {0.f, 0.f, 0.f},
                                        {0.f, 0.f, 0.f},
@@ -202,7 +228,7 @@ struct TagTwoProngDisplacedVertices {
   Produces<aod::TagTopoVariables> tagVarsTable;
 
   SliceCache cache;
-  Configurable<int> fillTopoVarsTable{"fillTopoVarsTable", 0, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> bkg from no HF only, 4 -> all)"};
+  Configurable<int> fillTopoVarsTable{"fillTopoVarsTable", 0, "flag to fill tag table with topological variables (0: disabled, 1: signal only, 2: bkg only, 3: bkg from no HF only, 4: all)"};
   Configurable<float> downsamplingForTopoVarTable{"downsamplingForTopoVarTable", 1.1, "fraction of tag candidates to downscale in filling table with topological variables"};
   Configurable<float> ptTagMaxForDownsampling{"ptTagMaxForDownsampling", 5., "maximum pT for downscaling of tag candidates in filling table with topological variables"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
@@ -212,15 +238,15 @@ struct TagTwoProngDisplacedVertices {
   Configurable<float> trackDcaXyMin{"trackDcaXyMin", 0.002f, "minimum DCAxy for tracks with pT < 2 GeV/c"};
   Configurable<float> trackPtMin{"trackPtMin", 0.4f, "minimum track pT"};
 
-  Configurable<std::vector<double>> binsPtPiPiFromDplus{"binsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
-  Configurable<std::vector<double>> binsPtKaKaFromDsOrDplus{"binsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
-  Configurable<std::vector<double>> binsPtDzeroFromDstar{"binsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
-  Configurable<std::vector<double>> binsPtDzeroKaKaFromDstar{"binsPtDzeroKaKaFromDstar", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for KK pairs from D0 <- D*+ decays"};
+  Configurable<std::vector<double>> BinsPtPiPiFromDplus{"BinsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
+  Configurable<std::vector<double>> BinsPtKaKaFromDsOrDplus{"BinsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
+  Configurable<std::vector<double>> BinsPtDzeroFromDstar{"BinsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
+  Configurable<std::vector<double>> BinsPtDzeroKaKaFromDstar{"BinsPtDzeroKaKaFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from D0 <- D*+ decays"};
 
-  Configurable<LabeledArray<double>> cutsPiPiFromDplus{"cutsPiPiFromDplus", {aod::tagandprobe::cuts[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for pipi pairs from D+ decays"};
-  Configurable<LabeledArray<double>> cutsKaKaFromDsOrDplus{"cutsKaKaFromDsOrDplus", {aod::tagandprobe::cuts[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for KK pairs from Ds or D+ decays"};
-  Configurable<LabeledArray<double>> cutsDzeroFromDstar{"cutsDzeroFromDstar", {aod::tagandprobe::cuts[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for Kpi pairs from D0 <- D*+ decays"};
-  Configurable<LabeledArray<double>> cutsDzeroKaKaFromDstar{"cutsDzeroKaKaFromDstar", {aod::tagandprobe::cuts[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for KK pairs from D0 <- D*+ decays"};
+  Configurable<LabeledArray<double>> cutsPiPiFromDplus{"cutsPiPiFromDplus", {aod::tagandprobe::Cuts[0], aod::tagandprobe::NBinsPt, aod::tagandprobe::NCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for pipi pairs from D+ decays"};
+  Configurable<LabeledArray<double>> cutsKaKaFromDsOrDplus{"cutsKaKaFromDsOrDplus", {aod::tagandprobe::Cuts[0], aod::tagandprobe::NBinsPt, aod::tagandprobe::NCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for KK pairs from Ds or D+ decays"};
+  Configurable<LabeledArray<double>> cutsDzeroFromDstar{"cutsDzeroFromDstar", {aod::tagandprobe::Cuts[0], aod::tagandprobe::NBinsPt, aod::tagandprobe::NCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for Kpi pairs from D0 <- D*+ decays"};
+  Configurable<LabeledArray<double>> cutsDzeroKaKaFromDstar{"cutsDzeroKaKaFromDstar", {aod::tagandprobe::Cuts[0], aod::tagandprobe::NBinsPt, aod::tagandprobe::NCutVars, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsCutVar}, "Selections for KK pairs from D0 <- D*+ decays"};
 
   // ML models for triggers
   struct : ConfigurableGroup {
@@ -243,19 +269,19 @@ struct TagTwoProngDisplacedVertices {
     // ML cuts
     Configurable<int> numMlClasses{"numMlClasses", 3, "Number of classes for the ML models"};
     Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller}, "Whether to reject score values greater or smaller than the threshold"};
-    Configurable<LabeledArray<double>> mlCutsPiPiFromDplus{"mlCutsPiPiFromDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for pipi pairs from D+ decays"};
-    Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
-    Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
-    Configurable<LabeledArray<double>> mlCutsDzeroKaKaFromDstar{"mlCutsDzeroKaKaFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from D0 <- D*+ decays"};
+    Configurable<LabeledArray<double>> mlCutsPiPiFromDplus{"mlCutsPiPiFromDplus", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for pipi pairs from D+ decays"};
+    Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
+    Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
+    Configurable<LabeledArray<double>> mlCutsDzeroKaKaFromDstar{"mlCutsDzeroKaKaFromDstar", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from D0 <- D*+ decays"};
   } mlConfig;
 
   using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWithSelAndDcaMc = soa::Join<TracksWithSelAndDca, aod::McTrackLabels>;
   using CollisionsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
-  Filter evSelFilter = aod::evsel::sel8 == true;                                                                                                              // simple event selection
-  Filter collisionFilter = nabs(aod::collision::posZ) < 10.f;                                                                                                 // simple event selection
-  Filter trackFilter = requireGlobalTrackWoDCAInFilter() && aod::track::pt > trackPtMin && (nabs(aod::track::dcaXY) > trackDcaXyMin || aod::track::pt > 2.f); // for the tag, we only consider global tracks with large dcaXY (low pT only)
+  Filter evSelFilter = aod::evsel::sel8 == true;                                                                                                                                            // simple event selection
+  Filter collisionFilter = nabs(aod::collision::posZ) < o2::aod::tagandprobe::ZVtxMax;                                                                                                      // simple event selection
+  Filter trackFilter = requireGlobalTrackWoDCAInFilter() && aod::track::pt > trackPtMin && (nabs(aod::track::dcaXY) > trackDcaXyMin || aod::track::pt > o2::aod::tagandprobe::PtMaxDcaCut); // for the tag, we only consider global tracks with large dcaXY (low pT only)
   using TracksWithSelAndDcaFiltered = soa::Filtered<TracksWithSelAndDca>;
   using TracksWithSelAndDcaMcFiltered = soa::Filtered<TracksWithSelAndDcaMc>;
   using CollisionsFiltered = soa::Filtered<CollisionsWithEvSel>;
@@ -315,7 +341,7 @@ struct TagTwoProngDisplacedVertices {
     vertexer.setUseAbsDCA(false);
 
     topologicalCuts = {cutsPiPiFromDplus, cutsKaKaFromDsOrDplus, cutsDzeroFromDstar, cutsDzeroFromDstar, cutsDzeroKaKaFromDstar};
-    ptBinsForTopologicalCuts = {binsPtPiPiFromDplus, binsPtKaKaFromDsOrDplus, binsPtDzeroFromDstar, binsPtDzeroFromDstar, binsPtDzeroKaKaFromDstar};
+    ptBinsForTopologicalCuts = {BinsPtPiPiFromDplus, BinsPtKaKaFromDsOrDplus, BinsPtDzeroFromDstar, BinsPtDzeroFromDstar, BinsPtDzeroKaKaFromDstar};
 
     const AxisSpec axisPt{250, 0.f, 50.f};
     const AxisSpec axisPtDzeroRefl{{0.f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 24.0f, 30.0f, 40.0f}};
@@ -383,13 +409,13 @@ struct TagTwoProngDisplacedVertices {
     pdgResonances.clear();
     if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
-      pdgResonances.push_back(313);    // K*(892)0
-      pdgResonances.push_back(10313);  // K1(1270)0
-      pdgResonances.push_back(100313); // K*(1410)0
-      pdgResonances.push_back(10311);  // K*0(1430)0
-      pdgResonances.push_back(100311); // K*(1460)0
-      pdgResonances.push_back(20313);  // K1(1400)0
-      pdgResonances.push_back(30313);  // K*(1680)0
+      pdgResonances.push_back(constants::physics::Pdg::kK0Star892);
+      pdgResonances.push_back(10313);  // o2-linter: disable=pdg/explicit-code (PDG code of K1(1270)0 to be added in O2)
+      pdgResonances.push_back(100313); // o2-linter: disable=pdg/explicit-code (PDG code of K*(1410)0 to be added in O2)
+      pdgResonances.push_back(10311);  // o2-linter: disable=pdg/explicit-code (PDG code of K*0(1430)0 to be added in O2)
+      pdgResonances.push_back(100311); // o2-linter: disable=pdg/explicit-code (PDG code of K*(1460)0 to be added in O2)
+      pdgResonances.push_back(20313);  // o2-linter: disable=pdg/explicit-code (PDG code of K1(1400)0 to be added in O2)
+      pdgResonances.push_back(30313);  // o2-linter: disable=pdg/explicit-code (PDG code of K*(1680)0 to be added in O2)
     } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
       pdgDecayMothers.push_back(constants::physics::Pdg::kDS);
@@ -422,13 +448,13 @@ struct TagTwoProngDisplacedVertices {
 
     if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
       pdgTagMother = constants::physics::Pdg::kDPlus;
-      pdgProbeParticle = 321; // Ka
+      pdgProbeParticle = kKPlus;
     } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
       pdgTagMother = constants::physics::Pdg::kPhi;
-      pdgProbeParticle = 211; // Pi
+      pdgProbeParticle = kPiPlus;
     } else {
       pdgTagMother = constants::physics::Pdg::kD0;
-      pdgProbeParticle = 211; // Pi
+      pdgProbeParticle = kPiPlus;
     }
 
     if (!firsTrack.has_mcParticle() || !secondTrack.has_mcParticle()) {
@@ -442,6 +468,7 @@ struct TagTwoProngDisplacedVertices {
       auto secondTrackMotherId = RecoDecay::getMother(mcParticles, secondMcTrack, pdgTagMother, true);
 
       bool isTaggedAsSignal{false}, isResonant{false};
+      const int nDauReso{2}, nDauNonReso{3};
       if ((firstTrackMotherId == secondTrackMotherId) && (firstTrackMotherId != -1)) {
         auto particleMother = mcParticles.rawIteratorAt(firstTrackMotherId);
 
@@ -451,16 +478,16 @@ struct TagTwoProngDisplacedVertices {
           auto daughters = particleMother.template daughters_as<PParticles>();
 
           // Check if the probe is within the mother's particle daughters
-          if (daughters.size() == 3) { // non-resonant decay
-            for (auto& daughter : daughters) {
+          if (daughters.size() == nDauNonReso) { // non-resonant decay
+            for (auto const& daughter : daughters) {
               if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
                 isTaggedAsSignal = true;
                 motherIdx = firstTrackMotherId;
                 break;
               }
             }
-          } else if (daughters.size() == 2) { // resonant decay
-            for (auto& daughter : daughters) {
+          } else if (daughters.size() == nDauReso) { // resonant decay
+            for (auto const& daughter : daughters) {
               auto absPdg = std::abs(daughter.pdgCode());
               if (std::find(pdgResonances.begin(), pdgResonances.end(), absPdg) != pdgResonances.end()) {
                 isTaggedAsSignal = true;
@@ -473,14 +500,14 @@ struct TagTwoProngDisplacedVertices {
         } else {
           ///  K∓K± for φ from Ds± or D± → φπ± decays
           ///  K∓π± for D0 from D±* → D0π± decays
-          for (auto pdgGrandMother : pdgDecayMothers) {
+          for (auto const& pdgGrandMother : pdgDecayMothers) {
             auto grandMotherId = RecoDecay::getMother(mcParticles, particleMother, pdgGrandMother, true);
             if (grandMotherId != -1) {
               auto particleGrandMother = mcParticles.rawIteratorAt(grandMotherId);
               auto daughters = particleGrandMother.template daughters_as<PParticles>();
               // Check if the probe is within the GrandMother's particle daughters
-              if (daughters.size() == 2) { // exclude undesired decays, such as Ds± → φπ±π±π∓
-                for (auto& daughter : daughters) {
+              if (daughters.size() == nDauReso) { // exclude undesired decays, such as Ds± → φπ±π±π∓
+                for (auto const& daughter : daughters) {
                   if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
                     isTaggedAsSignal = true;
                     motherIdx = grandMotherId;
@@ -740,11 +767,11 @@ struct TagTwoProngDisplacedVertices {
 
         if (fillTopoVarsTable) {
           bool fillTable{true};
-          if (fillTopoVarsTable == 1 && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
+          if (fillTopoVarsTable == aod::tagandprobe::TopoVarsFillOptions::Signal && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
             fillTable = false;
-          } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
+          } else if (fillTopoVarsTable == aod::tagandprobe::TopoVarsFillOptions::Background && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
             fillTable = false;
-          } else if (fillTopoVarsTable == 3 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
+          } else if (fillTopoVarsTable == aod::tagandprobe::TopoVarsFillOptions::BackgroundNoHF && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
             fillTable = false;
           }
           float pseudoRndm = trackFirst.pt() * 1000. - static_cast<int64_t>(trackFirst.pt() * 1000);
@@ -867,15 +894,15 @@ struct TagTwoProngDisplacedVertices {
             registry.fill(HIST("hMassKaPiVsPt"), ptTag, invMass);
           } else {
             float invMassRefl{0.f};
-            int isDzero = 1;
+            int isDzero = aod::tagandprobe::DzeroType::Dzero;
             if (std::abs(trackPos.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackNeg.tpcNSigmaPi()) < trackNumSigmaTpc)) {
-              isDzero = 3;
+              isDzero = aod::tagandprobe::DzeroType::DzeroAndDzeroBar;
               if (applyTofPid) {
                 if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi))
-                  isDzero = 1;
+                  isDzero = aod::tagandprobe::DzeroType::Dzero;
               }
             }
-            if (isDzero == 3) {
+            if (isDzero == aod::tagandprobe::DzeroType::DzeroAndDzeroBar) {
               auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
               invMassRefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
             }
@@ -886,15 +913,15 @@ struct TagTwoProngDisplacedVertices {
             registry.fill(HIST("hMassKaPiVsPt"), ptTag, invMass);
           } else {
             float invMassRefl{0.f};
-            int isDzero = 2;
+            int isDzero = aod::tagandprobe::DzeroType::DzeroBar;
             if (std::abs(trackNeg.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackPos.tpcNSigmaPi()) < trackNumSigmaTpc)) {
-              isDzero = 3;
+              isDzero = aod::tagandprobe::DzeroType::DzeroAndDzeroBar;
               if (applyTofPid) {
                 if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi))
-                  isDzero = 2;
+                  isDzero = aod::tagandprobe::DzeroType::DzeroBar;
               }
             }
-            if (isDzero == 3) {
+            if (isDzero == aod::tagandprobe::DzeroType::DzeroAndDzeroBar) {
               auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
               invMassRefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
             }
@@ -906,11 +933,11 @@ struct TagTwoProngDisplacedVertices {
 
         if (fillTopoVarsTable) {
           bool fillTable{true};
-          if (fillTopoVarsTable == 1 && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
+          if (fillTopoVarsTable == aod::tagandprobe::TopoVarsFillOptions::Signal && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
             fillTable = false;
-          } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
+          } else if (fillTopoVarsTable == aod::tagandprobe::TopoVarsFillOptions::Background && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
             fillTable = false;
-          } else if (fillTopoVarsTable == 3 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
+          } else if (fillTopoVarsTable == aod::tagandprobe::TopoVarsFillOptions::BackgroundNoHF && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
             fillTable = false;
           }
           float pseudoRndm = trackPos.pt() * 1000. - static_cast<int64_t>(trackPos.pt() * 1000);
@@ -1151,14 +1178,6 @@ struct TagTwoProngDisplacedVertices {
 /// Probe third track reconstruction efficiency with different selections
 struct ProbeThirdTrack {
 
-  enum EvSelITSLayers : uint8_t {
-    None = 0,
-    GoodITSLayer3,
-    GoodITSLayer0123,
-    GoodITSLayersAll,
-    NEvSelITSLayers
-  };
-
   // ML models for triggers
   struct : ConfigurableGroup {
     std::string prefix = "ML";
@@ -1166,13 +1185,13 @@ struct ProbeThirdTrack {
     Configurable<bool> applyMlKaKaFromDsOrDplus{"applyMlKaKaFromDsOrDplus", false, "Flag to enable ML application for KK pairs from Ds or D+ decays"};
     Configurable<bool> applyMlDzeroFromDstar{"applyMlDzeroFromDstar", false, "Flag to enable ML application for Kpi pairs from D0 <- D*+ decays"};
     // pt bins
-    Configurable<std::vector<double>> binsPtPiPiFromDplus{"binsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
-    Configurable<std::vector<double>> binsPtKaKaFromDsOrDplus{"binsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
-    Configurable<std::vector<double>> binsPtDzeroFromDstar{"binsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::vecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
+    Configurable<std::vector<double>> BinsPtPiPiFromDplus{"BinsPtPiPiFromDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
+    Configurable<std::vector<double>> BinsPtKaKaFromDsOrDplus{"BinsPtKaKaFromDsOrDplus", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
+    Configurable<std::vector<double>> BinsPtDzeroFromDstar{"BinsPtDzeroFromDstar", std::vector<double>{aod::tagandprobe::VecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
     // ML cuts
-    Configurable<LabeledArray<double>> mlCutsPiPiFromDplus{"mlCutsPiPiFromDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for pipi pairs from D+ decays"};
-    Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
-    Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
+    Configurable<LabeledArray<double>> mlCutsPiPiFromDplus{"mlCutsPiPiFromDplus", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for pipi pairs from D+ decays"};
+    Configurable<LabeledArray<double>> mlCutsKaKaFromDsOrDplus{"mlCutsKaKaFromDsOrDplus", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for KK pairs from Ds or D+ decays"};
+    Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::MlCuts[0], aod::tagandprobe::NBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
   } mlConfig;
   Configurable<float> ptCandMin{"ptCandMin", 0.f, "Minimum candidate pt for THnSparse filling"};
   Configurable<bool> fillTpcOnlyCase{"fillTpcOnlyCase", true, "Fill output for TPC only case (not needed for thinned data or Pb-Pb)"};
@@ -1391,22 +1410,24 @@ struct ProbeThirdTrack {
   bool isCollisionSelected(CollisionsWithEvSel::iterator const& collision)
   {
     switch (requireCollisionsGoodITS.value) {
-      case None:
+      case aod::tagandprobe::None:
         return true;
         break;
-      case GoodITSLayer3:
+      case aod::tagandprobe::GoodITSLayer3:
         return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
         break;
-      case GoodITSLayer0123:
+      case aod::tagandprobe::GoodITSLayer0123:
         return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
         break;
-      case GoodITSLayersAll:
+      case aod::tagandprobe::GoodITSLayersAll:
         return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
         break;
       default:
         LOGP(fatal, "Event selection flag for ITS acceptance {} not properly set.", requireCollisionsGoodITS.value);
         break;
     }
+
+    return false;
   }
 
   template <uint8_t channel, bool doMc, typename TTags, typename TTrackIndices, typename TTracks, typename PParticles>
@@ -1418,11 +1439,12 @@ struct ProbeThirdTrack {
     for (const auto& tag : groupedTags) {
       auto trackFirst = tag.template track0_as<TTracks>();
       auto trackSecond = tag.template track1_as<TTracks>();
-      if (applyMl[channel] && tag.mlScores().size() == 3) {
+      const int nMlClasses{3};
+      if (applyMl[channel] && tag.mlScores().size() == nMlClasses) {
         std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
         std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
         auto ptTag = RecoDecay::pt(RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond));
-        auto ptBin = o2::analysis::findBin(&mlConfig.binsPtPiPiFromDplus.value, ptTag);
+        auto ptBin = o2::analysis::findBin(&mlConfig.BinsPtPiPiFromDplus.value, ptTag);
         if (tag.mlScores()[0] > mlConfig.mlCutsPiPiFromDplus->get(ptBin, 0u) || tag.mlScores()[1] < mlConfig.mlCutsPiPiFromDplus->get(ptBin, 1u) || tag.mlScores()[2] < mlConfig.mlCutsPiPiFromDplus->get(ptBin, 2u)) {
           continue;
         }
@@ -1560,7 +1582,7 @@ struct ProbeThirdTrack {
   void processGeneratedDstarToDzeroPi(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
 
-    if (std::abs(mcCollision.posZ()) > 10.)
+    if (std::abs(mcCollision.posZ()) > o2::aod::tagandprobe::ZVtxMax)
       return;
     std::array<int, 3> arrDstar = {kPiPlus, kKMinus, kPiPlus};
     int8_t* sign = nullptr;
