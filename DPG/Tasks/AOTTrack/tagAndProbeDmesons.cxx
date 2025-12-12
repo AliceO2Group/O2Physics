@@ -114,6 +114,7 @@ DECLARE_SOA_COLUMN(TrackDcaXY1, trackDcaXY1, float);                         //!
 DECLARE_SOA_COLUMN(ProductTrackDcaXY, productTrackDcaXY, float);             //! Product of DCAxy of the two tag tracks
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of the tag
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine of the pointing angle in XY of the tag
+DECLARE_SOA_COLUMN(Radius, radius, float);                                   //! Radius of the tag
 DECLARE_SOA_COLUMN(DecChannel, decChannel, uint8_t);                         //! Flag the selected decay channel
 // MC info
 DECLARE_SOA_COLUMN(IsSignal, isSignal, uint8_t);                     //! Flag for a signal
@@ -127,7 +128,8 @@ DECLARE_SOA_TABLE(PiPiFromDpTags, "AOD", "PIPIFROMDPTAG", //! Table for same sig
                   aod::tagandprobe::CollisionId,
                   aod::tagandprobe::Track0Id,
                   aod::tagandprobe::Track1Id,
-                  aod::tagandprobe::MlScores);
+                  aod::tagandprobe::MlScores,
+                  aod::tagandprobe::Radius);
 DECLARE_SOA_TABLE(PiPiFromDpMcTags, "AOD", "PIPIFROMDPMCTAG", //! Table with MC truth for same sign 2-pion vertices used as tags
                   aod::tagandprobe::IsSignal,
                   aod::tagandprobe::MotherId);
@@ -137,6 +139,7 @@ DECLARE_SOA_TABLE(KaKaFromDspTags, "AOD", "KAKAFROMDSPTAG", //! Table for opposi
                   aod::tagandprobe::Track0Id,
                   aod::tagandprobe::Track1Id,
                   aod::tagandprobe::MlScores,
+                  aod::tagandprobe::Radius,
                   soa::Marker<1>);
 DECLARE_SOA_TABLE(KaKaFromDsMcTags, "AOD", "KAKAFROMDSMCTAG", //! Table with MC truth for opposite sign 2-kaon vertices used as tags
                   aod::tagandprobe::IsSignal,
@@ -148,6 +151,7 @@ DECLARE_SOA_TABLE(PiKaFromDzTags, "AOD", "PIKAFROMDZTAG", //! Table for opposite
                   aod::tagandprobe::Track0Id,
                   aod::tagandprobe::Track1Id,
                   aod::tagandprobe::MlScores,
+                  aod::tagandprobe::Radius,
                   soa::Marker<2>);
 DECLARE_SOA_TABLE(PiKaFromDzMcTags, "AOD", "PIKAFROMDZMCTAG", //! Table with MC truth for opposite sign pion(+)-kaon(-) vertices used as tags
                   aod::tagandprobe::IsSignal,
@@ -159,6 +163,7 @@ DECLARE_SOA_TABLE(KaPiFromDzTags, "AOD", "KAPIFROMDZTAG", //! Table for opposite
                   aod::tagandprobe::Track0Id,
                   aod::tagandprobe::Track1Id,
                   aod::tagandprobe::MlScores,
+                  aod::tagandprobe::Radius,
                   soa::Marker<3>);
 DECLARE_SOA_TABLE(KaPiFromDzMcTags, "AOD", "KAPIFROMDZMCTAG", //! Table with MC truth for opposite sign kaon(+)-pion(-) vertices used as tags
                   aod::tagandprobe::IsSignal,
@@ -750,7 +755,8 @@ struct TagTwoProngDisplacedVertices {
             tagVarsTable(ptTag, invMass, topoVars[0], topoVars[1], topoVars[2], topoVars[3], trackDcaXy[0], trackDcaXy[1], topoVars[6], topoVars[7], topoVars[8], isSignal, channel);
           }
         } else {
-          tagPiPiTable(trackFirst.collisionId(), trackFirst.globalIndex(), trackSecond.globalIndex(), mlScoresTag);
+          float radius = std::hypot(secVtx[0], secVtx[1]);
+          tagPiPiTable(trackFirst.collisionId(), trackFirst.globalIndex(), trackSecond.globalIndex(), mlScoresTag, radius);
           if constexpr (doMc) {
             tagPiPiMcTable(isSignal, motherIdx);
           }
@@ -916,17 +922,20 @@ struct TagTwoProngDisplacedVertices {
           }
         } else {
           if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
-            tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), mlScoresTag);
+            float radius = std::hypot(secVtx[0], secVtx[1]);
+            tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), mlScoresTag, radius);
             if constexpr (doMc) {
               tagKaKaMcTable(isSignal, motherIdx);
             }
           } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) {
-            tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), mlScoresTag);
+            float radius = std::hypot(secVtx[0], secVtx[1]);
+            tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), mlScoresTag, radius);
             if constexpr (doMc) {
               tagPiKaMcTable(isSignal, motherIdx);
             }
           } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
-            tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), mlScoresTag);
+            float radius = std::hypot(secVtx[0], secVtx[1]);
+            tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex(), mlScoresTag, radius);
             if constexpr (doMc) {
               tagKaPiMcTable(isSignal, motherIdx);
             }
@@ -1142,6 +1151,14 @@ struct TagTwoProngDisplacedVertices {
 /// Probe third track reconstruction efficiency with different selections
 struct ProbeThirdTrack {
 
+  enum EvSelITSLayers : uint8_t {
+    None = 0,
+    GoodITSLayer3,
+    GoodITSLayer0123,
+    GoodITSLayersAll,
+    NEvSelITSLayers
+  };
+
   // ML models for triggers
   struct : ConfigurableGroup {
     std::string prefix = "ML";
@@ -1159,6 +1176,7 @@ struct ProbeThirdTrack {
   } mlConfig;
   Configurable<float> ptCandMin{"ptCandMin", 0.f, "Minimum candidate pt for THnSparse filling"};
   Configurable<bool> fillTpcOnlyCase{"fillTpcOnlyCase", true, "Fill output for TPC only case (not needed for thinned data or Pb-Pb)"};
+  Configurable<uint8_t> requireCollisionsGoodITS{"requireCollisionsGoodITS", 0u, "Event selection for ITS full acceptance (0: none, 1: layer 3, 2: layers 0-1-2-3, 3: all layers)"};
 
   ConfigurableAxis axisPtProbe{"axisPtProbe", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Probe"};
   ConfigurableAxis axisPtTag{"axisPtTag", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Tag"};
@@ -1170,11 +1188,13 @@ struct ProbeThirdTrack {
   ConfigurableAxis axisNumCluIts{"axisNumCluIts", {5, 2.5f, 7.5f}, "Axis for Number of Cluster ITS"};
   ConfigurableAxis axisPtMinTagdaught{"axisPtMinTagdaught", {10, 0.f, 1.f}, "Axis for Pt Min of Tag daughter"};
   ConfigurableAxis axisAbsEtaMaxTagdaught{"axisAbsEtaMaxTagdaught", {10, 0.f, 1.f}, "Axis for AbsEtaMax for Tag daughter"};
+  ConfigurableAxis axisRadiusTag{"axisRadiusTag", {100, 0.f, 0.5f}, "Axis for Tag Radius (cm)"};
 
   Filter tagMcFilter = aod::tagandprobe::isSignal > static_cast<uint8_t>(0);
 
   using TracksWithDca = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksExtra>;
   using TracksWithDcaMc = soa::Join<TracksWithDca, aod::McTrackLabels>;
+  using CollisionsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
   using FilteredPiPiFromDpMcTags = soa::Filtered<soa::Join<aod::PiPiFromDpTags, aod::PiPiFromDpMcTags>>;
   using FilteredKaKaFromDspMcTags = soa::Filtered<soa::Join<aod::KaKaFromDspTags, aod::KaKaFromDsMcTags>>;
   using FilteredPiKaFromDzMcTags = soa::Filtered<soa::Join<aod::PiKaFromDzTags, aod::PiKaFromDzMcTags>>;
@@ -1263,15 +1283,15 @@ struct ProbeThirdTrack {
           continue;
         }
         histos[iChannel][iTrackType] = registry.add<THnSparse>(Form("h%sVsPtProbeTag_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()),
-                                                               "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe) (GeV/#it{c}); #it{p}_{T}^{TPC in}(probe) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2}); #it{#eta}(probe); #it{N}_{cross rows}^{TPC}(probe); #chi^{2}/#it{N}_{clusters}^{TPC}(probe); #it{N}_{clusters}^{ITS}(probe);",
-                                                               HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts});
+                                                               "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe) (GeV/#it{c}); #it{p}_{T}^{TPC in}(probe) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2}); #it{#eta}(probe); #it{N}_{cross rows}^{TPC}(probe); #chi^{2}/#it{N}_{clusters}^{TPC}(probe); #it{N}_{clusters}^{ITS}(probe); radius(tag) (cm)",
+                                                               HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts, axisRadiusTag});
         auto invMassBins = axisMass[iChannel].binEdges;
         minInvMass[iChannel] = invMassBins.front();
         maxInvMass[iChannel] = invMassBins.back();
       }
     }
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
-      histosGen[iChannel] = registry.add<THnSparse>(Form("hGen%s", tagChannels[iChannel].data()), ";#it{p}_{T}(D_{parent}) (GeV/#it{c}); #it{y}(D_{parent});#it{p}_{T}(tag) (GeV/#it{c}); #it{y}(tag);#it{p}_{T}(probe) (GeV/#it{c}); #it{#eta}(probe);#it{p}_{T}^{min}(tag daughters);#it{#eta}_{max}(tag daughters)", HistType::kTHnSparseF, {axisPtD, axisYD, axisPtTag, axisYD, axisPtProbe, axisEtaProbe, axisPtMinTagdaught, axisAbsEtaMaxTagdaught});
+      histosGen[iChannel] = registry.add<THnSparse>(Form("hGen%s", tagChannels[iChannel].data()), ";#it{p}_{T}(D_{parent}) (GeV/#it{c}); #it{y}(D_{parent});#it{p}_{T}(tag) (GeV/#it{c}); #it{y}(tag);#it{p}_{T}(probe) (GeV/#it{c}); #it{#eta}(probe);#it{p}_{T}^{min}(tag daughters);#it{#eta}_{max}(tag daughters); radius(tag) (cm)", HistType::kTHnSparseF, {axisPtD, axisYD, axisPtTag, axisYD, axisPtProbe, axisEtaProbe, axisPtMinTagdaught, axisAbsEtaMaxTagdaught,axisRadiusTag});
     }
     applyMl = {mlConfig.applyMlPiPiFromDplus, mlConfig.applyMlKaKaFromDsOrDplus, mlConfig.applyMlDzeroFromDstar};
   }
@@ -1296,7 +1316,7 @@ struct ProbeThirdTrack {
   }
 
   template <uint8_t channel, bool doMc, typename TTrackIndices, typename TTrack, typename TTracks, typename PParticles>
-  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& /*tracks*/, TTrack const& trackFirst, TTrack const& trackSecond, PParticles const mcParticles, const int motherIdxTag)
+  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& /*tracks*/, TTrack const& trackFirst, TTrack const& trackSecond, PParticles const mcParticles, const int motherIdxTag, const float radius)
   {
     for (const auto& trackIndex : groupedTrackThirdIndices) {
       auto trackThird = trackIndex.template track_as<TTracks>();
@@ -1362,9 +1382,30 @@ struct ProbeThirdTrack {
           continue;
         }
         if (trackSelector[iTrackType].IsSelected(trackThird)) {
-          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, ptTpcInnerTrackThird, invMass, invMassTag, etaTrackThird, numTpcCrossRowTrackThird, numTpcChi2NumCluTrackThird, numItsCluTrackThird);
+          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, ptTpcInnerTrackThird, invMass, invMassTag, etaTrackThird, numTpcCrossRowTrackThird, numTpcChi2NumCluTrackThird, numItsCluTrackThird, radius);
         }
       }
+    }
+  }
+
+  bool isCollisionSelected(CollisionsWithEvSel::iterator const& collision)
+  {
+    switch(requireCollisionsGoodITS.value) {
+      case None:
+        return true;
+        break;
+      case GoodITSLayer3:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+        break;
+      case GoodITSLayer0123:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+        break;
+      case GoodITSLayersAll:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+        break;
+      default:
+        LOGP(fatal, "Event selection flag for ITS acceptance {} not properly set.", requireCollisionsGoodITS.value);
+        break;
     }
   }
 
@@ -1390,16 +1431,19 @@ struct ProbeThirdTrack {
       if constexpr (doMc) {
         motherIdxTag = tag.motherId();
       }
-      loopOverThirdTrack<channel, doMc>(groupedTrackIndices, tracks, trackFirst, trackSecond, mcParticles, motherIdxTag);
+      loopOverThirdTrack<channel, doMc>(groupedTrackIndices, tracks, trackFirst, trackSecond, mcParticles, motherIdxTag, tag.radius());
     }
   }
 
-  void processCombinatorialDplusToKaPiPi(aod::Collisions const& collisions,
+  void processCombinatorialDplusToKaPiPi(CollisionsWithEvSel const& collisions,
                                          aod::PiPiFromDpTags const& tagsPiPi,
                                          aod::TrackAssoc const& trackIndices,
                                          TracksWithDca const& tracks)
   {
     for (const auto& collision : collisions) {
+      if (!isCollisionSelected(collision)) {
+        continue;
+      }
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       // D+ -> pi+pi+K- and c.c.
@@ -1409,13 +1453,16 @@ struct ProbeThirdTrack {
   }
   PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDplusToKaPiPi, "Process combinatorial of tagged 2-pion vertices with additional track", true);
 
-  void processCombinatorialDplusToKaPiPiMc(aod::Collisions const& collisions,
+  void processCombinatorialDplusToKaPiPiMc(CollisionsWithEvSel const& collisions,
                                            FilteredPiPiFromDpMcTags const& tagsPiPi,
                                            aod::TrackAssoc const& trackIndices,
                                            TracksWithDcaMc const& tracks,
                                            aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
+      if (!isCollisionSelected(collision)) {
+        continue;
+      }
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       // D+ -> pi+pi+K- and c.c.
@@ -1425,14 +1472,17 @@ struct ProbeThirdTrack {
   }
   PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDplusToKaPiPiMc, "Process combinatorial of tagged 2-pion vertices with additional track using MC truth", false);
 
-  void processCombinatorialDsToPhiPi(aod::Collisions const& collisions,
+  void processCombinatorialDsToPhiPi(CollisionsWithEvSel const& collisions,
                                      aod::KaKaFromDspTags const& tagsKaKa,
                                      aod::TrackAssoc const& trackIndices,
                                      TracksWithDca const& tracks)
   {
     for (const auto& collision : collisions) {
-      // Ds+/D+ -> phi(->K+K-)pi+ and c.c.
+      if (!isCollisionSelected(collision)) {
+        continue;
+      }
       auto thisCollId = collision.globalIndex();
+      // Ds+/D+ -> phi(->K+K-)pi+ and c.c.
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto groupedTagsKaKa = tagsKaKa.sliceBy(tagsKaKaPerCollision, thisCollId);
       runCombinatorialThirdTrack<aod::tagandprobe::TagChannels::DsOrDplusToKKPi, false>(groupedTagsKaKa, groupedTrackIndices, tracks, tracks);
@@ -1440,15 +1490,18 @@ struct ProbeThirdTrack {
   }
   PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDsToPhiPi, "Process combinatorial of tagged 2-kaon (phi) vertices with additional track", true);
 
-  void processCombinatorialDsToPhiPiMc(aod::Collisions const& collisions,
+  void processCombinatorialDsToPhiPiMc(CollisionsWithEvSel const& collisions,
                                        FilteredKaKaFromDspMcTags const& tagsKaKa,
                                        aod::TrackAssoc const& trackIndices,
                                        TracksWithDcaMc const& tracks,
                                        aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
-      // Ds+/D+ -> phi(->K+K-)pi+ and c.c.
+      if (!isCollisionSelected(collision)) {
+        continue;
+      }
       auto thisCollId = collision.globalIndex();
+      // Ds+/D+ -> phi(->K+K-)pi+ and c.c.
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto groupedTagsKaKa = tagsKaKa.sliceBy(tagsKaKaMcPerCollision, thisCollId);
       runCombinatorialThirdTrack<aod::tagandprobe::TagChannels::DsOrDplusToKKPi, true>(groupedTagsKaKa, groupedTrackIndices, tracks, mcParticles);
@@ -1456,13 +1509,16 @@ struct ProbeThirdTrack {
   }
   PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDsToPhiPiMc, "Process combinatorial of tagged 2-kaon (phi) vertices with additional track using MC truth", false);
 
-  void processCombinatorialDstarToDzeroPi(aod::Collisions const& collisions,
+  void processCombinatorialDstarToDzeroPi(CollisionsWithEvSel const& collisions,
                                           aod::PiKaFromDzTags const& tagsPiKa,
                                           aod::KaPiFromDzTags const& tagsKaPi,
                                           aod::TrackAssoc const& trackIndices,
                                           TracksWithDca const& tracks)
   {
     for (const auto& collision : collisions) {
+      if (!isCollisionSelected(collision)) {
+        continue;
+      }
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       // D*+ -> D0(->pi+K-)pi+
@@ -1475,7 +1531,7 @@ struct ProbeThirdTrack {
   }
   PROCESS_SWITCH(ProbeThirdTrack, processCombinatorialDstarToDzeroPi, "Process combinatorial of tagged pion-kaon (D0) vertices with additional track", true);
 
-  void processCombinatorialDstarToDzeroPiMc(aod::Collisions const& collisions,
+  void processCombinatorialDstarToDzeroPiMc(CollisionsWithEvSel const& collisions,
                                             FilteredPiKaFromDzMcTags const& tagsPiKa,
                                             FilteredKaPiFromDzMcTags const& tagsKaPi,
                                             aod::TrackAssoc const& trackIndices,
@@ -1483,6 +1539,9 @@ struct ProbeThirdTrack {
                                             aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
+      if (!isCollisionSelected(collision)) {
+        continue;
+      }
       auto thisCollId = collision.globalIndex();
       auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       // D*+ -> D0(->pi+K-)pi+
