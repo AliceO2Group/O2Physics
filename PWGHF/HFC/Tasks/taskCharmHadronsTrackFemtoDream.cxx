@@ -295,19 +295,19 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, trackSel.pdgCodeTrack1, true);
 
     sameEventCont.init(&registry,
-                             binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
-                             bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
-                             isMc, use4D, extendedPlots,
-                             highkstarCut,
-                             smearingByOrigin, binInvMass);
+                       binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
+                       bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
+                       isMc, use4D, extendedPlots,
+                       highkstarCut,
+                       smearingByOrigin, binInvMass);
 
     sameEventCont.setPDGCodes(trackSel.pdgCodeTrack1, charmSel.charmHadPDGCode);
     mixedEventCont.init(&registry,
-                              binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
-                              bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
-                              isMc, use4D, extendedPlots,
-                              highkstarCut,
-                              smearingByOrigin, binInvMass);
+                        binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
+                        bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
+                        isMc, use4D, extendedPlots,
+                        highkstarCut,
+                        smearingByOrigin, binInvMass);
 
     mixedEventCont.setPDGCodes(trackSel.pdgCodeTrack1, charmSel.charmHadPDGCode);
     registryMixQa.add("MixingQA/hSECollisionBins", "; bin; Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -787,7 +787,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         doSameEvent<false, DecayChannel::LcToPKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceTrk1, parts, col);
       }
     }
-    if (mixSetting.doMixEvent)
+    if (mixSetting.doMixEvent) {
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
           doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMult);
@@ -801,6 +801,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
       }
+    }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processDataLcTrk, "Enable processing LcToPKPi and Tracks correlation", false);
 
@@ -822,7 +823,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         doSameEvent<false, DecayChannel::DplusToPiKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceTrk1, parts, col);
       }
     }
-    if (mixSetting.doMixEvent)
+    if (mixSetting.doMixEvent) {
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
           doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMult);
@@ -836,6 +837,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
       }
+    }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processDataDplusTrk, "Enable processing DplusToPiKPi and Tracks correlation", false);
 
@@ -853,7 +855,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       fillTables<false, DecayChannel::D0ToPiK>(col, sliceTrk1, sliceCharmHad);
       doSameEvent<false, DecayChannel::D0ToPiK, FilteredCharmCand2Prongs>(sliceCharmHad, sliceTrk1, parts, col);
     }
-    if (mixSetting.doMixEvent)
+    if (mixSetting.doMixEvent) {
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
           doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionTrk1, parts, colBinningMult);
@@ -867,6 +869,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
       }
+    }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processDataD0Trk, "Enable processing D0ToPiK and Tracks correlation", false);
 
@@ -884,7 +887,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceTrk1, sliceCharmHad);
       doSameEvent<false, DecayChannel::DstarToD0Pi, FilteredCharmCandDstars>(sliceCharmHad, sliceTrk1, parts, col);
     }
-    if (mixSetting.doMixEvent)
+    if (mixSetting.doMixEvent) {
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
           doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionTrk1, parts, colBinningMult);
@@ -898,6 +901,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
       }
+    }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processDataDstarTrk, "Enable processing DstarToD0Pi and Tracks correlation", false);
 
