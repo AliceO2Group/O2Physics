@@ -49,7 +49,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+// using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -680,45 +680,45 @@ struct skimmerPrimaryElectronQC {
   }
   PROCESS_SWITCH(skimmerPrimaryElectronQC, processRec, "process reconstructed info only", true); // standalone
 
-  void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
-  {
-    stored_trackIds.reserve(tracks.size());
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  // {
+  //   stored_trackIds.reserve(tracks.size());
 
-    for (const auto& collision : collisions) {
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
+  //   for (const auto& collision : collisions) {
+  //     auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+  //     initCCDB(bc);
 
-      if (!collision.isSelected()) {
-        continue;
-      }
+  //     if (!collision.isSelected()) {
+  //       continue;
+  //     }
 
-      if (collision.swtaliastmp_raw() == 0) {
-        continue;
-      }
+  //     if (collision.swtaliastmp_raw() == 0) {
+  //       continue;
+  //     }
 
-      const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+  //     const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+  //     const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
-      for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
-        if ((checkTrackTight<false>(collision, pos) && isElectronTight(pos)) && (checkTrack<false>(collision, ele) && isElectron(ele))) {
-          if (isDielectronFromPi0<false>(collision, pos, ele)) {
-            fillTrackTable<false>(collision, ele);
-          }
-        }
-        if ((checkTrackTight<false>(collision, ele) && isElectronTight(ele)) && (checkTrack<false>(collision, pos) && isElectron(pos))) {
-          if (isDielectronFromPi0<false>(collision, pos, ele)) {
-            fillTrackTable<false>(collision, pos);
-          }
-        }
+  //     for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
+  //       if ((checkTrackTight<false>(collision, pos) && isElectronTight(pos)) && (checkTrack<false>(collision, ele) && isElectron(ele))) {
+  //         if (isDielectronFromPi0<false>(collision, pos, ele)) {
+  //           fillTrackTable<false>(collision, ele);
+  //         }
+  //       }
+  //       if ((checkTrackTight<false>(collision, ele) && isElectronTight(ele)) && (checkTrack<false>(collision, pos) && isElectron(pos))) {
+  //         if (isDielectronFromPi0<false>(collision, pos, ele)) {
+  //           fillTrackTable<false>(collision, pos);
+  //         }
+  //       }
 
-      } // end of ULS pairing
+  //     } // end of ULS pairing
 
-    } // end of collision loop
+  //   } // end of collision loop
 
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
-  }
-  PROCESS_SWITCH(skimmerPrimaryElectronQC, processRec_SWT, "process reconstructed info only", false); // standalone with swt
+  //   stored_trackIds.clear();
+  //   stored_trackIds.shrink_to_fit();
+  // }
+  // PROCESS_SWITCH(skimmerPrimaryElectronQC, processRec_SWT, "process reconstructed info only", false); // standalone with swt
 
   // ---------- for MC ----------
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;

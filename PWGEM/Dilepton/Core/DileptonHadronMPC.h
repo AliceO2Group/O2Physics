@@ -32,6 +32,7 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Tools/ML/MlResponse.h"
 
@@ -49,7 +50,6 @@
 #include "MathUtils/Utils.h"
 
 #include "Math/Vector4D.h"
-#include "TH1D.h"
 #include "TString.h"
 
 #include <algorithm>
@@ -73,9 +73,6 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
-
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMSWTriggerBits>;
-using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
 
 using MyElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronsPrefilterBitDerived>;
 using MyElectron = MyElectrons::iterator;
@@ -113,7 +110,7 @@ struct DileptonHadronMPC {
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
-  Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
+  // Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   // Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   // Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
@@ -290,12 +287,20 @@ struct DileptonHadronMPC {
     Configurable<uint16_t> cfg_track_bits{"cfg_track_bits", 5765, "required track bits"}; // default:645, loose:0, tight:778
   } trackcuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "zorroGroup";
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name"}; // 1 trigger per 1 task
+    o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+    Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  } zorroGroup;
+
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
-  o2::ccdb::CcdbApi ccdbApi;
+  // o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
   float d_bz;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  Zorro zorro;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
@@ -389,16 +394,6 @@ struct DileptonHadronMPC {
       leptonM1 = o2::constants::physics::MassMuon;
       leptonM2 = o2::constants::physics::MassMuon;
     }
-
-    if (doprocessTriggerAnalysis) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", cfg_swt_name.value.data()), kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
-      hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
-      hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
-    }
   }
 
   template <bool isTriggerAnalysis, typename TCollision>
@@ -442,10 +437,12 @@ struct DileptonHadronMPC {
     }
     mRunNumber = collision.runNumber();
 
+    // zorro
     if constexpr (isTriggerAnalysis) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
-      // LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
-      // fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
+      zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
+      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value);
+      zorro.populateHistRegistry(fRegistry, collision.runNumber());
     }
   }
 
@@ -1038,12 +1035,6 @@ struct DileptonHadronMPC {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
-      }
-
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
 
       if (!fEMEventCut.IsSelected(collision)) {
@@ -1051,6 +1042,12 @@ struct DileptonHadronMPC {
       }
       if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+          continue;
+        }
       }
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
@@ -1297,12 +1294,6 @@ struct DileptonHadronMPC {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
-      }
-
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
@@ -1385,8 +1376,7 @@ struct DileptonHadronMPC {
   }
   PROCESS_SWITCH(DileptonHadronMPC, processAnalysis, "run dilepton analysis", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerATCounters const& countersAT, aod::EMSWTriggerTOICounters const& countersTOI, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisions const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
@@ -1403,25 +1393,6 @@ struct DileptonHadronMPC {
     }
     map_weight.clear();
     ndf++;
-
-    // for nomalization
-    int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value);
-    for (const auto& counter : countersAT) {
-      if (counter.isAnalyzed_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 0);
-      }
-    }
-    for (const auto& counter : countersTOI) {
-      if (counter.isAnalyzedToI_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 1);
-      }
-    }
-
-    for (const auto& info : cefpinfos) {
-      fRegistry.fill(HIST("NormTrigger/hInspectedTVX"), info.runNumber(), info.nInspectedTVX());
-      fRegistry.fill(HIST("NormTrigger/hScalers"), info.runNumber(), info.nScalers()[emswtId]);
-      fRegistry.fill(HIST("NormTrigger/hSelections"), info.runNumber(), info.nSelections()[emswtId]);
-    }
   }
   PROCESS_SWITCH(DileptonHadronMPC, processTriggerAnalysis, "run dilepton analysis on triggered data", false);
 
