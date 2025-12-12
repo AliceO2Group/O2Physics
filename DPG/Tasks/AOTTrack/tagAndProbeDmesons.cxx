@@ -1291,7 +1291,7 @@ struct ProbeThirdTrack {
       }
     }
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
-      histosGen[iChannel] = registry.add<THnSparse>(Form("hGen%s", tagChannels[iChannel].data()), ";#it{p}_{T}(D_{parent}) (GeV/#it{c}); #it{y}(D_{parent});#it{p}_{T}(tag) (GeV/#it{c}); #it{y}(tag);#it{p}_{T}(probe) (GeV/#it{c}); #it{#eta}(probe);#it{p}_{T}^{min}(tag daughters);#it{#eta}_{max}(tag daughters); radius(tag) (cm)", HistType::kTHnSparseF, {axisPtD, axisYD, axisPtTag, axisYD, axisPtProbe, axisEtaProbe, axisPtMinTagdaught, axisAbsEtaMaxTagdaught,axisRadiusTag});
+      histosGen[iChannel] = registry.add<THnSparse>(Form("hGen%s", tagChannels[iChannel].data()), ";#it{p}_{T}(D_{parent}) (GeV/#it{c}); #it{y}(D_{parent});#it{p}_{T}(tag) (GeV/#it{c}); #it{y}(tag);#it{p}_{T}(probe) (GeV/#it{c}); #it{#eta}(probe);#it{p}_{T}^{min}(tag daughters);#it{#eta}_{max}(tag daughters); radius(tag) (cm)", HistType::kTHnSparseF, {axisPtD, axisYD, axisPtTag, axisYD, axisPtProbe, axisEtaProbe, axisPtMinTagdaught, axisAbsEtaMaxTagdaught, axisRadiusTag});
     }
     applyMl = {mlConfig.applyMlPiPiFromDplus, mlConfig.applyMlKaKaFromDsOrDplus, mlConfig.applyMlDzeroFromDstar};
   }
@@ -1390,7 +1390,7 @@ struct ProbeThirdTrack {
 
   bool isCollisionSelected(CollisionsWithEvSel::iterator const& collision)
   {
-    switch(requireCollisionsGoodITS.value) {
+    switch (requireCollisionsGoodITS.value) {
       case None:
         return true;
         break;
