@@ -366,7 +366,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     }
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);

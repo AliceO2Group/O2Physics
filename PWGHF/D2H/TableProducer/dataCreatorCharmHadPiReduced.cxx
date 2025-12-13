@@ -396,7 +396,7 @@ struct HfDataCreatorCharmHadPiReduced {
     setLabelHistoCands(hCandidatesD0FromDstar);
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
     if (doprocessDplusPiMc || doprocessDplusPiMcWithMl ||
         doprocessDsPiMc || doprocessDsPiMcWithMl ||
         doprocessD0PiMc || doprocessD0PiMcWithMl ||
