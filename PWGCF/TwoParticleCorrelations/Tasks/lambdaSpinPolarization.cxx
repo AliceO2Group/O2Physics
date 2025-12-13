@@ -45,13 +45,18 @@ namespace lambdacollision
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Mult, mult, float);
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, float);
+// DECALRE_SOA_
 } // namespace lambdacollision
 DECLARE_SOA_TABLE(LambdaCollisions, "AOD", "LAMBDACOLS", o2::soa::Index<>,
                   lambdacollision::Cent,
                   lambdacollision::Mult,
                   aod::collision::PosX,
                   aod::collision::PosY,
-                  aod::collision::PosZ);
+                  aod::collision::PosZ,
+                  lambdacollision::TimeStamp
+                  //, lambdacollision::CollisionId
+);
 using LambdaCollision = LambdaCollisions::iterator;
 
 namespace lambdamcgencollision
@@ -156,7 +161,8 @@ DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);
 DECLARE_SOA_TABLE(LambdaMixEventCollisions, "AOD", "LAMBDAMIXCOLS", o2::soa::Index<>,
                   lambdamixeventcollision::CollisionIndex,
                   lambdacollision::Cent,
-                  aod::collision::PosZ);
+                  aod::collision::PosZ,
+                  lambdacollision::TimeStamp);
 
 using LambdaMixEventCollision = LambdaMixEventCollisions::iterator;
 
@@ -165,6 +171,8 @@ namespace lambdamixeventtracks
 // DECLARE_SOA_INDEX_COLUMN(LambdaMixEventCollision, lambdaMixEventCollision);
 DECLARE_SOA_COLUMN(LambdaMixEventCollisionIdx, lambdaMixEventCollisionIdx, int);
 DECLARE_SOA_COLUMN(LambdaMixEventTrackIdx, lambdaMixEventTrackIdx, int);
+DECLARE_SOA_COLUMN(LambdaMixEventTimeStamp, lambdaMixEventTimeStamp, float);
+
 } // namespace lambdamixeventtracks
 
 DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS", o2::soa::Index<>,
@@ -178,7 +186,8 @@ DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS", o2::soa::Index<>
                   lambdatrack::PrPx,
                   lambdatrack::PrPy,
                   lambdatrack::PrPz,
-                  lambdatrack::V0Type);
+                  lambdatrack::V0Type,
+                  lambdamixeventtracks::LambdaMixEventTimeStamp);
 
 using LambdaMixEventTrack = LambdaMixEventTracks::iterator;
 } // namespace o2::aod
@@ -459,7 +468,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2 || doprocessMCRecoRun3 || doprocessMCRecoRun2) {
+    /* if (doprocessMCRun3 || doprocessMCRun2 || doprocessMCRecoRun3 || doprocessMCRecoRun2) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -499,7 +508,7 @@ struct LambdaTableProducer {
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenLambdaNoDau, "kGenLambdaNoDau");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenLambdaToPrPi, "kGenLambdaToPrPi");
     }
-
+    */
     // set bin labels
     histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotCol, "kTotCol");
     histos.get<TH1>(HIST("Events/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassSelCol, "kPassSelCol");
@@ -1008,8 +1017,8 @@ struct LambdaTableProducer {
   }
 
   // Reconstructed Level Tables
-  template <RunType run, DMCType dmc, typename C, typename V, typename T>
-  void fillLambdaRecoTables(C const& collision, V const& v0tracks, T const& tracks)
+  template <RunType run, DMCType dmc, typename C, typename B, typename V, typename T>
+  void fillLambdaRecoTables(C const& collision, B const& bc, V const& v0tracks, T const& tracks)
   {
     // Total Collisions
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
@@ -1025,7 +1034,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
 
     // Fill Collision Table
-    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ());
+    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ(), bc.timestamp());
 
     // initialize v0track objects
     ParticleType v0Type = kLambda;
@@ -1281,7 +1290,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("McGen/h2f_collision_posZ"), mcCollision.posZ(), collisions.begin().posZ());
     auto v0Tracks = V0s.sliceBy(perCollision, collisions.begin().globalIndex());
-    fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
+    // fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
     fillLambdaMcGenTables<run>(mcCollision, mcParticles);
   }
 
@@ -1296,14 +1305,15 @@ struct LambdaTableProducer {
   using TracksMCRun2 = soa::Join<TracksRun2, aod::McTrackLabels>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
-  void processDataRun3(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
+  void processDataRun3(CollisionsRun3::iterator const& collision, aod::BCsWithTimestamps const&, aod::V0Datas const& V0s, Tracks const& tracks)
   {
-    fillLambdaRecoTables<kRun3, kData>(collision, V0s, tracks);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    fillLambdaRecoTables<kRun3, kData>(collision, bc, V0s, tracks);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun3, "Process for Run3 DATA", true);
 
-  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, TracksRun2 const& tracks)
+  /* void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, TracksRun2 const& tracks)
   {
     fillLambdaRecoTables<kRun2, kData>(collision, V0s, tracks);
   }
@@ -1332,7 +1342,7 @@ struct LambdaTableProducer {
     fillLambdaRecoTables<kRun2, kMC>(collision, V0s, tracks);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 McReco DATA", false);
+  // PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 McReco DATA", false);
 
   void processMCRun3(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,
@@ -1342,7 +1352,7 @@ struct LambdaTableProducer {
     analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC RecoGen", false);
+  // PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC RecoGen", false);
 
   void processMCRun2(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
@@ -1352,7 +1362,7 @@ struct LambdaTableProducer {
     analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC RecoGen", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC RecoGen", false);*/
 };
 
 struct LambdaTracksExtProducer {
@@ -1689,11 +1699,11 @@ struct LambdaSpinPolarization {
     }
 
     // fill collision table
-    lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ());
+    lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ(), collision.timeStamp());
 
     for (auto const& track : tracks) {
       lambdaMixEvtTrk(collision.index(), track.globalIndex(), track.px(), track.py(), track.pz(), track.mass(),
-                      track.prPx(), track.prPy(), track.prPz(), track.v0Type());
+                      track.prPx(), track.prPy(), track.prPz(), track.v0Type(), collision.timeStamp());
     }
   }
 
