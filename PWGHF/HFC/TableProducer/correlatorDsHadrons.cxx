@@ -858,14 +858,14 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidPion"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidProton"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidPionM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidKaonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidProtonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
-
         if (pidTrkApplied) {
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidPion"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidProton"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidPionM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidKaonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidProtonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
+
           if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
           }
