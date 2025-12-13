@@ -576,7 +576,7 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDHadron(const Ttrack& candidate)
   {
-    bool PID;
+    bool PID = false; 
     if (settingHadPDGCode == PDG_t::kPiPlus) {
       PID = selectionPIDPion(candidate);
       MassHad = o2::constants::physics::MassPiPlus;
