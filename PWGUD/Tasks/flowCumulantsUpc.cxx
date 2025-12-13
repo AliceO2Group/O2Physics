@@ -976,11 +976,11 @@ struct FlowCumulantsUpc {
         independent = static_cast<float>(groupedUDMcParticles.size());
       }
 
-      LOG(info) << "mcParticles.size() = " << groupedUDMcParticles.size() << std::endl;
+      // LOG(info) << "mcParticles.size() = " << groupedUDMcParticles.size() << std::endl;
 
       for (const auto& mcParticle : groupedUDMcParticles) {
 
-        LOG(info) << "filling mc particle px: " << mcParticle.px() << ", py: " << mcParticle.py() << ", pz: " << mcParticle.pz() << std::endl;
+        // LOG(info) << "filling mc particle px: " << mcParticle.px() << ", py: " << mcParticle.py() << ", pz: " << mcParticle.pz() << std::endl;
 
         // output information from mcparticles
         registry.fill(HIST("hPxMc"), mcParticle.px());
@@ -989,7 +989,7 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hweightMc"), mcParticle.weight());
 
         if (!mcParticle.isPhysicalPrimary()) {
-          LOG(info) << "mcParticle.isPhysicalPrimary() = " << mcParticle.isPhysicalPrimary() << std::endl;
+          // LOG(info) << "mcParticle.isPhysicalPrimary() = " << mcParticle.isPhysicalPrimary() << std::endl;
           continue;
         }
 
@@ -999,7 +999,7 @@ struct FlowCumulantsUpc {
         constexpr double kEtaCut = 0.8;
         constexpr double kPtCut = 0.1;
         if (!(std::fabs(protoMC.Eta()) < kEtaCut && protoMC.Pt() > kPtCut)) {
-          LOG(info) << "protoMC.Eta() = " << protoMC.Eta() << ", protoMC.Pt() = " << protoMC.Pt() << std::endl;
+          // LOG(info) << "protoMC.Eta() = " << protoMC.Eta() << ", protoMC.Pt() = " << protoMC.Pt() << std::endl;
           continue;
         }
         // auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
