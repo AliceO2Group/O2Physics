@@ -15,7 +15,6 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 
 #include "JetDerivedDataUtilities.h"
-#include "RecoDecay.h"
 
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -23,13 +22,14 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>

@@ -9,14 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file jetmatchingmcsub.cxx
-/// \brief matching event-wise constituent subtracted detector level and unsubtracted generated level jets (this is usseful as a template for embedding  matching)
+/// \file jetmatching.cxx
+/// \brief matching event-wise constituent subtracted data jets and unsubtracted data jets
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGSUB_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGSUB_H_
 
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "Framework/ASoA.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
@@ -24,38 +28,32 @@
 
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
+template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename TracksTag, typename Candidates>
+struct JetMatchingSub {
 
-template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename Candidates>
-struct JetMatchingMcSub {
+  o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
+  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
 
-  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
-  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
-  Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
-  Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
-
-  Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
-  Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
+  o2::framework::Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
+  o2::framework::Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
 
   // preslicing jet collections, only for Mc-based collection
-  static constexpr bool jetsBaseIsMc = false;
-  static constexpr bool jetsTagIsMc = false;
+  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<o2::aod::JMcCollisions, JetsBase>();
+  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<o2::aod::JMcCollisions, JetsTag>();
 
-  Preslice<JetsBase> baseJetsPerCollision = aod::jet::collisionId;
-  Preslice<JetsTag> tagJetsPerCollision = aod::jet::collisionId;
+  o2::framework::Preslice<JetsBase> baseJetsPerCollision = jetsBaseIsMc ? o2::aod::jet::mcCollisionId : o2::aod::jet::collisionId;
+  o2::framework::Preslice<JetsTag> tagJetsPerCollision = jetsTagIsMc ? o2::aod::jet::mcCollisionId : o2::aod::jet::collisionId;
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
   }
 
-  void processJets(aod::JetCollisions const& collisions,
+  void processJets(o2::aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   aod::JetTracks const& tracks,
-                   aod::JetTracksSub const& tracksSub,
-                   Candidates const& candidates)
+                   o2::aod::JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
   {
 
     // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
@@ -84,5 +82,7 @@ struct JetMatchingMcSub {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingMcSub, processJets, "Perform jet matching", true);
+  PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGSUB_H_
