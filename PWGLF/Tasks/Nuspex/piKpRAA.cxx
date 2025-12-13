@@ -121,6 +121,10 @@ struct PiKpRAA {
   static constexpr float kMaxdEdxMIP{60.0f};
   static constexpr float kMindEdxMIPPlateau{70.0f};
   static constexpr float kMaxdEdxMIPPlateau{90.0f};
+  static constexpr float kMinFT0A{3.5f};
+  static constexpr float kMaxFT0A{4.9f};
+  static constexpr float kMinFT0C{-3.3f};
+  static constexpr float kMaxFT0C{-2.1f};
 
   static constexpr float kLowEta[kNEtaHists] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6};
   static constexpr float kHighEta[kNEtaHists] = {-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
@@ -203,6 +207,7 @@ struct PiKpRAA {
   Configurable<bool> isT0Ccent{"isT0Ccent", true, "Use T0C-based centrality?"};
   Configurable<bool> isZvtxPosSel{"isZvtxPosSel", true, "Zvtx position selection?"};
   Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
+  Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
   Configurable<bool> selINELgt0{"selINELgt0", true, "Select INEL > 0?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
   Configurable<bool> applyNchSel{"applyNchSel", false, "Use mid-rapidity-based Nch selection"};
@@ -522,6 +527,9 @@ struct PiKpRAA {
     }
 
     if (doprocessSim) {
+
+      // MC events passing the TVX requirement
+      registry.add("NchMCcentVsTVX", ";Passed(=1.5) NOT Passed(=0.5);", kTH2F, {{{nBinsNch, minNch, maxNch}, {2, 0, 2}}});
 
       registry.add("NumberOfRecoCollisions", "Number of times Gen. Coll.are reconstructed;N;Entries", kTH1F, {{10, -0.5, 9.5}});
 
@@ -1390,10 +1398,9 @@ struct PiKpRAA {
     // By counting number of primary charged particles in |eta| < 1
     //---------------------------
     int nChMC{0};
+    int nChFT0A{0};
+    int nChFT0C{0};
     for (const auto& particle : mcParticles) {
-
-      if (std::abs(particle.eta()) > kOne)
-        continue;
 
       auto charge{0.};
       // Get the MC particle
@@ -1412,7 +1419,33 @@ struct PiKpRAA {
       if (!particle.isPhysicalPrimary())
         continue;
 
+      const float eta{particle.eta()};
+
+      // TVX requirement
+      if (eta > kMinFT0A && eta < kMaxFT0A) {
+        nChFT0A++;
+      }
+
+      if (eta > kMinFT0C && eta < kMaxFT0C) {
+        nChFT0C++;
+      }
+
+      // INEL > 0
+      if (std::abs(eta) > kOne)
+        continue;
+
       nChMC++;
+    }
+
+    //---------------------------
+    // Only events with at least one charged particle in the FT0A and FT0C acceptances
+    //---------------------------
+    if (selTVXMC) {
+      if (!(nChFT0A > kZeroInt && nChFT0C > kZeroInt)) {
+        registry.fill(HIST("NchMCcentVsTVX"), nChMC, 0.5);
+        return;
+      }
+      registry.fill(HIST("NchMCcentVsTVX"), nChMC, 1.5);
     }
 
     //---------------------------
