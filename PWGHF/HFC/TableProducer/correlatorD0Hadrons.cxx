@@ -607,7 +607,7 @@ struct HfCorrelatorD0Hadrons {
           if (isD0Prompt) {
             registry.fill(HIST("hPtCandRecSigPrompt"), candidate.pt());
             registry.fill(HIST("hPtVsMultiplicityRecPrompt"), candidate.pt(), collision.multFT0M());
-            registry.fill(HIST("hPtVsMLScoreVsEtasRecSigPrompt"), outputMlD0[0], outputMlD0[1], outputMlD0[2], candidate.pt(), candidate.eta());
+            registry.fill(HIST("hPtVsMLScoresVsEtaRecSigPrompt"), outputMlD0[0], outputMlD0[1], outputMlD0[2], candidate.pt(), candidate.eta());
           } else if (isD0NonPrompt) {
             registry.fill(HIST("hPtCandRecSigNonPrompt"), candidate.pt());
             registry.fill(HIST("hPtVsMultiplicityRecNonPrompt"), candidate.pt(), collision.multFT0M());
