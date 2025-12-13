@@ -92,7 +92,7 @@ enum Selections {
   kAll
 };
 
- float MassHad = 0;
+float MassHad = 0;
 
 } // namespace
 
@@ -550,9 +550,9 @@ struct HadNucleiFemto {
       auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
 
       mQaRegistry.fill(HIST("h2NsigmaHadTOF_preselection"), candidate.pt(), tofNSigmaPi);
-      //if (combNsigma > settingCutNsigmaTOFTPCHad) {
-      //  return false;
-      //}
+      // if (combNsigma > settingCutNsigmaTOFTPCHad) {
+      //   return false;
+      // }
       if (std::abs(tofNSigmaPi) > settingCutNsigmaTOFHad) {
         return false;
       }
@@ -577,16 +577,16 @@ struct HadNucleiFemto {
   bool selectionPIDHadron(const Ttrack& candidate)
   {
     bool PID;
-   if (settingHadPDGCode == PDG_t::kPiPlus) {
-     PID = selectionPIDPion(candidate);
-     MassHad = o2::constants::physics::MassPiPlus;
-   } else if (settingHadPDGCode == PDG_t::kKPlus) {
-     PID = selectionPIDKaon(candidate);
-     MassHad = o2::constants::physics::MassKPlus;
-   } else {
-     LOG(info) << "invalid PDG code";
-   }
-   return PID;
+    if (settingHadPDGCode == PDG_t::kPiPlus) {
+      PID = selectionPIDPion(candidate);
+      MassHad = o2::constants::physics::MassPiPlus;
+    } else if (settingHadPDGCode == PDG_t::kKPlus) {
+      PID = selectionPIDKaon(candidate);
+      MassHad = o2::constants::physics::MassKPlus;
+    } else {
+      LOG(info) << "invalid PDG code";
+    }
+    return PID;
   }
 
   template <typename Ttrack>
@@ -738,7 +738,7 @@ struct HadNucleiFemto {
     hadNucand.momNu = std::array{trackDe.px(), trackDe.py(), trackDe.pz()};
     hadNucand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
     float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu,hadNucand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassDeuteron),MassHad});
+    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu, hadNucand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassDeuteron), MassHad});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       mQaRegistry.fill(HIST("hSkipReasons"), 3);
       return false;
@@ -835,7 +835,7 @@ struct HadNucleiFemto {
     hadHypercand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
 
     float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu,hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3),MassHad});
+    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu, hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3), MassHad});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
