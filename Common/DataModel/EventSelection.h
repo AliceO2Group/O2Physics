@@ -65,6 +65,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");  //! ZDC entry index in ZDCs table (-1 if doesn't exist)
 DECLARE_SOA_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, int);   //! Occupancy in specified time interval by a number of tracks from nearby collisions // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(SumAmpFT0CInTimeRange, ft0cOccupancyInTimeRange, float); //! Occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(OccupancyMedianTime, occupancyMedianTime, float);        //! Median time for the occupancy in specified time interval (the delta-time wrt to the collision at which occupancy crosses 1/2 of its full value)
 } // namespace evsel
 
 // bc-joinable event selection decisions
@@ -85,7 +86,8 @@ DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::FoundFDDId,
                   evsel::FoundZDCId,
                   evsel::NumTracksInTimeRange,
-                  evsel::SumAmpFT0CInTimeRange);
+                  evsel::SumAmpFT0CInTimeRange,
+                  evsel::OccupancyMedianTime);
 using EvSel = EvSels::iterator;
 } // namespace o2::aod
 
