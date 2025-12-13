@@ -111,8 +111,8 @@ void runMassFitter(const std::string& configFileName)
   std::vector<double> fixSecondSigmaManual;
   std::vector<double> fixFracDoubleGausManual;
   std::vector<int> nRebin;
-  std::vector<int> bkgFuncConfig;
-  std::vector<int> sgnFuncConfig;
+  std::vector<int> bkgFunc;
+  std::vector<int> sgnFunc;
 
   readJsonVector(inputHistoName, config, "InputHistoName", true);
   readJsonVector(promptHistoName, config, "PromptHistoName");
@@ -151,35 +151,57 @@ void runMassFitter(const std::string& configFileName)
   bool const includeSecPeak = readJsonField<bool>(config, "InclSecPeak", false);
   bool const useLikelihood = readJsonField<bool>(config, "UseLikelihood");
 
-  readJsonVector(bkgFuncConfig, config, "BkgFunc", true);
-  readJsonVector(sgnFuncConfig, config, "SgnFunc", true);
+  readJsonVector(bkgFunc, config, "BkgFunc", true);
+  readJsonVector(sgnFunc, config, "SgnFunc", true);
 
   const bool enableRefl = readJsonField<bool>(config, "EnableRefl", false);
   const bool drawBgPrefit = readJsonField<bool>(config, "drawBgPrefit", true);
   const bool highlightPeakRegion = readJsonField<bool>(config, "highlightPeakRegion", true);
 
   const int nSliceVarBins = static_cast<int>(sliceVarMin.size());
-  std::vector<int> bkgFunc(nSliceVarBins);
-  std::vector<int> sgnFunc(nSliceVarBins);
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
+
+  auto checkVectorSize = [&](const auto& vec, const std::string& name = "", const bool isEmptyOk = false) {
+    if (vec.size() != static_cast<size_t>(nSliceVarBins)) {
+      if (isEmptyOk && vec.empty()) {
+        return;
+      }
+      throw std::runtime_error("ERROR: inconsistent vector size for " + name + "! Exit");
+    }
+  };
+
+  checkVectorSize(inputHistoName, "inputHistoName", true);
+  checkVectorSize(promptHistoName, "promptHistoName", true);
+  checkVectorSize(fdHistoName, "fdHistoName", true);
+  checkVectorSize(reflHistoName, "reflHistoName", true);
+  checkVectorSize(promptSecPeakHistoName, "promptSecPeakHistoName", true);
+  checkVectorSize(fdSecPeakHistoName, "fdSecPeakHistoName", true);
+  checkVectorSize(sliceVarMin, "sliceVarMin");
+  checkVectorSize(sliceVarMax, "sliceVarMax");
+  checkVectorSize(massMin, "massMin");
+  checkVectorSize(massMax, "massMax");
+  checkVectorSize(fixMeanManual, "fixMeanManual", true);
+  checkVectorSize(fixSigmaManual, "fixSigmaManual", true);
+  checkVectorSize(fixSecondSigmaManual, "fixSecondSigmaManual", true);
+  checkVectorSize(fixFracDoubleGausManual, "fixFracDoubleGausManual", true);
+  checkVectorSize(nRebin, "nRebin");
+  checkVectorSize(bkgFunc, "bkgFunc");
+  checkVectorSize(sgnFunc, "sgnFunc");
 
   for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
-    sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
-    if (bkgFuncConfig[iSliceVar] < 0 || bkgFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
+    if (bkgFunc[iSliceVar] < 0 || bkgFunc[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
       throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
-    bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
     if (isMc && bkgFunc[iSliceVar] != HFInvMassFitter::NoBkg) {
       throw std::runtime_error("ERROR: in MC mode the background function must be NoBkg! Exit");
     }
-
-    if (sgnFuncConfig[iSliceVar] < 0 || sgnFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
+    if (sgnFunc[iSliceVar] < 0 || sgnFunc[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
       throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
-    sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
+  sliceVarLimits[nSliceVarBins] = sliceVarMax[nSliceVarBins - 1];
 
   struct decayInfo {
     std::string decayProducts;
@@ -474,8 +496,8 @@ void runMassFitter(const std::string& configFileName)
       const auto valueToFix = fixSigmaManual.empty() ? hSigmaToFix->GetBinContent(iSliceVar + 1) : fixSigmaManual[iSliceVar];
       hFitConfig->SetBinContent(ConfigFixSigma, iSliceVar + 1, valueToFix);
     }
-    hFitConfig->SetBinContent(ConfigBkgFunc, iSliceVar + 1, bkgFuncConfig[iSliceVar]);
-    hFitConfig->SetBinContent(ConfigSgnFunc, iSliceVar + 1, sgnFuncConfig[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigBkgFunc, iSliceVar + 1, bkgFunc[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigSgnFunc, iSliceVar + 1, sgnFunc[iSliceVar]);
   }
 
   // save output histograms
