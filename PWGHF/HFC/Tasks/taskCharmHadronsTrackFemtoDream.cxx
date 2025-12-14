@@ -88,7 +88,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   constexpr static int OriginRecFD = 2;
   constexpr static int CutBitChargePositive = 2;
 
-  Produces<o2::aod::FDHfPairs> rowFemtoResultPairs;
+  Produces<o2::aod::FDHfCharmTrkPairs> rowFemtoResultPairs;
   Produces<o2::aod::FDHfCharm3Prong> rowFemtoResultCharm3Prong;
   Produces<o2::aod::FDHfCharm2Prong> rowFemtoResultCharm2Prong;
   Produces<o2::aod::FDHfCharmDstar> rowFemtoResultCharmDstar;

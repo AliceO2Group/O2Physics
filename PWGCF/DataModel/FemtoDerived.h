@@ -464,7 +464,7 @@ DECLARE_SOA_TABLE(FDHfCandDstar, "AOD", "FDHFCANDDSTAR", //! Table to store the 
                   fdhf_dstar::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf_dstar::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDHfPairs, "AOD", "FDHFPAIRS", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDHfCharmTrkPairs, "AOD", "FDHFCHARMTRKPAIRS", //! table to store results for HF femtoscopy
                   fdhf::CharmM,
                   fdhf::CharmPt,
                   fdhf::TrkPt,
@@ -535,6 +535,22 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   fdhf::TrkPhi,
                   fdhf::TrackId,
                   femtodreamparticle::Sign,
+                  femtodreamparticle::TPCNClsFound,
+                  track::TPCNClsFindable,
+                  femtodreamparticle::TPCNClsCrossedRows,
+                  femtodreamparticle::TPCNSigmaPr,
+                  femtodreamparticle::TOFNSigmaPr);
+
+DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  femtodreamparticle::Pt,
+                  femtodreamparticle::Eta,
+                  femtodreamparticle::Phi,
+                  femtodreamparticle::ChildrenIds,
+                  femtodreamparticle::PartType,
+                  femtodreamparticle::MLambda,
+                  femtodreamparticle::MAntiLambda,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,
