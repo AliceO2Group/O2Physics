@@ -66,7 +66,7 @@ using namespace o2::framework::expressions;
 // template for labelled array
 static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
 
-struct flowDecorrelation {
+struct FlowDecorrelation {
   Service<ccdb::BasicCCDBManager> ccdb;
   o2::aod::ITSResponse itsResponse;
 
@@ -905,7 +905,7 @@ struct flowDecorrelation {
     const auto& ft0 = collision.foundFT0();
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, kFT0A, cent, weightCent);
   }
-  PROCESS_SWITCH(LongRangeDihadronCor, processSameTpcFt0a, "Process same event for TPC-FT0 correlation", true);
+  PROCESS_SWITCH(FlowDecorrelation, processSameTpcFt0a, "Process same event for TPC-FT0 correlation", true);
 
   // the process for filling the mixed events
   void processMixedTpcFt0a(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
@@ -969,7 +969,7 @@ struct flowDecorrelation {
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, kFT0A, cent1, eventWeight * weightCent);
     }
   }
-  PROCESS_SWITCH(LongRangeDihadronCor, processMixedTpcFt0a, "Process mixed events for TPC-FT0A correlation", true);
+  PROCESS_SWITCH(FlowDecorrelation, processMixedTpcFt0a, "Process mixed events for TPC-FT0A correlation", true);
 
   void processSameTpcFt0c(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -1010,7 +1010,7 @@ struct flowDecorrelation {
     const auto& ft0 = collision.foundFT0();
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, kFT0C, cent, weightCent);
   }
-  PROCESS_SWITCH(LongRangeDihadronCor, processSameTpcFt0c, "Process same event for TPC-FT0C correlation", false);
+  PROCESS_SWITCH(FlowDecorrelation, processSameTpcFt0c, "Process same event for TPC-FT0C correlation", false);
 
   // the process for filling the mixed events
   void processMixedTpcFt0c(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
@@ -1074,7 +1074,7 @@ struct flowDecorrelation {
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, kFT0C, cent1, eventWeight * weightCent);
     }
   }
-  PROCESS_SWITCH(LongRangeDihadronCor, processMixedTpcFt0c, "Process mixed events for TPC-FT0C correlation", false);
+  PROCESS_SWITCH(FlowDecorrelation, processMixedTpcFt0c, "Process mixed events for TPC-FT0C correlation", false);
 
   void processSameFt0aFt0c(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -1106,7 +1106,7 @@ struct flowDecorrelation {
     const auto& ft0 = collision.foundFT0();
     fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, ft0, collision.posZ(), SameEvent, weightCent);
   }
-  PROCESS_SWITCH(LongRangeDihadronCor, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", false);
+  PROCESS_SWITCH(FlowDecorrelation, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", false);
 
   // the process for filling the mixed events
   void processMixedFt0aFt0c(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
@@ -1167,12 +1167,12 @@ struct flowDecorrelation {
       fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0Col1, ft0Col2, collision1.posZ(), MixedEvent, eventWeight * weightCent);
     }
   }
-  PROCESS_SWITCH(LongRangeDihadronCor, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
+  PROCESS_SWITCH(FlowDecorrelation, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LongRangeDihadronCor>(cfgc),
+    adaptAnalysisTask<FlowDecorrelation>(cfgc),
   };
 }
