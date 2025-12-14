@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FlowDecorrelation.cxx
-/// \brief long range di-hadron correlation for O-O, Ne-Ne, Pb-Pb collisions
+/// \file flowDecorrelation.cxx
+/// \brief long range correlations for O-O and Ne-Ne collisions as a function of eta
 /// \author Zhiyong Lu (zhiyong.lu@cern.ch), Joachim Hansen (joachim.hansen@cern.ch), Lukas Cernusak (lukas.cernusak@cern.ch)
 /// \since  Sep/10/2025
 
@@ -66,7 +66,7 @@ using namespace o2::framework::expressions;
 // template for labelled array
 static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
 
-struct LongRangeDihadronCor {
+struct flowDecorrelation {
   Service<ccdb::BasicCCDBManager> ccdb;
   o2::aod::ITSResponse itsResponse;
 
