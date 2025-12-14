@@ -954,7 +954,7 @@ struct hadronnucleicorrelation {
       if (isAntiDe) {
         selectedtracks_antid[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
         if (mode == 0 || mode == 2) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_antideuteron->Interpolate(track.pt(), track.eta()));
+          registry.fill(HIST("hNtrig_total"), track.pt(), 1./hEffpTEta_antideuteron->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -968,7 +968,7 @@ struct hadronnucleicorrelation {
         selectedtracks_d[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         if (mode == 1 || mode == 3) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_deuteron->Interpolate(track.pt(), track.eta()));
+          registry.fill(HIST("hNtrig_total"), track.pt(), 1./hEffpTEta_deuteron->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -984,7 +984,7 @@ struct hadronnucleicorrelation {
         selectedtracks_p[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         if (mode == 6 || mode == 7) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_proton->Interpolate(track.pt(), track.eta()));
+          registry.fill(HIST("hNtrig_total"), track.pt(), 1./hEffpTEta_proton->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
@@ -997,7 +997,7 @@ struct hadronnucleicorrelation {
         selectedtracks_antip[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         if (mode == 4 || mode == 5) {
-          registry.fill(HIST("hNtrig_total"), track.pt(), hEffpTEta_antiproton->Interpolate(track.pt(), track.eta()));
+          registry.fill(HIST("hNtrig_total"), track.pt(), 1./hEffpTEta_antiproton->Interpolate(track.pt(), track.eta()));
         }
 
         if (doQA) {
