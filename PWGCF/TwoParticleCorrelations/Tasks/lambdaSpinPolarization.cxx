@@ -1271,7 +1271,7 @@ struct LambdaTableProducer {
   }
 
   template <RunType run, DMCType dmc, typename M, typename C, typename V, typename T, typename P>
-  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& tracks, P const& mcParticles)
+  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& /*tracks*/, P const& mcParticles)
   {
     // Number of Rec Collisions Associated to the McGen Collision
     int nRecCols = collisions.size();
