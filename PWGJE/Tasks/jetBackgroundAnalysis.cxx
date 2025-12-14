@@ -12,7 +12,7 @@
 /// \author Aimeric Landou <aimeric.landou@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Yubiao Wang <yubiao.wang@cern.ch>
-/// \file jetBackgroundAnalysis.cxx
+/// \file JetBackgroundAnalysisTask.cxx
 /// \brief This file contains the implementation for the Charged Jet v2 analysis in the ALICE experiment
 
 #include "RecoDecay.h"
@@ -43,7 +43,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetBackgroundAnalysis {
+struct JetBackgroundAnalysisTask {
   HistogramRegistry registry;
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
@@ -221,7 +221,7 @@ struct JetBackgroundAnalysis {
     registry.fill(HIST("h2_centrality_rho"), centrality, collision.rho());
     registry.fill(HIST("h2_centrality_rhom"), centrality, collision.rhoM());
   }
-  PROCESS_SWITCH(JetBackgroundAnalysis, processRho, "QA for rho-area subtracted jets", false);
+  PROCESS_SWITCH(JetBackgroundAnalysisTask, processRho, "QA for rho-area subtracted jets", false);
 
   void processBkgFluctuationsData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
@@ -238,7 +238,7 @@ struct JetBackgroundAnalysis {
 
     bkgFluctuationsRandomCone(collision, jets, tracks, centrality);
   }
-  PROCESS_SWITCH(JetBackgroundAnalysis, processBkgFluctuationsData, "QA for random cone estimation of background fluctuations in data", false);
+  PROCESS_SWITCH(JetBackgroundAnalysisTask, processBkgFluctuationsData, "QA for random cone estimation of background fluctuations in data", false);
 
   void processBkgFluctuationsMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
@@ -255,10 +255,10 @@ struct JetBackgroundAnalysis {
 
     bkgFluctuationsRandomCone(collision, jets, tracks, centrality);
   }
-  PROCESS_SWITCH(JetBackgroundAnalysis, processBkgFluctuationsMCD, "QA for random cone estimation of background fluctuations in mcd", false);
+  PROCESS_SWITCH(JetBackgroundAnalysisTask, processBkgFluctuationsMCD, "QA for random cone estimation of background fluctuations in mcd", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<JetBackgroundAnalysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<JetBackgroundAnalysisTask>(cfgc)};
 }
