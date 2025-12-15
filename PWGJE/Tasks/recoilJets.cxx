@@ -1721,7 +1721,7 @@ struct RecoilJets {
   template <typename Collision>
   bool skipMBGapEvent(const Collision& coll)
   {
-    return skipMBGapEvents && coll.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap;
+    return skipMBGapEvents && coll.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap;
   }
 
   template <typename Track>

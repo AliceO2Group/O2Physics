@@ -39,7 +39,6 @@ struct LuminosityCalculator {
   HistogramRegistry registry;
   void init(InitContext&)
   {
-
     std::vector<std::string> histLabels = {"BC", "BC+TVX", "BC+TVX+NoTFB", "BC+TVX+NoTFB+NoITSROFB", "Coll", "Coll+TVX", "Coll+TVX+VtxZ+Sel8", "Coll+TVX+VtxZ+Sel8Full", "Coll+TVX+VtxZ+Sel8FullPbPb", "Coll+TVX+VtxZ+SelMC", "Coll+TVX+VtxZ+SelMCFull", "Coll+TVX+VtxZ+SelMCFullPbPb", "Coll+TVX+VtxZ+SelUnanchoredMC", "Coll+TVX+VtxZ+SelTVX", "Coll+TVX+VtxZ+Sel7", "Coll+TVX+VtxZ+Sel7KINT7", "custom"};
     registry.add("counter", "BCs and Collisions", HistType::kTH1D, {{static_cast<int>(histLabels.size()), -0.5, static_cast<double>(histLabels.size()) - 0.5}});
     auto counter = registry.get<TH1>(HIST("counter"));
@@ -56,10 +55,10 @@ struct LuminosityCalculator {
     int readBCWithTVXAndNoTFBAndNoITSROFB = 0;
 
     for (const auto& bcCount : bcCounts) {
-      readBC += bcCount.readCounts().front();
-      readBCWithTVXCounter += bcCount.readCountsWithTVX().front();
-      readBCWithTVXAndNoTFBCounter += bcCount.readCountsWithTVXAndNoTFB().front();
-      readBCWithTVXAndNoTFBAndNoITSROFB += bcCount.readCountsWithTVXAndNoTFBAndNoITSROFB().front();
+      readBC += bcCount.counts();
+      readBCWithTVXCounter += bcCount.countsWithTVX();
+      readBCWithTVXAndNoTFBCounter += bcCount.countsWithTVXAndNoTFB();
+      readBCWithTVXAndNoTFBAndNoITSROFB += bcCount.countsWithTVXAndNoTFBAndNoITSROFB();
     }
 
     int readCollision = 0;
@@ -77,19 +76,19 @@ struct LuminosityCalculator {
     int readCollisionWithCustomCounter = 0;
 
     for (const auto& collisionCount : collisionCounts) {
-      readCollision += collisionCount.readCounts().front();
-      readCollisionWithTVXCounter += collisionCount.readCountsWithTVX().front();
-      readCollisionWithTVXAndZVertexAndSel8Counter += collisionCount.readCountsWithTVXAndZVertexAndSel8().front();
-      readCollisionWithTVXAndZVertexAndSel8FullCounter += collisionCount.readCountsWithTVXAndZVertexAndSel8Full().front();
-      readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter += collisionCount.readCountsWithTVXAndZVertexAndSel8FullPbPb().front();
-      readCollisionWithTVXAndZVertexAndSelMCCounter += collisionCount.readCountsWithTVXAndZVertexAndSelMC().front();
-      readCollisionWithTVXAndZVertexAndSelMCFullCounter += collisionCount.readCountsWithTVXAndZVertexAndSelMCFull().front();
-      readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter += collisionCount.readCountsWithTVXAndZVertexAndSelMCFullPbPb().front();
-      readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter += collisionCount.readCountsWithTVXAndZVertexAndSelUnanchoredMC().front();
-      readCollisionWithTVXAndZVertexAndSelTVXCounter += collisionCount.readCountsWithTVXAndZVertexAndSelTVX().front();
-      readCollisionWithTVXAndZVertexAndSel7Counter += collisionCount.readCountsWithTVXAndZVertexAndSel7().front();
-      readCollisionWithTVXAndZVertexAndSel7KINT7Counter += collisionCount.readCountsWithTVXAndZVertexAndSel7KINT7().front();
-      readCollisionWithCustomCounter += collisionCount.readCountsWithCustom().front();
+      readCollision += collisionCount.counts();
+      readCollisionWithTVXCounter += collisionCount.countsWithTVX();
+      readCollisionWithTVXAndZVertexAndSel8Counter += collisionCount.countsWithTVXAndZVertexAndSel8();
+      readCollisionWithTVXAndZVertexAndSel8FullCounter += collisionCount.countsWithTVXAndZVertexAndSel8Full();
+      readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter += collisionCount.countsWithTVXAndZVertexAndSel8FullPbPb();
+      readCollisionWithTVXAndZVertexAndSelMCCounter += collisionCount.countsWithTVXAndZVertexAndSelMC();
+      readCollisionWithTVXAndZVertexAndSelMCFullCounter += collisionCount.countsWithTVXAndZVertexAndSelMCFull();
+      readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter += collisionCount.countsWithTVXAndZVertexAndSelMCFullPbPb();
+      readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter += collisionCount.countsWithTVXAndZVertexAndSelUnanchoredMC();
+      readCollisionWithTVXAndZVertexAndSelTVXCounter += collisionCount.countsWithTVXAndZVertexAndSelTVX();
+      readCollisionWithTVXAndZVertexAndSel7Counter += collisionCount.countsWithTVXAndZVertexAndSel7();
+      readCollisionWithTVXAndZVertexAndSel7KINT7Counter += collisionCount.countsWithTVXAndZVertexAndSel7KINT7();
+      readCollisionWithCustomCounter += collisionCount.countsWithCustomSelection();
     }
 
     registry.get<TH1>(HIST("counter"))->SetBinContent(1, registry.get<TH1>(HIST("counter"))->GetBinContent(1) + readBC);
@@ -108,7 +107,7 @@ struct LuminosityCalculator {
     registry.get<TH1>(HIST("counter"))->SetBinContent(14, registry.get<TH1>(HIST("counter"))->GetBinContent(14) + readCollisionWithTVXAndZVertexAndSelTVXCounter);
     registry.get<TH1>(HIST("counter"))->SetBinContent(15, registry.get<TH1>(HIST("counter"))->GetBinContent(15) + readCollisionWithTVXAndZVertexAndSel7Counter);
     registry.get<TH1>(HIST("counter"))->SetBinContent(16, registry.get<TH1>(HIST("counter"))->GetBinContent(16) + readCollisionWithTVXAndZVertexAndSel7KINT7Counter);
-    registry.get<TH1>(HIST("counter"))->SetBinContent(16, registry.get<TH1>(HIST("counter"))->GetBinContent(17) + readCollisionWithCustomCounter);
+    registry.get<TH1>(HIST("counter"))->SetBinContent(17, registry.get<TH1>(HIST("counter"))->GetBinContent(17) + readCollisionWithCustomCounter);
   }
   PROCESS_SWITCH(LuminosityCalculator, processCalculateLuminosity, "calculate ingredients for luminosity and fill a histogram", true);
 };
