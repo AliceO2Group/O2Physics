@@ -1631,13 +1631,13 @@ struct FullJetSpectra {
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-        return;
+        continue;
       }
       if (!isAcceptedPartJet<aod::JetParticles>(jet)) {
-        return;
+        continue;
       }
       if (doMBGapTrigger && jet.eventWeight() == 1) {
-        return;
+        continue;
       }
       fillMCPHistograms(jet, jet.eventWeight());
     }
@@ -1745,7 +1745,7 @@ struct FullJetSpectra {
 
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<jetMcpPerMcCollision>()) {
         if (!isAcceptedPartJet<aod::JetParticles>(mcpjet)) {
-          return;
+          continue;
         }
         // apply emcal fiducial cuts to the matched particle level jets
         if (mcpjet.eta() > jetEtaMax || mcpjet.eta() < jetEtaMin || mcpjet.phi() > jetPhiMax || mcpjet.phi() < jetPhiMin) {
@@ -1866,7 +1866,7 @@ struct FullJetSpectra {
 
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedWeightedJoined>()) {
         if (!isAcceptedPartJet<aod::JetParticles>(mcpjet)) {
-          return;
+          continue;
         }
         // apply emcal fiducial cuts to the matched particle level jets - if the matched mcp jet lies outside of the EMCAL fiducial, flag it as a fake jet
         if (mcpjet.eta() > jetEtaMax || mcpjet.eta() < jetEtaMin || mcpjet.phi() > jetPhiMax || mcpjet.phi() < jetPhiMin) {
