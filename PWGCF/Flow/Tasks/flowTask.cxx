@@ -242,6 +242,7 @@ struct FlowTask {
   };
   enum BootstrapHist {
     kMeanPtWithinGap08 = 0,
+    kMeanPtWithinGap08_MC,
     kCount_BootstrapHist
   };
   int mRunNumber{-1};
@@ -359,6 +360,10 @@ struct FlowTask {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
       registry.add("MCGen/MChPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+      registry.add("hMeanPtWithinGap08_MC", "mean p_{T}", {HistType::kTProfile, {axisIndependent}});
+      for (auto i = 0; i < cfgNbootstrap; i++) {
+        bootstrapArray[i][kMeanPtWithinGap08_MC] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08_MC", i), "", {HistType::kTProfile, {axisIndependent}});
+      }
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -1248,16 +1253,23 @@ struct FlowTask {
     fGFW->Clear();
     fFCptgen->clearVector();
 
+    double ptSum_Gap08 = 0.;
+    double count_Gap08 = 0.;
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary())
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
+      bool withinEtaGap08 = (std::abs(mcParticle.eta()) < cfgEtaPtPt);
 
       if (withinPtRef) {
         registry.fill(HIST("MCGen/MChPhi"), mcParticle.phi());
         registry.fill(HIST("MCGen/MChEta"), mcParticle.eta());
         registry.fill(HIST("MCGen/MChPtRef"), mcParticle.pt());
+        if (withinEtaGap08) {
+          ptSum_Gap08 += mcParticle.pt();
+          count_Gap08 += 1.;
+        }
       }
       if (withinPtRef)
         fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 1);
@@ -1270,6 +1282,12 @@ struct FlowTask {
       if (!cfgUsePtRef && withinPtPOI)
         fillPtSums<kGen>(mcParticle, 1.);
     }
+
+    if (count_Gap08 > 0)
+      registry.fill(HIST("hMeanPtWithinGap08_MC"), independent, ptSum_Gap08 / count_Gap08, 1.0);
+    int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
+    if (count_Gap08 > 0)
+      bootstrapArray[sampleIndex][kMeanPtWithinGap08_MC]->Fill(independent, ptSum_Gap08 / count_Gap08, 1.0);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {

@@ -314,7 +314,7 @@ struct HadronPhotonCorrelation {
   template <typename C, typename P>
   bool initCollisionMC(const C& collision, const P& particles)
   {
-    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+    if (collision.getSubGeneratorId() != subGeneratorIdSelections) {
       return false;
     }
 
@@ -500,7 +500,7 @@ struct HadronPhotonCorrelation {
   void processEventsMCGen(JetMcCollision const& collision,
                           JetParticles const& particles)
   {
-    if (collision.subGeneratorId() == subGeneratorIdSelections) {
+    if (collision.getSubGeneratorId() == subGeneratorIdSelections) {
       registry.fill(HIST("generated/events/hEventStats"), 0);
       registry.fill(HIST("generated/events/hEventStats"), 2, collision.weight());
       registry.fill(HIST("generated/events/hEventStats"), 4, collision.xsectGen());
@@ -522,7 +522,7 @@ struct HadronPhotonCorrelation {
                            JetMcCollisions const&,
                            JetParticles const&)
   {
-    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+    if (collision.getSubGeneratorId() != subGeneratorIdSelections) {
       return;
     }
     registry.fill(HIST("reconstructed/events/hEventStats"), 0);
@@ -579,7 +579,7 @@ struct HadronPhotonCorrelation {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, false)) {
       return;
     }
-    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+    if (collision.getSubGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -672,7 +672,7 @@ struct HadronPhotonCorrelation {
     if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits, false)) {
       return;
     }
-    if (collision_reco.mcCollision().subGeneratorId() != subGeneratorIdSelections) {
+    if (collision_reco.mcCollision().getSubGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -861,7 +861,7 @@ struct HadronPhotonCorrelation {
     if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits, false)) {
       return;
     }
-    if (collision_reco.mcCollision().subGeneratorId() != subGeneratorIdSelections) {
+    if (collision_reco.mcCollision().getSubGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -1039,7 +1039,7 @@ struct HadronPhotonCorrelation {
     if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits, false)) {
       return;
     }
-    if (collision_reco.mcCollision().subGeneratorId() != subGeneratorIdSelections) {
+    if (collision_reco.mcCollision().getSubGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
