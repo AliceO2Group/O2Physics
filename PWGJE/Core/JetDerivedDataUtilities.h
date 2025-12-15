@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file JetDetivedDataUtilities.h
+/// \file JetDerivedDataUtilities.h
 /// \brief Jet derived data related utilities
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
@@ -54,14 +54,30 @@ enum JCollisionSubGeneratorId {
 };
 
 template <typename T>
-bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
+bool commonCollisionSelection(T const& collision, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
 {
-  if (skipMBGapEvents && collision.subGeneratorId() == JCollisionSubGeneratorId::mbGap) {
+  if (skipMBGapEvents && collision.getSubGeneratorId() == JCollisionSubGeneratorId::mbGap) {
     return false;
   }
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   rctChecker.init(rctLabel, requireZDCRct, rejectLimitedAcceptanceRct);
   if (rctSelection && !rctChecker.checkTable(collision)) { // CBT_hadronPID given as default so that TOF is included in RCT selection to benefit from better timing for tracks. Impact of this for inclusive jets should be studied
+    return false;
+  }
+  return true;
+}
+
+template <typename T>
+bool selectMcCollision(T const& mcCollision, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
+{
+  return commonCollisionSelection(mcCollision, skipMBGapEvents, rctSelection, rctLabel, rejectLimitedAcceptanceRct, requireZDCRct);
+}
+
+template <typename T>
+bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
+{
+
+  if (!commonCollisionSelection(collision, skipMBGapEvents, rctSelection, rctLabel, rejectLimitedAcceptanceRct, requireZDCRct)) {
     return false;
   }
   if (eventSelectionMaskBits.size() == 0) {
@@ -648,7 +664,7 @@ float trackEnergy(T const& track, float mass = mPion)
 template <typename T>
 bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
 {
-  return abs(track.dcaZ()) < dcaZmax;
+  return std::abs(track.dcaZ()) < dcaZmax;
 }
 
 } // namespace jetderiveddatautilities

@@ -694,7 +694,7 @@ struct AnalysisTrackSelection {
 
       // compute MC matching decisions and fill histograms for matched associations
       int isig = 0;
-      if (filterMap > 0 && track.has_reducedMCTrack()) {
+      if (filterMap > 0 && track.has_reducedMCTrack() && fConfigQA) {
         // loop over all MC signals
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
           // check if this MC signal is matched
@@ -2122,12 +2122,12 @@ struct AnalysisSameEventPairing {
               if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
                 continue;
               if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), VarManager::fgValues);
               } else {
                 if (sign1 > 0) {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][1].Data(), VarManager::fgValues);
                 } else {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][2].Data(), VarManager::fgValues);
                 }
               }
             } // end loop (pair cuts)
@@ -4075,7 +4075,7 @@ struct AnalysisDileptonTrack {
               }
             }
             // fill mc truth vertexing (for the associated track as this will have a displaced vertex, while the B hadron is produced in the PV)
-            VarManager::FillTrackCollisionMC<VarManager::kBtoJpsiEEK>(trackMC, currentMCParticle, event.reducedMCevent(), fValuesHadron);
+            VarManager::FillTrackCollisionMC<VarManager::kBtoJpsiEEK, TEventFillMap>(trackMC, currentMCParticle, event.reducedMCevent(), fValuesHadron);
           }
 
           // table to be written out for ML analysis

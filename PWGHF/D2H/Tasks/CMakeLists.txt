@@ -56,7 +56,7 @@ o2physics_add_dpl_workflow(task-cd
 
 o2physics_add_dpl_workflow(task-charm-polarisation
                     SOURCES taskCharmPolarisation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-charm-reso-to-d-v0-reduced

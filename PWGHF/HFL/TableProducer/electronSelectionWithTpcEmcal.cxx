@@ -46,6 +46,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
@@ -123,6 +124,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> m20EmcClusterElectronMin{"m20EmcClusterElectronMin", 0.0f, "min Electron  EMCal Cluster M20"};
   Configurable<float> tpcNsigmaElectronMin{"tpcNsigmaElectronMin", -0.5f, "min Electron TPCnsigma"};
   Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
+  Configurable<float> tofNSigmaEl{"tofNSigmaEl", 3.0, "Sigma cut for electrons not in EMCal"};
   Configurable<int> pdgCodeCharmMin{"pdgCodeCharmMin", 400, "Min Charm Hadron PdgCode"};
   Configurable<int> pdgCodeCharmMax{"pdgCodeCharmMax", 600, "Max Charm Hadron PdgCode"};
   Configurable<int> pdgCodeBeautyMin{"pdgCodeBeautyMin", 4000, "Min beauty Hadron PdgCode"};
@@ -224,6 +226,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
     registry.add("hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", {HistType::kTHnSparseF, {{axisEoP}, {axisPt}, {axisnSigma}, {axisM02}, {axisM20}}});
     registry.add("hEmcClsTrkEtaPhiDiffTime", "EmcClsTrkEtaPhiDiffTime;#Delta#eta;#Delta#varphi;Sec;", {HistType::kTH3F, {{axisDeltaEta}, {axisDeltaPhi}, {axisEmcClsTime}}});
+    registry.add("hTofNSigmaVsPt", " TOF nSigma vs pt; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
+    registry.add("hTpcNSigmaVsPt", " TPC nSigma vs pt; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
   }
   // Track Selection Cut
   template <typename T>
@@ -292,12 +296,11 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     int nElPairsLS = 0;
     int nElPairsUS = 0;
-    bool isLSElectron = false;
-    bool isULSElectron = false;
     float invMassElectron = 0.;
     float massLike = 0;
     float massUnLike = 0;
-
+    std::vector<float> vecLSMass;
+    std::vector<float> vecULSMass;
     for (const auto& pTrack : tracks) {
       if (pTrack.globalIndex() == electron.globalIndex()) {
         continue;
@@ -339,10 +342,12 @@ struct HfElectronSelectionWithTpcEmcal {
       }
 
       invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), electron.pVector()}, std::array{MassElectron, MassElectron});
-
+      bool isLSElectron = false;
+      bool isULSElectron = false;
       // for like charge
       if (pTrack.sign() == electron.sign()) {
         massLike = invMassElectron;
+        vecLSMass.push_back(massLike);
         isLSElectron = true;
         if (isEMcal) {
           registry.fill(HIST("hLikeMass"), massLike);
@@ -351,6 +356,7 @@ struct HfElectronSelectionWithTpcEmcal {
       // for unlike charge
       if (pTrack.sign() != electron.sign()) {
         massUnLike = invMassElectron;
+        vecULSMass.push_back(massUnLike);
         isULSElectron = true;
         if (isEMcal) {
           registry.fill(HIST("hUnLikeMass"), massUnLike);
@@ -375,7 +381,8 @@ struct HfElectronSelectionWithTpcEmcal {
       }
     }
     // Pass multiplicities and other required parameters for this electron
-    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), invMassElectron, nElPairsLS, nElPairsUS, isEMcal);
+    // Pass multiplicities and other required parameters for this electron
+    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), vecLSMass, vecULSMass, nElPairsLS, nElPairsUS, isEMcal);
   }
   // Electron Identification
   template <bool IsMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
@@ -525,13 +532,22 @@ struct HfElectronSelectionWithTpcEmcal {
 
         nonHfe(matchTrack, tracks, true);
 
-        electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
+        /////////////////          NonHf electron Selection without Emcal       ////////////////////////
+        electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
       /// Electron information without Emcal and use TPC and TOF
       if (isEMcal) {
         continue;
       }
+      if (std::abs(track.tofNSigmaEl()) > tofNSigmaEl)
+        continue;
+      registry.fill(HIST("hTofNSigmaVsPt"), track.tofNSigmaEl(), track.pt());
+      registry.fill(HIST("hTpcNSigmaVsPt"), track.tpcNSigmaEl(), track.pt());
+
+      if ((track.tpcNSigmaEl() < tpcNsigmaElectronMin || track.tpcNSigmaEl() > tpcNsigmaElectronMax))
+        continue;
+
       nonHfe(track, tracks, false);
       /////////////////          NonHf electron Selection without Emcal       ////////////////////////
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),

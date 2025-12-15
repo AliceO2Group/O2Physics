@@ -598,24 +598,41 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
+        // apply PID selection
+        if (pidTrkApplied) {
+          if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
+            continue;
+          }
+          registry.fill(HIST("hTpcTofNSigmaPidPionMc"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPidKaonMc"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPidProtonMc"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
+        }
         bool isPhysicalPrimary = false;
         // DsToKKPi and DsToPiKK division
         if (isCorrectInvMassHypo && candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
-                            track.eta() - candidate.eta(),
-                            candidate.pt() * chargeDs,
-                            track.pt() * track.sign(),
-                            poolBin,
-                            collision.numContrib());
-          entryDsHadronRecoInfo(HfHelper::invMassDsToKKPi(candidate), isDsSignal, isDecayChan);
-          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+            if (trkPIDspecies->at(0) == o2::track::PID::Kaon && mcParticle.pdgCode() != kKPlus) {
+              continue;
+            }
+            if (trkPIDspecies->at(0) == o2::track::PID::Pion && mcParticle.pdgCode() != kPiPlus) {
+              continue;
+            }
+            if (trkPIDspecies->at(0) == o2::track::PID::Proton && mcParticle.pdgCode() != kProton) {
+              continue;
+            }
+            entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+                              track.eta() - candidate.eta(),
+                              candidate.pt() * chargeDs,
+                              track.pt() * track.sign(),
+                              poolBin,
+                              collision.numContrib());
+            entryDsHadronRecoInfo(HfHelper::invMassDsToKKPi(candidate), isDsSignal, isDecayChan);
+            entryDsHadronMlInfo(outputMl[0], outputMl[2]);
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
             auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
             entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
           } else {
-            entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, 0);
             registry.fill(HIST("hFakeTracksMcRec"), track.pt());
           }
           // for secondary particle fraction estimation
@@ -627,21 +644,20 @@ struct HfCorrelatorDsHadrons {
           }
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         } else if (isCorrectInvMassHypo && candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
-                            track.eta() - candidate.eta(),
-                            candidate.pt() * chargeDs,
-                            track.pt() * track.sign(),
-                            poolBin,
-                            collision.numContrib());
-          entryDsHadronRecoInfo(HfHelper::invMassDsToPiKK(candidate), isDsSignal, isDecayChan);
-          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+            entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+                              track.eta() - candidate.eta(),
+                              candidate.pt() * chargeDs,
+                              track.pt() * track.sign(),
+                              poolBin,
+                              collision.numContrib());
+            entryDsHadronRecoInfo(HfHelper::invMassDsToPiKK(candidate), isDsSignal, isDecayChan);
+            entryDsHadronMlInfo(outputMl[0], outputMl[2]);
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
             auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
             entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
           } else {
-            entryDsHadronGenInfo(isDsPrompt, false, 0);
             registry.fill(HIST("hFakeTracksMcRec"), track.pt());
           }
           // for secondary particle fraction estimation
@@ -842,14 +858,14 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidPion"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidProton"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidPionM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidKaonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
-        registry.fill(HIST("hTpcTofNSigmaPreSelPidProtonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
-
         if (pidTrkApplied) {
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidPion"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidProton"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidPionM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Pion, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Pion, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidKaonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), track.pt());
+          registry.fill(HIST("hTpcTofNSigmaPreSelPidProtonM2"), o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), track.pt());
+
           if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
           }

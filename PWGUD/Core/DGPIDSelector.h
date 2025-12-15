@@ -342,10 +342,10 @@ struct DGPIDSelector {
 
     // cut on dcaXY and dcaZ
     LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
-    if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
+    if (track.dcaXY() < -std::abs(mAnaPars.maxDCAxy()) || track.dcaXY() > std::abs(mAnaPars.maxDCAxy())) {
       return false;
     }
-    if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
+    if (track.dcaZ() < -std::abs(mAnaPars.maxDCAz()) || track.dcaZ() > std::abs(mAnaPars.maxDCAz())) {
       return false;
     }
 
@@ -379,7 +379,7 @@ struct DGPIDSelector {
         if (!track.hasTPC()) {
           continue;
         }
-        switch (abs(pidcut.cutType())) {
+        switch (std::abs(pidcut.cutType())) {
           case 1:
             detValue = getTPCnSigma(track, pidcut.cutPID());
             break;
@@ -387,11 +387,11 @@ struct DGPIDSelector {
             detValue = track.tpcSignal();
         }
         LOGF(debug, "detValue TPC %f", detValue);
-      } else if (abs(pidcut.cutDetector()) == 2) {
+      } else if (std::abs(pidcut.cutDetector()) == 2) {
         if (!track.hasTOF()) {
           continue;
         }
-        switch (abs(pidcut.cutType())) {
+        switch (std::abs(pidcut.cutType())) {
           case 1:
             detValue = getTOFnSigma(track, pidcut.cutPID());
             break;

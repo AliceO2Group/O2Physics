@@ -49,8 +49,11 @@
 
 #include <THnSparse.h>
 
+#include <Rtypes.h>
+
 #include <algorithm> // std::min
 #include <array>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector>

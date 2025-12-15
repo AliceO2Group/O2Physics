@@ -897,7 +897,7 @@ struct TrackEfficiency {
                                 soa::Filtered<aod::JetParticles> const& mcparticles,
                                 soa::Filtered<aod::JetTracksMCD> const& tracks)
   {
-    if (skipMBGapEvents && mcCollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mcCollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
 
@@ -1128,7 +1128,7 @@ struct TrackEfficiency {
                                    soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
                                    soa::SmallGroups<aod::JetCollisionsMCD> const& collisions)
   {
-    if (skipMBGapEvents && mcCollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mcCollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
 

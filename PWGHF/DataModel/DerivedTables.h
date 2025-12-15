@@ -859,6 +859,24 @@ DECLARE_SOA_TABLE_STAGED(HfDplusParEs, "HFDPPARE", //! Table with additional can
                          hf_cand_par::Ct,
                          o2::soa::Marker<MarkerDplus>);
 
+DECLARE_SOA_TABLE_STAGED(HfDplusDaugs, "HFDPDAUG", //! Table to study daughter properties
+                         hf_cand_base::Pt,
+                         hf_cand::Chi2PCA,
+                         hf_cand_par::DecayLength,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
+                         hf_cand::PxProng1,
+                         hf_cand::PyProng1,
+                         hf_cand::PzProng1,
+                         hf_cand::PxProng2,
+                         hf_cand::PyProng2,
+                         hf_cand::PzProng2,
+                         hf_cand_par::NSigTpcTofPi0,
+                         hf_cand_par::NSigTpcTofKa1,
+                         hf_cand_par::NSigTpcTofPi2,
+                         o2::soa::Marker<MarkerDplus>);
+
 DECLARE_SOA_TABLE_STAGED(HfDplusMls, "HFDPML", //! Table with candidate selection ML scores
                          hf_cand_mc::MlScores,
                          o2::soa::Marker<MarkerDplus>);

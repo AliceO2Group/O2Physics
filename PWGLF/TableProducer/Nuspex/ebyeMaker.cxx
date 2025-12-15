@@ -54,7 +54,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime>;
 using TracksFullPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFPr>;
 using TracksFullIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFPr>;
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
@@ -64,7 +63,6 @@ namespace
 constexpr int kNpart = 2;
 constexpr float kTrackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
 constexpr float kDcaSelsParam[3][3]{{-1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32}};
-constexpr float kDcaSels[3]{10., 10., 10.};
 constexpr double kBetheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double kBetheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 constexpr double kEstimatorsCorrelationCoef[2]{-0.669108, 1.04489};
@@ -195,7 +193,7 @@ struct EbyeMaker {
   const AxisSpec centAxis{106, 0, 106, "centrality"};
   const AxisSpec zVtxAxis{100, -20.f, 20.f, "vertex z in cm"};
   const AxisSpec nTpcAxis{160, 0, 160, "N TPC"};
-  const AxisSpec dcaAxis{600, -3., 3., "DCA in cm"};
+  const AxisSpec dcaAxis{2000, -1., 1., "DCA in cm"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -258,7 +256,6 @@ struct EbyeMaker {
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
-  Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {kDcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
   Configurable<LabeledArray<float>> cfgDcaSelsParam{"cfgDcaSelsParam", {kDcaSelsParam[0], 3, 3, dcaSelsNames, dcaParNames}, "DCA threshold settings"};
 
   std::array<float, kNpart> ptMin;
@@ -269,7 +266,6 @@ struct EbyeMaker {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Preslice<TracksFull> perCollisionTracksFull = o2::aod::track::collisionId;
   Preslice<TracksFullPID> perCollisionTracksFullPID = o2::aod::track::collisionId;
   Preslice<TracksFullIUPID> perCollisionTracksFullIUPID = o2::aod::track::collisionId;
   Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
@@ -429,12 +425,40 @@ struct EbyeMaker {
     return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }
 
-  template <class T>
-  float getOuterPID(T const& track)
+  template <const bool isMc, class T>
+  void fillTableMiniTrack(CandidateTrack& candidateTrack, T const& tk, float const& nSigmaITS = -999.f)
   {
-    if (!(doprocessRun2 || doprocessMcRun2) && track.hasTOF() && track.pt() > antipPtTof)
-      return track.tofNSigmaPr();
-    return -999.f;
+    int selMask = -1;
+    if ((isMc && candidateTrack.isreco) || !isMc) {
+      float outerPID = tk.pt() > antipPtTof ? tk.tofNSigmaPr() : -999.f;
+      candidateTrack.itsnsigma = nSigmaITS;
+      candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
+      selMask = getTrackSelMask(candidateTrack);
+      if (candidateTrack.outerPID < outerPIDMin)
+        return;
+      if (isMc && candidateTrack.pdgcodemoth > 0)
+        selMask |= candidateTrack.pdgcodemoth;
+    } else if (isMc && candidateTrack.pdgcodemoth > 0) {
+      selMask = candidateTrack.pdgcodemoth;
+    }
+    if (isMc && selMask >= 0) {
+      mcMiniTrkTable(
+        miniCollTable.lastIndex(),
+        candidateTrack.pt,
+        static_cast<int8_t>(candidateTrack.eta * 100),
+        selMask,
+        candidateTrack.outerPID,
+        candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
+        static_cast<int8_t>(candidateTrack.geneta * 100),
+        candidateTrack.isreco);
+    } else if (!isMc) {
+      miniTrkTable(
+        miniCollTable.lastIndex(),
+        candidateTrack.pt,
+        static_cast<int8_t>(candidateTrack.eta * 100),
+        selMask,
+        candidateTrack.outerPID);
+    }
   }
 
   template <class T>
@@ -509,8 +533,8 @@ struct EbyeMaker {
 
     // tracking variables QA
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
-    histos.add<TH1>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH1>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
@@ -525,8 +549,6 @@ struct EbyeMaker {
   {
     if (doprocessRun3 || doprocessMcRun3)
       return tracksAll.sliceBy(perCollisionTracksFullIUPID, collId);
-    else if (doprocessRun2 || doprocessMcRun2)
-      return tracksAll.sliceBy(perCollisionTracksFull, collId);
     else
       return tracksAll.sliceBy(perCollisionTracksFullPID, collId);
   }
@@ -563,7 +585,7 @@ struct EbyeMaker {
       auto trackEta = trackParCov.getEta();
       histos.fill(HIST("QA/dcaxyVsPt"), track.pt(), dcaInfo[0]);
       histos.fill(HIST("QA/dcazVsPt"), track.pt(), dcaInfo[1]);
-      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") * dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz") * dcaSigma(track.pt(), "dcaz") || dca > cfgDcaSels->get("dca") * dcaSigma(track.pt(), "dca")) { // dcaxy
+      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca")) { // dcaxy
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
@@ -891,7 +913,7 @@ struct EbyeMaker {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -900,7 +922,7 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
-      auto centrality = collision.centFT0M();
+      auto centrality = collision.centFT0C();
       if (centrality > kCentCutMax)
         continue;
 
@@ -914,27 +936,15 @@ struct EbyeMaker {
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
-
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-        float outerPID = getOuterPID(tk);
-        candidateTrack.itsnsigma = -999.f;
-        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-        int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < outerPIDMin)
-          continue;
-        miniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID);
+        fillTableMiniTrack<false>(candidateTrack, tk);
       }
     }
   }
   PROCESS_SWITCH(EbyeMaker, processRun3, "process (Run 3)", false);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFullPID const& tracks, aod::V0s const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -976,8 +986,13 @@ struct EbyeMaker {
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
       histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
 
-      collisionEbyeTable(centrality, collision.posZ());
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
+        auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
+        fillTableMiniTrack<false>(candidateTrack, tk);
+      }
 
+      collisionEbyeTable(centrality, collision.posZ());
       for (const auto& candidateV0 : candidateV0s) {
         lambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
@@ -990,7 +1005,6 @@ struct EbyeMaker {
           candidateV0.globalIndexNeg,
           candidateV0.globalIndexPos);
       }
-
       for (int iP{0}; iP < kNpart; ++iP) {
         for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
           nucleiEbyeTable(
@@ -1049,30 +1063,19 @@ struct EbyeMaker {
       if (triggerCut != 0x0 && (trigger & triggerCut) != triggerCut) {
         continue;
       }
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, centrality, nTracksColl);
 
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, centrality, nTracksColl);
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-        float outerPID = getOuterPID(tk);
         auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
         histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
-        candidateTrack.itsnsigma = nSigmaITS;
-        candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-        int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < outerPIDMin)
-          continue;
-        miniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID);
+        fillTableMiniTrack<false>(candidateTrack, tk, nSigmaITS);
       }
     }
   }
   PROCESS_SWITCH(EbyeMaker, processMiniRun2, "process mini tables(Run 2)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIUPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1081,7 +1084,7 @@ struct EbyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
-      auto centrality = collision.centFT0M();
+      auto centrality = collision.centFT0C();
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1093,37 +1096,15 @@ struct EbyeMaker {
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
-
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
-        int selMask = -1;
-        if (candidateTrack.isreco) {
-          auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-          float outerPID = getOuterPID(tk);
-          candidateTrack.itsnsigma = -999.f;
-          candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-          selMask = getTrackSelMask(candidateTrack);
-          if (candidateTrack.pdgcodemoth > 0)
-            selMask |= candidateTrack.pdgcodemoth;
-        } else if (candidateTrack.pdgcodemoth > 0) {
-          selMask = candidateTrack.pdgcodemoth;
-        }
-        if (selMask < 0)
-          continue;
-        mcMiniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID,
-          candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          static_cast<int8_t>(candidateTrack.geneta * 100),
-          candidateTrack.isreco);
+        auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
+        fillTableMiniTrack<true>(candidateTrack, tk);
       }
     }
   }
   PROCESS_SWITCH(EbyeMaker, processMcRun3, "process MC (Run 3)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1145,8 +1126,13 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      collisionEbyeTable(centrality, collision.posZ());
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
+        auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
+        fillTableMiniTrack<true>(candidateTrack, tk);
+      }
 
+      collisionEbyeTable(centrality, collision.posZ());
       for (const auto& candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
@@ -1163,7 +1149,6 @@ struct EbyeMaker {
           candidateV0.pdgcode,
           candidateV0.isreco);
       }
-
       for (int iP{0}; iP < kNpart; ++iP) {
         for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
           mcNucleiEbyeTable(
@@ -1208,33 +1193,12 @@ struct EbyeMaker {
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
-
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
-        int selMask = -1;
-        if (candidateTrack.isreco) {
-          auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
-          float outerPID = getOuterPID(tk);
-          auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
+        auto tk = candidateTrack.isreco ? tracks.rawIteratorAt(candidateTrack.globalIndex) : tracks.rawIteratorAt(0);
+        auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
+        if (candidateTrack.isreco)
           histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
-          candidateTrack.itsnsigma = nSigmaITS;
-          candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
-          selMask = getTrackSelMask(candidateTrack);
-          if (candidateTrack.pdgcodemoth > 0)
-            selMask |= candidateTrack.pdgcodemoth;
-        } else if (candidateTrack.pdgcodemoth > 0) {
-          selMask = candidateTrack.pdgcodemoth;
-        }
-        if (selMask < 0)
-          continue;
-        mcMiniTrkTable(
-          miniCollTable.lastIndex(),
-          candidateTrack.pt,
-          static_cast<int8_t>(candidateTrack.eta * 100),
-          selMask,
-          candidateTrack.outerPID,
-          candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          static_cast<int8_t>(candidateTrack.geneta * 100),
-          candidateTrack.isreco);
+        fillTableMiniTrack<true>(candidateTrack, tk, nSigmaITS);
       }
     }
   }

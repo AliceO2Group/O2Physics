@@ -101,6 +101,11 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-emcemc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pi0eta-to-gammagamma-pcmemc
+                    SOURCES Pi0EtaToGammaGammaPCMEMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-pcmpcm
                     SOURCES Pi0EtaToGammaGammaMCPCMPCM.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
@@ -114,6 +119,11 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-pcmdalitzee
 o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-emcemc
                     SOURCES Pi0EtaToGammaGammaMCEMCEMC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photon-hbt-pcmpcm
+                    SOURCES PhotonHBTPCMPCM.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tag-and-probe
@@ -174,5 +184,10 @@ o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmdalitzee
 
 o2physics_add_dpl_workflow(calib-task-emc
                     SOURCES calibTaskEmc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::EMCALBase O2::EMCALCalib O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(test-task-emc
+                    SOURCES testTaskEmc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::EMCALBase O2::EMCALCalib O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
