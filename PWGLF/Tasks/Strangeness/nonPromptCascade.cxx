@@ -186,7 +186,6 @@ struct NonPromptCascadeTask {
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
   using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
-  using CollisionsWithLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsGlobal>;
   using TracksWithLabel = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
@@ -742,7 +741,7 @@ struct NonPromptCascadeTask {
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
 
-  void processGenParticles(aod::McParticles const& mcParticles)
+  void processGenParticles(aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
     for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
@@ -817,7 +816,7 @@ struct NonPromptCascadeTask {
     }
     return mult;
   }
-  void processdNdetaMC(CollisionsWithLabel const& colls, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TracksWithLabel const& tracks)
+  void processdNdetaMC(CollisionCandidatesRun3MC const& colls, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TracksWithLabel const& tracks)
   {
     // std::cout << "ProcNegMC" << std::endl;
     // Map: collision index -> reco multiplicity
