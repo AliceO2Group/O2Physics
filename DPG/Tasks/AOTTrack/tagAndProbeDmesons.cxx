@@ -1444,7 +1444,7 @@ struct ProbeThirdTrack {
         std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
         std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
         auto ptTag = RecoDecay::pt(RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond));
-        auto ptBin = o2::analysis::findBin(&mlConfig.BinsPtPiPiFromDplus.value, ptTag);
+        auto ptBin = o2::analysis::findBin(&mlConfig.binsPtPiPiFromDplus.value, ptTag);
         if (tag.mlScores()[0] > mlConfig.mlCutsPiPiFromDplus->get(ptBin, 0u) || tag.mlScores()[1] < mlConfig.mlCutsPiPiFromDplus->get(ptBin, 1u) || tag.mlScores()[2] < mlConfig.mlCutsPiPiFromDplus->get(ptBin, 2u)) {
           continue;
         }
