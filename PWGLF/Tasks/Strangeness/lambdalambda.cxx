@@ -393,7 +393,7 @@ struct lambdalambda {
 
   template <typename V01, typename V02, typename Coll>
   float getPVPA(V01 const& v01, V02 const& v02, Coll const& coll)
-  {   
+  {
     ROOT::Math::XYZVector v0v0mom;
     v0v0mom.SetXYZ(v01.px() + v02.px(), v01.py() + v02.py(), v01.pz() + v02.pz());
 
@@ -403,7 +403,7 @@ struct lambdalambda {
     v01mom.SetXYZ(v01.px() / v01.p(), v01.py() / v01.p(), v01.pz() / v01.p());
     v02mom.SetXYZ(v02.px() / v02.p(), v02.py() / v02.p(), v02.pz() / v02.p());
     ROOT::Math::XYZVector posdiff = v02pos - v01pos;
-  
+
     float d = 1. - TMath::Power(v01mom.Dot(v02mom), 2);
     if (d < 1e-5)
       return -2;
