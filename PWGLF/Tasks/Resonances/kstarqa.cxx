@@ -623,16 +623,7 @@ struct Kstarqa {
         if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > cBetaCutTOF) {
           return true;
         }
-      }
-      //  else if (onlyTOFHIT) {
-      //   if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFPi && candidate.beta() > cBetaCutTOF) {
-      //     return true;
-      //   }
-      //   if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
-      //     return true;
-      //   }
-      // }
-      else if (onlyTPC) {
+      } else if (onlyTPC) {
         if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCPi) {
           return true;
         }
@@ -649,16 +640,7 @@ struct Kstarqa {
         if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > cBetaCutTOF) {
           return true;
         }
-      }
-      //  else if (onlyTOFHIT) {
-      //   if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFKa && candidate.beta() > cBetaCutTOF) {
-      //     return true;
-      //   }
-      //   if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
-      //     return true;
-      //   }
-      // }
-      else if (onlyTPC) {
+      } else if (onlyTPC) {
         if (std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCKa) {
           return true;
         }
