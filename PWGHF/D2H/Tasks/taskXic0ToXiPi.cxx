@@ -270,7 +270,7 @@ struct HfTaskXic0ToXiPi {
 
       auto ptGen = particle.pt();
       auto yGen = particle.rapidityCharmBaryonGen();
-      
+
       auto mcCollision = particle.template mcCollision_as<McCollisionWithCents>();
       unsigned maxNumContrib = 0;
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
