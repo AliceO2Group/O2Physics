@@ -541,7 +541,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       std::vector<float> outputMl = {-1., -1., -1.};
-      auto prong0 = candidate.template prong0_as<MyTracksData>();
+      auto prong0 = candidate.template prong0_as<TracksWithMc>();
       int const chargeDs = prong0.sign();
 
       if (isDsSignal && isDecayChan && isCorrectInvMassHypo) {
@@ -1000,7 +1000,7 @@ struct HfCorrelatorDsHadrons {
         if (!pAssoc.isGlobalTrackWoDCA()) {
           continue;
         }
-        auto prong0 = candidate.template prong0_as<MyTracksData>();
+        auto prong0 = candidate.template prong0_as<TracksWithMc>();
         int const chargeDs = prong0.sign();
         std::vector<float> outputMl = {-1., -1., -1.};
         // prompt and non-prompt division
