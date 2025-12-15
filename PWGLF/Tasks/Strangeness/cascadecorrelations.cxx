@@ -137,7 +137,7 @@ struct CascadeSelector {
   ConfigurableAxis invXiMassAxis = {"invXiMassAxis", {100, 1.28f, 1.38f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis invOmegaMassAxis = {"invOmegaMassAxis", {100, 1.62f, 1.72f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis ptAxis = {"ptAxis", {150, 0, 15}, "#it{p}_{T}"};
-  ConfigurableAxis rapidityAxis{"rapidityAxis", {100, -1.f, 1.f}, "y"};
+  ConfigurableAxis etaAxis{"etaAxis", {100, -1.f, 1.f}, "#eta"};
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis chi2Axis{"chi2Axis", {100, 0.f, 10.f}, "Chi2"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
@@ -158,10 +158,10 @@ struct CascadeSelector {
       {"hDCACascDau", "hDCACascDau", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
       {"hLambdaMass", "hLambdaMass", {HistType::kTH3F, {invLambdaMassAxis, invXiMassAxis, ptAxis}}},
 
-      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH3F, {invXiMassAxis, ptAxis, rapidityAxis}}},
-      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH3F, {invXiMassAxis, ptAxis, rapidityAxis}}},
-      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH3F, {invOmegaMassAxis, ptAxis, rapidityAxis}}},
-      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH3F, {invOmegaMassAxis, ptAxis, rapidityAxis}}},
+      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH3F, {invXiMassAxis, ptAxis, etaAxis}}},
+      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH3F, {invXiMassAxis, ptAxis, etaAxis}}},
+      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH3F, {invOmegaMassAxis, ptAxis, etaAxis}}},
+      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH3F, {invOmegaMassAxis, ptAxis, etaAxis}}},
 
       // ITS & TPC clusters, with Xi inv mass
       {"hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", {HistType::kTH3F, {tpcRowsAxis, invXiMassAxis, ptAxis}}},
@@ -231,23 +231,23 @@ struct CascadeSelector {
       registry.add("truerec/hITSChi2Pos", "hITSChi2Pos", HistType::kTH1F, {chi2Axis});
       registry.add("truerec/hITSChi2Neg", "hITSChi2Neg", HistType::kTH1F, {chi2Axis});
       registry.add("truerec/hITSChi2Bach", "hITSChi2Bach", HistType::kTH1F, {chi2Axis});
-      registry.add("truerec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("truerec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("truerec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("truerec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("truerec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("truerec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("truerec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("truerec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, etaAxis});
     }
 
     if (doprocessGenMC) {
       // only create the MC gen histograms if relevant
-      registry.add("gen/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("gen/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("gen/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("gen/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("gen/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("gen/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("gen/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("gen/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, etaAxis});
 
-      registry.add("genwithrec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("genwithrec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("genwithrec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
-      registry.add("genwithrec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("genwithrec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("genwithrec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, etaAxis});
+      registry.add("genwithrec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, etaAxis});
 
       registry.add("genwithrec/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events with reconstructed event"}});
       registry.add("gen/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events"}});
@@ -335,16 +335,16 @@ struct CascadeSelector {
       registry.fill(HIST("truerec/hTPCChi2Bach"), rec.bachelor_as<FullTracksExtIUWithPID>().tpcChi2NCl());
       switch (genpdg) { // is matched so we can use genpdg
         case kXiMinus:
-          registry.fill(HIST("truerec/hXiMinus"), rec.pt(), rec.yXi());
+          registry.fill(HIST("truerec/hXiMinus"), rec.pt(), rec.eta());
           break;
         case kXiPlusBar:
-          registry.fill(HIST("truerec/hXiPlus"), rec.pt(), rec.yXi());
+          registry.fill(HIST("truerec/hXiPlus"), rec.pt(), rec.eta());
           break;
         case kOmegaMinus:
-          registry.fill(HIST("truerec/hOmegaMinus"), rec.pt(), rec.yOmega());
+          registry.fill(HIST("truerec/hOmegaMinus"), rec.pt(), rec.eta());
           break;
         case kOmegaPlusBar:
-          registry.fill(HIST("truerec/hOmegaPlus"), rec.pt(), rec.yOmega());
+          registry.fill(HIST("truerec/hOmegaPlus"), rec.pt(), rec.eta());
           break;
       }
     }
@@ -472,27 +472,27 @@ struct CascadeSelector {
       case 1:                                       // only Xi
         registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
         if (casc.sign() < 0) {
-          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
+          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.eta());
         } else {
-          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
+          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.eta());
         }
         break;
       case 2:                                       // Xi or Omega
         registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
         if (casc.sign() < 0) {
-          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
-          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
+          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.eta());
+          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.eta());
         } else {
-          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
-          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
+          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.eta());
+          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.eta());
         }
         break;
       case 3:                                       // only Omega
         registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
         if (casc.sign() < 0) {
-          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
+          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.eta());
         } else {
-          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
+          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.eta());
         }
         break;
     }
@@ -519,16 +519,16 @@ struct CascadeSelector {
 
       switch (mcPart.pdgCode()) {
         case kXiMinus:
-          registry.fill(HIST("gen/hXiMinus"), mcPart.pt(), mcPart.y());
+          registry.fill(HIST("gen/hXiMinus"), mcPart.pt(), mcPart.eta());
           break;
         case kXiPlusBar:
-          registry.fill(HIST("gen/hXiPlus"), mcPart.pt(), mcPart.y());
+          registry.fill(HIST("gen/hXiPlus"), mcPart.pt(), mcPart.eta());
           break;
         case kOmegaMinus:
-          registry.fill(HIST("gen/hOmegaMinus"), mcPart.pt(), mcPart.y());
+          registry.fill(HIST("gen/hOmegaMinus"), mcPart.pt(), mcPart.eta());
           break;
         case kOmegaPlusBar:
-          registry.fill(HIST("gen/hOmegaPlus"), mcPart.pt(), mcPart.y());
+          registry.fill(HIST("gen/hOmegaPlus"), mcPart.pt(), mcPart.eta());
           break;
       }
     }
@@ -556,16 +556,16 @@ struct CascadeSelector {
 
           switch (mcPart.pdgCode()) {
             case kXiMinus:
-              registry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y());
+              registry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.eta());
               break;
             case kXiPlusBar:
-              registry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y());
+              registry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.eta());
               break;
             case kOmegaMinus:
-              registry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y());
+              registry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.eta());
               break;
             case kOmegaPlusBar:
-              registry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.y());
+              registry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.eta());
               break;
           }
         }
@@ -637,6 +637,7 @@ struct CascadeCorrelations {
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
   AxisSpec signAxis{3, -1.5, 1.5, "sign of cascade"};
   AxisSpec deltaYAxis{40, -2.f, 2.f, "#Delta y"};
+  AxisSpec etaAxis{100, -1.f, 1.f, "#eta"};
   AxisSpec rapidityAxis{100, -1.f, 1.f, "y"};
   AxisSpec selectionFlagAxis{4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
@@ -673,10 +674,10 @@ struct CascadeCorrelations {
     mCounter.mSelectPrimaries = true;
   }
 
-  double getEfficiency(TH1* h, double pT, double y = 0)
+  double getEfficiency(TH1* h, double pT, double eta = 0)
   {
     // This function returns 1 / eff
-    double eff = h->GetBinContent(h->FindFixBin(pT, y));
+    double eff = h->GetBinContent(h->FindFixBin(pT, eta));
     if (eff == 0)
       return 0;
     else
@@ -699,13 +700,13 @@ struct CascadeCorrelations {
     "registry",
     {
       // inv mass
-      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH3F, {{200, 1.24, 1.44, "Inv. Mass (GeV/c^{2})"}, ptAxis, rapidityAxis}}},
-      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH3F, {{200, 1.24, 1.44, "Inv. Mass (GeV/c^{2})"}, ptAxis, rapidityAxis}}},
-      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH3F, {{200, 1.6, 1.8, "Inv. Mass (GeV/c^{2})"}, ptAxis, rapidityAxis}}},
-      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH3F, {{200, 1.6, 1.8, "Inv. Mass (GeV/c^{2})"}, ptAxis, rapidityAxis}}},
+      {"hMassXiMinus", "hMassXiMinus", {HistType::kTH3F, {{200, 1.24, 1.44, "Inv. Mass (GeV/c^{2})"}, ptAxis, etaAxis}}},
+      {"hMassXiPlus", "hMassXiPlus", {HistType::kTH3F, {{200, 1.24, 1.44, "Inv. Mass (GeV/c^{2})"}, ptAxis, etaAxis}}},
+      {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH3F, {{200, 1.6, 1.8, "Inv. Mass (GeV/c^{2})"}, ptAxis, etaAxis}}},
+      {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH3F, {{200, 1.6, 1.8, "Inv. Mass (GeV/c^{2})"}, ptAxis, etaAxis}}},
       // efficiency corrected inv mass
-      {"hMassXiEffCorrected", "hMassXiEffCorrected", {HistType::kTHnSparseF, {invMassAxis, signAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hMassOmegaEffCorrected", "hMassOmegaEffCorrected", {HistType::kTHnSparseF, {invMassAxis, signAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hMassXiEffCorrected", "hMassXiEffCorrected", {HistType::kTHnSparseF, {invMassAxis, signAxis, ptAxis, etaAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hMassOmegaEffCorrected", "hMassOmegaEffCorrected", {HistType::kTHnSparseF, {invMassAxis, signAxis, ptAxis, etaAxis, vertexAxis, multiplicityAxis}}, true},
 
       // trigger QA
       {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
@@ -806,25 +807,25 @@ struct CascadeCorrelations {
     for (auto const& casc : Cascades) {
       if (casc.isSelected() <= 2) { // not exclusively an Omega --> consistent with Xi or both
         if (casc.sign() < 0) {
-          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
-          weight = getEfficiency(hEffXiMin, casc.pt(), casc.yXi());
+          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.eta());
+          weight = getEfficiency(hEffXiMin, casc.pt(), casc.eta());
         } else {
-          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
-          weight = getEfficiency(hEffXiPlus, casc.pt(), casc.yXi());
+          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.eta());
+          weight = getEfficiency(hEffXiPlus, casc.pt(), casc.eta());
         }
         // LOGF(info, "casc pt %f, weight %f", casc.pt(), weight);
-        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.sign(), casc.pt(), casc.yXi(), collision.posZ(), collision.centFT0M(), weight);
+        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.sign(), casc.pt(), casc.eta(), collision.posZ(), collision.centFT0M(), weight);
         registry.fill(HIST("hRapidityXi"), casc.yXi());
       }
       if (casc.isSelected() >= 2) { // consistent with Omega or both
         if (casc.sign() < 0) {
-          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
-          weight = getEfficiency(hEffOmegaMin, casc.pt(), casc.yOmega());
+          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.eta());
+          weight = getEfficiency(hEffOmegaMin, casc.pt(), casc.eta());
         } else {
-          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
-          weight = getEfficiency(hEffOmegaPlus, casc.pt(), casc.yOmega());
+          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.eta());
+          weight = getEfficiency(hEffOmegaPlus, casc.pt(), casc.eta());
         }
-        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.sign(), casc.pt(), casc.yOmega(), collision.posZ(), collision.centFT0M(), weight);
+        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.sign(), casc.pt(), casc.eta(), collision.posZ(), collision.centFT0M(), weight);
         registry.fill(HIST("hRapidityOmega"), casc.yOmega());
       }
       registry.fill(HIST("hV0Radius"), casc.v0radius());
@@ -879,30 +880,30 @@ struct CascadeCorrelations {
 
       if (trigger.isSelected() <= 2 && std::abs(trigger.yXi()) < maxRapidity) { // trigger Xi
         if (doEfficiencyCorrection)
-          weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
+          weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt(), trigger.eta()) : getEfficiency(hEffXiPlus, trigger.pt(), trigger.eta());
         if (assoc.isSelected() <= 2 && std::abs(assoc.yXi()) < maxRapidity) { // assoc Xi
           if (doEfficiencyCorrection)
-            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffXiPlus, assoc.pt(), assoc.eta());
           registry.fill(HIST("hXiXi"), dphi, trigger.yXi() - assoc.yXi(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, collision.posZ(), collision.centFT0M(), weightTrigg * weightAssoc);
         }
         if (assoc.isSelected() >= 2 && std::abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
           if (doEfficiencyCorrection)
-            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffOmegaPlus, assoc.pt(), assoc.eta());
           registry.fill(HIST("hXiOm"), dphi, trigger.yXi() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, collision.posZ(), collision.centFT0M(), weightTrigg * weightAssoc);
         }
       }
       if (trigger.isSelected() >= 2 && std::abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
         if (doEfficiencyCorrection)
-          weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
+          weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt(), trigger.eta()) : getEfficiency(hEffOmegaPlus, trigger.pt(), trigger.eta());
         if (assoc.isSelected() <= 2 && std::abs(assoc.yXi()) < maxRapidity) { // assoc Xi
           if (doEfficiencyCorrection)
-            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffXiPlus, assoc.pt(), assoc.eta());
           // if Omega-Xi, fill the Xi-Omega histogram (flip the trigger/assoc and dphy,dy signs)
           registry.fill(HIST("hXiOm"), RecoDecay::constrainAngle(assoc.phi() - trigger.phi(), -PIHalf), -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, collision.posZ(), collision.centFT0M(), weightTrigg * weightAssoc);
         }
         if (assoc.isSelected() >= 2 && std::abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
           if (doEfficiencyCorrection)
-            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffOmegaPlus, assoc.pt(), assoc.eta());
           registry.fill(HIST("hOmOm"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, collision.posZ(), collision.centFT0M(), weightTrigg * weightAssoc);
         }
       }
@@ -965,30 +966,30 @@ struct CascadeCorrelations {
 
         if (trigger.isSelected() <= 2 && std::abs(trigger.yXi()) < maxRapidity) { // trigger Xi
           if (doEfficiencyCorrection)
-            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
+            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt(), trigger.eta()) : getEfficiency(hEffXiPlus, trigger.pt(), trigger.eta());
           if (assoc.isSelected() <= 2 && std::abs(assoc.yXi()) < maxRapidity) { // assoc Xi
             if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffXiPlus, assoc.pt(), assoc.eta());
             registry.fill(HIST("MixedEvents/hMEXiXi"), dphi, trigger.yXi() - assoc.yXi(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, col1.posZ(), col1.centFT0M(), weightTrigg * weightAssoc);
           }
           if (assoc.isSelected() >= 2 && std::abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
             if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffOmegaPlus, assoc.pt(), assoc.eta());
             registry.fill(HIST("MixedEvents/hMEXiOm"), dphi, trigger.yXi() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, col1.posZ(), col1.centFT0M(), weightTrigg * weightAssoc);
           }
         }
         if (trigger.isSelected() >= 2 && std::abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
           if (doEfficiencyCorrection)
-            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
+            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt(), trigger.eta()) : getEfficiency(hEffOmegaPlus, trigger.pt(), trigger.eta());
           if (assoc.isSelected() <= 2 && std::abs(assoc.yXi()) < maxRapidity) { // assoc Xi
             if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffXiPlus, assoc.pt(), assoc.eta());
             // if Omega-Xi, fill the Xi-Omega histogram (flip the trigger/assoc and dphy,dy signs)
             registry.fill(HIST("MixedEvents/hMEXiOm"), RecoDecay::constrainAngle(assoc.phi() - trigger.phi(), -PIHalf), -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, col1.posZ(), col1.centFT0M(), weightTrigg * weightAssoc);
           }
           if (assoc.isSelected() >= 2 && std::abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
             if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt(), assoc.eta()) : getEfficiency(hEffOmegaPlus, assoc.pt(), assoc.eta());
             registry.fill(HIST("MixedEvents/hMEOmOm"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, col1.posZ(), col1.centFT0M(), weightTrigg * weightAssoc);
           }
         }
