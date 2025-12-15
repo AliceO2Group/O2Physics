@@ -52,7 +52,6 @@ struct ZdcTaskLightIons {
   Configurable<bool> cfgApplyZvtxCut{"cfgApplyZvtxCut", true, "Event selection: zVtx"};
   Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx cut value"};
   Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
-  Configurable<bool> cfgIsTriggerTVX{"cfgIsTriggerTVX", true, "Event selection: is trigger TVX"};
   Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", true, "Event selection: do occupancy selection"};
   Configurable<float> cfgEvSelsMaxOccupancy{"cfgEvSelsMaxOccupancy", 10000, "Event selection: set max occupancy"};
   Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", true, "Event selection: no same bunch pileup cut"};
@@ -61,13 +60,13 @@ struct ZdcTaskLightIons {
   Configurable<bool> cfgNoTimeFrameBorder{"cfgNoTimeFrameBorder", true, "Event selection: no time frame border"};
   Configurable<bool> cfgNoITSROFFrameBorder{"cfgNoITSROFFrameBorder", true, "Event selection: no ITS ROF frame border"};
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
+  Configurable<bool> cfgIsTriggerTVX{"cfgIsTriggerTVX", true, "Event selection: is trigger TVX"};
   //
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   enum SelectionCriteria {
     evSel_zvtx,
     evSel_sel8,
-    evSel_kIsTriggerTVX,
     evSel_occupancy,
     evSel_kNoSameBunchPileup,
     evSel_kIsGoodZvtxFT0vsPV,
@@ -76,6 +75,7 @@ struct ZdcTaskLightIons {
     evSel_kNoITSROFrameBorder,
     evSel_kIsGoodITSLayersAll,
     evSel_allEvents,
+    evSel_kIsTriggerTVX,
     nEventSelections
   };
 
@@ -83,20 +83,20 @@ struct ZdcTaskLightIons {
   {
     registry.add("zdcDebunchHist", "ZN sum vs. diff; ZNA-ZNC (ns); ZNA+ZNC (ns)", {HistType::kTH2D, {{nBinsTiming, -20., 20.}, {nBinsTiming, -20., 20.}}});
 
-    // if (doprocessALICEcoll) {
-    registry.add("hEventCount", "Number of events; Cut; # of selected events ", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsTriggerTVX + 1, "kIsTriggerTVX");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
-    //}
+    if (doprocessALICEcoll) {
+      registry.add("hEventCount", "Number of events; Cut; # of selected events ", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "sel8");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsTriggerTVX + 1, "kIsTriggerTVX");
+    }
   }
 
   template <typename TCollision>
@@ -118,12 +118,6 @@ struct ZdcTaskLightIons {
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_sel8);
       registry.fill(HIST("hEventCount"), evSel_sel8);
-    }
-
-    selected = collision.selection_bit(kIsTriggerTVX);
-    if (selected) {
-      selectionBits |= (uint8_t)(0x1u << evSel_kIsTriggerTVX);
-      registry.fill(HIST("hEventCount"), evSel_kIsTriggerTVX);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
@@ -167,6 +161,12 @@ struct ZdcTaskLightIons {
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodITSLayersAll);
       registry.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+    }
+
+    selected = collision.selection_bit(kIsTriggerTVX);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kIsTriggerTVX);
+      registry.fill(HIST("hEventCount"), evSel_kIsTriggerTVX);
     }
 
     return selectionBits;

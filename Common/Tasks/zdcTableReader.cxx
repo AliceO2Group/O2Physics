@@ -28,11 +28,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 
+#define CHECK_BIT(var, pos) (((var) >> (pos)) & 1)
+
 struct ZDCLIAnalysis {
 
-  // Configurable number of bins
-  Configurable<bool> useZvtx{"useZvtx", false, "If true uses Z_vertex"};
-  Configurable<float> zVval{"zVval", 10., "Z_vertex cut value"};
+  // Configurable
   Configurable<uint64_t> tStampOffset{"tStampOffset", 0, "offset value for timestamp"};
   Configurable<int> nBinstStamp{"nBinstStamp", 1000, "no. bins in histo vs. timestamp"};
   Configurable<float> tStampMax{"tStampMax", 1000, ",maximum value for timestamp"};
@@ -54,15 +54,32 @@ struct ZDCLIAnalysis {
   Configurable<float> enCalibZPA{"enCalibZPA", 1.0, "Energy calibration ZPA"};
   Configurable<float> enCalibZPC{"enCalibZPC", 1.0, "Energy calibration ZPC"};
   //
+  Configurable<bool> selectZvtx{"selectZvtx", true, "Activate Z vertex selection"};
+  Configurable<bool> sel8{"sel8", true, "Activate sel8 selection"};
+  Configurable<bool> triggetTVX{"triggerTVX", true, "Activate trigger TVX selection"};
+  Configurable<bool> doOccupancySel{"doOccupancySel", false, "Activate occupancy selection"};
+  Configurable<bool> noSameBunchPileupCut{"noSameBunchPileupCut", true, "Activate no same bunch pileup selection"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", true, "Activate is good Z vertex FT0 vs PV selection"};
+  Configurable<bool> noCollInTimeRangeStandard{"noCollInTimeRangeStandard", true, "Activate no collision in time range standard selection"};
+  Configurable<bool> noTimeFrameBorder{"noTimeFrameBorder", true, "Activate no time frame border selection"};
+  Configurable<bool> noITSROFFrameBorder{"noITSROFFrameBorder", true, "Activate no ITS ROF frame border selection"};
+  Configurable<bool> isGoodITSLayersAll{"isGoodITSLayersAll", false, "Activate is good ITS layers all selection"};
+  //
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
-    registry.add("hZNApmc", "ZNApmc; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -0.5, MaxZN}}});
-    registry.add("hZPApmc", "ZPApmc; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZP}}});
-    registry.add("hZNCpmc", "ZNCpmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -0.5, MaxZN}}});
-    registry.add("hZPCpmc", "ZPCpmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZP}}});
+    registry.add("hzvertex", "z vertex; z_vertex (cm); Entries", {HistType::kTH1F, {{200, -20., 20.}}});
+    //
+    registry.add("hZNApmc", "ZNA pmc; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -0.5, MaxZN}}});
+    registry.add("hZPApmc", "ZPA pmc; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZP}}});
+    registry.add("hZNCpmc", "ZNC pmc; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZN, -0.5, MaxZN}}});
+    registry.add("hZPCpmc", "ZPC pmc; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZP}}});
     registry.add("hZEM", "ZEM; ZEM1+ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmpZP, -0.5, MaxZEM}}});
+    registry.add("hZDCA", "ZNA+ZPA; ZNA+ZPA; Entries", {HistType::kTH1F, {{nBinsAmpZN + nBinsAmpZP, -0.5, MaxZN + MaxZP}}});
+    registry.add("hZDCC", "ZNC+ZPC; ZNC+ZPC; Entries", {HistType::kTH1F, {{nBinsAmpZN + nBinsAmpZP, -0.5, MaxZN + MaxZP}}});
+    registry.add("hZDCCvsA", "ZDC side C vs. side A; ZDCA; ZDCC", {HistType::kTH2F, {{{nBinsAmpZN + nBinsAmpZP, -0.5, MaxZN + MaxZP}, {nBinsAmpZN + nBinsAmpZP, -0.5, MaxZN + MaxZP}}}});
+    //
     registry.add("hZNAamplvsADC", "ZNA amplitude vs. ADC; ZNA ADC; ZNA amplitude", {HistType::kTH2F, {{{nBinsAmpZN, -0.5, 3. * MaxZN}, {nBinsAmpZN, -0.5, MaxZN}}}});
     registry.add("hZNCamplvsADC", "ZNC amplitude vs. ADC; ZNC ADC; ZNC amplitude", {HistType::kTH2F, {{{nBinsAmpZN, -0.5, 3. * MaxZN}, {nBinsAmpZN, -0.5, MaxZN}}}});
     registry.add("hZPAamplvsADC", "ZPA amplitude vs. ADC; ZPA ADC; ZPA amplitude", {HistType::kTH2F, {{{nBinsAmpZP, -0.5, 3. * MaxZP}, {nBinsAmpZP, -0.5, MaxZP}}}});
@@ -132,93 +149,160 @@ struct ZDCLIAnalysis {
       auto multFT0A = zdc.multFt0a();
       auto multFT0C = zdc.multFt0c();
       auto multV0A = zdc.multV0a();
-      // auto zvtx = zdc.vertexZ();
+      auto zvtx = zdc.vertexZ();
       auto centrFT0C = zdc.centralityFt0c();
       auto centrFT0A = zdc.centralityFt0a();
       auto centrFT0M = zdc.centralityFt0m();
       auto timestamp = zdc.timestamp();
-      // auto selectionBits = zdc.selectionBits();
+      auto selectionBits = zdc.selectionBits();
 
-      if (enCalibZNA > 0.) {
-        zna *= enCalibZNA;
-        znaADC *= enCalibZNA;
-        znapm1 *= enCalibZNA;
-        znapm2 *= enCalibZNA;
-        znapm3 *= enCalibZNA;
-        znapm4 *= enCalibZNA;
-      }
-      if (enCalibZNC > 0.) {
-        znc *= enCalibZNC;
-        zncADC *= enCalibZNC;
-        zncpm1 *= enCalibZNC;
-        zncpm2 *= enCalibZNC;
-        zncpm3 *= enCalibZNC;
-        zncpm4 *= enCalibZNC;
-      }
-      if (enCalibZPA > 0.) {
-        zpa *= enCalibZPA;
-        zpaADC *= enCalibZPA;
-      }
-      if (enCalibZPC > 0.) {
-        zpc *= enCalibZPC;
-        zpcADC *= enCalibZPC;
-      }
+      bool zvtxSel = false;
+      if (selectZvtx && CHECK_BIT(selectionBits, 0))
+        zvtxSel = true;
+      else if (!selectZvtx)
+        zvtxSel = true;
+      //
+      bool ottoSel = false;
+      if (sel8 && CHECK_BIT(selectionBits, 1))
+        ottoSel = true;
+      else if (!sel8)
+        ottoSel = true;
+      //
+      bool isdoOccupancySel = false;
+      if (doOccupancySel && CHECK_BIT(selectionBits, 2))
+        isdoOccupancySel = true;
+      else if (!doOccupancySel)
+        isdoOccupancySel = true;
+      //
+      bool isnoSameBunchPileupCut = false;
+      if (noSameBunchPileupCut && CHECK_BIT(selectionBits, 3))
+        isnoSameBunchPileupCut = true;
+      else if (!noSameBunchPileupCut)
+        isnoSameBunchPileupCut = true;
+      //
+      bool isGoodZvtxFT0vsPVsel = false;
+      if (isGoodZvtxFT0vsPV && CHECK_BIT(selectionBits, 4))
+        isGoodZvtxFT0vsPVsel = true;
+      else if (!isGoodZvtxFT0vsPV)
+        isGoodZvtxFT0vsPVsel = true;
+      //
+      bool isnoCollInTimeRangeStandard = false;
+      if (noCollInTimeRangeStandard && CHECK_BIT(selectionBits, 5))
+        isnoCollInTimeRangeStandard = true;
+      else if (!noCollInTimeRangeStandard)
+        isnoCollInTimeRangeStandard = true;
+      //
+      bool isnoTimeFrameBorder = false;
+      if (noTimeFrameBorder && CHECK_BIT(selectionBits, 6))
+        isnoTimeFrameBorder = true;
+      else if (!noTimeFrameBorder)
+        isnoTimeFrameBorder = true;
+      //
+      bool isnoITSROFFrameBorder = false;
+      if (noITSROFFrameBorder && CHECK_BIT(selectionBits, 7))
+        isnoITSROFFrameBorder = true;
+      else if (!noITSROFFrameBorder)
+        isnoITSROFFrameBorder = true;
+      //
+      bool isGoodITSLayersAllsel = false;
+      if (isGoodITSLayersAll && CHECK_BIT(selectionBits, 8))
+        isGoodITSLayersAllsel = true;
+      else if (!isGoodITSLayersAll)
+        isGoodITSLayersAllsel = true;
+      //
+      bool istriggerTVX = false;
+      if (triggetTVX && CHECK_BIT(selectionBits, 9))
+        istriggerTVX = true;
+      else if (!triggetTVX)
+        istriggerTVX = true;
 
-      registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
-      registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
-      registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
-      registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
-      registry.get<TH1>(HIST("hZEM"))->Fill(zem1 + zem2);
-      //
-      registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
-      registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
-      registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
-      registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
-      //
-      registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
-      registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
-      registry.get<TH2>(HIST("hZPAvsZPC"))->Fill(zpc, zpa);
-      registry.get<TH2>(HIST("hZNAvsZPA"))->Fill(zpa, zna);
-      registry.get<TH2>(HIST("hZNCvsZPC"))->Fill(zpc, znc);
-      //
-      registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
-      registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
-      registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
-      registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
-      //
-      registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
-      registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
-      //
-      registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
-      registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
-      registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
-      //
-      registry.get<TH2>(HIST("hZNAvscentrFT0A"))->Fill(centrFT0A, zna);
-      registry.get<TH2>(HIST("hZNAvscentrFT0C"))->Fill(centrFT0C, zna);
-      registry.get<TH2>(HIST("hZNAvscentrFT0M"))->Fill(centrFT0M, zna);
-      registry.get<TH2>(HIST("hZPAvscentrFT0A"))->Fill(centrFT0A, zpa);
-      registry.get<TH2>(HIST("hZPAvscentrFT0C"))->Fill(centrFT0C, zpa);
-      registry.get<TH2>(HIST("hZPAvscentrFT0M"))->Fill(centrFT0M, zpa);
-      registry.get<TH2>(HIST("hZNCvscentrFT0A"))->Fill(centrFT0A, znc);
-      registry.get<TH2>(HIST("hZNCvscentrFT0C"))->Fill(centrFT0C, znc);
-      registry.get<TH2>(HIST("hZNCvscentrFT0M"))->Fill(centrFT0M, znc);
-      registry.get<TH2>(HIST("hZPCvscentrFT0A"))->Fill(centrFT0A, zpc);
-      registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
-      registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
-      //
-      /*if (tStampOffset > timestamp) {
-        printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %lu \n\n", timestamp);
-        return;
-      }*/
-      float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
-      /*if (tsh > tStampMax) {
-        printf("\n\n MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n\n", tsh);
-        return;
-      }*/
-      registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(tsh, zna);
-      registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(tsh, znc);
-      registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(tsh, zpa);
-      registry.get<TH2>(HIST("hZPCvstimestamp"))->Fill(tsh, zpc);
+      if (zvtxSel && ottoSel && isdoOccupancySel && isnoSameBunchPileupCut && isGoodZvtxFT0vsPVsel && isnoCollInTimeRangeStandard && isnoTimeFrameBorder && isnoITSROFFrameBorder && isGoodITSLayersAllsel) {
+        if (enCalibZNA > 0.) {
+          zna *= enCalibZNA;
+          znaADC *= enCalibZNA;
+          znapm1 *= enCalibZNA;
+          znapm2 *= enCalibZNA;
+          znapm3 *= enCalibZNA;
+          znapm4 *= enCalibZNA;
+        }
+        if (enCalibZNC > 0.) {
+          znc *= enCalibZNC;
+          zncADC *= enCalibZNC;
+          zncpm1 *= enCalibZNC;
+          zncpm2 *= enCalibZNC;
+          zncpm3 *= enCalibZNC;
+          zncpm4 *= enCalibZNC;
+        }
+        if (enCalibZPA > 0.) {
+          zpa *= enCalibZPA;
+          zpaADC *= enCalibZPA;
+        }
+        if (enCalibZPC > 0.) {
+          zpc *= enCalibZPC;
+          zpcADC *= enCalibZPC;
+        }
+
+        registry.get<TH1>(HIST("hzvertex"))->Fill(zvtx);
+        registry.get<TH1>(HIST("hZNApmc"))->Fill(zna);
+        registry.get<TH1>(HIST("hZNCpmc"))->Fill(znc);
+        registry.get<TH1>(HIST("hZPApmc"))->Fill(zpa);
+        registry.get<TH1>(HIST("hZPCpmc"))->Fill(zpc);
+        registry.get<TH1>(HIST("hZEM"))->Fill(zem1 + zem2);
+        //
+        registry.get<TH1>(HIST("hZDCA"))->Fill(zna + zpa);
+        registry.get<TH1>(HIST("hZDCC"))->Fill(znc + zpc);
+        registry.get<TH2>(HIST("hZDCCvsA"))->Fill(zna + zpa, znc + zpc);
+        //
+        registry.get<TH2>(HIST("hZNAamplvsADC"))->Fill(znaADC, zna);
+        registry.get<TH2>(HIST("hZNCamplvsADC"))->Fill(zncADC, znc);
+        registry.get<TH2>(HIST("hZPAamplvsADC"))->Fill(zpaADC, zpa);
+        registry.get<TH2>(HIST("hZPCamplvsADC"))->Fill(zpcADC, zpc);
+        //
+        registry.get<TH2>(HIST("hZNvsZEM"))->Fill(zem1 + zem2, zna + znc);
+        registry.get<TH2>(HIST("hZNAvsZNC"))->Fill(znc, zna);
+        registry.get<TH2>(HIST("hZPAvsZPC"))->Fill(zpc, zpa);
+        registry.get<TH2>(HIST("hZNAvsZPA"))->Fill(zpa, zna);
+        registry.get<TH2>(HIST("hZNCvsZPC"))->Fill(zpc, znc);
+        //
+        registry.get<TH2>(HIST("hZNAvstdc"))->Fill(tdczna, zna);
+        registry.get<TH2>(HIST("hZNCvstdc"))->Fill(tdcznc, znc);
+        registry.get<TH2>(HIST("hZPAvstdc"))->Fill(tdczpa, zpa);
+        registry.get<TH2>(HIST("hZPCvstdc"))->Fill(tdczpc, zpc);
+        //
+        registry.get<TH2>(HIST("hZNAcvsZNAsum"))->Fill(0.25 * (znapm1 + znapm2 + znapm3 + znapm4), zna);
+        registry.get<TH2>(HIST("hZNCcvsZNCsum"))->Fill(0.25 * (zncpm1 + zncpm2 + zncpm3 + zncpm4), znc);
+        //
+        registry.get<TH2>(HIST("hZNvsV0A"))->Fill(multV0A / 100., zna + znc);
+        registry.get<TH2>(HIST("hZNAvsFT0A"))->Fill((multFT0A) / 100., zna);
+        registry.get<TH2>(HIST("hZNCvsFT0C"))->Fill((multFT0C) / 100., znc);
+        //
+        registry.get<TH2>(HIST("hZNAvscentrFT0A"))->Fill(centrFT0A, zna);
+        registry.get<TH2>(HIST("hZNAvscentrFT0C"))->Fill(centrFT0C, zna);
+        registry.get<TH2>(HIST("hZNAvscentrFT0M"))->Fill(centrFT0M, zna);
+        registry.get<TH2>(HIST("hZPAvscentrFT0A"))->Fill(centrFT0A, zpa);
+        registry.get<TH2>(HIST("hZPAvscentrFT0C"))->Fill(centrFT0C, zpa);
+        registry.get<TH2>(HIST("hZPAvscentrFT0M"))->Fill(centrFT0M, zpa);
+        registry.get<TH2>(HIST("hZNCvscentrFT0A"))->Fill(centrFT0A, znc);
+        registry.get<TH2>(HIST("hZNCvscentrFT0C"))->Fill(centrFT0C, znc);
+        registry.get<TH2>(HIST("hZNCvscentrFT0M"))->Fill(centrFT0M, znc);
+        registry.get<TH2>(HIST("hZPCvscentrFT0A"))->Fill(centrFT0A, zpc);
+        registry.get<TH2>(HIST("hZPCvscentrFT0C"))->Fill(centrFT0C, zpc);
+        registry.get<TH2>(HIST("hZPCvscentrFT0M"))->Fill(centrFT0M, zpc);
+        //
+        /*if (tStampOffset > timestamp) {
+          printf("\n\n #################  OFFSET timestamp too large!!!!!!!!!!!!!!!!!!!!!!!!!! >  timestamp %lu \n\n", timestamp);
+          return;
+        }*/
+        float tsh = (timestamp / 1000.) - (tStampOffset / 1000.); // in hours
+        /*if (tsh > tStampMax) {
+          printf("\n\n MAXIMUM timestamp too small!!!!!!!!!!!!!!!!!!!!!!!!!! > timestamp-offset %f \n\n", tsh);
+          return;
+        }*/
+        registry.get<TH2>(HIST("hZNAvstimestamp"))->Fill(tsh, zna);
+        registry.get<TH2>(HIST("hZNCvstimestamp"))->Fill(tsh, znc);
+        registry.get<TH2>(HIST("hZPAvstimestamp"))->Fill(tsh, zpa);
+        registry.get<TH2>(HIST("hZPCvstimestamp"))->Fill(tsh, zpc);
+      }
     }
   }
 };
