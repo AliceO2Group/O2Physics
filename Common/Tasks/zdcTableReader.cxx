@@ -216,7 +216,7 @@ struct ZDCLIAnalysis {
       else if (!triggetTVX)
         istriggerTVX = true;
 
-      if (zvtxSel && ottoSel && isdoOccupancySel && isnoSameBunchPileupCut && isGoodZvtxFT0vsPVsel && isnoCollInTimeRangeStandard && isnoTimeFrameBorder && isnoITSROFFrameBorder && isGoodITSLayersAllsel) {
+      if (zvtxSel && ottoSel && istriggerTVX && isdoOccupancySel && isnoSameBunchPileupCut && isGoodZvtxFT0vsPVsel && isnoCollInTimeRangeStandard && isnoTimeFrameBorder && isnoITSROFFrameBorder && isGoodITSLayersAllsel) {
         if (enCalibZNA > 0.) {
           zna *= enCalibZNA;
           znaADC *= enCalibZNA;
