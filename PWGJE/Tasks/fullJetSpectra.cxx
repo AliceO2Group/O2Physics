@@ -83,8 +83,10 @@ struct FullJetSpectra {
   Configurable<float> jetpTMax{"jetpTMax", 350., "maximum jet pT"};
   Configurable<float> jetEtaMin{"jetEtaMin", -0.3, "minimum jet eta"}; // each of these jet configurables are for the fiducial emcal cuts
   Configurable<float> jetEtaMax{"jetEtaMax", 0.3, "maximum jet eta"};  // for R = 0.4 (EMCAL eta acceptance: eta_jet = 0.7 - R)
-  Configurable<float> jetPhiMin{"jetPhiMin", 1.80, "minimum jet phi"}; // phi_jet_min for R = 0.4 is 1.80
-  Configurable<float> jetPhiMax{"jetPhiMax", 2.86, "maximum jet phi"}; // phi_jet_min for R = 0.4 is 2.86
+  // Configurable<float> emcalPhiMin{"jetPhiMin", 1.3962634, "minimum emcal phi"};
+  // Configurable<float> emcalPhiMax{"jetPhiMax", 3.2836100, "maximum emcal phi"};
+  Configurable<float> jetPhiMin{"jetPhiMin", 1.3962634, "minimum emcal phi"};
+  Configurable<float> jetPhiMax{"jetPhiMax", 3.2836100, "maximum emcal phi"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
 
   // Leading track and cluster pT configurables
@@ -769,6 +771,37 @@ struct FullJetSpectra {
       }
     }
     return true;
+  }
+
+  template <typename T>
+  bool isInPhiAcceptance(T const& jet) const
+  {
+    const double twoPi = 2.0 * M_PI;
+    // convert encoded radius to real R (radians)
+    const double R = static_cast<double>(jet.r()) / 100.0;
+
+    // emcalPhiMin/emcalPhiMax are configured emcal phi edges in radians, e.g. 1.3962634, 3.2836100
+    double jetPhiMin = emcalPhiMin + R;
+    double jetPhiMax = emcalPhiMax - R;
+
+    // normalize to [0, 2pi)
+    auto norm = [&](double a) {
+      while (a < 0) a += twoPi;
+      while (a >= twoPi) a -= twoPi;
+      return a;
+    };
+
+    double phi = norm(jet.phi());
+    jetPhiMin = norm(jetPhiMin);
+    jetPhiMax = norm(jetPhiMax);
+
+    if (jetPhiMin <= jetPhiMax) {
+      // non-wrap case (your EMCal default)
+      return (phi >= jetPhiMin && phi <= jetPhiMax);
+    } else {
+      // wrap-around case (defensive)
+      return (phi >= jetPhiMin || phi <= jetPhiMax);
+    }
   }
 
   template <typename T>
