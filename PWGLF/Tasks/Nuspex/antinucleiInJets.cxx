@@ -473,7 +473,7 @@ struct AntinucleiInJets {
       const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
       const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
       const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
-      const AxisSpec subsampleAxis{nSubsamples, 0, nSubsamples, "Subsample Index"};
+      const AxisSpec subsampleAxis{nSubsamples, 0, static_cast<double>(nSubsamples), "Subsample Index"};
 
       // Event counter
       registryCorr.add("eventCounter", "number of events", HistType::kTH1F, {{20, 0, 20, "counter"}});
