@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -11,8 +11,7 @@
 
 /// \file   jetShape.cxx
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
-/// \brief Task for measuring the dependence of the jet shape function rho(r) on
-/// the distance r from the jet axis.
+/// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
