@@ -139,7 +139,8 @@ class svPoolCreator
       float collTime = collision.collisionTime();
       float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.template bc_as<BC>().globalBC();
-      int collIdx = collision.globalIndex();
+      // int collIdx = collision.globalIndex();
+      int collIdx = i;
       int64_t bcOffset = globalBC - static_cast<int64_t>(collBC);
       if (static_cast<uint64_t>(std::abs(bcOffset)) > bOffsetMax) {
         if (bcOffset < 0) {
