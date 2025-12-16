@@ -258,10 +258,15 @@ class FemtoDreamDetaDphiStar
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kReso) {
       /// V0-Reso combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kV0 || (part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF &&
-                                                                                 part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC &&
-                                                                                 part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF &&
-                                                                                 part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC)) {
+      if ((part1.partType() != o2::aod::femtodreamparticle::ParticleType::kV0 && part1.partType() != o2::aod::femtodreamparticle::ParticleType::kV0K0Short) ||
+          (part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC)) {
         LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kV0, kResoPosdaughTOF_NegdaughTOF, kResoPosdaughTOF_NegdaughTPC, kResoPosdaughTPC_NegdaughTOF, kResoPosdaughTPC_NegdaughTPC candidates.";
         return false;
       }

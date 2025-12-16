@@ -772,7 +772,7 @@ struct TaskPi0FlowEMC {
         // only combine rotated photons with other photons
         continue;
       }
-      if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+      if (!(fEMCCut.IsSelected(photon))) {
         continue;
       }
       if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelBackground.value) {
@@ -869,7 +869,7 @@ struct TaskPi0FlowEMC {
         // only combine rotated photons with other photons
         continue;
       }
-      if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+      if (!(fEMCCut.IsSelected(photon))) {
         continue;
       }
       if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelBackground.value) {
@@ -993,7 +993,7 @@ struct TaskPi0FlowEMC {
         for (const auto& photon : photonsPerCollision) {
           registry.fill(HIST("clusterQA/hEClusterBefore"), photon.e());                      // before cuts
           registry.fill(HIST("clusterQA/hClusterEtaPhiBefore"), photon.phi(), photon.eta()); // before cuts
-          if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+          if (!(fEMCCut.IsSelected(photon))) {
             continue;
           }
           if (cfgDistanceToEdge.value && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {
@@ -1004,7 +1004,7 @@ struct TaskPi0FlowEMC {
         }
       }
       for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
+        if (!(fEMCCut.IsSelected(g1)) || !(fEMCCut.IsSelected(g2))) {
           continue;
         }
 
@@ -1113,7 +1113,7 @@ struct TaskPi0FlowEMC {
       }
       registry.fill(HIST("h3DMixingCount"), c1.posZ(), getCentrality(c1), c1.ep2ft0m());
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
+        if (!(fEMCCut.IsSelected(g1)) || !(fEMCCut.IsSelected(g2))) {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
@@ -1352,14 +1352,14 @@ struct TaskPi0FlowEMC {
       if (emccuts.cfgEnableQA.value) {
         for (const auto& photon : photonsPerCollision) {
           registry.fill(HIST("clusterQA/hEClusterBefore"), photon.e()); // before cuts
-          if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+          if (!(fEMCCut.IsSelected(photon))) {
             continue;
           }
           registry.fill(HIST("clusterQA/hEClusterAfter"), photon.e()); // accepted after cuts
         }
       }
       for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
+        if (!(fEMCCut.IsSelected(g1)) || !(fEMCCut.IsSelected(g2))) {
           continue;
         }
 
@@ -1467,7 +1467,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("clusterQA/hEClusterBefore"), photon.e());                      // before cuts
           registry.fill(HIST("clusterQA/hClusterEtaPhiBefore"), photon.phi(), photon.eta()); // before cuts
         }
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+        if (!(fEMCCut.IsSelected(photon))) {
           continue;
         }
         if (cfgDistanceToEdge.value && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {

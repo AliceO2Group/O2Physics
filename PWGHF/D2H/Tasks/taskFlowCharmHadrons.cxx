@@ -43,6 +43,7 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <THnSparse.h>
 #include <TString.h>
 
 #include <Rtypes.h>
@@ -301,8 +302,7 @@ struct HfTaskFlowCharmHadrons {
         registry.add("spReso/hSparseReso", "THn for resolution with occupancy", HistType::kTHnSparseF, axesReso);
       }
 
-      int dummyVariable;
-      hfEvSel.init(registry, dummyVariable);
+      hfEvSel.init(registry);
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();

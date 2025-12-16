@@ -1984,14 +1984,16 @@ struct AnalysisSameEventPairing {
               PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], isAmbiInBunch, isAmbiOutOfBunch, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
                 fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                }
-                if (isUnambiguous) {
-                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousMuonHistograms) {
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                  }
+                  if (isUnambiguous) {
+                    fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                  }
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -2004,14 +2006,16 @@ struct AnalysisSameEventPairing {
               if (sign1 > 0) {
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
                   fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
-                  if (isAmbiInBunch) {
-                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
-                  }
-                  if (isAmbiOutOfBunch) {
-                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                  }
-                  if (isUnambiguous) {
-                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                  if (fConfigAmbiguousMuonHistograms) {
+                    if (isAmbiInBunch) {
+                      fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
+                    }
+                    if (isAmbiOutOfBunch) {
+                      fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                    }
+                    if (isUnambiguous) {
+                      fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                    }
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -2023,14 +2027,16 @@ struct AnalysisSameEventPairing {
               } else {
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
                   fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
-                  if (isAmbiInBunch) {
-                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
-                  }
-                  if (isAmbiOutOfBunch) {
-                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                  }
-                  if (isUnambiguous) {
-                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                  if (fConfigAmbiguousMuonHistograms) {
+                    if (isAmbiInBunch) {
+                      fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
+                    }
+                    if (isAmbiOutOfBunch) {
+                      fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                    }
+                    if (isUnambiguous) {
+                      fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                    }
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -2094,9 +2100,9 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedmuon_as<TTracks1>();
           auto t2 = a2.template reducedmuon_as<TTracks2>();
-          if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId() && t1.matchMCHTrackId() >= 0)
             continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMCHTrackId() >= 0)
             continue;
           VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
@@ -2165,14 +2171,16 @@ struct AnalysisSameEventPairing {
           if (pairSign == 0) {
             if constexpr (TPairType == VarManager::kDecayToMuMu) {
               fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
-              if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
-              }
-              if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][18].Data(), VarManager::fgValues);
-              }
-              if (isUnambiguous) {
-                fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousMuonHistograms) {
+                if (isAmbiInBunch) {
+                  fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
+                }
+                if (isAmbiOutOfBunch) {
+                  fHistMan->FillHistClass(histNames[icut][18].Data(), VarManager::fgValues);
+                }
+                if (isUnambiguous) {
+                  fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
+                }
               }
             }
             if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -2182,14 +2190,16 @@ struct AnalysisSameEventPairing {
             if (pairSign > 0) {
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
                 fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][19].Data(), VarManager::fgValues);
-                }
-                if (isUnambiguous) {
-                  fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousMuonHistograms) {
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][19].Data(), VarManager::fgValues);
+                  }
+                  if (isUnambiguous) {
+                    fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
+                  }
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -2198,14 +2208,16 @@ struct AnalysisSameEventPairing {
             } else {
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
                 fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][20].Data(), VarManager::fgValues);
-                }
-                if (isUnambiguous) {
-                  fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousMuonHistograms) {
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][20].Data(), VarManager::fgValues);
+                  }
+                  if (isUnambiguous) {
+                    fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
+                  }
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {

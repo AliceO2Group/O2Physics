@@ -25,7 +25,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
@@ -142,7 +141,7 @@ struct HfCandidateCreatorCascade {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     massP = MassProton;
     massK0s = MassK0Short;

@@ -21,7 +21,6 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"

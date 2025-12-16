@@ -337,7 +337,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
     if (doprocessJpsiKMc || doprocessJpsiPhiMc) {
       const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
       for (const DeviceSpec& device : workflows.devices) {

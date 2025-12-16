@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfHelperAlice3.h
+/// \file utilsHfAlice3.h
 /// \brief Class with helper functions for HF analyses
 ///
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
@@ -26,15 +26,7 @@ enum CharmHadAlice3 { Lc = 1 };
 
 } // namespace o2::analysis
 
-class HfHelperAlice3
-{
- public:
-  /// Default constructor
-  HfHelperAlice3() = default;
-
-  /// Default destructor
-  ~HfHelperAlice3() = default;
-
+struct HfHelperAlice3 {
   /// Get candidate mass (ALICE3 HF data model)
   /// \tparam TCand candidate type
   /// \param cand candidate

@@ -160,6 +160,8 @@ struct JetDerivedDataProducerTask {
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   Zorro triggerDecider;
 
+  std::vector<uint32_t> bcRctMapping;
+
   ctpRateFetcher rateFetcher;
   int runNumber;
   float hadronicRate;
@@ -192,12 +194,28 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClearMaps, "clears all maps", true);
 
-  void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>::iterator const& bc)
+  void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps, aod::BcSels> const& bcs)
   {
-    products.jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
-    products.jBCParentIndexTable(bc.globalIndex());
+    bcRctMapping.clear();
+    bcRctMapping.resize(bcs.size(), ~uint32_t{0});
+    for (const auto& bc : bcs) {
+      products.jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
+      products.jBCParentIndexTable(bc.globalIndex());
+      bcRctMapping[bc.globalIndex()] = bc.rct_raw();
+    }
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossings, "produces derived bunch crossing table", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossings, "produces derived bunch crossing table", true);
+
+  void processBunchCrossingsWithoutSels(soa::Join<aod::BCs, aod::Timestamps> const& bcs)
+  {
+    bcRctMapping.clear();
+    bcRctMapping.resize(bcs.size(), ~uint32_t{0});
+    for (const auto& bc : bcs) {
+      products.jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), ~uint32_t{0}, ~uint64_t{0}, ~uint32_t{0});
+      products.jBCParentIndexTable(bc.globalIndex());
+    }
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossingsWithoutSels, "produces derived bunch crossing table with bunch crossing selections", false);
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::FT0Mults, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s>::iterator const& collision, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
@@ -274,28 +292,28 @@ struct JetDerivedDataProducerTask {
 
   void processMcCollisions(soa::Join<aod::McCollisions, aod::HepMCXSections, aod::MultsExtraMC, aod::McCentFT0Ms>::iterator const& mcCollision)
   {
-    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.getSubGeneratorId(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard());
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), bcRctMapping[mcCollision.bcId()], mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
   void processMcCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::McCollisions, aod::HepMCXSections>::iterator const& mcCollision)
   {
-    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), mcCollision.getSubGeneratorId(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard());
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), bcRctMapping[mcCollision.bcId()], mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutCentralityAndMultiplicity, "produces derived MC collision table without centraility and multiplicity", false);
 
   void processMcCollisionsWithoutXsection(soa::Join<aod::McCollisions, aod::MultsExtraMC, aod::McCentFT0Ms>::iterator const& mcCollision)
   {
-    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.getSubGeneratorId(), 1, 1, 1.0, 1.0, 999.0);
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), 1, 1, 1.0, 1.0, 999.0, bcRctMapping[mcCollision.bcId()], mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutXsection, "produces derived MC collision table without cross section information", false);
 
   void processMcCollisionsWithoutCentralityAndMultiplicityAndXsection(aod::McCollision const& mcCollision)
   {
-    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), mcCollision.getSubGeneratorId(), 1, 1, 1.0, 1.0, 999.0);
+    products.jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), 1, 1, 1.0, 1.0, 999.0, bcRctMapping[mcCollision.bcId()], mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutCentralityAndMultiplicityAndXsection, "produces derived MC collision table without centrality, multiplicity and cross section information", false);

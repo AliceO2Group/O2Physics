@@ -369,6 +369,18 @@ void VarManager::SetDefaultVarNames()
 
   fgVariableNames[kRunNo] = "Run number";
   fgVariableUnits[kRunNo] = "";
+  fgVariableNames[kTFNBCs] = "Number of bunch crossings per TF";
+  fgVariableUnits[kTFNBCs] = "";
+  fgVariableNames[kTFNCollisions] = "Number of collisions per TF";
+  fgVariableUnits[kTFNCollisions] = "";
+  fgVariableNames[kTFNMCCollisions] = "Number of MC collisions per TF";
+  fgVariableUnits[kTFNMCCollisions] = "";
+  fgVariableNames[kTFNTracks] = "Number of tracks per TF";
+  fgVariableUnits[kTFNTracks] = "";
+  fgVariableNames[kTFNMuons] = "Number of muons per TF";
+  fgVariableUnits[kTFNMuons] = "";
+  fgVariableNames[kTFNMFTs] = "Number of MFT tracks per TF";
+  fgVariableUnits[kTFNMFTs] = "";
   fgVariableNames[kBC] = "Bunch crossing";
   fgVariableUnits[kBC] = "";
   fgVariableNames[kTimeFromSOR] = "time since SOR";
@@ -1402,6 +1414,12 @@ void VarManager::SetDefaultVarNames()
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
   fgVarNamesMap["kRunNo"] = kRunNo;
+  fgVarNamesMap["kTFNBCs"] = kTFNBCs;
+  fgVarNamesMap["kTFNCollisions"] = kTFNCollisions;
+  fgVarNamesMap["kTFNMCCollisions"] = kTFNMCCollisions;
+  fgVarNamesMap["kTFNTracks"] = kTFNTracks;
+  fgVarNamesMap["kTFNMuons"] = kTFNMuons;
+  fgVarNamesMap["kTFNMFTs"] = kTFNMFTs;
   fgVarNamesMap["kNRunWiseVariables"] = kNRunWiseVariables;
   fgVarNamesMap["kTimestamp"] = kTimestamp;
   fgVarNamesMap["kTimeFromSOR"] = kTimeFromSOR;

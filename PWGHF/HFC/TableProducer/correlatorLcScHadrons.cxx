@@ -17,7 +17,6 @@
 /// \author Ravindra Singh <ravindra.singh@cern.ch>
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -57,8 +56,6 @@
 
 #include <TPDGCode.h>
 #include <TRandom3.h>
-
-#include <Rtypes.h>
 
 #include <array>
 #include <cstddef>

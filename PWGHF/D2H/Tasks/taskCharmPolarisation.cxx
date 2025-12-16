@@ -31,6 +31,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -679,7 +680,7 @@ struct HfTaskCharmPolarisation {
     /// Event-plane related histograms
     if (doprocessResolEventPlane) {
       const AxisSpec axisCosDeltaPhi{1000, -1., 1., "cos(2(#Psi_{2}(A) #minus #Psi_{2}(B)))"};
-      const AxisSpec axisPsi{180, 0., o2::constants::math::PI, "#Psi_{2}"};
+      const AxisSpec axisPsi{180, -o2::constants::math::PIHalf, o2::constants::math::PIHalf, "#Psi_{2}"};
 
       registry.add("resolEvPlane/hEvPlaneAngleFV0A", ";centrality;#Psi_{2} (FV0A)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
       registry.add("resolEvPlane/hEvPlaneAngleFT0A", ";centrality;#Psi_{2} (FT0A)", {HistType::kTH2F, {thnAxisCentrality, axisPsi}});
@@ -718,8 +719,7 @@ struct HfTaskCharmPolarisation {
     }
 
     if (doprocessResolEventPlane) {
-      int dummyVariable;
-      hfEvSel.init(registry, dummyVariable);
+      hfEvSel.init(registry);
       ccdb->setURL("http://alice-ccdb.cern.ch");
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();

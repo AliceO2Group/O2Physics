@@ -50,7 +50,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
 #include <THnSparse.h>
 #include <TPDGCode.h>
 
