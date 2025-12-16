@@ -66,6 +66,9 @@ struct LumiStabilityLightIons {
   Configurable<bool> cfgDoBCL{"cfgDoBCL", false, "Create and fill histograms for leading BCs of type B"};
   Configurable<bool> cfgDoBCSL{"cfgDoBCSL", false, "Create and fill histograms for super-leading BCs (no preceding FT0/FDD activity) of type B"};
 
+  Configurable<bool> cfgRequireZDCTriggerForZDCQA{"cfgRequireZDCTriggerForZDCQA", false, "Require ZDC trigger (1ZNC or 1ZNA) for filling QA histograms"};
+  Configurable<bool> cfgRequireTVXTriggerForZDCQA{"cfgRequireTVXTriggerForZDCQA", false, "Require FT0 vertex trigger for filling ZDC QA histograms"};
+
   Configurable<bool> cfgRequireNoT0ForSLBC{"cfgRequireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
 
   Configurable<int> cfgEmptyBCsBeforeLeadingBC{"cfgEmptyBCsBeforeLeadingBC", 5, "Minimum number of empty BCs before a leading BC to identify it as such"};
@@ -138,7 +141,7 @@ struct LumiStabilityLightIons {
             mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
           }
         }
-        if (cfgDoBCSL && (iTrigger == kFT0Vtx || iTrigger == kFDD)) { // only for FT0Vtx and FDD fill super-leading BC histograms
+        if (cfgDoBCSL && (iTrigger == kFT0Vtx || iTrigger == kFDD || iTrigger == kAllBCs)) { // only for FT0Vtx and FDD fill super-leading BC histograms
           mHistManager.add(Form("%s", std::string(NBCsVsTimeHistNames[iTrigger][5]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
           mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][5]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
         }
@@ -250,6 +253,10 @@ struct LumiStabilityLightIons {
     for (const auto& bc : bcs) {
 
       std::bitset<64> ctpInputMask(bc.inputMask());
+      if (cfgRequireTVXTriggerForZDCQA && !(ctpInputMask.test(2)))
+        continue;
+      if (cfgRequireZDCTriggerForZDCQA && !(ctpInputMask.test(25)))
+        continue;
 
       bool zdcHit = !bc.has_zdc() ? 0 : ((bc.zdc().energyCommonZNC() > -1 && std::abs(bc.zdc().timeZNC()) < 1E5) ? 1 : 0);
       mHistManager.fill(HIST("ZDCQA/BCHasZDC"), zdcHit, ctpInputMask.test(25) ? 1 : 0);
@@ -310,6 +317,8 @@ struct LumiStabilityLightIons {
 
       if (!bcPatternB[localBC])
         continue;
+
+      fillHistograms<kAllBCs, kBCSL>(timeSinceSOF, localBC);
 
       if (ctpInputMask.test(2))
         fillHistograms<kFT0Vtx, kBCSL>(timeSinceSOF, localBC);
