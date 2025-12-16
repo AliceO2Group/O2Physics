@@ -53,7 +53,9 @@
 #include <array>
 #include <chrono>
 #include <cmath>
-#include <iostream>
+// #include <iostream>
+#include "Framework/Logger.h"
+
 #include <string>
 #include <vector>
 
@@ -70,7 +72,6 @@ struct zdccalderived {
   // Configurables.
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
@@ -84,32 +85,32 @@ struct zdccalderived {
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
 
   struct : ConfigurableGroup {
-    Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
-    Configurable<int> PhiNbins{"PhiNbins", 100, "Number of bins in phi histogram"};
+    Configurable<int> qxyNbins{"qxyNbins", 100, "Number of bins in QxQy histograms"};
+    Configurable<int> phiNbins{"phiNbins", 100, "Number of bins in phi histogram"};
     Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
     Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
-    Configurable<int> VxNbins{"VxNbins", 25, "Number of bins in Vx histograms"};
+    Configurable<int> vxNbins{"vxNbins", 25, "Number of bins in Vx histograms"};
     Configurable<float> lbinVx{"lbinVx", -0.05, "lower bin value in Vx histograms"};
     Configurable<float> hbinVx{"hbinVx", 0.0, "higher bin value in Vx histograms"};
-    Configurable<int> VyNbins{"VyNbins", 25, "Number of bins in Vy histograms"};
+    Configurable<int> vyNbins{"vyNbins", 25, "Number of bins in Vy histograms"};
     Configurable<float> lbinVy{"lbinVy", -0.02, "lower bin value in Vy histograms"};
     Configurable<float> hbinVy{"hbinVy", 0.02, "higher bin value in Vy histograms"};
-    Configurable<int> VzNbins{"VzNbins", 20, "Number of bins in Vz histograms"};
+    Configurable<int> vzNbins{"vzNbins", 20, "Number of bins in Vz histograms"};
     Configurable<float> lbinVz{"lbinVz", -10.0, "lower bin value in Vz histograms"};
     Configurable<float> hbinVz{"hbinVz", 10.0, "higher bin value in Vz histograms"};
-    Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
+    Configurable<int> centNbins{"centNbins", 16, "Number of bins in cent histograms"};
     Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
     Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
-    Configurable<int> VxfineNbins{"VxfineNbins", 25, "Number of bins in Vx fine histograms"};
+    Configurable<int> vxFineNbins{"vxFineNbins", 25, "Number of bins in Vx fine histograms"};
     Configurable<float> lfinebinVx{"lfinebinVx", -0.05, "lower bin value in Vx fine histograms"};
     Configurable<float> hfinebinVx{"hfinebinVx", 0.0, "higher bin value in Vx fine histograms"};
-    Configurable<int> VyfineNbins{"VyfineNbins", 25, "Number of bins in Vy fine histograms"};
+    Configurable<int> vyFineNbins{"vyFineNbins", 25, "Number of bins in Vy fine histograms"};
     Configurable<float> lfinebinVy{"lfinebinVy", -0.02, "lower bin value in Vy fine histograms"};
     Configurable<float> hfinebinVy{"hfinebinVy", 0.02, "higher bin value in Vy fine histograms"};
-    Configurable<int> VzfineNbins{"VzfineNbins", 20, "Number of bins in Vz fine histograms"};
+    Configurable<int> vzFineNbins{"vzFineNbins", 20, "Number of bins in Vz fine histograms"};
     Configurable<float> lfinebinVz{"lfinebinVz", -10.0, "lower bin value in Vz fine histograms"};
     Configurable<float> hfinebinVz{"hfinebinVz", 10.0, "higher bin value in Vz fine histograms"};
-    Configurable<int> CentfineNbins{"CentfineNbins", 16, "Number of bins in cent fine histograms"};
+    Configurable<int> centFineNbins{"centFineNbins", 16, "Number of bins in cent fine histograms"};
     Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
     Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
   } configbins;
@@ -133,40 +134,41 @@ struct zdccalderived {
   Configurable<bool> fine6{"fine6", false, "REfine6"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with THn"};
-  Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
-  Configurable<std::string> ConfGainPathvxy{"ConfGainPathvxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
-  Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
-  Configurable<std::string> ConfRecentereSp2{"ConfRecentereSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere2"};
-  Configurable<std::string> ConfRecentereSp3{"ConfRecentereSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere3"};
-  Configurable<std::string> ConfRecentereSp4{"ConfRecentereSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere4"};
-  Configurable<std::string> ConfRecentereSp5{"ConfRecentereSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere5"};
-  Configurable<std::string> ConfRecentereSp6{"ConfRecentereSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere6"};
-  Configurable<std::string> ConfRecenterecentSp{"ConfRecenterecentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere"};
-  Configurable<std::string> ConfRecenterevxSp{"ConfRecenterevxSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere"};
-  Configurable<std::string> ConfRecenterevySp{"ConfRecenterevySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere"};
-  Configurable<std::string> ConfRecenterevzSp{"ConfRecenterevzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere"};
-  Configurable<std::string> ConfRecenterecentSp2{"ConfRecenterecentSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere2"};
-  Configurable<std::string> ConfRecenterevxSp2{"ConfRecenterevxSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere2"};
-  Configurable<std::string> ConfRecenterevySp2{"ConfRecenterevySp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere2"};
-  Configurable<std::string> ConfRecenterevzSp2{"ConfRecenterevzSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere2"};
-  Configurable<std::string> ConfRecenterecentSp3{"ConfRecenterecentSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere3"};
-  Configurable<std::string> ConfRecenterevxSp3{"ConfRecenterevxSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere3"};
-  Configurable<std::string> ConfRecenterevySp3{"ConfRecenterevySp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere3"};
-  Configurable<std::string> ConfRecenterevzSp3{"ConfRecenterevzSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere3"};
-  Configurable<std::string> ConfRecenterecentSp4{"ConfRecenterecentSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere4"};
-  Configurable<std::string> ConfRecenterevxSp4{"ConfRecenterevxSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere4"};
-  Configurable<std::string> ConfRecenterevySp4{"ConfRecenterevySp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere4"};
-  Configurable<std::string> ConfRecenterevzSp4{"ConfRecenterevzSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere4"};
-  Configurable<std::string> ConfRecenterecentSp5{"ConfRecenterecentSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere5"};
-  Configurable<std::string> ConfRecenterevxSp5{"ConfRecenterevxSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere5"};
-  Configurable<std::string> ConfRecenterevySp5{"ConfRecenterevySp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere5"};
-  Configurable<std::string> ConfRecenterevzSp5{"ConfRecenterevzSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere5"};
-  Configurable<std::string> ConfRecenterecentSp6{"ConfRecenterecentSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere6"};
-  Configurable<std::string> ConfRecenterevxSp6{"ConfRecenterevxSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere6"};
-  Configurable<std::string> ConfRecenterevySp6{"ConfRecenterevySp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere6"};
-  Configurable<std::string> ConfRecenterevzSp6{"ConfRecenterevzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere6"};
-  Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
-  Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
+
+  Configurable<std::string> confGainPath{"confGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
+  Configurable<std::string> confGainPathVxy{"confGainPathVxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
+  Configurable<std::string> confRecentereSp{"confRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering"};
+  Configurable<std::string> confRecentereSp2{"confRecentereSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 2"};
+  Configurable<std::string> confRecentereSp3{"confRecentereSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 3"};
+  Configurable<std::string> confRecentereSp4{"confRecentereSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 4"};
+  Configurable<std::string> confRecentereSp5{"confRecentereSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 5"};
+  Configurable<std::string> confRecentereSp6{"confRecentereSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 6"};
+  Configurable<std::string> confRecentereCentSp{"confRecentereCentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering"};
+  Configurable<std::string> confRecentereVxSp{"confRecentereVxSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vx recentering"};
+  Configurable<std::string> confRecentereVySp{"confRecentereVySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vy recentering"};
+  Configurable<std::string> confRecentereVzSp{"confRecentereVzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vz recentering"};
+  Configurable<std::string> confRecentereCentSp2{"confRecentereCentSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 2"};
+  Configurable<std::string> confRecentereVxSp2{"confRecentereVxSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vx recentering 2"};
+  Configurable<std::string> confRecentereVySp2{"confRecentereVySp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vy recentering 2"};
+  Configurable<std::string> confRecentereVzSp2{"confRecentereVzSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vz recentering 2"};
+  Configurable<std::string> confRecentereCentSp3{"confRecentereCentSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 3"};
+  Configurable<std::string> confRecentereVxSp3{"confRecentereVxSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vx recentering 3"};
+  Configurable<std::string> confRecentereVySp3{"confRecentereVySp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vy recentering 3"};
+  Configurable<std::string> confRecentereVzSp3{"confRecentereVzSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vz recentering 3"};
+  Configurable<std::string> confRecentereCentSp4{"confRecentereCentSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 4"};
+  Configurable<std::string> confRecentereVxSp4{"confRecentereVxSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vx recentering 4"};
+  Configurable<std::string> confRecentereVySp4{"confRecentereVySp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vy recentering 4"};
+  Configurable<std::string> confRecentereVzSp4{"confRecentereVzSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vz recentering 4"};
+  Configurable<std::string> confRecentereCentSp5{"confRecentereCentSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 5"};
+  Configurable<std::string> confRecentereVxSp5{"confRecentereVxSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vx recentering 5"};
+  Configurable<std::string> confRecentereVySp5{"confRecentereVySp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vy recentering 5"};
+  Configurable<std::string> confRecentereVzSp5{"confRecentereVzSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vz recentering 5"};
+  Configurable<std::string> confRecentereCentSp6{"confRecentereCentSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 6"};
+  Configurable<std::string> confRecentereVxSp6{"confRecentereVxSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vx recentering 6"};
+  Configurable<std::string> confRecentereVySp6{"confRecentereVySp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vy recentering 6"};
+  Configurable<std::string> confRecentereVzSp6{"confRecentereVzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for vz recentering 6"};
+  Configurable<std::string> confShiftC{"confShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
+  Configurable<std::string> confShiftA{"confShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
 
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
@@ -183,16 +185,16 @@ struct zdccalderived {
     // rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
-    AxisSpec qxZDCAxis = {configbins.QxyNbins, configbins.lbinQxy, configbins.hbinQxy, "Qx"};
-    AxisSpec phiAxis = {configbins.PhiNbins, -6.28, 6.28, "phi"};
-    AxisSpec vzAxis = {configbins.VzNbins, configbins.lbinVz, configbins.hbinVz, "vz"};
-    AxisSpec vxAxis = {configbins.VxNbins, configbins.lbinVx, configbins.hbinVx, "vx"};
-    AxisSpec vyAxis = {configbins.VyNbins, configbins.lbinVy, configbins.hbinVy, "vy"};
-    AxisSpec centAxis = {configbins.CentNbins, configbins.lbinCent, configbins.hbinCent, "V0M (%)"};
-    AxisSpec vzfineAxis = {configbins.VzfineNbins, configbins.lfinebinVz, configbins.hfinebinVz, "vzfine"};
-    AxisSpec vxfineAxis = {configbins.VxfineNbins, configbins.lfinebinVx, configbins.hfinebinVx, "vxfine"};
-    AxisSpec vyfineAxis = {configbins.VyfineNbins, configbins.lfinebinVy, configbins.hfinebinVy, "vyfine"};
-    AxisSpec centfineAxis = {configbins.CentfineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
+    AxisSpec qxZDCAxis = {configbins.qxyNbins, configbins.lbinQxy, configbins.hbinQxy, "Qx"};
+    AxisSpec phiAxis = {configbins.phiNbins, -6.28, 6.28, "phi"};
+    AxisSpec vzAxis = {configbins.vzNbins, configbins.lbinVz, configbins.hbinVz, "vz"};
+    AxisSpec vxAxis = {configbins.vxNbins, configbins.lbinVx, configbins.hbinVx, "vx"};
+    AxisSpec vyAxis = {configbins.vyNbins, configbins.lbinVy, configbins.hbinVy, "vy"};
+    AxisSpec centAxis = {configbins.centNbins, configbins.lbinCent, configbins.hbinCent, "V0M (%)"};
+    AxisSpec vzfineAxis = {configbins.vzFineNbins, configbins.lfinebinVz, configbins.hfinebinVz, "vzfine"};
+    AxisSpec vxfineAxis = {configbins.vxFineNbins, configbins.lfinebinVx, configbins.hfinebinVx, "vxfine"};
+    AxisSpec vyfineAxis = {configbins.vyFineNbins, configbins.lfinebinVy, configbins.hfinebinVy, "vyfine"};
+    AxisSpec centfineAxis = {configbins.centFineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {2, 0, 2, "basis"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
@@ -262,7 +264,7 @@ struct zdccalderived {
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
 
-  Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     int binCoords[5];
@@ -306,7 +308,7 @@ struct zdccalderived {
     return kTRUE;
   }
 
-  Bool_t Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     if (!hrecenterecentSp || !hrecenterevxSp || !hrecenterevySp || !hrecenterevzSp) {
@@ -346,9 +348,9 @@ struct zdccalderived {
   void process(EventCandidates::iterator const& collision)
   {
 
-    if (collision.triggereventzdc()) {
+    if (collision.triggerEventZDC()) {
       auto centrality = collision.cent();
-      currentRunNumber = collision.triggereventrunno();
+      currentRunNumber = collision.triggerEventRunNo();
 
       auto vz = collision.vz();
       auto vx = collision.vx();
@@ -386,7 +388,7 @@ struct zdccalderived {
       histos.fill(HIST("hEvtSelInfo"), 7.5);
 
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
-        gainprofile = ccdb->getForTimeStamp<TH2D>(ConfGainPath.value, ts);
+        gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, ts);
       }
 
       auto gainequal = 1.0;
@@ -397,7 +399,8 @@ struct zdccalderived {
       histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
       histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
 
-      for (std::size_t iChA = 0; iChA < 8; iChA++) {
+      int ntow = 8;
+      for (std::size_t iChA = 0; iChA < ntow; iChA++) {
         auto chanelid = iChA;
         if (useGainCallib && gainprofile) {
           gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz + 0.00001, chanelid + 0.5));
@@ -407,7 +410,7 @@ struct zdccalderived {
 
           double ampl = gainequal * znaEnergy[iChA];
           if (followpub) {
-            ampl = TMath::Power(ampl, alphaZDC);
+            ampl = std::pow(ampl, alphaZDC);
           }
           qxZDCA = qxZDCA - ampl * x[iChA];
           qyZDCA = qyZDCA + ampl * y[iChA];
@@ -416,7 +419,7 @@ struct zdccalderived {
         } else {
           double ampl = gainequal * zncEnergy[iChA - 4];
           if (followpub) {
-            ampl = TMath::Power(ampl, alphaZDC);
+            ampl = std::pow(ampl, alphaZDC);
           }
           qxZDCC = qxZDCC + ampl * x[iChA - 4];
           qyZDCC = qyZDCC + ampl * y[iChA - 4];
@@ -450,7 +453,7 @@ struct zdccalderived {
       histos.fill(HIST("AvgVxy"), 1.5, vy);
 
       if (useCallibvertex && (currentRunNumber != lastRunNumber)) {
-        gainprofilevxy = ccdb->getForTimeStamp<TProfile>(ConfGainPathvxy.value, ts);
+        gainprofilevxy = ccdb->getForTimeStamp<TProfile>(confGainPathVxy.value, ts);
       }
 
       if (useCallibvertex) {
@@ -458,13 +461,13 @@ struct zdccalderived {
         vy = vy - gainprofilevxy->GetBinContent(2);
       }
 
-      Bool_t res = 0;
-      Bool_t resfine = 0;
-      Int_t check = 1;
+      bool res = 0;
+      bool resfine = 0;
+      int check = 1;
 
       if (coarse1) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[0] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, ts);
+          hrecentereSpA[0] = ccdb->getForTimeStamp<THnF>(confRecentereSp.value, ts);
         }
         res = Correctcoarse(hrecentereSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
@@ -472,95 +475,95 @@ struct zdccalderived {
       if (fine1) {
 
         if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, ts);
-          hrecenterevxSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, ts);
-          hrecenterevySpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, ts);
-          hrecenterevzSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, ts);
+          hrecenterecentSpA[0] = ccdb->getForTimeStamp<TH2F>(confRecentereCentSp.value, ts);
+          hrecenterevxSpA[0] = ccdb->getForTimeStamp<TH2F>(confRecentereVxSp.value, ts);
+          hrecenterevySpA[0] = ccdb->getForTimeStamp<TH2F>(confRecentereVySp.value, ts);
+          hrecenterevzSpA[0] = ccdb->getForTimeStamp<TH2F>(confRecentereVzSp.value, ts);
         }
         resfine = Correctfine(hrecenterecentSpA[0], hrecenterevxSpA[0], hrecenterevySpA[0], hrecenterevzSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse2) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[1] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp2.value, ts);
+          hrecentereSpA[1] = ccdb->getForTimeStamp<THnF>(confRecentereSp2.value, ts);
         }
         res = Correctcoarse(hrecentereSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine2) {
         if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp2.value, ts);
-          hrecenterevxSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp2.value, ts);
-          hrecenterevySpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp2.value, ts);
-          hrecenterevzSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp2.value, ts);
+          hrecenterecentSpA[1] = ccdb->getForTimeStamp<TH2F>(confRecentereCentSp2.value, ts);
+          hrecenterevxSpA[1] = ccdb->getForTimeStamp<TH2F>(confRecentereVxSp2.value, ts);
+          hrecenterevySpA[1] = ccdb->getForTimeStamp<TH2F>(confRecentereVySp2.value, ts);
+          hrecenterevzSpA[1] = ccdb->getForTimeStamp<TH2F>(confRecentereVzSp2.value, ts);
         }
         resfine = Correctfine(hrecenterecentSpA[1], hrecenterevxSpA[1], hrecenterevySpA[1], hrecenterevzSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse3) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[2] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp3.value, ts);
+          hrecentereSpA[2] = ccdb->getForTimeStamp<THnF>(confRecentereSp3.value, ts);
         }
         res = Correctcoarse(hrecentereSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine3) {
         if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp3.value, ts);
-          hrecenterevxSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp3.value, ts);
-          hrecenterevySpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp3.value, ts);
-          hrecenterevzSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp3.value, ts);
+          hrecenterecentSpA[2] = ccdb->getForTimeStamp<TH2F>(confRecentereCentSp3.value, ts);
+          hrecenterevxSpA[2] = ccdb->getForTimeStamp<TH2F>(confRecentereVxSp3.value, ts);
+          hrecenterevySpA[2] = ccdb->getForTimeStamp<TH2F>(confRecentereVySp3.value, ts);
+          hrecenterevzSpA[2] = ccdb->getForTimeStamp<TH2F>(confRecentereVzSp3.value, ts);
         }
         resfine = Correctfine(hrecenterecentSpA[2], hrecenterevxSpA[2], hrecenterevySpA[2], hrecenterevzSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse4) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[3] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp4.value, ts);
+          hrecentereSpA[3] = ccdb->getForTimeStamp<THnF>(confRecentereSp4.value, ts);
         }
         res = Correctcoarse(hrecentereSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine4) {
         if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp4.value, ts);
-          hrecenterevxSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp4.value, ts);
-          hrecenterevySpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp4.value, ts);
-          hrecenterevzSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp4.value, ts);
+          hrecenterecentSpA[3] = ccdb->getForTimeStamp<TH2F>(confRecentereCentSp4.value, ts);
+          hrecenterevxSpA[3] = ccdb->getForTimeStamp<TH2F>(confRecentereVxSp4.value, ts);
+          hrecenterevySpA[3] = ccdb->getForTimeStamp<TH2F>(confRecentereVySp4.value, ts);
+          hrecenterevzSpA[3] = ccdb->getForTimeStamp<TH2F>(confRecentereVzSp4.value, ts);
         }
         resfine = Correctfine(hrecenterecentSpA[3], hrecenterevxSpA[3], hrecenterevySpA[3], hrecenterevzSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse5) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[4] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp5.value, ts);
+          hrecentereSpA[4] = ccdb->getForTimeStamp<THnF>(confRecentereSp5.value, ts);
         }
         res = Correctcoarse(hrecentereSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine5) {
         if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp5.value, ts);
-          hrecenterevxSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp5.value, ts);
-          hrecenterevySpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp5.value, ts);
-          hrecenterevzSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp5.value, ts);
+          hrecenterecentSpA[4] = ccdb->getForTimeStamp<TH2F>(confRecentereCentSp5.value, ts);
+          hrecenterevxSpA[4] = ccdb->getForTimeStamp<TH2F>(confRecentereVxSp5.value, ts);
+          hrecenterevySpA[4] = ccdb->getForTimeStamp<TH2F>(confRecentereVySp5.value, ts);
+          hrecenterevzSpA[4] = ccdb->getForTimeStamp<TH2F>(confRecentereVzSp5.value, ts);
         }
         resfine = Correctfine(hrecenterecentSpA[4], hrecenterevxSpA[4], hrecenterevySpA[4], hrecenterevzSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (coarse6) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp6.value, ts);
+          hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(confRecentereSp6.value, ts);
         }
         res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (fine6) {
         if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp6.value, ts);
-          hrecenterevxSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp6.value, ts);
-          hrecenterevySpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp6.value, ts);
-          hrecenterevzSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp6.value, ts);
+          hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(confRecentereCentSp6.value, ts);
+          hrecenterevxSpA[5] = ccdb->getForTimeStamp<TH2F>(confRecentereVxSp6.value, ts);
+          hrecenterevySpA[5] = ccdb->getForTimeStamp<TH2F>(confRecentereVySp6.value, ts);
+          hrecenterevzSpA[5] = ccdb->getForTimeStamp<TH2F>(confRecentereVzSp6.value, ts);
         }
         resfine = Correctfine(hrecenterecentSpA[5], hrecenterevxSpA[5], hrecenterevySpA[5], hrecenterevzSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
@@ -568,14 +571,14 @@ struct zdccalderived {
       if (res == 0 && resfine == 0 && check == 0) {
         LOG(info) << "Histograms are null";
       }
-      psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
-      psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
+      psiZDCC = 1.0 * std::atan2(qyZDCC, qxZDCC);
+      psiZDCA = 1.0 * std::atan2(qyZDCA, qxZDCA);
 
       int nshift = 10; // no. of iterations
 
       if (useShift && (currentRunNumber != lastRunNumber)) {
-        shiftprofileC = ccdb->getForTimeStamp<TProfile3D>(ConfShiftC.value, ts);
-        shiftprofileA = ccdb->getForTimeStamp<TProfile3D>(ConfShiftA.value, ts);
+        shiftprofileC = ccdb->getForTimeStamp<TProfile3D>(confShiftC.value, ts);
+        shiftprofileA = ccdb->getForTimeStamp<TProfile3D>(confShiftA.value, ts);
       }
 
       if (useShift) {
@@ -586,18 +589,18 @@ struct zdccalderived {
           auto coeffshiftyZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5));
           auto coeffshiftxZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5));
-          deltapsiZDCC = deltapsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * TMath::Cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * TMath::Sin(ishift * 1.0 * psiZDCC)));
-          deltapsiZDCA = deltapsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * TMath::Cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * TMath::Sin(ishift * 1.0 * psiZDCA)));
+          deltapsiZDCC = deltapsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
+          deltapsiZDCA = deltapsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
         }
         psiZDCC = psiZDCC + deltapsiZDCC;
         psiZDCA = psiZDCA + deltapsiZDCA;
       }
 
       for (int ishift = 1; ishift <= nshift; ishift++) {
-        histos.fill(HIST("ShiftZDCC"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCC));
-        histos.fill(HIST("ShiftZDCC"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCC));
-        histos.fill(HIST("ShiftZDCA"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCA));
-        histos.fill(HIST("ShiftZDCA"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCA));
+        histos.fill(HIST("ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+        histos.fill(HIST("ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+        histos.fill(HIST("ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+        histos.fill(HIST("ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
       }
 
       histos.fill(HIST("hpQxZDCAC"), centrality, (qxZDCA * qxZDCC));
@@ -632,8 +635,8 @@ struct zdccalderived {
         histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
       }
 
-      histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));
-      histos.fill(HIST("hpSinPsiAPsiC"), centrality, (TMath::Sin(psiZDCA - psiZDCC)));
+      histos.fill(HIST("hpCosPsiAPsiC"), centrality, (std::cos(psiZDCA - psiZDCC)));
+      histos.fill(HIST("hpSinPsiAPsiC"), centrality, (std::sin(psiZDCA - psiZDCC)));
       histos.fill(HIST("PsiZDCA"), centrality, psiZDCA);
       histos.fill(HIST("PsiZDCC"), centrality, psiZDCC);
 

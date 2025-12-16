@@ -25,6 +25,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/Logger.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -53,7 +54,6 @@
 #include <array>
 #include <chrono>
 #include <cmath>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -72,7 +72,6 @@ struct zdcvector {
   // Configurables.
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
@@ -87,10 +86,10 @@ struct zdcvector {
   Configurable<bool> usemem{"usemem", true, "usemem"};
 
   struct : ConfigurableGroup {
-    Configurable<int> VzfineNbins{"VzfineNbins", 20, "Number of bins in Vz fine histograms"};
+    Configurable<int> vzFineNbins{"vzFineNbins", 20, "Number of bins in Vz fine histograms"};
     Configurable<float> lfinebinVz{"lfinebinVz", -10.0, "lower bin value in Vz fine histograms"};
     Configurable<float> hfinebinVz{"hfinebinVz", 10.0, "higher bin value in Vz fine histograms"};
-    Configurable<int> CentfineNbins{"CentfineNbins", 16, "Number of bins in cent fine histograms"};
+    Configurable<int> centFineNbins{"centFineNbins", 16, "Number of bins in cent fine histograms"};
     Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
     Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
   } configbins;
@@ -98,8 +97,8 @@ struct zdcvector {
   Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   Configurable<bool> useCallibvertex{"useCallibvertex", false, "use calibration for vxy"};
-  Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
-  Configurable<std::string> ConfGainPathvxy{"ConfGainPathvxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
+  Configurable<std::string> confGainPath{"confGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
+  Configurable<std::string> confGainPathVxy{"confGainPathVxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
 
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
@@ -116,8 +115,8 @@ struct zdcvector {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
-    AxisSpec vzfineAxis = {configbins.VzfineNbins, configbins.lfinebinVz, configbins.hfinebinVz, "vzfine"};
-    AxisSpec centfineAxis = {configbins.CentfineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
+    AxisSpec vzfineAxis = {configbins.vzFineNbins, configbins.lfinebinVz, configbins.hfinebinVz, "vzfine"};
+    AxisSpec centfineAxis = {configbins.centFineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
 
     histos.add("htpcnsigmapi", "htpcnsigmapi", kTH1F, {{50, -10, 10.0}});
@@ -227,10 +226,10 @@ struct zdcvector {
 
     histos.fill(HIST("hEvtSelInfo"), 6.5);
 
-    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && std::abs(vz) < cfgCutVertex && collision.has_foundFT0() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
-        gainprofile = ccdb->getForTimeStamp<TH2D>(ConfGainPath.value, bc.timestamp());
+        gainprofile = ccdb->getForTimeStamp<TH2D>(confGainPath.value, bc.timestamp());
       }
 
       histos.fill(HIST("hEvtSelInfo"), 7.5);
@@ -243,7 +242,8 @@ struct zdcvector {
       histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
       histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
 
-      for (std::size_t iChA = 0; iChA < 8; iChA++) {
+      int ntow = 8;
+      for (std::size_t iChA = 0; iChA < ntow; iChA++) {
         auto chanelid = iChA;
         if (useGainCallib && gainprofile) {
           gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz + 0.00001, chanelid + 0.5));
@@ -258,7 +258,7 @@ struct zdcvector {
           } else {
             double ampl = gainequal * znaEnergy[iChA];
             if (followpub) {
-              ampl = TMath::Power(ampl, alphaZDC);
+              ampl = std::pow(ampl, alphaZDC);
             }
             qxZDCA = qxZDCA - ampl * x[iChA];
             qyZDCA = qyZDCA + ampl * y[iChA];
@@ -273,7 +273,7 @@ struct zdcvector {
           } else {
             double ampl = gainequal * zncEnergy[iChA - 4];
             if (followpub) {
-              ampl = TMath::Power(ampl, alphaZDC);
+              ampl = std::pow(ampl, alphaZDC);
             }
             qxZDCC = qxZDCC + ampl * x[iChA - 4];
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
@@ -310,7 +310,7 @@ struct zdcvector {
       histos.fill(HIST("AvgVxy"), 1.5, vy);
 
       if (useCallibvertex && (currentRunNumber != lastRunNumber)) {
-        gainprofilevxy = ccdb->getForTimeStamp<TProfile>(ConfGainPathvxy.value, bc.timestamp());
+        gainprofilevxy = ccdb->getForTimeStamp<TProfile>(confGainPathVxy.value, bc.timestamp());
       }
 
       if (useCallibvertex) {

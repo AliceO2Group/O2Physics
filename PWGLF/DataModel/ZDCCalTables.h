@@ -29,22 +29,22 @@ namespace o2::aod
 {
 namespace zdccaltable
 {
-DECLARE_SOA_COLUMN(TriggerEventZDC, triggereventzdc, bool);
-DECLARE_SOA_COLUMN(TriggerEventRunNo, triggereventrunno, int);
+DECLARE_SOA_COLUMN(TriggerEventZDC, triggerEventZDC, bool);
+DECLARE_SOA_COLUMN(TriggerEventRunNo, triggerEventRunNo, int);
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Vx, vx, float);
 DECLARE_SOA_COLUMN(Vy, vy, float);
 DECLARE_SOA_COLUMN(Vz, vz, float);
-DECLARE_SOA_COLUMN(ZNAC, znaC, float);
-DECLARE_SOA_COLUMN(ZNCC, zncC, float);
-DECLARE_SOA_COLUMN(ZNAE0, znaE0, float);
-DECLARE_SOA_COLUMN(ZNAE1, znaE1, float);
-DECLARE_SOA_COLUMN(ZNAE2, znaE2, float);
-DECLARE_SOA_COLUMN(ZNAE3, znaE3, float);
-DECLARE_SOA_COLUMN(ZNCE0, zncE0, float);
-DECLARE_SOA_COLUMN(ZNCE1, zncE1, float);
-DECLARE_SOA_COLUMN(ZNCE2, zncE2, float);
-DECLARE_SOA_COLUMN(ZNCE3, zncE3, float);
+DECLARE_SOA_COLUMN(ZnaC, znaC, float);
+DECLARE_SOA_COLUMN(ZncC, zncC, float);
+DECLARE_SOA_COLUMN(ZnaE0, znaE0, float);
+DECLARE_SOA_COLUMN(ZnaE1, znaE1, float);
+DECLARE_SOA_COLUMN(ZnaE2, znaE2, float);
+DECLARE_SOA_COLUMN(ZnaE3, znaE3, float);
+DECLARE_SOA_COLUMN(ZncE0, zncE0, float);
+DECLARE_SOA_COLUMN(ZncE1, zncE1, float);
+DECLARE_SOA_COLUMN(ZncE2, zncE2, float);
+DECLARE_SOA_COLUMN(ZncE3, zncE3, float);
 } // namespace zdccaltable
 DECLARE_SOA_TABLE(ZDCCalTables, "AOD", "ZDCCALTABLE",
                   zdccaltable::TriggerEventZDC,
@@ -53,16 +53,16 @@ DECLARE_SOA_TABLE(ZDCCalTables, "AOD", "ZDCCALTABLE",
                   zdccaltable::Vx,
                   zdccaltable::Vy,
                   zdccaltable::Vz,
-                  zdccaltable::ZNAC,
-                  zdccaltable::ZNCC,
-                  zdccaltable::ZNAE0,
-                  zdccaltable::ZNAE1,
-                  zdccaltable::ZNAE2,
-                  zdccaltable::ZNAE3,
-                  zdccaltable::ZNCE0,
-                  zdccaltable::ZNCE1,
-                  zdccaltable::ZNCE2,
-                  zdccaltable::ZNCE3);
+                  zdccaltable::ZnaC,
+                  zdccaltable::ZncC,
+                  zdccaltable::ZnaE0,
+                  zdccaltable::ZnaE1,
+                  zdccaltable::ZnaE2,
+                  zdccaltable::ZnaE3,
+                  zdccaltable::ZncE0,
+                  zdccaltable::ZncE1,
+                  zdccaltable::ZncE2,
+                  zdccaltable::ZncE3);
 using ZDCCalTable = ZDCCalTables::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_ZDCCALTABLES_H_
