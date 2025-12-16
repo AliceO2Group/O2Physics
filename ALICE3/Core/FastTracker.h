@@ -68,6 +68,14 @@ class FastTracker
   void AddSiliconALICE3v2(std::vector<float> pixelResolution);
   void AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
+
+  /**
+   * @brief Parses a TEnv configuration file and returns the key-value pairs split per entry
+   * @param filename Path to the TEnv configuration file
+   * @return A map where each key is a layer name and the value is another map of key-value pairs for that layer
+   */
+  std::map<std::string, std::map<std::string, std::string>> parseTEnvConfiguration(std::string filename);
+
   /**
    * @brief Adds a generic detector configuration from the specified file.
    *
