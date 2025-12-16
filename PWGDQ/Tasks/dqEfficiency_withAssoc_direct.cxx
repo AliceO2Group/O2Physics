@@ -3101,10 +3101,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
-     adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
-     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-     adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)
-  };
+    adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
+    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
+    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)};
 }
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups)
