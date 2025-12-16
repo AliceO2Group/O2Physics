@@ -319,7 +319,7 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
 
     DetLayer* addedLayer = AddLayer(layer.first.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
     if (!deadPhiRegions.empty()) { // Taking it as ccdb path or local file
-                                      // Check if it begins with ccdb:
+                                   // Check if it begins with ccdb:
       if (std::string(deadPhiRegions).rfind("ccdb:", 0) == 0) {
         std::string ccdbPath = std::string(deadPhiRegions).substr(5); // remove "ccdb:" prefix
         if (ccdbManager == nullptr) {
