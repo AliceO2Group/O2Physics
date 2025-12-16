@@ -455,6 +455,10 @@ TH1D* FlowContainer::GetHistCorrXXVsMulti(const char* order, int l_pti)
 TH1D* FlowContainer::GetHistCorrXXVsPt(const char* order, double lminmulti, double lmaxmulti)
 {
   TH1D* rethist = GetCorrXXVsPt(order, lminmulti, lmaxmulti);
+  if (!rethist) {
+    printf("GetCorrXXVsPt return nullptr!");
+    return nullptr;
+  }
   TProfile* refflow = GetRefFlowProfile(order, lminmulti, lmaxmulti);
   if (refflow) {
     refflow->RebinX(refflow->GetNbinsX());
