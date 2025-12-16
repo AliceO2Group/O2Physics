@@ -72,7 +72,7 @@ class FlowContainer : public TNamed
   double* GetMultiRebin(int& nBins);
   void SetPropagateErrors(bool newval) { fPropagateErrors = newval; }
   TProfile* GetCorrXXVsMulti(const char* order, int l_pti = 0);                             // pti = 0 for pt-integrated
-  TH1D* GetCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1); // 0 for multi. integrated
+  TH1D* GetCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1);     // 0 for multi. integrated
   TH1D* GetHistCorrXXVsMulti(const char* order, int l_pti = 0);                             // pti = 0 for pt-integrated
   TH1D* GetHistCorrXXVsPt(const char* order, double lminmulti = -1, double lmaxmulti = -1); // 0 for multi. integrated
 
