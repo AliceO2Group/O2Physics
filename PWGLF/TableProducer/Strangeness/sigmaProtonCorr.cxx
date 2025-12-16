@@ -212,7 +212,7 @@ struct sigmaProtonCorrTask {
   }
 
   template <typename Ttrack>
-  void fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracks, Ttrack const& tracksDauSigma)
+  void fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks)
   {
     for (const auto& sigmaCand : kinkCands) {
       if (selectSigma(sigmaCand, tracksDauSigma)) {
