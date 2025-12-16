@@ -69,7 +69,7 @@ struct LambdaJetpolarization {
   Configurable<float> etaMax{"etaMax", +0.9f, "eta max"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.00, "eta gap from the edge"};
   // track parameters
-  Configurable<float> minITSnCls{"minITSnCls", 4.0f, "min number of ITS clusters"};
+  Configurable<float> minITSnCls{"minITSnCls", 2.0f, "min number of ITS clusters"};
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 80.0f, "min number of found TPC clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
   Configurable<float> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
@@ -94,15 +94,15 @@ struct LambdaJetpolarization {
   // v0 parameters
   Configurable<float> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 CosPA"};
   Configurable<float> v0cospainit{"v0cospainit", 0.97f, "Minimum V0 CosPA"};
-  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.2f, "Minimum V0 Radius"};
+  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
   Configurable<float> maximumV0Radius{"maximumV0Radius", 100000.0f, "Maximum V0 Radius"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA Daughters"};
   Configurable<float> dcanegtoPVmin{"dcanegtoPVmin", 0.1f, "Minimum DCA Neg To PV"};
   Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA Pos To PV"};
   Configurable<float> v0radius{"v0radius", 0.0, "Radius"};
-  Configurable<float> dcav0dau{"dcav0dau", 10, "DCA V0 Daughters"};
-  Configurable<float> dcanegtopv{"dcanegtopv", 0.0, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", 0.0, "DCA Pos To PV"};
+  Configurable<float> dcav0dau{"dcav0dau", 1, "DCA V0 Daughters"};
+  Configurable<float> dcanegtopv{"dcanegtopv", 0.05, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 0.05, "DCA Pos To PV"};
 
   // jet selection
   Configurable<float> cfgjetPtMin{"cfgjetPtMin", 8.0, "minimum jet pT cut"};
@@ -130,7 +130,7 @@ struct LambdaJetpolarization {
   Configurable<bool> ifinitpasslambda{"ifinitpasslambda", 0, "ifinitpasslambda"};
   Configurable<bool> ifpasslambda{"ifpasslambda", 1, "ifpasslambda"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<bool> doArmenterosCut{"doArmenterosCut", 0, "do Armenteros Cut"};
+  Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut"};
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
   Configurable<bool> notITSAfterburner{"notITSAfterburner", 0, "notITSAfterburner"};
@@ -303,6 +303,8 @@ struct LambdaJetpolarization {
     registryData.add("hprotonThetaInJetV0", "hprotonThetaInJetV0", kTH1F, {axisTheta});
 
     registryData.add("LambdaQA/TH2FLambdaMassPhiInJet", "TH2FLambdaMassPhiInJet", kTH2F, {{200, 0, TMath::Pi()}, {200, 0.9, 1.2}});
+    registryData.add("LambdaQA/hArmenterosPreAnalyserCuts", "hArmenterosPreAnalyserCuts", kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}});
+    registryData.add("AntiLambdaQA/hArmenterosPreAnalyserCuts", "hArmenterosPreAnalyserCuts", kTH2F, {{1000, -1.0f, 1.0f, "#alpha"}, {1000, 0.0f, 0.30f, "#it{Q}_{T}"}});
 
     // Lab frame measures
     registryData.add("LambdaQA/TH2FprotonCosThetaInLab", "TH2FprotonCosThetaInLab", kTH2F, {{200, 0.9, 1.2}, {200, -1.0, 1.0}});
@@ -722,6 +724,10 @@ struct LambdaJetpolarization {
       evFlag = 1;
     }
 
+    if (v0.pt() < 0.6) {
+      return false;
+    }
+
     registryData.fill(HIST("QA/hv0sSelection"), 0.5);
 
     if (evSel && evFlag < 1)
@@ -833,7 +839,9 @@ struct LambdaJetpolarization {
     if (collision.isInelGt0()) {
       evFlag = 1;
     }
-
+    if (v0.pt() < 0.6) {
+      return false;
+    }
     if (evSel && evFlag < 1)
       return false;
 
@@ -1599,7 +1607,7 @@ struct LambdaJetpolarization {
       }
     }
   }
-  PROCESS_SWITCH(LambdaJetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", true);
+  PROCESS_SWITCH(LambdaJetpolarization, processLongitudinalPolarization, "processLongitudinalPolarization", false);
 
   void processLambdaJetPolarization(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
   {
@@ -1701,10 +1709,12 @@ struct LambdaJetpolarization {
       if (registryDataAcceptV0Lambda(v0, pos, neg, collision)) {
         V0Numbers = V0Numbers + 1;
         registryData.fill(HIST("LambdaPtMass"), v0.pt(), v0.mLambda());
+        registryData.fill(HIST("LambdaQA/hArmenterosPreAnalyserCuts"), v0.alpha(), v0.qtarm());
       }
       if (registryDataAcceptV0AntiLambda(v0, pos, neg, collision)) {
         AntiV0Numbers = AntiV0Numbers + 1;
         registryData.fill(HIST("AntiLambdaPtMass"), v0.pt(), v0.mAntiLambda());
+        registryData.fill(HIST("AntiLambdaQA/hArmenterosPreAnalyserCuts"), v0.alpha(), v0.qtarm());
       }
     }
     registryData.fill(HIST("nV0sPerEvent"), V0Numbers);
