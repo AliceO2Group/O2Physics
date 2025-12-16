@@ -312,7 +312,7 @@ struct zdccalderived {
   {
 
     if (!hrecenterecentSp || !hrecenterevxSp || !hrecenterevySp || !hrecenterevzSp) {
-      std::cerr << "Error: One or more histograms are null." << std::endl;
+      // std::cerr << "Error: One or more histograms are null." << std::endl;
       return false;
     }
 
