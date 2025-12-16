@@ -1,12 +1,4 @@
 ---
-alice3:
-  - changed-files:
-      - any-glob-to-any-file: ['ALICE3/**']
-
-common:
-  - changed-files:
-      - any-glob-to-any-file: ['Common/**']
-
 infrastructure:
   - changed-files:
       - any-glob-to-any-file:
@@ -34,6 +26,14 @@ infrastructure:
 datamodel:
   - changed-files:
       - any-glob-to-any-file: ['DataModel/**', '**/DataModel/**']
+
+alice3:
+  - changed-files:
+      - any-glob-to-any-file: ['ALICE3/**']
+
+common:
+  - changed-files:
+      - any-glob-to-any-file: ['Common/**']
 
 dpg:
   - changed-files:
