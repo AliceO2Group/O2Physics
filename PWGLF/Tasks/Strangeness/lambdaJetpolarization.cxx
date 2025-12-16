@@ -92,7 +92,7 @@ struct LambdaJetpolarization {
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.10, "set track min pT"};
 
   // v0 parameters
-   Configurable<float> v0Ptmin{"v0Ptmin", 0.6f, "Minimum V0 pT"};
+  Configurable<float> v0Ptmin{"v0Ptmin", 0.6f, "Minimum V0 pT"};
   Configurable<float> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 CosPA"};
   Configurable<float> v0cospainit{"v0cospainit", 0.97f, "Minimum V0 CosPA"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
