@@ -107,8 +107,8 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgDrawEtaPhiDis, bool, false, "draw eta-phi distribution for detectors in used")
-  O2_DEFINE_CONFIGURABLE(cfgRejectOutsideDetectors, bool, false, "Rejection of outside ring events of the FT0 detector")
-  O2_DEFINE_CONFIGURABLE(cfgRejectInsideDetectors, bool, false, "Rejection of inside ring events of the FT0 detector")
+  O2_DEFINE_CONFIGURABLE(cfgRejectOutsideDetectors, bool, false, "Rejection of outside ring channels of the FT0 detector")
+  O2_DEFINE_CONFIGURABLE(cfgRejectInsideDetectors, bool, false, "Rejection of inside ring channels of the FT0 detector")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
