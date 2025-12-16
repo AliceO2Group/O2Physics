@@ -136,38 +136,37 @@ class ToTLUT
 
   bool load(int pdg, const std::string& filename)
   {
-    if (!filename.empty() && strncmp(filename.c_str(), "ccdb:", 5) == 0) {
-      std::string basePath = std::string(filename).substr(5);
-      std::string path = basePath + "/PDG_" + std::to_string(pdg);
-      const std::string outPath = "/tmp/ToTLUTs/";
-
-      std::string localFilename = Form("%s/lut_tot_%d.root", outPath.c_str(), pdg);
+    if (filename.empty()) {
+      LOG(warning) << "Provided filename is empty for PDG " << pdg;
+      return false;
+    }
+    if (strncmp(filename.c_str(), "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
+      const std::string basePath = std::string(filename).substr(5);
+      const std::string outPath = "/tmp/ToTLUTs/" + basePath;
+      const std::string localFilename = outPath + "/snapshot.root";
       std::ifstream checkFile(localFilename);
-      if (!checkFile.is_open()) {
+      if (!checkFile.is_open()) { // File is not found, need to download it from CCDB
         if (!mCcdbManager) {
           LOG(fatal) << "CCDB manager not set. Please set it before loading LUT from CCDB.";
         }
         std::map<std::string, std::string> metadata;
-        mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
-
-        std::string foundFile = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
-        std::ifstream testFile(foundFile);
+        mCcdbManager->getCCDBAccessor().retrieveBlob(basePath, outPath, metadata, 1);
+        std::ifstream testFile(localFilename);
         if (!testFile.is_open()) {
-          LOG(error) << "Could not find downloaded CCDB file for PDG " << pdg;
+          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg;
           return false;
         }
         testFile.close();
-
-        return load(pdg, foundFile);
-      } else {
+        return load(pdg, localFilename);
+      } else { // File is found, proceed to load it
         checkFile.close();
         return load(pdg, localFilename);
       }
     }
-
+    // In case the file is already available locally
     TFile* f = TFile::Open(filename.c_str());
     if (!f || f->IsZombie()) {
-      LOG(error) << "Failed to open LUT file: " << filename;
+      LOG(fatal) << "Failed to open LUT file: " << filename;
       return false;
     }
 
@@ -397,15 +396,15 @@ struct OnTheFlyTrackerPid {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for electrons"};
-  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for muons"};
-  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for pions"};
-  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for kaons"};
-  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for protons"};
-  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for deuteron"};
-  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for triton"};
-  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for helium-3"};
-  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for alphas"};
+  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_11/", "ToT LUT for electrons"};
+  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_13/", "ToT LUT for muons"};
+  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_211/", "ToT LUT for pions"};
+  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_321/", "ToT LUT for kaons"};
+  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_2212/", "ToT LUT for protons"};
+  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000010020/", "ToT LUT for deuteron"};
+  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000010030/", "ToT LUT for triton"};
+  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020030/", "ToT LUT for helium-3"};
+  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020040/", "ToT LUT for alphas"};
 
   Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss) for track propagation"};
   Configurable<int> maxBarrelLayers{"maxBarrelLayers", 11, "Maximum number of barrel layers"};

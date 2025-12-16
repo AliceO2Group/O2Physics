@@ -771,7 +771,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -796,7 +796,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -821,7 +821,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -846,7 +846,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -871,7 +871,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -901,7 +901,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -933,7 +933,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -965,7 +965,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -997,7 +997,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1029,7 +1029,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1061,7 +1061,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1093,7 +1093,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1125,7 +1125,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (skipMBGapEvents && mccollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {

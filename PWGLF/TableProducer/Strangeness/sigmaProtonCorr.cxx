@@ -78,6 +78,8 @@ struct sigmaProtonCorrTask {
   HistogramRegistry rSigmaProton{"sigmaProton", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
+
+  Configurable<float> minPtSigma{"minPtSigma", 1.f, "Minimum pT for Sigma candidates (GeV/c)"};
   Configurable<float> cutEtaDaught{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
   Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
   Configurable<bool> doSigmaMinus{"doSigmaMinus", true, "If true, pair Sigma- candidates, else Sigma+"};
@@ -175,6 +177,11 @@ struct sigmaProtonCorrTask {
     std::array<float, 3> momDaug = {sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
     float alphaAP = getAlphaAP(momMoth, momDaug);
     float qtAP = getQtAP(momMoth, momDaug);
+
+    if (sigmaCand.ptMoth() < minPtSigma) {
+      return false;
+    }
+
     if (alphaAP > alphaAPCut || (qtAP < qtAPCutLow || qtAP > qtAPCutHigh)) {
       return false;
     }
