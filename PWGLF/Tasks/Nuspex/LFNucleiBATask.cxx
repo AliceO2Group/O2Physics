@@ -776,6 +776,11 @@ struct LFNucleiBATask {
       histos.add<TH1>("tracks/helium/h1HeliumSpectra_Z2", "#it{p}_{T} (He)", HistType::kTH1F, {ptHeAxis});
       histos.add<TH1>("tracks/helium/h1antiHeliumSpectra_Z2", "#it{p}_{T} (#bar{He})", HistType::kTH1F, {ptHeAxis});
 
+      if (outFlagOptions.doTOFplots && enableCentrality) {
+        histos.add<TH2>("tracks/helium/TOF/h2HeliumSpectraVsMult_Z2", "#it{p}_{T} (He)", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
+        histos.add<TH2>("tracks/helium/TOF/h2antiHeliumSpectraVsMult_Z2", "#it{p}_{T} (#bar{He})", HistType::kTH2F, {{ptHeAxis}, {binsPercentile}});
+      }
+
       histos.add<TH2>("tracks/helium/h2antiHeliumYvsPt_Z2", "#it{y} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptHeAxis}});
       histos.add<TH2>("tracks/helium/h2antiHeliumEtavsPt_Z2", "#it{#eta} vs #it{p}_{T} (#bar{He})", HistType::kTH2F, {{96, -1.2, 1.2}, {ptHeAxis}});
     }
@@ -4867,7 +4872,7 @@ struct LFNucleiBATask {
         }
 
         if (isHeWTPCpid) {
-          histos.fill(HIST("tracks/helium/TOF/h1HeliumSpectra_Z2"), 2 * hePt);
+          histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraVsMult_Z2"), 2 * hePt, centFT0M);
           histos.fill(HIST("tracks/helium/h2HeliumTOFbetaVsP"), heP, track.beta());
           if (outFlagOptions.enableEffPlots) {
             histos.fill(HIST("tracks/eff/helium/h2pVsTOFExpMomentumHe"), track.tofExpMom(), heP);
@@ -4876,7 +4881,7 @@ struct LFNucleiBATask {
         }
 
         if (isAntiHeWTPCpid) {
-          histos.fill(HIST("tracks/helium/TOF/h1antiHeliumSpectra_Z2"), 2 * hePt);
+          histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraVsMult_Z2"), 2 * antihePt, centFT0M);
           histos.fill(HIST("tracks/helium/h2antiHeliumTOFbetaVsP"), antiheP, track.beta());
           if (outFlagOptions.enableEffPlots) {
             histos.fill(HIST("tracks/eff/helium/h2pVsTOFExpMomentumantiHe"), track.tofExpMom(), antiheP);
@@ -5881,10 +5886,11 @@ struct LFNucleiBATask {
           case -PDGHelium:
             if (isHelium && passDCAzCutAntiHe && passDCAxyCutAntiHe) {
               histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrue_Z2"), 2 * antihePt);
-              if (enableCentrality)
+              if (enableCentrality) {
                 histos.fill(HIST("tracks/helium/h2antiHeliumSpectraTrueVsMult_Z2"), 2 * antihePt, centFT0M);
-              if (track.hasTOF() && outFlagOptions.doTOFplots) {
-                histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraTrueWPIDVsMult_Z2"), 2 * antihePt, centFT0M);
+                if (track.hasTOF() && outFlagOptions.doTOFplots) {
+                  histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraTrueWPIDVsMult_Z2"), 2 * antihePt, centFT0M);
+                }
               }
               if (outFlagOptions.makeDCAAfterCutPlots) {
                 histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtantiHeliumTrue"), antihePt, track.dcaXY());
