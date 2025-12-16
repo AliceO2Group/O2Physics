@@ -121,6 +121,7 @@ struct AntinucleiInJets {
   Configurable<double> maxNormalizedJetArea{"maxNormalizedJetArea", 1.0, "area cut"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
   Configurable<int> nSyst{"nSyst", 50, "number of systematic variations"};
+  Configurable<int> nSubsamples{"nSubsamples", 50, "number of subsamples"};
 
   // Track quality, kinematic, and PID selection parameters
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
@@ -472,7 +473,7 @@ struct AntinucleiInJets {
       const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
       const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
       const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
-      const AxisSpec subsampleAxis{20, 0, 20, "Subsample Index"};
+      const AxisSpec subsampleAxis{nSubsamples, 0, static_cast<double>(nSubsamples), "Subsample Index"};
 
       // Event counter
       registryCorr.add("eventCounter", "number of events", HistType::kTH1F, {{20, 0, 20, "counter"}});
@@ -2684,7 +2685,7 @@ struct AntinucleiInJets {
     registryCorr.fill(HIST("eventCounter"), 7.5);
 
     // Assign event to a random subsample (0-19)
-    double sampleId = mRand.Integer(20) + 0.5;
+    double sampleId = mRand.Integer(nSubsamples) + 0.5;
 
     // Multiplicity percentile
     const float multiplicity = collision.centFT0M();

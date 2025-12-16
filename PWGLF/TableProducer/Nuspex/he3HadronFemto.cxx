@@ -129,6 +129,8 @@ std::array<float, 3> kDCAzResolutionParams[static_cast<int>(Species::kAllSpecies
   {0.0021, 1.1122, 0.0021}  // Pr
 };
 
+std::array<float, 2> kHePidTrkParams = {0.1593, -0.0445};
+
 } // namespace
 
 struct He3HadCandidate {
@@ -470,6 +472,15 @@ struct he3HadronFemto {
     }
 
     return true;
+  }
+
+  template <typename Ttrack>
+  float correctPtHe3TrackedAsTriton(const Ttrack& candidate)
+  {
+    if (candidate.pt() < 2.5 && candidate.pidForTracking() == o2::track::PID::Triton)
+      return candidate.pt() * 2. * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * candidate.pt() * 2.);
+
+    return candidate.pt() * 2.;
   }
 
   float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
@@ -1337,7 +1348,9 @@ struct he3HadronFemto {
       if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(track, Species::kHe3))
         continue;
 
-      mQaRegistry.fill(HIST("He3/hHe3Pt"), track.pt() * 2.f);
+      const float ptHe3Corrected = correctPtHe3TrackedAsTriton(track);
+
+      mQaRegistry.fill(HIST("He3/hHe3Pt"), ptHe3Corrected);
       mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
       mQaRegistry.fill(HIST("He3/hDCAzHe3"), track.dcaZ());
 
@@ -1348,7 +1361,7 @@ struct he3HadronFemto {
       }
 
       const float nSigmaHe3 = computeNSigmaHe3(track);
-      mQaRegistry.fill(HIST("He3/h2NsigmaHe3TPC_preselection"), track.sign() * 2 * track.pt(), nSigmaHe3);
+      mQaRegistry.fill(HIST("He3/h2NsigmaHe3TPC_preselection"), track.sign() * ptHe3Corrected, nSigmaHe3);
     }
   }
   PROCESS_SWITCH(he3HadronFemto, processPurity, "Process for purity studies", false);
