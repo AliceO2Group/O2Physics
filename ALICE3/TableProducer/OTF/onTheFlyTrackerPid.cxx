@@ -136,14 +136,14 @@ class ToTLUT
 
   bool load(int pdg, const std::string& filename)
   {
-    if(filename.empty()) {
+    if (filename.empty()) {
       LOG(warning) << "Provided filename is empty for PDG " << pdg;
       return false;
     }
     if (strncmp(filename.c_str(), "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
       const std::string basePath = std::string(filename).substr(5);
       const std::string outPath = "/tmp/ToTLUTs/" + basePath;
-      const std::string localFilename =  outPath + "/snapshot.root";
+      const std::string localFilename = outPath + "/snapshot.root";
       std::ifstream checkFile(localFilename);
       if (!checkFile.is_open()) { // File is not found, need to download it from CCDB
         if (!mCcdbManager) {
@@ -158,7 +158,7 @@ class ToTLUT
         }
         testFile.close();
         return load(pdg, localFilename);
-      } else {// File is found, proceed to load it
+      } else { // File is found, proceed to load it
         checkFile.close();
         return load(pdg, localFilename);
       }
