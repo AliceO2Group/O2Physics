@@ -10,19 +10,26 @@ common:
 infrastructure:
   - changed-files:
       - any-glob-to-any-file:
+          - '.checkov.yml'
           - '.clang-format'
           - '.clang-tidy'
           - '.flake8'
+          - '.git-blame-ignore-revs'
           - '.github/**'
-          - '.checkov.yml'
+          - '.gitignore'
           - '.mega-linter.yml'
           - '.pre-commit-config.yaml'
           - 'cmake/**'
+          - 'CMakeLists.txt'
           - 'CODEOWNERS'
+          - 'COPYING'
+          - 'cppcheck_config'
           - 'CPPLINT.cfg'
           - 'dependencies/**'
+          - 'o2linter_config'
           - 'packaging/**'
           - 'pyproject.toml'
+          - 'README.md'
 
 datamodel:
   - changed-files:
@@ -56,9 +63,21 @@ pwglf:
   - changed-files:
       - any-glob-to-any-file: ['PWGLF/**', '*/PWGLF/**', 'PWGMM/**', '*/PWGMM/**']
 
+pwgmm:
+  - changed-files:
+      - any-glob-to-any-file: ['PWGMM/**', '*/PWGMM/**']
+
 pwgud:
   - changed-files:
       - any-glob-to-any-file: ['PWGUD/**', '*/PWGUD/**']
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file: ['Scripts/**']
+
+tools:
+  - changed-files:
+      - any-glob-to-any-file: ['Tools/**']
 
 trigger:
   - changed-files:
