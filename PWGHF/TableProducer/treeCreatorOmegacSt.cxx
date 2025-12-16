@@ -311,6 +311,7 @@ struct HfTreeCreatorOmegacSt {
   static constexpr float TpcNclsFindableFraction{0.8f};
   static constexpr float TpcChi2NclMax{4.f};
   static constexpr float ItsChi2NclMax{36.f};
+  static constexpr std::array<float, 2> TofWoSignalRange{998.f, 1000.f};
 
   float bz{0.f};
   int runNumber{0};
@@ -388,7 +389,7 @@ struct HfTreeCreatorOmegacSt {
     setLabelHistoCands(hCandidatesCascPiOrK);
 
     // init HF event selection helper (centrality, event cuts, monitoring)
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
   }
 
   // processMC: loop over MC objects
@@ -643,8 +644,8 @@ struct HfTreeCreatorOmegacSt {
           const bool tpcBachelor = (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor);
           const float tofBachelorPiAbs = std::abs(bachelor.tofNSigmaPi());
           const float tofBachelorKaAbs = std::abs(bachelor.tofNSigmaKa());
-          const bool tofBachelorPiPass = (tofBachelorPiAbs > 998.f && tofBachelorPiAbs < 1000.f) || (tofBachelorPiAbs < maxAbsTofNsigmaBachelorPi);
-          const bool tofBachelorKaPass = (tofBachelorKaAbs > 998.f && tofBachelorKaAbs < 1000.f) || (tofBachelorKaAbs < maxAbsTofNsigmaBachelorKa);
+          const bool tofBachelorPiPass = (tofBachelorPiAbs > TofWoSignalRange[0] && tofBachelorPiAbs < TofWoSignalRange[1]) || (tofBachelorPiAbs < maxAbsTofNsigmaBachelorPi);
+          const bool tofBachelorKaPass = (tofBachelorKaAbs > TofWoSignalRange[0] && tofBachelorKaAbs < TofWoSignalRange[1]) || (tofBachelorKaAbs < maxAbsTofNsigmaBachelorKa);
           const bool tofBachelorPass = tofBachelorPiPass || tofBachelorKaPass;
           const bool bachelorPass = useTofPid.value ? (tpcBachelor && tofBachelorPass) : tpcBachelor;
 
@@ -652,15 +653,15 @@ struct HfTreeCreatorOmegacSt {
           const bool tpcV0Pi = (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi);
           const float tofV0PrAbs = std::abs(v0TrackPr.tofNSigmaPr());
           const float tofV0PiAbs = std::abs(v0TrackPi.tofNSigmaPi());
-          const bool tofV0PrPass = (tofV0PrAbs > 998.f && tofV0PrAbs < 1000.f) || (tofV0PrAbs < maxAbsTofNsigmaV0Pr);
-          const bool tofV0PiPass = (tofV0PiAbs > 998.f && tofV0PiAbs < 1000.f) || (tofV0PiAbs < maxAbsTofNsigmaV0Pi);
+          const bool tofV0PrPass = (tofV0PrAbs > TofWoSignalRange[0] && tofV0PrAbs < TofWoSignalRange[1]) || (tofV0PrAbs < maxAbsTofNsigmaV0Pr);
+          const bool tofV0PiPass = (tofV0PiAbs > TofWoSignalRange[0] && tofV0PiAbs < TofWoSignalRange[1]) || (tofV0PiAbs < maxAbsTofNsigmaV0Pi);
           const bool v0PrPass = useTofPid.value ? (tpcV0Pr && tofV0PrPass) : tpcV0Pr;
           const bool v0PiPass = useTofPid.value ? (tpcV0Pi && tofV0PiPass) : tpcV0Pi;
 
           if (bachelorPass && v0PrPass && v0PiPass) {
 
             std::array<double, NDaughters> const massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
-            std::array<double, NDaughters> const OmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
+            std::array<double, NDaughters> const massOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
             std::array<double, NDaughters> const massesXicToXiPi{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
 
             std::array<std::array<float, 3>, NDaughters> momenta{};
@@ -697,8 +698,8 @@ struct HfTreeCreatorOmegacSt {
                 const bool passTPCpid = (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) || (std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon);
                 const float tofPiAbs = std::abs(track.tofNSigmaPi());
                 const float tofKaAbs = std::abs(track.tofNSigmaKa());
-                const bool tofPiPass = (tofPiAbs > 998.f && tofPiAbs < 1000.f) || (tofPiAbs < maxAbsTofNsigmaTrackPi);
-                const bool tofKaPass = (tofKaAbs > 998.f && tofKaAbs < 1000.f) || (tofKaAbs < maxAbsTofNsigmaTrackKa);
+                const bool tofPiPass = (tofPiAbs > TofWoSignalRange[0] && tofPiAbs < TofWoSignalRange[1]) || (tofPiAbs < maxAbsTofNsigmaTrackPi);
+                const bool tofKaPass = (tofKaAbs > TofWoSignalRange[0] && tofKaAbs < TofWoSignalRange[1]) || (tofKaAbs < maxAbsTofNsigmaTrackKa);
                 const bool passTOFpid = tofPiPass || tofKaPass;
                 if (useTofPid.value) {
                   if (!(passTPCpid && passTOFpid)) {
@@ -752,7 +753,7 @@ struct HfTreeCreatorOmegacSt {
                     const auto ptPionOrKaon = std::hypot(momenta[1][0], momenta[1][1]);
                     const auto ptCharmedBaryon = RecoDecay::pt(momenta[0], momenta[1]);
                     const auto massOmegaPion = RecoDecay::m(momenta, massesOmegacToOmegaPi);
-                    const auto massOmegaKaon = RecoDecay::m(momenta, OmegaK);
+                    const auto massOmegaKaon = RecoDecay::m(momenta, massOmegaK);
                     const auto massXiPion = RecoDecay::m(momenta, massesXicToXiPi);
                     registry.fill(HIST("hMassOmegaPi"), massOmegaPion);
                     registry.fill(HIST("hMassOmegaPiVsPt"), massOmegaPion, ptCharmedBaryon);
