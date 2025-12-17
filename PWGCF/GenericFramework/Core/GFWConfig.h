@@ -19,6 +19,7 @@
 #include <TObject.h>
 #include <TMath.h>
 #include "GFW.h"
+#include "Framework/Logger.h"
 
 namespace o2
 {
