@@ -54,6 +54,8 @@ class ZorroSummary : public TNamed
     mCurrentAnalysedTOIcounters = &mAnalysedTOIcounters[runNumber];
   }
   double getNormalisationFactor(int toiId) const;
+  std::unordered_map<int, std::vector<double>> getPerRunNormalisationFactors() const;
+
   void increaseTOIcounter(int runNumber, int toiId)
   {
     if (runNumber != mRunNumber) {
