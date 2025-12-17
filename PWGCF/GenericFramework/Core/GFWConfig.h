@@ -12,13 +12,17 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
+#include "GFW.h"
+
+#include "Framework/Logger.h"
+
+#include <TMath.h>
+#include <TObject.h>
+
 #include <algorithm>
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
-#include <TObject.h>
-#include <TMath.h>
-#include "GFW.h"
 
 namespace o2
 {
