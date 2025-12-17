@@ -317,7 +317,9 @@ struct HfTreeCreatorOmegacSt {
   int runNumber{0};
   std::map<int, int> mapMcPartToGenTable;
 
-  using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>>;
+  using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using CollisionsFT0C = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+  using CollisionsFT0M = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
@@ -483,8 +485,8 @@ struct HfTreeCreatorOmegacSt {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
-  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename TracksType>
-  void fillTable(Collisions const& collisions,
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename TracksType, typename TColl>
+  void fillTable(TColl const& collisions,
                  aod::AssignedTrackedCascades const& trackedCascades,
                  aod::TrackAssoc const& trackIndices,
                  std::optional<std::reference_wrapper<aod::McParticles const>> mcParticles = std::nullopt)
@@ -500,7 +502,7 @@ struct HfTreeCreatorOmegacSt {
         }
         // record event-level monitoring (centrality, vertex, etc.)
         hfEvSel.fillHistograms(collision, rejectionMask, centrality);
-        const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         if (skimmedProcessing) {
           if (runNumber == 0) {
@@ -543,7 +545,7 @@ struct HfTreeCreatorOmegacSt {
 
       o2::dataformats::DCA impactParameterCasc;
       for (const auto& trackedCascade : groupedTrackedCascades) {
-        const auto trackCasc = trackedCascade.track_as<TracksType>();
+        const auto trackCasc = trackedCascade.template track_as<TracksType>();
         int trackCascMotherId = -1;
         if constexpr (std::is_same<TracksType, TracksExtMc>::value) {
           if (trackCasc.has_mcParticle() && trackCasc.mcParticle().has_mothers()) {
@@ -560,10 +562,10 @@ struct HfTreeCreatorOmegacSt {
         }
 
         const auto& casc = trackedCascade.cascade();
-        const auto& bachelor = casc.bachelor_as<TracksType>();
+        const auto& bachelor = casc.template bachelor_as<TracksType>();
         const auto& v0 = casc.v0();
-        const auto& v0TrackPos = v0.posTrack_as<TracksType>();
-        const auto& v0TrackNeg = v0.negTrack_as<TracksType>();
+        const auto& v0TrackPos = v0.template posTrack_as<TracksType>();
+        const auto& v0TrackNeg = v0.template negTrack_as<TracksType>();
 
         if (!v0TrackPos.hasTPC() || !v0TrackNeg.hasTPC() || !bachelor.hasTPC() ||
             v0TrackPos.tpcNClsFindable() < minNoClsTrackedCascade ||
@@ -797,18 +799,18 @@ struct HfTreeCreatorOmegacSt {
                     //--- do the MC Rec match
                     if (mcParticles) {
                       auto arrayDaughters = std::array{
-                        trackId.template track_as<TracksExtMc>(), // bachelor <- charm baryon
-                        casc.bachelor_as<TracksExtMc>(),          // bachelor <- cascade
-                        v0.posTrack_as<TracksExtMc>(),            // p <- lambda
-                        v0.negTrack_as<TracksExtMc>()};           // pi <- lambda
+                        trackId.template track_as<TracksExtMc>(),      // bachelor <- charm baryon
+                        casc.template bachelor_as<TracksExtMc>(),      // bachelor <- cascade
+                        v0.template posTrack_as<TracksExtMc>(),        // p <- lambda
+                        v0.template negTrack_as<TracksExtMc>()};       // pi <- lambda
 
                       auto arrayDaughtersCasc = std::array{
-                        casc.bachelor_as<TracksExtMc>(), // bachelor <- cascade
-                        v0.posTrack_as<TracksExtMc>(),   // p <- lambda
-                        v0.negTrack_as<TracksExtMc>()};  // pi <- lambda
+                        casc.template bachelor_as<TracksExtMc>(), // bachelor <- cascade
+                        v0.template posTrack_as<TracksExtMc>(),   // p <- lambda
+                        v0.template negTrack_as<TracksExtMc>()};  // pi <- lambda
                       auto arrayDaughtersV0 = std::array{
-                        v0.posTrack_as<TracksExtMc>(),  // p <- lambda
-                        v0.negTrack_as<TracksExtMc>()}; // pi <- lambda
+                        v0.template posTrack_as<TracksExtMc>(),  // p <- lambda
+                        v0.template negTrack_as<TracksExtMc>()}; // pi <- lambda
 
                       if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
                         // Match Omegac0 → Omega- + Pi+
@@ -963,7 +965,7 @@ struct HfTreeCreatorOmegacSt {
     PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataNocent, "Process data (No centrality)", true);
   
     // FT0C centrality selection
-    void processDataFT0C(Collisions const& collisions,
+    void processDataFT0C(CollisionsFT0C const& collisions,
                soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                aod::TrackAssoc const& trackIndices,
                aod::Cascades const&,
@@ -976,7 +978,7 @@ struct HfTreeCreatorOmegacSt {
     PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0C, "Process data (FT0C centrality)", false);
   
     // FT0M centrality selection
-    void processDataFT0M(Collisions const& collisions,
+    void processDataFT0M(CollisionsFT0M const& collisions,
                soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                aod::TrackAssoc const& trackIndices,
                aod::Cascades const&,
@@ -1005,7 +1007,7 @@ struct HfTreeCreatorOmegacSt {
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecNocent, "Process MC reco (No centrality)", false);
 
   // MC reco: FT0C centrality selection
-  void processMcRecFT0C(Collisions const& collisions,
+  void processMcRecFT0C(CollisionsFT0C const& collisions,
                         aod::McCollisions const&,
                         soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                         aod::TrackAssoc const& trackIndices,
@@ -1020,7 +1022,7 @@ struct HfTreeCreatorOmegacSt {
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRecFT0C, "Process MC reco (FT0C centrality)", false);
 
   // MC reco: FT0M centrality selection
-  void processMcRecFT0M(Collisions const& collisions,
+  void processMcRecFT0M(CollisionsFT0M const& collisions,
                         aod::McCollisions const&,
                         soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                         aod::TrackAssoc const& trackIndices,
@@ -1043,7 +1045,7 @@ struct HfTreeCreatorOmegacSt {
                     aod::McParticles const&,
                     aod::BCsWithTimestamps const&)
   {
-    const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       runNumber = bc.runNumber();
       auto timestamp = bc.timestamp();
@@ -1061,7 +1063,7 @@ struct HfTreeCreatorOmegacSt {
     const auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterCasc;
     for (const auto& trackedCascade : trackedCascades) {
-      const auto trackCasc = trackedCascade.track_as<TracksExtMc>();
+      const auto trackCasc = trackedCascade.template track_as<TracksExtMc>();
       auto trackParCovCasc = getTrackParCov(trackCasc);
       if (bzOnly) {
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovCasc, bz, 2.f, matCorr, &impactParameterCasc);
@@ -1070,10 +1072,10 @@ struct HfTreeCreatorOmegacSt {
       }
 
       const auto& casc = trackedCascade.cascade();
-      const auto& bachelor = casc.bachelor_as<TracksExtMc>();
+      const auto& bachelor = casc.template bachelor_as<TracksExtMc>();
       const auto& v0 = casc.v0();
-      const auto& v0TrackPos = v0.posTrack_as<TracksExtMc>();
-      const auto& v0TrackNeg = v0.negTrack_as<TracksExtMc>();
+      const auto& v0TrackPos = v0.template posTrack_as<TracksExtMc>();
+      const auto& v0TrackNeg = v0.template negTrack_as<TracksExtMc>();
 
       if (!v0TrackPos.has_mcParticle() || !v0TrackNeg.has_mcParticle() || !bachelor.has_mcParticle()) {
         continue;
