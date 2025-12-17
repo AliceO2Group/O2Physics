@@ -1,69 +1,89 @@
 ---
-alice3:
-  - changed-files:
-      - any-glob-to-any-file: ['ALICE3/**']
-
-common:
-  - changed-files:
-      - any-glob-to-any-file: ['Common/**']
-
 infrastructure:
   - changed-files:
       - any-glob-to-any-file:
-          - '.clang-format'
-          - '.clang-tidy'
-          - '.flake8'
-          - '.github/**'
-          - '.checkov.yml'
-          - '.mega-linter.yml'
-          - '.pre-commit-config.yaml'
-          - 'cmake/**'
-          - 'CODEOWNERS'
-          - 'CPPLINT.cfg'
-          - 'dependencies/**'
-          - 'packaging/**'
-          - 'pyproject.toml'
+          - ".checkov.yml"
+          - ".clang-format"
+          - ".clang-tidy"
+          - ".flake8"
+          - ".git-blame-ignore-revs"
+          - ".github/**"
+          - ".gitignore"
+          - ".mega-linter.yml"
+          - ".pre-commit-config.yaml"
+          - "cmake/**"
+          - "CMakeLists.txt"
+          - "CODEOWNERS"
+          - "COPYING"
+          - "cppcheck_config"
+          - "CPPLINT.cfg"
+          - "dependencies/**"
+          - "o2linter_config"
+          - "packaging/**"
+          - "pyproject.toml"
+          - "README.md"
 
 datamodel:
   - changed-files:
-      - any-glob-to-any-file: ['DataModel/**', '**/DataModel/**']
+      - any-glob-to-any-file: ["DataModel/**", "**/DataModel/**"]
+
+alice3:
+  - changed-files:
+      - any-glob-to-any-file: ["ALICE3/**"]
+
+common:
+  - changed-files:
+      - any-glob-to-any-file: ["Common/**"]
 
 dpg:
   - changed-files:
-      - any-glob-to-any-file: ['DPG/**']
+      - any-glob-to-any-file: ["DPG/**"]
 
 pwgcf:
   - changed-files:
-      - any-glob-to-any-file: ['PWGCF/**', '*/PWGCF/**']
+      - any-glob-to-any-file: ["PWGCF/**", "*/PWGCF/**"]
 
 pwgdq:
   - changed-files:
-      - any-glob-to-any-file: ['PWGDQ/**', '*/PWGDQ/**']
+      - any-glob-to-any-file: ["PWGDQ/**", "*/PWGDQ/**"]
 
 pwgem:
   - changed-files:
-      - any-glob-to-any-file: ['PWGEM/**', '*/PWGEM/**']
+      - any-glob-to-any-file: ["PWGEM/**", "*/PWGEM/**"]
 
 pwghf:
   - changed-files:
-      - any-glob-to-any-file: ['PWGHF/**', '*/PWGHF/**']
+      - any-glob-to-any-file: ["PWGHF/**", "*/PWGHF/**"]
 
 pwgje:
   - changed-files:
-      - any-glob-to-any-file: ['PWGJE/**', '*/PWGJE/**']
+      - any-glob-to-any-file: ["PWGJE/**", "*/PWGJE/**"]
 
 pwglf:
   - changed-files:
-      - any-glob-to-any-file: ['PWGLF/**', '*/PWGLF/**', 'PWGMM/**', '*/PWGMM/**']
+      - any-glob-to-any-file:
+          ["PWGLF/**", "*/PWGLF/**", "PWGMM/**", "*/PWGMM/**"]
+
+pwgmm:
+  - changed-files:
+      - any-glob-to-any-file: ["PWGMM/**", "*/PWGMM/**"]
 
 pwgud:
   - changed-files:
-      - any-glob-to-any-file: ['PWGUD/**', '*/PWGUD/**']
+      - any-glob-to-any-file: ["PWGUD/**", "*/PWGUD/**"]
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file: ["Scripts/**"]
+
+tools:
+  - changed-files:
+      - any-glob-to-any-file: ["Tools/**"]
 
 trigger:
   - changed-files:
-      - any-glob-to-any-file: ['EventFiltering/**']
+      - any-glob-to-any-file: ["EventFiltering/**"]
 
 tutorial:
   - changed-files:
-      - any-glob-to-any-file: ['Tutorials/**']
+      - any-glob-to-any-file: ["Tutorials/**"]

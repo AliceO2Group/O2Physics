@@ -75,6 +75,45 @@ o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov
   return trackparCov;
 }
 
+/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
+template <typename TFwdTrack, typename... TCovariance>
+o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
+{
+  double chi2 = track.chi2();
+  if constexpr (sizeof...(covOpt) == 0) {
+    // No covariance passed
+    if constexpr (std::is_same_v<std::decay_t<TFwdTrack>, aod::FwdTracks::iterator>) {
+      if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+        chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
+      }
+    }
+  } else {
+    // Covariance passed
+    using TCov = std::decay_t<decltype((covOpt, ...))>;
+    if constexpr (std::is_same_v<TCov, aod::FwdTracksCov::iterator>) {
+      if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+        chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
+      }
+    }
+  }
+
+  SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+
+  SMatrix55 tcovs;
+  if constexpr (sizeof...(covOpt) == 1) {
+    auto const& cov = (covOpt, ...);
+    std::vector<double> v1{
+      cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
+      cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
+      cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
+    tcovs = SMatrix55(v1.begin(), v1.end());
+  } else {
+    tcovs = SMatrix55{};
+  }
+
+  return o2::track::TrackParCovFwd(track.z() + zshift, tpars, tcovs, chi2);
+}
+
 /// propagate fwdtrack to a certain point.
 template <typename TFwdTrack, typename TFwdTrackCov, typename TCollision>
 o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TFwdTrackCov const& cov, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG)
