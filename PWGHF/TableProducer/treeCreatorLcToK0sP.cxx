@@ -18,7 +18,6 @@
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
 /// \author Elisa Meninno <elisa.meninno@cern.ch>
 
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -92,7 +91,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(MlScoreFirstClass, mlScoreFirstClass, float);
 DECLARE_SOA_COLUMN(MlScoreSecondClass, mlScoreSecondClass, float);
 DECLARE_SOA_COLUMN(MlScoreThirdClass, mlScoreThirdClass, float);
-DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);                       //! 0 bg, 1 prompt, 2 non-prompt,-1 default value (impossible, should not be the case), -999 for data
+DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int); //! 0 bg, 1 prompt, 2 non-prompt,-1 default value (impossible, should not be the case), -999 for data
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -140,7 +139,6 @@ DECLARE_SOA_TABLE(HfCandCascLites, "AOD", "HFCANDCASCLITE",
                   full::MlScoreSecondClass,
                   full::MlScoreThirdClass,
                   full::SigBgStatus);
-		
 
 DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   collision::BCId,
@@ -273,7 +271,7 @@ struct HfTreeCreatorLcToK0sP {
     SigBgStatus status{Default};
 
     if (std::abs(flag) != 1) {
-      return Background;  // combinatorial or wrong decay
+      return Background; // combinatorial or wrong decay
     }
     // Otherwise it is signal: distinguish between Prompt/ NonPrompt
     if (origin == RecoDecay::OriginType::Prompt) {
@@ -489,11 +487,11 @@ struct HfTreeCreatorLcToK0sP {
       const int flag = candidate.flagMcMatchRec();
 
       // get status (Prompt / NonPrompt / Background)
-      SigBgStatus sigbgstatus = determineSignalBgStatus(candidate); 
-      
+      SigBgStatus sigbgstatus = determineSignalBgStatus(candidate);
+
       bool isSignal = (std::abs(flag) == 1);
       bool isBackground = !isSignal;
-      
+
       if ((fillOnlySignal && isSignal) || (fillOnlyBackground && isBackground) || (!fillOnlySignal && !fillOnlyBackground)) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore, sigbgstatus);
       }
