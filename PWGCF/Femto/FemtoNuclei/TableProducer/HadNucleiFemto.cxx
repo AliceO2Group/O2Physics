@@ -92,7 +92,7 @@ enum Selections {
   kAll
 };
 
- float MassHad = 0;
+float MassHad = 0;
 
 } // namespace
 
@@ -280,7 +280,7 @@ struct HadNucleiFemto {
      {"hNuPhi", "phi distribution; phi(Nu)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-     {"h2dEdxHadcandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+          {"h2dEdxHadcandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2dEdx", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
@@ -507,7 +507,7 @@ struct HadNucleiFemto {
     if (std::abs(candidate.pt()) < settingCutHadptMin || std::abs(candidate.pt()) > settingCutHadptMax)
       return false;
 
-      // reject protons and pions
+    // reject protons and pions
     if (std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin || std::abs(candidate.tpcNSigmaPi()) < settingCutNsigTPCPiMin)
       return false;
     mQaRegistry.fill(HIST("h2NsigmaHadPrTPC"), candidate.tpcNSigmaPr());
@@ -532,14 +532,14 @@ struct HadNucleiFemto {
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaKa);
       mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaKa);
-      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
+            mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     } else if (candidate.tpcInnerParam() < settingCutPinMinTOFHad) {
       if (std::abs(tpcNSigmaKa) > settingCutNsigmaTPCHad) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaKa);
-      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
+            mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     }
     return false;
@@ -570,9 +570,9 @@ struct HadNucleiFemto {
       auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
 
       mQaRegistry.fill(HIST("h2NsigmaHadTOF_preselection"), candidate.pt(), tofNSigmaPi);
-      //if (combNsigma > settingCutNsigmaTOFTPCHad) {
-      //  return false;
-      //}
+      // if (combNsigma > settingCutNsigmaTOFTPCHad) {
+      //   return false;
+      // }
       if (std::abs(tofNSigmaPi) > settingCutNsigmaTOFHad) {
         return false;
       }
@@ -582,14 +582,14 @@ struct HadNucleiFemto {
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
       mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaPi);
       mQaRegistry.fill(HIST("h2NsigmaHadComb"), candidate.sign() * candidate.pt(), combNsigma);
-      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
+            mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     } else if (candidate.tpcInnerParam() < settingCutPinMinTOFHad) {
       if (std::abs(tpcNSigmaPi) > settingCutNsigmaTPCHad) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
-      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
+            mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     }
     return false;
@@ -598,17 +598,17 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDHadron(const Ttrack& candidate)
   {
-    bool PID = false; 
-   if (settingHadPDGCode == PDG_t::kPiPlus) {
-     PID = selectionPIDPion(candidate);
-     MassHad = o2::constants::physics::MassPiPlus;
-   } else if (settingHadPDGCode == PDG_t::kKPlus) {
-     PID = selectionPIDKaon(candidate);
-     MassHad = o2::constants::physics::MassKPlus;
-   } else {
-     LOG(info) << "invalid PDG code";
-   }
-   return PID;
+    bool PID = false;
+    if (settingHadPDGCode == PDG_t::kPiPlus) {
+      PID = selectionPIDPion(candidate);
+      MassHad = o2::constants::physics::MassPiPlus;
+    } else if (settingHadPDGCode == PDG_t::kKPlus) {
+      PID = selectionPIDKaon(candidate);
+      MassHad = o2::constants::physics::MassKPlus;
+    } else {
+      LOG(info) << "invalid PDG code";
+    }
+    return PID;
   }
 
   template <typename Ttrack>
@@ -760,7 +760,7 @@ struct HadNucleiFemto {
     hadNucand.momNu = std::array{trackDe.px(), trackDe.py(), trackDe.pz()};
     hadNucand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
     float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu,hadNucand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassDeuteron),MassHad});
+    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu, hadNucand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassDeuteron), MassHad});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       mQaRegistry.fill(HIST("hSkipReasons"), 3);
       return false;
@@ -857,7 +857,7 @@ struct HadNucleiFemto {
     hadHypercand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
 
     float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu,hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3),MassHad});
+    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu, hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3), MassHad});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
