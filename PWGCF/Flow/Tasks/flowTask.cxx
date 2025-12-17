@@ -1253,6 +1253,13 @@ struct FlowTask {
     fGFW->Clear();
     fFCptgen->clearVector();
 
+    if (cfgUseAdditionalEventCut) {
+      for (auto const& collision : collisions) {
+        if (!eventSelected(collision, mcParticles.size(), cent))
+          return;
+      }
+    }
+
     double ptSum_Gap08 = 0.;
     double count_Gap08 = 0.;
     for (const auto& mcParticle : mcParticles) {
