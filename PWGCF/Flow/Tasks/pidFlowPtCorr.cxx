@@ -109,7 +109,7 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
   // number of runs used in the data, make sure the number is bigger than the vectorsize above
-  O2_DEFINE_CONFIGURABLE(cfgNumberOfRuns, int, 7, "number of runs in the data");
+  O2_DEFINE_CONFIGURABLE(cfgNumberOfRuns, double, 7, "number of runs in the data");
 
   // switch
   O2_DEFINE_CONFIGURABLE(cfgDoAccEffCorr, bool, false, "do acc and eff corr")
@@ -287,7 +287,7 @@ struct PidFlowPtCorr {
       // hist for NUA
       registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {{cfgNumberOfRuns, 0, cfgNumberOfRuns}, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
       // set "correction/hRunNumberPhiEtaVertex" axis0 label
-      for (int idx = 1; idx <= runNumbers.size(); idx++) {
+      for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
       // end set "correction/hRunNumberPhiEtaVertex" axis0 label
@@ -795,7 +795,6 @@ struct PidFlowPtCorr {
   void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     // init
-    o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
     float nMultTPC = collision.multTPC();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1033,9 +1032,7 @@ struct PidFlowPtCorr {
   void fillCorrectionGraph(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     // init
-    o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
-    float nMultTPC = collision.multTPC();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
@@ -1057,7 +1054,7 @@ struct PidFlowPtCorr {
     // loop the vector, find the place to put (phi eta Vz)
     // if the run number is new, create one
     int matchedPosition = -1;
-    for (int idxPosition = 0; idxPosition < this->runNumbers.size(); idxPosition++) {
+    for (uint64_t idxPosition = 0; idxPosition < this->runNumbers.size(); idxPosition++) {
       if (this->runNumbers[idxPosition] == runNumber) {
         matchedPosition = idxPosition;
         break;
@@ -1100,7 +1097,6 @@ struct PidFlowPtCorr {
     // cut and correction
     o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
-    float nMultTPC = collision.multTPC();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
