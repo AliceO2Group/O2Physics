@@ -108,8 +108,6 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
-  // number of runs used in the data, make sure the number is bigger than the vectorsize above
-  O2_DEFINE_CONFIGURABLE(cfgNumberOfRuns, double, 7, "number of runs in the data");
 
   // switch
   O2_DEFINE_CONFIGURABLE(cfgDoAccEffCorr, bool, false, "do acc and eff corr")
@@ -150,6 +148,7 @@ struct PidFlowPtCorr {
   ConfigurableAxis cfgaxisMeanPt{"cfgaxisMeanPt", {300, 0, 3}, "pt (GeV)"};
   ConfigurableAxis cfgaxisNch{"cfgaxisNch", {3000, 0.5, 3000.5}, "Nch"};
   ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
+  ConfigurableAxis cfgaxisRun{"cfgaxisRun", {7, 0, 7}, "axis of runs in the data"};
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
 
@@ -285,7 +284,7 @@ struct PidFlowPtCorr {
     runNumbers = cfgRunNumbers;
     if (cfgOutputrunbyrun) {
       // hist for NUA
-      registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {{cfgNumberOfRuns, 0, cfgNumberOfRuns}, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
       // set "correction/hRunNumberPhiEtaVertex" axis0 label
       for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
