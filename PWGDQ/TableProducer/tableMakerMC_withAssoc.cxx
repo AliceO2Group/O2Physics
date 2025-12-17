@@ -364,9 +364,7 @@ struct TableMakerMC {
   std::vector<double> binsPtMl;
   std::array<double, 1> cutValues;
   std::vector<int> cutDirMl;
-
   std::unordered_set<int> labelsToReserve;
-
   void init(o2::framework::InitContext &context) {
     // Check whether barrel or muon are enabled
     bool isProcessBCenabled = context.mOptions.get<bool>("processPP");
@@ -1003,7 +1001,6 @@ struct TableMakerMC {
         if ((labelsToReserve.count(mcCollision.globalIndex()) == 0))
           continue;
       }
-
       // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for
       // use in some cases where the analysis on skims is done
       //   in workflows where the original AO2Ds are also present)
