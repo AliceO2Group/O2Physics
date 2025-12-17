@@ -157,7 +157,7 @@ struct PidFlowPtCorr {
 
   // filter and using
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU>>; // tracks filter
@@ -1069,7 +1069,7 @@ struct PidFlowPtCorr {
     // end find place to put run data
 
     // loop all the track
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       // track cut
       if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
         continue;
@@ -1118,7 +1118,7 @@ struct PidFlowPtCorr {
     // end cut and correction
 
     // start filling graphs
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       // track cut
       if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
         continue;
@@ -1164,7 +1164,7 @@ struct PidFlowPtCorr {
     // cut && init
     // loop all the collisions reco matched to MC
     double cent = -1;
-    for (auto oneColl : collisions) {
+    for (const auto& oneColl : collisions) {
       auto bc = oneColl.bc_as<aod::BCsWithTimestamps>();
       int runNumber = bc.runNumber();
       double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
@@ -1181,7 +1181,7 @@ struct PidFlowPtCorr {
     // end cut && init
 
     // loop all the particle
-    for (auto mcPart : mcParticles) {
+    for (const auto& mcPart : mcParticles) {
       // track cut
       if (!mcPart.isPhysicalPrimary())
         continue;
