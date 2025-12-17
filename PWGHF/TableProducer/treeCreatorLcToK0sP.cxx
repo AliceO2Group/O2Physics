@@ -16,6 +16,8 @@
 ///        Modified version of treeCreatorLcToPKPi.cxx
 ///
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
+/// \author Elisa Meninno <elisa.meninno@cern.ch>
+
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -90,6 +92,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(MlScoreFirstClass, mlScoreFirstClass, float);
 DECLARE_SOA_COLUMN(MlScoreSecondClass, mlScoreSecondClass, float);
 DECLARE_SOA_COLUMN(MlScoreThirdClass, mlScoreThirdClass, float);
+DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);                       //! 0 bg, 1 prompt, 2 non-prompt,-1 default value (impossible, should not be the case), -999 for data
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -135,7 +138,9 @@ DECLARE_SOA_TABLE(HfCandCascLites, "AOD", "HFCANDCASCLITE",
                   full::OriginMcRec,
                   full::MlScoreFirstClass,
                   full::MlScoreSecondClass,
-                  full::MlScoreThirdClass);
+                  full::MlScoreThirdClass,
+                  full::SigBgStatus);
+		
 
 DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   collision::BCId,
@@ -208,7 +213,8 @@ DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   full::OriginMcRec,
                   full::MlScoreFirstClass,
                   full::MlScoreSecondClass,
-                  full::MlScoreThirdClass);
+                  full::MlScoreThirdClass,
+                  full::SigBgStatus);
 
 DECLARE_SOA_TABLE(HfCandCascFullEs, "AOD", "HFCANDCASCFULLE",
                   collision::BCId,
@@ -247,6 +253,38 @@ struct HfTreeCreatorLcToK0sP {
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
 
+  // number showing MC status of the candidate (signal or background, prompt or non-prompt etc.)
+  enum SigBgStatus : int {
+    Background = 0, // combinatorial background, at least one of the prongs do not originate from the Lc decay
+    Prompt,         // signal with Lc produced directly in the event
+    NonPrompt,      // signal with Lc produced aftewards the event, e.g. during decay of beauty particle
+    Default = -1    // impossible, should not be the case, to catch logical error if any
+  };
+
+  /// \brief function which determines if the candidate corresponds to MC-particle or belongs to a combinatorial background
+  /// \param candidate candidate to be checked for being signal or background
+  /// \return SigBgStatus enum with value encoding MC status of the candidate
+  template <typename CandType>
+  SigBgStatus determineSignalBgStatus(const CandType& candidate)
+  {
+    const int flag = candidate.flagMcMatchRec();
+    const int origin = candidate.originMcRec();
+
+    SigBgStatus status{Default};
+
+    if (std::abs(flag) != 1) {
+      return Background;  // combinatorial or wrong decay
+    }
+    // Otherwise it is signal: distinguish between Prompt/ NonPrompt
+    if (origin == RecoDecay::OriginType::Prompt) {
+      return Prompt;
+    }
+    if (origin == RecoDecay::OriginType::NonPrompt) {
+      return NonPrompt;
+    }
+    return Default;
+  }
+
   void init(InitContext const&)
   {
   }
@@ -276,7 +314,8 @@ struct HfTreeCreatorLcToK0sP {
   }
 
   template <typename T, typename U>
-  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc, int8_t originMcRec, aod::HfMlLcToK0sP::iterator const& candidateMlScore)
+  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc, int8_t originMcRec, aod::HfMlLcToK0sP::iterator const& candidateMlScore, int sigbgstatus)
+  /// \param sigbgstatus for MC: number indicating if candidate is prompt, non-prompt or background; for data: UndefValueInt
   {
 
     float mlScoreFirstClass{UndefValueFloat};
@@ -328,7 +367,8 @@ struct HfTreeCreatorLcToK0sP {
         originMcRec,
         mlScoreFirstClass,
         mlScoreSecondClass,
-        mlScoreThirdClass);
+        mlScoreThirdClass,
+        sigbgstatus);
     } else {
       rowCandidateFull(
         bach.collision().bcId(),
@@ -401,7 +441,8 @@ struct HfTreeCreatorLcToK0sP {
         originMcRec,
         mlScoreFirstClass,
         mlScoreSecondClass,
-        mlScoreThirdClass);
+        mlScoreThirdClass,
+        sigbgstatus);
     }
   }
   template <typename T>
@@ -447,8 +488,14 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       const int flag = candidate.flagMcMatchRec();
 
-      if ((fillOnlySignal && flag != 0) || (fillOnlyBackground && flag == 0) || (!fillOnlySignal && !fillOnlyBackground)) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
+      // get status (Prompt / NonPrompt / Background)
+      SigBgStatus sigbgstatus = determineSignalBgStatus(candidate); 
+      
+      bool isSignal = (std::abs(flag) == 1);
+      bool isBackground = !isSignal;
+      
+      if ((fillOnlySignal && isSignal) || (fillOnlyBackground && isBackground) || (!fillOnlySignal && !fillOnlyBackground)) {
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore, sigbgstatus);
       }
     }
 
@@ -500,7 +547,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       double const pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        fillCandidate(candidate, bach, 0, 0, candidateMlScore);
+        fillCandidate(candidate, bach, 0, 0, candidateMlScore, -999);
       }
     }
   }
