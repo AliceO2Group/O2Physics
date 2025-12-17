@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file   pidFlowPtCorr.cxx
-/// \author Fuchun Cui(fcui@cern.ch)
+/// \author Fuchun Cui(fcui@cern.ch) Qiuyu Xia(qiuyu.xia@cern.ch)
 /// \since  Nov/24/2025
 /// \brief  This task is to caculate vn-[pt] correlation of PID particles
 
@@ -108,13 +108,40 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
+  // number of runs used in the data, make sure the number is bigger than the vectorsize above
+  O2_DEFINE_CONFIGURABLE(cfgNumberOfRuns, int, 7, "number of runs in the data");
+
   // switch
   O2_DEFINE_CONFIGURABLE(cfgDoAccEffCorr, bool, false, "do acc and eff corr")
   O2_DEFINE_CONFIGURABLE(cfgDoLocDenCorr, bool, false, "do local density corr")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "Fill and output NUA weights run by run")
+  O2_DEFINE_CONFIGURABLE(cfgOutPutMC, bool, false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open")
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
+
+  /**
+   * @brief cfg for PID pt range
+   * @details default datas are from run2, note that separate pi-k and k-p needs to use difference pt range
+   */
+  // separate pi and k
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4ITS_pi_k, float, 0.2, "pt min for ITS to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4ITS_pi_k, float, 0.8, "pt max for ITS to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TOF_pi_k, float, 0.5, "pt min for TOF to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TOF_pi_k, float, 3.0, "pt max for TOF to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TPC_pi_k, float, 0.2, "pt min for TPC to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TPC_pi_k, float, 0.6, "pt max for TPC to separate pi and k");
+  // end separate pi and k
+
+  // separate k-p
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4ITS_k_p, float, 0.4, "pt min for ITS to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4ITS_k_p, float, 1.4, "pt max for ITS to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TOF_k_p, float, 0.6, "pt min for TOF to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TOF_k_p, float, 3.0, "pt max for TOF to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TPC_k_p, float, 0.2, "pt min for TPC to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TPC_k_p, float, 1.0, "pt max for TPC to separate k and p");
+  // end separate k-p
+  // end cfg for PID pt range
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -128,12 +155,20 @@ struct PidFlowPtCorr {
 
   AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
+  // filter and using
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU>>; // tracks filter
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::MultsRun3>>;                                               // collisions filter
+
+  Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
+  using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
+
+  Filter particleFilter = nabs(aod::mcparticle::eta) < trkQualityOpts.cfgCutEta.value;
+  using FilteredMcParticles = soa::Filtered<soa::Join<aod::McParticles, aod::ParticlesToTracks>>;
+  // end using and filter
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -226,20 +261,39 @@ struct PidFlowPtCorr {
     registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
 
+    // TPC vs TOF vs its, comparation graphs, check the PID performance in difference pt
+    if (cfgOutputQA) {
+      registry.add("DetectorPidPerformace/TPCvsTOF/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsTOF/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsTOF/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+
+      registry.add("DetectorPidPerformace/TPCvsITS/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsITS/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsITS/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+
+      registry.add("DetectorPidPerformace/ITSvsTOF/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/ITSvsTOF/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/ITSvsTOF/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+    } // end TPC vs TOF vs its graph add
+
+    if (cfgOutPutMC) {
+      // hist for NUE correction
+      registry.add("correction/hCentPtMC", "", {HistType::kTH2D, {axisMultiplicity, cfgaxisPt}});
+      registry.add("correction/hCentPtData", "", {HistType::kTH2D, {axisMultiplicity, cfgaxisPt}});
+    } // cfgoutputMC
+
+    runNumbers = cfgRunNumbers;
     if (cfgOutputrunbyrun) {
-      runNumbers = cfgRunNumbers;
-      for (const auto& runNumber : runNumbers) {
-        std::vector<std::shared_ptr<TH1>> histosPhi(kCount_TH1Names);
-        histosPhi[hPhi] = registry.add<TH1>(Form("%d/hPhi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
-        histosPhi[hPhicorr] = registry.add<TH1>(Form("%d/hPhicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
-        th1sList.insert(std::make_pair(runNumber, histosPhi));
-
-        std::vector<std::shared_ptr<TH3>> nuaTH3(kCount_TH3Names);
-        nuaTH3[hPhiEtaVtxz] = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
-        th3sList.insert(std::make_pair(runNumber, nuaTH3));
+      // hist for NUA
+      registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {{cfgNumberOfRuns, 0, cfgNumberOfRuns}, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      // set "correction/hRunNumberPhiEtaVertex" axis0 label
+      for (int idx = 1; idx <= runNumbers.size(); idx++) {
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
-    }
+      // end set "correction/hRunNumberPhiEtaVertex" axis0 label
+    } // cfgooutputrunbyrun
 
+    // set bin label for hEventCount
     registry.add("hEventCount", "", {HistType::kTH1D, {{14, 0, 14}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
@@ -256,6 +310,7 @@ struct PidFlowPtCorr {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(13, "after IRmincut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(14, "after IRmaxcut");
     registry.add("hInteractionRate", "", {HistType::kTH1D, {{1000, 0, 1000}}});
+    // end set bin label for eventcount
 
     // cumulant of flow
     registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
@@ -427,6 +482,136 @@ struct PidFlowPtCorr {
     funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
   }
 
+  /**
+   * @brief Identify whether the input track is a Pion
+   *
+   * @param track Input track object to be identified
+   * @return true  The track is identified as Pion
+   * @return false The track is NOT identified as Pion
+   * @note The result is the logical AND of valid detector Sigma checks.
+   *       If the track pt is out of a detector's valid range, that detector's check is skipped.
+   */
+  template <typename TrackObject>
+  bool isPion(TrackObject track)
+  {
+    bool resultPion = true;
+
+    // Declare ITSResponse object internally to get ITS Sigma
+    o2::aod::ITSResponse itsResponse;
+    // Extract sigma values and pt from track
+    const float itsSigma = std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(track));
+    const float tofSigma = std::fabs(track.tofNSigmaPi());
+    const float tpcSigma = std::fabs(track.tpcNSigmaPi());
+    const float pt = track.pt();
+
+    // ITS detector check (pi-k separation pt range)
+    if (pt > cfgPtMin4ITS_pi_k && pt < cfgPtMax4ITS_pi_k) {
+      resultPion &= (itsSigma < cfgNSigma[6]);
+    }
+    // end ITS
+
+    // TOF detector check (pi-k separation pt range)
+    if (pt > cfgPtMin4TOF_pi_k && pt < cfgPtMax4TOF_pi_k) {
+      resultPion &= (tofSigma < cfgNSigma[3]);
+    }
+    // end TOF
+
+    // TPC detector check (pi-k separation pt range)
+    if (pt > cfgPtMin4TPC_pi_k && pt < cfgPtMax4TPC_pi_k) {
+      resultPion &= (tpcSigma < cfgNSigma[0]);
+    }
+    // end TPC
+
+    return resultPion;
+  }
+
+  /**
+   * @brief Identify whether the input track is a Proton
+   *
+   * @param track Input track object to be identified
+   * @return true  The track is identified as Proton
+   * @return false The track is NOT identified as Proton
+   * @note The result is the logical AND of valid detector Sigma checks.
+   *       If the track pt is out of a detector's valid range, that detector's check is skipped.
+   */
+  template <typename TrackObject>
+  bool isProton(TrackObject track)
+  {
+    bool resultProton = true;
+
+    // Declare ITSResponse object internally to get ITS Sigma
+    o2::aod::ITSResponse itsResponse;
+    // Extract sigma values and pt from track
+    const float itsSigma = std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+    const float tofSigma = std::fabs(track.tofNSigmaPr());
+    const float tpcSigma = std::fabs(track.tpcNSigmaPr());
+    const float pt = track.pt();
+
+    // ITS detector check (k-p separation pt range)
+    if (pt > cfgPtMin4ITS_k_p && pt < cfgPtMax4ITS_k_p) {
+      resultProton &= (itsSigma < cfgNSigma[7]);
+    }
+    // end ITS
+
+    // TOF detector check (k-p separation pt range)
+    if (pt > cfgPtMin4TOF_k_p && pt < cfgPtMax4TOF_k_p) {
+      resultProton &= (tofSigma < cfgNSigma[4]);
+    }
+    // end TOF
+
+    // TPC detector check (k-p separation pt range)
+    if (pt > cfgPtMin4TPC_k_p && pt < cfgPtMax4TPC_k_p) {
+      resultProton &= (tpcSigma < cfgNSigma[1]);
+    }
+    // end TPC
+
+    return resultProton;
+  }
+
+  /**
+   * @brief Identify whether the input track is a Kaon (separate from Pion and Proton)
+   *
+   * @param track Input track object (aod::Track) to be identified
+   * @return true  The track is identified as Kaon
+   * @return false The track is NOT identified as Kaon
+   * @note The result is the logical AND of valid detector Sigma checks.
+   *       Only pt range that overlaps with both pi-k and k-p separation ranges is checked.
+   *       If the track pt is out of the overlapping range, that detector's check is skipped.
+   */
+  template <typename TrackObject>
+  bool isKaon(TrackObject track)
+  {
+    bool resultKaon = true;
+
+    // Declare ITSResponse object internally to get ITS Sigma
+    o2::aod::ITSResponse itsResponse;
+    // Extract sigma values and pt from track
+    const float itsSigma = std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track));
+    const float tofSigma = std::fabs(track.tofNSigmaKa());
+    const float tpcSigma = std::fabs(track.tpcNSigmaKa());
+    const float pt = track.pt();
+
+    // ITS detector check (overlap of pi-k and k-p separation pt ranges)
+    if (pt > cfgPtMin4ITS_k_p && pt > cfgPtMin4ITS_pi_k && pt < cfgPtMax4ITS_k_p && pt < cfgPtMax4ITS_pi_k) {
+      resultKaon &= (itsSigma < cfgNSigma[8]);
+    }
+    // end ITS
+
+    // TOF detector check (overlap of pi-k and k-p separation pt ranges)
+    if (pt > cfgPtMin4TOF_k_p && pt > cfgPtMin4TOF_pi_k && pt < cfgPtMax4TOF_k_p && pt < cfgPtMax4TOF_pi_k) {
+      resultKaon &= (tofSigma < cfgNSigma[5]);
+    }
+    // end TOF
+
+    // TPC detector check (overlap of pi-k and k-p separation pt ranges)
+    if (pt > cfgPtMin4TPC_k_p && pt > cfgPtMin4TPC_pi_k && pt < cfgPtMax4TPC_k_p && pt < cfgPtMax4TPC_pi_k) {
+      resultKaon &= (tpcSigma < cfgNSigma[2]);
+    }
+    // end TPC
+
+    return resultKaon;
+  }
+
   // input HIST("name")
   template <char... chars>
   void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
@@ -476,7 +661,7 @@ struct PidFlowPtCorr {
   {
     if (correctionsLoaded)
       return;
-    int nspecies = 5;
+    int nspecies = 1;
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
       for (int i = 0; i <= nspecies - 1; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
@@ -502,7 +687,7 @@ struct PidFlowPtCorr {
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
   {
     float eff = 1.;
-    int nspecies = 5;
+    int nspecies = 1;
     if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
@@ -609,13 +794,17 @@ struct PidFlowPtCorr {
 
   void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
-    // o2::aod::ITSResponse itsResponse;
+    // init
+    o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
     float nMultTPC = collision.multTPC();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+    // end init
 
+    // collision cut
+    // include : 1.track.size 2.collision.sel8 3.this->evenSelected
     registry.fill(HIST("hEventCount"), 0.5);
     if (nTot < 1)
       return;
@@ -626,12 +815,16 @@ struct PidFlowPtCorr {
     registry.fill(HIST("hEventCount"), 1.5);
     if (!eventSelected(collision, cent, interactionRate))
       return;
+    // end collision cut
+
+    // correction
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), nTot);
     registry.fill(HIST("hMultTPC"), nMultTPC);
     registry.fill(HIST("hCent"), cent);
+    // end correction
 
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
@@ -641,6 +834,7 @@ struct PidFlowPtCorr {
       double q3x = 0, q3y = 0;
       double q4x = 0, q4y = 0;
       for (const auto& track : tracks) {
+        // pt cut
         bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value); // within RF pT rang
         if (withinPtRef) {
           q2x += std::cos(2 * track.phi());
@@ -657,7 +851,7 @@ struct PidFlowPtCorr {
       v2 = funcV2->Eval(cent);
       v3 = funcV3->Eval(cent);
       v4 = funcV4->Eval(cent);
-    }
+    } // cfgDoLocDenCorr
 
     float weff = 1;
     float wacc = 1;
@@ -671,7 +865,7 @@ struct PidFlowPtCorr {
       if (cfgDoAccEffCorr) {
         if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
           continue;
-      }
+      } // cfgDoAccEffCorr
       if (cfgDoLocDenCorr) {
         bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
         if (withinPtRef) {
@@ -686,13 +880,16 @@ struct PidFlowPtCorr {
             }
           }
         }
-      }
+      } // cfgDoLocDenCorr
+
+      // track cut
       if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
       if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
         continue;
       if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
+      // end track cut
 
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
@@ -702,21 +899,21 @@ struct PidFlowPtCorr {
       if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
         continue;
       fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
-      if (track.tpcNSigmaPi() < cfgNSigma[0])
+
+      if (this->isPion(track)) {
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 18);
-      if (track.tpcNSigmaKa() < cfgNSigma[1])
+      }
+
+      if (this->isKaon(track)) {
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 36);
-      if (track.tpcNSigmaPr() < cfgNSigma[2])
+      }
+
+      if (this->isProton(track)) {
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 72);
+      }
 
       if (cfgOutputNUAWeights)
         fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-
-      if (cfgOutputrunbyrun) {
-        th1sList[runNumber][hPhi]->Fill(track.phi());
-        th1sList[runNumber][hPhicorr]->Fill(track.phi(), wacc);
-        th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), vtxz);
-      }
 
       if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
         nch += weff;
@@ -825,6 +1022,187 @@ struct PidFlowPtCorr {
     }
   }
   PROCESS_SWITCH(PidFlowPtCorr, processData, "", true);
+
+  /**
+   * @brief this function is used to fill THn hist for NUA correction and for NUE correction
+   * @details hist THn: (runNumberIDX, phi, eta, Vz), note that different runNumber will be put in the same hist
+   *
+   * @param collision
+   * @param tracks
+   */
+  void fillCorrectionGraph(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  {
+    // init
+    o2::aod::ITSResponse itsResponse;
+    int nTot = tracks.size();
+    float nMultTPC = collision.multTPC();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
+    double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+    // end init
+
+    // collision cut
+    // include : 1.track.size 2.collision.sel8 3.this->evenSelected
+    if (nTot < 1)
+      return;
+    fGFW->Clear();
+    const auto cent = collision.centFT0C();
+    if (!collision.sel8())
+      return;
+
+    if (!eventSelected(collision, cent, interactionRate))
+      return;
+    // end collision cut
+
+    // loop the vector, find the place to put (phi eta Vz)
+    // if the run number is new, create one
+    int matchedPosition = -1;
+    for (int idxPosition = 0; idxPosition < this->runNumbers.size(); idxPosition++) {
+      if (this->runNumbers[idxPosition] == runNumber) {
+        matchedPosition = idxPosition;
+        break;
+      }
+    }
+    if (matchedPosition == -1) {
+      return;
+    }
+    // end find place to put run data
+
+    // loop all the track
+    for (auto track : tracks) {
+      // track cut
+      if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
+        continue;
+      if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        continue;
+      if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+        continue;
+      if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+        continue;
+      // end track cut
+
+      // fill the THn
+      registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), collision.posZ());
+      // end fill the THn
+
+    } // end loop all the track
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, fillCorrectionGraph, "", true);
+
+  /**
+   * @brief this main function is used to check the PID performance of ITS TOC TPC
+   *
+   * @param collision
+   * @param tracks
+   */
+  void detectorPidQA(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  {
+    // cut and correction
+    o2::aod::ITSResponse itsResponse;
+    int nTot = tracks.size();
+    float nMultTPC = collision.multTPC();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
+    double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+
+    if (nTot < 1)
+      return;
+    fGFW->Clear();
+    const auto cent = collision.centFT0C();
+    if (!collision.sel8())
+      return;
+
+    if (!eventSelected(collision, cent, interactionRate))
+      return;
+    // loadCorrections(bc.timestamp());
+    // end cut and correction
+
+    // start filling graphs
+    for (auto track : tracks) {
+      // track cut
+      if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
+        continue;
+      if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+        continue;
+      if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+        continue;
+      if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+        continue;
+      // end track cut
+
+      // TPC TOF
+      registry.fill(HIST("DetectorPidPerformace/TPCvsTOF/Pi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+      registry.fill(HIST("DetectorPidPerformace/TPCvsTOF/Pr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+      registry.fill(HIST("DetectorPidPerformace/TPCvsTOF/Ka"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+
+      // TPC ITS
+      registry.fill(HIST("DetectorPidPerformace/TPCvsITS/Pi"), track.tpcNSigmaPi(), itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.pt());
+      registry.fill(HIST("DetectorPidPerformace/TPCvsITS/Pr"), track.tpcNSigmaPr(), itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.pt());
+      registry.fill(HIST("DetectorPidPerformace/TPCvsITS/Ka"), track.tpcNSigmaKa(), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.pt());
+
+      // ITS vs TOF
+      registry.fill(HIST("DetectorPidPerformace/ITSvsTOF/Pi"), itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.tofNSigmaPi(), track.pt());
+      registry.fill(HIST("DetectorPidPerformace/ITSvsTOF/Pr"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.tofNSigmaPr(), track.pt());
+      registry.fill(HIST("DetectorPidPerformace/ITSvsTOF/Ka"), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.tofNSigmaKa(), track.pt());
+
+    } // end filling graphs
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, detectorPidQA, "", true);
+
+  /**
+   * @brief this function is used to loop mc events
+   * @note implemented:
+   *       1.fill mc pt hist to calculate efficiency(correction/hCentPtMC, correction/hCentPtData)
+   *
+   */
+  void processMCGen(FilteredMcCollisions::iterator const&,
+                    aod::BCsWithTimestamps const&,
+                    FilteredMcParticles const& mcParticles,
+                    soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisions,
+                    AodTracks const&)
+  {
+    // cut && init
+    // loop all the collisions reco matched to MC
+    double cent = -1;
+    for (auto oneColl : collisions) {
+      auto bc = oneColl.bc_as<aod::BCsWithTimestamps>();
+      int runNumber = bc.runNumber();
+      double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+      cent = oneColl.centFT0C();
+
+      // collision cut
+      if (!oneColl.sel8())
+        return;
+      if (!eventSelected(oneColl, cent, interactionRate))
+        return;
+      // end collision cut
+    }
+    // end loop all the collisions reco matched to MC
+    // end cut && init
+
+    // loop all the particle
+    for (auto mcPart : mcParticles) {
+      // track cut
+      if (!mcPart.isPhysicalPrimary())
+        continue;
+      // end track cut
+
+      registry.fill(HIST("correction/hCentPtMC"), cent, mcPart.pt());
+
+      // loop real track
+      if (mcPart.has_tracks()) {
+        auto const& tracks = mcPart.tracks_as<AodTracks>();
+        for (const auto& track : tracks) {
+          // track select
+          // end track select
+          registry.fill(HIST("correction/hCentPtData"), cent, track.pt());
+        }
+      }
+      // end loop real track
+    }
+    // end loop all the particle
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processMCGen, "", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
