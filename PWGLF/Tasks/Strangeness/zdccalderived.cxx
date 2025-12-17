@@ -25,6 +25,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/Logger.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -53,9 +54,6 @@
 #include <array>
 #include <chrono>
 #include <cmath>
-// #include <iostream>
-#include "Framework/Logger.h"
-
 #include <string>
 #include <vector>
 
