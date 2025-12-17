@@ -123,21 +123,21 @@ struct PidFlowPtCorr {
    * @details default datas are from run2, note that separate pi-k and k-p needs to use difference pt range
    */
   // separate pi and k
-  O2_DEFINE_CONFIGURABLE(cfgPtMin4ITS_pi_k, float, 0.2, "pt min for ITS to separate pi and k");
-  O2_DEFINE_CONFIGURABLE(cfgPtMax4ITS_pi_k, float, 0.8, "pt max for ITS to separate pi and k");
-  O2_DEFINE_CONFIGURABLE(cfgPtMin4TOF_pi_k, float, 0.5, "pt min for TOF to separate pi and k");
-  O2_DEFINE_CONFIGURABLE(cfgPtMax4TOF_pi_k, float, 3.0, "pt max for TOF to separate pi and k");
-  O2_DEFINE_CONFIGURABLE(cfgPtMin4TPC_pi_k, float, 0.2, "pt min for TPC to separate pi and k");
-  O2_DEFINE_CONFIGURABLE(cfgPtMax4TPC_pi_k, float, 0.6, "pt max for TPC to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4ITSPiKa, float, 0.2, "pt min for ITS to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4ITSPiKa, float, 0.8, "pt max for ITS to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TOFPiKa, float, 0.5, "pt min for TOF to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TOFPiKa, float, 3.0, "pt max for TOF to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TPCPiKa, float, 0.2, "pt min for TPC to separate pi and k");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TPCPiKa, float, 0.6, "pt max for TPC to separate pi and k");
   // end separate pi and k
 
   // separate k-p
-  O2_DEFINE_CONFIGURABLE(cfgPtMin4ITS_k_p, float, 0.4, "pt min for ITS to separate k and p");
-  O2_DEFINE_CONFIGURABLE(cfgPtMax4ITS_k_p, float, 1.4, "pt max for ITS to separate k and p");
-  O2_DEFINE_CONFIGURABLE(cfgPtMin4TOF_k_p, float, 0.6, "pt min for TOF to separate k and p");
-  O2_DEFINE_CONFIGURABLE(cfgPtMax4TOF_k_p, float, 3.0, "pt max for TOF to separate k and p");
-  O2_DEFINE_CONFIGURABLE(cfgPtMin4TPC_k_p, float, 0.2, "pt min for TPC to separate k and p");
-  O2_DEFINE_CONFIGURABLE(cfgPtMax4TPC_k_p, float, 1.0, "pt max for TPC to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4ITSKaPr, float, 0.4, "pt min for ITS to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4ITSKaPr, float, 1.4, "pt max for ITS to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TOFKaPr, float, 0.6, "pt min for TOF to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TOFKaPr, float, 3.0, "pt max for TOF to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin4TPCKaPr, float, 0.2, "pt min for TPC to separate k and p");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax4TPCKaPr, float, 1.0, "pt max for TPC to separate k and p");
   // end separate k-p
   // end cfg for PID pt range
 
@@ -151,6 +151,9 @@ struct PidFlowPtCorr {
   ConfigurableAxis cfgaxisRun{"cfgaxisRun", {7, 0, 7}, "axis of runs in the data"};
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityV2P{"cfgTrackDensityV2P", std::vector<double>{0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10}, "parameter of v2(cent) for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityV3P{"cfgTrackDensityV3P", std::vector<double>{0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09}, "parameter of v2(cent) for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityV4P{"cfgTrackDensityV4P", std::vector<double>{0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10}, "parameter of v2(cent) for track density efficiency correction"};
 
   AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
@@ -473,12 +476,15 @@ struct PidFlowPtCorr {
       funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
       funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc]);
     }
+    std::vector<double> v2para = cfgTrackDensityV2P;
+    std::vector<double> v3para = cfgTrackDensityV3P;
+    std::vector<double> v4para = cfgTrackDensityV4P;
     funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-    funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+    funcV2->SetParameters(v2para[0], v2para[1], v2para[2], v2para[3], v2para[4]);
     funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-    funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+    funcV3->SetParameters(v3para[0], v3para[1], v3para[2], v3para[3], v3para[4]);
     funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-    funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
+    funcV4->SetParameters(v4para[0], v4para[1], v4para[2], v4para[3], v4para[4]);
   }
 
   /**
@@ -504,19 +510,19 @@ struct PidFlowPtCorr {
     const float pt = track.pt();
 
     // ITS detector check (pi-k separation pt range)
-    if (pt > cfgPtMin4ITS_pi_k && pt < cfgPtMax4ITS_pi_k) {
+    if (pt > cfgPtMin4ITSPiKa && pt < cfgPtMax4ITSPiKa) {
       resultPion &= (itsSigma < cfgNSigma[6]);
     }
     // end ITS
 
     // TOF detector check (pi-k separation pt range)
-    if (pt > cfgPtMin4TOF_pi_k && pt < cfgPtMax4TOF_pi_k) {
+    if (pt > cfgPtMin4TOFPiKa && pt < cfgPtMax4TOFPiKa) {
       resultPion &= (tofSigma < cfgNSigma[3]);
     }
     // end TOF
 
     // TPC detector check (pi-k separation pt range)
-    if (pt > cfgPtMin4TPC_pi_k && pt < cfgPtMax4TPC_pi_k) {
+    if (pt > cfgPtMin4TPCPiKa && pt < cfgPtMax4TPCPiKa) {
       resultPion &= (tpcSigma < cfgNSigma[0]);
     }
     // end TPC
@@ -547,19 +553,19 @@ struct PidFlowPtCorr {
     const float pt = track.pt();
 
     // ITS detector check (k-p separation pt range)
-    if (pt > cfgPtMin4ITS_k_p && pt < cfgPtMax4ITS_k_p) {
+    if (pt > cfgPtMin4ITSKaPr && pt < cfgPtMax4ITSKaPr) {
       resultProton &= (itsSigma < cfgNSigma[7]);
     }
     // end ITS
 
     // TOF detector check (k-p separation pt range)
-    if (pt > cfgPtMin4TOF_k_p && pt < cfgPtMax4TOF_k_p) {
+    if (pt > cfgPtMin4TOFKaPr && pt < cfgPtMax4TOFKaPr) {
       resultProton &= (tofSigma < cfgNSigma[4]);
     }
     // end TOF
 
     // TPC detector check (k-p separation pt range)
-    if (pt > cfgPtMin4TPC_k_p && pt < cfgPtMax4TPC_k_p) {
+    if (pt > cfgPtMin4TPCKaPr && pt < cfgPtMax4TPCKaPr) {
       resultProton &= (tpcSigma < cfgNSigma[1]);
     }
     // end TPC
@@ -591,19 +597,19 @@ struct PidFlowPtCorr {
     const float pt = track.pt();
 
     // ITS detector check (overlap of pi-k and k-p separation pt ranges)
-    if (pt > cfgPtMin4ITS_k_p && pt > cfgPtMin4ITS_pi_k && pt < cfgPtMax4ITS_k_p && pt < cfgPtMax4ITS_pi_k) {
+    if (pt > cfgPtMin4ITSKaPr && pt > cfgPtMin4ITSPiKa && pt < cfgPtMax4ITSKaPr && pt < cfgPtMax4ITSPiKa) {
       resultKaon &= (itsSigma < cfgNSigma[8]);
     }
     // end ITS
 
     // TOF detector check (overlap of pi-k and k-p separation pt ranges)
-    if (pt > cfgPtMin4TOF_k_p && pt > cfgPtMin4TOF_pi_k && pt < cfgPtMax4TOF_k_p && pt < cfgPtMax4TOF_pi_k) {
+    if (pt > cfgPtMin4TOFKaPr && pt > cfgPtMin4TOFPiKa && pt < cfgPtMax4TOFKaPr && pt < cfgPtMax4TOFPiKa) {
       resultKaon &= (tofSigma < cfgNSigma[5]);
     }
     // end TOF
 
     // TPC detector check (overlap of pi-k and k-p separation pt ranges)
-    if (pt > cfgPtMin4TPC_k_p && pt > cfgPtMin4TPC_pi_k && pt < cfgPtMax4TPC_k_p && pt < cfgPtMax4TPC_pi_k) {
+    if (pt > cfgPtMin4TPCKaPr && pt > cfgPtMin4TPCPiKa && pt < cfgPtMax4TPCKaPr && pt < cfgPtMax4TPCPiKa) {
       resultKaon &= (tpcSigma < cfgNSigma[2]);
     }
     // end TPC
