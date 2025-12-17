@@ -242,7 +242,8 @@ struct zdcvector {
       histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
       histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
 
-      int ntow = 8;
+      // int ntow = 8;
+      constexpr std::size_t ntow = 8;
       for (std::size_t iChA = 0; iChA < ntow; iChA++) {
         auto chanelid = iChA;
         if (useGainCallib && gainprofile) {
