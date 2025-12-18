@@ -21,8 +21,9 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "TLorentzVector.h"
-
 #include <vector>
+
+
 
 namespace o2::upgrade
 {
@@ -36,6 +37,17 @@ void convertTLorentzVectorToO2Track(const int charge,
                                     const TLorentzVector particle,
                                     const std::vector<double> productionVertex,
                                     o2::track::TrackParCov& o2track);
+
+struct OTFParticle {
+  int pdgCode;
+  float e;
+  float vx, vy, vz;
+  float px, py, pz;
+
+  void setPDG(int pdg) { pdgCode = pdg; }
+  void setVxVyVz(float _vx, float _vy, float _vz) { vx = _vx; vy = _vy; vz = _vz; }
+  void setPxPyPzE(float _px, float _py, float _pz, float _e) { px = _px; py = _py; pz = _pz; e = _e; }
+};
 
 /// Function to convert a TLorentzVector into a perfect Track
 /// \param pdgCode particle pdg
@@ -56,6 +68,24 @@ void convertTLorentzVectorToO2Track(int pdgCode,
     charge = pdgInfo->Charge() / 3;
   }
   convertTLorentzVectorToO2Track(charge, particle, productionVertex, o2track);
+}
+
+/// Function to convert a OTFParticle into a perfect Track
+/// \param particle the particle to convert (OTFParticle)
+/// \param o2track the address of the resulting TrackParCov
+/// \param pdg the pdg service
+template <typename PdgService>
+void convertOTFParticleToO2Track(const OTFParticle& particle, o2::track::TrackParCov& o2track, const PdgService& pdg)
+{
+  const auto pdgInfo = pdg->GetParticle(particle.pdgCode);
+  int charge = 0;
+  if (pdgInfo != nullptr) {
+    charge = pdgInfo->Charge() / 3;
+  }
+
+  static TLorentzVector tlv;
+  tlv.SetPxPyPzE(particle.px, particle.py, particle.pz, particle.e);
+  convertTLorentzVectorToO2Track(particle.pdgCode, tlv, {particle.vx, particle.vy, particle.vz}, o2track, pdg);
 }
 
 /// Function to convert a McParticle into a perfect Track
