@@ -41,9 +41,13 @@ jobs:
           labels = os.environ['labels']
           tags = {
               "infrastructure": "Infrastructure",
-              "alice3": "ALICE3",
+              "scripts": "Scripts",
+              "tools": "Tools",
               "common": "Common",
+              "trigger": "Trigger",
               "dpg": "DPG",
+              "tutorial": "Tutorial",
+              "alice3": "ALICE3",
               "pwgcf": "PWGCF",
               "pwgdq": "PWGDQ",
               "pwgem": "PWGEM",
@@ -52,10 +56,6 @@ jobs:
               "pwglf": "PWGLF",
               "pwgmm": "PWGMM",
               "pwgud": "PWGUD",
-              "scripts": "Scripts",
-              "tools": "Tools",
-              "trigger": "Trigger",
-              "tutorial": "Tutorial",
           }
           print(f'PR title: "{title}"')
           print(f'PR labels: "{labels}"')
