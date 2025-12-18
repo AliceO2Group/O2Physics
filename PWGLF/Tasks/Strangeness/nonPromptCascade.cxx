@@ -281,7 +281,7 @@ struct NonPromptCascadeTask {
     int nBinsMultFV0 = cfgMaxMultFV0;
 
     AxisSpec multAxis = {nBinsMult, 0, cfgMaxMult, "Multiplicity FT0M"};
-    AxisSpec multAxisFV0 = {nBinsMultFV0, 0, cfgMaxMultFV0, "Multiplicity FT0M"};
+    AxisSpec multAxisFV0 = {nBinsMultFV0, 0, cfgMaxMultFV0, "Multiplicity FV0"};
     AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
     AxisSpec nTracksAxisMC = {100, 0., 100., "NTracksMC"};
     std::vector<double> centBinning;
@@ -311,13 +311,13 @@ struct NonPromptCascadeTask {
       runsBinning.push_back(run);
       run++;
     }
-    AxisSpec centAxis{centBinning, "Centrality (%)"};
-    // AxisSpec multAxis{multBinning, "Multiplicity"};
+    AxisSpec centAxisFT0M{centBinning, "Centrality FT0M (%)"};
+    AxisSpec centAxisFV0{centBinning, "Centrality FV0 (%)"};
     AxisSpec trackAxisMC{trackBinning, "NTracks MC"};
     AxisSpec trackAxis{trackBinning, "NTracks Global Reco"};
     AxisSpec runsAxis{runsBinning, "Run Number"};
 
-    mRegistryMults.add("hCentMultsRuns", "hCentMultsRuns", HistType::kTHnSparseF, {centAxis, multAxis, centAxis, multAxisFV0, nTracksAxis, runsAxis});
+    mRegistryMults.add("hCentMultsRuns", "hCentMultsRuns", HistType::kTHnSparseF, {centAxisFT0M, multAxis, centAxisFV0, multAxisFV0, nTracksAxis, runsAxis});
     //
     // dN/deta
     //
@@ -792,114 +792,180 @@ struct NonPromptCascadeTask {
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
 
-  int getMCMult(aod::McParticles const& mcParticles, int mcCollId, std::vector<float>& ptMCvec)
-  {
-    int mult = 0;
-    for (auto const& mcp : mcParticles) {
-      if (mcp.mcCollisionId() == mcCollId) {
-        // multiplicity definition:
-        bool accept = mcp.isPhysicalPrimary();
-        accept = accept && (mcp.eta() < 0.5) && (mcp.eta() > -0.5);
-        int q = 0;
-        auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode());
-        if (pdgEntry) {
-          q = int(std::round(pdgEntry->Charge() / 3.0));
-        } else {
-          // LOG(warn) << "No pdg assuming neutral";
-        }
-        accept = accept && (q != 0);
-        if (accept) {
-          ++mult;
-          ptMCvec.push_back(mcp.pt());
-        }
-      }
-    }
-    return mult;
-  }
-  void processdNdetaMC(CollisionCandidatesRun3MC const& colls, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, TracksWithLabel const& tracks)
-  {
-    // std::cout << "ProcNegMC" << std::endl;
-    // Map: collision index -> reco multiplicity
-    std::vector<int> recoMult(colls.size(), 0);
-    for (auto const& trk : tracks) {
-      int collId = trk.collisionId();
-      // Here you can impose same track cuts as for MC (eta, primaries, etc.)
-      if (std::abs(trk.eta()) > 0.5f) {
-        continue;
-      }
-      ++recoMult[collId];
-    }
-    std::vector<int> isReco(mcParticles.size(), 0);
-    std::vector<int> isRecoMult(mcParticles.size(), 0);
-    std::vector<int> mcReconstructed(mcCollisions.size(), 0);
-    // std::cout << " reco cols with mc:" << colls.size() << " tracks:" << tracks.size() << " mccols:" << mcCollisions.size() << "mcParticles:" << mcParticles.size() << std::endl;
-    for (auto const& col : colls) {
-      int mcCollId = col.mcCollisionId(); // col.template mcCollision_as<aod::McCollisions>();
-      int collId = col.globalIndex();
-      // auto mc = col.mcCollision();
-      // int mcId = mc.globalIndex();
-      // std::cout << "globalIndex:" << mcId << " colID:" << mcCollId << std::endl;
-      std::vector<float> mcptvec;
-      float mult = getMCMult(mcParticles, mcCollId, mcptvec);
-      mcReconstructed[mcCollId] = 1;
-      for (auto const& trk : tracks) {
-        int mcPid = trk.mcParticleId(); // depends on your label table
-        if (mcPid >= 0 && mcPid < (int)mcParticles.size()) {
-          isReco[mcPid] = 1;
-          isRecoMult[mcPid] = mult;
-        } else {
-          continue;
-        }
-        if (trk.collisionId() != collId) {
-          continue; // different event
-        }
-        auto mcPar = mcParticles.rawIteratorAt(mcPid);
-        // Apply same acceptance as in MC multiplicity
-        if (!mcPar.isPhysicalPrimary()) {
-          continue;
-        }
-        if (std::abs(mcPar.eta()) > 0.5f) {
-          continue;
-        }
-        int q = 0;
-        auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcPar.pdgCode());
-        if (pdgEntry) {
-          q = int(std::round(pdgEntry->Charge() / 3.0));
-        }
-        if (q == 0) {
-          continue;
-        }
-        // float multReco = recoMult[collId];
-        float multReco = col.multNTracksGlobal();
-        float ptReco = trk.pt();
-        float ptMC = mcPar.pt();
-        mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
-      }
+// colls : Join<aod::Collisions, ...>
+// tracks: Join<aod::Tracks, aod::McTrackLabels>
+// mcCollisions: aod::McCollisions
+// mcParticles : aod::McParticles
 
-      // mRegistry.fill(HIST("hNTracksMCVsTracksReco"), mult, col.multNTracksGlobal());
+void processdNdetaMC(CollisionCandidatesRun3MC const& colls,
+                     aod::McCollisions const& mcCollisions,
+                     aod::McParticles const& mcParticles,
+                     TracksWithLabel const& tracks)
+{
+  //-------------------------------------------------------------
+  // MC mult for all MC coll
+  //--------------------------------------------------------------
+  std::vector<int> mcMult(mcCollisions.size(), 0);
+  for (auto const& mcp : mcParticles) {
+    int mcid = mcp.mcCollisionId();
+    if (mcid < 0 || mcid >= (int)mcMult.size()) continue;
+
+    // apply your primary/eta/charge definition here
+    if (!mcp.isPhysicalPrimary()) continue;
+    if (std::abs(mcp.eta()) > 0.5f) continue;
+    int q = 0;
+    if (auto pdg = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode())) {
+      q = int(std::round(pdg->Charge() / 3.0));
     }
-    // count mc particles with no reco tracks
-    for (auto const& mcp : mcParticles) {
-      int mcPidG = mcp.globalIndex();
-      // std::cout << "mcPidG:" << mcPidG << std::endl;
-      if (!isReco[mcPidG]) {
-        mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"), isRecoMult[mcPidG], mcp.pt());
-      }
+    if (q == 0) continue;
+
+    ++mcMult[mcid];
+  }
+
+  // ------------------------------------------------------------
+  // Build mapping: (aod::Collisions row id used by tracks.collisionId())
+  //              -> dense index in 'colls' (0..colls.size()-1)
+  // We assume col.globalIndex() refers to the original aod::Collisions row.
+  // ------------------------------------------------------------
+  int maxCollRowId = -1;
+  for (auto const& trk : tracks) {
+    maxCollRowId = std::max(maxCollRowId, (int)trk.collisionId());
+  }
+  std::vector<int> collRowIdToDense(maxCollRowId + 1, -1);
+
+  int dense = 0;
+  for (auto const& col : colls) {
+    const int collRowId = col.globalIndex(); // row id in aod::Collisions
+    if (collRowId >= 0 && collRowId < (int)collRowIdToDense.size()) {
+      collRowIdToDense[collRowId] = dense;
     }
-    // count unreconstructed mc collisions
-    for (auto const& mc : mcCollisions) {
-      int gindex = mc.globalIndex();
-      // std::cout << "mc globalIndex:" << gindex << std::endl;
-      if (!mcReconstructed[gindex]) {
-        std::vector<float> mcptvec;
-        int mult = getMCMult(mcParticles, gindex, mcptvec);
-        // std::cout << "===> unreconstructed:" << mult << std::endl;
-        for (auto const& pt : mcptvec) {
-          mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"), mult, pt);
-        }
+    ++dense;
+  }
+
+  // ------------------------------------------------------------
+  // Reco multiplicity per *dense collision index in colls*
+  // ------------------------------------------------------------
+  std::vector<int> recoMultDense(colls.size(), 0);
+  for (auto const& trk : tracks) {
+    if (std::abs(trk.eta()) > 0.5f) {
+      continue;
+    }
+    const int collRowId = trk.collisionId();
+    if (collRowId < 0 || collRowId >= (int)collRowIdToDense.size()) {
+      continue;
+    }
+    const int dIdx = collRowIdToDense[collRowId];
+    if (dIdx >= 0) {
+      ++recoMultDense[dIdx];
+    }
+  }
+
+  // ------------------------------------------------------------
+  // MC bookkeeping: index by ROW INDEX (0..size-1), not globalIndex()
+  // ------------------------------------------------------------
+  std::vector<char>  isReco(mcParticles.size(), 0);
+  std::vector<float> isRecoMult(mcParticles.size(), 0.f);
+  std::vector<char>  mcReconstructed(mcCollisions.size(), 0);
+
+  // Optional cache of MC multiplicity per MC collision
+  std::vector<float> mcMultCache(mcCollisions.size(), -1.f);
+
+  // ------------------------------------------------------------
+  // Single pass over tracks: fill RM for tracks whose collision is in colls
+  // ------------------------------------------------------------
+  for (auto const& trk : tracks) {
+    // Accept reco track
+    if (std::abs(trk.eta()) > 0.5f) {
+      continue;
+    }
+
+    // Map track's collision row id -> dense colls index
+    const int collRowId = trk.collisionId();
+    if (collRowId < 0 || collRowId >= (int)collRowIdToDense.size()) {
+      continue;
+    }
+    const int dIdx = collRowIdToDense[collRowId];
+    if (dIdx < 0) {
+      continue; // this track's collision is not in our 'colls' view
+    }
+
+    // Get the collision row (dense index in colls view)
+    auto col = colls.rawIteratorAt(dIdx);
+
+    // MC collision id (row index in aod::McCollisions)
+    const int mcCollId = col.mcCollisionId();
+    if (mcCollId < 0 || mcCollId >= (int)mcCollisions.size()) {
+      continue;
+    }
+    mcReconstructed[mcCollId] = 1;
+
+    // MC particle id (row index in aod::McParticles)
+    const int mcPid = trk.mcParticleId();
+    if (mcPid < 0 || mcPid >= (int)mcParticles.size()) {
+      continue;
+    }
+
+    // MC multiplicity for that MC collision (cache)
+    float mult = mcMultCache[mcCollId];
+    if (mult < 0.f) {
+      std::vector<float> tmp;
+      mult = mcMult[mcCollId];
+      mcMultCache[mcCollId] = mult;
+    }
+
+    auto mcPar = mcParticles.rawIteratorAt(mcPid);
+
+    // Apply the same acceptance as in MC multiplicity definition
+    if (!mcPar.isPhysicalPrimary()) {
+      continue;
+    }
+    if (std::abs(mcPar.eta()) > 0.5f) {
+      continue;
+    }
+
+    int q = 0;
+    if (auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcPar.pdgCode())) {
+      q = int(std::round(pdgEntry->Charge() / 3.0));
+    }
+    if (q == 0) {
+      continue;
+    }
+
+    // Mark reconstructed MC particle (now that it truly passed & matched)
+    isReco[mcPid] = 1;
+    isRecoMult[mcPid] = mult;
+
+    const float multReco = col.multNTracksGlobal(); // or recoMultDense[dIdx]
+    const float ptReco   = trk.pt();
+    const float ptMC     = mcPar.pt();
+
+    mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
+  }
+
+  // ------------------------------------------------------------
+  // MC particles with no reco track (iterate by row index)
+  // ------------------------------------------------------------
+  for (int pid = 0; pid < (int)mcParticles.size(); ++pid) {
+    if (!isReco[pid]) {
+      auto mcp = mcParticles.rawIteratorAt(pid);
+      mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"), isRecoMult[pid], mcp.pt());
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Unreconstructed MC collisions (iterate by row index)
+  // ------------------------------------------------------------
+  for (int mcid = 0; mcid < (int)mcCollisions.size(); ++mcid) {
+    if (!mcReconstructed[mcid]) {
+      std::vector<float> mcptvec;
+      const int mult = mcMult[mcid];
+      for (auto const& pt : mcptvec) {
+        mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"), mult, pt);
       }
     }
   }
+}
+
   PROCESS_SWITCH(NonPromptCascadeTask, processdNdetaMC, "process mc dN/deta", false);
 };
 
