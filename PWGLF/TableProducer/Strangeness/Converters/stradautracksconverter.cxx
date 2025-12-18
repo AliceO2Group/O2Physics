@@ -19,7 +19,7 @@ using namespace o2::framework;
 
 // Converts V0 version 001 to 002
 struct stradautracksconverter {
-  Produces<aod::DauTrackTOFPIDs> dautracktofpids;
+  Produces<aod::DauTrackTOFPIDs_000> dautracktofpids;
 
   void process(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
