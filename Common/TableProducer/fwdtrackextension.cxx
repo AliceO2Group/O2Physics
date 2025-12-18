@@ -22,19 +22,19 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <GlobalTracking/MatchGlobalFwd.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/DataTypes.h>
 #include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
