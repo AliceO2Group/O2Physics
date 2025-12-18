@@ -48,10 +48,13 @@ jobs:
               "pwgem": "PWGEM",
               "pwghf": "PWGHF",
               "pwgje": "PWGJE",
+              "pwgmm": "PWGMM",
               "pwglf": "PWGLF",
               "pwgud": "PWGUD",
               "dpg": "DPG",
+              "scripts": "Scripts",
               "trigger": "Trigger",
+              "tools": "Tools",
               "tutorial": "Tutorial",
           }
           print(f'PR title: "{title}"')
