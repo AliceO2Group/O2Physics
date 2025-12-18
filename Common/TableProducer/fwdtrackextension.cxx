@@ -14,6 +14,12 @@
 //
 
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/fwdtrackUtilities.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -34,30 +40,62 @@ using namespace o2::framework::expressions;
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
+using MuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
+
 struct FwdTrackExtension {
-  Produces<aod::FwdTracksDCA> extendedTrackQuantities;
+  Produces<aod::FwdTracksDCA> fwdDCA;
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> fRefitGlobalMuon{"refitGlobal", true, "Recompute parameters of global muons"};
 
-  void process(aod::FwdTracks const& tracks, aod::Collisions const&)
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
+  int fCurrentRun;                               // needed to detect if the run changed and trigger update of magnetic field
+
+  void init(o2::framework::InitContext&)
   {
-    for (auto& track : tracks) {
-      float dcaX = -999;
-      float dcaY = -999;
-      if (track.has_collision()) {
-        if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack || track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+    // Load geometry
+    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
 
-          auto const& collision = track.collision();
-          double chi2 = track.chi2();
-          SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-          std::vector<double> v1;
-          SMatrix55 tcovs(v1.begin(), v1.end());
-          o2::track::TrackParCovFwd pars1{track.z(), tpars, tcovs, chi2};
-          pars1.propagateToZlinear(collision.posZ());
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      LOGF(info, "Load geometry from CCDB");
+      fCCDB->get<TGeoManager>(geoPath);
+    }
+  }
 
-          dcaX = (pars1.getX() - collision.posX());
-          dcaY = (pars1.getY() - collision.posY());
-        }
+  void process(aod::Collisions::iterator const& collision, o2::aod::BCsWithTimestamps const& /*...*/, MuonsWithCov const& tracks, aod::MFTTracks const& /*...*/)
+  {
+    auto bc = collision.template bc_as<o2::aod::BCsWithTimestamps>();
+    if (fCurrentRun != bc.runNumber()) {
+      grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+      if (grpmag != nullptr) {
+        LOGF(info, "Init field from GRP");
+        o2::base::Propagator::initFieldFromGRP(grpmag);
       }
-      extendedTrackQuantities(dcaX, dcaY);
+      LOGF(info, "Set field for muons");
+      o2::mch::TrackExtrap::setField();
+      fCurrentRun = bc.runNumber();
+    }
+    const float zField = grpmag->getNominalL3Field();
+    for (auto& track : tracks) {
+	    const auto trackType = track.trackType();
+	    o2::dataformats::GlobalFwdTrack fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd(track,track);
+	    if (fRefitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
+			    auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
+			    auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
+			    o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
+			    SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+			    SMatrix55 tcovs{};
+			    o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+			    fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon,mft);
+	    }
+	    const auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
+	    const float dcaX = (proptrack.getX() - collision.posX());
+	    const float dcaY = (proptrack.getY() - collision.posY());
+	    fwdDCA(dcaX, dcaY);
     }
   }
 };
