@@ -497,7 +497,7 @@ struct PidFlowPtCorr {
    *       If the track pt is out of a detector's valid range, that detector's check is skipped.
    */
   template <typename TrackObject>
-  bool isPion(TrackObject track)
+  bool isPion(TrackObject const& track)
   {
     bool resultPion = true;
 
@@ -540,7 +540,7 @@ struct PidFlowPtCorr {
    *       If the track pt is out of a detector's valid range, that detector's check is skipped.
    */
   template <typename TrackObject>
-  bool isProton(TrackObject track)
+  bool isProton(TrackObject const& track)
   {
     bool resultProton = true;
 
@@ -584,7 +584,7 @@ struct PidFlowPtCorr {
    *       If the track pt is out of the overlapping range, that detector's check is skipped.
    */
   template <typename TrackObject>
-  bool isKaon(TrackObject track)
+  bool isKaon(TrackObject const& track)
   {
     bool resultKaon = true;
 
