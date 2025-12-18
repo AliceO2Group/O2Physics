@@ -17,16 +17,16 @@
 /// \author Ruiqi Yin
 
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -269,22 +269,22 @@ struct HfTreeCreatorOmegacSt {
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
   // TOF nsigma configurable cuts (defaults: very loose = 9999)
-  Configurable<float> maxAbsTofNsigmaTrackPi{"maxAbsTofNsigmaTrackPi", 9999.f, "Max abs TOF nsigma for charm bachelor track as pion"};
-  Configurable<float> maxAbsTofNsigmaTrackKa{"maxAbsTofNsigmaTrackKa", 9999.f, "Max abs TOF nsigma for charm bachelor track as kaon"};
-  Configurable<float> maxAbsTofNsigmaV0Pr{"maxAbsTofNsigmaV0Pr", 9999.f, "Max abs TOF nsigma for V0 proton"};
-  Configurable<float> maxAbsTofNsigmaV0Pi{"maxAbsTofNsigmaV0Pi", 9999.f, "Max abs TOF nsigma for V0 pion"};
-  Configurable<float> maxAbsTofNsigmaBachelorPi{"maxAbsTofNsigmaBachelorPi", 9999.f, "Max abs TOF nsigma for cascade bachelor as pion"};
-  Configurable<float> maxAbsTofNsigmaBachelorKa{"maxAbsTofNsigmaBachelorKa", 9999.f, "Max abs TOF nsigma for cascade bachelor as kaon"};
+  Configurable<float> maxAbsTofnSigmaTrackPi{"maxAbsTofnSigmaTrackPi", 9999.f, "Max abs TOF nsigma for charm bachelor track as pion"};
+  Configurable<float> maxAbsTofnSigmaTrackKa{"maxAbsTofnSigmaTrackKa", 9999.f, "Max abs TOF nsigma for charm bachelor track as kaon"};
+  Configurable<float> maxAbsTofnSigmaV0Pr{"maxAbsTofnSigmaV0Pr", 9999.f, "Max abs TOF nsigma for V0 proton"};
+  Configurable<float> maxAbsTofnSigmaV0Pi{"maxAbsTofnSigmaV0Pi", 9999.f, "Max abs TOF nsigma for V0 pion"};
+  Configurable<float> maxAbsTofnSigmaBachelorPi{"maxAbsTofnSigmaBachelorPi", 9999.f, "Max abs TOF nsigma for cascade bachelor as pion"};
+  Configurable<float> maxAbsTofnSigmaBachelorKa{"maxAbsTofnSigmaBachelorKa", 9999.f, "Max abs TOF nsigma for cascade bachelor as kaon"};
   // whether to require TOF in addition to TPC
   Configurable<bool> useTofPid{"useTofPid", false, "Require TOF PID together with TPC PID when true; otherwise use TPC only"};
 
-  // pT cut for CharmBaryon
+  //pT cut for CharmBaryon
   Configurable<float> minPtCharmedBaryon{"minPtCharmedBaryon", 0.f, "Minimum pT for the charmed baryon"};
   Configurable<float> maxPtCharmedBaryon{"maxPtCharmedBaryon", 50.f, "Maximum pT for the charmed baryon"};
 
   // CPA cuts (defaults: >= 0.9)
   Configurable<float> minCpaCharmedBaryon{"minCpaCharmedBaryon", 0.9f, "Minimum CPA for charmed baryon"};
-  Configurable<float> minCpaXYCharmedBaryon{"minCpaXYCharmedBaryon", 0.9f, "Minimum CPA XY for charmed baryon"}; // remove maybe???
+  Configurable<float> minCpaXYCharmedBaryon{"minCpaXYCharmedBaryon", 0.9f, "Minimum CPA XY for charmed baryon"};//remove maybe???
   Configurable<float> minCpaCasc{"minCpaCasc", 0.9f, "Minimum CPA for cascade"};
   Configurable<float> minCpaXYCasc{"minCpaXYCasc", 0.9f, "Minimum CPA XY for cascade"};
 
@@ -494,15 +494,15 @@ struct HfTreeCreatorOmegacSt {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
 
     for (const auto& collision : collisions) {
-      // Event selection & centrality using HF helper
-      float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-      if (rejectionMask != 0) {
-        continue; // reject collisions failing HF event selection
-      }
-      // record event-level monitoring (centrality, vertex, etc.)
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
-      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+        // Event selection & centrality using HF helper 
+        float centrality{-1.f};
+        const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+        if (rejectionMask != 0) {
+          continue; // reject collisions failing HF event selection
+        }
+        // record event-level monitoring (centrality, vertex, etc.)
+        hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+        const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         if (skimmedProcessing) {
           if (runNumber == 0) {
@@ -646,8 +646,8 @@ struct HfTreeCreatorOmegacSt {
           const bool tpcBachelor = (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor);
           const float tofBachelorPiAbs = std::abs(bachelor.tofNSigmaPi());
           const float tofBachelorKaAbs = std::abs(bachelor.tofNSigmaKa());
-          const bool tofBachelorPiPass = (tofBachelorPiAbs > TofWoSignalRange[0] && tofBachelorPiAbs < TofWoSignalRange[1]) || (tofBachelorPiAbs < maxAbsTofNsigmaBachelorPi);
-          const bool tofBachelorKaPass = (tofBachelorKaAbs > TofWoSignalRange[0] && tofBachelorKaAbs < TofWoSignalRange[1]) || (tofBachelorKaAbs < maxAbsTofNsigmaBachelorKa);
+          const bool tofBachelorPiPass = (tofBachelorPiAbs > TofWoSignalRange[0] && tofBachelorPiAbs < TofWoSignalRange[1]) || (tofBachelorPiAbs < maxAbsTofnSigmaBachelorPi);
+          const bool tofBachelorKaPass = (tofBachelorKaAbs > TofWoSignalRange[0] && tofBachelorKaAbs < TofWoSignalRange[1]) || (tofBachelorKaAbs < maxAbsTofnSigmaBachelorKa);
           const bool tofBachelorPass = tofBachelorPiPass || tofBachelorKaPass;
           const bool bachelorPass = useTofPid.value ? (tpcBachelor && tofBachelorPass) : tpcBachelor;
 
@@ -655,8 +655,8 @@ struct HfTreeCreatorOmegacSt {
           const bool tpcV0Pi = (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi);
           const float tofV0PrAbs = std::abs(v0TrackPr.tofNSigmaPr());
           const float tofV0PiAbs = std::abs(v0TrackPi.tofNSigmaPi());
-          const bool tofV0PrPass = (tofV0PrAbs > TofWoSignalRange[0] && tofV0PrAbs < TofWoSignalRange[1]) || (tofV0PrAbs < maxAbsTofNsigmaV0Pr);
-          const bool tofV0PiPass = (tofV0PiAbs > TofWoSignalRange[0] && tofV0PiAbs < TofWoSignalRange[1]) || (tofV0PiAbs < maxAbsTofNsigmaV0Pi);
+          const bool tofV0PrPass = (tofV0PrAbs > TofWoSignalRange[0] && tofV0PrAbs < TofWoSignalRange[1]) || (tofV0PrAbs < maxAbsTofnSigmaV0Pr);
+          const bool tofV0PiPass = (tofV0PiAbs > TofWoSignalRange[0] && tofV0PiAbs < TofWoSignalRange[1]) || (tofV0PiAbs < maxAbsTofnSigmaV0Pi);
           const bool v0PrPass = useTofPid.value ? (tpcV0Pr && tofV0PrPass) : tpcV0Pr;
           const bool v0PiPass = useTofPid.value ? (tpcV0Pi && tofV0PiPass) : tpcV0Pi;
 
@@ -696,12 +696,12 @@ struct HfTreeCreatorOmegacSt {
                   (track.tpcNClsCrossedRows() >= TpcNclsFindableFraction * track.tpcNClsFindable()) &&
                   (track.tpcChi2NCl() <= TpcChi2NclMax) &&
                   (track.itsChi2NCl() <= ItsChi2NclMax)) {
-                // TPC and TOF PID for pion/kaon from chambaryon
+                //TPC and TOF PID for pion/kaon from chambaryon
                 const bool passTPCpid = (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) || (std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon);
                 const float tofPiAbs = std::abs(track.tofNSigmaPi());
                 const float tofKaAbs = std::abs(track.tofNSigmaKa());
-                const bool tofPiPass = (tofPiAbs > TofWoSignalRange[0] && tofPiAbs < TofWoSignalRange[1]) || (tofPiAbs < maxAbsTofNsigmaTrackPi);
-                const bool tofKaPass = (tofKaAbs > TofWoSignalRange[0] && tofKaAbs < TofWoSignalRange[1]) || (tofKaAbs < maxAbsTofNsigmaTrackKa);
+                const bool tofPiPass = (tofPiAbs > TofWoSignalRange[0] && tofPiAbs < TofWoSignalRange[1]) || (tofPiAbs < maxAbsTofnSigmaTrackPi);
+                const bool tofKaPass = (tofKaAbs > TofWoSignalRange[0] && tofKaAbs < TofWoSignalRange[1]) || (tofKaAbs < maxAbsTofnSigmaTrackKa);
                 const bool passTOFpid = tofPiPass || tofKaPass;
                 if (useTofPid.value) {
                   if (!(passTPCpid && passTOFpid)) {
@@ -799,10 +799,10 @@ struct HfTreeCreatorOmegacSt {
                     //--- do the MC Rec match
                     if (mcParticles) {
                       auto arrayDaughters = std::array{
-                        trackId.template track_as<TracksExtMc>(), // bachelor <- charm baryon
-                        casc.template bachelor_as<TracksExtMc>(), // bachelor <- cascade
-                        v0.template posTrack_as<TracksExtMc>(),   // p <- lambda
-                        v0.template negTrack_as<TracksExtMc>()};  // pi <- lambda
+                        trackId.template track_as<TracksExtMc>(),      // bachelor <- charm baryon
+                        casc.template bachelor_as<TracksExtMc>(),      // bachelor <- cascade
+                        v0.template posTrack_as<TracksExtMc>(),        // p <- lambda
+                        v0.template negTrack_as<TracksExtMc>()};       // pi <- lambda
 
                       auto arrayDaughtersCasc = std::array{
                         casc.template bachelor_as<TracksExtMc>(), // bachelor <- cascade
@@ -896,7 +896,7 @@ struct HfTreeCreatorOmegacSt {
                                 bachelor.tpcNSigmaKa(),
                                 bachelor.tofNSigmaKa(),
                                 momenta[0][0], // cascade momentum
-                                momenta[0][1],
+                                momenta[0][1], 
                                 momenta[0][2],
                                 static_cast<bool>(trackCasc.sign() > 0),
                                 momenta[1][0], // pion/kaon momentum
@@ -950,45 +950,46 @@ struct HfTreeCreatorOmegacSt {
       }
     }
   }
+  
+    // No centrality selection
+    void processDataNocent(Collisions const& collisions,
+                 soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+                 aod::TrackAssoc const& trackIndices,
+                 aod::Cascades const&,
+                 aod::V0s const&,
+                 TracksExt const&,
+                 aod::BCsWithTimestamps const&)
+    {
+      fillTable<CentralityEstimator::None, TracksExt>(collisions, trackedCascades, trackIndices);
+    }
+    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataNocent, "Process data (No centrality)", true);
+  
+    // FT0C centrality selection
+    void processDataFT0C(CollisionsFT0C const& collisions,
+               soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+               aod::TrackAssoc const& trackIndices,
+               aod::Cascades const&,
+               aod::V0s const&,
+               TracksExt const&,
+               aod::BCsWithTimestamps const&)
+    {
+      fillTable<CentralityEstimator::FT0C, TracksExt>(collisions, trackedCascades, trackIndices);
+    }
+    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0C, "Process data (FT0C centrality)", false);
+  
+    // FT0M centrality selection
+    void processDataFT0M(CollisionsFT0M const& collisions,
+               soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+               aod::TrackAssoc const& trackIndices,
+               aod::Cascades const&,
+               aod::V0s const&,
+               TracksExt const&,
+               aod::BCsWithTimestamps const&)
+    {
+      fillTable<CentralityEstimator::FT0M, TracksExt>(collisions, trackedCascades, trackIndices);
+    }
+    PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0M, "Process data (FT0M centrality)", false);
 
-  // No centrality selection
-  void processDataNocent(Collisions const& collisions,
-                         soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
-                         aod::TrackAssoc const& trackIndices,
-                         aod::Cascades const&,
-                         aod::V0s const&,
-                         TracksExt const&,
-                         aod::BCsWithTimestamps const&)
-  {
-    fillTable<CentralityEstimator::None, TracksExt>(collisions, trackedCascades, trackIndices);
-  }
-  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataNocent, "Process data (No centrality)", true);
-
-  // FT0C centrality selection
-  void processDataFT0C(CollisionsFT0C const& collisions,
-                       soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
-                       aod::TrackAssoc const& trackIndices,
-                       aod::Cascades const&,
-                       aod::V0s const&,
-                       TracksExt const&,
-                       aod::BCsWithTimestamps const&)
-  {
-    fillTable<CentralityEstimator::FT0C, TracksExt>(collisions, trackedCascades, trackIndices);
-  }
-  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0C, "Process data (FT0C centrality)", false);
-
-  // FT0M centrality selection
-  void processDataFT0M(CollisionsFT0M const& collisions,
-                       soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
-                       aod::TrackAssoc const& trackIndices,
-                       aod::Cascades const&,
-                       aod::V0s const&,
-                       TracksExt const&,
-                       aod::BCsWithTimestamps const&)
-  {
-    fillTable<CentralityEstimator::FT0M, TracksExt>(collisions, trackedCascades, trackIndices);
-  }
-  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processDataFT0M, "Process data (FT0M centrality)", false);
 
   // MC reco: No centrality selection
   void processMcRecNocent(Collisions const& collisions,
