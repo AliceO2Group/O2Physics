@@ -13,14 +13,14 @@
 // Task performing forward track DCA computation
 //
 
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/fwdtrackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
-
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -81,21 +81,21 @@ struct FwdTrackExtension {
     }
     const float zField = grpmag->getNominalL3Field();
     for (auto& track : tracks) {
-	    const auto trackType = track.trackType();
-	    o2::dataformats::GlobalFwdTrack fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd(track,track);
-	    if (fRefitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
-			    auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
-			    auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
-			    o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
-			    SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-			    SMatrix55 tcovs{};
-			    o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
-			    fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon,mft);
-	    }
-	    const auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
-	    const float dcaX = (proptrack.getX() - collision.posX());
-	    const float dcaY = (proptrack.getY() - collision.posY());
-	    fwdDCA(dcaX, dcaY);
+      const auto trackType = track.trackType();
+      o2::dataformats::GlobalFwdTrack fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd(track, track);
+      if (fRefitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
+        auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
+        auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
+        o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
+        SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+        SMatrix55 tcovs{};
+        o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+        fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
+      }
+      const auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
+      const float dcaX = (proptrack.getX() - collision.posX());
+      const float dcaY = (proptrack.getY() - collision.posY());
+      fwdDCA(dcaX, dcaY);
     }
   }
 };
