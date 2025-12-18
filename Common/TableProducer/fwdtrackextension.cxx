@@ -10,7 +10,9 @@
 // or submit itself to any jurisdiction.
 
 //
-// Task performing forward track DCA computation
+// \file fwdtrackextension.cxx
+// \brief Task performing forward track DCA computation.
+// \author Maurice Coquet, maurice.louis.coquet@cern.ch
 //
 
 #include "Common/Core/fwdtrackUtilities.h"
@@ -45,10 +47,10 @@ using MuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 struct FwdTrackExtension {
   Produces<aod::FwdTracksDCA> fwdDCA;
-  Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> fGrpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<bool> fRefitGlobalMuon{"refitGlobal", true, "Recompute parameters of global muons"};
+  Configurable<std::string> fGeoPath{"fGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> fGrpmagPath{"fGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> fConfigCcdbUrl{"fConfigCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> fRefitGlobalMuon{"fRefitGlobalMuon", true, "Recompute parameters of global muons"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
