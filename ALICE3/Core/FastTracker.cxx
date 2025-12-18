@@ -11,15 +11,18 @@
 
 #include "FastTracker.h"
 
-#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "Common/Core/TableHelper.h"
 
-#include "TMath.h"
-#include "TMatrixD.h"
-#include "TMatrixDSymEigen.h"
-#include "TRandom.h"
+#include <ReconstructionDataFormats/TrackParametrization.h>
+
 #include <TEnv.h>
 #include <THashList.h>
+#include <TMath.h>
+#include <TMatrixD.h>
+#include <TMatrixDSymEigen.h>
 #include <TObject.h>
+#include <TRandom.h>
+#include <TSystem.h>
 
 #include <fstream>
 #include <map>
@@ -30,6 +33,81 @@ namespace o2
 {
 namespace fastsim
 {
+
+std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string filename, std::vector<std::string>& layers)
+{
+  std::map<std::string, std::map<std::string, std::string>> configMap;
+  filename = gSystem->ExpandPathName(filename.c_str());
+  TEnv env(filename.c_str());
+  THashList* table = env.GetTable();
+  layers.clear();
+  for (int i = 0; i < table->GetEntries(); ++i) {
+    const std::string key = table->At(i)->GetName();
+    // key should contain exactly one dot
+    if (key.find('.') == std::string::npos || key.find('.') != key.rfind('.')) {
+      LOG(fatal) << "Key " << key << " does not contain exactly one dot";
+      continue;
+    }
+    const std::string firstPart = key.substr(0, key.find('.'));
+    if (std::find(layers.begin(), layers.end(), firstPart) == layers.end()) {
+      layers.push_back(firstPart);
+    }
+  }
+  env.Print();
+  // Layers
+  for (const auto& layer : layers) {
+    LOG(info) << " Reading layer " << layer;
+    for (int i = 0; i < table->GetEntries(); ++i) {
+      const std::string key = table->At(i)->GetName();
+      if (key.find(layer + ".") == 0) {
+        const std::string paramName = key.substr(key.find('.') + 1);
+        const std::string value = env.GetValue(key.c_str(), "");
+        configMap[layer][paramName] = value;
+      }
+    }
+  }
+  return configMap;
+}
+
+void GeometryContainer::init(o2::framework::InitContext& initContext)
+{
+  std::vector<std::string> detectorConfiguration;
+  const bool found = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
+  if (!found) {
+    LOG(fatal) << "Could not retrieve detector configuration from OnTheFlyDetectorGeometryProvider task.";
+    return;
+  }
+  LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
+  for (const auto& configFile : detectorConfiguration) {
+    LOG(info) << "Detector geometry configuration file used: " << configFile;
+    addEntry(configFile);
+  }
+}
+
+std::map<std::string, std::string> GeometryContainer::GeometryEntry::getConfiguration(const std::string& layerName) const
+{
+  auto it = mConfigurations.find(layerName);
+  if (it != mConfigurations.end()) {
+    return it->second;
+  } else {
+    LOG(fatal) << "Layer " << layerName << " not found in geometry configurations.";
+    return {};
+  }
+}
+
+std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerName, const std::string& key, bool require) const
+{
+  auto layer = getConfiguration(layerName);
+  auto entry = layer.find(key);
+  if (entry != layer.end()) {
+    return layer.at(key);
+  } else if (require) {
+    LOG(fatal) << "Key " << key << " not found in layer " << layerName << " configurations.";
+    return "";
+  } else {
+    return "";
+  }
+}
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
@@ -236,88 +314,31 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
   }
 }
 
-std::map<std::string, std::map<std::string, std::string>> FastTracker::parseTEnvConfiguration(std::string filename)
+void FastTracker::AddGenericDetector(GeometryContainer::GeometryEntry configMap, o2::ccdb::BasicCCDBManager* ccdbManager)
 {
-  std::map<std::string, std::map<std::string, std::string>> configMap;
-
-  TEnv env(filename.c_str());
-  THashList* table = env.GetTable();
-  std::vector<std::string> layers;
-  for (int i = 0; i < table->GetEntries(); ++i) {
-    const std::string key = table->At(i)->GetName();
-    // key should contain exactly one dot
-    if (key.find('.') == std::string::npos || key.find('.') != key.rfind('.')) {
-      LOG(fatal) << "Key " << key << " does not contain exactly one dot";
+  // Layers
+  for (const auto& layer : configMap.getLayerNames()) {
+    if (layer.find("global") != std::string::npos) { // Layers with global tag are skipped
+      LOG(info) << " Skipping global configuration entry " << layer;
       continue;
     }
-    const std::string firstPart = key.substr(0, key.find('.'));
-    if (std::find(layers.begin(), layers.end(), firstPart) == layers.end()) {
-      layers.push_back(firstPart);
-    }
-  }
-  env.Print();
 
-  // Layers
-  for (const auto& layer : layers) {
     LOG(info) << " Reading layer " << layer;
-    for (int i = 0; i < table->GetEntries(); ++i) {
-      const std::string key = table->At(i)->GetName();
-      if (key.find(layer + ".") == 0) {
-        const std::string paramName = key.substr(key.find('.') + 1);
-        const std::string value = env.GetValue(key.c_str(), "");
-        configMap[layer][paramName] = value;
-      }
-    }
-  }
-  return configMap;
-}
-
-void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBManager* ccdbManager)
-{
-  LOG(info) << " Adding generic detector from file " << filename;
-  // If the filename starts with ccdb: then take the file from the ccdb
-  if (filename.rfind("ccdb:", 0) == 0) {
-    std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
-    if (ccdbManager == nullptr) {
-      LOG(fatal) << "CCDB manager is null, cannot retrieve file " << ccdbPath;
-      return;
-    }
-    const std::string outPath = "/tmp/DetGeo/";
-    filename = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
-    std::ifstream checkFile(filename); // Check if file already exists
-    if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
-      LOG(info) << " --- CCDB source detected for detector geometry " << filename;
-      std::map<std::string, std::string> metadata;
-      ccdbManager->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
-      // Add CCDB handling logic here if needed
-      LOG(info) << " --- Now retrieving geometry configuration from CCDB to: " << filename;
-    } else { // File exists, proceed to load
-      LOG(info) << " --- Geometry configuration file already exists: " << filename << ". Skipping download.";
-      checkFile.close();
-    }
-    AddGenericDetector(filename, nullptr);
-    return;
-  }
-
-  std::map<std::string, std::map<std::string, std::string>> configMap = parseTEnvConfiguration(filename);
-  // Layers
-  for (const auto& layer : configMap) {
-    LOG(info) << " Reading layer " << layer.first;
-    const float r = std::stof(layer.second.at("r"));
-    LOG(info) << " Layer " << layer.first << " has radius " << r;
-    const float z = std::stof(layer.second.at("z"));
-    const float x0 = std::stof(layer.second.at("x0"));
-    const float xrho = std::stof(layer.second.at("xrho"));
-    const float resRPhi = std::stof(layer.second.at("resRPhi"));
-    const float resZ = std::stof(layer.second.at("resZ"));
-    const float eff = std::stof(layer.second.at("eff"));
-    const int type = std::stoi(layer.second.at("type"));
-    const std::string deadPhiRegions = layer.second.at("deadPhiRegions");
+    const float r = configMap.getFloatValue(layer, "r");
+    LOG(info) << " Layer " << layer << " has radius " << r;
+    const float z = configMap.getFloatValue(layer, "z");
+    const float x0 = configMap.getFloatValue(layer, "x0");
+    const float xrho = configMap.getFloatValue(layer, "xrho");
+    const float resRPhi = configMap.getFloatValue(layer, "resRPhi");
+    const float resZ = configMap.getFloatValue(layer, "resZ");
+    const float eff = configMap.getFloatValue(layer, "eff");
+    const int type = configMap.getIntValue(layer, "type");
+    const std::string deadPhiRegions = configMap.getValue(layer, "deadPhiRegions", false);
 
     // void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
-    LOG(info) << " Adding layer " << layer.first << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type << " deadPhiRegions=" << deadPhiRegions;
+    LOG(info) << " Adding layer " << layer << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type << " deadPhiRegions=" << deadPhiRegions;
 
-    DetLayer* addedLayer = AddLayer(layer.first.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+    DetLayer* addedLayer = AddLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
     if (!deadPhiRegions.empty()) { // Taking it as ccdb path or local file
                                    // Check if it begins with ccdb:
       if (std::string(deadPhiRegions).rfind("ccdb:", 0) == 0) {
@@ -340,7 +361,7 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
         addedLayer->setDeadPhiRegions(g);
       }
     } else {
-      LOG(debug) << " No dead phi regions for layer " << layer.first;
+      LOG(debug) << " No dead phi regions for layer " << layer;
     }
   }
 }

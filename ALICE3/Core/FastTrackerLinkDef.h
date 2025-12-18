@@ -16,6 +16,7 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
+#pragma link C++ class o2::fastsim::GeometryContainer + ;
 #pragma link C++ class o2::fastsim::FastTracker + ;
 #pragma link C++ class o2::fastsim::DelphesO2LutWriter + ;
 

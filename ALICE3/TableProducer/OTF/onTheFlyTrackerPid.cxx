@@ -20,11 +20,11 @@
 /// \since  May 22, 2025
 ///
 
-#include "TableHelper.h"
-
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
+#include "ALICE3/DataModel/OTFTracks.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -37,7 +37,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -46,6 +45,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 
 #include <TF1.h>
 #include <TFile.h>
@@ -406,7 +406,6 @@ struct OnTheFlyTrackerPid {
   Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020030/", "ToT LUT for helium-3"};
   Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020040/", "ToT LUT for alphas"};
 
-  Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss) for track propagation"};
   Configurable<int> maxBarrelLayers{"maxBarrelLayers", 11, "Maximum number of barrel layers"};
   Configurable<int> numLogBins{"numLogBins", 200, "Number of logarithmic momentum bins"};
   Configurable<float> analysisEtaMin{"analysisEtaMin", 0.0f, "Minimum |eta| for LUT loading optimization"};
@@ -428,8 +427,16 @@ struct OnTheFlyTrackerPid {
     1000020040  // Alpha
   };
 
-  void init(o2::framework::InitContext&)
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
+  void init(o2::framework::InitContext& initContext)
   {
+    mGeoContainer.init(initContext);
+
+    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
 
@@ -608,14 +615,14 @@ struct OnTheFlyTrackerPid {
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f;
-      if (o2track.propagateToDCA(mcPvVtx, dBz)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         xPv = o2track.getX();
       }
 
       if (xPv > kTrkXThreshold) {
         for (int layer = 0; layer < maxBarrelLayers.value; ++layer) {
           float layerRadius = kTrackerRadii[layer];
-          float trackLength = computeTrackLength(o2track, layerRadius, dBz);
+          float trackLength = computeTrackLength(o2track, layerRadius, mMagneticField);
 
           if (trackLength > 0) {
             hitMap |= (1 << layer);
