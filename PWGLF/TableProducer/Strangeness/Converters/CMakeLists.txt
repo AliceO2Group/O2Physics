@@ -14,11 +14,6 @@ o2physics_add_dpl_workflow(stradautracksconverter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(stradautracksextraconverter
-                    SOURCES stradautracksextraconverter.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(stradautrackstpcpidconverter
                     SOURCES stradautrackstpcpidconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -31,6 +26,11 @@ o2physics_add_dpl_workflow(stradautrackstofpidconverter
 
 o2physics_add_dpl_workflow(stradautrackstofpidconverter2
                     SOURCES stradautrackstofpidconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stradautracksextraconverter
+                    SOURCES stradautracksextraconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
