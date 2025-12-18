@@ -16,6 +16,8 @@
 /// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
 //
 
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,7 +27,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-// Converts V0 version 001 to 002
 struct stradautracksconverter {
   Produces<aod::DauTrackTOFPIDs_000> dautracktofpids;
 
