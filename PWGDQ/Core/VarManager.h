@@ -21,10 +21,13 @@
 #define HomogeneousField
 #endif
 
+#include "PWGUD/Core/UDHelpers.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 
@@ -108,6 +111,8 @@ class VarManager : public TObject
     ReducedEventMultExtra = BIT(19),
     CollisionQvectCentr = BIT(20),
     RapidityGapFilter = BIT(21),
+    Fit = BIT(22),
+    ReducedFit = BIT(23),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -125,18 +130,19 @@ class VarManager : public TObject
     ReducedMuon = BIT(14),
     ReducedMuonExtra = BIT(15),
     ReducedMuonCov = BIT(16),
-    ParticleMC = BIT(17),
-    Pair = BIT(18), // TODO: check whether we really need the Pair member here
-    AmbiTrack = BIT(19),
-    AmbiMuon = BIT(20),
-    DalitzBits = BIT(21),
-    TrackTPCPID = BIT(22),
-    TrackMFT = BIT(23),
-    ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
-    ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
-    MuonRealign = BIT(26),
-    MuonCovRealign = BIT(27),
-    MFTCov = BIT(28)
+    Pair = BIT(17), // TODO: check whether we really need the Pair member here
+    AmbiTrack = BIT(18),
+    AmbiMuon = BIT(19),
+    DalitzBits = BIT(20),
+    TrackTPCPID = BIT(21),
+    TrackMFT = BIT(22),
+    ReducedTrackCollInfo = BIT(23), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    ReducedMuonCollInfo = BIT(24),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
+    MuonRealign = BIT(25),
+    MuonCovRealign = BIT(26),
+    MFTCov = BIT(27),
+    TrackTOFService = BIT(28),
+    ParticleMC = BIT(29)
   };
 
   enum PairCandidateType {
@@ -184,8 +190,17 @@ class VarManager : public TObject
     kRunNo = 0,
     kNRunWiseVariables,
 
+    // Timeframe wise variables
+    kTFNBCs = kNRunWiseVariables,
+    kTFNCollisions,
+    kTFNMCCollisions,
+    kTFNTracks,
+    kTFNMuons,
+    kTFNMFTs,
+    kNTFWiseVariables,
+
     // Event wise variables
-    kTimestamp,
+    kTimestamp = kNTFWiseVariables,
     kTimeFromSOR, // Time since Start of Run (SOR) in minutes
     kCollisionTime,
     kCollisionTimeRes,
@@ -438,7 +453,6 @@ class VarManager : public TObject
     kTwoR2SP2, // Scalar product resolution of event2 for ME technique
     kTwoR2EP1, // Event plane resolution of event2 for ME technique
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
-    kNEventWiseVariables,
 
     // Variables for event mixing with cumulant
     kV22m,
@@ -449,9 +463,10 @@ class VarManager : public TObject
     kV24ME,
     kWV22ME,
     kWV24ME,
+    kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
-    kX,
+    kX = kNEventWiseVariables,
     kY,
     kZ,
     kPt,
@@ -567,7 +582,7 @@ class VarManager : public TObject
     kNBarrelTrackVariables,
 
     // Muon track variables
-    kMuonNClusters,
+    kMuonNClusters = kNBarrelTrackVariables,
     kMuonPDca,
     kMuonRAtAbsorberEnd,
     kMCHBitMap,
@@ -627,40 +642,17 @@ class VarManager : public TObject
     kMCdeltaeta,
     kMCHadronPt,
     kMCHadronEta,
+    kMCHadronPhi,
     kMCWeight,
-    kNhadron,
-    kMCCosChi_minus,
-    kMCCosTheta_minus,
-    kMCWeight_minus,
-    kMCCosChi_toward_minus,
-    kMCCosTheta_toward_minus,
-    kMCWeight_toward_minus,
-    kMCCosChi_away_minus,
-    kMCCosTheta_away_minus,
-    kMCWeight_away_minus,
-    kMCCosChi_trans_minus,
-    kMCCosTheta_trans_minus,
-    kMCWeight_trans_minus,
-    kMCdeltaphi_minus,
-    kMCdeltaphi_toward_minus,
-    kMCdeltaphi_away_minus,
-    kMCdeltaphi_trans_minus,
-    kMCCosChi_plus,
-    kMCCosTheta_plus,
-    kMCWeight_plus,
-    kMCCosChi_toward_plus,
-    kMCCosTheta_toward_plus,
-    kMCWeight_toward_plus,
-    kMCCosChi_away_plus,
-    kMCCosTheta_away_plus,
-    kMCWeight_away_plus,
-    kMCCosChi_trans_plus,
-    kMCCosTheta_trans_plus,
-    kMCWeight_trans_plus,
-    kMCdeltaphi_plus,
-    kMCdeltaphi_toward_plus,
-    kMCdeltaphi_away_plus,
-    kMCdeltaphi_trans_plus,
+    kMCCosChi_randomPhi_toward,
+    kMCWeight_randomPhi_toward,
+    kMCCosChi_randomPhi_away,
+    kMCWeight_randomPhi_away,
+    kMCCosChi_randomPhi_trans,
+    kMCWeight_randomPhi_trans,
+    kMCdeltaphi_randomPhi_toward,
+    kMCdeltaphi_randomPhi_away,
+    kMCdeltaphi_randomPhi_trans,
     kMCWeight_before,
 
     // MC mother particle variables
@@ -686,19 +678,34 @@ class VarManager : public TObject
     kVertexingPseudoCTau,
     kVertexingLxyz,
     kVertexingLxyzErr,
+    kMCVertexingLxy,
+    kMCVertexingLxyz,
+    kMCLxyExpected,
+    kMCLxyzExpected,
     kVertexingLz,
     kVertexingLzErr,
+    kMCVertexingLz,
     kVertexingTauxy,
     kVertexingTauxyErr,
+    kMCVertexingTauxy,
     kVertexingLzProjected,
     kVertexingLxyProjected,
     kVertexingLxyzProjected,
+    kMCVertexingLzProjected,
+    kMCVertexingLxyProjected,
+    kMCVertexingLxyzProjected,
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
     kVertexingTauxyProjectedPoleJPsiMass,
     kVertexingTauxyProjectedNs,
     kVertexingTauxyzProjected,
+    kMCVertexingTauzProjected,
+    kMCVertexingTauxyProjected,
+    kMCVertexingTauxyProjectedNs,
+    kMCVertexingTauxyzProjected,
+    kMCCosPointingAngle,
     kVertexingTauz,
+    kMCVertexingTauz,
     kVertexingTauzErr,
     kVertexingPz,
     kVertexingSV,
@@ -877,6 +884,15 @@ class VarManager : public TObject
     kPtDau,
     kCosTheta,
     kEWeight_before,
+    kCosChi_randomPhi_trans,
+    kCosChi_randomPhi_toward,
+    kCosChi_randomPhi_away,
+    kWeight_randomPhi_trans,
+    kWeight_randomPhi_toward,
+    kWeight_randomPhi_away,
+    kdeltaphi_randomPhi_trans,
+    kdeltaphi_randomPhi_toward,
+    kdeltaphi_randomPhi_away,
 
     // Dilepton-track-track variables
     kQuadMass,
@@ -911,6 +927,34 @@ class VarManager : public TObject
     kBdtBackground,
     kBdtPrompt,
     kBdtNonprompt,
+
+    // FIT detector variables
+    kAmplitudeFT0A,
+    kAmplitudeFT0C,
+    kTimeFT0A,
+    kTimeFT0C,
+    kTriggerMaskFT0,
+    kAmplitudeFDDA,
+    kAmplitudeFDDC,
+    kTimeFDDA,
+    kTimeFDDC,
+    kTriggerMaskFDD,
+    kAmplitudeFV0A,
+    kTimeFV0A,
+    kTriggerMaskFV0A,
+    kBBFT0Apf,
+    kBGFT0Apf,
+    kBBFT0Cpf,
+    kBGFT0Cpf,
+    kBBFV0Apf,
+    kBGFV0Apf,
+    kBBFDDApf,
+    kBGFDDApf,
+    kBBFDDCpf,
+    kBGFDDCpf,
+    kNFiredChannelsFT0A,
+    kNFiredChannelsFT0C,
+    kNFiredChannelsFV0A,
 
     kNVars
   }; // end of Variables enumeration
@@ -1130,8 +1174,8 @@ class VarManager : public TObject
   static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
-  template <uint32_t fillMap, typename TEvent, typename TAssoc, typename TTracks>
-  static void FillEventTrackEstimators(TEvent const& collision, TAssoc const& groupedTrackIndices, TTracks const& tracks, float* values = nullptr);
+  template <typename T>
+  static void FillTimeFrame(T const& tfTable, float* values = nullptr);
   template <typename T>
   static void FillEventFlowResoFactor(T const& hs_sp, T const& hs_ep, float* values = nullptr);
   template <typename T>
@@ -1148,6 +1192,8 @@ class VarManager : public TObject
   static void FillPhoton(T const& photon, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
+  template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
+  static void FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C const& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C, typename M, typename P>
   static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename U, typename T>
@@ -1210,6 +1256,8 @@ class VarManager : public TObject
   static void FillZDC(const T& zdc, float* values = nullptr);
   template <typename T>
   static void FillBdtScore(const T& bdtScore, float* values = nullptr);
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  static void FillFIT(const T1& bc, const T2& bcs, const T3& ft0s, const T4& fv0as, const T5& fdds, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -1327,7 +1375,7 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 4);
+  ClassDef(VarManager, 5);
 };
 
 template <typename T, typename C>
@@ -1593,6 +1641,32 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
       values[kEta] = globalRefit.getEta();
       values[kPhi] = globalRefit.getPhi();
     }
+  }
+}
+
+template <typename T>
+void VarManager::FillTimeFrame(T const& tf, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr (T::template contains<o2::aod::BCs>()) {
+    values[kTFNBCs] = tf.size();
+  }
+  if constexpr (T::template contains<o2::aod::Collisions>()) {
+    values[kTFNCollisions] = tf.size();
+  }
+  if constexpr (T::template contains<o2::aod::McCollisions>()) {
+    values[kTFNMCCollisions] = tf.size();
+  }
+  if constexpr (T::template contains<o2::aod::Tracks>()) {
+    values[kTFNTracks] = tf.size();
+  }
+  if constexpr (T::template contains<o2::aod::FwdTracks>()) {
+    values[kTFNMuons] = tf.size();
+  }
+  if constexpr (T::template contains<o2::aod::MFTTracks>()) {
+    values[kTFNMFTs] = tf.size();
   }
 }
 
@@ -2069,57 +2143,36 @@ void VarManager::FillEvent(T const& event, float* values)
     FillZDC(event, values);
   }
 
+  if constexpr ((fillMap & ReducedFit) > 0) {
+    values[kAmplitudeFT0A] = event.amplitudeFT0A();
+    values[kAmplitudeFT0C] = event.amplitudeFT0C();
+    values[kTimeFT0A] = event.timeFT0A();
+    values[kTimeFT0C] = event.timeFT0C();
+    values[kTriggerMaskFT0] = event.triggerMaskFT0();
+    values[kNFiredChannelsFT0A] = event.nFiredChannelsFT0A();
+    values[kNFiredChannelsFT0C] = event.nFiredChannelsFT0C();
+    values[kAmplitudeFDDA] = event.amplitudeFDDA();
+    values[kAmplitudeFDDC] = event.amplitudeFDDC();
+    values[kTimeFDDA] = event.timeFDDA();
+    values[kTimeFDDC] = event.timeFDDC();
+    values[kTriggerMaskFDD] = event.triggerMaskFDD();
+    values[kAmplitudeFV0A] = event.amplitudeFV0A();
+    values[kTimeFV0A] = event.timeFV0A();
+    values[kTriggerMaskFV0A] = event.triggerMaskFV0A();
+    values[kNFiredChannelsFV0A] = event.nFiredChannelsFV0A();
+    values[kBBFT0Apf] = event.bbFT0Apf();
+    values[kBGFT0Apf] = event.bgFT0Apf();
+    values[kBBFT0Cpf] = event.bbFT0Cpf();
+    values[kBGFT0Cpf] = event.bgFT0Cpf();
+    values[kBBFV0Apf] = event.bbFV0Apf();
+    values[kBGFV0Apf] = event.bgFV0Apf();
+    values[kBBFDDApf] = event.bbFDDApf();
+    values[kBGFDDApf] = event.bgFDDApf();
+    values[kBBFDDCpf] = event.bbFDDCpf();
+    values[kBGFDDCpf] = event.bgFDDCpf();
+  }
+
   // FillEventDerived(values);
-}
-
-template <uint32_t fillMap, typename TEvent, typename TAssoc, typename TTracks>
-void VarManager::FillEventTrackEstimators(TEvent const& collision, TAssoc const& assocs, TTracks const& /*tracks*/, float* values)
-{
-  // Compute median Z for the large dcaZ tracks in the TPC
-  // This is for studies of the pileup impact on the TPC
-
-  if (!values) {
-    values = fgValues;
-  }
-
-  if constexpr ((fillMap & Track) > 0 && (fillMap & TrackDCA) > 0) {
-
-    std::vector<float> tracksP;
-    std::vector<float> tracksM;
-
-    for (const auto& assoc : assocs) {
-      auto track = assoc.template track_as<TTracks>();
-      // compute the dca of this track wrt the collision
-      auto trackPar = getTrackPar(track);
-      std::array<float, 2> dca{1e10f, 1e10f};
-      trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
-
-      // if it is a displaced track longitudinally, add it to the track vector
-      if (abs(dca[0]) < 3.0 && abs(dca[1]) > 4.0) {
-        if (track.tgl() > 0.1) {
-          tracksP.push_back(track.z());
-        }
-        if (track.tgl() < -0.1) {
-          tracksM.push_back(track.z());
-        }
-      }
-    } // end loop over associations
-
-    // compute the number of pileup contributors and the median z for pileup
-    if (tracksP.size() > 0) {
-      std::sort(tracksP.begin(), tracksP.end());
-      auto midP = tracksP.size() / 2;
-      values[kNTPCpileupContribA] = tracksP.size();
-      values[kNTPCpileupZA] = (tracksP.size() % 2 ? (tracksP[midP] + tracksP[midP - 1]) / 2 : tracksP[midP]);
-    }
-
-    if (tracksM.size() > 0) {
-      std::sort(tracksM.begin(), tracksM.end());
-      values[kNTPCpileupContribC] = tracksM.size();
-      auto midM = tracksM.size() / 2;
-      values[kNTPCpileupZC] = (tracksM.size() % 2 ? (tracksM[midM] + tracksM[midM - 1]) / 2 : tracksM[midM]);
-    }
-  }
 }
 
 template <typename T>
@@ -2214,25 +2267,17 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
   if (!values) {
     values = fgValues;
   }
-
+  // if constexpr (T::template contains<o2::aod::Collision>()) {
   values[kTwoEvPosZ1] = ev1.posZ();
   values[kTwoEvPosZ2] = ev2.posZ();
   values[kTwoEvPosR1] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
   values[kTwoEvPosR2] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
-  values[kTwoEvPVcontrib1] = ev1.numContrib();
-  values[kTwoEvPVcontrib2] = ev2.numContrib();
-  if (ev1.numContrib() < ev2.numContrib()) {
-    values[kTwoEvPosZ1] = ev2.posZ();
-    values[kTwoEvPosZ2] = ev1.posZ();
-    values[kTwoEvPVcontrib1] = ev2.numContrib();
-    values[kTwoEvPVcontrib2] = ev1.numContrib();
-    values[kTwoEvPosR1] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
-    ;
-    values[kTwoEvPosR2] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
-  }
   values[kTwoEvDeltaZ] = ev1.posZ() - ev2.posZ();
   values[kTwoEvDeltaX] = ev1.posX() - ev2.posX();
   values[kTwoEvDeltaY] = ev1.posY() - ev2.posY();
+  //}
+  values[kTwoEvPVcontrib1] = ev1.numContrib();
+  values[kTwoEvPVcontrib2] = ev2.numContrib();
   values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX] * values[kTwoEvDeltaX] + values[kTwoEvDeltaY] * values[kTwoEvDeltaY]);
 }
 
@@ -2614,6 +2659,12 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTOFbeta] = track.beta();
     }
   }
+  if constexpr ((fillMap & TrackTOFService) > 0) {
+    values[kTOFnSigmaEl] = track.tofNSigmaDynEl();
+    values[kTOFnSigmaEl] = track.tofNSigmaDynPi();
+    values[kTOFnSigmaEl] = track.tofNSigmaDynKa();
+    values[kTOFnSigmaEl] = track.tofNSigmaDynPr();
+  }
   if constexpr ((fillMap & TrackTPCPID) > 0) {
     values[kTPCnSigmaEl] = track.tpcNSigmaEl();
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
@@ -2804,6 +2855,60 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   FillTrackDerived(values);
 }
 
+template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
+void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C const& collision, float* values)
+{
+
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m = o2::constants::physics::MassBPlus;
+  float pdgLifetime = 1.638e-12; // s
+  if (std::abs(MotherTrack.pdgCode()) == 511) {
+    m = o2::constants::physics::MassB0;
+    pdgLifetime = 1.517e-12; // s
+  }
+
+  // Extract the collision primary vertex position using constexpr, since the collision type may be CollisionMC or ReducedMCEvent
+  double collPos[3] = {0.0, 0.0, 0.0};
+  if constexpr (fillMap & ObjTypes::CollisionMC) {
+    collPos[0] = collision.posX();
+    collPos[1] = collision.posY();
+    collPos[2] = collision.posZ();
+  } else if constexpr (fillMap & ObjTypes::ReducedEventMC) {
+    collPos[0] = collision.mcPosX();
+    collPos[1] = collision.mcPosY();
+    collPos[2] = collision.mcPosZ();
+  }
+
+  // displaced vertex is compued with decay product (track) and momentum of mother particle (MotherTrack)
+  values[kMCVertexingLxy] = (collPos[0] - track.vx()) * (collPos[0] - track.vx()) +
+                            (collPos[1] - track.vy()) * (collPos[1] - track.vy());
+  values[kMCVertexingLz] = (collPos[2] - track.vz()) * (collPos[2] - track.vz());
+  values[kMCVertexingLxyz] = values[kMCVertexingLxy] + values[kMCVertexingLz];
+  values[kMCVertexingLxy] = std::sqrt(values[kMCVertexingLxy]);
+  values[kMCVertexingLz] = std::sqrt(values[kMCVertexingLz]);
+  values[kMCVertexingLxyz] = std::sqrt(values[kMCVertexingLxyz]);
+  values[kMCVertexingTauz] = (collPos[2] - track.vz()) * m / (TMath::Abs(MotherTrack.pz()) * o2::constants::physics::LightSpeedCm2NS);
+  values[kMCVertexingTauxy] = values[kMCVertexingLxy] * m / (MotherTrack.pt() * o2::constants::physics::LightSpeedCm2NS);
+
+  values[kMCCosPointingAngle] = ((collPos[0] - track.vx()) * MotherTrack.px() +
+                                 (collPos[1] - track.vy()) * MotherTrack.py() +
+                                 (collPos[2] - track.vz()) * MotherTrack.pz()) /
+                                (MotherTrack.p() * values[VarManager::kMCVertexingLxyz]);
+
+  values[kMCLxyExpected] = (MotherTrack.pt() / m) * (pdgLifetime * o2::constants::physics::LightSpeedCm2S);
+  values[kMCLxyzExpected] = (MotherTrack.p() / m) * (pdgLifetime * o2::constants::physics::LightSpeedCm2S);
+
+  values[kMCVertexingLzProjected] = ((track.vz() - collPos[2]) * MotherTrack.pz()) / TMath::Abs(MotherTrack.pz());
+  values[kMCVertexingLxyProjected] = (((track.vx() - collPos[0]) * MotherTrack.px()) + ((track.vy() - collPos[1]) * MotherTrack.py())) / TMath::Abs(MotherTrack.pt());
+  values[kMCVertexingLxyzProjected] = (((track.vx() - collPos[1]) * MotherTrack.px()) + ((track.vy() - collPos[1]) * MotherTrack.py()) + ((track.vz() - collPos[2]) * MotherTrack.pz())) / MotherTrack.p();
+  values[kMCVertexingTauxyProjected] = values[kMCVertexingLxyProjected] * m / (MotherTrack.pt());
+  values[kMCVertexingTauzProjected] = values[kMCVertexingLzProjected] * m / TMath::Abs(MotherTrack.pz());
+  values[kMCVertexingTauxyzProjected] = values[kMCVertexingLxyzProjected] * m / (MotherTrack.p());
+}
+
 template <int pairType, typename T, typename T1>
 void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values)
 {
@@ -2811,7 +2916,6 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   float MassHadron;
   if constexpr (pairType == kJpsiHadronMass) {
     MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
-    ;
   }
   if constexpr (pairType == kJpsiPionMass) {
     MassHadron = o2::constants::physics::MassPionCharged;
@@ -2830,85 +2934,42 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   values[kMCdeltaeta] = deltaeta;
   values[kMCHadronPt] = t1.pt();
   values[kMCHadronEta] = t1.eta();
+  values[kMCHadronPhi] = RecoDecay::constrainAngle(t1.phi(), -o2::constants::math::PIHalf);
   values[kMCHadronPdgCode] = t1.pdgCode();
   values[kMCWeight] = E_boost / o2::constants::physics::MassJPsi;
-  values[kMCCosChi_minus] = -999.9f;
-  values[kMCCosTheta_minus] = -999.9f;
-  values[kMCCosChi_toward_minus] = -999.9f;
-  values[kMCCosTheta_toward_minus] = -999.9f;
-  values[kMCCosChi_away_minus] = -999.9f;
-  values[kMCCosTheta_away_minus] = -999.9f;
-  values[kMCCosChi_trans_minus] = -999.9f;
-  values[kMCCosTheta_trans_minus] = -999.9f;
-  values[kMCdeltaphi_minus] = -999.9f;
-  values[kMCdeltaphi_toward_minus] = -999.9f;
-  values[kMCdeltaphi_away_minus] = -999.9f;
-  values[kMCdeltaphi_trans_minus] = -999.9f;
 
-  if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -0.25 * TMath::Pi()) || (deltaphi > 1.25 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi())) {
+  values[kMCCosChi_randomPhi_trans] = -999.9f;
+  values[kMCCosChi_randomPhi_toward] = -999.9f;
+  values[kMCCosChi_randomPhi_away] = -999.9f;
 
-    values[kMCCosChi_minus] = CosChi;
-    values[kMCCosTheta_minus] = CosTheta;
-    values[kMCWeight_minus] = E_boost / o2::constants::physics::MassJPsi;
+  values[kMCdeltaphi_randomPhi_trans] = -999.9f;
+  values[kMCdeltaphi_randomPhi_toward] = -999.9f;
+  values[kMCdeltaphi_randomPhi_away] = -999.9f;
 
-    ROOT::Math::PtEtaPhiMVector v2_toward_minus(t1.pt(), t1.eta(), t1.phi() - 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_toward_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_toward_minus);
-    values[kMCCosTheta_toward_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_toward_minus);
-    values[kMCWeight_toward_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_toward_minus) / o2::constants::physics::MassJPsi;
+  float randomPhi_trans = -o2::constants::math::PIHalf;
+  float randomPhi_toward = -o2::constants::math::PIHalf;
+  float randomPhi_away = -o2::constants::math::PIHalf;
 
-    ROOT::Math::PtEtaPhiMVector v2_away_minus(t1.pt(), t1.eta(), t1.phi() + 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_away_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_away_minus);
-    values[kMCCosTheta_away_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_away_minus);
-    values[kMCWeight_away_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_away_minus) / o2::constants::physics::MassJPsi;
+  if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+    randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+    randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
 
-    ROOT::Math::PtEtaPhiMVector v2_trans_minus(t1.pt(), t1.eta(), t1.phi() + TMath::Pi(), MassHadron);
-    values[kMCCosChi_trans_minus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_trans_minus);
-    values[kMCCosTheta_trans_minus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_trans_minus);
-    values[kMCWeight_trans_minus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_trans_minus) / o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
+    values[kMCWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M();
 
-    values[kMCdeltaphi_minus] = deltaphi;
-    values[kMCdeltaphi_toward_minus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() - 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
-    values[kMCdeltaphi_away_minus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() + 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
-    values[kMCdeltaphi_trans_minus] = RecoDecay::constrainAngle(track.phi() - t1.phi() + TMath::Pi(), -o2::constants::math::PIHalf);
-  }
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_randomPhi_toward] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_toward);
+    values[kMCWeight_randomPhi_toward] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_toward) / v1.M();
 
-  values[kMCCosChi_plus] = -999.9f;
-  values[kMCCosTheta_plus] = -999.9f;
-  values[kMCCosChi_toward_plus] = -999.9f;
-  values[kMCCosTheta_toward_plus] = -999.9f;
-  values[kMCCosChi_away_plus] = -999.9f;
-  values[kMCCosTheta_away_plus] = -999.9f;
-  values[kMCCosChi_trans_plus] = -999.9f;
-  values[kMCCosTheta_trans_plus] = -999.9f;
-  values[kMCdeltaphi_plus] = -999.9f;
-  values[kMCdeltaphi_toward_plus] = -999.9f;
-  values[kMCdeltaphi_away_plus] = -999.9f;
-  values[kMCdeltaphi_trans_plus] = -999.9f;
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
+    values[kMCWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M();
 
-  if (deltaphi > 0.25 * TMath::Pi() && deltaphi < 0.75 * TMath::Pi()) {
-    values[kMCCosChi_plus] = CosChi;
-    values[kMCCosTheta_plus] = CosTheta;
-    values[kMCWeight_plus] = E_boost / o2::constants::physics::MassJPsi;
-
-    ROOT::Math::PtEtaPhiMVector v2_toward_plus(t1.pt(), t1.eta(), t1.phi() + 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_toward_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_toward_plus);
-    values[kMCCosTheta_toward_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_toward_plus);
-    values[kMCWeight_toward_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_toward_plus) / o2::constants::physics::MassJPsi;
-
-    ROOT::Math::PtEtaPhiMVector v2_away_plus(t1.pt(), t1.eta(), t1.phi() - 0.5 * TMath::Pi(), MassHadron);
-    values[kMCCosChi_away_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_away_plus);
-    values[kMCCosTheta_away_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_away_plus);
-    values[kMCWeight_away_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_away_plus) / o2::constants::physics::MassJPsi;
-
-    ROOT::Math::PtEtaPhiMVector v2_trans_plus(t1.pt(), t1.eta(), t1.phi() + TMath::Pi(), MassHadron);
-    values[kMCCosChi_trans_plus] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_trans_plus);
-    values[kMCCosTheta_trans_plus] = LorentzTransformJpsihadroncosChi("costheta", v1, v2_trans_plus);
-    values[kMCWeight_trans_plus] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_trans_plus) / o2::constants::physics::MassJPsi;
-
-    values[kMCdeltaphi_plus] = deltaphi;
-    values[kMCdeltaphi_toward_plus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() + 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
-    values[kMCdeltaphi_away_plus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() - 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
-    values[kMCdeltaphi_trans_plus] = RecoDecay::constrainAngle(track.phi() - (t1.phi() - 0.5 * TMath::Pi()), -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
+    values[kMCdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
   }
 }
 
@@ -5240,7 +5301,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     double Q1 = (dilepton.mass() * dilepton.mass() - hadronMass * hadronMass) / Pinv;
     values[kDileptonHadronKstar] = sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
   }
-  if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau]) {
+  if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau] || fgUsedVars[kCosChi_randomPhi_trans] || fgUsedVars[kCosChi_randomPhi_toward] || fgUsedVars[kCosChi_randomPhi_away]) {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
     ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
     values[kCosChi] = LorentzTransformJpsihadroncosChi("coschi", v1, v2);
@@ -5250,8 +5311,44 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kEWeight_before] = v2.Pt() / v1.M();
     values[kPtDau] = v2.pt();
     values[kEtaDau] = v2.eta();
-    values[kPhiDau] = v2.phi();
+    values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
+
+    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
+    values[kCosChi_randomPhi_trans] = -999.9f;
+    values[kCosChi_randomPhi_toward] = -999.9f;
+    values[kCosChi_randomPhi_away] = -999.9f;
+
+    values[kdeltaphi_randomPhi_trans] = -999.9f;
+    values[kdeltaphi_randomPhi_toward] = -999.9f;
+    values[kdeltaphi_randomPhi_away] = -999.9f;
+
+    float randomPhi_trans = -o2::constants::math::PIHalf;
+    float randomPhi_toward = -o2::constants::math::PIHalf;
+    float randomPhi_away = -o2::constants::math::PIHalf;
+
+    if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+      randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+      randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
+      values[kCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
+      values[kWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M();
+
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, o2::constants::physics::MassPionCharged);
+      values[kCosChi_randomPhi_toward] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_toward);
+      values[kWeight_randomPhi_toward] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_toward) / v1.M();
+
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, o2::constants::physics::MassPionCharged);
+      values[kCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
+      values[kWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M();
+
+      values[kdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
+      values[kdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
+    }
   }
+
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();
     if (delta > 3.0 / 2.0 * M_PI) {
@@ -5858,5 +5955,60 @@ float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1,
   }
   return value;
 }
+template <typename T1, typename T2, typename T3, typename T4, typename T5>
+void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& fv0as, T5 const& fdds, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
 
+  // Initialize FIT info structure
+  upchelpers::FITInfo fitInfo{};
+  udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
+
+  // Fill FT0 information
+  values[kAmplitudeFT0A] = fitInfo.ampFT0A;
+  values[kAmplitudeFT0C] = fitInfo.ampFT0C;
+  values[kTimeFT0A] = fitInfo.timeFT0A;
+  values[kTimeFT0C] = fitInfo.timeFT0C;
+  values[kTriggerMaskFT0] = static_cast<float>(fitInfo.triggerMaskFT0);
+  const auto ft0Index = bc.ft0Id();
+  if (ft0Index < 0 || ft0Index >= ft0s.size()) {
+    values[kNFiredChannelsFT0A] = -1;
+    values[kNFiredChannelsFT0C] = -1;
+  } else {
+    const auto ft0 = ft0s.iteratorAt(ft0Index);
+    values[kNFiredChannelsFT0A] = ft0.channelA().size();
+    values[kNFiredChannelsFT0C] = ft0.channelC().size();
+  }
+  // Fill FDD information
+  values[kAmplitudeFDDA] = fitInfo.ampFDDA;
+  values[kAmplitudeFDDC] = fitInfo.ampFDDC;
+  values[kTimeFDDA] = fitInfo.timeFDDA;
+  values[kTimeFDDC] = fitInfo.timeFDDC;
+  values[kTriggerMaskFDD] = static_cast<float>(fitInfo.triggerMaskFDD);
+
+  // Fill FV0A information
+  values[kAmplitudeFV0A] = fitInfo.ampFV0A;
+  values[kTimeFV0A] = fitInfo.timeFV0A;
+  values[kTriggerMaskFV0A] = static_cast<float>(fitInfo.triggerMaskFV0A);
+  const auto fv0aIndex = bc.fv0aId();
+  if (fv0aIndex < 0 || fv0aIndex >= fv0as.size()) {
+    values[kNFiredChannelsFV0A] = -1;
+  } else {
+    const auto fv0a = fv0as.iteratorAt(fv0aIndex);
+    values[kNFiredChannelsFV0A] = fv0a.channel().size();
+  }
+  // Fill pileup flags
+  values[kBBFT0Apf] = static_cast<float>(fitInfo.BBFT0Apf);
+  values[kBGFT0Apf] = static_cast<float>(fitInfo.BGFT0Apf);
+  values[kBBFT0Cpf] = static_cast<float>(fitInfo.BBFT0Cpf);
+  values[kBGFT0Cpf] = static_cast<float>(fitInfo.BGFT0Cpf);
+  values[kBBFV0Apf] = static_cast<float>(fitInfo.BBFV0Apf);
+  values[kBGFV0Apf] = static_cast<float>(fitInfo.BGFV0Apf);
+  values[kBBFDDApf] = static_cast<float>(fitInfo.BBFDDApf);
+  values[kBGFDDApf] = static_cast<float>(fitInfo.BGFDDApf);
+  values[kBBFDDCpf] = static_cast<float>(fitInfo.BBFDDCpf);
+  values[kBGFDDCpf] = static_cast<float>(fitInfo.BGFDDCpf);
+}
 #endif // PWGDQ_CORE_VARMANAGER_H_

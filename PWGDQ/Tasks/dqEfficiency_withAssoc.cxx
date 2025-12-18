@@ -89,11 +89,22 @@ DECLARE_SOA_COLUMN(EtaBcandidate, etaBcandidate, float);
 DECLARE_SOA_COLUMN(PhiBcandidate, phiBcandidate, float);
 DECLARE_SOA_COLUMN(RapBcandidate, rapBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
+DECLARE_SOA_COLUMN(LxyBcandidateErr, lxyBcandidateErr, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
+DECLARE_SOA_COLUMN(LxyzBcandidateErr, lxyzBcandidateErr, float);
 DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
+DECLARE_SOA_COLUMN(LzBcandidateErr, lzBcandidateErr, float);
 DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
+DECLARE_SOA_COLUMN(TauxyBcandidateErr, tauxyBcandidateErr, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
+DECLARE_SOA_COLUMN(TauzBcandidateErr, tauzBcandidateErr, float);
+DECLARE_SOA_COLUMN(MCLxyBcandidate, MClxyBcandidate, float);
+DECLARE_SOA_COLUMN(MCLxyzBcandidate, MClxyzBcandidate, float);
+DECLARE_SOA_COLUMN(MCLzBcandidate, MClzBcandidate, float);
+DECLARE_SOA_COLUMN(MCTauxyBcandidate, MCtauxyBcandidate, float);
+DECLARE_SOA_COLUMN(MCTauzBcandidate, MCtauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
+DECLARE_SOA_COLUMN(MCCosPBcandidate, MCcosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
 DECLARE_SOA_COLUMN(GlobalIndexassoc, globalIndexassoc, uint64_t);
 DECLARE_SOA_COLUMN(GlobalIndexleg1, globalIndexleg1, uint64_t);
@@ -173,8 +184,10 @@ DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSele
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::RunNumber, dqanalysisflags::EventIdx, dqanalysisflags::EventTimestamp,
                   dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate, dqanalysisflags::PhiBcandidate, dqanalysisflags::RapBcandidate,
-                  dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
-                  dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
+                  dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyBcandidateErr, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LxyzBcandidateErr, dqanalysisflags::LzBcandidate, dqanalysisflags::LzBcandidateErr,
+                  dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauxyBcandidateErr, dqanalysisflags::TauzBcandidate, dqanalysisflags::TauzBcandidateErr, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
+                  dqanalysisflags::MCLxyBcandidate, dqanalysisflags::MCLxyzBcandidate, dqanalysisflags::MCLzBcandidate,
+                  dqanalysisflags::MCTauxyBcandidate, dqanalysisflags::MCTauzBcandidate, dqanalysisflags::MCCosPBcandidate,
                   dqanalysisflags::GlobalIndexassoc, dqanalysisflags::GlobalIndexleg1, dqanalysisflags::GlobalIndexleg2,
                   dqanalysisflags::PINassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Ptpair, dqanalysisflags::Etapair,
                   dqanalysisflags::PINleg1, dqanalysisflags::Etaleg1, dqanalysisflags::PINleg2, dqanalysisflags::Etaleg2,
@@ -681,7 +694,7 @@ struct AnalysisTrackSelection {
 
       // compute MC matching decisions and fill histograms for matched associations
       int isig = 0;
-      if (filterMap > 0 && track.has_reducedMCTrack()) {
+      if (filterMap > 0 && track.has_reducedMCTrack() && fConfigQA) {
         // loop over all MC signals
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
           // check if this MC signal is matched
@@ -2109,12 +2122,12 @@ struct AnalysisSameEventPairing {
               if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
                 continue;
               if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][0].Data(), VarManager::fgValues);
               } else {
                 if (sign1 > 0) {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][1].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][1].Data(), VarManager::fgValues);
                 } else {
-                  fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][2].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[ncuts + icut * fPairCuts.size() + iPairCut][2].Data(), VarManager::fgValues);
                 }
               }
             } // end loop (pair cuts)
@@ -3954,7 +3967,7 @@ struct AnalysisDileptonTrack {
 
   // Template function to run pair - hadron combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TTrackAssocs, typename TDileptons>
-  void runDileptonHadron(TEvent const& event, TTrackAssocs const& assocs, TTracks const& tracks, TDileptons const& dileptons, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
+  void runDileptonHadron(TEvent const& event, TTrackAssocs const& assocs, TTracks const& tracks, TDileptons const& dileptons, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -4018,6 +4031,8 @@ struct AnalysisDileptonTrack {
 
       // loop over track associations
       for (auto& assoc : assocs) {
+        VarManager::ResetValues(0, VarManager::kNVars, fValuesHadron);
+        VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
 
         uint32_t trackSelection = 0;
         if constexpr (TCandidateType == VarManager::kBtoJpsiEEK) {
@@ -4044,12 +4059,33 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
+
+          // fill MC truth values for the B hadron
+          auto currentMCParticle = trackMC;
+          if (mcDecision > 0) {
+            while (true) {
+              if (currentMCParticle.has_mothers()) {
+                currentMCParticle = currentMCParticle.template mothers_first_as<ReducedMCTracks>();
+                if (std::abs(currentMCParticle.pdgCode()) > 500 && std::abs(currentMCParticle.pdgCode()) < 549) { // nb! hardcoded pdgcodes
+                  VarManager::FillTrackMC(mcTracks, currentMCParticle, fValuesHadron);
+                  break;
+                }
+              } else {
+                break;
+              }
+            }
+            // fill mc truth vertexing (for the associated track as this will have a displaced vertex, while the B hadron is produced in the PV)
+            VarManager::FillTrackCollisionMC<VarManager::kBtoJpsiEEK, TEventFillMap>(trackMC, currentMCParticle, event.reducedMCevent(), fValuesHadron);
+          }
+
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(),
                        fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
-                       fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
-                       fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
+                       fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyErr], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLxyzErr], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingLzErr],
+                       fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauxyErr], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kVertexingTauzErr], fValuesHadron[VarManager::kCosPointingAngle],
                        fValuesHadron[VarManager::kVertexingChi2PCA],
+                       fValuesHadron[VarManager::kMCVertexingLxy], fValuesHadron[VarManager::kMCVertexingLxyz], fValuesHadron[VarManager::kMCVertexingLz],
+                       fValuesHadron[VarManager::kMCVertexingTauxy], fValuesHadron[VarManager::kMCVertexingTauz], fValuesHadron[VarManager::kMCCosPointingAngle],
                        track.globalIndex(), lepton1.globalIndex(), lepton2.globalIndex(),
                        track.tpcInnerParam(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.tpcInnerParam(), lepton1.eta(), lepton2.tpcInnerParam(), lepton2.eta(),
                        track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),

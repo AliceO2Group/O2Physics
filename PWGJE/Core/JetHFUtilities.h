@@ -602,20 +602,6 @@ bool isHFDaughterTrack(T& track, U& candidate)
 }
 
 /**
- * returns the index of the JMcParticle matched to the HF candidate
- *
- * @param candidate hf candidate that is being checked
- * @param tracks track table
- * @param particles particle table
- */
-template <typename T, typename U, typename V>
-auto matchedHFParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
-{
-  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
-  return candidateDaughterParticle.template mothers_first_as<V>().globalIndex(); // can we get the Id directly?
-}
-
-/**
  * returns the JMcParticle matched to the HF candidate
  *
  * @param candidate hf candidate that is being checked
@@ -625,8 +611,62 @@ auto matchedHFParticleId(const T& candidate, const U& /*tracks*/, const V& /*par
 template <typename T, typename U, typename V>
 auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
 {
-  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+
+  typename V::iterator candidateDaughterParticle;
+  if constexpr (isD0Candidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isDplusCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
+      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isDsCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
+      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isDstarCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+      candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isLcCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isB0Candidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
+      candidateDaughterParticle = candidate.template prong3_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isBplusCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::BplusToD0Pi) {
+      candidateDaughterParticle = candidate.template prong2_as<U>().template mcParticle_as<V>();
+    }
+  }
+  if constexpr (isXicToXiPiPiCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
+      candidateDaughterParticle = candidate.template prong0_as<U>().template mcParticle_as<V>();
+    }
+  }
   return candidateDaughterParticle.template mothers_first_as<V>();
+}
+
+/**
+ * returns the index of the JMcParticle matched to the HF candidate
+ *
+ * @param candidate hf candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedHFParticleId(const T& candidate, const U& tracks, const V& particles)
+{
+  return (matchedHFParticle(candidate, tracks, particles)).globalIndex();
 }
 
 /**

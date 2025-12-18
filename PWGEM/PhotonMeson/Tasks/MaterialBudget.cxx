@@ -14,46 +14,48 @@
 /// \author S. Mrozinski, smrozins@cern.ch
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TPCVDriftManager.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
-#include <TProfile2D.h>
+#include <TProfile.h>
+#include <TString.h>
 
 #include <algorithm>
+#include <bitset>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <deque>
-#include <iterator>
 #include <map>
-#include <ranges>
 #include <string>
+#include <string_view>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -62,17 +64,16 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils;
 using o2::constants::math::TwoPI;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMMCEventLabels>;
+using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMMCEventLabels>;
 using MyCollisionMC = MyCollisionsMC::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts, aod::MostProbableEMEventIdsInMC>;
@@ -773,7 +774,7 @@ struct MaterialBudget {
   {
     for (const auto& prev : pool) {
       for (const auto& g1 : current) {
-        if (!fV0PhotonCut.IsSelected<aod::V0Legs>(g1)) {
+        if (!fV0PhotonCut.IsSelected<decltype(g1), aod::V0Legs>(g1)) {
           continue;
         }
         for (const auto& g2 : prev) {
@@ -796,7 +797,7 @@ struct MaterialBudget {
   {
 
     for (const auto& g1 : v0s) {
-      if (!fV0PhotonCut.IsSelected<aod::V0Legs>(g1)) {
+      if (!fV0PhotonCut.IsSelected<decltype(g1), aod::V0Legs>(g1)) {
         continue;
       }
       ROOT::Math::PtEtaPhiMVector vGamma(g1.pt(), g1.eta(), g1.phi(), 0.);
@@ -862,7 +863,7 @@ struct MaterialBudget {
 
       for (const auto& v0 : v0sThisCollision) {
 
-        if (!fV0PhotonCut.IsSelected<aod::V0Legs>(v0)) {
+        if (!fV0PhotonCut.IsSelected<decltype(v0), aod::V0Legs>(v0)) {
           continue;
         }
 
@@ -963,7 +964,7 @@ struct MaterialBudget {
       std::vector<SimplePhoton> eventCopy;
       eventCopy.reserve(v0sThisCollision.size());
       for (const auto& v0 : v0sThisCollision) {
-        if (!fV0PhotonCut.IsSelected<aod::V0Legs>(v0)) {
+        if (!fV0PhotonCut.IsSelected<decltype(v0), aod::V0Legs>(v0)) {
           continue;
         }
         eventCopy.push_back({v0.pt(), v0.eta(), v0.phi(), v0.vz(), v0.v0radius()});
@@ -1045,7 +1046,7 @@ struct MaterialBudget {
         auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
         auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
-        if (!fV0PhotonCut.IsSelected<MyMCV0Legs>(v0)) {
+        if (!fV0PhotonCut.IsSelected<decltype(v0), MyMCV0Legs>(v0)) {
           continue;
         }
 
@@ -1133,7 +1134,7 @@ struct MaterialBudget {
 
       for (auto const& v0 : v0s) {
 
-        if (!fV0PhotonCut.IsSelected<MyMCV0Legs>(v0)) {
+        if (!fV0PhotonCut.IsSelected<decltype(v0), MyMCV0Legs>(v0)) {
           continue;
         }
 

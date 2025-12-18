@@ -16,6 +16,8 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_CLUSTERHISTOGRAMS_H_
 #define PWGEM_PHOTONMESON_UTILS_CLUSTERHISTOGRAMS_H_
 
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+
 #include <CommonConstants/MathConstants.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -24,8 +26,6 @@
 
 #include <cstddef>
 #include <string_view>
-
-#include <math.h>
 
 namespace o2::aod::pwgem::photonmeson::utils::clusterhistogram
 {
@@ -52,15 +52,17 @@ inline void addClusterHistograms(o2::framework::HistogramRegistry* fRegistry, bo
     fRegistry->add("Cluster/before/hTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c})", o2::framework::kTH1F, {{200, 0., 5.}}, true);
   }
 
-  auto hClusterQualityCuts = fRegistry->add<TH2>("Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::kTH2F, {{8, -0.5, 7.5}, {500, 0, 50}}, true);
+  auto hClusterQualityCuts = fRegistry->add<TH2>("Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, {500, 0, 50}}, true);
   hClusterQualityCuts->GetXaxis()->SetBinLabel(1, "In");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(2, "Energy");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(3, "NCell");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(4, "M02");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(5, "Timing");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(6, "Track matching");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(7, "Exotic");
-  hClusterQualityCuts->GetXaxis()->SetBinLabel(8, "Out");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(2, "Definition");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(3, "Energy");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(4, "NCell");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(5, "M02");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(6, "Timing");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(7, "TM");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(8, "Sec. TM");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(9, "Exotic");
+  hClusterQualityCuts->GetXaxis()->SetBinLabel(10, "Out");
 
   fRegistry->addClone("Cluster/before/", "Cluster/after/");
 }

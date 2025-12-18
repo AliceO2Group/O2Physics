@@ -12,19 +12,24 @@
 /// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
-#include "Math/Vector4D.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep
+
+#include <cmath>
+#include <set>
+#include <string>
+#include <utility>
 
 using namespace o2;
 using namespace o2::soa;
@@ -235,13 +240,13 @@ struct skimmerDalitzEE {
     if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
-    if (applyPiRej_TPC && abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
+    if (applyPiRej_TPC && std::abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
       return false;
     }
-    if (applyKaRej_TPC && abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa) {
+    if (applyKaRej_TPC && std::abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa) {
       return false;
     }
-    if (applyPrRej_TPC && abs(track.tpcNSigmaPr()) < maxTPCNsigmaPr) {
+    if (applyPrRej_TPC && std::abs(track.tpcNSigmaPr()) < maxTPCNsigmaPr) {
       return false;
     }
 
@@ -251,10 +256,10 @@ struct skimmerDalitzEE {
   template <typename TTrack>
   bool isElectron_TOFrequire(TTrack const& track)
   {
-    if (applyPiRej_TPC && abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
+    if (applyPiRej_TPC && std::abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
       return false;
     }
-    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <EM_EEPairType pairtype, bool isCEFP, typename TCollision, typename TTracks1, typename TTracks2>
@@ -290,7 +295,7 @@ struct skimmerDalitzEE {
 
         fRegistry.fill(HIST("hNpairs"), static_cast<int>(pairtype));
         npair++;
-      }      // end of pairing loop
+      } // end of pairing loop
     } else { // LS
       for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
         if (!checkTrack(t1) || !checkTrack(t2)) {

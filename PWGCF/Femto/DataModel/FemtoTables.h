@@ -163,7 +163,7 @@ DECLARE_SOA_COLUMN(ItsClusterSizes, itsClusterSizes, uint32_t);      //! Its clu
 
 // tpc related information
 DECLARE_SOA_COLUMN(TpcSignal, tpcSignal, float);                             //! Tpc signal
-DECLARE_SOA_COLUMN(TpcInnerParam, tpcInnerParam, bool);                      //! Momentum at inner wall of Tpc
+DECLARE_SOA_COLUMN(TpcInnerParam, tpcInnerParam, float);                     //! Momentum at inner wall of Tpc
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                     //! Number of Tpc clusters
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);         //! Number of Tpc crossed rows
 DECLARE_SOA_DYNAMIC_COLUMN(TpcCrossedRowsOverFound, tpcCrossedRowsOverFound, //! Number of crossed rows over found Tpc clusters

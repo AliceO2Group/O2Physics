@@ -41,205 +41,154 @@ using namespace o2::framework::expressions;
 
 struct LuminosityProducer {
 
-  Produces<aod::StoredBCCounts> storedBCCountsTable;
-  Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
+  Produces<aod::StoredBCCounts> bcCountsTable;
+  Produces<aod::StoredCollisionCounts> collisionCountsTable;
 
   Configurable<float> vertexZCutForCounting{"vertexZCutForCounting", 10.0, "choose z-vertex cut for collision counter"};
   Configurable<std::string> customEventSelections{"customEventSelections", "sel8", "choose custom event selection to be added"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
 
   void init(InitContext&)
   {
   }
 
-  void processStoreBCCounting(aod::JBCs const& bcs, aod::BCCounts const& bcCounts)
+  void processBCCountingNonDerived(aod::JBCs const& bcs)
   {
-    int readBCCounter = 0;
-    int readBCWithTVXCounter = 0;
-    int readBCWithTVXAndNoTFBCounter = 0;
-    int readBCWithTVXAndNoTFBAndNoITSROFBCounter = 0;
+    int bcCounter = 0;
+    int bcWithTVXCounter = 0;
+    int bcWithTVXAndNoTFBCounter = 0;
+    int bcWithTVXAndNoTFBAndNoITSROFBCounter = 0;
     for (const auto& bc : bcs) {
-      readBCCounter++;
+      bcCounter++;
       if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
-        readBCWithTVXCounter++;
+        bcWithTVXCounter++;
         if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoTimeFrameBorder)) {
-          readBCWithTVXAndNoTFBCounter++;
+          bcWithTVXAndNoTFBCounter++;
           if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoITSROFrameBorder)) {
-            readBCWithTVXAndNoTFBAndNoITSROFBCounter++;
+            bcWithTVXAndNoTFBAndNoITSROFBCounter++;
           }
         }
       }
     }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndNoTFB;
-    std::vector<int> previousReadCountsWithTVXAndNoTFBAndNoITSROFB;
-    int iPreviousDataFrame = 0;
-    for (const auto& bcCount : bcCounts) {
-      auto readBCCounterSpan = bcCount.readCounts();
-      auto readBCWithTVXCounterSpan = bcCount.readCountsWithTVX();
-      auto readBCWithTVXAndNoTFBCounterSpan = bcCount.readCountsWithTVXAndNoTFB();
-      auto readBCWithTVXAndNoTFBAndNoITSROFBCounterSpan = bcCount.readCountsWithTVXAndNoTFBAndNoITSROFB();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readBCCounterSpan.begin(), readBCCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readBCWithTVXCounterSpan.begin(), readBCWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readBCWithTVXAndNoTFBCounterSpan.begin(), readBCWithTVXAndNoTFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndNoTFB));
-        std::copy(readBCWithTVXAndNoTFBAndNoITSROFBCounterSpan.begin(), readBCWithTVXAndNoTFBAndNoITSROFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndNoTFBAndNoITSROFB));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) { // in principle we only care about the first element, but might be interesting information to keep
-          previousReadCounts[i] += readBCCounterSpan[i];
-          previousReadCountsWithTVX[i] += readBCWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndNoTFB[i] += readBCWithTVXAndNoTFBCounterSpan[i];
-          previousReadCountsWithTVXAndNoTFBAndNoITSROFB[i] += readBCWithTVXAndNoTFBAndNoITSROFBCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readBCCounter);
-    previousReadCountsWithTVX.push_back(readBCWithTVXCounter);
-    previousReadCountsWithTVXAndNoTFB.push_back(readBCWithTVXAndNoTFBCounter);
-    previousReadCountsWithTVXAndNoTFBAndNoITSROFB.push_back(readBCWithTVXAndNoTFBAndNoITSROFBCounter);
-    storedBCCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndNoTFB, previousReadCountsWithTVXAndNoTFBAndNoITSROFB);
+    bcCountsTable(bcCounter, bcWithTVXCounter, bcWithTVXAndNoTFBCounter, bcWithTVXAndNoTFBAndNoITSROFBCounter);
   }
-  PROCESS_SWITCH(LuminosityProducer, processStoreBCCounting, "write out bc counting output table", true);
+  PROCESS_SWITCH(LuminosityProducer, processBCCountingNonDerived, "write out bc counting output table for running on full AO2D", true);
 
-  void processStoreCollisionCounting(aod::JetCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
+  void processBCCountingDerived(aod::BCCounts const& bcCounts)
   {
-    int readCollisionCounter = 0;
-    int readCollisionWithTVXCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSel8Counter = 0;
-    int readCollisionWithTVXAndZVertexAndSel8FullCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSelMCCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSelMCFullCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSelTVXCounter = 0; // redundant but we keep it
-    int readCollisionWithTVXAndZVertexAndSel7Counter = 0;
-    int readCollisionWithTVXAndZVertexAndSel7KINT7Counter = 0;
-    int readCollisionWithCustomCounter = 0;
+    int bcCounter = 0;
+    int bcWithTVXCounter = 0;
+    int bcWithTVXAndNoTFBCounter = 0;
+    int bcWithTVXAndNoTFBAndNoITSROFBCounter = 0;
+
+    for (const auto& bcCount : bcCounts) {
+      bcCounter += bcCount.counts();
+      bcWithTVXCounter += bcCount.countsWithTVX();
+      bcWithTVXAndNoTFBCounter += bcCount.countsWithTVXAndNoTFB();
+      bcWithTVXAndNoTFBAndNoITSROFBCounter += bcCount.countsWithTVXAndNoTFBAndNoITSROFB();
+    }
+    bcCountsTable(bcCounter, bcWithTVXCounter, bcWithTVXAndNoTFBCounter, bcWithTVXAndNoTFBAndNoITSROFBCounter);
+  }
+  PROCESS_SWITCH(LuminosityProducer, processBCCountingDerived, "write out bc counting output table for running on derived data", false);
+
+  void processCollisionCountingNonDerived(aod::JetCollisions const& collisions)
+  {
+
+    int collisionCounter = 0;
+    int collisionWithTVXCounter = 0;
+    int collisionWithTVXAndZVertexAndSel8Counter = 0;
+    int collisionWithTVXAndZVertexAndSel8FullCounter = 0;
+    int collisionWithTVXAndZVertexAndSel8FullPbPbCounter = 0;
+    int collisionWithTVXAndZVertexAndSelMCCounter = 0;
+    int collisionWithTVXAndZVertexAndSelMCFullCounter = 0;
+    int collisionWithTVXAndZVertexAndSelMCFullPbPbCounter = 0;
+    int collisionWithTVXAndZVertexAndSelUnanchoredMCCounter = 0;
+    int collisionWithTVXAndZVertexAndSelTVXCounter = 0; // redundant but we keep it
+    int collisionWithTVXAndZVertexAndSel7Counter = 0;
+    int collisionWithTVXAndZVertexAndSel7KINT7Counter = 0;
+    int collisionWithCustomCounter = 0;
     for (const auto& collision : collisions) {
-      readCollisionCounter++;
-      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("TVX"))) { // asuumes all selections include the TVX trigger and also assumes the default RCT configuration is always used
-        readCollisionWithTVXCounter++;
+      collisionCounter++;
+      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("TVX"), skipMBGapEvents, false)) { // asuumes all selections include the TVX trigger but for this step does not include the rct flags
+        collisionWithTVXCounter++;
         if (std::abs(collision.posZ()) > vertexZCutForCounting) {
           continue;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8"))) {
-          readCollisionWithTVXAndZVertexAndSel8Counter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSel8Counter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("TVX"))) {
-          readCollisionWithTVXAndZVertexAndSelTVXCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("TVX"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSelTVXCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel7"))) {
-          readCollisionWithTVXAndZVertexAndSel7Counter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel7"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSel7Counter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel7KINT7"))) {
-          readCollisionWithTVXAndZVertexAndSel7KINT7Counter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel7KINT7"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSel7KINT7Counter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8Full"))) {
-          readCollisionWithTVXAndZVertexAndSel8FullCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8Full"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSel8FullCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8FullPbPb"))) {
-          readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("sel8FullPbPb"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSel8FullPbPbCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selMC"))) {
-          readCollisionWithTVXAndZVertexAndSelMCCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selMC"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSelMCCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selMCFull"))) {
-          readCollisionWithTVXAndZVertexAndSelMCFullCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selMCFull"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSelMCFullCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selMCFullPbPb"))) {
-          readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selMCFullPbPb"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSelMCFullPbPbCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selUnanchoredMC"))) {
-          readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits("selUnanchoredMC"), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithTVXAndZVertexAndSelUnanchoredMCCounter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(customEventSelections)))) {
-          readCollisionWithCustomCounter++;
+        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(customEventSelections)), skipMBGapEvents, applyRCTSelections)) {
+          collisionWithCustomCounter++;
         }
       }
     }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSel8;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSel8Full;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSel8FullPbPb;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSelMC;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSelMCFull;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSelTVX;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSel7;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSel7KINT7;
-    std::vector<int> previousReadCountsWithCustom;
 
-    int iPreviousDataFrame = 0;
-    for (const auto& collisionCount : collisionCounts) {
-      auto readCollisionCounterSpan = collisionCount.readCounts();
-      auto readCollisionWithTVXCounterSpan = collisionCount.readCountsWithTVX();
-      auto readCollisionWithTVXAndZVertexAndSel8CounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel8();
-      auto readCollisionWithTVXAndZVertexAndSel8FullCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel8Full();
-      auto readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel8FullPbPb();
-      auto readCollisionWithTVXAndZVertexAndSelMCCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelMC();
-      auto readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelMCFull();
-      auto readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelMCFullPbPb();
-      auto readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelUnanchoredMC();
-      auto readCollisionWithTVXAndZVertexAndSelTVXCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelTVX();
-      auto readCollisionWithTVXAndZVertexAndSel7CounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel7();
-      auto readCollisionWithTVXAndZVertexAndSel7KINT7CounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel7KINT7();
-      auto readCollisionWithCustomCounterSpan = collisionCount.readCountsWithCustom();
-
-      if (iPreviousDataFrame == 0) {
-        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readCollisionWithTVXCounterSpan.begin(), readCollisionWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readCollisionWithTVXAndZVertexAndSel8CounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel8CounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel8));
-        std::copy(readCollisionWithTVXAndZVertexAndSel8FullCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel8FullCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel8Full));
-        std::copy(readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel8FullPbPb));
-        std::copy(readCollisionWithTVXAndZVertexAndSelMCCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelMCCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelMC));
-        std::copy(readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelMCFull));
-        std::copy(readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb));
-        std::copy(readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC));
-        std::copy(readCollisionWithTVXAndZVertexAndSelTVXCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelTVX));
-        std::copy(readCollisionWithTVXAndZVertexAndSel7CounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel7CounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel7));
-        std::copy(readCollisionWithTVXAndZVertexAndSel7KINT7CounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel7KINT7CounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel7KINT7));
-        std::copy(readCollisionWithCustomCounterSpan.begin(), readCollisionWithCustomCounterSpan.end(), std::back_inserter(previousReadCountsWithCustom));
-
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) { // in principle we only care about the first element, but might be interesting information to keep
-          previousReadCounts[i] += readCollisionCounterSpan[i];
-          previousReadCountsWithTVX[i] += readCollisionWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSel8[i] += readCollisionWithTVXAndZVertexAndSel8CounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSel8Full[i] += readCollisionWithTVXAndZVertexAndSel8FullCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSel8FullPbPb[i] += readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSelMC[i] += readCollisionWithTVXAndZVertexAndSelMCCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSelMCFull[i] += readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb[i] += readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC[i] += readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSelTVX[i] += readCollisionWithTVXAndZVertexAndSelTVXCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSel7[i] += readCollisionWithTVXAndZVertexAndSel7CounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSel7KINT7[i] += readCollisionWithTVXAndZVertexAndSel7KINT7CounterSpan[i];
-          previousReadCountsWithCustom[i] += readCollisionWithCustomCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readCollisionCounter);
-    previousReadCountsWithTVX.push_back(readCollisionWithTVXCounter);
-    previousReadCountsWithTVXAndZVertexAndSel8.push_back(readCollisionWithTVXAndZVertexAndSel8Counter);
-    previousReadCountsWithTVXAndZVertexAndSel8Full.push_back(readCollisionWithTVXAndZVertexAndSel8FullCounter);
-    previousReadCountsWithTVXAndZVertexAndSel8FullPbPb.push_back(readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter);
-    previousReadCountsWithTVXAndZVertexAndSelMC.push_back(readCollisionWithTVXAndZVertexAndSelMCCounter);
-    previousReadCountsWithTVXAndZVertexAndSelMCFull.push_back(readCollisionWithTVXAndZVertexAndSelMCFullCounter);
-    previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb.push_back(readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter);
-    previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC.push_back(readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter);
-    previousReadCountsWithTVXAndZVertexAndSelTVX.push_back(readCollisionWithTVXAndZVertexAndSelTVXCounter);
-    previousReadCountsWithTVXAndZVertexAndSel7.push_back(readCollisionWithTVXAndZVertexAndSel7Counter);
-    previousReadCountsWithTVXAndZVertexAndSel7KINT7.push_back(readCollisionWithTVXAndZVertexAndSel7KINT7Counter);
-    previousReadCountsWithCustom.push_back(readCollisionWithCustomCounter);
-
-    storedCollisionCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndZVertexAndSel8, previousReadCountsWithTVXAndZVertexAndSel8Full, previousReadCountsWithTVXAndZVertexAndSel8FullPbPb, previousReadCountsWithTVXAndZVertexAndSelMC, previousReadCountsWithTVXAndZVertexAndSelMCFull, previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb, previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC, previousReadCountsWithTVXAndZVertexAndSelTVX, previousReadCountsWithTVXAndZVertexAndSel7, previousReadCountsWithTVXAndZVertexAndSel7KINT7, previousReadCountsWithCustom);
+    collisionCountsTable(collisionCounter, collisionWithTVXCounter, collisionWithTVXAndZVertexAndSel8Counter, collisionWithTVXAndZVertexAndSel8FullCounter, collisionWithTVXAndZVertexAndSel8FullPbPbCounter, collisionWithTVXAndZVertexAndSelMCCounter, collisionWithTVXAndZVertexAndSelMCFullCounter, collisionWithTVXAndZVertexAndSelMCFullPbPbCounter, collisionWithTVXAndZVertexAndSelUnanchoredMCCounter, collisionWithTVXAndZVertexAndSelTVXCounter, collisionWithTVXAndZVertexAndSel7Counter, collisionWithTVXAndZVertexAndSel7KINT7Counter, collisionWithCustomCounter);
   }
-  PROCESS_SWITCH(LuminosityProducer, processStoreCollisionCounting, "write out collision counting output table", true);
+  PROCESS_SWITCH(LuminosityProducer, processCollisionCountingNonDerived, "write out collision counting output table for running on full AO2D", true);
+
+  void processStoreCollisionCountingDerived(aod::CollisionCounts const& collisionCounts)
+  {
+    int collisionCounter = 0;
+    int collisionWithTVXCounter = 0;
+    int collisionWithTVXAndZVertexAndSel8Counter = 0;
+    int collisionWithTVXAndZVertexAndSel8FullCounter = 0;
+    int collisionWithTVXAndZVertexAndSel8FullPbPbCounter = 0;
+    int collisionWithTVXAndZVertexAndSelMCCounter = 0;
+    int collisionWithTVXAndZVertexAndSelMCFullCounter = 0;
+    int collisionWithTVXAndZVertexAndSelMCFullPbPbCounter = 0;
+    int collisionWithTVXAndZVertexAndSelUnanchoredMCCounter = 0;
+    int collisionWithTVXAndZVertexAndSelTVXCounter = 0; // redundant but we keep it
+    int collisionWithTVXAndZVertexAndSel7Counter = 0;
+    int collisionWithTVXAndZVertexAndSel7KINT7Counter = 0;
+    int collisionWithCustomCounter = 0;
+    for (const auto& collisionCount : collisionCounts) {
+      collisionCounter += collisionCount.counts();
+      collisionWithTVXCounter += collisionCount.countsWithTVX();
+      collisionWithTVXAndZVertexAndSel8Counter += collisionCount.countsWithTVXAndZVertexAndSel8();
+      collisionWithTVXAndZVertexAndSel8FullCounter += collisionCount.countsWithTVXAndZVertexAndSel8Full();
+      collisionWithTVXAndZVertexAndSel8FullPbPbCounter += collisionCount.countsWithTVXAndZVertexAndSel8FullPbPb();
+      collisionWithTVXAndZVertexAndSelMCCounter += collisionCount.countsWithTVXAndZVertexAndSelMC();
+      collisionWithTVXAndZVertexAndSelMCFullCounter += collisionCount.countsWithTVXAndZVertexAndSelMCFull();
+      collisionWithTVXAndZVertexAndSelMCFullPbPbCounter += collisionCount.countsWithTVXAndZVertexAndSelMCFullPbPb();
+      collisionWithTVXAndZVertexAndSelUnanchoredMCCounter += collisionCount.countsWithTVXAndZVertexAndSelUnanchoredMC();
+      collisionWithTVXAndZVertexAndSelTVXCounter += collisionCount.countsWithTVXAndZVertexAndSelTVX();
+      collisionWithTVXAndZVertexAndSel7Counter += collisionCount.countsWithTVXAndZVertexAndSel7();
+      collisionWithTVXAndZVertexAndSel7KINT7Counter += collisionCount.countsWithTVXAndZVertexAndSel7KINT7();
+      collisionWithCustomCounter += collisionCount.countsWithCustomSelection();
+    }
+
+    collisionCountsTable(collisionCounter, collisionWithTVXCounter, collisionWithTVXAndZVertexAndSel8Counter, collisionWithTVXAndZVertexAndSel8FullCounter, collisionWithTVXAndZVertexAndSel8FullPbPbCounter, collisionWithTVXAndZVertexAndSelMCCounter, collisionWithTVXAndZVertexAndSelMCFullCounter, collisionWithTVXAndZVertexAndSelMCFullPbPbCounter, collisionWithTVXAndZVertexAndSelUnanchoredMCCounter, collisionWithTVXAndZVertexAndSelTVXCounter, collisionWithTVXAndZVertexAndSel7Counter, collisionWithTVXAndZVertexAndSel7KINT7Counter, collisionWithCustomCounter);
+  }
+  PROCESS_SWITCH(LuminosityProducer, processStoreCollisionCountingDerived, "write out collision counting output table for running on derived data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

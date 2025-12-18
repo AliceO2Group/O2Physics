@@ -23,7 +23,7 @@ jobs:
     steps:
       # Git Checkout
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # Checkout the HEAD of the PR instead of the merge commit.
           ref: ${{ github.event.pull_request.head.sha }}
@@ -38,7 +38,7 @@ jobs:
         id: ml
         # You can override MegaLinter flavor used to have faster performances
         # More info at https://megalinter.io/flavors/
-        uses: oxsecurity/megalinter@v9.1.0
+        uses: oxsecurity/megalinter@v9.2.0
         env:
           # All available variables are described in documentation:
           # https://megalinter.io/configuration/

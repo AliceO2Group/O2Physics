@@ -30,7 +30,7 @@ jobs:
           echo BRANCH_HEAD="$branch_head" >> "$GITHUB_ENV"
           echo BRANCH_BASE="$branch_base" >> "$GITHUB_ENV"
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ env.BRANCH_HEAD }}
           fetch-depth: 0 # needed to get the full history

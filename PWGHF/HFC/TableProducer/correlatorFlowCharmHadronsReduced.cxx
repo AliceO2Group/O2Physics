@@ -155,7 +155,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       LOGP(fatal, "The size of bdtScore0PtMaxs and bdtScore1PtMins must be the one of binsPtTrig minus one!");
     }
 
-    if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix) {
+    if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix || doprocessSameEventCharmHadWCentMixBase || doprocessMixedEventCharmHadWCentMixBase) {
       poolBins = (centPoolBins->size() - 2) * (zPoolBins->size() - 2);
     } else {
       poolBins = (multPoolBins->size() - 2) * (zPoolBins->size() - 2);
@@ -434,8 +434,8 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         continue;
       }
 
-      int poolBin = binPolicy.getBin({c2.posZ(), c2.multiplicity()});
-      int poolBinTrigCand = binPolicy.getBin({c1.posZ(), c1.multiplicity()});
+      int poolBin = binPolicy.getBin({c2.posZ(), c2.centrality()});
+      int poolBinTrigCand = binPolicy.getBin({c1.posZ(), c1.centrality()});
 
       if (poolBin != poolBinTrigCand) {
         LOGF(info, "Error, poolBins are different");
@@ -610,7 +610,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   void processSameEventCharmHadWCentMixBase(aod::HfcRedCorrColls const& collisions,
                                             TrigCharmCands const& candidates,
-                                            AssocTracks const& tracks)
+                                            aod::HfcRedAssBases const& tracks)
   {
     BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
 
@@ -618,7 +618,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       if (collision.centrality() < centralityMin || collision.centrality() > centralityMax) {
         continue;
       }
-      int poolBin = binPolicyPosZCent.getBin({collision.posZ(), collision.multiplicity()});
+      int poolBin = binPolicyPosZCent.getBin({collision.posZ(), collision.centrality()});
 
       auto thisCollId = collision.globalIndex();
       auto candsThisColl = candidates.sliceBy(trigCharmCandsPerCol, thisCollId);
@@ -631,7 +631,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   void processMixedEventCharmHadWCentMixBase(aod::HfcRedCorrColls const& collisions,
                                              TrigCharmCands const& candidates,
-                                             AssocTracks const& tracks)
+                                             aod::HfcRedAssBases const& tracks)
   {
     BinningCentPosZ binPolicyPosZCent{{zPoolBins, centPoolBins}, true};
 
