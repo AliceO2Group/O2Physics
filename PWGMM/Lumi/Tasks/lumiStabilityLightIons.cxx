@@ -49,7 +49,7 @@ DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(AmplitudeZNA, amplitudeZNA, float);
 DECLARE_SOA_COLUMN(AmplitudeZNC, amplitudeZNC, float);
 } // namespace myBc_aod
-DECLARE_SOA_TABLE(MyBCaod, "AOD", "MYBCAOD", myBc_aod::Timestamp, myBc_aod:: BCid, myBc_aod::TimeZNA, myBc_aod::TimeZNC, myBc_aod::AmplitudeZNA, myBc_aod::AmplitudeZNC);
+DECLARE_SOA_TABLE(MyBCaod, "AOD", "MYBCAOD", myBc_aod::Timestamp, myBc_aod::BCid, myBc_aod::TimeZNA, myBc_aod::TimeZNC, myBc_aod::AmplitudeZNA, myBc_aod::AmplitudeZNC);
 } // namespace o2::aod
 
 using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>;
@@ -71,7 +71,7 @@ struct LumiStabilityLightIons {
 
   Configurable<bool> cfgRequireZDCTriggerForZDCQA{"cfgRequireZDCTriggerForZDCQA", false, "Require ZDC trigger (1ZNC) for filling QA histograms"};
   Configurable<bool> cfgRequireTVXTriggerForZDCQA{"cfgRequireTVXTriggerForZDCQA", false, "Require FT0 vertex trigger (MTVX) for filling ZDC QA histograms"};
-  
+
   Configurable<bool> cfgRequireNoT0ForSLBC{"cfgRequireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
 
   Configurable<int> cfgEmptyBCsBeforeLeadingBC{"cfgEmptyBCsBeforeLeadingBC", 5, "Minimum number of empty BCs before a leading BC to identify it as such"};
@@ -256,11 +256,11 @@ struct LumiStabilityLightIons {
     for (const auto& bc : bcs) {
 
       std::bitset<64> ctpInputMask(bc.inputMask());
-      if (cfgRequireTVXTriggerForZDCQA && !(ctpInputMask.test(2))) //2 = 3 - 1 -> MTVX
+      if (cfgRequireTVXTriggerForZDCQA && !(ctpInputMask.test(2))) // 2 = 3 - 1 -> MTVX
         continue;
-      if (cfgRequireZDCTriggerForZDCQA && !(ctpInputMask.test(25))) //25 = 26 - 1 -> 1ZNC
+      if (cfgRequireZDCTriggerForZDCQA && !(ctpInputMask.test(25))) // 25 = 26 - 1 -> 1ZNC
         continue;
-    
+
       bool zdcHit = !bc.has_zdc() ? 0 : ((bc.zdc().energyCommonZNC() > -1 && std::abs(bc.zdc().timeZNC()) < 1E5) ? 1 : 0);
       mHistManager.fill(HIST("ZDCQA/BCHasZDC"), zdcHit, ctpInputMask.test(25) ? 1 : 0);
       if (!bc.has_zdc())
