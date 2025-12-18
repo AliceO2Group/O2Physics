@@ -17,6 +17,7 @@
 
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFMCParticle.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -64,16 +65,23 @@ static const std::vector<int> pdgCodes{kK0Short,
                                        kOmegaPlusBar};
 
 struct OnTheFlyDecayer {
+  Produces<aod::OTFMCParticles> tableMcParticles;
   o2::upgrade::Decayer decayer;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
     {defaultParameters[0], kNumDecays, kNumParameters, particleNames, parameterNames},
     "Enable option for particle to be decayed: 0 - no, 1 - yes"};
-    
+
+
+  ConfigurableAxis axisRadius{"axisRadius", {1000, 0, 100}, "Radius"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+
+
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
   {
@@ -86,6 +94,14 @@ struct OnTheFlyDecayer {
         mEnabledDecays.push_back(pdgCodes[i]);
       }
     }
+
+    histos.add("K0S/hGenK0S", "hGenK0S", kTH2D, {axisRadius, axisPt});
+    histos.add("Lambda/hGenLambda", "hGenLambda", kTH2D, {axisRadius, axisPt});
+    histos.add("AntiLambda/hGenAntiLambda", "hGenAntiLambda", kTH2D, {axisRadius, axisPt});
+    histos.add("Xi/hGenXi", "hGenXi", kTH2D, {axisRadius, axisPt});
+    histos.add("AntiXi/hGenAntiXi", "hGenAntiXi", kTH2D, {axisRadius, axisPt});
+    histos.add("Omega/hGenOmega", "hGenOmega", kTH2D, {axisRadius, axisPt});
+    histos.add("AntiOmega/hGenAntiOmega", "hGenAntiOmega", kTH2D, {axisRadius, axisPt});
   }
 
   bool canDecay(const int pdgCode)
@@ -103,7 +119,6 @@ struct OnTheFlyDecayer {
       o2::track::TrackParCov o2track;
       o2::upgrade::convertMCParticleToO2Track(particle, o2track, pdgDB);
       std::vector<o2::upgrade::OTFParticle> decayDaughters = decayer.decayParticle(pdgDB, o2track, particle.pdgCode());
-      std::cout << particle.pdgCode() << " decayed into: ";
       for (const auto& dau : decayDaughters) {
         o2::track::TrackParCov dauTrack;
         o2::upgrade::convertOTFParticleToO2Track(dau, dauTrack, pdgDB);
@@ -114,9 +129,38 @@ struct OnTheFlyDecayer {
           }
         }
       }
-      std::vector<bool> isFinalState;
+
+      if (decayDaughters.empty()) {
+        LOG(error) << "Attempted to decay " << particle.pdgCode() << " but resulting vector of daugthers were empty";
+        continue;
+      }
+      
+      
+      const float decayRadius2D = std::hypot(decayDaughters[0].vx, decayDaughters[0].vy);
+      std::cout << particle.pdgCode() << ": " << decayRadius2D << std::endl;
+      if (particle.pdgCode() == kK0Short) {
+        histos.fill(HIST("K0S/hGenK0S"), decayRadius2D, particle.pt());
+      } else if (particle.pdgCode() == kLambda0) {
+        histos.fill(HIST("Lambda/hGenLambda"), decayRadius2D, particle.pt());
+      } else if (particle.pdgCode() == kLambda0Bar) {
+        histos.fill(HIST("AntiLambda/hGenAntiLambda"), decayRadius2D, particle.pt());
+      } else if (particle.pdgCode() == kXiMinus) {
+        histos.fill(HIST("Xi/hGenXi"), decayRadius2D, particle.pt());
+      } else if (particle.pdgCode() == kXiPlusBar) {
+        histos.fill(HIST("AntiXi/hGenAntiXi"), decayRadius2D, particle.pt());
+      } else if (particle.pdgCode() == kOmegaMinus) {
+        histos.fill(HIST("Omega/hGenOmega"), decayRadius2D, particle.pt());
+      } else if (particle.pdgCode() == kOmegaPlusBar) {
+        histos.fill(HIST("AntiOmega/hGenAntiOmega"), decayRadius2D, particle.pt());
+      }
+      
       for (size_t i = 0; i < decayDaughters.size(); ++i) {
-        isFinalState.push_back(!canDecay(decayDaughters[i].pdgCode));
+        const o2::upgrade::OTFParticle& dau = decayDaughters[i];
+        const bool isAlive = !canDecay(dau.pdgCode);
+        tableMcParticles(particle.globalIndex(),
+          isAlive, dau.pdgCode,
+          dau.vx, dau.vy, dau.vz,
+          dau.px, dau.py, dau.pz);
       }
     }
   }

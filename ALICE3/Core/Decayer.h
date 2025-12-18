@@ -60,22 +60,32 @@ class Decayer {
     const double ctau = o2::constants::physics::LightSpeedCm2S * particleInfo->Lifetime(); // cm
     const double betaGamma = track.getP() / mass;
     const double rxyz = -betaGamma * ctau * std::log(1 - u);
+    double vx, vy, vz;
+    double px, py, e;
 
-    float sna, csa;
-    o2::math_utils::CircleXYf_t circle;
-    track.getCircleParams(mBz, circle, sna, csa);
-    const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
-    const double theta = rxy / circle.rC;
-
-    const double vx = ((pos[0] - circle.xC) * std::cos(theta) - (pos[1] - circle.yC) * std::sin(theta)) + circle.xC;
-    const double vy = ((pos[1] - circle.yC) * std::cos(theta) + (pos[0] - circle.xC) * std::sin(theta)) + circle.yC;
-    const double vz = mom[2] + rxyz * (mom[2] / track.getP());
-
-    const double px = mom[0] * std::cos(theta) - mom[1] * std::sin(theta);
-    const double py = mom[1] * std::cos(theta) + mom[0] * std::sin(theta);
-    const double e = std::sqrt(mass * mass + px * px + py * py + mom[2] * mom[2]);
+    if (!charge) {
+      vx = pos[0] + rxyz * (mom[0] / track.getP());
+      vy = pos[1] + rxyz * (mom[1] / track.getP());
+      vy = pos[2] + rxyz * (mom[2] / track.getP());
+      px = mom[0];
+      py = mom[2];
+    } else {
+      float sna, csa;
+      o2::math_utils::CircleXYf_t circle;
+      track.getCircleParams(mBz, circle, sna, csa);
+      const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
+      const double theta = rxy / circle.rC;
+      
+      vx = ((pos[0] - circle.xC) * std::cos(theta) - (pos[1] - circle.yC) * std::sin(theta)) + circle.xC;
+      vy = ((pos[1] - circle.yC) * std::cos(theta) + (pos[0] - circle.xC) * std::sin(theta)) + circle.yC;
+      vz = mom[2] + rxyz * (mom[2] / track.getP());
+      
+      px = mom[0] * std::cos(theta) - mom[1] * std::sin(theta);
+      py = mom[1] * std::cos(theta) + mom[0] * std::sin(theta);
+    }
 
     double brTotal = 0.;
+    e = std::sqrt(mass * mass + px * px + py * py + mom[2] * mom[2]);
     for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
       brTotal += particleInfo->DecayChannel(ch)->BranchingRatio();
     }
