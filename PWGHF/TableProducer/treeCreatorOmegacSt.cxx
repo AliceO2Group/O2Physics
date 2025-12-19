@@ -391,7 +391,7 @@ struct HfTreeCreatorOmegacSt {
     setLabelHistoCands(hCandidatesCascPiOrK);
 
     // init HF event selection helper (centrality, event cuts, monitoring)
-    hfEvSel.init(registry, &zorroSummary);
+    hfEvSel.init(registry, nullptr);
   }
 
   // processMC: loop over MC objects
@@ -504,18 +504,31 @@ struct HfTreeCreatorOmegacSt {
         const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
       // Update CCDB-based magnetic field only when run changes to avoid redundant lookups
-      if (runNumber != bc.runNumber()) {
+      if (runNumber != bc.runNumber()) {  
+        if (skimmedProcessing) {
+            if (runNumber == 0) {
+              zorroSummary.setObject(zorro.getZorroSummary());
+            }
+            zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
+            zorro.populateHistRegistry(registry, bc.runNumber());
+          }
         runNumber = bc.runNumber();
         auto timestamp = bc.timestamp();
 
+        bool fieldLoaded = false;
         if (auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
           o2::base::Propagator::initFieldFromGRP(grpo);
           bz = grpo->getNominalL3Field();
+          fieldLoaded = true;
         } else if (auto* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
           o2::base::Propagator::initFieldFromGRP(grpmag);
           bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+          fieldLoaded = true;
         } else {
-          LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
+          LOG(error) << "CCDB miss for GRP/field (" << grpMagPath << ", " << grpPath << ") at timestamp " << timestamp << "; skipping collision to avoid bad B field.";
+        }
+        if (!fieldLoaded) {
+          continue; // skip this collision if CCDB does not provide field
         }
         df2.setBz(bz);
       }
