@@ -18,8 +18,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
@@ -36,11 +34,9 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include <Math/Vector4D.h>
 #include <TFile.h>
 #include <TH2F.h>
 #include <TList.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 
@@ -49,7 +45,6 @@
 #include <cstdlib>
 #include <string>
 #include <utility>
-// #include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::soa;
