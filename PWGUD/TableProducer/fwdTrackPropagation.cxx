@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file fwdTrackPropagation.cxx
+/// \brief Forward track propagation task for UD tasks
 /// \author Nazar Burmasov, nazar.burmasov@cern.ch
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
