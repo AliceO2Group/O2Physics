@@ -261,6 +261,8 @@ struct HadNucleiFemto {
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
      {"hdcaxyNu", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcaxyHad", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazHad", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsNuITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
@@ -499,7 +501,9 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDKaon(const Ttrack& candidate)
   {
-    if (abs(candidate.dcaXY()) > settingCutHadDCAxyMin || abs(candidate.dcaZ()) > settingCutHadDCAzMin)
+    float DeDCAxyMin = 0.004 + (0.013 / candidate.pt());
+    float DeDCAzMin = 0.004 + (0.013 / candidate.pt());
+    if (abs(candidate.dcaXY()) > DeDCAxyMin || abs(candidate.dcaZ()) > DeDCAzMin)
       return false;
 
     auto tpcNSigmaKa = candidate.tpcNSigmaKa();
@@ -1098,6 +1102,8 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hNuHadtInvMass"), hadNucand.invMass);
     mQaRegistry.fill(HIST("hdcaxyNu"), hadNucand.dcaxyNu);
     mQaRegistry.fill(HIST("hdcazNu"), hadNucand.dcazNu);
+    mQaRegistry.fill(HIST("hdcaxyHad"), hadNucand.dcaxyHad);
+    mQaRegistry.fill(HIST("hdcazHad"), hadNucand.dcazHad);
     mQaRegistry.fill(HIST("hdcazNu_min"), (abs(hadNucand.dcazNu) - settingCutDeDCAzMin));
     mQaRegistry.fill(HIST("hNClsNuITS"), hadNucand.nClsItsNu);
     mQaRegistry.fill(HIST("hNClsHadITS"), hadNucand.nClsItsHad);
