@@ -22,10 +22,6 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 
-using namespace o2;
-using namespace o2::constants;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
 using std::array;
 using CollBracket = o2::math_utils::Bracket<int>;
 
@@ -89,7 +85,7 @@ class svPoolCreator
   void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, BC const&)
   {
     if (pdgHypo != track0Pdg && pdgHypo != track1Pdg) {
-      LOG(debug) << "Wrong pdg hypothesis";
+      LOGP(debug, "Wrong pdg hypothesis");
       return;
     }
     bool isDau0 = pdgHypo == track0Pdg;
