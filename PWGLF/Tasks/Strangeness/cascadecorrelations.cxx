@@ -693,7 +693,8 @@ struct CascadeCorrelations {
   }
 
   template <typename TCascade, typename TCollision>
-  void doSameEventCorrelation(const TCascade& trigger, const TCascade& assoc, const TCollision& collision){
+  void doSameEventCorrelation(const TCascade& trigger, const TCascade& assoc, const TCollision& collision)
+  {
     // autocorrelation check
     std::array<int, 3> triggerTracks = {trigger.posTrackId(), trigger.negTrackId(), trigger.bachelorId()};
     std::array<int, 3> assocTracks = {assoc.posTrackId(), assoc.negTrackId(), assoc.bachelorId()};
@@ -750,7 +751,8 @@ struct CascadeCorrelations {
   }
 
   template <typename TCascade, typename TCollision>
-  void doMixedEventCorrelation(const TCascade& trigger, const TCascade& assoc, const TCollision& col1){
+  void doMixedEventCorrelation(const TCascade& trigger, const TCascade& assoc, const TCollision& col1)
+  {
     if (trigger.collisionId() == assoc.collisionId()) {
       registry.fill(HIST("hMEQA"), 1.5);
       return;
@@ -810,7 +812,8 @@ struct CascadeCorrelations {
   }
 
   template <typename TCascade>
-  void doMCCorrelation(const TCascade& trigger, const TCascade& assoc, double vtxz, int FT0mult){
+  void doMCCorrelation(const TCascade& trigger, const TCascade& assoc, double vtxz, int FT0mult)
+  {
     if (!trigger.isPhysicalPrimary() || !assoc.isPhysicalPrimary())
       return; // require the cascades to be primaries
     if (std::abs(trigger.eta()) > etaGenCascades)
@@ -989,7 +992,7 @@ struct CascadeCorrelations {
     } // casc loop
 
     for (const auto& [c0, c1] : combinations(Cascades, Cascades)) { // combinations automatically applies strictly upper in case of 2 identical tables
-      // Define the trigger as the particle with the highest pT. 
+      // Define the trigger as the particle with the highest pT.
       // As we can't swap the cascade tables themselves, we have created a function that we can call with the correct order.
       if (c0.pt() >= c1.pt()) {
         doSameEventCorrelation(c0, c1, collision);
@@ -1021,7 +1024,7 @@ struct CascadeCorrelations {
 
         // Define the trigger as the particle with the highest pT.
         // As we can't swap the cascade tables themselves, we have created a function that we can call with the correct order.
-        if(casc1.pt() >= casc2.pt()) {
+        if (casc1.pt() >= casc2.pt()) {
           doMixedEventCorrelation(casc1, casc2, col1);
         } else {
           doMixedEventCorrelation(casc2, casc1, col2);
