@@ -1322,8 +1322,8 @@ class VarManager : public TObject
   template <uint32_t fillMap, typename T>
   static void FillEventAlice3(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
-  static void FillTrackAlice3(T const& track, float* values  = nullptr);
-  
+  static void FillTrackAlice3(T const& track, float* values = nullptr);
+
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
     fgCalibs[calib] = obj;
@@ -6077,7 +6077,6 @@ void VarManager::FillFIT(T1 const& bc, T2 const& bcs, T3 const& ft0s, T4 const& 
   values[kBGFDDCpf] = static_cast<float>(fitInfo.BGFDDCpf);
 }
 
-
 template <uint32_t fillMap, typename T>
 void VarManager::FillEventAlice3(T const& event, float* values)
 {
@@ -6241,18 +6240,18 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
   }
 
   if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
-    
+
     values[kOTTOTSignal] = track.timeOverThresholdBarrel();
-    values[kOTnSigmaEl]  = track.nSigmaTrkEl();
-    values[kOTnSigmaMu]  = track.nSigmaTrkMu();
-    values[kOTnSigmaPi]  = track.nSigmaTrkPi();
-    values[kOTnSigmaKa]  = track.nSigmaTrkKa();
-    values[kOTnSigmaPr]  = track.nSigmaTrkPr();
-    values[kOTnSigmaDe]  = track.nSigmaTrkDe();
-    values[kOTnSigmaTr]  = track.nSigmaTrkTr();
+    values[kOTnSigmaEl] = track.nSigmaTrkEl();
+    values[kOTnSigmaMu] = track.nSigmaTrkMu();
+    values[kOTnSigmaPi] = track.nSigmaTrkPi();
+    values[kOTnSigmaKa] = track.nSigmaTrkKa();
+    values[kOTnSigmaPr] = track.nSigmaTrkPr();
+    values[kOTnSigmaDe] = track.nSigmaTrkDe();
+    values[kOTnSigmaTr] = track.nSigmaTrkTr();
     values[kOTnSigmaHe3] = track.nSigmaTrkHe();
-    values[kOTnSigmaAl]  = track.nSigmaTrkAl();
-    values[kHasRICHSig]  = track.hasSig();
+    values[kOTnSigmaAl] = track.nSigmaTrkAl();
+    values[kHasRICHSig] = track.hasSig();
     values[kHasRICHSigInGas] = track.hasSigInGas();
     values[kHasRICHSigEl] = track.hasSigEl();
     values[kHasRICHSigMu] = track.hasSigMu();
@@ -6263,35 +6262,35 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
     values[kHasRICHSigTr] = track.hasSigTr();
     values[kHasRICHSigHe3] = track.hasSigHe3();
     values[kHasRICHSigAl] = track.hasSigAl();
-    values[kRICHnSigmaEl]  = track.nSigmaElectronRich();
-    values[kRICHnSigmaMu]  = track.nSigmaMuonRich();
-    values[kRICHnSigmaPi]  = track.nSigmaPionRich();
-    values[kRICHnSigmaKa]  = track.nSigmaKaonRich();
-    values[kRICHnSigmaPr]  = track.nSigmaProtonRich();
-    values[kRICHnSigmaDe]  = track.nSigmaDeuteronRich();
-    values[kRICHnSigmaTr]  = track.nSigmaTritonRich();
+    values[kRICHnSigmaEl] = track.nSigmaElectronRich();
+    values[kRICHnSigmaMu] = track.nSigmaMuonRich();
+    values[kRICHnSigmaPi] = track.nSigmaPionRich();
+    values[kRICHnSigmaKa] = track.nSigmaKaonRich();
+    values[kRICHnSigmaPr] = track.nSigmaProtonRich();
+    values[kRICHnSigmaDe] = track.nSigmaDeuteronRich();
+    values[kRICHnSigmaTr] = track.nSigmaTritonRich();
     values[kRICHnSigmaHe3] = track.nSigmaHelium3Rich();
-    values[kRICHnSigmaAl]  = track.nSigmaAlphaRich();
-    values[kTOFEventTime]  = track.tofEventTime();
+    values[kRICHnSigmaAl] = track.nSigmaAlphaRich();
+    values[kTOFEventTime] = track.tofEventTime();
     values[kTOFEventTimeErr] = track.tofEventTimeErr();
-    values[kOuterTOFnSigmaEl]  = track.nSigmaElectronOuterTOF();
-    values[kOuterTOFnSigmaMu]  = track.nSigmaMuonOuterTOF();
-    values[kOuterTOFnSigmaPi]  = track.nSigmaPionOuterTOF();
-    values[kOuterTOFnSigmaKa]  = track.nSigmaKaonOuterTOF();
-    values[kOuterTOFnSigmaPr]  = track.nSigmaProtonOuterTOF();
-    values[kOuterTOFnSigmaDe]  = track.nSigmaDeuteronOuterTOF();
-    values[kOuterTOFnSigmaTr]  = track.nSigmaTritonOuterTOF();
+    values[kOuterTOFnSigmaEl] = track.nSigmaElectronOuterTOF();
+    values[kOuterTOFnSigmaMu] = track.nSigmaMuonOuterTOF();
+    values[kOuterTOFnSigmaPi] = track.nSigmaPionOuterTOF();
+    values[kOuterTOFnSigmaKa] = track.nSigmaKaonOuterTOF();
+    values[kOuterTOFnSigmaPr] = track.nSigmaProtonOuterTOF();
+    values[kOuterTOFnSigmaDe] = track.nSigmaDeuteronOuterTOF();
+    values[kOuterTOFnSigmaTr] = track.nSigmaTritonOuterTOF();
     values[kOuterTOFnSigmaHe3] = track.nSigmaHelium3OuterTOF();
-    values[kOuterTOFnSigmaAl]  = track.nSigmaAlphaOuterTOF();
-    values[kInnerTOFnSigmaEl]  = track.nSigmaElectronInnerTOF();
-    values[kInnerTOFnSigmaMu]  = track.nSigmaMuonInnerTOF();
-    values[kInnerTOFnSigmaPi]  = track.nSigmaPionInnerTOF();
-    values[kInnerTOFnSigmaKa]  = track.nSigmaKaonInnerTOF();
-    values[kInnerTOFnSigmaPr]  = track.nSigmaProtonInnerTOF();
-    values[kInnerTOFnSigmaDe]  = track.nSigmaDeuteronInnerTOF();
-    values[kInnerTOFnSigmaTr]  = track.nSigmaTritonInnerTOF();
+    values[kOuterTOFnSigmaAl] = track.nSigmaAlphaOuterTOF();
+    values[kInnerTOFnSigmaEl] = track.nSigmaElectronInnerTOF();
+    values[kInnerTOFnSigmaMu] = track.nSigmaMuonInnerTOF();
+    values[kInnerTOFnSigmaPi] = track.nSigmaPionInnerTOF();
+    values[kInnerTOFnSigmaKa] = track.nSigmaKaonInnerTOF();
+    values[kInnerTOFnSigmaPr] = track.nSigmaProtonInnerTOF();
+    values[kInnerTOFnSigmaDe] = track.nSigmaDeuteronInnerTOF();
+    values[kInnerTOFnSigmaTr] = track.nSigmaTritonInnerTOF();
     values[kInnerTOFnSigmaHe3] = track.nSigmaHelium3InnerTOF();
-    values[kInnerTOFnSigmaAl]  = track.nSigmaAlphaInnerTOF();
+    values[kInnerTOFnSigmaAl] = track.nSigmaAlphaInnerTOF();
   }
 
   // Quantities based on the pair table(s)
@@ -6304,7 +6303,6 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
   // Derived quantities which can be computed based on already filled variables
   FillTrackDerived(values);
 }
-
 
 template <int pairType, uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)

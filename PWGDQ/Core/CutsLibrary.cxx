@@ -3703,24 +3703,23 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-
   //---------------------------------------------------------------
   // ALICE 3 studies composite cuts
 
   if (!nameStr.compare("alice3StandardKine")) {
     cut->AddCut(GetAnalysisCut("alice3StandardKine"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3KineSkim")) {
     cut->AddCut(GetAnalysisCut("alice3KineSkim"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3TrackQuality")) {
     cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3iTOFPIDEl")) {
     cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
@@ -3730,17 +3729,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("alice3iTOFPIDPi")) {
     cut->AddCut(GetAnalysisCut("alice3iTOFPIDPi"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3iTOFPIDKa")) {
     cut->AddCut(GetAnalysisCut("alice3iTOFPIDKa"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3iTOFPIDPr")) {
     cut->AddCut(GetAnalysisCut("alice3iTOFPIDPr"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3oTOFPIDEl")) {
     cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
@@ -3750,37 +3749,37 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("alice3oTOFPIDPi")) {
     cut->AddCut(GetAnalysisCut("alice3oTOFPIDPi"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3oTOFPIDKa")) {
     cut->AddCut(GetAnalysisCut("alice3oTOFPIDKa"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3oTOFPIDPr")) {
     cut->AddCut(GetAnalysisCut("alice3oTOFPIDPr"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3RICHPIDEl")) {
     cut->AddCut(GetAnalysisCut("alice3RICHPIDEl"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3RICHPIDPi")) {
     cut->AddCut(GetAnalysisCut("alice3RICHPIDPi"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3RICHPIDKa")) {
     cut->AddCut(GetAnalysisCut("alice3RICHPIDKa"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3RICHPIDPr")) {
     cut->AddCut(GetAnalysisCut("alice3RICHPIDPr"));
     return cut;
-  }  
+  }
 
   if (!nameStr.compare("alice3DielectronPID")) {
     cut->AddCut(GetAnalysisCut("alice3StandardKine"));
@@ -6803,8 +6802,8 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -1.75, 1.75); // Value taken from LoI
     return cut;
   }
-  
-  if(!nameStr.compare("alice3TrackQuality")) {
+
+  if (!nameStr.compare("alice3TrackQuality")) {
     cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);
     cut->AddCut(VarManager::kTrackDCAz, -1.0, 1.0);
     return cut;
