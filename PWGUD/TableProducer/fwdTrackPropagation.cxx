@@ -125,7 +125,7 @@ struct FwdTrackPropagation {
       if (t.z() < ZAbsorberFront) {
         std::array<float, 3> vtx = {0.f, 0.f, 0.f};
         std::array<float, 2> vtxCov = {0.f, 0.f};
-        if (t.has_collision() && t.trackType() < ForwardTrackTypeEnum::GlobalForwardTrack) { // propagate only global muon tracks to collision vtx
+        if (t.has_collision() && t.trackType() <= ForwardTrackTypeEnum::GlobalForwardTrack) { // propagate only global muon tracks to collision vtx
           auto col = cols.iteratorAt(t.collisionId());
           vtx[0] = col.posX();
           vtx[1] = col.posY();
