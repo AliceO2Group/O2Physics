@@ -111,8 +111,6 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
   O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
   O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")
-  O2_DEFINE_CONFIGURABLE(cfgRemapFT0ADeadChannels, bool, false, "If true, remap FT0A channels 60-63 to amplitudes from 28,30,29,31 respectively")
-  O2_DEFINE_CONFIGURABLE(cfgRemapFT0CDeadChannels, bool, false, "If true, remap FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -655,17 +653,6 @@ struct LongRangeDihadronCor {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
-      if (cfgRemapFT0CDeadCha        if (id == 177)
-          ampl = ft0.amplitudeC()[145];
-        else if (id == 176)
-          ampl = ft0.amplitudeC()[144];
-        else if (id == 178)
-          ampl = ft0.amplitudeC()[146];
-        else if (id == 179)
-          ampl = ft0.amplitudeC()[147];
-        else if (id == 139)
-          ampl = ft0.amplitudeC()[115];
-      }
       if ((cfgRejectFT0CInside && (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax)))
         ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
@@ -674,16 +661,6 @@ struct LongRangeDihadronCor {
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
-      if (cfgRemapFT0ADeadChannels) {
-        if (id == 60)
-          ampl = ft0.amplitudeA()[92];
-        else if (id == 61)
-          ampl = ft0.amplitudeA()[93];
-        else if (id == 62)
-          ampl = ft0.amplitudeA()[94];
-        else if (id == 63)
-          ampl = ft0.amplitudeA()[95];
-      }
       if ((cfgRejectFT0AInside && (id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax)))
         ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
