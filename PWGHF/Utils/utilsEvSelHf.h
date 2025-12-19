@@ -216,6 +216,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   ctpRateFetcher irFetcher;
   std::string irSourceForCptFetcher;
 
+  // guard variable to guarantee full configuration
+  // important for RCT, Zorro
+  bool isInitCalled{false};
+
   /// Set standard preselection gap trigger (values taken from UD group)
   SGCutParHolder setSgPreselection()
   {
@@ -277,6 +281,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     if (!irSource.value.empty()) {
       irSourceForCptFetcher = irSource.value;
     }
+
+    // full configuration complete: update the guard variable
+    isInitCalled = true;
   }
 
   /// \brief Applies event selection.
@@ -304,8 +311,14 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     if constexpr (UseEvSel) {
       /// RCT condition
-      if (requireGoodRct && !rctChecker.checkTable(collision)) {
-        SETBIT(rejectionMask, EventRejection::Rct);
+      if (requireGoodRct) {
+        if (!isInitCalled) {
+          // protect against incomplete configuration
+          LOG(fatal) << "Checking RCT flags w/o full HF event-selection configuration. Call the function HfEventSelection::init() to fix.";
+        }
+        if (!rctChecker.checkTable(collision)) {
+          SETBIT(rejectionMask, EventRejection::Rct);
+        }
       }
       /// trigger condition
       if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
@@ -368,6 +381,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     if (!softwareTrigger.value.empty()) {
+      if (!isInitCalled) {
+        // protect against incomplete configuration
+        LOG(fatal) << "Using Zorro utility w/o full HF event-selection configuration. Call the function HfEventSelection::init() to fix.";
+      }
       // we might have to update it from CCDB
       const auto bc = collision.template bc_as<TBcs>();
       const auto runNumber = bc.runNumber();
@@ -480,6 +497,7 @@ struct HfEventSelectionMc {
   std::string rctLabel;                       // RCT selection flag
   bool rctCheckZDC{false};                    // require ZDC from RCT
   bool rctTreatLimitedAcceptanceAsBad{false}; // RCT flag to reject events with limited acceptance for selected detectors
+  bool isInitCalled{false};                   // guard variable to guarantee full configuration, important for RCT
 
   // util to retrieve the RCT info from CCDB
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -557,6 +575,9 @@ struct HfEventSelectionMc {
 
     // we initialise histograms
     addHistograms(registry);
+
+    // full configuration complete: update the guard variable
+    isInitCalled = true;
   }
 
   /// \brief Function to apply event selections to generated MC collisions
@@ -583,6 +604,10 @@ struct HfEventSelectionMc {
 
     /// RCT condition
     if (requireGoodRct) {
+      if (!isInitCalled) {
+        // protect against incomplete configuration
+        LOG(fatal) << "Checking RCT flags w/o full HF event-selection configuration (MC). Call the function HfEventSelectionMc::init() to fix.";
+      }
       if (!rctChecker.checkTable(bc)) {
         SETBIT(rejectionMask, EventRejection::Rct);
       }
