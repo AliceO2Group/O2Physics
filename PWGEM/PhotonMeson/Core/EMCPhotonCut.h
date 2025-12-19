@@ -16,6 +16,7 @@
 #ifndef PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 
+#include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include <Framework/ASoA.h>
@@ -31,16 +32,25 @@
 #include <vector>
 
 template <typename T>
-concept isTrackContainer = o2::soa::is_table<T> && requires(T t) {
+concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
   // Check that the *elements* of the container have the required methods:
-  { t.begin.deltaEta() } -> std::same_as<float>;
-  { t.begin.deltaPhi() } -> std::same_as<float>;
-  { t.begin.trackPt() } -> std::same_as<float>;
-  { t.begin.trackP() } -> std::same_as<float>;
+  { t.deltaEta() } -> std::same_as<float>;
+  { t.deltaPhi() } -> std::same_as<float>;
+  { t.trackPt() } -> std::same_as<float>;
+  { t.trackP() } -> std::same_as<float>;
+};
+
+template <typename T>
+concept IsTrackContainer = o2::soa::is_table<T> && requires(T t) {
+  // Check that the *elements* of the container have the required methods:
+  { t.begin().deltaEta() } -> std::same_as<float>;
+  { t.begin().deltaPhi() } -> std::same_as<float>;
+  { t.begin().trackPt() } -> std::same_as<float>;
+  { t.begin().trackP() } -> std::same_as<float>;
 };
 
 template <typename Cluster>
-concept hasTrackMatching = requires(Cluster cluster) {
+concept HasTrackMatching = requires(Cluster cluster) {
   // requires that the following are valid calls:
   { cluster.deltaEta() } -> std::convertible_to<std::vector<float>>;
   { cluster.deltaPhi() } -> std::convertible_to<std::vector<float>>;
@@ -49,23 +59,13 @@ concept hasTrackMatching = requires(Cluster cluster) {
 };
 
 template <typename Cluster>
-concept hasSecondaryMatching = requires(Cluster cluster) {
+concept HasSecondaryMatching = requires(Cluster cluster) {
   // requires that the following are valid calls:
   { cluster.deltaEtaSec() } -> std::convertible_to<std::vector<float>>;
   { cluster.deltaPhiSec() } -> std::convertible_to<std::vector<float>>;
   { cluster.trackptSec() } -> std::convertible_to<std::vector<float>>;
   { cluster.trackpSec() } -> std::convertible_to<std::vector<float>>;
 };
-
-template <typename Cluster>
-concept isSkimEMCClusterLike = requires(Cluster c) {
-  { c.e() } -> std::convertible_to<float>;
-  { c.nCells() } -> std::convertible_to<int>;
-  { c.m02() } -> std::convertible_to<float>;
-  { c.time() } -> std::convertible_to<float>;
-  { c.definition() } -> std::convertible_to<int>;
-} && (!hasTrackMatching<Cluster>) // important: skim clusters don’t have TM
-                               &&(!hasSecondaryMatching<Cluster>);
 
 struct TrackMatchingParams {
   float a{0.01f};
@@ -93,6 +93,168 @@ class EMCPhotonCut : public TNamed
   };
 
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
+
+  constexpr auto getClusterId(o2::soa::is_iterator auto const& t) const
+  {
+    if constexpr (requires { t.emEmcClusterId(); }) {
+      return t.emEmcClusterId();
+    } else if constexpr (requires { t.minClusterId(); }) {
+      return t.minClusterId();
+    } else {
+      return -1;
+    }
+  }
+
+  /// \brief performs check if track is matched with given cluster
+  /// \param cluster cluster to be checked
+  /// \param emcmatchedtrack matched track iterator
+  /// \param emcmatchedtrackEnd matched track end iterator
+  /// \param GetEtaCut lambda to get the eta cut value
+  /// \param GetPhiCut lambda to get the phi cut value
+  /// \param applyEoverP bool to check if E/p should be checked (for secondaries we do not check this!)
+  bool checkTrackMatching(o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrack, o2::soa::RowViewSentinel const emcmatchedtrackEnd,
+                          bool applyEoverP, auto GetEtaCut, auto GetPhiCut) const
+  {
+    // advance to cluster
+    while (emcmatchedtrack != emcmatchedtrackEnd && getClusterId(emcmatchedtrack) < cluster.globalIndex()) {
+      ++emcmatchedtrack;
+    }
+    // all matched tracks have been checked
+    if (emcmatchedtrack == emcmatchedtrackEnd) {
+      return true;
+    }
+    // if all remaining tracks are beyond this cluster, it survives
+    if (getClusterId(emcmatchedtrack) > cluster.globalIndex()) {
+      return true;
+    }
+    // iterate over tracks belonging to this cluster
+    while (emcmatchedtrack != emcmatchedtrackEnd && getClusterId(emcmatchedtrack) == cluster.globalIndex()) {
+      auto dEta = std::fabs(emcmatchedtrack.deltaEta());
+      auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
+      auto trackpt = emcmatchedtrack.trackPt();
+      auto trackp = emcmatchedtrack.trackP();
+      bool fail = (dEta > GetEtaCut(trackpt)) ||
+                  (dPhi > GetPhiCut(trackpt)) ||
+                  (applyEoverP && cluster.e() / trackp >= mMinEoverP);
+      if (!fail) {
+        return false; // cluster got a track matche to it
+      }
+      ++emcmatchedtrack;
+    }
+    return true; // all tracks checked, cluster survives
+  }
+
+  /// \brief check if given clusters survives all cuts
+  /// \param flags EMBitFlags where results will be stored
+  /// \param cluster cluster table to check
+  /// \param matchedTracks matched primary tracks table
+  /// \param matchedSecondaries matched secondary tracks table
+  void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries) const
+  {
+    auto emcmatchedtrackIter = emcmatchedtracks.begin();
+    auto emcmatchedtrackEnd = emcmatchedtracks.end();
+    auto secondaryIter = secondaries.begin();
+    auto secondaryEnd = secondaries.end();
+    size_t iCluster = 0;
+    for (const auto& cluster : clusters) {
+      if (!IsSelectedRunning(cluster, emcmatchedtrackIter, emcmatchedtrackEnd, secondaryIter, secondaryEnd)) {
+        flags.set(iCluster);
+      }
+      ++iCluster;
+    }
+  }
+
+  /// \brief check if given cluster survives all cuts
+  /// \param cluster cluster to check
+  /// \param emcmatchedtrackIter current iterator of matched primary tracks
+  /// \param emcmatchedtrackEnd end iterator of matched primary tracks
+  /// \param secondaryIter current iterator of matched secondary tracks
+  /// \param secondaryEnd end iterator of matched secondary tracks
+  /// \return true if cluster survives all cuts else false
+  bool IsSelectedRunning(o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& emcmatchedtrackIter, o2::soa::RowViewSentinel const emcmatchedtrackEnd, IsTrackIterator auto& secondaryIter, o2::soa::RowViewSentinel const secondaryEnd) const
+  {
+    if (!IsSelectedEMCalRunning(EMCPhotonCuts::kDefinition, cluster)) {
+      return false;
+    }
+    if (!IsSelectedEMCalRunning(EMCPhotonCuts::kEnergy, cluster)) {
+      return false;
+    }
+    if (!IsSelectedEMCalRunning(EMCPhotonCuts::kNCell, cluster)) {
+      return false;
+    }
+    if (!IsSelectedEMCalRunning(EMCPhotonCuts::kM02, cluster)) {
+      return false;
+    }
+    if (!IsSelectedEMCalRunning(EMCPhotonCuts::kTiming, cluster)) {
+      return false;
+    }
+    if (mUseTM && (!IsSelectedEMCalRunning(EMCPhotonCuts::kTM, cluster, emcmatchedtrackIter, emcmatchedtrackEnd))) {
+      return false;
+    }
+    if (mUseSecondaryTM && (!IsSelectedEMCalRunning(EMCPhotonCuts::kSecondaryTM, cluster, secondaryIter, secondaryEnd))) {
+      return false;
+    }
+    if (!IsSelectedEMCalRunning(EMCPhotonCuts::kExotic, cluster)) {
+      return false;
+    }
+    return true;
+  }
+
+  /// \brief check if given cluster survives a given cut
+  /// \param cut enum of the cluster cut to check
+  /// \param cluster cluster to check
+  /// \return true if cluster survives cut else false
+  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster) const
+  {
+    switch (cut) {
+      case EMCPhotonCuts::kDefinition:
+        return cluster.definition() == mDefinition;
+
+      case EMCPhotonCuts::kEnergy:
+        return cluster.e() > mMinE;
+
+      case EMCPhotonCuts::kNCell:
+        return cluster.nCells() >= mMinNCell;
+
+      case EMCPhotonCuts::kM02:
+        return (cluster.nCells() == 1 || (mMinM02 <= cluster.m02() && cluster.m02() <= mMaxM02));
+
+      case EMCPhotonCuts::kTiming:
+        return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
+
+      case EMCPhotonCuts::kTM:
+        return false;
+
+      case EMCPhotonCuts::kSecondaryTM:
+        return false;
+
+      case EMCPhotonCuts::kExotic:
+        return mUseExoticCut ? !cluster.isExotic() : true;
+
+      default:
+        return true;
+    }
+  }
+
+  /// \brief check if given cluster survives a given cut
+  /// \param cut enum of the cluster cut to check
+  /// \param cluster cluster to check
+  /// \param matchedTrackIter current iterator of matched primary or secondary tracks
+  /// \param matchedTrackEnd end iterator of matched primary or secondary tracks
+  /// \return true if cluster survives cut else false
+  bool IsSelectedEMCalRunning(const EMCPhotonCuts& cut, o2::soa::is_iterator auto const& cluster, IsTrackIterator auto& matchedTrackIter, o2::soa::RowViewSentinel const matchedTrackEnd) const
+  {
+    switch (cut) {
+      case EMCPhotonCuts::kTM:
+        return checkTrackMatching(cluster, matchedTrackIter, matchedTrackEnd, true, [this](float pt) { return GetTrackMatchingEta(pt); }, [this](float pt) { return GetTrackMatchingPhi(pt); });
+
+      case EMCPhotonCuts::kSecondaryTM:
+        return checkTrackMatching(cluster, matchedTrackIter, matchedTrackEnd, false, [this](float pt) { return GetSecTrackMatchingEta(pt); }, [this](float pt) { return GetSecTrackMatchingPhi(pt); });
+
+      default:
+        return true;
+    }
+  }
 
   /// \brief check if given cluster survives all cuts
   /// \param cluster cluster to check
@@ -155,7 +317,7 @@ class EMCPhotonCut : public TNamed
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
       case EMCPhotonCuts::kTM: {
-        if constexpr (isTrackContainer<TMatchedTracks>) {
+        if constexpr (IsTrackContainer<TMatchedTracks>) {
           for (const auto& emcmatchedtrack : emcmatchedtracks) {
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
@@ -166,7 +328,7 @@ class EMCPhotonCut : public TNamed
               return false;
             }
           }
-        } else if constexpr (hasTrackMatching<Cluster>) {
+        } else if constexpr (HasTrackMatching<Cluster>) {
           auto dEtas = cluster.deltaEta();   // std:vector<float>
           auto dPhis = cluster.deltaPhi();   // std:vector<float>
           auto trackspt = cluster.trackpt(); // std:vector<float>
@@ -186,18 +348,18 @@ class EMCPhotonCut : public TNamed
         return true; // when we don't have any tracks the cluster should always survive the TM cut!
       }
       case EMCPhotonCuts::kSecondaryTM: {
-        if constexpr (isTrackContainer<TMatchedTracks>) {
+        if constexpr (IsTrackContainer<TMatchedTracks>) {
           for (const auto& emcmatchedtrack : emcmatchedtracks) {
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
             auto trackpt = emcmatchedtrack.trackPt();
             auto trackp = emcmatchedtrack.trackP();
-            bool result = (dEta > GetTrackMatchingEta(trackpt)) || (dPhi > GetTrackMatchingPhi(trackpt)) || (cluster.e() / trackp >= mMinEoverP);
+            bool result = (dEta > GetSecTrackMatchingEta(trackpt)) || (dPhi > GetSecTrackMatchingPhi(trackpt)) || (cluster.e() / trackp >= mMinEoverP);
             if (!result) {
               return false;
             }
           }
-        } else if constexpr (hasSecondaryMatching<Cluster>) {
+        } else if constexpr (HasSecondaryMatching<Cluster>) {
           auto dEtas = cluster.deltaEtaSec();   // std:vector<float>
           auto dPhis = cluster.deltaPhiSec();   // std:vector<float>
           auto trackspt = cluster.trackptSec(); // std:vector<float>
