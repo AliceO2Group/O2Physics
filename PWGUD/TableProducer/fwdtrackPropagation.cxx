@@ -27,11 +27,14 @@
 #include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
 #include "Math/SMatrix.h"
 #include "TGeoGlobalMagField.h"
+
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;

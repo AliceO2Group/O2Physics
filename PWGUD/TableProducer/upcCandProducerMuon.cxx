@@ -16,7 +16,6 @@
 
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/DataModel/UDTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
@@ -35,6 +34,7 @@
 
 #include <algorithm>
 #include <map>
+#include <string>
 #include <vector>
 
 using namespace o2::framework;
@@ -94,7 +94,6 @@ struct UpcCandProducerMuon {
 
   bool cut(const o2::dataformats::GlobalFwdTrack& pft, const ForwardTracks::iterator& fwdTrack)
   {
-    constexpr double AbsorberMid = 26.5;
     histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelAll, 1);
     auto pt = pft.getPt();
     auto eta = pft.getEta();
@@ -104,7 +103,7 @@ struct UpcCandProducerMuon {
     bool passPt = pt > fUpcCuts.getFwdPtLow() && pt < fUpcCuts.getFwdPtHigh();
     bool passEta = eta > fUpcCuts.getFwdEtaLow() && eta < fUpcCuts.getFwdEtaHigh();
     bool passRabs = rabs > fUpcCuts.getMuonRAtAbsorberEndLow() && rabs < fUpcCuts.getMuonRAtAbsorberEndHigh();
-    bool passPDca = rabs < AbsorberMid ? pdca < fUpcCuts.getMuonPDcaHighFirst() : pdca < fUpcCuts.getMuonPDcaHighSecond();
+    bool passPDca = rabs < upchelpers::AbsorberMid ? pdca < fUpcCuts.getMuonPDcaHighFirst() : pdca < fUpcCuts.getMuonPDcaHighSecond();
     bool passChi2 = chi2 > fUpcCuts.getFwdChi2Low() && chi2 < fUpcCuts.getFwdChi2High();
     if (passPt)
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelPt, 1);
