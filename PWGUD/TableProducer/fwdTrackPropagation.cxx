@@ -65,13 +65,12 @@ struct FwdTrackPropagation {
                            muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
                            muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
     SMatrix55 tcovs(v1.begin(), v1.end());
-    o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
     o2::dataformats::GlobalFwdTrack propmuon;
 
     if (static_cast<int>(muon.trackType()) > 2) {
       o2::dataformats::GlobalFwdTrack track;
       track.setParameters(tpars);
-      track.setZ(fwdtrack.getZ());
+      track.setZ(muon.z());
       track.setCovariances(tcovs);
       auto mchTrack = fMatching.FwdtoMCH(track);
       o2::mch::TrackExtrap::extrapToVertex(mchTrack, vtx[0], vtx[1], vtx[2], vtxCov[0], vtxCov[1]);
@@ -81,7 +80,8 @@ struct FwdTrackPropagation {
       propmuon.setCovariances(proptrack.getCovariances());
     } else if (static_cast<int>(muon.trackType()) < 2) {
       double centerMFT[3] = {0, 0, -61.4};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+      o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+      auto* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
       auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
       auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), vtx[0], vtx[1], vtx[2]);
       auto x2x0 = static_cast<float>(geoMan.meanX2X0);
@@ -116,7 +116,7 @@ struct FwdTrackPropagation {
       if (t.z() < -90.f) {
         std::array<float, 3> vtx = {0.f, 0.f, 0.f};
         std::array<float, 2> vtxCov = {0.f, 0.f};
-        if (t.has_collision()) {
+        if (t.has_collision() && static_cast<int>(t.trackType()) < 2) { // propagate only global muon tracks to collision vtx
           auto col = cols.iteratorAt(t.collisionId());
           vtx[0] = col.posX();
           vtx[1] = col.posY();
@@ -129,7 +129,7 @@ struct FwdTrackPropagation {
                       pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt(),
                       pft.getEta(), pft.getPt(), pft.getP(),
                       t.nClusters(), t.pDca(), t.rAtAbsorberEnd(),
-                      pft.getTrackChi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
+                      t.chi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
                       t.matchScoreMCHMFT(), t.matchMFTTrackId(), t.matchMCHTrackId(),
                       t.mchBitMap(), t.midBoards(), t.midBitMap(),
                       t.trackTime(), t.trackTimeRes());

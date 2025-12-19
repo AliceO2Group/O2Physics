@@ -102,7 +102,7 @@ void applyFwdCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& fwd
   fwdSelectors[kFwdSelPt] = track.pt() > upcCuts.getFwdPtLow() && track.pt() < upcCuts.getFwdPtHigh();                                                     // check pt
   fwdSelectors[kFwdSelEta] = track.eta() > upcCuts.getFwdEtaLow() && track.eta() < upcCuts.getFwdEtaHigh();                                                // check pseudorapidity
   fwdSelectors[kFwdSelRabs] = track.rAtAbsorberEnd() > upcCuts.getMuonRAtAbsorberEndLow() && track.rAtAbsorberEnd() < upcCuts.getMuonRAtAbsorberEndHigh(); // check muon R
-  fwdSelectors[kFwdSelpDCA] = track.pDca() < 26.5 ? track.pDca() < upcCuts.getMuonPDcaHighFirst() : track.pDca() < upcCuts.getMuonPDcaHighSecond();        // check pDCA
+  fwdSelectors[kFwdSelpDCA] = track.rAtAbsorberEnd() < 26.5 ? track.pDca() < upcCuts.getMuonPDcaHighFirst() : track.pDca() < upcCuts.getMuonPDcaHighSecond();        // check pDCA
   fwdSelectors[kFwdSelChi2] = track.chi2() > upcCuts.getFwdChi2Low() && track.chi2() < upcCuts.getFwdChi2High();                                           // check chi2
 }
 
