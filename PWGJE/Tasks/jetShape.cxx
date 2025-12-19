@@ -506,10 +506,11 @@ struct JetShapeTask {
   PROCESS_SWITCH(JetShapeTask, processJetProductionRatio,
                  "production ratio around jets", false);
 
-  void processInclusiveProductionRatio(soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Ms, aod::EvSels>>::iterator const& collision, soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, o2::aod::TrackSelection> const& tracks)
+  void processInclusiveProductionRatio(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, o2::aod::TrackSelection> const& tracks)
   {
-    if (!collision.sel8())
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
+    }
 
     // tracks conditions
     for (const auto& track : tracks) {
@@ -522,7 +523,7 @@ struct JetShapeTask {
       registry.fill(HIST("trackEta"), track.eta());
       registry.fill(HIST("trackPhi"), track.phi());
 
-      if (!track.isGlobalTrack()) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
 
@@ -571,7 +572,7 @@ struct JetShapeTask {
 
   void processReco(
     soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
-    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, o2::aod::TrackSelection> const& tracks, aod::ChargedMCDetectorLevelJets const& jets, aod::McParticles const& mcParticles)
+    soa::Join<aod::JetTracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::ChargedMCDetectorLevelJets const& jets, aod::McParticles const& mcParticles)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
@@ -582,7 +583,8 @@ struct JetShapeTask {
     registry.fill(HIST("eventCounter"), 0.5);
 
     float centrality = collision.centFT0M();
-    // float rho = collision.rho();
+    float rho = collision.rho();
+
     registry.fill(HIST("mcCentralityReco"), centrality);
 
     struct CachedJet {
@@ -597,14 +599,15 @@ struct JetShapeTask {
     for (const auto& jet : jets) {
       registry.fill(HIST("jetPt"), jet.pt());
 
-      float mcdPtCorr = jet.pt();
+      float mcdPtCorr = jet.pt() - rho * jet.area();
       cachedJets.push_back({jet.pt(), jet.eta(), jet.phi(), mcdPtCorr});
     }
 
     for (const auto& track : tracks) {
 
-      if (!track.isGlobalTrack())
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
+      }
 
       if (!track.has_mcParticle())
         continue;
