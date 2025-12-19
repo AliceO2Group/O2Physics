@@ -13,13 +13,12 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Tasks/jetSubstructureHFOutput.cxx"
-
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/Tasks/jetSubstructureHFOutput.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
@@ -28,6 +27,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using JetSubstructureOutputDplus = JetSubstructureHFOutputTask<aod::CollisionsDplus, soa::Join<aod::McCollisionsDplus, aod::HfDplusMcRCollIds>, aod::McCollisionsDplus, aod::CandidatesDplusData, aod::CandidatesDplusMCD, aod::CandidatesDplusMCP, aod::BkgDplusRhos, aod::BkgDplusMcRhos, aod::JTrackDplusSubs, soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents, aod::DplusCJetSSs>, soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents, aod::DplusCJetSSs, aod::DplusChargedJetsMatchedToDplusChargedEventWiseSubtractedJets>, soa::Join<aod::DplusChargedSPs, aod::DplusChargedSPsMatchedToDplusChargedEventWiseSubtractedSPs>, soa::Join<aod::DplusChargedPRs, aod::DplusChargedPRsMatchedToDplusChargedEventWiseSubtractedPRs>, aod::DplusCJetCOs, aod::DplusCJetOs, aod::DplusCJetSSOs, aod::DplusCJetMOs, soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents, aod::DplusCMCDJetSSs, aod::DplusChargedMCDetectorLevelJetsMatchedToDplusChargedMCParticleLevelJets>, soa::Join<aod::DplusChargedMCDetectorLevelSPs, aod::DplusChargedMCDetectorLevelSPsMatchedToDplusChargedMCParticleLevelSPs>, soa::Join<aod::DplusChargedMCDetectorLevelPRs, aod::DplusChargedMCDetectorLevelPRsMatchedToDplusChargedMCParticleLevelPRs>, aod::DplusCMCDJetCOs, aod::DplusCMCDJetOs, aod::DplusCMCDJetSSOs, aod::DplusCMCDJetMOs, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents, aod::DplusCMCPJetSSs>, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents, aod::DplusCMCPJetSSs, aod::DplusChargedMCParticleLevelJetsMatchedToDplusChargedMCDetectorLevelJets>, soa::Join<aod::DplusChargedMCParticleLevelSPs, aod::DplusChargedMCParticleLevelSPsMatchedToDplusChargedMCDetectorLevelSPs>, soa::Join<aod::DplusChargedMCParticleLevelPRs, aod::DplusChargedMCParticleLevelPRsMatchedToDplusChargedMCDetectorLevelPRs>, aod::DplusCMCPJetCOs, aod::DplusCMCPJetMCCOs, aod::DplusCMCPJetOs, aod::DplusCMCPJetSSOs, aod::DplusCMCPJetMOs, soa::Join<aod::DplusChargedEventWiseSubtractedJets, aod::DplusChargedEventWiseSubtractedJetConstituents, aod::DplusCEWSJetSSs, aod::DplusChargedEventWiseSubtractedJetsMatchedToDplusChargedJets>, soa::Join<aod::DplusChargedEventWiseSubtractedSPs, aod::DplusChargedEventWiseSubtractedSPsMatchedToDplusChargedSPs>, soa::Join<aod::DplusChargedEventWiseSubtractedPRs, aod::DplusChargedEventWiseSubtractedPRsMatchedToDplusChargedPRs>, aod::DplusCEWSJetCOs, aod::DplusCEWSJetOs, aod::DplusCEWSJetSSOs, aod::DplusCEWSJetMOs, aod::StoredHfDplusCollBase, aod::StoredHfDplusBases, aod::StoredHfDplusPars, aod::StoredHfDplusParEs, aod::JDumDplusParDaus, aod::StoredHfDplusSels, aod::StoredHfDplusMls, aod::JDumDplusMlDaus, aod::StoredHfDplusMcs, aod::StoredHfDplusMcCollBases, aod::StoredHfDplusMcRCollIds, aod::StoredHfDplusPBases>;
 

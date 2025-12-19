@@ -254,8 +254,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   /// \brief Inits the HF event selection object
   /// \param registry reference to the histogram registry
-  template <typename T>
-  void init(o2::framework::HistogramRegistry& registry, T& zorroSummary)
+  void init(o2::framework::HistogramRegistry& registry, o2::framework::OutputObj<ZorroSummary>* zorroSummary = nullptr)
   {
     // we initialise the RCT checker
     if (requireGoodRct) {
@@ -264,11 +263,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     // we initialise the summary object
     if (!softwareTrigger.value.empty()) {
-      if constexpr (std::is_same_v<T, o2::framework::OutputObj<ZorroSummary>>) {
-        zorroSummary.setObject(zorro.getZorroSummary());
-      } else {
-        LOGP(fatal, "No o2::framework::OutputObj<ZorroSummary> provided to HF event selection object in your task, add it if you want to get the normalisation from Zorro.");
+      if (zorroSummary == nullptr) {
+        LOGP(fatal, "No OutputObj<ZorroSummary> provided to HF event selection object in your task. Add it if you want to get the normalisation from Zorro.");
+        return;
       }
+      zorroSummary->setObject(zorro.getZorroSummary());
     }
 
     // we initialise histograms
@@ -584,11 +583,8 @@ struct HfEventSelectionMc {
 
     /// RCT condition
     if (requireGoodRct) {
-      for (auto const& collision : collSlice) {
-        if (!rctChecker.checkTable(collision)) {
-          SETBIT(rejectionMask, EventRejection::Rct);
-          break;
-        }
+      if (!rctChecker.checkTable(bc)) {
+        SETBIT(rejectionMask, EventRejection::Rct);
       }
     }
     /// Sel8 trigger selection

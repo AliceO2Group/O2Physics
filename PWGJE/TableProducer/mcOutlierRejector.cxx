@@ -75,7 +75,7 @@ struct McOutlierRejectorTask {
             auto& mcCollisions = mcCollisionsOpt.value().get();
             auto mcParticle = selectionObject.template mcParticle_as<soa::Join<aod::JetParticles, aod::JMcParticlePIs>>();
             auto mcCollision = mcCollisions.sliceBy(perColParticle, mcParticle.mcCollisionId());
-            int subGenID = mcCollision.begin().subGeneratorId();
+            int subGenID = mcCollision.begin().getSubGeneratorId();
             int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
             if (diffCollisionID != 0 &&
                 selectionObjectPt > ptHatMax * ptHard) {

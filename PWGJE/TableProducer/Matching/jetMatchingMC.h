@@ -17,51 +17,50 @@
 /// \author Aimeric Lanodu <aimeric.landou@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMC_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMC_H_
+
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
-#include "Framework/ASoA.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename CandidatesBase, typename CandidatesTag, typename ClustersBase>
 struct JetMatchingMc {
 
-  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
-  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
-  Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
-  Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
+  o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
+  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
 
-  Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
-  Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
+  o2::framework::Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
+  o2::framework::Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
 
   // preslicing jet collections, only for Mc-based collection
-  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<aod::JetMcCollisions, JetsBase>();
-  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<aod::JetMcCollisions, JetsTag>();
+  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<o2::aod::JetMcCollisions, JetsBase>();
+  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<o2::aod::JetMcCollisions, JetsTag>();
 
-  Preslice<JetsBase> baseJetsPerCollision = jetsBaseIsMc ? aod::jet::mcCollisionId : aod::jet::collisionId;
-  Preslice<JetsTag> tagJetsPerCollision = jetsTagIsMc ? aod::jet::mcCollisionId : aod::jet::collisionId;
+  o2::framework::Preslice<JetsBase> baseJetsPerCollision = jetsBaseIsMc ? o2::aod::jet::mcCollisionId : o2::aod::jet::collisionId;
+  o2::framework::Preslice<JetsTag> tagJetsPerCollision = jetsTagIsMc ? o2::aod::jet::mcCollisionId : o2::aod::jet::collisionId;
 
-  PresliceUnsorted<aod::JetCollisionsMCD> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
+  o2::framework::PresliceUnsorted<o2::aod::JetCollisionsMCD> CollisionsPerMcCollision = o2::aod::jmccollisionlb::mcCollisionId;
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
   }
 
-  void processJets(aod::JetMcCollisions const& mcCollisions, aod::JetCollisionsMCD const& collisions,
+  void processJets(o2::aod::JetMcCollisions const& mcCollisions, o2::aod::JetCollisionsMCD const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   aod::JetTracksMCD const& tracks,
+                   o2::aod::JetTracksMCD const& tracks,
                    ClustersBase const& clusters,
-                   aod::JetParticles const& particles,
+                   o2::aod::JetParticles const& particles,
                    CandidatesBase const& candidatesBase,
                    CandidatesTag const& candidatesTag)
   {
@@ -97,3 +96,5 @@ struct JetMatchingMc {
   }
   PROCESS_SWITCH(JetMatchingMc, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_JETMATCHINGMC_H_

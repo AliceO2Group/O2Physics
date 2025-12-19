@@ -304,18 +304,18 @@ struct ThreeParticleCorrelations {
     rMCRegistry.add("hPIDProtonN", "hPIDProtonN", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
 
     // Purity
-    rMCRegistry.add("hSelectPionP", "hSelectPionP", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hSelectPionN", "hSelectPionN", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hSelectKaonP", "hSelectKaonP", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hSelectKaonN", "hSelectKaonN", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hSelectProtonP", "hSelectProtonP", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hSelectProtonN", "hSelectProtonN", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectPionP", "hTrueSelectPionP", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectPionN", "hTrueSelectPionN", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectKaonP", "hTrueSelectKaonP", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectKaonN", "hTrueSelectKaonN", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectProtonP", "hTrueSelectProtonP", {HistType::kTH1D, {trackPtAxis}});
-    rMCRegistry.add("hTrueSelectProtonN", "hTrueSelectProtonN", {HistType::kTH1D, {trackPtAxis}});
+    rMCRegistry.add("hSelectPionP", "hSelectPionP", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hSelectPionN", "hSelectPionN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hSelectKaonP", "hSelectKaonP", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hSelectKaonN", "hSelectKaonN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hSelectProtonP", "hSelectProtonP", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hSelectProtonN", "hSelectProtonN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hTrueSelectPionP", "hTrueSelectPionP", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hTrueSelectPionN", "hTrueSelectPionN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hTrueSelectKaonP", "hTrueSelectKaonP", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hTrueSelectKaonN", "hTrueSelectKaonN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hTrueSelectProtonP", "hTrueSelectProtonP", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
+    rMCRegistry.add("hTrueSelectProtonN", "hTrueSelectProtonN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
 
     // Correlations
     rSECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
@@ -800,36 +800,36 @@ struct ThreeParticleCorrelations {
         // Purity (PID)
         if (track.sign() > 0) {        // Positive tracks
           if (assocPID[0] == pionID) { // Pions
-            rMCRegistry.fill(HIST("hSelectPionP"), track.pt());
+            rMCRegistry.fill(HIST("hSelectPionP"), track.pt(), collision.centFT0C());
             if (particle.pdgCode() == kPiPlus) {
-              rMCRegistry.fill(HIST("hTrueSelectPionP"), track.pt());
+              rMCRegistry.fill(HIST("hTrueSelectPionP"), track.pt(), collision.centFT0C());
             }
           } else if (assocPID[0] == kaonID) { // Kaons
-            rMCRegistry.fill(HIST("hSelectKaonP"), track.pt());
+            rMCRegistry.fill(HIST("hSelectKaonP"), track.pt(), collision.centFT0C());
             if (particle.pdgCode() == kKPlus) {
-              rMCRegistry.fill(HIST("hTrueSelectKaonP"), track.pt());
+              rMCRegistry.fill(HIST("hTrueSelectKaonP"), track.pt(), collision.centFT0C());
             }
           } else if (assocPID[0] == protonID) { // Protons
-            rMCRegistry.fill(HIST("hSelectProtonP"), track.pt());
+            rMCRegistry.fill(HIST("hSelectProtonP"), track.pt(), collision.centFT0C());
             if (particle.pdgCode() == kProton) {
-              rMCRegistry.fill(HIST("hTrueSelectProtonP"), track.pt());
+              rMCRegistry.fill(HIST("hTrueSelectProtonP"), track.pt(), collision.centFT0C());
             }
           }
         } else if (track.sign() < 0) { // Negative tracks
           if (assocPID[0] == pionID) { // Pions
-            rMCRegistry.fill(HIST("hSelectPionN"), track.pt());
+            rMCRegistry.fill(HIST("hSelectPionN"), track.pt(), collision.centFT0C());
             if (particle.pdgCode() == kPiMinus) {
-              rMCRegistry.fill(HIST("hTrueSelectPionN"), track.pt());
+              rMCRegistry.fill(HIST("hTrueSelectPionN"), track.pt(), collision.centFT0C());
             }
           } else if (assocPID[0] == kaonID) { // Kaons
-            rMCRegistry.fill(HIST("hSelectKaonN"), track.pt());
+            rMCRegistry.fill(HIST("hSelectKaonN"), track.pt(), collision.centFT0C());
             if (particle.pdgCode() == kKMinus) {
-              rMCRegistry.fill(HIST("hTrueSelectKaonN"), track.pt());
+              rMCRegistry.fill(HIST("hTrueSelectKaonN"), track.pt(), collision.centFT0C());
             }
           } else if (assocPID[0] == protonID) { // Protons
-            rMCRegistry.fill(HIST("hSelectProtonN"), track.pt());
+            rMCRegistry.fill(HIST("hSelectProtonN"), track.pt(), collision.centFT0C());
             if (particle.pdgCode() == kProtonBar) {
-              rMCRegistry.fill(HIST("hTrueSelectProtonN"), track.pt());
+              rMCRegistry.fill(HIST("hTrueSelectProtonN"), track.pt(), collision.centFT0C());
             }
           }
         }
