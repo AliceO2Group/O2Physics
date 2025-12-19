@@ -305,13 +305,18 @@ struct HfTaskPidStudies {
   }
 
   template <typename T1>
-  int isMatched(const T1& cand)
+  int isMatched(const T1& cand, int mcCoresSize)
   {
     if constexpr (std::is_same<T1, V0sMcRec::iterator>::value) {
       if (!cand.has_v0MCCore()) {
         return Particle::NotMatched;
       }
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();
+      int v0MCId = cand.template v0MCCoreId();
+      if (v0MCId >= mcCoresSize) {
+        // LOG(warn) << "v0MCId (" << v0MCId << ") >= MCCores size (" << mcCoresSize << "). Some issue in the data model?";
+        return Particle::NotMatched;
+      }
       if (v0MC.pdgCode() == kK0Short && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kPiPlus) {
         return Particle::K0s;
       }
@@ -509,7 +514,7 @@ struct HfTaskPidStudies {
 
   void processV0Mc(CollisionsMc const& /*mcCollisions*/,
                    V0sMcRec const& v0s,
-                   aod::V0MCCores const&,
+                   aod::V0MCCores const& v0MCCores,
                    aod::McParticles const& /*particlesMc*/,
                    PidTracks const& /*tracks*/,
                    aod::BCsWithTimestamps const&)
@@ -522,7 +527,8 @@ struct HfTaskPidStudies {
         continue;
       }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
-        int const matched = isMatched(v0);
+        int const v0MCCoresSize = v0MCCores.size();
+        int const matched = isMatched(v0, v0MCCoresSize);
         if (matched != Particle::NotMatched) {
           fillTree<true, CollisionsMc>(v0, matched);
         }
@@ -552,7 +558,7 @@ struct HfTaskPidStudies {
 
   void processCascMc(CollisionsMc const& /*mcCollisions*/,
                      CascsMcRec const& cascades,
-                     aod::CascMCCores const&,
+                     aod::CascMCCores const& cascMCCores,
                      aod::McParticles const& /*particlesMc*/,
                      PidTracks const&,
                      aod::BCsWithTimestamps const&)
@@ -565,7 +571,8 @@ struct HfTaskPidStudies {
         continue;
       }
       if (isSelectedCascAsOmega<CollisionsMc>(casc)) {
-        int const matched = isMatched(casc);
+        int const cascMCCoresSize = cascMCCores.size();
+        int const matched = isMatched(casc, cascMCCoresSize);
         if (matched != Particle::NotMatched) {
           fillTree<false, CollisionsMc>(casc, matched);
         }
