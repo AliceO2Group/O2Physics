@@ -204,8 +204,8 @@ struct HfTaskPidStudies {
                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
-  using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
-  using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
+  using V0sMcRec = soa::Join<aod::V0Datas, aod::V0MCCores>;
+  using CascsMcRec = soa::Join<aod::CascDatas, aod::CascMCCores>;
 
   ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
@@ -308,37 +308,29 @@ struct HfTaskPidStudies {
   int isMatched(const T1& cand)
   {
     if constexpr (std::is_same<T1, V0sMcRec::iterator>::value) {
-      if (!cand.has_v0MCCore()) {
-        return Particle::NotMatched;
-      }
-      auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();
-      if (v0MC.pdgCode() == kK0Short && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kPiPlus) {
+      if (cand.pdgCode() == kK0Short && cand.pdgCodeNegative() == -kPiPlus && cand.pdgCodePositive() == kPiPlus) {
         return Particle::K0s;
       }
-      if (v0MC.pdgCode() == kLambda0 && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kProton) {
+      if (cand.pdgCode() == kLambda0 && cand.pdgCodeNegative() == -kPiPlus && cand.pdgCodePositive() == kProton) {
         return Particle::Lambda;
       }
-      if (v0MC.pdgCode() == -kLambda0 && v0MC.pdgCodeNegative() == -kProton && v0MC.pdgCodePositive() == kPiPlus) {
+      if (cand.pdgCode() == -kLambda0 && cand.pdgCodeNegative() == -kProton && cand.pdgCodePositive() == kPiPlus) {
         return -Particle::Lambda;
       }
     }
     if constexpr (std::is_same<T1, CascsMcRec::iterator>::value) {
-      if (!cand.has_cascMCCore()) {
-        return Particle::NotMatched;
-      }
-      auto cascMC = cand.template cascMCCore_as<aod::CascMCCores>();
-      if (cascMC.pdgCode() == kOmegaMinus &&
-          cascMC.pdgCodeBachelor() == -kKPlus &&
-          cascMC.pdgCodeV0() == kLambda0 &&
-          cascMC.pdgCodePositive() == kProton &&
-          cascMC.pdgCodeNegative() == -kPiPlus) {
+      if (cand.pdgCode() == kOmegaMinus &&
+          cand.pdgCodeBachelor() == -kKPlus &&
+          cand.pdgCodeV0() == kLambda0 &&
+          cand.pdgCodePositive() == kProton &&
+          cand.pdgCodeNegative() == -kPiPlus) {
         return Particle::Omega;
       }
-      if (cascMC.pdgCode() == -kOmegaMinus &&
-          cascMC.pdgCodeBachelor() == kKPlus &&
-          cascMC.pdgCodeV0() == -kLambda0 &&
-          cascMC.pdgCodePositive() == kPiPlus &&
-          cascMC.pdgCodeNegative() == -kProton) {
+      if (cand.pdgCode() == -kOmegaMinus &&
+          cand.pdgCodeBachelor() == kKPlus &&
+          cand.pdgCodeV0() == -kLambda0 &&
+          cand.pdgCodePositive() == kPiPlus &&
+          cand.pdgCodeNegative() == -kProton) {
         return -Particle::Omega;
       }
     }
