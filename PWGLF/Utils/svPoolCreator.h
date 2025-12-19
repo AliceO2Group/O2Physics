@@ -22,7 +22,6 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 
-using std::array;
 using CollBracket = o2::math_utils::Bracket<int>;
 
 constexpr uint64_t bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
@@ -150,7 +149,7 @@ class svPoolCreator
       float trackTimeRes{0.};
       if (trackCand.isPVContributor()) {
         trackTime = trackCand.template collision_as<C>().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
-        trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS;                 // 1 BC
+        trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS;             // 1 BC
       } else {
         trackTime = trackCand.trackTime();
         trackTimeRes = trackCand.trackTimeRes();
