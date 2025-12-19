@@ -214,6 +214,7 @@ struct HfTaskPidStudies {
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry registry{"registry", {}};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext&)
   {
@@ -223,7 +224,9 @@ struct HfTaskPidStudies {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    hfEvSel.addHistograms(registry);
+
+    // init HF event selection helper
+    hfEvSel.init(registry, &zorroSummary);
 
     std::shared_ptr<TH1> const hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{TrackCuts::NCuts, 0, TrackCuts::NCuts}}});
 
