@@ -114,9 +114,9 @@ struct FwdTrackPropagation {
     propFwdTracks.reserve(fwdTracks.size());
     propFwdTracksCov.reserve(fwdTracks.size());
 
-    constexpr float zAbsorberFront = -90.f;
+    constexpr float ZAbsorberFront = -90.f;
     for (const auto& t : fwdTracks) {
-      if (t.z() < zAbsorberFront) {
+      if (t.z() < ZAbsorberFront) {
         std::array<float, 3> vtx = {0.f, 0.f, 0.f};
         std::array<float, 2> vtxCov = {0.f, 0.f};
         if (t.has_collision() && t.trackType() < ForwardTrackTypeEnum::GlobalForwardTrack) { // propagate only global muon tracks to collision vtx

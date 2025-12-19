@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file UpcCandProducerMuon.cxx
+/// \brief UPC candidate producer for forward muons without MFT
+/// \author Nazar Burmasov, nazar.burmasov@cern.ch
+/// \since 19.12.2025
+
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
@@ -89,7 +94,7 @@ struct UpcCandProducerMuon {
 
   bool cut(const o2::dataformats::GlobalFwdTrack& pft, const ForwardTracks::iterator& fwdTrack)
   {
-    constexpr double absorberMid = 26.5;
+    constexpr double AbsorberMid = 26.5;
     histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelAll, 1);
     auto pt = pft.getPt();
     auto eta = pft.getEta();
@@ -99,7 +104,7 @@ struct UpcCandProducerMuon {
     bool passPt = pt > fUpcCuts.getFwdPtLow() && pt < fUpcCuts.getFwdPtHigh();
     bool passEta = eta > fUpcCuts.getFwdEtaLow() && eta < fUpcCuts.getFwdEtaHigh();
     bool passRabs = rabs > fUpcCuts.getMuonRAtAbsorberEndLow() && rabs < fUpcCuts.getMuonRAtAbsorberEndHigh();
-    bool passPDca = rabs < absorberMid ? pdca < fUpcCuts.getMuonPDcaHighFirst() : pdca < fUpcCuts.getMuonPDcaHighSecond();
+    bool passPDca = rabs < AbsorberMid ? pdca < fUpcCuts.getMuonPDcaHighFirst() : pdca < fUpcCuts.getMuonPDcaHighSecond();
     bool passChi2 = chi2 > fUpcCuts.getFwdChi2Low() && chi2 < fUpcCuts.getFwdChi2High();
     if (passPt)
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelPt, 1);
@@ -389,9 +394,9 @@ struct UpcCandProducerMuon {
     }
 
     std::map<uint64_t, int64_t> mapGlobalBcWithV0A{};
-    constexpr float fv0ValidTime = 15.f;
+    constexpr float FV0ValidTime = 15.f;
     for (const auto& fv0 : fv0s) {
-      if (std::abs(fv0.time()) > fv0ValidTime)
+      if (std::abs(fv0.time()) > FV0ValidTime)
         continue;
       uint64_t globalBC = vGlobalBCs[fv0.bcId()];
       mapGlobalBcWithV0A[globalBC] = fv0.globalIndex();
@@ -399,9 +404,9 @@ struct UpcCandProducerMuon {
     auto nFV0s = mapGlobalBcWithV0A.size();
 
     std::map<uint64_t, int64_t> mapGlobalBcWithZdc{};
-    constexpr float zdcValidTime = 2.f;
+    constexpr float ZDCValidTime = 2.f;
     for (const auto& zdc : zdcs) {
-      if (std::abs(zdc.timeZNA()) > zdcValidTime && std::abs(zdc.timeZNC()) > zdcValidTime)
+      if (std::abs(zdc.timeZNA()) > ZDCValidTime && std::abs(zdc.timeZNC()) > ZDCValidTime)
         continue;
       uint64_t globalBC = vGlobalBCs[zdc.bcId()];
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();

@@ -61,7 +61,7 @@ o2physics_add_dpl_workflow(tau-three-prong-event-table-producer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(upccand-producer-muon
-                           SOURCES upccandProducerMuon.cxx
+o2physics_add_dpl_workflow(upc-cand-producer-muon
+                           SOURCES UpcCandProducerMuon.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
                            COMPONENT_NAME Analysis)
