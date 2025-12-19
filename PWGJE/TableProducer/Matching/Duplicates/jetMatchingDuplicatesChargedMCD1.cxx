@@ -13,10 +13,9 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/Matching/Duplicates/jetMatchingDuplicates.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/TableProducer/Matching/Duplicates/jetMatchingDuplicates.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
@@ -25,6 +24,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using Charged1JetMCDMatchingDupliacates = JetMatchingDuplicates<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>,
                                                                 soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>,

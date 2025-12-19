@@ -18,11 +18,10 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#include <onnxruntime_cxx_api.h>
-
 #include <Framework/Logger.h>
 
 #include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -330,6 +329,7 @@ class TensorAllocator
 {
  protected:
   Ort::MemoryInfo memInfo;
+
  public:
   TensorAllocator()
     : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
@@ -426,7 +426,7 @@ class GNNBjetAllocator : public TensorAllocator
   }
   ~GNNBjetAllocator() = default;
 
-  // Copy operator for initializing GNNBjetAllocator using Configurable values
+  // Copy operator for initializing GNNBjetAllocator using o2::framework::Configurable values
   GNNBjetAllocator& operator=(const GNNBjetAllocator& other)
   {
     nJetFeat = other.nJetFeat;
