@@ -13,15 +13,14 @@
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
@@ -426,9 +425,9 @@ struct UpcCandProducerMuon {
       auto trackId = fwdTrack.globalIndex();
       int64_t indexBC = vAmbFwdTrackIndex[trackId] < 0 ? vColIndexBCs[fwdTrack.collisionId()] : vAmbFwdTrackIndexBCs[vAmbFwdTrackIndex[trackId]];
       auto globalBC = vGlobalBCs[indexBC] + TMath::FloorNint(fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + 1.);
-      if (fwdTrack.trackType() == MuonStandaloneTrack)
+      if (fwdTrack.trackType() == MuonStandaloneTrack) // MCH-MID
         mapGlobalBcsWithMCHMIDTrackIds[globalBC].push_back(trackId);
-      if (fwdTrack.trackType() == MCHStandaloneTrack)
+      if (fwdTrack.trackType() == MCHStandaloneTrack) // MCH-only
         mapGlobalBcsWithMCHTrackIds[globalBC].push_back(trackId);
     }
 

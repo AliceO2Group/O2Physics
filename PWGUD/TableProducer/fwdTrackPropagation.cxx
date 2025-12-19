@@ -12,25 +12,27 @@
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
 #include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
 #include "MCHTracking/TrackParam.h"
-#include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
-#include "PWGUD/DataModel/UDTables.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using o2::aod::fwdtrack::ForwardTrackTypeEnum;
 
 struct FwdTrackPropagation {
   using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
@@ -67,7 +69,7 @@ struct FwdTrackPropagation {
     SMatrix55 tcovs(v1.begin(), v1.end());
     o2::dataformats::GlobalFwdTrack propmuon;
 
-    if (static_cast<int>(muon.trackType()) > 2) {
+    if (muon.trackType() > ForwardTrackTypeEnum::GlobalForwardTrack) { // tracks without MFT
       o2::dataformats::GlobalFwdTrack track;
       track.setParameters(tpars);
       track.setZ(muon.z());
@@ -78,7 +80,7 @@ struct FwdTrackPropagation {
       propmuon.setParameters(proptrack.getParameters());
       propmuon.setZ(proptrack.getZ());
       propmuon.setCovariances(proptrack.getCovariances());
-    } else if (static_cast<int>(muon.trackType()) < 2) {
+    } else if (muon.trackType() <= ForwardTrackTypeEnum::GlobalForwardTrack) { // tracks with MFT
       double centerMFT[3] = {0, 0, -61.4};
       o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
       auto* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
@@ -112,11 +114,12 @@ struct FwdTrackPropagation {
     propFwdTracks.reserve(fwdTracks.size());
     propFwdTracksCov.reserve(fwdTracks.size());
 
+    constexpr float zAbsorberFront = -90.f;
     for (const auto& t : fwdTracks) {
-      if (t.z() < -90.f) {
+      if (t.z() < zAbsorberFront) {
         std::array<float, 3> vtx = {0.f, 0.f, 0.f};
         std::array<float, 2> vtxCov = {0.f, 0.f};
-        if (t.has_collision() && static_cast<int>(t.trackType()) < 2) { // propagate only global muon tracks to collision vtx
+        if (t.has_collision() && t.trackType() < ForwardTrackTypeEnum::GlobalForwardTrack) { // propagate only global muon tracks to collision vtx
           auto col = cols.iteratorAt(t.collisionId());
           vtx[0] = col.posX();
           vtx[1] = col.posY();
