@@ -342,6 +342,7 @@ struct StrangenessInJetsIons {
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(4, "kNoSameBunchPileup");
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(6, "No empty events");
+      registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(7, "At least one jet");
 
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, -0.5, 100.5, "Multiplicity percentile"}});
@@ -1716,7 +1717,7 @@ struct StrangenessInJetsIons {
         continue;
 
       // Fill event counter for events with at least one selected jet
-      registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
+      registryMC.fill(HIST("number_of_events_mc_rec"), 6.5);
       registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
 
       // Loop over selected jets
