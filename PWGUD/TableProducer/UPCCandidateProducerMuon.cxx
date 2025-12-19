@@ -13,29 +13,24 @@
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
 #include "Math/SMatrix.h"
 #include "TGeoGlobalMagField.h"
 
 #include <algorithm>
-#include <limits>
 #include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 #include <vector>
 
 using namespace o2::framework;
@@ -57,13 +52,13 @@ struct UpcCandProducerMuon {
   Produces<o2::aod::UDCollisionsSelsFwd> eventCandidatesSelsFwd;
   Produces<o2::aod::UDZdcsReduced> udZdcsReduced;
 
-  Configurable<int> fSignalGenID{"signalGenID", 1, "Signal generator ID"};
+  Configurable<int> fSignalGenID{"fSignalGenID", 1, "Signal generator ID"};
 
-  UPCCutparHolder upcCuts = UPCCutparHolder();
-  MutableConfigurable<UPCCutparHolder> inputCuts{"UPCCuts", {}, "UPC event cuts"};
-  Configurable<uint64_t> fBCWindowFITAmps{"bcWindowFITAmps", 20, "BC range for T0A/V0A amplitudes array [-range, +(range-1)]"};
-  Configurable<int> fBcWindowMCH{"bcWindowMCH", 20, "Time window for MCH-MID to MCH-only matching for Muon candidates"};
-  Configurable<float> fMaxFV0Amp{"maxFV0Amp", 100.f, "Max FV0 amplitude in the same BC"};
+  UPCCutparHolder fUpcCuts = UPCCutparHolder();
+  MutableConfigurable<UPCCutparHolder> fUpcCutsConf{"fUpcCutsConf", {}, "UPC event cuts"};
+  Configurable<uint64_t> fBcWindowFITAmps{"fBcWindowFITAmps", 20, "BC range for T0A/V0A amplitudes array [-range, +(range-1)]"};
+  Configurable<int> fBcWindowMCH{"fBcWindowMCH", 20, "Time window for MCH-MID to MCH-only matching for Muon candidates"};
+  Configurable<float> fMaxFV0Amp{"fMaxFV0Amp", 100.f, "Max FV0 amplitude in the same BC"};
 
   using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
 
@@ -76,8 +71,8 @@ struct UpcCandProducerMuon {
 
   void init(InitContext&)
   {
-    upcCuts = (UPCCutparHolder)inputCuts;
-    if (upcCuts.getUseFwdCuts()) {
+    fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
+    if (fUpcCuts.getUseFwdCuts()) {
       fCCDB->setURL("http://alice-ccdb.cern.ch");
       fCCDB->setCaching(true);
       fCCDB->setLocalObjectValidityChecking();
@@ -95,17 +90,18 @@ struct UpcCandProducerMuon {
 
   bool cut(const o2::dataformats::GlobalFwdTrack& pft, const ForwardTracks::iterator& fwdTrack)
   {
+    constexpr double absorberMid = 26.5;
     histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelAll, 1);
     auto pt = pft.getPt();
     auto eta = pft.getEta();
     auto pdca = fwdTrack.pDca();
     auto rabs = fwdTrack.rAtAbsorberEnd();
     auto chi2 = fwdTrack.chi2();
-    bool passPt = pt > upcCuts.getFwdPtLow() && pt < upcCuts.getFwdPtHigh();
-    bool passEta = eta > upcCuts.getFwdEtaLow() && eta < upcCuts.getFwdEtaHigh();
-    bool passRabs = rabs > upcCuts.getMuonRAtAbsorberEndLow() && rabs < upcCuts.getMuonRAtAbsorberEndHigh();
-    bool passPDca = rabs < 26.5 ? pdca < upcCuts.getMuonPDcaHighFirst() : pdca < upcCuts.getMuonPDcaHighSecond();
-    bool passChi2 = chi2 > upcCuts.getFwdChi2Low() && chi2 < upcCuts.getFwdChi2High();
+    bool passPt = pt > fUpcCuts.getFwdPtLow() && pt < fUpcCuts.getFwdPtHigh();
+    bool passEta = eta > fUpcCuts.getFwdEtaLow() && eta < fUpcCuts.getFwdEtaHigh();
+    bool passRabs = rabs > fUpcCuts.getMuonRAtAbsorberEndLow() && rabs < fUpcCuts.getMuonRAtAbsorberEndHigh();
+    bool passPDca = rabs < absorberMid ? pdca < fUpcCuts.getMuonPDcaHighFirst() : pdca < fUpcCuts.getMuonPDcaHighSecond();
+    bool passChi2 = chi2 > fUpcCuts.getFwdChi2Low() && chi2 < fUpcCuts.getFwdChi2High();
     if (passPt)
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelPt, 1);
     if (passEta)
@@ -157,7 +153,7 @@ struct UpcCandProducerMuon {
       // collecting new mother IDs
       if (mcPart.has_mothers()) {
         const auto& motherIDs = mcPart.mothersIds();
-        for (auto motherID : motherIDs) {
+        for (const auto& motherID : motherIDs) {
           if (motherID >= nMCParticles) {
             continue;
           }
@@ -273,7 +269,7 @@ struct UpcCandProducerMuon {
   {
     auto fillMchIds = [&outMchTrkIds](std::map<uint64_t, std::vector<int64_t>>::iterator& inIt, uint64_t gbc) {
       std::vector<int64_t>& ids = inIt->second;
-      for (auto id : ids)
+      for (const auto& id : ids)
         outMchTrkIds[id] = gbc;
     };
     scrollBackForth(inGbc, maxDbc, mchTracksPerBC, fillMchIds);
@@ -327,7 +323,7 @@ struct UpcCandProducerMuon {
     const auto& track = fwdTracks.iteratorAt(trackId);
     float px, py, pz;
     int sign;
-    if (upcCuts.getUseFwdCuts()) {
+    if (fUpcCuts.getUseFwdCuts()) {
       auto pft = propagateToZero(track);
       bool pass = cut(pft, track);
       if (!pass)
@@ -363,8 +359,11 @@ struct UpcCandProducerMuon {
                         o2::aod::Zdcs const& zdcs,
                         const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
+    using o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack;
+    using o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack;
+
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
-    if (upcCuts.getUseFwdCuts()) {
+    if (fUpcCuts.getUseFwdCuts()) {
       if (runNumber != fRun) {
         fRun = runNumber;
         std::map<std::string, std::string> metadata;
@@ -391,8 +390,9 @@ struct UpcCandProducerMuon {
     }
 
     std::map<uint64_t, int64_t> mapGlobalBcWithV0A{};
+    constexpr float fv0ValidTime = 15.f;
     for (const auto& fv0 : fv0s) {
-      if (std::abs(fv0.time()) > 15.f)
+      if (std::abs(fv0.time()) > fv0ValidTime)
         continue;
       uint64_t globalBC = vGlobalBCs[fv0.bcId()];
       mapGlobalBcWithV0A[globalBC] = fv0.globalIndex();
@@ -400,8 +400,9 @@ struct UpcCandProducerMuon {
     auto nFV0s = mapGlobalBcWithV0A.size();
 
     std::map<uint64_t, int64_t> mapGlobalBcWithZdc{};
+    constexpr float zdcValidTime = 2.f;
     for (const auto& zdc : zdcs) {
-      if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
+      if (std::abs(zdc.timeZNA()) > zdcValidTime && std::abs(zdc.timeZNC()) > zdcValidTime)
         continue;
       uint64_t globalBC = vGlobalBCs[zdc.bcId()];
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
@@ -420,26 +421,26 @@ struct UpcCandProducerMuon {
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHMIDTrackIds;
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHTrackIds;
     for (const auto& fwdTrack : fwdTracks) {
-      if (fwdTrack.trackType() != 3 && fwdTrack.trackType() != 4)
+      if (fwdTrack.trackType() != MCHStandaloneTrack && fwdTrack.trackType() != MuonStandaloneTrack)
         continue;
       auto trackId = fwdTrack.globalIndex();
       int64_t indexBC = vAmbFwdTrackIndex[trackId] < 0 ? vColIndexBCs[fwdTrack.collisionId()] : vAmbFwdTrackIndexBCs[vAmbFwdTrackIndex[trackId]];
       auto globalBC = vGlobalBCs[indexBC] + TMath::FloorNint(fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + 1.);
-      if (fwdTrack.trackType() == 3)
+      if (fwdTrack.trackType() == MuonStandaloneTrack)
         mapGlobalBcsWithMCHMIDTrackIds[globalBC].push_back(trackId);
-      if (fwdTrack.trackType() == 4)
+      if (fwdTrack.trackType() == MCHStandaloneTrack)
         mapGlobalBcsWithMCHTrackIds[globalBC].push_back(trackId);
     }
 
     int32_t candId = 0;
-    for (auto& gbc_muids : mapGlobalBcsWithMCHMIDTrackIds) {
+    for (const auto& gbc_muids : mapGlobalBcsWithMCHMIDTrackIds) {
       uint64_t globalBcMid = gbc_muids.first;
       auto itFv0Id = mapGlobalBcWithV0A.find(globalBcMid);
       if (itFv0Id != mapGlobalBcWithV0A.end()) {
         auto fv0Id = itFv0Id->second;
         const auto& fv0 = fv0s.iteratorAt(fv0Id);
         float fv0Amp = 0.f;
-        for (auto amp : fv0.amplitude())
+        for (const auto& amp : fv0.amplitude())
           fv0Amp += amp;
         if (fv0Amp > fMaxFV0Amp)
           continue;
@@ -447,7 +448,7 @@ struct UpcCandProducerMuon {
       uint16_t numContrib = 0;
       auto& vMuonIds = gbc_muids.second;
       // writing MCH-MID tracks
-      for (auto imuon : vMuonIds) {
+      for (const auto& imuon : vMuonIds) {
         if (!addToFwdTable(candId, imuon, globalBcMid, 0., fwdTracks, mcFwdTrackLabels))
           continue;
         numContrib++;
@@ -457,7 +458,7 @@ struct UpcCandProducerMuon {
       std::map<int64_t, uint64_t> mapMchIdBc{};
       getMchTrackIds(globalBcMid, mapGlobalBcsWithMCHTrackIds, fBcWindowMCH, mapMchIdBc);
       // writing MCH-only tracks
-      for (auto& [imch, gbc] : mapMchIdBc) {
+      for (const auto& [imch, gbc] : mapMchIdBc) {
         if (!addToFwdTable(candId, imch, gbc, (gbc - globalBcMid) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mcFwdTrackLabels))
           continue;
         numContrib++;
@@ -468,7 +469,7 @@ struct UpcCandProducerMuon {
       std::vector<float> amplitudesT0A{};
       std::vector<int8_t> relBCsT0A{};
       if (nFV0s > 0) {
-        getFV0Amplitudes(globalBcMid, fv0s, fBCWindowFITAmps, mapGlobalBcWithV0A, amplitudesV0A, relBCsV0A);
+        getFV0Amplitudes(globalBcMid, fv0s, fBcWindowFITAmps, mapGlobalBcWithV0A, amplitudesV0A, relBCsV0A);
       }
       eventCandidatesSelsFwd(0., 0., amplitudesT0A, relBCsT0A, amplitudesV0A, relBCsV0A);
       if (nZdcs > 0) {
